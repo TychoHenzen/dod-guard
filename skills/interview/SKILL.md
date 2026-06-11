@@ -133,6 +133,64 @@ When you believe you understand everything, present a structured summary:
 
 The user MUST explicitly confirm before you proceed. If they identify gaps, return to Phase 2.
 
+## Phase 3.5: Apply Company DoD Baselines
+
+Before constructing the DoD steps, determine the work type and apply the company baseline from `standards/dod-baselines.md`.
+
+### Determine Work Type
+
+| If the task is… | Work type | Baseline |
+|-----------------|-----------|----------|
+| A bug fix, defect, regression, incident | **Bug** | Bug Fix baseline |
+| A feature, enhancement, refactor, new component | **General** | General (Algemeen) baseline |
+
+### Assess Project Cleanliness (Phase 1 output)
+
+Before choosing proof commands, check the project's current lint/format state:
+
+1. Run the language-appropriate linter on the full project — count existing violations. Record as `LINT_BASELINE`.
+2. Run the formatter in **dry-run/check mode** — count files that would be changed. Record as `FORMAT_BASELINE`.
+3. **If mostly clean (<10 violations)**: proactively fix remaining issues and use zero-tolerance greenfield proofs. Small cleanup is worth it.
+4. **If dirty (10+ violations)**: use delta proofs:
+   - **Lint**: scope to changed files, or assert warning count `<= LINT_BASELINE`
+   - **Format**: dry-run only, assert violation count `<= FORMAT_BASELINE`. Never auto-format in brownfield — even single-file formatting can dominate a PR diff and make review impossible.
+
+Record both baselines in `research_notes` so proofs can reference them.
+
+See `standards/language-commands.md` for greenfield vs brownfield commands per language.
+
+### Mandatory Minimum Proofs
+
+**For Bug Fixes, the DoD must include at minimum:**
+
+1. **Lint/quality** — lint proof scoped to changed files (or baseline count comparison if project has existing debt)
+2. **Format/standards** — dry-run formatter, assert violation count `<= FORMAT_BASELINE` (never auto-format)
+3. **Regression test (TDD)** — a `tdd: 0` proof ensuring a test for this specific bug was written red-first
+4. **Regression test structure** — an `output_matches` proof verifying the test has real assertions about the bug condition
+5. **Full test suite** — an `exit_code: 0` proof running the complete test suite (no regressions)
+6. **Application walkthrough** — a `manual` proof: run the app, verify the fix works and existing features aren't broken
+7. **Code review** — a `manual` proof for peer review
+
+**For General work, the DoD must include at minimum:**
+
+1. **Lint/quality** — lint proof scoped to changed files (or baseline count comparison if project has existing debt)
+2. **Format/standards** — dry-run formatter, assert violation count `<= FORMAT_BASELINE` (never auto-format)
+3. **New unit tests (TDD)** — a `tdd: 0` proof for tests covering new functionality
+4. **New test structure** — an `output_matches` proof verifying tests have meaningful assertions
+5. **Full test suite** — an `exit_code: 0` proof running the complete test suite
+6. **Application walkthrough** — a `manual` proof: run the app, verify new functionality works and existing features aren't broken
+7. **Documentation** — a structural proof (`exit_code: 0` via grep/find) that documentation exists for new components
+8. **Code review** — a `manual` proof for peer review
+
+### Enforcement
+
+- Machine-checkable proofs (lint, tests, TDD, structure) **cannot** be replaced with manual proofs
+- TDD proofs are **non-negotiable** — bug fixes need regression tests, features need unit tests
+- **Mostly clean (<10 violations)**: proactively fix remaining issues, use zero-tolerance proofs — worth the small cleanup
+- **Dirty (10+ violations)**: lint scoped to changed files, format dry-run only with baseline comparison. Never auto-format in brownfield.
+- Additional feature-specific proofs are added on top of these baselines
+- If a baseline proof genuinely doesn't apply (e.g., no linter configured), note the omission in `open_risks` and discuss with the user
+
 ## Phase 4: Create Locked DoD via dod-guard MCP
 
 Instead of writing the spec file directly, call the `dod_create` MCP tool to create a **locked, anti-cheat DoD document**. This stores proof commands canonically in MCP storage — editing the rendered markdown cannot weaken verification.
@@ -231,9 +289,11 @@ Flexible naming is fine — use regex patterns like `output_matches: "test_.*val
 **When to use `output_not_contains` / `output_not_matches`:**
 
 Use for absence checks that go beyond exit codes:
-- `cargo clippy 2>&1` with `output_not_contains: "warning"` — no clippy warnings
-- `grep -r "TODO" src/` with `output_not_matches: "TODO.*HACK"` — no TODO+HACK combos
+- Linter output with `output_not_contains: "warning"` — no lint warnings (scope to changed files in brownfield projects)
+- `grep -r "TODO" src/new_module/` with `output_not_matches: "TODO.*HACK"` — no TODO+HACK combos in new code
 - Build output with `output_not_contains: "deprecated"` — no deprecation warnings
+
+**Important:** In brownfield projects with pre-existing violations, scope `output_not_contains` checks to changed files or new modules only. See `standards/language-commands.md` for delta techniques per language.
 
 **Fallback:** If `dod_create` is unavailable (MCP not connected), fall back to writing the markdown directly using the Write tool and warn the user that anti-cheat locking is not active.
 
@@ -254,12 +314,12 @@ Each proof must be:
 - **Expected value is exact** — specify the exact output, exit code, pattern, or measurable condition
 - **Outcome-verifying, not process-verifying** — prove the thing works, not that a file was created
 
-Good proofs:
+Good proofs (language-agnostic patterns):
 ```
-- [ ] Proof: `cargo test -- test_auth_login` → exit code 0, all tests pass
+- [ ] Proof: `<test-runner> <test-filter>` → exit code 0, targeted tests pass
 - [ ] Proof: `curl -s localhost:3000/api/health` → response body contains `{"status":"ok"}`
-- [ ] Proof: `grep "fn validate_email" src/auth.rs` → function exists with `#[cfg(test)]` module containing at least 3 test cases
-- [ ] Proof: run `cargo build` → exit code 0, no warnings about unused imports in src/auth.rs
+- [ ] Proof: `grep "validate_email" src/auth.*` → function exists in expected location
+- [ ] Proof: `<linter> $(git diff --name-only HEAD~1)` → exit 0, no new lint violations in changed files
 ```
 
 Bad proofs (vague, not invokable, not falsifiable):
@@ -295,21 +355,24 @@ Rules for amendments:
 
 #### Proof Categories
 
-Use these categories to ensure coverage:
+Use these categories to ensure coverage. Mandatory categories are marked below per company DoD baselines (see Phase 3.5). For concrete commands per language, see `standards/language-commands.md`.
 
-| Category | What it verifies | Example proof | Predicate |
-|----------|-----------------|---------------|-----------|
-| **Build** | Compiles without errors/warnings | `cargo build 2>&1` | `output_not_contains: "error"` |
-| **Test** | Tests pass | `cargo test -- test_name` | `exit_code: 0` |
-| **TDD** | Test was written before implementation | `cargo test -- test_new_feature` | `tdd: 0` (must fail first) |
-| **Lint/Format** | Code quality checks pass | `cargo clippy 2>&1` | `output_not_contains: "warning"` |
-| **Behavior** | Correct runtime behavior | `curl -s localhost:3000/health` | `output_contains: "ok"` |
-| **Structure** | Code is in right place/pattern | `grep "impl Trait" src/` | `exit_code: 0` |
-| **Absence** | Something is NOT present | `grep "TODO" src/new_module/` | `exit_code: 1` |
-| **Pattern absence** | Specific pattern not in output | `grep -r "unwrap()" src/lib/` | `output_not_matches: "unwrap\\(\\)"` |
-| **Contract** | Interface/schema matches spec | `grep "pub fn create_user" src/api.rs` | `output_matches: "fn create_user\\(name: &str"` |
-| **Integration** | Works with existing system | `cargo test -- integration` | `exit_code: 0` |
-| **Regression** | Bug doesn't recur | `cargo test -- test_issue_42` | `tdd: 0` (proves test was red) |
+| Category | What it verifies | Example approach | Predicate | Required? |
+|----------|-----------------|-----------------|-----------|-----------|
+| **Lint** (mandatory) | Code quality / SonarQube clean | Run linter on changed files | `output_not_contains` or `exit_code: 0` | Always (delta-scoped in brownfield) |
+| **Format** (mandatory) | Code standards / formatting | Dry-run formatter, count violations, assert `<= FORMAT_BASELINE` | `exit_code: 0` | Always (never auto-format) |
+| **Test** (mandatory) | Full test suite passes | Run full test suite | `exit_code: 0` | Always |
+| **TDD** (mandatory) | Test written before implementation | Run specific new test | `tdd: 0` (must fail first) | Always (regression for bugs, unit for general) |
+| **Structure** (mandatory) | Test has real assertions | grep for assertion patterns | `output_matches` | Always (paired with TDD) |
+| **Code Review** (mandatory) | Reviewed by another developer | — | `manual` | Always |
+| **Documentation** (mandatory) | New components documented | find/grep for docs | `exit_code: 0` | General only |
+| **Build** | Compiles without errors | Build command | `exit_code: 0` | Recommended |
+| **Behavior** | Correct runtime behavior | curl/HTTP check | `output_contains` | Feature-specific |
+| **Absence** | Something is NOT present | grep for removed pattern | `exit_code: 1` | Feature-specific |
+| **Pattern absence** | Specific pattern not in output | grep for anti-pattern in new code | `output_not_matches` | Feature-specific |
+| **Contract** | Interface/schema matches spec | grep for function/type signature | `output_matches` | Feature-specific |
+| **Integration** | Works with existing system | Run integration tests | `exit_code: 0` | Recommended |
+| **Regression** | Bug doesn't recur | Run bug-specific test | `tdd: 0` (proves test was red) | Bug fixes (via TDD) |
 
 ## Phase 5: Output /goal Prompt
 
@@ -322,8 +385,24 @@ DoD created and locked. ID: <dod_id>. Saved to docs/plans/<filename>. <N> steps,
 
 Goal prompt for fresh context:
 
-/goal Implement all <N> steps in the DoD (ID: <dod_id>). Work through each step sequentially. After completing each step, call dod_check to verify. The goal is met when dod_check returns overall PASS. If a proof is unreasonable, use dod_amend with a reason. The DoD markdown is at docs/plans/<filename> for reference.
+/goal Implement all <N> steps in the DoD (ID: <dod_id>). Work through each step sequentially. After completing each step, call dod_check to verify. The goal is met when dod_check returns overall PASS. If a proof is unreasonable, use dod_amend with a reason. The DoD markdown is at docs/plans/<filename> for reference. When all machine-checkable proofs pass, list all remaining manual steps the user must complete before this work is done.
 ```
+
+The goal agent must end its work by listing all manual proofs that require human action:
+
+```
+## Manual steps remaining
+
+All machine-checkable proofs pass. The following manual steps still need to happen:
+
+- [ ] Code review: code reviewed by another developer, comments discussed
+- [ ] Application walkthrough: manually verify the running application — check the changed functionality works and existing features aren't broken
+- [ ] Release: deploy to correct environment
+- [ ] Cleanup: remove test databases
+- [ ] (any other manual proofs from the DoD)
+```
+
+This list must be printed even if the goal agent considers the work "done" — machine proofs passing is not the full DoD.
 
 That's it. No AskUserQuestion. No choice menu. Just the goal prompt.
 
