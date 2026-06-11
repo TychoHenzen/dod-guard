@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+
+# Code review graph cache
+.code-review-graph/
