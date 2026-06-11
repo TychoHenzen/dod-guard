@@ -168,8 +168,9 @@ See `standards/language-commands.md` for greenfield vs brownfield commands per l
 3. **Regression test (TDD)** — a `tdd: 0` proof ensuring a test for this specific bug was written red-first
 4. **Regression test structure** — an `output_matches` proof verifying the test has real assertions about the bug condition
 5. **Full test suite** — an `exit_code: 0` proof running the complete test suite (no regressions)
-6. **Application walkthrough** — a `manual` proof: run the app, verify the fix works and existing features aren't broken
-7. **Code review** — a `manual` proof for peer review
+6. **Integration** — two-layer integration proof: (1) structural wiring — grep that the fix is connected to the system, (2) behavioral — exercise it through the system's real entry point. See Integration Proof Design below. This is the **last machine-checkable step** — it gates the transition to manual proofs.
+7. **Application walkthrough** — a `manual` proof: run the app, verify the fix works and existing features aren't broken
+8. **Code review** — a `manual` proof for peer review
 
 **For General work, the DoD must include at minimum:**
 
@@ -178,9 +179,10 @@ See `standards/language-commands.md` for greenfield vs brownfield commands per l
 3. **New unit tests (TDD)** — a `tdd: 0` proof for tests covering new functionality
 4. **New test structure** — an `output_matches` proof verifying tests have meaningful assertions
 5. **Full test suite** — an `exit_code: 0` proof running the complete test suite
-6. **Application walkthrough** — a `manual` proof: run the app, verify new functionality works and existing features aren't broken
-7. **Documentation** — a structural proof (`exit_code: 0` via grep/find) that documentation exists for new components
-8. **Code review** — a `manual` proof for peer review
+6. **Documentation** — a structural proof (`exit_code: 0` via grep/find) that documentation exists for new components
+7. **Integration** — a machine-checkable proof that exercises the feature through its real entry point (see Integration Proof Design below). This is the **last machine-checkable step** — it gates the transition to manual proofs.
+8. **Application walkthrough** — a `manual` proof: run the app, verify new functionality works and existing features aren't broken
+9. **Code review** — a `manual` proof for peer review
 
 ### Enforcement
 
@@ -188,8 +190,51 @@ See `standards/language-commands.md` for greenfield vs brownfield commands per l
 - TDD proofs are **non-negotiable** — bug fixes need regression tests, features need unit tests
 - **Mostly clean (<10 violations)**: proactively fix remaining issues, use zero-tolerance proofs — worth the small cleanup
 - **Dirty (10+ violations)**: lint scoped to changed files, format dry-run only with baseline comparison. Never auto-format in brownfield.
+- **Integration proof is mandatory** — cannot be replaced with manual. Must exercise the feature's real entry point.
 - Additional feature-specific proofs are added on top of these baselines
 - If a baseline proof genuinely doesn't apply (e.g., no linter configured), note the omission in `open_risks` and discuss with the user
+
+### Integration Proof Design
+
+Integration proofs exist because **unit tests passing does not mean the feature works**. Claude consistently implements pieces correctly but fails to wire them together. The integration proof catches this by verifying the feature is **reachable from and working through the actual system** — not just that it works in isolation.
+
+**The critical distinction:** A component that passes tests in a mock harness but is never imported into the real app is not integrated. An API handler that works in a test but is never registered in the router is not integrated. A CLI subcommand that works standalone but is never added to the parser is not integrated. Integration means the system knows about the new piece and a real user can reach it.
+
+**Two-layer integration proof (both required):**
+
+Every integration proof must verify two things:
+
+1. **Wiring proof (structural)** — The new piece is connected to the system. Grep for the import, registration, route definition, menu entry, or config that makes the piece reachable. This is a `grep`/`find` with `output_matches` or `exit_code: 0`.
+
+2. **Behavioral proof (runtime)** — The feature works when exercised through the system's actual entry point — not the component's own API, but the path a real user would take. This is a command that hits the running system or calls through the top-level interface.
+
+Both layers are needed because:
+- Wiring without behavior catches "registered but broken"
+- Behavior without wiring catches "works in test harness but unreachable in production"
+
+**Examples by project type:**
+
+| Project type | Wiring proof (structural) | Behavioral proof (runtime) |
+|--------------|---------------------------|----------------------------|
+| UI (React/Vue/etc.) | `grep -r "NewComponent" src/pages/` or `grep "path.*new-route" src/router.*` — component imported and rendered in a real page/route | `curl -s localhost:3000/new-route` → `output_contains: "expected-element"` or test that renders the full page (not the component in isolation) and asserts the component appears |
+| API/server | `grep "router\.\(get\|post\|put\).*new-endpoint" src/routes/` — route registered in the real router | `curl -s localhost:3000/api/new-endpoint` → `output_contains: "expected_field"` |
+| CLI tool | `grep "add_subcommand\|command.*new-cmd" src/main.*` — subcommand registered in the parser | `./my-tool new-cmd --help` → `exit_code: 0` + `output_contains: "description"` |
+| Library/SDK | `grep "pub use\|export.*NewThing" src/lib.*` — symbol exported from the public API | Test that `use mylib::NewThing` or `import { NewThing } from 'mylib'` compiles/runs → `exit_code: 0` |
+| MCP server | `grep "name.*new_tool" src/index.*` — tool listed in the server's tool registration | Call the tool through the MCP protocol or test harness → `output_contains` |
+| Plugin/extension | `grep "register\|activate.*NewPlugin" src/plugin-loader.*` — plugin registered in the host system | Test that exercises the host system and observes the plugin's effect → `output_contains` or `exit_code: 0` |
+| Refactor | `grep` for the new function/module name at all former call sites — old callers updated | Existing integration/E2E tests still pass → `exit_code: 0` |
+| Bug fix | `grep` for the fix at the actual code path (not just a test file) | Reproduce the original bug scenario end-to-end, verify it no longer occurs → `exit_code: 0` |
+
+**Anti-patterns (rejected):**
+
+- ❌ Component tested in React Testing Library / Storybook but never imported in a real page — that's a unit test with a fancy harness, not integration
+- ❌ Handler tested directly via function call but never added to the router — works in isolation, unreachable in production
+- ❌ Running unit tests and calling it "integration" — unit tests test units, not wiring
+- ❌ `grep` for a function definition alone — proves the code exists, not that it's connected to the system
+- ❌ A manual proof — integration must be machine-checkable
+- ❌ Testing through mock/test infrastructure that bypasses the real system's wiring (mock servers, test harnesses that auto-discover components, in-memory routers)
+
+**Step ordering rule:** The integration proof must be in the **final implementation step** of the DoD (the last step before any manual-only steps). This ensures all pieces are built before integration is verified, and prevents "done" claims when units pass but nothing is wired.
 
 ## Phase 4: Create Locked DoD via dod-guard MCP
 
@@ -371,7 +416,7 @@ Use these categories to ensure coverage. Mandatory categories are marked below p
 | **Absence** | Something is NOT present | grep for removed pattern | `exit_code: 1` | Feature-specific |
 | **Pattern absence** | Specific pattern not in output | grep for anti-pattern in new code | `output_not_matches` | Feature-specific |
 | **Contract** | Interface/schema matches spec | grep for function/type signature | `output_matches` | Feature-specific |
-| **Integration** | Works with existing system | Run integration tests | `exit_code: 0` | Recommended |
+| **Integration** (mandatory) | Feature wired into system AND works through real entry point | Two proofs: (1) grep for wiring (import/registration/route), (2) behavioral test through system entry point | `exit_code: 0` or `output_contains` | **Always** (last machine-checkable step) |
 | **Regression** | Bug doesn't recur | Run bug-specific test | `tdd: 0` (proves test was red) | Bug fixes (via TDD) |
 
 ## Phase 5: Output /goal Prompt

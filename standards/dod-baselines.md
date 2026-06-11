@@ -50,6 +50,8 @@ See language-commands.md for per-language delta commands and the <10 threshold l
 | Regression test exists | TDD | `tdd: 0` | Test for bug must fail-first, then pass |
 | Regression test has real assertions | Structure | `output_matches` | grep for assert on bug-specific condition |
 | All existing tests pass | Test | `exit_code: 0` | Full test suite via language test runner |
+| **Integration (wiring)** | **Integration** | `output_matches` or `exit_code: 0` | **Mandatory.** Structural grep proving the fix is connected to the system (import in real caller, route registration, config entry). |
+| **Integration (behavioral)** | **Integration** | `exit_code: 0` or `output_contains` | **Mandatory.** Exercise the fix through the system's actual entry point (API call, CLI invocation, full page render) — not through test harnesses that bypass real wiring. Last machine-checkable step. |
 | Application walkthrough | Manual | `manual` | Manually run the app, verify the fix works and nothing else broke |
 | Code review | Manual | `manual` | Reviewed by another developer |
 | Released to environment | Manual | `manual` | Deployed to correct environment |
@@ -90,8 +92,10 @@ See language-commands.md for per-language delta commands and the <10 threshold l
 | New tests have real assertions | Structure | `output_matches` | grep for meaningful assertions |
 | All existing tests pass | Test | `exit_code: 0` | Full test suite via language test runner |
 | No regressions introduced | Test | `exit_code: 0` | Full test suite still green |
-| Application walkthrough | Manual | `manual` | Manually run the app, verify new functionality works and nothing else broke |
 | Documentation exists | Structure | `exit_code: 0` | grep/find for docs on new component |
+| **Integration (wiring)** | **Integration** | `output_matches` or `exit_code: 0` | **Mandatory.** Structural grep proving the feature is connected to the system (import in real page/route, router registration, public export). |
+| **Integration (behavioral)** | **Integration** | `exit_code: 0` or `output_contains` | **Mandatory.** Exercise the feature through the system's actual entry point — not through mock harnesses or isolated component tests. Last machine-checkable step. |
+| Application walkthrough | Manual | `manual` | Manually run the app, verify new functionality works and nothing else broke |
 | Code review | Manual | `manual` | Reviewed by another developer |
 | Acceptance criteria met | Manual | `manual` | All AC verified |
 | Released to environment | Manual | `manual` | Deployed to correct environment |
@@ -102,9 +106,10 @@ See language-commands.md for per-language delta commands and the <10 threshold l
 ## Enforcement Rules
 
 1. **Every DoD must declare its type** — bug or general — so the correct baseline applies
-2. **Machine-checkable proofs are mandatory** for: lint, tests, TDD, structure. These cannot be replaced with manual proofs.
+2. **Machine-checkable proofs are mandatory** for: lint, tests, TDD, structure, integration. These cannot be replaced with manual proofs.
 3. **TDD proofs are required** for:
    - Bug fixes: regression test proving the bug is caught
    - General: unit tests for new functionality
 4. **Full test suite proof is always required** — verifies no regressions
-5. **Manual proofs** are acceptable only for: code review, release verification, database cleanup, acceptance criteria sign-off
+5. **Integration proof is always required (two layers)** — a wiring proof (structural grep that the feature is connected to the real system) AND a behavioral proof (exercised through the system's actual entry point, not test harnesses). Both are mandatory. Unit tests and mock-harness tests are not integration. This is the last machine-checkable step before manual proofs.
+6. **Manual proofs** are acceptable only for: code review, release verification, database cleanup, acceptance criteria sign-off
