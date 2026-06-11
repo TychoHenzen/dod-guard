@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dod-guard",
+  "description": "Anti-cheat Definition of Done verification with locked proofs and a structured interview skill for requirements gathering.",
+  "owner": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  },
+  "plugins": [
+    {
+      "name": "dod-guard",
+      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Includes /interview skill for structured requirements gathering.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

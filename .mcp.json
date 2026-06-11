@@ -1,0 +1,6 @@
+{
+  "dod-guard": {
+    "command": "node",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/dist/bundle.js"]
+  }
+}

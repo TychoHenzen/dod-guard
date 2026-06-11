@@ -5,6 +5,12 @@ node_modules/
 .idea/
 .vscode/
 
+# TypeScript compiler output (bundle.js is the distributed artifact)
+dist/*.js
+dist/*.d.ts
+dist/*.js.map
+!dist/bundle.js
+
 # Logs
 *.log
 npm-debug.log*
