@@ -76,7 +76,7 @@ The output is a self-contained spec with testable proofs that can be passed to `
 
 ### Anti-cheat properties
 
-- Proof commands live in `~/.claude/dod-store/{uuid}.json`, not in the markdown file
+- Proof commands live in `~/.claude/dod-store/{uuid}.json` claude is not aware of, not in the markdown file claude may read/alter
 - `dod_check` reads from the store — editing markdown proof text has zero effect
 - Each check prints a SHA256 fingerprint — compare to detect store tampering
 - Cannot weaken a machine-checkable proof to `manual` (blocked server-side)
@@ -91,7 +91,25 @@ The output is a self-contained spec with testable proofs that can be passed to `
 | `exit_code_not` | `0` | Command exits non-zero |
 | `output_contains` | `"text"` | stdout contains text |
 | `output_matches` | `"regex"` | stdout matches regex |
+| `output_not_contains` | `"text"` | stdout does NOT contain text |
+| `output_not_matches` | `"regex"` | stdout does NOT match regex |
+| `tdd` | `0` | **TDD enforcer.** Must be observed failing before it can pass |
 | `manual` | — | Skipped by checker (human-only) |
+
+### TDD enforcement
+
+The `tdd` predicate enforces test-driven development by requiring proof of a red-green cycle:
+
+1. Write a failing test
+2. Run `dod_check` — records the failure (RED phase, `seen_failing=true`)
+3. Implement the feature
+4. Run `dod_check` again — test passes AND was previously seen failing → proof passes
+
+If a test passes without ever being observed failing, dod-guard rejects it with **"TDD VIOLATION"**. This prevents writing tests after implementation that merely confirm existing behavior.
+
+### Tamper detection
+
+Each DoD stores a SHA256 fingerprint of its proof set at creation time. On every `dod_check`, the current fingerprint is compared to the stored original. If they don't match (and no `dod_amend` was used), a tamper warning is emitted. Amendments via `dod_amend` legitimately update the stored fingerprint.
 
 ## Development
 

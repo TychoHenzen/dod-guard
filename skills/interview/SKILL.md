@@ -187,7 +187,27 @@ Instead of writing the spec file directly, call the `dod_create` MCP tool to cre
 | `exit_code_not` | `0` | Command must NOT exit 0. **Avoid for "no matches" — use `exit_code: 1` instead** (exit_code_not passes on command-not-found errors) |
 | `output_contains` | `"text"` | stdout must contain the given text |
 | `output_matches` | `"regex"` | stdout must match the regex |
+| `output_not_contains` | `"text"` | stdout must NOT contain text (e.g. "no warnings", "no TODO") |
+| `output_not_matches` | `"regex"` | stdout must NOT match regex |
+| `tdd` | `0` | **TDD enforcer.** Must be observed FAILING before it can pass. Run `dod_check` after writing the failing test (RED), then implement (GREEN). Passes only when: seen_failing=true AND command exits with value. |
 | `manual` | _(none)_ | Human-only verification, skipped by checker |
+
+**When to use `tdd` predicates:**
+
+Use `tdd` when a step involves writing new functionality that should be test-driven. The workflow:
+1. Write the test (it should fail — the feature doesn't exist yet)
+2. Run `dod_check` — the TDD proof records the failure (RED phase)
+3. Implement the feature
+4. Run `dod_check` again — test passes AND was previously seen failing → proof passes
+
+If a test passes without ever being seen failing, dod-guard rejects it with "TDD VIOLATION" — this prevents writing tests after implementation that merely confirm existing behavior.
+
+**When to use `output_not_contains` / `output_not_matches`:**
+
+Use for absence checks that go beyond exit codes:
+- `cargo clippy 2>&1` with `output_not_contains: "warning"` — no clippy warnings
+- `grep -r "TODO" src/` with `output_not_matches: "TODO.*HACK"` — no TODO+HACK combos
+- Build output with `output_not_contains: "deprecated"` — no deprecation warnings
 
 **Fallback:** If `dod_create` is unavailable (MCP not connected), fall back to writing the markdown directly using the Write tool and warn the user that anti-cheat locking is not active.
 
@@ -251,16 +271,19 @@ Rules for amendments:
 
 Use these categories to ensure coverage:
 
-| Category | What it verifies | Example proof |
-|----------|-----------------|---------------|
-| **Build** | Compiles without errors/warnings | `cargo build` → exit 0, no warnings |
-| **Test** | Tests pass | `cargo test -- <test_name>` → exit 0 |
-| **Lint/Format** | Code quality checks pass | `cargo clippy` → no new warnings |
-| **Behavior** | Correct runtime behavior | `curl -X POST ...` → response contains `{"id":...}` |
-| **Structure** | Code is in right place/pattern | `grep "impl Trait" src/` → trait impl found in expected file |
-| **Absence** | Something is NOT present | `grep "TODO" src/new_module/` → exit 1 (no matches) |
-| **Contract** | Interface/schema matches spec | `grep "pub fn" src/api.rs` → signature matches `fn create_user(name: &str, email: &str) -> Result<User>` |
-| **Integration** | Works with existing system | `cargo test -- integration` → all integration tests pass |
+| Category | What it verifies | Example proof | Predicate |
+|----------|-----------------|---------------|-----------|
+| **Build** | Compiles without errors/warnings | `cargo build 2>&1` | `output_not_contains: "error"` |
+| **Test** | Tests pass | `cargo test -- test_name` | `exit_code: 0` |
+| **TDD** | Test was written before implementation | `cargo test -- test_new_feature` | `tdd: 0` (must fail first) |
+| **Lint/Format** | Code quality checks pass | `cargo clippy 2>&1` | `output_not_contains: "warning"` |
+| **Behavior** | Correct runtime behavior | `curl -s localhost:3000/health` | `output_contains: "ok"` |
+| **Structure** | Code is in right place/pattern | `grep "impl Trait" src/` | `exit_code: 0` |
+| **Absence** | Something is NOT present | `grep "TODO" src/new_module/` | `exit_code: 1` |
+| **Pattern absence** | Specific pattern not in output | `grep -r "unwrap()" src/lib/` | `output_not_matches: "unwrap\\(\\)"` |
+| **Contract** | Interface/schema matches spec | `grep "pub fn create_user" src/api.rs` | `output_matches: "fn create_user\\(name: &str"` |
+| **Integration** | Works with existing system | `cargo test -- integration` | `exit_code: 0` |
+| **Regression** | Bug doesn't recur | `cargo test -- test_issue_42` | `tdd: 0` (proves test was red) |
 
 ## Phase 5: Output /goal Prompt
 

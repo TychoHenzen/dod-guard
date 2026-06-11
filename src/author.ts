@@ -91,6 +91,11 @@ export function renderMarkdown(doc: DodDocument): string {
       const mark = proofMark(proof.last_status);
       if (proof.predicate.type === "manual") {
         l.push(`- ${mark} Proof: Manual — ${proof.description}`);
+      } else if (proof.predicate.type === "tdd") {
+        const tddState = proof.seen_failing
+          ? (proof.last_status === "pass" ? "🟢 GREEN" : "🔴 RED")
+          : "⬜ AWAITING RED";
+        l.push(`- ${mark} Proof (TDD ${tddState}): \`${proof.command}\` → ${proof.description}`);
       } else {
         l.push(`- ${mark} Proof: \`${proof.command}\` → ${proof.description}`);
       }

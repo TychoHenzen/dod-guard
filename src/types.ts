@@ -1,5 +1,5 @@
 export interface Predicate {
-  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "manual";
+  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual";
   value?: number | string;
 }
 
@@ -11,6 +11,8 @@ export interface Proof {
   last_status: "pending" | "pass" | "fail" | "skipped";
   last_output?: string;
   last_checked?: string;
+  seen_failing?: boolean;
+  seen_failing_at?: string;
 }
 
 export interface Step {
@@ -40,6 +42,7 @@ export interface DodDocument {
   locked: boolean;
   sections: DodSections;
   steps: Step[];
+  proof_fingerprint?: string;
   amendments: Amendment[];
   last_check?: {
     timestamp: string;

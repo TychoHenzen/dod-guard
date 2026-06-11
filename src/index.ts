@@ -17,7 +17,7 @@ const server = new McpServer({
 // ── Shared schemas ──────────────────────────────────────────────────
 
 const PredicateSchema = z.object({
-  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "manual"]),
+  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual"]),
   value: z.union([z.number(), z.string()]).optional(),
 });
 
@@ -70,6 +70,12 @@ server.tool(
       })),
     }));
 
+    // Compute proof-set fingerprint and store it for tamper detection
+    const fpData = dodSteps.flatMap(s =>
+      s.proofs.map(p => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
+    ).join("\n");
+    const fingerprint = createHash("sha256").update(fpData).digest("hex").slice(0, 12);
+
     const doc: DodDocument = {
       id,
       title,
@@ -81,6 +87,7 @@ server.tool(
       locked: true,
       sections,
       steps: dodSteps,
+      proof_fingerprint: fingerprint,
       amendments: [],
     };
 
@@ -88,12 +95,6 @@ server.tool(
     await writeMarkdown(doc);
 
     const proofCount = dodSteps.reduce((sum, s) => sum + s.proofs.length, 0);
-
-    // Compute initial proof-set fingerprint for tamper-evidence
-    const fpData = dodSteps.flatMap(s =>
-      s.proofs.map(p => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
-    ).join("\n");
-    const fingerprint = createHash("sha256").update(fpData).digest("hex").slice(0, 12);
 
     return {
       content: [{
@@ -146,6 +147,15 @@ server.tool(
 
     const result = await checkDocument(doc, cwd_override);
 
+    // Tamper detection: compare stored fingerprint to current proof-set
+    let tamperWarning = "";
+    if (doc.proof_fingerprint && result.proof_fingerprint !== doc.proof_fingerprint) {
+      tamperWarning = `\n\n⚠️ TAMPER WARNING: Proof fingerprint mismatch!\n  Original: ${doc.proof_fingerprint}\n  Current:  ${result.proof_fingerprint}\n  Proofs in the store may have been modified outside of dod_amend.\n`;
+    } else if (!doc.proof_fingerprint) {
+      // Backfill fingerprint for pre-existing DoDs that lack one
+      doc.proof_fingerprint = result.proof_fingerprint;
+    }
+
     updateDocFromCheckResult(doc, result);
     await store.save(doc);
     await writeMarkdown(doc);
@@ -153,7 +163,7 @@ server.tool(
     return {
       content: [{
         type: "text" as const,
-        text: formatCheckResult(result),
+        text: formatCheckResult(result) + tamperWarning,
       }],
     };
   },
@@ -260,6 +270,12 @@ server.tool(
       new_value: { command: proof.command, predicate: { ...proof.predicate }, description: proof.description },
       reason,
     });
+
+    // Recompute stored fingerprint so dod_check doesn't flag the amendment as tampering
+    const fpData = doc.steps.flatMap(s =>
+      s.proofs.map(p => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
+    ).join("\n");
+    doc.proof_fingerprint = createHash("sha256").update(fpData).digest("hex").slice(0, 12);
 
     await store.save(doc);
     await writeMarkdown(doc);

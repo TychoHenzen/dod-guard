@@ -21177,10 +21177,45 @@ function evaluatePredicate(predicate, exitCode, stdout) {
       return stdout.includes(predicate.value);
     case "output_matches":
       return new RegExp(predicate.value, "m").test(stdout);
+    case "output_not_contains":
+      return !stdout.includes(predicate.value);
+    case "output_not_matches":
+      return !new RegExp(predicate.value, "m").test(stdout);
+    case "tdd":
+      return exitCode === (predicate.value ?? 0);
     case "manual":
       return true;
     default:
       return false;
+  }
+}
+async function runCommand(proof, cwd) {
+  const start = Date.now();
+  try {
+    const shellCmd = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
+    const { stdout, stderr } = await execAsync(proof.command, {
+      cwd,
+      timeout: TIMEOUT_MS,
+      maxBuffer: 10 * 1024 * 1024,
+      shell: shellCmd,
+      windowsHide: true
+    });
+    return { exitCode: 0, combined: (stdout + stderr).slice(0, 4e3), duration: Date.now() - start };
+  } catch (err) {
+    const duration3 = Date.now() - start;
+    const execErr = err;
+    const exitCode = execErr.code ?? 1;
+    const stdout = execErr.stdout ?? "";
+    const stderr = execErr.stderr ?? "";
+    const combined = (stdout + stderr).slice(0, 4e3);
+    if (execErr.killed) {
+      return { exitCode, combined: `TIMEOUT after ${TIMEOUT_MS}ms`, duration: duration3, error: "Process killed due to timeout", killed: true };
+    }
+    const notFound = exitCode === 127 || exitCode === 9009 || /not recognized|command not found|no such file/i.test(stderr + (execErr.message ?? ""));
+    if (notFound) {
+      return { exitCode, combined, duration: duration3, error: `Command not found or not executable (exit ${exitCode})`, notFound: true };
+    }
+    return { exitCode, combined, duration: duration3, error: stderr.slice(0, 2e3) || void 0 };
   }
 }
 async function executeProof(proof, cwd) {
@@ -21193,72 +21228,69 @@ async function executeProof(proof, cwd) {
       output: "Manual verification \u2014 skipped by checker"
     };
   }
-  const start = Date.now();
-  try {
-    const shellCmd = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
-    const { stdout, stderr } = await execAsync(proof.command, {
-      cwd,
-      timeout: TIMEOUT_MS,
-      maxBuffer: 10 * 1024 * 1024,
-      shell: shellCmd,
-      windowsHide: true
-    });
-    const duration3 = Date.now() - start;
-    const combined = stdout + stderr;
-    const passed = evaluatePredicate(proof.predicate, 0, combined);
+  const run = await runCommand(proof, cwd);
+  if (run.killed || run.notFound) {
     return {
       id: proof.id,
       description: proof.description,
-      status: passed ? "pass" : "fail",
+      status: "fail",
       command: proof.command,
-      output: combined.slice(0, 4e3),
-      exit_code: 0,
-      duration_ms: duration3
-    };
-  } catch (err) {
-    const duration3 = Date.now() - start;
-    const execErr = err;
-    const exitCode = execErr.code ?? 1;
-    const stdout = execErr.stdout ?? "";
-    const stderr = execErr.stderr ?? "";
-    const combined = stdout + stderr;
-    if (execErr.killed) {
-      return {
-        id: proof.id,
-        description: proof.description,
-        status: "fail",
-        command: proof.command,
-        output: `TIMEOUT after ${TIMEOUT_MS}ms`,
-        error: "Process killed due to timeout",
-        exit_code: exitCode,
-        duration_ms: duration3
-      };
-    }
-    const notFound = exitCode === 127 || exitCode === 9009 || /not recognized|command not found|no such file/i.test(stderr + (execErr.message ?? ""));
-    if (notFound) {
-      return {
-        id: proof.id,
-        description: proof.description,
-        status: "fail",
-        command: proof.command,
-        output: combined.slice(0, 4e3),
-        error: `Command not found or not executable (exit ${exitCode})`,
-        exit_code: exitCode,
-        duration_ms: duration3
-      };
-    }
-    const passed = evaluatePredicate(proof.predicate, exitCode, combined);
-    return {
-      id: proof.id,
-      description: proof.description,
-      status: passed ? "pass" : "fail",
-      command: proof.command,
-      output: combined.slice(0, 4e3),
-      error: stderr.slice(0, 2e3) || void 0,
-      exit_code: exitCode,
-      duration_ms: duration3
+      output: run.combined,
+      error: run.error,
+      exit_code: run.exitCode,
+      duration_ms: run.duration
     };
   }
+  if (proof.predicate.type === "tdd") {
+    const greenExitCode = proof.predicate.value ?? 0;
+    const isGreen = run.exitCode === greenExitCode;
+    if (!isGreen) {
+      proof.seen_failing = true;
+      proof.seen_failing_at = proof.seen_failing_at ?? (/* @__PURE__ */ new Date()).toISOString();
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: run.error,
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    if (isGreen && !proof.seen_failing) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: "TDD VIOLATION: test passed without ever failing. Write a failing test first, run dod_check to record the red phase, then implement.",
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    return {
+      id: proof.id,
+      description: proof.description,
+      status: "pass",
+      command: proof.command,
+      output: run.combined,
+      exit_code: run.exitCode,
+      duration_ms: run.duration
+    };
+  }
+  const passed = evaluatePredicate(proof.predicate, run.exitCode, run.combined);
+  return {
+    id: proof.id,
+    description: proof.description,
+    status: passed ? "pass" : "fail",
+    command: proof.command,
+    output: run.combined,
+    error: run.error,
+    exit_code: run.exitCode,
+    duration_ms: run.duration
+  };
 }
 async function checkDocument(doc, cwdOverride) {
   const cwd = cwdOverride ?? doc.cwd;
@@ -21382,6 +21414,9 @@ function renderMarkdown(doc) {
       const mark = proofMark(proof.last_status);
       if (proof.predicate.type === "manual") {
         l.push(`- ${mark} Proof: Manual \u2014 ${proof.description}`);
+      } else if (proof.predicate.type === "tdd") {
+        const tddState = proof.seen_failing ? proof.last_status === "pass" ? "\u{1F7E2} GREEN" : "\u{1F534} RED" : "\u2B1C AWAITING RED";
+        l.push(`- ${mark} Proof (TDD ${tddState}): \`${proof.command}\` \u2192 ${proof.description}`);
       } else {
         l.push(`- ${mark} Proof: \`${proof.command}\` \u2192 ${proof.description}`);
       }
@@ -21468,8 +21503,24 @@ function formatCheckResult(result) {
 import { promises as fs3 } from "node:fs";
 function inferPredicate(description) {
   const lower = description.toLowerCase();
+  if (lower.includes("tdd") || lower.includes("must fail first") || lower.includes("red before green")) {
+    const exitMatch2 = lower.match(/exit\s*(?:code\s*)?(\d+)/);
+    return { type: "tdd", value: exitMatch2 ? parseInt(exitMatch2[1], 10) : 0 };
+  }
   if (lower.includes("no match")) {
     return { type: "exit_code", value: 1 };
+  }
+  if (lower.includes("not contain") || lower.includes("must not contain") || lower.includes("no warning") || lower.includes("no error")) {
+    const quoted = description.match(/"([^"]+)"/);
+    if (quoted) return { type: "output_not_contains", value: quoted[1] };
+  }
+  if (lower.includes("not match") || lower.includes("must not match")) {
+    const quoted = description.match(/"([^"]+)"/);
+    if (quoted) return { type: "output_not_matches", value: quoted[1] };
+  }
+  if (lower.includes("contains") || lower.includes("must contain")) {
+    const quoted = description.match(/"([^"]+)"/);
+    if (quoted) return { type: "output_contains", value: quoted[1] };
   }
   const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
   if (exitMatch) {
@@ -21624,7 +21675,7 @@ var server = new McpServer({
   version: "1.0.0"
 });
 var PredicateSchema = external_exports.object({
-  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "manual"]),
+  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual"]),
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional()
 });
 var ProofInputSchema = external_exports.object({
@@ -21669,6 +21720,10 @@ server.tool(
         last_status: "pending"
       }))
     }));
+    const fpData = dodSteps.flatMap(
+      (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
+    ).join("\n");
+    const fingerprint = createHash2("sha256").update(fpData).digest("hex").slice(0, 12);
     const doc = {
       id,
       title,
@@ -21680,15 +21735,12 @@ server.tool(
       locked: true,
       sections,
       steps: dodSteps,
+      proof_fingerprint: fingerprint,
       amendments: []
     };
     await save(doc);
     await writeMarkdown(doc);
     const proofCount = dodSteps.reduce((sum, s) => sum + s.proofs.length, 0);
-    const fpData = dodSteps.flatMap(
-      (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
-    ).join("\n");
-    const fingerprint = createHash2("sha256").update(fpData).digest("hex").slice(0, 12);
     return {
       content: [{
         type: "text",
@@ -21734,13 +21786,25 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
       };
     }
     const result = await checkDocument(doc, cwd_override);
+    let tamperWarning = "";
+    if (doc.proof_fingerprint && result.proof_fingerprint !== doc.proof_fingerprint) {
+      tamperWarning = `
+
+\u26A0\uFE0F TAMPER WARNING: Proof fingerprint mismatch!
+  Original: ${doc.proof_fingerprint}
+  Current:  ${result.proof_fingerprint}
+  Proofs in the store may have been modified outside of dod_amend.
+`;
+    } else if (!doc.proof_fingerprint) {
+      doc.proof_fingerprint = result.proof_fingerprint;
+    }
     updateDocFromCheckResult(doc, result);
     await save(doc);
     await writeMarkdown(doc);
     return {
       content: [{
         type: "text",
-        text: formatCheckResult(result)
+        text: formatCheckResult(result) + tamperWarning
       }]
     };
   }
@@ -21831,6 +21895,10 @@ server.tool(
       new_value: { command: proof.command, predicate: { ...proof.predicate }, description: proof.description },
       reason
     });
+    const fpData = doc.steps.flatMap(
+      (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
+    ).join("\n");
+    doc.proof_fingerprint = createHash2("sha256").update(fpData).digest("hex").slice(0, 12);
     await save(doc);
     await writeMarkdown(doc);
     return {

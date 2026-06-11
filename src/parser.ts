@@ -4,10 +4,33 @@ import type { DodSections, Step, Proof, Predicate } from "./types.js";
 function inferPredicate(description: string): Predicate {
   const lower = description.toLowerCase();
 
+  // TDD proofs
+  if (lower.includes("tdd") || lower.includes("must fail first") || lower.includes("red before green")) {
+    const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
+    return { type: "tdd", value: exitMatch ? parseInt(exitMatch[1], 10) : 0 };
+  }
+
   // grep/ripgrep: exit 1 = no matches (exact). Using exit_code_not:0 would
   // pass on command-not-found (exit 127/9009), giving false positives.
   if (lower.includes("no match")) {
     return { type: "exit_code", value: 1 };
+  }
+
+  // Negation patterns
+  if (lower.includes("not contain") || lower.includes("must not contain") || lower.includes("no warning") || lower.includes("no error")) {
+    const quoted = description.match(/"([^"]+)"/);
+    if (quoted) return { type: "output_not_contains", value: quoted[1] };
+  }
+
+  if (lower.includes("not match") || lower.includes("must not match")) {
+    const quoted = description.match(/"([^"]+)"/);
+    if (quoted) return { type: "output_not_matches", value: quoted[1] };
+  }
+
+  // Positive output matching
+  if (lower.includes("contains") || lower.includes("must contain")) {
+    const quoted = description.match(/"([^"]+)"/);
+    if (quoted) return { type: "output_contains", value: quoted[1] };
   }
 
   const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
