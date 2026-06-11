@@ -202,6 +202,32 @@ Use `tdd` when a step involves writing new functionality that should be test-dri
 
 If a test passes without ever being seen failing, dod-guard rejects it with "TDD VIOLATION" — this prevents writing tests after implementation that merely confirm existing behavior.
 
+**Recommended TDD proof pattern — always pair structural + temporal:**
+
+A `tdd` predicate alone proves red-to-green, but not that the test is meaningful. The agent could write a trivially failing test, then fix it. Always pair TDD proofs with a structural check that verifies the test has real assertions:
+
+```json
+{
+  "title": "Add email validation with TDD",
+  "proofs": [
+    {
+      "command": "grep -E \"assert.*(invalid|valid|@|email)\" tests/test_email.py",
+      "predicate": {"type": "output_matches", "value": "assert.*(invalid|@)"},
+      "description": "test file contains assertions about email validity"
+    },
+    {
+      "command": "python -m pytest tests/test_email.py -v",
+      "predicate": {"type": "tdd", "value": 0},
+      "description": "TDD: tests must fail first (RED), then pass after implementation (GREEN)"
+    }
+  ]
+}
+```
+
+The structural proof verifies the test checks something real (not `assert True`). The TDD proof verifies the red-to-green cycle. Together they enforce genuine test-driven development.
+
+Flexible naming is fine — use regex patterns like `output_matches: "test_.*valid"` rather than exact test names, since the agent may choose reasonable names during implementation.
+
 **When to use `output_not_contains` / `output_not_matches`:**
 
 Use for absence checks that go beyond exit codes:
