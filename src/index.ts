@@ -7,7 +7,10 @@ import * as store from "./store.js";
 import { checkDocument } from "./checker.js";
 import { writeMarkdown, updateDocFromCheckResult, formatCheckResult } from "./author.js";
 import { parseMarkdown } from "./parser.js";
-import type { DodDocument, Predicate, Step } from "./types.js";
+import { playJingle, showMessageBox } from "./notify.js";
+import { findMissingTools, suggestionFor, currentOs, type MissingTool } from "./command-check.js";
+import type { Confirmer, ManualAnswer } from "./manual.js";
+import type { DodDocument, Predicate, Proof, Step } from "./types.js";
 
 const server = new McpServer({
   name: "dod-guard",
@@ -41,11 +44,47 @@ const SectionsSchema = z.object({
   open_risks: z.string().optional(),
 });
 
+// ── OS command validation ───────────────────────────────────────────
+//
+// Proof commands execute on THIS machine. Reject any DoD whose commands invoke
+// tools missing on the current OS so the model writes OS-correct commands
+// up-front, instead of locking bash on Windows and amending it later.
+
+function formatMissingTools(missing: MissingTool[]): string {
+  const lines = [
+    `ERROR: ${missing.length} proof command(s) invoke tool(s) not available on this OS (${currentOs}).`,
+    "Proof commands run on THIS machine — author them for the target OS, not as portable/bash by default.",
+    "",
+  ];
+  for (const m of missing) {
+    const hint = suggestionFor(m.tool);
+    lines.push(`  • \`${m.tool}\` not found${hint ? ` — on ${currentOs} use: ${hint}` : ""}`);
+    lines.push(`    in: ${m.command}`);
+  }
+  lines.push("");
+  lines.push("Rewrite these commands for the current OS, then retry. (For human-only checks, use a `manual` proof instead.)");
+  return lines.join("\n");
+}
+
+/** Returns an error tool-result if any command is unrunnable here, else null. */
+async function checkCommandsForOs(
+  steps: Array<{ proofs: Array<{ command: string; predicate: Predicate }> }>,
+  cwd: string,
+): Promise<{ content: { type: "text"; text: string }[] } | null> {
+  const commands = steps
+    .flatMap((s) => s.proofs)
+    .filter((p) => p.predicate.type !== "manual" && p.command.trim() !== "")
+    .map((p) => p.command);
+  const missing = await findMissingTools(commands, cwd);
+  if (missing.length === 0) return null;
+  return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
+}
+
 // ── dod_create ──────────────────────────────────────────────────────
 
 server.tool(
   "dod_create",
-  "Create a new locked DoD document. Stores proof commands canonically in MCP storage — editing the rendered markdown cannot weaken verification. Returns the DoD ID for use with dod_check.",
+  "Create a new locked DoD document. Stores proof commands canonically in MCP storage — editing the rendered markdown cannot weaken verification. Returns the DoD ID for use with dod_check. Proof commands run on the HOST OS — write them for that OS (e.g. on Windows use findstr/type/dir, not grep/cat/ls). Creation is rejected if any command invokes a tool absent on the current OS.",
   {
     title: z.string().describe("Feature/plan title"),
     goal: z.string().describe("One-sentence goal"),
@@ -55,6 +94,13 @@ server.tool(
     steps: z.array(StepInputSchema).describe("DoD steps with proof commands and predicates"),
   },
   async ({ title, goal, cwd, markdown_path, sections, steps }) => {
+    const resolvedCwd = path.resolve(cwd);
+    const osError = await checkCommandsForOs(
+      steps.map((s) => ({ proofs: s.proofs.map((p) => ({ command: p.command, predicate: p.predicate as Predicate })) })),
+      resolvedCwd,
+    );
+    if (osError) return osError;
+
     const id = store.generateId();
     const date = new Date().toISOString().split("T")[0];
 
@@ -81,7 +127,7 @@ server.tool(
       title,
       goal,
       date,
-      cwd: path.resolve(cwd),
+      cwd: resolvedCwd,
       markdown_path: path.resolve(markdown_path),
       created_at: new Date().toISOString(),
       locked: true,
@@ -117,6 +163,85 @@ server.tool(
   },
 );
 
+// ── Manual verification confirmer ───────────────────────────────────
+//
+// Anti-cheat core: the human's answer is obtained ONLY through a channel the
+// model cannot drive — MCP elicitation (a client↔server message Claude never
+// authors) or a server-spawned Windows dialog. dod_check takes NO parameter
+// that could carry a "passed" verdict, so Claude cannot fake confirmation.
+
+const MANUAL_TIMEOUT_MS = 10 * 60 * 1000;
+
+function manualInstructions(proof: Proof): string {
+  const lines = [proof.description];
+  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual") {
+    lines.push("", `Steps / command: ${proof.command}`);
+  }
+  lines.push("", "Confirm PASS only after you have personally verified this works as described.");
+  return lines.join("\n");
+}
+
+function buildConfirmer(): Confirmer {
+  return async (proof: Proof): Promise<ManualAnswer> => {
+    const instructions = manualInstructions(proof);
+
+    // Draw attention with a distinctive jingle before prompting.
+    playJingle();
+
+    // Preferred channel: MCP elicitation, if the client advertises support.
+    const caps = server.server.getClientCapabilities();
+    if (caps?.elicitation) {
+      try {
+        const result = await server.server.elicitInput(
+          {
+            message: `Manual verification required:\n\n${instructions}`,
+            requestedSchema: {
+              type: "object",
+              properties: {
+                result: {
+                  type: "string",
+                  enum: ["pass", "fail"],
+                  enumNames: ["✅ Verified — works as expected", "❌ Not verified — does not work"],
+                  description: "Did the manual verification pass?",
+                },
+                note: {
+                  type: "string",
+                  maxLength: 500,
+                  description: "Optional note about what you observed",
+                },
+              },
+              required: ["result"],
+            },
+          },
+          { timeout: MANUAL_TIMEOUT_MS },
+        );
+
+        if (result.action === "accept") {
+          const passed = result.content?.result === "pass";
+          const note = typeof result.content?.note === "string" ? result.content.note : undefined;
+          return { answer: passed ? "pass" : "fail", note, channel: "elicitation" };
+        }
+        // decline / cancel → not verified.
+        return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
+      } catch {
+        // Client claimed support but failed — fall through to the dialog.
+      }
+    }
+
+    // Fallback channel: server-spawned Windows dialog.
+    const choice = await showMessageBox(
+      `DoD manual verification — ${proof.id}`,
+      `${instructions}\n\nClick YES only if it passed.`,
+      Math.floor(MANUAL_TIMEOUT_MS / 1000),
+    );
+    return {
+      answer: choice === "yes" ? "pass" : "fail",
+      note: choice === "timeout" ? "dialog timed out" : undefined,
+      channel: "messagebox",
+    };
+  };
+}
+
 // ── dod_check ───────────────────────────────────────────────────────
 
 server.tool(
@@ -145,7 +270,7 @@ server.tool(
       };
     }
 
-    const result = await checkDocument(doc, cwd_override);
+    const result = await checkDocument(doc, cwd_override, buildConfirmer());
 
     // Tamper detection: compare stored fingerprint to current proof-set
     let tamperWarning = "";
@@ -254,6 +379,16 @@ server.tool(
       };
     }
 
+    // Validate the amended command against the current OS before locking it in.
+    const effectivePredicate = (new_predicate ?? proof.predicate) as Predicate;
+    const effectiveCommand = new_command ?? proof.command;
+    if (effectivePredicate.type !== "manual" && effectiveCommand.trim() !== "") {
+      const missing = await findMissingTools([effectiveCommand], doc.cwd);
+      if (missing.length > 0) {
+        return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
+      }
+    }
+
     const oldSnapshot = { command: proof.command, predicate: { ...proof.predicate }, description: proof.description };
 
     if (new_command !== undefined) proof.command = new_command;
@@ -349,8 +484,12 @@ server.tool(
 
     try {
       const parsed = await parseMarkdown(mdPath);
-      const id = store.generateId();
       const resolvedCwd = path.resolve(cwd);
+
+      const osError = await checkCommandsForOs(parsed.steps, resolvedCwd);
+      if (osError) return osError;
+
+      const id = store.generateId();
 
       const doc: DodDocument = {
         id,

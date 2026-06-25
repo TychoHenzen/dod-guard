@@ -2,6 +2,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { createHash } from "node:crypto";
 import type { DodDocument, CheckResult, StepResult, ProofResult, Predicate, Proof } from "./types.js";
+import { resolveManual, type Confirmer } from "./manual.js";
 
 const execAsync = promisify(exec);
 
@@ -70,14 +71,28 @@ async function runCommand(proof: Proof, cwd: string): Promise<{ exitCode: number
   }
 }
 
-async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
+async function executeProof(proof: Proof, cwd: string, confirm?: Confirmer): Promise<ProofResult> {
   if (proof.predicate.type === "manual") {
+    if (!confirm) {
+      // No confirmation channel (e.g. headless run). Fail safe — a manual proof
+      // must never pass without a human, and we never fabricate the answer.
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        error: "Manual verification required but no confirmation channel is available (non-interactive run).",
+        output: "Manual verification not confirmed",
+      };
+    }
+    const resolution = await resolveManual(proof, confirm);
     return {
       id: proof.id,
       description: proof.description,
-      status: "skipped",
+      status: resolution.status,
       command: proof.command,
-      output: "Manual verification — skipped by checker",
+      output: resolution.output,
+      error: resolution.status === "fail" ? "Manual verification was not confirmed as passing." : undefined,
     };
   }
 
@@ -133,7 +148,7 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
   };
 }
 
-export async function checkDocument(doc: DodDocument, cwdOverride?: string): Promise<CheckResult> {
+export async function checkDocument(doc: DodDocument, cwdOverride?: string, confirm?: Confirmer): Promise<CheckResult> {
   const cwd = cwdOverride ?? doc.cwd;
   const stepResults: StepResult[] = [];
   let totalPass = 0;
@@ -144,14 +159,14 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string): Pro
     let stepPassed = true;
 
     for (const proof of step.proofs) {
-      const result = await executeProof(proof, cwd);
+      const result = await executeProof(proof, cwd, confirm);
       proofResults.push(result);
       if (result.status === "fail") stepPassed = false;
     }
 
-    // Step with no executable proofs (empty or all-manual) is not "pass"
-    const executableCount = step.proofs.filter(p => p.predicate.type !== "manual").length;
-    if (executableCount === 0) stepPassed = false;
+    // A step with no proofs at all cannot pass. Manual proofs are now first-class
+    // (verified by a human via the confirmer), so an all-manual step CAN pass.
+    if (step.proofs.length === 0) stepPassed = false;
 
     stepResults.push({
       id: step.id,

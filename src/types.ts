@@ -3,6 +3,25 @@ export interface Predicate {
   value?: number | string;
 }
 
+/**
+ * Record of a human's confirmation of a `manual` proof.
+ *
+ * Anti-cheat: this is written ONLY by the server after collecting the answer
+ * out-of-band (MCP elicitation or a server-spawned dialog). It is never
+ * derived from a parameter Claude supplies to dod_check.
+ *
+ * `proof_fingerprint` ties the answer to the exact proof text it was given for.
+ * If the proof is later amended (command/predicate/description change), the
+ * fingerprint no longer matches and the cached answer is invalidated.
+ */
+export interface ManualResult {
+  answer: "pass" | "fail";
+  note?: string;
+  confirmed_at: string;
+  channel: "elicitation" | "messagebox";
+  proof_fingerprint: string;
+}
+
 export interface Proof {
   id: string;
   command: string;
@@ -13,6 +32,7 @@ export interface Proof {
   last_checked?: string;
   seen_failing?: boolean;
   seen_failing_at?: string;
+  manual_result?: ManualResult;
 }
 
 export interface Step {

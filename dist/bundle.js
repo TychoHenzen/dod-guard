@@ -2980,7 +2980,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve3.call(this, root, ref);
+      let _sch = resolve4.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3007,7 +3007,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve3(root, ref) {
+    function resolve4(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3225,8 +3225,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path4) {
-      let input = path4;
+    function removeDotSegments(path5) {
+      let input = path5;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3478,8 +3478,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path4, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path4 && path4 !== "/" ? path4 : void 0;
+        const [path5, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path5 && path5 !== "/" ? path5 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3638,7 +3638,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve3(baseURI, relativeURI, options) {
+    function resolve4(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse3(baseURI, schemelessOptions), parse3(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
@@ -3896,7 +3896,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve3,
+      resolve: resolve4,
       resolveComponent,
       equal,
       serialize,
@@ -7363,8 +7363,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path4, errorMaps, issueData } = params;
-  const fullPath = [...path4, ...issueData.path || []];
+  const { data, path: path5, errorMaps, issueData } = params;
+  const fullPath = [...path5, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7480,11 +7480,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path4, key) {
+  constructor(parent, value, path5, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path4;
+    this._path = path5;
     this._key = key;
   }
   get path() {
@@ -11121,10 +11121,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path4) {
-  if (!path4)
+function getElementAtPath(obj, path5) {
+  if (!path5)
     return obj;
-  return path4.reduce((acc, key) => acc?.[key], obj);
+  return path5.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11444,11 +11444,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path4, issues) {
+function prefixIssues(path5, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path4);
+    iss.path.unshift(path5);
     return iss;
   });
 }
@@ -18976,7 +18976,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -18993,7 +18993,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19071,7 +19071,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve3(parseResult.data);
+            resolve4(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19332,12 +19332,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve3, reject) => {
+    return new Promise((resolve4, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve3, interval);
+      const timeoutId = setTimeout(resolve4, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20437,7 +20437,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
+      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21086,20 +21086,20 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve3) => {
+    return new Promise((resolve4) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve3();
+        resolve4();
       } else {
-        this._stdout.once("drain", resolve3);
+        this._stdout.once("drain", resolve4);
       }
     });
   }
 };
 
 // src/index.ts
-import * as path3 from "node:path";
-import { createHash as createHash2 } from "node:crypto";
+import * as path4 from "node:path";
+import { createHash as createHash3 } from "node:crypto";
 
 // src/store.ts
 import { promises as fs } from "node:fs";
@@ -21164,7 +21164,45 @@ async function listAll() {
 // src/checker.ts
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { createHash as createHash2 } from "node:crypto";
+
+// src/manual.ts
 import { createHash } from "node:crypto";
+function perProofFingerprint(proof) {
+  const data = [
+    proof.command,
+    proof.predicate.type,
+    proof.predicate.value ?? "",
+    proof.description
+  ].join("|");
+  return createHash("sha256").update(data).digest("hex").slice(0, 12);
+}
+async function resolveManual(proof, confirm) {
+  const fingerprint = perProofFingerprint(proof);
+  const cached2 = proof.manual_result;
+  if (cached2 && cached2.answer === "pass" && cached2.proof_fingerprint === fingerprint) {
+    return {
+      status: "pass",
+      cached: true,
+      output: `Manual verification cached: PASS at ${cached2.confirmed_at} via ${cached2.channel}${cached2.note ? ` \u2014 "${cached2.note}"` : ""}`
+    };
+  }
+  const answer = await confirm(proof);
+  proof.manual_result = {
+    answer: answer.answer,
+    note: answer.note,
+    confirmed_at: (/* @__PURE__ */ new Date()).toISOString(),
+    channel: answer.channel,
+    proof_fingerprint: fingerprint
+  };
+  return {
+    status: answer.answer,
+    cached: false,
+    output: `Manual verification ${answer.answer.toUpperCase()} via ${answer.channel}${answer.note ? ` \u2014 "${answer.note}"` : ""}`
+  };
+}
+
+// src/checker.ts
 var execAsync = promisify(exec);
 var TIMEOUT_MS = 12e4;
 function evaluatePredicate(predicate, exitCode, stdout) {
@@ -21218,14 +21256,26 @@ async function runCommand(proof, cwd) {
     return { exitCode, combined, duration: duration3, error: stderr.slice(0, 2e3) || void 0 };
   }
 }
-async function executeProof(proof, cwd) {
+async function executeProof(proof, cwd, confirm) {
   if (proof.predicate.type === "manual") {
+    if (!confirm) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        error: "Manual verification required but no confirmation channel is available (non-interactive run).",
+        output: "Manual verification not confirmed"
+      };
+    }
+    const resolution = await resolveManual(proof, confirm);
     return {
       id: proof.id,
       description: proof.description,
-      status: "skipped",
+      status: resolution.status,
       command: proof.command,
-      output: "Manual verification \u2014 skipped by checker"
+      output: resolution.output,
+      error: resolution.status === "fail" ? "Manual verification was not confirmed as passing." : void 0
     };
   }
   const run = await runCommand(proof, cwd);
@@ -21292,7 +21342,7 @@ async function executeProof(proof, cwd) {
     duration_ms: run.duration
   };
 }
-async function checkDocument(doc, cwdOverride) {
+async function checkDocument(doc, cwdOverride, confirm) {
   const cwd = cwdOverride ?? doc.cwd;
   const stepResults = [];
   let totalPass = 0;
@@ -21301,12 +21351,11 @@ async function checkDocument(doc, cwdOverride) {
     const proofResults = [];
     let stepPassed = true;
     for (const proof of step.proofs) {
-      const result = await executeProof(proof, cwd);
+      const result = await executeProof(proof, cwd, confirm);
       proofResults.push(result);
       if (result.status === "fail") stepPassed = false;
     }
-    const executableCount = step.proofs.filter((p) => p.predicate.type !== "manual").length;
-    if (executableCount === 0) stepPassed = false;
+    if (step.proofs.length === 0) stepPassed = false;
     stepResults.push({
       id: step.id,
       title: step.title,
@@ -21319,7 +21368,7 @@ async function checkDocument(doc, cwdOverride) {
   const fingerprintData = doc.steps.flatMap(
     (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
   ).join("\n");
-  const proofFingerprint = createHash("sha256").update(fingerprintData).digest("hex").slice(0, 12);
+  const proofFingerprint = createHash2("sha256").update(fingerprintData).digest("hex").slice(0, 12);
   const overall = totalFail === 0 ? "pass" : "fail";
   return {
     overall,
@@ -21352,6 +21401,7 @@ function renderMarkdown(doc) {
   l.push("> 2. Call `dod_check` to verify proofs \u2014 do NOT mark proofs manually.");
   l.push("> 3. A step is complete when ALL its proofs pass via `dod_check`.");
   l.push("> 4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
+  l.push("> 4b. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
   l.push("> 5. Continue until `dod_check` returns PASS \u2014 then stop and report done.");
   l.push(">");
   l.push(`> **Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
@@ -21360,6 +21410,8 @@ function renderMarkdown(doc) {
   l.push("> `dod_check` executes commands from the canonical copy, not this markdown file.");
   l.push("> Editing proof text here has no effect on verification.");
   l.push("> Store tampering is **logged and detectable** \u2014 each check prints a proof-set fingerprint.");
+  l.push("> Manual proofs are confirmed by the human directly (elicitation / dialog) during `dod_check` \u2014");
+  l.push("> Claude cannot self-confirm them. A confirmed PASS is cached until the proof changes.");
   l.push("");
   l.push(`**Goal:** ${doc.goal}`);
   l.push("");
@@ -21413,7 +21465,9 @@ function renderMarkdown(doc) {
     for (const proof of step.proofs) {
       const mark = proofMark(proof.last_status);
       if (proof.predicate.type === "manual") {
-        l.push(`- ${mark} Proof: Manual \u2014 ${proof.description}`);
+        const mr = proof.manual_result;
+        const state = mr ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_` : " _(awaiting human verification)_";
+        l.push(`- ${mark} Proof: Manual \u2014 ${proof.description}${state}`);
       } else if (proof.predicate.type === "tdd") {
         const tddState = proof.seen_failing ? proof.last_status === "pass" ? "\u{1F7E2} GREEN" : "\u{1F534} RED" : "\u2B1C AWAITING RED";
         l.push(`- ${mark} Proof (TDD ${tddState}): \`${proof.command}\` \u2192 ${proof.description}`);
@@ -21474,10 +21528,18 @@ function formatCheckResult(result) {
     const countStr = skipCount > 0 ? `${passCount} pass, ${skipCount} manual-skip, ${step.proofs.length - passCount - skipCount} fail` : `${passCount}/${step.proofs.length} proofs`;
     l.push(`${icon} **Step: ${step.title}** \u2014 ${step.status.toUpperCase()} (${countStr})`);
     for (const proof of step.proofs) {
+      const isManual = proof.command === "manual";
       if (proof.status === "pass") {
-        l.push(`  \u2713 \`${proof.command}\` (${proof.duration_ms ?? 0}ms)`);
+        if (isManual) {
+          l.push(`  \u2713 MANUAL \u2014 ${proof.description} (${proof.output ?? "human-confirmed"})`);
+        } else {
+          l.push(`  \u2713 \`${proof.command}\` (${proof.duration_ms ?? 0}ms)`);
+        }
       } else if (proof.status === "skipped") {
         l.push(`  \u26A0 \`${proof.command}\` (MANUAL \u2014 not machine-verified, skipped)`);
+      } else if (isManual) {
+        l.push(`  \u2717 MANUAL \u2014 ${proof.description}`);
+        if (proof.error) l.push(`    ${proof.error}`);
       } else {
         l.push(`  \u2717 \`${proof.command}\``);
         if (proof.exit_code !== void 0) {
@@ -21669,6 +21731,252 @@ async function parseMarkdown(filePath) {
   return { title, goal, date: date3, cwd, sections, steps };
 }
 
+// src/notify.ts
+import { spawn } from "node:child_process";
+var isWindows = process.platform === "win32";
+function playJingle() {
+  if (!isWindows) return;
+  const tune = [
+    "[console]::beep(659,140)",
+    // E5
+    "[console]::beep(988,140)",
+    // B5
+    "[console]::beep(1319,180)",
+    // E6
+    "[console]::beep(988,90)",
+    // B5
+    "[console]::beep(1319,260)"
+    // E6 (hold)
+  ].join(";");
+  try {
+    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", tune], {
+      stdio: "ignore",
+      detached: true,
+      windowsHide: true
+    });
+    child.on("error", () => {
+    });
+    child.unref();
+  } catch {
+  }
+}
+var POPUP_YES = 6;
+var POPUP_TIMEOUT = -1;
+function showMessageBox(title, body, timeoutSec) {
+  if (!isWindows) return Promise.resolve("no");
+  const script = "$w = New-Object -ComObject WScript.Shell; $r = $w.Popup($env:DODG_MSG, [int]$env:DODG_TIMEOUT, $env:DODG_TITLE, 4 + 48 + 4096); [Console]::Out.Write($r)";
+  return new Promise((resolve4) => {
+    try {
+      const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+        stdio: ["ignore", "pipe", "ignore"],
+        windowsHide: true,
+        env: {
+          ...process.env,
+          DODG_MSG: body,
+          DODG_TITLE: title,
+          DODG_TIMEOUT: String(Math.max(0, Math.floor(timeoutSec)))
+        }
+      });
+      let out = "";
+      child.stdout.on("data", (chunk) => {
+        out += chunk.toString();
+      });
+      child.on("error", () => resolve4("no"));
+      child.on("close", () => {
+        const code = parseInt(out.trim(), 10);
+        if (code === POPUP_YES) resolve4("yes");
+        else if (code === POPUP_TIMEOUT) resolve4("timeout");
+        else resolve4("no");
+      });
+    } catch {
+      resolve4("no");
+    }
+  });
+}
+
+// src/command-check.ts
+import { execFile } from "node:child_process";
+import { promisify as promisify2 } from "node:util";
+import { existsSync } from "node:fs";
+import * as path3 from "node:path";
+var execFileAsync = promisify2(execFile);
+var isWindows2 = process.platform === "win32";
+var CMD_BUILTINS = /* @__PURE__ */ new Set([
+  "assoc",
+  "break",
+  "call",
+  "cd",
+  "chdir",
+  "cls",
+  "color",
+  "copy",
+  "date",
+  "del",
+  "dir",
+  "echo",
+  "endlocal",
+  "erase",
+  "exit",
+  "for",
+  "ftype",
+  "goto",
+  "if",
+  "md",
+  "mkdir",
+  "mklink",
+  "move",
+  "path",
+  "pause",
+  "popd",
+  "prompt",
+  "pushd",
+  "rd",
+  "rem",
+  "ren",
+  "rename",
+  "rmdir",
+  "set",
+  "setlocal",
+  "shift",
+  "start",
+  "time",
+  "title",
+  "type",
+  "ver",
+  "verify",
+  "vol"
+]);
+var OPERATOR_CHARS = /* @__PURE__ */ new Set(["|", "&", ";", "(", ")", "`", "\n", "\r"]);
+var WINDOWS_EQUIVALENTS = {
+  grep: "findstr",
+  cat: "type",
+  ls: "dir",
+  rm: "del  (or rmdir /s for dirs)",
+  cp: "copy",
+  mv: "move",
+  touch: "type nul > file",
+  which: "where",
+  sed: "PowerShell -replace",
+  awk: "PowerShell",
+  head: "PowerShell Select-Object -First N",
+  tail: "PowerShell Select-Object -Last N",
+  test: "if exist / if defined",
+  pwd: "cd",
+  export: "set",
+  diff: "fc",
+  wc: "find /c"
+};
+function splitCommands(command) {
+  const segments = [];
+  let buf = "";
+  let quote = null;
+  for (const c of command) {
+    if (quote) {
+      buf += c;
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      buf += c;
+      continue;
+    }
+    if (OPERATOR_CHARS.has(c)) {
+      if (buf.trim()) segments.push(buf);
+      buf = "";
+      continue;
+    }
+    buf += c;
+  }
+  if (buf.trim()) segments.push(buf);
+  return segments;
+}
+function firstToken(segment) {
+  let s = segment.trim();
+  while (s.length > 0) {
+    if (s[0] === ">" || s[0] === "<" || /^\d+>/.test(s)) {
+      const m2 = s.match(/^\S+\s*/);
+      s = (m2 ? s.slice(m2[0].length) : s.slice(1)).trim();
+      continue;
+    }
+    const q = s[0];
+    if (q === '"' || q === "'") {
+      const end = s.indexOf(q, 1);
+      const token2 = end === -1 ? s.slice(1) : s.slice(1, end);
+      return token2 || null;
+    }
+    const m = s.match(/^(\S+)\s*/);
+    const token = m ? m[1] : s;
+    const rest = m ? s.slice(m[0].length) : "";
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(token)) {
+      s = rest.trim();
+      continue;
+    }
+    return token;
+  }
+  return null;
+}
+function hasAlnum(s) {
+  return /[A-Za-z0-9]/.test(s);
+}
+function extractCommandNames(command) {
+  const names = [];
+  for (const seg of splitCommands(command)) {
+    const tok = firstToken(seg);
+    if (tok && hasAlnum(tok) && !names.includes(tok)) names.push(tok);
+  }
+  return names;
+}
+var existsCache = /* @__PURE__ */ new Map();
+async function onPath(name) {
+  try {
+    if (isWindows2) {
+      await execFileAsync("where", [name], { timeout: 5e3, windowsHide: true });
+    } else {
+      await execFileAsync("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5e3 });
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+function looksLikePath(name) {
+  return name.includes("/") || name.includes("\\") || /^[A-Za-z]:/.test(name) || name.startsWith(".");
+}
+async function toolExists(name, cwd) {
+  const key = `${isWindows2 ? name.toLowerCase() : name}\0${cwd}`;
+  const cached2 = existsCache.get(key);
+  if (cached2 !== void 0) return cached2;
+  let ok;
+  if (isWindows2 && CMD_BUILTINS.has(name.toLowerCase())) {
+    ok = true;
+  } else if (looksLikePath(name)) {
+    const base = path3.isAbsolute(name) ? name : path3.resolve(cwd, name);
+    const candidates = isWindows2 ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
+    ok = candidates.some((p) => existsSync(p));
+  } else {
+    ok = await onPath(name);
+  }
+  existsCache.set(key, ok);
+  return ok;
+}
+async function findMissingTools(commands, cwd) {
+  const missing = [];
+  for (const command of commands) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const name of extractCommandNames(command)) {
+      if (seen.has(name)) continue;
+      seen.add(name);
+      if (!await toolExists(name, cwd)) missing.push({ command, tool: name });
+    }
+  }
+  return missing;
+}
+function suggestionFor(tool) {
+  return WINDOWS_EQUIVALENTS[tool.toLowerCase()];
+}
+var currentOs = process.platform;
+
 // src/index.ts
 var server = new McpServer({
   name: "dod-guard",
@@ -21695,9 +22003,30 @@ var SectionsSchema = external_exports.object({
   open_questions: external_exports.string().optional(),
   open_risks: external_exports.string().optional()
 });
+function formatMissingTools(missing) {
+  const lines = [
+    `ERROR: ${missing.length} proof command(s) invoke tool(s) not available on this OS (${currentOs}).`,
+    "Proof commands run on THIS machine \u2014 author them for the target OS, not as portable/bash by default.",
+    ""
+  ];
+  for (const m of missing) {
+    const hint = suggestionFor(m.tool);
+    lines.push(`  \u2022 \`${m.tool}\` not found${hint ? ` \u2014 on ${currentOs} use: ${hint}` : ""}`);
+    lines.push(`    in: ${m.command}`);
+  }
+  lines.push("");
+  lines.push("Rewrite these commands for the current OS, then retry. (For human-only checks, use a `manual` proof instead.)");
+  return lines.join("\n");
+}
+async function checkCommandsForOs(steps, cwd) {
+  const commands = steps.flatMap((s) => s.proofs).filter((p) => p.predicate.type !== "manual" && p.command.trim() !== "").map((p) => p.command);
+  const missing = await findMissingTools(commands, cwd);
+  if (missing.length === 0) return null;
+  return { content: [{ type: "text", text: formatMissingTools(missing) }] };
+}
 server.tool(
   "dod_create",
-  "Create a new locked DoD document. Stores proof commands canonically in MCP storage \u2014 editing the rendered markdown cannot weaken verification. Returns the DoD ID for use with dod_check.",
+  "Create a new locked DoD document. Stores proof commands canonically in MCP storage \u2014 editing the rendered markdown cannot weaken verification. Returns the DoD ID for use with dod_check. Proof commands run on the HOST OS \u2014 write them for that OS (e.g. on Windows use findstr/type/dir, not grep/cat/ls). Creation is rejected if any command invokes a tool absent on the current OS.",
   {
     title: external_exports.string().describe("Feature/plan title"),
     goal: external_exports.string().describe("One-sentence goal"),
@@ -21707,6 +22036,12 @@ server.tool(
     steps: external_exports.array(StepInputSchema).describe("DoD steps with proof commands and predicates")
   },
   async ({ title, goal, cwd, markdown_path, sections, steps }) => {
+    const resolvedCwd = path4.resolve(cwd);
+    const osError = await checkCommandsForOs(
+      steps.map((s) => ({ proofs: s.proofs.map((p) => ({ command: p.command, predicate: p.predicate })) })),
+      resolvedCwd
+    );
+    if (osError) return osError;
     const id = generateId();
     const date3 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
     const dodSteps = steps.map((s, si) => ({
@@ -21723,14 +22058,14 @@ server.tool(
     const fpData = dodSteps.flatMap(
       (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
     ).join("\n");
-    const fingerprint = createHash2("sha256").update(fpData).digest("hex").slice(0, 12);
+    const fingerprint = createHash3("sha256").update(fpData).digest("hex").slice(0, 12);
     const doc = {
       id,
       title,
       goal,
       date: date3,
-      cwd: path3.resolve(cwd),
-      markdown_path: path3.resolve(markdown_path),
+      cwd: resolvedCwd,
+      markdown_path: path4.resolve(markdown_path),
       created_at: (/* @__PURE__ */ new Date()).toISOString(),
       locked: true,
       sections,
@@ -21761,6 +22096,70 @@ server.tool(
     };
   }
 );
+var MANUAL_TIMEOUT_MS = 10 * 60 * 1e3;
+function manualInstructions(proof) {
+  const lines = [proof.description];
+  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual") {
+    lines.push("", `Steps / command: ${proof.command}`);
+  }
+  lines.push("", "Confirm PASS only after you have personally verified this works as described.");
+  return lines.join("\n");
+}
+function buildConfirmer() {
+  return async (proof) => {
+    const instructions = manualInstructions(proof);
+    playJingle();
+    const caps = server.server.getClientCapabilities();
+    if (caps?.elicitation) {
+      try {
+        const result = await server.server.elicitInput(
+          {
+            message: `Manual verification required:
+
+${instructions}`,
+            requestedSchema: {
+              type: "object",
+              properties: {
+                result: {
+                  type: "string",
+                  enum: ["pass", "fail"],
+                  enumNames: ["\u2705 Verified \u2014 works as expected", "\u274C Not verified \u2014 does not work"],
+                  description: "Did the manual verification pass?"
+                },
+                note: {
+                  type: "string",
+                  maxLength: 500,
+                  description: "Optional note about what you observed"
+                }
+              },
+              required: ["result"]
+            }
+          },
+          { timeout: MANUAL_TIMEOUT_MS }
+        );
+        if (result.action === "accept") {
+          const passed = result.content?.result === "pass";
+          const note = typeof result.content?.note === "string" ? result.content.note : void 0;
+          return { answer: passed ? "pass" : "fail", note, channel: "elicitation" };
+        }
+        return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
+      } catch {
+      }
+    }
+    const choice = await showMessageBox(
+      `DoD manual verification \u2014 ${proof.id}`,
+      `${instructions}
+
+Click YES only if it passed.`,
+      Math.floor(MANUAL_TIMEOUT_MS / 1e3)
+    );
+    return {
+      answer: choice === "yes" ? "pass" : "fail",
+      note: choice === "timeout" ? "dialog timed out" : void 0,
+      channel: "messagebox"
+    };
+  };
+}
 server.tool(
   "dod_check",
   "Run ALL proof commands for a DoD from canonical (locked) storage, mark pass/fail, update the markdown, and return an overall PASS/FAIL verdict. Use as /goal completion condition. Commands are executed from MCP's locked copy \u2014 the markdown file cannot influence results.",
@@ -21785,7 +22184,7 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
         }]
       };
     }
-    const result = await checkDocument(doc, cwd_override);
+    const result = await checkDocument(doc, cwd_override, buildConfirmer());
     let tamperWarning = "";
     if (doc.proof_fingerprint && result.proof_fingerprint !== doc.proof_fingerprint) {
       tamperWarning = `
@@ -21881,6 +22280,14 @@ server.tool(
         }]
       };
     }
+    const effectivePredicate = new_predicate ?? proof.predicate;
+    const effectiveCommand = new_command ?? proof.command;
+    if (effectivePredicate.type !== "manual" && effectiveCommand.trim() !== "") {
+      const missing = await findMissingTools([effectiveCommand], doc.cwd);
+      if (missing.length > 0) {
+        return { content: [{ type: "text", text: formatMissingTools(missing) }] };
+      }
+    }
     const oldSnapshot = { command: proof.command, predicate: { ...proof.predicate }, description: proof.description };
     if (new_command !== void 0) proof.command = new_command;
     if (new_predicate !== void 0) proof.predicate = new_predicate;
@@ -21898,7 +22305,7 @@ server.tool(
     const fpData = doc.steps.flatMap(
       (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
     ).join("\n");
-    doc.proof_fingerprint = createHash2("sha256").update(fpData).digest("hex").slice(0, 12);
+    doc.proof_fingerprint = createHash3("sha256").update(fpData).digest("hex").slice(0, 12);
     await save(doc);
     await writeMarkdown(doc);
     return {
@@ -21961,15 +22368,17 @@ server.tool(
     }
     try {
       const parsed = await parseMarkdown(mdPath);
+      const resolvedCwd = path4.resolve(cwd);
+      const osError = await checkCommandsForOs(parsed.steps, resolvedCwd);
+      if (osError) return osError;
       const id = generateId();
-      const resolvedCwd = path3.resolve(cwd);
       const doc = {
         id,
         title: parsed.title,
         goal: parsed.goal,
         date: parsed.date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
         cwd: resolvedCwd,
-        markdown_path: path3.resolve(mdPath),
+        markdown_path: path4.resolve(mdPath),
         created_at: (/* @__PURE__ */ new Date()).toISOString(),
         locked: true,
         sections: parsed.sections,

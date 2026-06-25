@@ -80,6 +80,7 @@ The output is a self-contained spec with testable proofs that can be passed to `
 - `dod_check` reads from the store — editing markdown proof text has zero effect
 - Each check prints a SHA256 fingerprint — compare to detect store tampering
 - Cannot weaken a machine-checkable proof to `manual` (blocked server-side)
+- `manual` proofs are confirmed by the human out-of-band (elicitation / server dialog) — Claude cannot self-confirm or fabricate the answer
 - All amendments are permanently logged with timestamps and reasons
 
 ### Predicate types
@@ -94,7 +95,7 @@ The output is a self-contained spec with testable proofs that can be passed to `
 | `output_not_contains` | `"text"` | stdout does NOT contain text |
 | `output_not_matches` | `"regex"` | stdout does NOT match regex |
 | `tdd` | `0` | **TDD enforcer.** Must be observed failing before it can pass |
-| `manual` | — | Skipped by checker (human-only) |
+| `manual` | — | **Human-verified.** Confirmed by the user during `dod_check` via a channel Claude cannot drive — see Manual verification |
 
 ### TDD enforcement
 
@@ -106,6 +107,32 @@ The `tdd` predicate enforces test-driven development by requiring proof of a red
 4. Run `dod_check` again — test passes AND was previously seen failing → proof passes
 
 If a test passes without ever being observed failing, dod-guard rejects it with **"TDD VIOLATION"**. This prevents writing tests after implementation that merely confirm existing behavior.
+
+### Manual verification
+
+Some acceptance criteria can't be machine-checked (e.g. "the app launches and the dashboard renders correctly"). The `manual` predicate covers these — but in a way Claude **cannot fake**.
+
+When `dod_check` reaches a `manual` proof:
+
+1. A distinctive **audible jingle** (Windows) plays to draw the user's attention.
+2. The server asks the human directly through a channel Claude does not control:
+   - **MCP elicitation** — if the client supports it, a structured pass/fail prompt is shown by the client and the answer returns over the protocol.
+   - **Windows dialog fallback** — if the client lacks elicitation support, the server spawns a blocking Yes/No dialog.
+3. The human's verdict is recorded on the proof (`manual_result`) with a timestamp, channel, and a fingerprint of the proof text.
+
+**Anti-cheat guarantee.** `dod_check` accepts **no parameter** that could carry a "passed" verdict. The answer is sourced solely from elicitation or the server-spawned dialog — both outside the model's reach. Claude cannot supply, infer, or fabricate the confirmation. If no human is available (non-interactive run, or the dialog times out), the proof **fails** — a missing human can never produce a pass.
+
+**Persistence.** A confirmed PASS is cached and reused on later `dod_check` runs so the human isn't re-prompted needlessly. The cache is keyed to a fingerprint of the proof's command, predicate, and description — if the proof changes (e.g. via `dod_amend`), the cache is invalidated and the human is asked again. A FAIL is never cached as reusable, so a fix can be re-verified immediately.
+
+### OS-correct commands (no bash-on-Windows)
+
+Proof commands execute on the **host OS** via `dod_check`. To stop the common failure of authoring Linux/bash commands that then fail on a Windows host (and the slow `dod_amend` cleanup that follows), dod-guard validates commands **up-front**:
+
+- On `dod_create`, `dod_import`, and `dod_amend`, every non-`manual` proof command is parsed for the executables it invokes (across pipes and `&&`/`||`/`;` chains, respecting quotes).
+- Each executable is checked against the current OS: cmd.exe built-ins, anything on `PATH` (`where` / `command -v`), or a real file at the working directory.
+- If any tool is missing, the operation is **rejected** with the offending tools and a suggested native replacement (`grep`→`findstr`, `cat`→`type`, `ls`→`dir`, `rm`→`del`, …). The DoD is not created/amended until the commands are OS-correct.
+
+This forces correct commands at authoring time instead of discovering breakage at check time. Checks that genuinely need a human use a `manual` proof (see above) rather than a shell command.
 
 ### Tamper detection
 

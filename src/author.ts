@@ -20,6 +20,7 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("> 2. Call `dod_check` to verify proofs — do NOT mark proofs manually.");
   l.push("> 3. A step is complete when ALL its proofs pass via `dod_check`.");
   l.push("> 4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
+  l.push("> 4b. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
   l.push("> 5. Continue until `dod_check` returns PASS — then stop and report done.");
   l.push(">");
   l.push(`> **Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
@@ -28,6 +29,8 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("> `dod_check` executes commands from the canonical copy, not this markdown file.");
   l.push("> Editing proof text here has no effect on verification.");
   l.push("> Store tampering is **logged and detectable** — each check prints a proof-set fingerprint.");
+  l.push("> Manual proofs are confirmed by the human directly (elicitation / dialog) during `dod_check` —");
+  l.push("> Claude cannot self-confirm them. A confirmed PASS is cached until the proof changes.");
   l.push("");
   l.push(`**Goal:** ${doc.goal}`);
   l.push("");
@@ -90,7 +93,11 @@ export function renderMarkdown(doc: DodDocument): string {
     for (const proof of step.proofs) {
       const mark = proofMark(proof.last_status);
       if (proof.predicate.type === "manual") {
-        l.push(`- ${mark} Proof: Manual — ${proof.description}`);
+        const mr = proof.manual_result;
+        const state = mr
+          ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_`
+          : " _(awaiting human verification)_";
+        l.push(`- ${mark} Proof: Manual — ${proof.description}${state}`);
       } else if (proof.predicate.type === "tdd") {
         const tddState = proof.seen_failing
           ? (proof.last_status === "pass" ? "🟢 GREEN" : "🔴 RED")
@@ -163,10 +170,18 @@ export function formatCheckResult(result: CheckResult): string {
     l.push(`${icon} **Step: ${step.title}** — ${step.status.toUpperCase()} (${countStr})`);
 
     for (const proof of step.proofs) {
+      const isManual = proof.command === "manual";
       if (proof.status === "pass") {
-        l.push(`  ✓ \`${proof.command}\` (${proof.duration_ms ?? 0}ms)`);
+        if (isManual) {
+          l.push(`  ✓ MANUAL — ${proof.description} (${proof.output ?? "human-confirmed"})`);
+        } else {
+          l.push(`  ✓ \`${proof.command}\` (${proof.duration_ms ?? 0}ms)`);
+        }
       } else if (proof.status === "skipped") {
         l.push(`  ⚠ \`${proof.command}\` (MANUAL — not machine-verified, skipped)`);
+      } else if (isManual) {
+        l.push(`  ✗ MANUAL — ${proof.description}`);
+        if (proof.error) l.push(`    ${proof.error}`);
       } else {
         l.push(`  ✗ \`${proof.command}\``);
         if (proof.exit_code !== undefined) {
