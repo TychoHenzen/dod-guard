@@ -5,7 +5,9 @@ Anti-cheat Definition of Done verification for Claude Code. Locks proof commands
 ## What it does
 
 - **Locks proofs canonically** — proof commands stored in MCP, not in editable markdown
-- **Tamper-evident** — SHA256 fingerprint of proof set printed on every check
+- **Tamper-blocking** — SHA256 fingerprint mismatch forces the verdict to FAIL, not just a warning
+- **Baseline enforcement** — `dod_create` rejects a DoD missing the mandatory proof categories (two-layer integration, full test suite)
+- **Incremental checking** — `dod_check --step N` verifies one step fast; only a full run can return PASS
 - **Amendment audit trail** — all proof modifications logged with mandatory reasons
 - **Weakening prevention** — cannot convert machine-checkable proofs to manual
 - **Structured interviews** — `/interview` skill gathers requirements before implementation
@@ -44,8 +46,8 @@ npm install -g dod-guard
 
 | Tool | Description |
 |------|-------------|
-| `dod_create` | Create a locked DoD with proof commands and metadata |
-| `dod_check` | Execute all proofs from canonical storage, return PASS/FAIL |
+| `dod_create` | Create a locked DoD (declares a `type`; each proof a `category`). Rejects DoDs missing mandatory baseline categories |
+| `dod_check` | Execute proofs from canonical storage, return PASS/FAIL. Optional `step` N verifies one step (scoped → INCOMPLETE, never PASS) |
 | `dod_status` | Read cached last check result without re-running |
 | `dod_amend` | Modify a proof with mandatory reason (audit-logged) |
 | `dod_list` | List all tracked DoDs with status |
@@ -96,6 +98,7 @@ The output is a self-contained spec with testable proofs that can be passed to `
 | `output_not_matches` | `"regex"` | stdout does NOT match regex |
 | `tdd` | `0` | **TDD enforcer.** Must be observed failing before it can pass |
 | `manual` | — | **Human-verified.** Confirmed by the user during `dod_check` via a channel Claude cannot drive — see Manual verification |
+| `review` | — | **Fresh-context code review.** The agent runs `/code-review` against the diff vs requirements; the PASS/FAIL verdict arrives through the same out-of-band channel as `manual` (model cannot self-pass). For intent/edge-case correctness commands can't assert |
 
 ### TDD enforcement
 
@@ -134,9 +137,17 @@ Proof commands execute on the **host OS** via `dod_check`. To stop the common fa
 
 This forces correct commands at authoring time instead of discovering breakage at check time. Checks that genuinely need a human use a `manual` proof (see above) rather than a shell command.
 
-### Tamper detection
+### Tamper detection (blocking)
 
-Each DoD stores a SHA256 fingerprint of its proof set at creation time. On every `dod_check`, the current fingerprint is compared to the stored original. If they don't match (and no `dod_amend` was used), a tamper warning is emitted. Amendments via `dod_amend` legitimately update the stored fingerprint.
+Each DoD stores a SHA256 fingerprint of its proof set at creation time. On every `dod_check`, the current fingerprint is compared to the stored original. If they don't match — the store was edited outside `dod_amend` — the verdict is **forced to FAIL** (not merely warned). `dod_amend` legitimately re-locks the fingerprint, so real changes go through the audited path; a raw store edit can never return PASS.
+
+### Baseline category enforcement
+
+Every proof declares a `category` and each DoD declares a `type` (`bug` / `general`), keyed to the company baselines in `standards/`. `dod_create` **rejects** a DoD missing the mandatory machine-checkable categories — two-layer integration (`integration_wiring` + `integration_behavioral`) and the full `test` suite — and **warns** when TDD is absent or a step is proven only by presence/structural checks. The mandate is enforced by the tool, not left to the authoring agent's goodwill.
+
+### Incremental checking
+
+`dod_check` accepts an optional `step` (1-based). A scoped run executes only that step's proofs and carries the others forward from their last result without re-running them — fast iteration without paying for the whole suite each time. A scoped run always returns **INCOMPLETE**, never PASS, so it can't satisfy a `/goal` completion gate; run `dod_check` with no `step` for the full verdict. Scoped runs never overwrite the canonical last full verdict.
 
 ## Development
 

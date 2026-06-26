@@ -274,8 +274,8 @@ Author a dod-guard DoD per workstream (`dod_create`) before coding. Each must in
 - [x] WS-C implemented (`review` predicate — out-of-band like manual, runs `/code-review` vs requirements, verdict via un-fakeable channel, FAIL never cached). Dispatch decision revised mid-build: checker can't call skills, so review is orchestrator-satisfied via the manual elicitation channel. 43 tests green. **Not yet committed.**
 - [x] WS-E implemented (interview baseline check: `dod_create` response nudges a pre-implementation `dod_check`; SKILL Phase 4.5 documents red-is-expected + catch broken commands early). **Not yet committed.**
 - [x] WS-F implemented (blocking tamper: fingerprint mismatch forces overall FAIL in `checkDocument`, no longer advisory). 45 tests green. **Not yet committed.**
-- [ ] README + `standards/` + `skills/interview/SKILL.md` updated.
-- [ ] Version bump + changelog.
+- [x] README + `standards/` + `skills/interview/SKILL.md` updated (README: blocking-tamper, baseline enforcement, incremental check, `review` predicate).
+- [x] Version bump 1.4.0 → 1.5.0 (package.json). No CHANGELOG file in repo; release notes captured in commit messages + this plan. **Round A+B+C+E+F shipped.**
 
 ---
 
