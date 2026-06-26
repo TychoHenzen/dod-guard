@@ -228,16 +228,26 @@ export async function checkDocument(
   ).join("\n");
   const proofFingerprint = createHash("sha256").update(fingerprintData).digest("hex").slice(0, 12);
 
+  // Tamper detection: the stored fingerprint was set by dod_create/dod_amend. If
+  // the recomputed set differs, the store was edited outside dod_amend — block.
+  const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
+
   // A scoped run verifies only one step, so it can never assert the whole DoD is
   // done — overall is always "incomplete". Only a full run yields pass/fail. This
   // is what stops a `--step N` run from satisfying a /goal "dod_check PASS" gate.
-  const overall: CheckResult["overall"] = scopedStepId
-    ? "incomplete"
-    : totalFail === 0 ? "pass" : "fail";
+  // Tamper always forces "fail", overriding both pass and incomplete.
+  const overall: CheckResult["overall"] = tampered
+    ? "fail"
+    : scopedStepId
+      ? "incomplete"
+      : totalFail === 0 ? "pass" : "fail";
 
-  const summary = scopedStepId
+  const baseSummary = scopedStepId
     ? `SCOPED (step "${scopedStepId}"): ${totalPass}/${doc.steps.length} steps currently pass — run a full dod_check (no step) to verify completion`
     : `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`;
+  const summary = tampered
+    ? `TAMPER DETECTED — proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}`
+    : baseSummary;
 
   return {
     overall,
@@ -246,5 +256,6 @@ export async function checkDocument(
     timestamp: new Date().toISOString(),
     proof_fingerprint: proofFingerprint,
     ...(scopedStepId ? { scoped: true, ran_step_id: scopedStepId } : {}),
+    ...(tampered ? { tampered: true } : {}),
   };
 }

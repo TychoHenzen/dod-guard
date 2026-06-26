@@ -141,3 +141,32 @@ test("full check (no stepId) still computes overall pass/fail across all steps",
   assert.equal(res.overall, "fail");
   assert.equal(res.scoped ?? false, false);
 });
+
+// ── WS-F: blocking tamper detection ────────────────────────────────
+
+function onePassDoc(): DodDocument {
+  return {
+    id: "test-1pass", title: "t", goal: "g", date: "2026-01-01",
+    cwd: process.cwd(), markdown_path: "X", created_at: "2026-01-01", locked: true,
+    sections: { requirements: "r" },
+    steps: [{ id: "step-1", title: "Only", proofs: [cmdProof("proof-1-1", "exit 0")] }],
+    amendments: [],
+  };
+}
+
+test("a proof-set fingerprint mismatch forces overall FAIL even when all proofs pass", async () => {
+  const doc = onePassDoc();
+  doc.proof_fingerprint = "staleffffff"; // does not match the real proof set → store was edited outside dod_amend
+  const res = await checkDocument(doc);
+  assert.equal(res.tampered, true);
+  assert.equal(res.overall, "fail", "tamper must block, not just warn");
+});
+
+test("a matching stored fingerprint is not flagged as tamper", async () => {
+  const doc = onePassDoc();
+  const first = await checkDocument(doc);          // no stored fingerprint yet
+  doc.proof_fingerprint = first.proof_fingerprint; // lock the real fingerprint (as dod_create/amend do)
+  const second = await checkDocument(doc);
+  assert.notEqual(second.tampered, true);
+  assert.equal(second.overall, "pass");
+});

@@ -438,9 +438,21 @@ Use these categories to ensure coverage. Mandatory categories are marked below p
 | **Integration** (mandatory) | Feature wired into system AND works through real entry point | Two proofs: (1) grep for wiring (import/registration/route), (2) behavioral test through system entry point | `exit_code: 0` or `output_contains` | **Always** (last machine-checkable step) |
 | **Regression** | Bug doesn't recur | Run bug-specific test | `tdd: 0` (proves test was red) | Bug fixes (via TDD) |
 
+## Phase 4.5: Baseline Check
+
+Immediately after `dod_create` succeeds, run `dod_check` once — **before** any implementation. This is a baseline, and it validates two things:
+
+1. **All proofs are RED** — overall **FAIL** is expected and correct here; the feature does not exist yet. TDD proofs in particular MUST be red now (that records the required red phase).
+2. **Every proof command actually runs** — a `command not found` / OS error at baseline means the proof is mis-authored (wrong shell, wrong tool for this OS). Fix it via `dod_amend` now, while it's cheap — not mid-implementation after a 26-amend pileup.
+
+Interpreting the baseline:
+- Proofs failing because the code isn't written yet → good, proceed.
+- Proofs failing because the **command errored** (not found, bad path, tamper) → fix before handing off.
+- A proof that PASSES at baseline (before any code) is suspect — it likely doesn't test the new behavior. Strengthen it.
+
 ## Phase 5: Output /goal Prompt
 
-After creating the locked DoD, always output the `/goal` prompt directly — do NOT offer a choice menu. The user always wants a fresh-context /goal launch after DoD creation.
+After the baseline check, always output the `/goal` prompt directly — do NOT offer a choice menu. The user always wants a fresh-context /goal launch after DoD creation.
 
 Output this exact block:
 

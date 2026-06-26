@@ -193,7 +193,12 @@ server.tool(
           "",
           "Proof commands are stored canonically in MCP. Editing the markdown file cannot affect verification.",
           "Each dod_check prints the proof fingerprint — compare to detect store tampering.",
-          "Use dod_check to run verification.",
+          "",
+          "NEXT — baseline check: run `dod_check` now, before implementing. Expect overall FAIL with",
+          "proofs RED (the feature does not exist yet). This validates every proof command executes on",
+          "this OS — a 'command not found' here means the proof is mis-authored; fix it via dod_amend now",
+          "rather than discovering it mid-implementation. TDD proofs SHOULD be red at baseline (that is the",
+          "required red phase). Then implement and re-check.",
         ].join("\n"),
       }],
     };
@@ -335,10 +340,11 @@ server.tool(
 
     const result = await checkDocument(doc, cwd_override, buildConfirmer(), { stepId });
 
-    // Tamper detection: compare stored fingerprint to current proof-set
+    // Tamper detection (blocking): a fingerprint mismatch forces the verdict to
+    // FAIL in checkDocument. Surface why, and how to legitimise a real change.
     let tamperWarning = "";
-    if (doc.proof_fingerprint && result.proof_fingerprint !== doc.proof_fingerprint) {
-      tamperWarning = `\n\n⚠️ TAMPER WARNING: Proof fingerprint mismatch!\n  Original: ${doc.proof_fingerprint}\n  Current:  ${result.proof_fingerprint}\n  Proofs in the store may have been modified outside of dod_amend.\n`;
+    if (result.tampered) {
+      tamperWarning = `\n\n🛑 TAMPER DETECTED — verdict forced to FAIL.\n  Stored:  ${doc.proof_fingerprint}\n  Current: ${result.proof_fingerprint}\n  The proof set was changed outside dod_amend. Revert the edit, or make the change through dod_amend (which re-locks the fingerprint with a logged reason).\n`;
     } else if (!doc.proof_fingerprint) {
       // Backfill fingerprint for pre-existing DoDs that lack one
       doc.proof_fingerprint = result.proof_fingerprint;

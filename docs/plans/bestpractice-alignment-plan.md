@@ -272,8 +272,8 @@ Author a dod-guard DoD per workstream (`dod_create`) before coding. Each must in
 - [x] WS-A implemented (`dod_check` `step` param; scoped run → INCOMPLETE, carries other steps unrun; `last_check` untouched by scoped runs; docs updated). 33 tests green. **Not yet committed.**
 - [x] WS-B implemented (proof `category` + DoD `type`; `validateBaseline` rejects missing integration two-layer + full-suite, warns on missing TDD / presence-only steps; wired into `dod_create`; standards + interview updated for categories & precision). 39 tests green; behavioral demo confirms reject/accept. **Not yet committed.**
 - [x] WS-C implemented (`review` predicate — out-of-band like manual, runs `/code-review` vs requirements, verdict via un-fakeable channel, FAIL never cached). Dispatch decision revised mid-build: checker can't call skills, so review is orchestrator-satisfied via the manual elicitation channel. 43 tests green. **Not yet committed.**
-- [ ] WS-E implemented, DoD green, committed.
-- [ ] WS-F implemented, DoD green, committed.
+- [x] WS-E implemented (interview baseline check: `dod_create` response nudges a pre-implementation `dod_check`; SKILL Phase 4.5 documents red-is-expected + catch broken commands early). **Not yet committed.**
+- [x] WS-F implemented (blocking tamper: fingerprint mismatch forces overall FAIL in `checkDocument`, no longer advisory). 45 tests green. **Not yet committed.**
 - [ ] README + `standards/` + `skills/interview/SKILL.md` updated.
 - [ ] Version bump + changelog.
 

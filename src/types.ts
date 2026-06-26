@@ -115,6 +115,9 @@ export interface CheckResult {
   scoped?: boolean;
   /** The step id that was freshly executed on a scoped run. */
   ran_step_id?: string;
+  /** True when the recomputed proof-set fingerprint differs from the stored one
+   * (store edited outside dod_amend). Forces overall to "fail". */
+  tampered?: boolean;
 }
 
 export interface StepResult {
