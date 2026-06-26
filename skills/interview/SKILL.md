@@ -240,6 +240,8 @@ Both layers are needed because:
 
 Instead of writing the spec file directly, call the `dod_create` MCP tool to create a **locked, anti-cheat DoD document**. This stores proof commands canonically in MCP storage — editing the rendered markdown cannot weaken verification.
 
+**XML-structured output:** The renderer wraps the agent guidance, each spec section, and the step list in semantic XML tags (`<claude_instructions>`, `<requirements>`, `<research_notes>`, `<definition_of_done>`, etc.) so the downstream `/goal` agent gets clean signal separation. Provide each section's content as **plain markdown** — the server adds the tags; do not wrap section content in XML yourself.
+
 **Call `dod_create` with this structure:**
 
 ```json
@@ -430,8 +432,17 @@ DoD created and locked. ID: <dod_id>. Saved to docs/plans/<filename>. <N> steps,
 
 Goal prompt for fresh context:
 
-/goal Implement all <N> steps in the DoD (ID: <dod_id>). Work through each step sequentially. After completing each step, call dod_check to verify. The goal is met when dod_check returns overall PASS. If a proof is unreasonable, use dod_amend with a reason. The DoD markdown is at docs/plans/<filename> for reference. When all machine-checkable proofs pass, list all remaining manual steps the user must complete before this work is done.
+/goal
+<task>Implement all <N> steps in the DoD (ID: <dod_id>).</task>
+<reference>DoD markdown: docs/plans/<filename> — sections and steps are wrapped in semantic XML tags for precise parsing.</reference>
+<process>
+Work through each step sequentially. After completing a step, call dod_check to verify its proofs. If a proof is unreasonable, call dod_amend with a reason instead of forcing it.
+</process>
+<success_criteria>dod_check returns overall PASS for every machine-checkable proof.</success_criteria>
+<on_completion>List every remaining manual step the user must complete before this work is done.</on_completion>
 ```
+
+Use real XML tags (not placeholders) so the fresh `/goal` agent gets clear signal separation between task, reference, process, and exit conditions. Do NOT add a `<reasoning>` or "think step by step" tag — it competes with the model's native reasoning.
 
 The goal agent must end its work by listing all manual proofs that require human action:
 

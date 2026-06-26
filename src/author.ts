@@ -15,22 +15,24 @@ export function renderMarkdown(doc: DodDocument): string {
 
   l.push(`# ${doc.title} — Requirements Spec`);
   l.push("");
-  l.push("> **For Claude (/goal):** Work through each incomplete step below.");
-  l.push("> 1. Mark a step `[>]` when you begin working on it.");
-  l.push("> 2. Call `dod_check` to verify proofs — do NOT mark proofs manually.");
-  l.push("> 3. A step is complete when ALL its proofs pass via `dod_check`.");
-  l.push("> 4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("> 4b. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
-  l.push("> 5. Continue until `dod_check` returns PASS — then stop and report done.");
-  l.push(">");
-  l.push(`> **Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
-  l.push(">");
-  l.push("> **🔒 Anti-cheat:** Proofs are stored canonically in MCP storage (dod-guard).");
-  l.push("> `dod_check` executes commands from the canonical copy, not this markdown file.");
-  l.push("> Editing proof text here has no effect on verification.");
-  l.push("> Store tampering is **logged and detectable** — each check prints a proof-set fingerprint.");
-  l.push("> Manual proofs are confirmed by the human directly (elicitation / dialog) during `dod_check` —");
-  l.push("> Claude cannot self-confirm them. A confirmed PASS is cached until the proof changes.");
+  l.push("<claude_instructions>");
+  l.push("**For Claude (/goal):** Work through each incomplete step below.");
+  l.push("1. Mark a step `[>]` when you begin working on it.");
+  l.push("2. Call `dod_check` to verify proofs — do NOT mark proofs manually.");
+  l.push("3. A step is complete when ALL its proofs pass via `dod_check`.");
+  l.push("4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
+  l.push("4b. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
+  l.push("5. Continue until `dod_check` returns PASS — then stop and report done.");
+  l.push("");
+  l.push(`**Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
+  l.push("");
+  l.push("**🔒 Anti-cheat:** Proofs are stored canonically in MCP storage (dod-guard).");
+  l.push("`dod_check` executes commands from the canonical copy, not this markdown file.");
+  l.push("Editing proof text here has no effect on verification.");
+  l.push("Store tampering is **logged and detectable** — each check prints a proof-set fingerprint.");
+  l.push("Manual proofs are confirmed by the human directly (elicitation / dialog) during `dod_check` —");
+  l.push("Claude cannot self-confirm them. A confirmed PASS is cached until the proof changes.");
+  l.push("</claude_instructions>");
   l.push("");
   l.push(`**Goal:** ${doc.goal}`);
   l.push("");
@@ -45,43 +47,39 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("");
   l.push("---");
 
+  const pushSection = (heading: string, tag: string, body: string) => {
+    l.push("");
+    l.push(`## ${heading}`);
+    l.push("");
+    l.push(`<${tag}>`);
+    l.push(body);
+    l.push(`</${tag}>`);
+  };
+
   if (doc.sections.decisions) {
-    l.push("");
-    l.push("## Decisions (locked with user)");
-    l.push("");
-    l.push(doc.sections.decisions);
+    pushSection("Decisions (locked with user)", "decisions", doc.sections.decisions);
   }
 
   if (doc.sections.current_state) {
-    l.push("");
-    l.push("## Current state");
-    l.push("");
-    l.push(doc.sections.current_state);
+    pushSection("Current state", "current_state", doc.sections.current_state);
   }
 
-  l.push("");
-  l.push("## Requirements");
-  l.push("");
-  l.push(doc.sections.requirements);
+  pushSection("Requirements", "requirements", doc.sections.requirements);
 
   if (doc.sections.research_notes) {
-    l.push("");
-    l.push("## Research Notes");
-    l.push("");
-    l.push(doc.sections.research_notes);
+    pushSection("Research Notes", "research_notes", doc.sections.research_notes);
   }
 
   if (doc.sections.open_questions) {
-    l.push("");
-    l.push("## Open Questions");
-    l.push("");
-    l.push(doc.sections.open_questions);
+    pushSection("Open Questions", "open_questions", doc.sections.open_questions);
   }
 
   l.push("");
   l.push("---");
   l.push("");
   l.push("## Definition of Done");
+  l.push("");
+  l.push("<definition_of_done>");
 
   for (let i = 0; i < doc.steps.length; i++) {
     const step = doc.steps[i];
@@ -109,11 +107,11 @@ export function renderMarkdown(doc: DodDocument): string {
     }
   }
 
+  l.push("");
+  l.push("</definition_of_done>");
+
   if (doc.sections.open_risks) {
-    l.push("");
-    l.push("## Open risks");
-    l.push("");
-    l.push(doc.sections.open_risks);
+    pushSection("Open risks", "open_risks", doc.sections.open_risks);
   }
 
   if (doc.amendments.length > 0) {
