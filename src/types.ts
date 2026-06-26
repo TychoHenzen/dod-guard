@@ -4,6 +4,22 @@ export interface Predicate {
 }
 
 /**
+ * Company-baseline proof category (see standards/dod-baselines.md). Declared
+ * per proof so `dod_create` can enforce that the mandatory categories are present
+ * instead of trusting the author to follow the standard.
+ */
+export type ProofCategory =
+  | "lint"
+  | "format"
+  | "tdd"
+  | "structure"
+  | "test"
+  | "integration_wiring"
+  | "integration_behavioral"
+  | "manual"
+  | "other";
+
+/**
  * Record of a human's confirmation of a `manual` proof.
  *
  * Anti-cheat: this is written ONLY by the server after collecting the answer
@@ -27,6 +43,8 @@ export interface Proof {
   command: string;
   predicate: Predicate;
   description: string;
+  /** Baseline category (optional on legacy/imported docs; required by dod_create). */
+  category?: ProofCategory;
   last_status: "pending" | "pass" | "fail" | "skipped";
   last_output?: string;
   last_checked?: string;
@@ -60,6 +78,8 @@ export interface DodDocument {
   markdown_path: string;
   created_at: string;
   locked: boolean;
+  /** Work type, selects the applicable company baseline. Optional on legacy docs. */
+  type?: "bug" | "general";
   sections: DodSections;
   steps: Step[];
   proof_fingerprint?: string;

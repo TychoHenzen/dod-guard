@@ -244,10 +244,16 @@ Instead of writing the spec file directly, call the `dod_create` MCP tool to cre
 
 **Call `dod_create` with this structure:**
 
+Every proof needs a `category` (company-baseline tag). `dod_create` **rejects** a DoD
+missing the mandatory categories `integration_wiring`, `integration_behavioral`, and
+`test`, and warns when `tdd` is absent or a step has only presence/structural proofs.
+The DoD also needs a `type` (`bug` or `general`) to select the baseline.
+
 ```json
 {
   "title": "[Feature Name]",
   "goal": "[One sentence goal from confirmed summary]",
+  "type": "general",
   "cwd": "[Absolute path to project root / working directory for running commands]",
   "markdown_path": "[Absolute path to docs/plans/YYYY-MM-DD-<topic>.md]",
   "sections": {
@@ -265,23 +271,33 @@ Instead of writing the spec file directly, call the `dod_create` MCP tool to cre
         {
           "command": "cargo test -- test_name",
           "predicate": {"type": "exit_code", "value": 0},
+          "category": "test",
           "description": "exit 0, all tests pass"
         },
         {
-          "command": "grep \"pattern\" src/file.rs",
+          "command": "grep -w \"register_route\" src/app.rs",
           "predicate": {"type": "exit_code", "value": 0},
-          "description": "pattern found in expected file"
+          "category": "integration_wiring",
+          "description": "feature is wired into the real router (word-boundary match)"
         },
         {
-          "command": "grep \"removed_thing\" src/file.rs",
-          "predicate": {"type": "exit_code", "value": 1},
-          "description": "exit 1 — grep found no matches (removed_thing is gone)"
+          "command": "curl -fs localhost:8080/feature",
+          "predicate": {"type": "exit_code", "value": 0},
+          "category": "integration_behavioral",
+          "description": "feature reachable through the running system's entry point"
         }
       ]
     }
   ]
 }
 ```
+
+**Proof categories:** `lint`, `format`, `tdd`, `structure`, `test`,
+`integration_wiring`, `integration_behavioral`, `manual`, `other`. Mandatory (enforced
+at create): `integration_wiring` + `integration_behavioral` + `test`. **Precision:**
+presence/removal proofs must match signatures or word boundaries (`grep -w`, `findstr /R`),
+never bare substrings — e.g. `TryStopTracking(dossierId)` vs `TryStopTracking(dossierId, clientId)`
+will collide on a bare substring match.
 
 **Predicate types for proofs:**
 

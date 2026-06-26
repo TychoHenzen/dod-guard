@@ -9,6 +9,7 @@ import { writeMarkdown, updateDocFromCheckResult, formatCheckResult } from "./au
 import { parseMarkdown } from "./parser.js";
 import { playJingle, showMessageBox } from "./notify.js";
 import { findMissingTools, suggestionFor, currentOs, type MissingTool } from "./command-check.js";
+import { validateBaseline } from "./baseline.js";
 import type { Confirmer, ManualAnswer } from "./manual.js";
 import type { DodDocument, Predicate, Proof, Step } from "./types.js";
 
@@ -24,10 +25,16 @@ const PredicateSchema = z.object({
   value: z.union([z.number(), z.string()]).optional(),
 });
 
+const ProofCategorySchema = z.enum([
+  "lint", "format", "tdd", "structure", "test",
+  "integration_wiring", "integration_behavioral", "manual", "other",
+]);
+
 const ProofInputSchema = z.object({
   command: z.string(),
   predicate: PredicateSchema,
   description: z.string(),
+  category: ProofCategorySchema.describe("Company-baseline category. Mandatory categories (integration_wiring, integration_behavioral, test) are enforced at creation — see standards/dod-baselines.md."),
 });
 
 const StepInputSchema = z.object({
@@ -88,18 +95,41 @@ server.tool(
   {
     title: z.string().describe("Feature/plan title"),
     goal: z.string().describe("One-sentence goal"),
+    type: z.enum(["bug", "general"]).describe("Work type — selects the company baseline (standards/dod-baselines.md)."),
     cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: z.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
     steps: z.array(StepInputSchema).describe("DoD steps with proof commands and predicates"),
   },
-  async ({ title, goal, cwd, markdown_path, sections, steps }) => {
+  async ({ title, goal, type, cwd, markdown_path, sections, steps }) => {
     const resolvedCwd = path.resolve(cwd);
     const osError = await checkCommandsForOs(
       steps.map((s) => ({ proofs: s.proofs.map((p) => ({ command: p.command, predicate: p.predicate as Predicate })) })),
       resolvedCwd,
     );
     if (osError) return osError;
+
+    // Baseline enforcement: reject a DoD missing the mandatory proof categories
+    // instead of trusting the author to follow the standard.
+    const baseline = validateBaseline(type, steps.map((s) => ({
+      title: s.title,
+      proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type } })),
+    })));
+    if (baseline.errors.length > 0) {
+      return {
+        content: [{
+          type: "text" as const,
+          text: [
+            `ERROR: this ${type} DoD does not meet the company baseline (standards/dod-baselines.md).`,
+            "",
+            ...baseline.errors.map((e) => `  • ${e}`),
+            "",
+            "Add proofs for the missing categories, then retry. If a category genuinely cannot apply",
+            "(e.g. no runnable entry point), say so to the user and document the exception.",
+          ].join("\n"),
+        }],
+      };
+    }
 
     const id = store.generateId();
     const date = new Date().toISOString().split("T")[0];
@@ -112,6 +142,7 @@ server.tool(
         command: p.command,
         predicate: p.predicate as Predicate,
         description: p.description,
+        category: p.category,
         last_status: "pending" as const,
       })),
     }));
@@ -127,6 +158,7 @@ server.tool(
       title,
       goal,
       date,
+      type,
       cwd: resolvedCwd,
       markdown_path: path.resolve(markdown_path),
       created_at: new Date().toISOString(),
@@ -142,6 +174,10 @@ server.tool(
 
     const proofCount = dodSteps.reduce((sum, s) => sum + s.proofs.length, 0);
 
+    const warningBlock = baseline.warnings.length > 0
+      ? ["", "⚠️ Baseline advisories (not blocking):", ...baseline.warnings.map((w) => `  • ${w}`)]
+      : [];
+
     return {
       content: [{
         type: "text" as const,
@@ -153,6 +189,7 @@ server.tool(
           `Steps: ${dodSteps.length}`,
           `Proofs: ${proofCount}`,
           `Proof fingerprint: ${fingerprint}`,
+          ...warningBlock,
           "",
           "Proof commands are stored canonically in MCP. Editing the markdown file cannot affect verification.",
           "Each dod_check prints the proof fingerprint — compare to detect store tampering.",
