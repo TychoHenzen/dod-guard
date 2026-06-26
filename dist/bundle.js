@@ -21177,14 +21177,14 @@ function perProofFingerprint(proof) {
   ].join("|");
   return createHash("sha256").update(data).digest("hex").slice(0, 12);
 }
-async function resolveManual(proof, confirm) {
+async function resolveManual(proof, confirm, label = "Manual verification") {
   const fingerprint = perProofFingerprint(proof);
   const cached2 = proof.manual_result;
   if (cached2 && cached2.answer === "pass" && cached2.proof_fingerprint === fingerprint) {
     return {
       status: "pass",
       cached: true,
-      output: `Manual verification cached: PASS at ${cached2.confirmed_at} via ${cached2.channel}${cached2.note ? ` \u2014 "${cached2.note}"` : ""}`
+      output: `${label} cached: PASS at ${cached2.confirmed_at} via ${cached2.channel}${cached2.note ? ` \u2014 "${cached2.note}"` : ""}`
     };
   }
   const answer = await confirm(proof);
@@ -21198,7 +21198,7 @@ async function resolveManual(proof, confirm) {
   return {
     status: answer.answer,
     cached: false,
-    output: `Manual verification ${answer.answer.toUpperCase()} via ${answer.channel}${answer.note ? ` \u2014 "${answer.note}"` : ""}`
+    output: `${label} ${answer.answer.toUpperCase()} via ${answer.channel}${answer.note ? ` \u2014 "${answer.note}"` : ""}`
   };
 }
 
@@ -21222,6 +21222,7 @@ function evaluatePredicate(predicate, exitCode, stdout) {
     case "tdd":
       return exitCode === (predicate.value ?? 0);
     case "manual":
+    case "review":
       return true;
     default:
       return false;
@@ -21257,25 +21258,27 @@ async function runCommand(proof, cwd) {
   }
 }
 async function executeProof(proof, cwd, confirm) {
-  if (proof.predicate.type === "manual") {
+  if (proof.predicate.type === "manual" || proof.predicate.type === "review") {
+    const isReview = proof.predicate.type === "review";
+    const label = isReview ? "Code review" : "Manual verification";
     if (!confirm) {
       return {
         id: proof.id,
         description: proof.description,
         status: "fail",
         command: proof.command,
-        error: "Manual verification required but no confirmation channel is available (non-interactive run).",
-        output: "Manual verification not confirmed"
+        error: `${label} required but no confirmation channel is available (non-interactive run).`,
+        output: `${label} not confirmed`
       };
     }
-    const resolution = await resolveManual(proof, confirm);
+    const resolution = await resolveManual(proof, confirm, label);
     return {
       id: proof.id,
       description: proof.description,
       status: resolution.status,
       command: proof.command,
       output: resolution.output,
-      error: resolution.status === "fail" ? "Manual verification was not confirmed as passing." : void 0
+      error: resolution.status === "fail" ? `${label} was not confirmed as passing.` : void 0
     };
   }
   const run = await runCommand(proof, cwd);
@@ -21342,12 +21345,33 @@ async function executeProof(proof, cwd, confirm) {
     duration_ms: run.duration
   };
 }
-async function checkDocument(doc, cwdOverride, confirm) {
+function carryForwardStep(step) {
+  const proofs = step.proofs.map((p) => ({
+    id: p.id,
+    description: p.description,
+    // A never-run proof (last_status "pending") has no result to carry; surface
+    // it as "skipped" for display. It is not persisted on a scoped run.
+    status: p.last_status === "pending" ? "skipped" : p.last_status,
+    command: p.command,
+    output: p.last_output
+  }));
+  const allPass = step.proofs.length > 0 && step.proofs.every((p) => p.last_status === "pass");
+  return { id: step.id, title: step.title, status: allPass ? "pass" : "fail", proofs };
+}
+async function checkDocument(doc, cwdOverride, confirm, opts) {
   const cwd = cwdOverride ?? doc.cwd;
+  const scopedStepId = opts?.stepId;
   const stepResults = [];
   let totalPass = 0;
   let totalFail = 0;
   for (const step of doc.steps) {
+    if (scopedStepId && step.id !== scopedStepId) {
+      const carried = carryForwardStep(step);
+      stepResults.push(carried);
+      if (carried.status === "pass") totalPass++;
+      else totalFail++;
+      continue;
+    }
     const proofResults = [];
     let stepPassed = true;
     for (const proof of step.proofs) {
@@ -21369,13 +21393,18 @@ async function checkDocument(doc, cwdOverride, confirm) {
     (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
   ).join("\n");
   const proofFingerprint = createHash2("sha256").update(fingerprintData).digest("hex").slice(0, 12);
-  const overall = totalFail === 0 ? "pass" : "fail";
+  const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
+  const overall = tampered ? "fail" : scopedStepId ? "incomplete" : totalFail === 0 ? "pass" : "fail";
+  const baseSummary = scopedStepId ? `SCOPED (step "${scopedStepId}"): ${totalPass}/${doc.steps.length} steps currently pass \u2014 run a full dod_check (no step) to verify completion` : `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`;
+  const summary = tampered ? `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}` : baseSummary;
   return {
     overall,
     steps: stepResults,
-    summary: `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`,
+    summary,
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    proof_fingerprint: proofFingerprint
+    proof_fingerprint: proofFingerprint,
+    ...scopedStepId ? { scoped: true, ran_step_id: scopedStepId } : {},
+    ...tampered ? { tampered: true } : {}
   };
 }
 
@@ -21396,22 +21425,26 @@ function renderMarkdown(doc) {
   const l = [];
   l.push(`# ${doc.title} \u2014 Requirements Spec`);
   l.push("");
-  l.push("> **For Claude (/goal):** Work through each incomplete step below.");
-  l.push("> 1. Mark a step `[>]` when you begin working on it.");
-  l.push("> 2. Call `dod_check` to verify proofs \u2014 do NOT mark proofs manually.");
-  l.push("> 3. A step is complete when ALL its proofs pass via `dod_check`.");
-  l.push("> 4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("> 4b. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
-  l.push("> 5. Continue until `dod_check` returns PASS \u2014 then stop and report done.");
-  l.push(">");
-  l.push(`> **Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
-  l.push(">");
-  l.push("> **\u{1F512} Anti-cheat:** Proofs are stored canonically in MCP storage (dod-guard).");
-  l.push("> `dod_check` executes commands from the canonical copy, not this markdown file.");
-  l.push("> Editing proof text here has no effect on verification.");
-  l.push("> Store tampering is **logged and detectable** \u2014 each check prints a proof-set fingerprint.");
-  l.push("> Manual proofs are confirmed by the human directly (elicitation / dialog) during `dod_check` \u2014");
-  l.push("> Claude cannot self-confirm them. A confirmed PASS is cached until the proof changes.");
+  l.push("<claude_instructions>");
+  l.push("**For Claude (/goal):** Work through each incomplete step below.");
+  l.push("1. Mark a step `[>]` when you begin working on it.");
+  l.push("2. Call `dod_check` to verify proofs \u2014 do NOT mark proofs manually.");
+  l.push("   While iterating on one step, pass `step: N` to verify just that step fast (other steps are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
+  l.push("3. A step is complete when ALL its proofs pass via `dod_check`.");
+  l.push("4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
+  l.push("4b. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
+  l.push("4c. After a step's proofs all pass, commit that step before starting the next \u2014 one commit per step (clean, bisectable history).");
+  l.push("5. Continue until `dod_check` returns PASS \u2014 then stop and report done.");
+  l.push("");
+  l.push(`**Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
+  l.push("");
+  l.push("**\u{1F512} Anti-cheat:** Proofs are stored canonically in MCP storage (dod-guard).");
+  l.push("`dod_check` executes commands from the canonical copy, not this markdown file.");
+  l.push("Editing proof text here has no effect on verification.");
+  l.push("Store tampering is **logged and detectable** \u2014 each check prints a proof-set fingerprint.");
+  l.push("Manual proofs are confirmed by the human directly (elicitation / dialog) during `dod_check` \u2014");
+  l.push("Claude cannot self-confirm them. A confirmed PASS is cached until the proof changes.");
+  l.push("</claude_instructions>");
   l.push("");
   l.push(`**Goal:** ${doc.goal}`);
   l.push("");
@@ -21423,38 +21456,33 @@ function renderMarkdown(doc) {
   }
   l.push("");
   l.push("---");
+  const pushSection = (heading, tag, body) => {
+    l.push("");
+    l.push(`## ${heading}`);
+    l.push("");
+    l.push(`<${tag}>`);
+    l.push(body);
+    l.push(`</${tag}>`);
+  };
   if (doc.sections.decisions) {
-    l.push("");
-    l.push("## Decisions (locked with user)");
-    l.push("");
-    l.push(doc.sections.decisions);
+    pushSection("Decisions (locked with user)", "decisions", doc.sections.decisions);
   }
   if (doc.sections.current_state) {
-    l.push("");
-    l.push("## Current state");
-    l.push("");
-    l.push(doc.sections.current_state);
+    pushSection("Current state", "current_state", doc.sections.current_state);
   }
-  l.push("");
-  l.push("## Requirements");
-  l.push("");
-  l.push(doc.sections.requirements);
+  pushSection("Requirements", "requirements", doc.sections.requirements);
   if (doc.sections.research_notes) {
-    l.push("");
-    l.push("## Research Notes");
-    l.push("");
-    l.push(doc.sections.research_notes);
+    pushSection("Research Notes", "research_notes", doc.sections.research_notes);
   }
   if (doc.sections.open_questions) {
-    l.push("");
-    l.push("## Open Questions");
-    l.push("");
-    l.push(doc.sections.open_questions);
+    pushSection("Open Questions", "open_questions", doc.sections.open_questions);
   }
   l.push("");
   l.push("---");
   l.push("");
   l.push("## Definition of Done");
+  l.push("");
+  l.push("<definition_of_done>");
   for (let i = 0; i < doc.steps.length; i++) {
     const step = doc.steps[i];
     const allPass = step.proofs.every((p) => p.last_status === "pass" || p.last_status === "skipped");
@@ -21476,11 +21504,10 @@ function renderMarkdown(doc) {
       }
     }
   }
+  l.push("");
+  l.push("</definition_of_done>");
   if (doc.sections.open_risks) {
-    l.push("");
-    l.push("## Open risks");
-    l.push("");
-    l.push(doc.sections.open_risks);
+    pushSection("Open risks", "open_risks", doc.sections.open_risks);
   }
   if (doc.amendments.length > 0) {
     l.push("");
@@ -21501,6 +21528,7 @@ async function writeMarkdown(doc) {
 }
 function updateDocFromCheckResult(doc, result) {
   for (const stepResult of result.steps) {
+    if (result.scoped && stepResult.id !== result.ran_step_id) continue;
     const step = doc.steps.find((s) => s.id === stepResult.id);
     if (!step) continue;
     for (const proofResult of stepResult.proofs) {
@@ -21511,9 +21539,10 @@ function updateDocFromCheckResult(doc, result) {
       proof.last_checked = result.timestamp;
     }
   }
+  if (result.scoped) return;
   doc.last_check = {
     timestamp: result.timestamp,
-    overall: result.overall,
+    overall: result.overall === "pass" ? "pass" : "fail",
     summary: result.summary
   };
 }
@@ -21521,6 +21550,11 @@ function formatCheckResult(result) {
   const l = [];
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
   l.push("");
+  if (result.scoped) {
+    l.push(`\u23F3 **Scoped run \u2014 step "${result.ran_step_id}" only.** Other steps shown from their last check, not re-run.`);
+    l.push("This is NOT a completion verdict. Run `dod_check` with no `step` to verify the whole DoD.");
+    l.push("");
+  }
   for (const step of result.steps) {
     const passCount = step.proofs.filter((p) => p.status === "pass").length;
     const skipCount = step.proofs.filter((p) => p.status === "skipped").length;
@@ -21977,19 +22011,65 @@ function suggestionFor(tool) {
 }
 var currentOs = process.platform;
 
+// src/baseline.ts
+var HARD_MANDATORY = [
+  { cat: "integration_wiring", label: "Integration (wiring): a structural grep proving the change is connected to the real system (import in a real caller, route registration, public export)." },
+  { cat: "integration_behavioral", label: "Integration (behavioral): exercise the change through the system's actual entry point (API/CLI/page render), not a test harness." },
+  { cat: "test", label: "Full test suite: a proof that the whole suite stays green (no regressions)." }
+];
+var STRONG = ["test", "tdd", "integration_behavioral", "manual"];
+var WEAK = ["structure", "lint", "format"];
+function validateBaseline(type, steps) {
+  const present = /* @__PURE__ */ new Set();
+  for (const s of steps) for (const p of s.proofs) present.add(p.category);
+  const errors = [];
+  for (const m of HARD_MANDATORY) {
+    if (!present.has(m.cat)) {
+      errors.push(`Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`);
+    }
+  }
+  const warnings = [];
+  if (!present.has("tdd")) {
+    warnings.push(
+      type === "bug" ? 'No "tdd" proof. A bug fix should include a regression test that fails first (red), then passes.' : 'No "tdd" proof. New functionality should include a fail-first unit test.'
+    );
+  }
+  for (const s of steps) {
+    if (s.proofs.length === 0) continue;
+    const hasStrong = s.proofs.some((p) => STRONG.includes(p.category));
+    const allWeak = s.proofs.every((p) => WEAK.includes(p.category));
+    if (!hasStrong && allWeak) {
+      warnings.push(`Step "${s.title}" has only presence/structural proofs \u2014 these confirm code exists, not that it works. Add a behavioral or test proof.`);
+    }
+  }
+  return { errors, warnings };
+}
+
 // src/index.ts
 var server = new McpServer({
   name: "dod-guard",
   version: "1.0.0"
 });
 var PredicateSchema = external_exports.object({
-  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual"]),
+  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review"]),
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional()
 });
+var ProofCategorySchema = external_exports.enum([
+  "lint",
+  "format",
+  "tdd",
+  "structure",
+  "test",
+  "integration_wiring",
+  "integration_behavioral",
+  "manual",
+  "other"
+]);
 var ProofInputSchema = external_exports.object({
   command: external_exports.string(),
   predicate: PredicateSchema,
-  description: external_exports.string()
+  description: external_exports.string(),
+  category: ProofCategorySchema.describe("Company-baseline category. Mandatory categories (integration_wiring, integration_behavioral, test) are enforced at creation \u2014 see standards/dod-baselines.md.")
 });
 var StepInputSchema = external_exports.object({
   title: external_exports.string(),
@@ -22030,18 +22110,38 @@ server.tool(
   {
     title: external_exports.string().describe("Feature/plan title"),
     goal: external_exports.string().describe("One-sentence goal"),
+    type: external_exports.enum(["bug", "general"]).describe("Work type \u2014 selects the company baseline (standards/dod-baselines.md)."),
     cwd: external_exports.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: external_exports.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
     steps: external_exports.array(StepInputSchema).describe("DoD steps with proof commands and predicates")
   },
-  async ({ title, goal, cwd, markdown_path, sections, steps }) => {
+  async ({ title, goal, type, cwd, markdown_path, sections, steps }) => {
     const resolvedCwd = path4.resolve(cwd);
     const osError = await checkCommandsForOs(
       steps.map((s) => ({ proofs: s.proofs.map((p) => ({ command: p.command, predicate: p.predicate })) })),
       resolvedCwd
     );
     if (osError) return osError;
+    const baseline = validateBaseline(type, steps.map((s) => ({
+      title: s.title,
+      proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type } }))
+    })));
+    if (baseline.errors.length > 0) {
+      return {
+        content: [{
+          type: "text",
+          text: [
+            `ERROR: this ${type} DoD does not meet the company baseline (standards/dod-baselines.md).`,
+            "",
+            ...baseline.errors.map((e) => `  \u2022 ${e}`),
+            "",
+            "Add proofs for the missing categories, then retry. If a category genuinely cannot apply",
+            "(e.g. no runnable entry point), say so to the user and document the exception."
+          ].join("\n")
+        }]
+      };
+    }
     const id = generateId();
     const date3 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
     const dodSteps = steps.map((s, si) => ({
@@ -22052,6 +22152,7 @@ server.tool(
         command: p.command,
         predicate: p.predicate,
         description: p.description,
+        category: p.category,
         last_status: "pending"
       }))
     }));
@@ -22064,6 +22165,7 @@ server.tool(
       title,
       goal,
       date: date3,
+      type,
       cwd: resolvedCwd,
       markdown_path: path4.resolve(markdown_path),
       created_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -22076,6 +22178,7 @@ server.tool(
     await save(doc);
     await writeMarkdown(doc);
     const proofCount = dodSteps.reduce((sum, s) => sum + s.proofs.length, 0);
+    const warningBlock = baseline.warnings.length > 0 ? ["", "\u26A0\uFE0F Baseline advisories (not blocking):", ...baseline.warnings.map((w) => `  \u2022 ${w}`)] : [];
     return {
       content: [{
         type: "text",
@@ -22087,10 +22190,16 @@ server.tool(
           `Steps: ${dodSteps.length}`,
           `Proofs: ${proofCount}`,
           `Proof fingerprint: ${fingerprint}`,
+          ...warningBlock,
           "",
           "Proof commands are stored canonically in MCP. Editing the markdown file cannot affect verification.",
           "Each dod_check prints the proof fingerprint \u2014 compare to detect store tampering.",
-          "Use dod_check to run verification."
+          "",
+          "NEXT \u2014 baseline check: run `dod_check` now, before implementing. Expect overall FAIL with",
+          "proofs RED (the feature does not exist yet). This validates every proof command executes on",
+          "this OS \u2014 a 'command not found' here means the proof is mis-authored; fix it via dod_amend now",
+          "rather than discovering it mid-implementation. TDD proofs SHOULD be red at baseline (that is the",
+          "required red phase). Then implement and re-check."
         ].join("\n")
       }]
     };
@@ -22098,15 +22207,26 @@ server.tool(
 );
 var MANUAL_TIMEOUT_MS = 10 * 60 * 1e3;
 function manualInstructions(proof) {
+  const isReview = proof.predicate.type === "review";
   const lines = [proof.description];
-  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual") {
+  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual" && !isReview) {
     lines.push("", `Steps / command: ${proof.command}`);
   }
-  lines.push("", "Confirm PASS only after you have personally verified this works as described.");
+  if (isReview) {
+    lines.push(
+      "",
+      "Run `/code-review` (fresh context) against the current diff vs the DoD requirements.",
+      "Confirm PASS only if it reports no gaps affecting correctness or the stated requirements."
+    );
+  } else {
+    lines.push("", "Confirm PASS only after you have personally verified this works as described.");
+  }
   return lines.join("\n");
 }
 function buildConfirmer() {
   return async (proof) => {
+    const isReview = proof.predicate.type === "review";
+    const promptLabel = isReview ? "Code review required" : "Manual verification required";
     const instructions = manualInstructions(proof);
     playJingle();
     const caps = server.server.getClientCapabilities();
@@ -22114,7 +22234,7 @@ function buildConfirmer() {
       try {
         const result = await server.server.elicitInput(
           {
-            message: `Manual verification required:
+            message: `${promptLabel}:
 
 ${instructions}`,
             requestedSchema: {
@@ -22162,13 +22282,14 @@ Click YES only if it passed.`,
 }
 server.tool(
   "dod_check",
-  "Run ALL proof commands for a DoD from canonical (locked) storage, mark pass/fail, update the markdown, and return an overall PASS/FAIL verdict. Use as /goal completion condition. Commands are executed from MCP's locked copy \u2014 the markdown file cannot influence results.",
+  "Verify a DoD's proofs from canonical (locked) storage, mark pass/fail, update the markdown, and return a verdict. Commands run from MCP's locked copy \u2014 the markdown cannot influence results. Pass `step` to verify only that one step (fast iteration); a scoped run returns INCOMPLETE and never PASS. Run with NO `step` for the full verdict \u2014 use that as the /goal completion condition.",
   {
     dod_id: external_exports.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: external_exports.string().optional().describe("Markdown file path \u2014 resolves to DoD by path if no ID given"),
-    cwd_override: external_exports.string().optional().describe("Override working directory for this check run")
+    cwd_override: external_exports.string().optional().describe("Override working directory for this check run"),
+    step: external_exports.number().int().positive().optional().describe("1-based step number to verify in isolation. Omit to run the full check. Scoped runs carry other steps forward unrun and always return INCOMPLETE (only a full run can return PASS).")
   },
-  async ({ dod_id, path: mdPath, cwd_override }) => {
+  async ({ dod_id, path: mdPath, cwd_override, step }) => {
     let doc = null;
     if (dod_id) {
       doc = await load(dod_id);
@@ -22184,15 +22305,28 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
         }]
       };
     }
-    const result = await checkDocument(doc, cwd_override, buildConfirmer());
+    let stepId;
+    if (step !== void 0) {
+      const target = doc.steps[step - 1];
+      if (!target) {
+        return {
+          content: [{
+            type: "text",
+            text: `ERROR: step ${step} is out of range \u2014 this DoD has ${doc.steps.length} step(s). Use a 1-based step number, or omit \`step\` to run the full check.`
+          }]
+        };
+      }
+      stepId = target.id;
+    }
+    const result = await checkDocument(doc, cwd_override, buildConfirmer(), { stepId });
     let tamperWarning = "";
-    if (doc.proof_fingerprint && result.proof_fingerprint !== doc.proof_fingerprint) {
+    if (result.tampered) {
       tamperWarning = `
 
-\u26A0\uFE0F TAMPER WARNING: Proof fingerprint mismatch!
-  Original: ${doc.proof_fingerprint}
-  Current:  ${result.proof_fingerprint}
-  Proofs in the store may have been modified outside of dod_amend.
+\u{1F6D1} TAMPER DETECTED \u2014 verdict forced to FAIL.
+  Stored:  ${doc.proof_fingerprint}
+  Current: ${result.proof_fingerprint}
+  The proof set was changed outside dod_amend. Revert the edit, or make the change through dod_amend (which re-locks the fingerprint with a logged reason).
 `;
     } else if (!doc.proof_fingerprint) {
       doc.proof_fingerprint = result.proof_fingerprint;
