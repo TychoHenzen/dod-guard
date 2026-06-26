@@ -19,9 +19,11 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("**For Claude (/goal):** Work through each incomplete step below.");
   l.push("1. Mark a step `[>]` when you begin working on it.");
   l.push("2. Call `dod_check` to verify proofs — do NOT mark proofs manually.");
+  l.push("   While iterating on one step, pass `step: N` to verify just that step fast (other steps are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
   l.push("3. A step is complete when ALL its proofs pass via `dod_check`.");
   l.push("4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
   l.push("4b. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
+  l.push("4c. After a step's proofs all pass, commit that step before starting the next — one commit per step (clean, bisectable history).");
   l.push("5. Continue until `dod_check` returns PASS — then stop and report done.");
   l.push("");
   l.push(`**Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
@@ -136,6 +138,11 @@ export async function writeMarkdown(doc: DodDocument): Promise<void> {
 
 export function updateDocFromCheckResult(doc: DodDocument, result: CheckResult): void {
   for (const stepResult of result.steps) {
+    // Scoped run: only the freshly-executed step has real new results. Other
+    // steps were carried from persisted state — do not write them back (that
+    // would clobber a never-run proof's "pending" with "skipped").
+    if (result.scoped && stepResult.id !== result.ran_step_id) continue;
+
     const step = doc.steps.find(s => s.id === stepResult.id);
     if (!step) continue;
     for (const proofResult of stepResult.proofs) {
@@ -146,9 +153,14 @@ export function updateDocFromCheckResult(doc: DodDocument, result: CheckResult):
       proof.last_checked = result.timestamp;
     }
   }
+
+  // A scoped run is not a completion verdict — leave the canonical last_check
+  // (set only by full runs) untouched so a prior PASS isn't masked as incomplete.
+  if (result.scoped) return;
+
   doc.last_check = {
     timestamp: result.timestamp,
-    overall: result.overall,
+    overall: result.overall === "pass" ? "pass" : "fail",
     summary: result.summary,
   };
 }
@@ -157,6 +169,11 @@ export function formatCheckResult(result: CheckResult): string {
   const l: string[] = [];
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
   l.push("");
+  if (result.scoped) {
+    l.push(`⏳ **Scoped run — step "${result.ran_step_id}" only.** Other steps shown from their last check, not re-run.`);
+    l.push("This is NOT a completion verdict. Run `dod_check` with no `step` to verify the whole DoD.");
+    l.push("");
+  }
 
   for (const step of result.steps) {
     const passCount = step.proofs.filter(p => p.status === "pass").length;

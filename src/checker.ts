@@ -148,13 +148,47 @@ async function executeProof(proof: Proof, cwd: string, confirm?: Confirmer): Pro
   };
 }
 
-export async function checkDocument(doc: DodDocument, cwdOverride?: string, confirm?: Confirmer): Promise<CheckResult> {
+/**
+ * Build a step result from each proof's persisted last_status WITHOUT executing
+ * any command. Used for steps other than the target on a scoped run, so a
+ * `--step N` check costs only the target step's proofs.
+ */
+function carryForwardStep(step: DodDocument["steps"][number]): StepResult {
+  const proofs: ProofResult[] = step.proofs.map((p) => ({
+    id: p.id,
+    description: p.description,
+    // A never-run proof (last_status "pending") has no result to carry; surface
+    // it as "skipped" for display. It is not persisted on a scoped run.
+    status: p.last_status === "pending" ? "skipped" : p.last_status,
+    command: p.command,
+    output: p.last_output,
+  }));
+  const allPass = step.proofs.length > 0 && step.proofs.every((p) => p.last_status === "pass");
+  return { id: step.id, title: step.title, status: allPass ? "pass" : "fail", proofs };
+}
+
+export async function checkDocument(
+  doc: DodDocument,
+  cwdOverride?: string,
+  confirm?: Confirmer,
+  opts?: { stepId?: string },
+): Promise<CheckResult> {
   const cwd = cwdOverride ?? doc.cwd;
+  const scopedStepId = opts?.stepId;
   const stepResults: StepResult[] = [];
   let totalPass = 0;
   let totalFail = 0;
 
   for (const step of doc.steps) {
+    // Scoped run: execute only the target step; carry the rest forward unrun.
+    if (scopedStepId && step.id !== scopedStepId) {
+      const carried = carryForwardStep(step);
+      stepResults.push(carried);
+      if (carried.status === "pass") totalPass++;
+      else totalFail++;
+      continue;
+    }
+
     const proofResults: ProofResult[] = [];
     let stepPassed = true;
 
@@ -186,12 +220,23 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, conf
   ).join("\n");
   const proofFingerprint = createHash("sha256").update(fingerprintData).digest("hex").slice(0, 12);
 
-  const overall = totalFail === 0 ? "pass" : "fail";
+  // A scoped run verifies only one step, so it can never assert the whole DoD is
+  // done — overall is always "incomplete". Only a full run yields pass/fail. This
+  // is what stops a `--step N` run from satisfying a /goal "dod_check PASS" gate.
+  const overall: CheckResult["overall"] = scopedStepId
+    ? "incomplete"
+    : totalFail === 0 ? "pass" : "fail";
+
+  const summary = scopedStepId
+    ? `SCOPED (step "${scopedStepId}"): ${totalPass}/${doc.steps.length} steps currently pass — run a full dod_check (no step) to verify completion`
+    : `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`;
+
   return {
     overall,
     steps: stepResults,
-    summary: `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`,
+    summary,
     timestamp: new Date().toISOString(),
     proof_fingerprint: proofFingerprint,
+    ...(scopedStepId ? { scoped: true, ran_step_id: scopedStepId } : {}),
   };
 }

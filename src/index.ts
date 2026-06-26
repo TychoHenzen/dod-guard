@@ -246,13 +246,14 @@ function buildConfirmer(): Confirmer {
 
 server.tool(
   "dod_check",
-  "Run ALL proof commands for a DoD from canonical (locked) storage, mark pass/fail, update the markdown, and return an overall PASS/FAIL verdict. Use as /goal completion condition. Commands are executed from MCP's locked copy — the markdown file cannot influence results.",
+  "Verify a DoD's proofs from canonical (locked) storage, mark pass/fail, update the markdown, and return a verdict. Commands run from MCP's locked copy — the markdown cannot influence results. Pass `step` to verify only that one step (fast iteration); a scoped run returns INCOMPLETE and never PASS. Run with NO `step` for the full verdict — use that as the /goal completion condition.",
   {
     dod_id: z.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
     cwd_override: z.string().optional().describe("Override working directory for this check run"),
+    step: z.number().int().positive().optional().describe("1-based step number to verify in isolation. Omit to run the full check. Scoped runs carry other steps forward unrun and always return INCOMPLETE (only a full run can return PASS)."),
   },
-  async ({ dod_id, path: mdPath, cwd_override }) => {
+  async ({ dod_id, path: mdPath, cwd_override, step }) => {
     let doc: DodDocument | null = null;
 
     if (dod_id) {
@@ -270,7 +271,21 @@ server.tool(
       };
     }
 
-    const result = await checkDocument(doc, cwd_override, buildConfirmer());
+    let stepId: string | undefined;
+    if (step !== undefined) {
+      const target = doc.steps[step - 1];
+      if (!target) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: `ERROR: step ${step} is out of range — this DoD has ${doc.steps.length} step(s). Use a 1-based step number, or omit \`step\` to run the full check.`,
+          }],
+        };
+      }
+      stepId = target.id;
+    }
+
+    const result = await checkDocument(doc, cwd_override, buildConfirmer(), { stepId });
 
     // Tamper detection: compare stored fingerprint to current proof-set
     let tamperWarning = "";

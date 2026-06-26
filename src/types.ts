@@ -81,11 +81,20 @@ export interface DodSections {
 }
 
 export interface CheckResult {
-  overall: "pass" | "fail";
+  /**
+   * "incomplete" is reserved for scoped (single-step) runs: they verify only the
+   * target step and carry other steps forward, so they can never assert that the
+   * whole DoD is done. Only a full (unscoped) run yields "pass"/"fail".
+   */
+  overall: "pass" | "fail" | "incomplete";
   steps: StepResult[];
   summary: string;
   timestamp: string;
   proof_fingerprint: string;
+  /** True when only one step was executed (`dod_check --step N`); others carried. */
+  scoped?: boolean;
+  /** The step id that was freshly executed on a scoped run. */
+  ran_step_id?: string;
 }
 
 export interface StepResult {

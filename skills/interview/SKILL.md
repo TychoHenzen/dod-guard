@@ -436,9 +436,9 @@ Goal prompt for fresh context:
 <task>Implement all <N> steps in the DoD (ID: <dod_id>).</task>
 <reference>DoD markdown: docs/plans/<filename> — sections and steps are wrapped in semantic XML tags for precise parsing.</reference>
 <process>
-Work through each step sequentially. After completing a step, call dod_check to verify its proofs. If a proof is unreasonable, call dod_amend with a reason instead of forcing it.
+Work through each step sequentially. After completing a step, call dod_check with `step: N` to verify just that step (fast — other steps are carried, not re-run). If a proof is unreasonable, call dod_amend with a reason instead of forcing it. When all steps are done, call dod_check with no `step` for the full PASS verdict.
 </process>
-<success_criteria>dod_check returns overall PASS for every machine-checkable proof.</success_criteria>
+<success_criteria>A full dod_check (no `step`) returns overall PASS for every machine-checkable proof. Scoped (`step: N`) runs return INCOMPLETE and never satisfy completion.</success_criteria>
 <on_completion>List every remaining manual step the user must complete before this work is done.</on_completion>
 ```
 
