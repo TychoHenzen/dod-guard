@@ -9,6 +9,7 @@ import { writeMarkdown, updateDocFromCheckResult, formatCheckResult } from "./au
 import { parseMarkdown } from "./parser.js";
 import { playJingle, showMessageBox } from "./notify.js";
 import { findMissingTools, suggestionFor, currentOs, type MissingTool } from "./command-check.js";
+import { validateBaseline } from "./baseline.js";
 import type { Confirmer, ManualAnswer } from "./manual.js";
 import type { DodDocument, Predicate, Proof, Step } from "./types.js";
 
@@ -20,14 +21,20 @@ const server = new McpServer({
 // ── Shared schemas ──────────────────────────────────────────────────
 
 const PredicateSchema = z.object({
-  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual"]),
+  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review"]),
   value: z.union([z.number(), z.string()]).optional(),
 });
+
+const ProofCategorySchema = z.enum([
+  "lint", "format", "tdd", "structure", "test",
+  "integration_wiring", "integration_behavioral", "manual", "other",
+]);
 
 const ProofInputSchema = z.object({
   command: z.string(),
   predicate: PredicateSchema,
   description: z.string(),
+  category: ProofCategorySchema.describe("Company-baseline category. Mandatory categories (integration_wiring, integration_behavioral, test) are enforced at creation — see standards/dod-baselines.md."),
 });
 
 const StepInputSchema = z.object({
@@ -88,18 +95,41 @@ server.tool(
   {
     title: z.string().describe("Feature/plan title"),
     goal: z.string().describe("One-sentence goal"),
+    type: z.enum(["bug", "general"]).describe("Work type — selects the company baseline (standards/dod-baselines.md)."),
     cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: z.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
     steps: z.array(StepInputSchema).describe("DoD steps with proof commands and predicates"),
   },
-  async ({ title, goal, cwd, markdown_path, sections, steps }) => {
+  async ({ title, goal, type, cwd, markdown_path, sections, steps }) => {
     const resolvedCwd = path.resolve(cwd);
     const osError = await checkCommandsForOs(
       steps.map((s) => ({ proofs: s.proofs.map((p) => ({ command: p.command, predicate: p.predicate as Predicate })) })),
       resolvedCwd,
     );
     if (osError) return osError;
+
+    // Baseline enforcement: reject a DoD missing the mandatory proof categories
+    // instead of trusting the author to follow the standard.
+    const baseline = validateBaseline(type, steps.map((s) => ({
+      title: s.title,
+      proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type } })),
+    })));
+    if (baseline.errors.length > 0) {
+      return {
+        content: [{
+          type: "text" as const,
+          text: [
+            `ERROR: this ${type} DoD does not meet the company baseline (standards/dod-baselines.md).`,
+            "",
+            ...baseline.errors.map((e) => `  • ${e}`),
+            "",
+            "Add proofs for the missing categories, then retry. If a category genuinely cannot apply",
+            "(e.g. no runnable entry point), say so to the user and document the exception.",
+          ].join("\n"),
+        }],
+      };
+    }
 
     const id = store.generateId();
     const date = new Date().toISOString().split("T")[0];
@@ -112,6 +142,7 @@ server.tool(
         command: p.command,
         predicate: p.predicate as Predicate,
         description: p.description,
+        category: p.category,
         last_status: "pending" as const,
       })),
     }));
@@ -127,6 +158,7 @@ server.tool(
       title,
       goal,
       date,
+      type,
       cwd: resolvedCwd,
       markdown_path: path.resolve(markdown_path),
       created_at: new Date().toISOString(),
@@ -142,6 +174,10 @@ server.tool(
 
     const proofCount = dodSteps.reduce((sum, s) => sum + s.proofs.length, 0);
 
+    const warningBlock = baseline.warnings.length > 0
+      ? ["", "⚠️ Baseline advisories (not blocking):", ...baseline.warnings.map((w) => `  • ${w}`)]
+      : [];
+
     return {
       content: [{
         type: "text" as const,
@@ -153,10 +189,16 @@ server.tool(
           `Steps: ${dodSteps.length}`,
           `Proofs: ${proofCount}`,
           `Proof fingerprint: ${fingerprint}`,
+          ...warningBlock,
           "",
           "Proof commands are stored canonically in MCP. Editing the markdown file cannot affect verification.",
           "Each dod_check prints the proof fingerprint — compare to detect store tampering.",
-          "Use dod_check to run verification.",
+          "",
+          "NEXT — baseline check: run `dod_check` now, before implementing. Expect overall FAIL with",
+          "proofs RED (the feature does not exist yet). This validates every proof command executes on",
+          "this OS — a 'command not found' here means the proof is mis-authored; fix it via dod_amend now",
+          "rather than discovering it mid-implementation. TDD proofs SHOULD be red at baseline (that is the",
+          "required red phase). Then implement and re-check.",
         ].join("\n"),
       }],
     };
@@ -173,16 +215,27 @@ server.tool(
 const MANUAL_TIMEOUT_MS = 10 * 60 * 1000;
 
 function manualInstructions(proof: Proof): string {
+  const isReview = proof.predicate.type === "review";
   const lines = [proof.description];
-  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual") {
+  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual" && !isReview) {
     lines.push("", `Steps / command: ${proof.command}`);
   }
-  lines.push("", "Confirm PASS only after you have personally verified this works as described.");
+  if (isReview) {
+    lines.push(
+      "",
+      "Run `/code-review` (fresh context) against the current diff vs the DoD requirements.",
+      "Confirm PASS only if it reports no gaps affecting correctness or the stated requirements.",
+    );
+  } else {
+    lines.push("", "Confirm PASS only after you have personally verified this works as described.");
+  }
   return lines.join("\n");
 }
 
 function buildConfirmer(): Confirmer {
   return async (proof: Proof): Promise<ManualAnswer> => {
+    const isReview = proof.predicate.type === "review";
+    const promptLabel = isReview ? "Code review required" : "Manual verification required";
     const instructions = manualInstructions(proof);
 
     // Draw attention with a distinctive jingle before prompting.
@@ -194,7 +247,7 @@ function buildConfirmer(): Confirmer {
       try {
         const result = await server.server.elicitInput(
           {
-            message: `Manual verification required:\n\n${instructions}`,
+            message: `${promptLabel}:\n\n${instructions}`,
             requestedSchema: {
               type: "object",
               properties: {
@@ -246,13 +299,14 @@ function buildConfirmer(): Confirmer {
 
 server.tool(
   "dod_check",
-  "Run ALL proof commands for a DoD from canonical (locked) storage, mark pass/fail, update the markdown, and return an overall PASS/FAIL verdict. Use as /goal completion condition. Commands are executed from MCP's locked copy — the markdown file cannot influence results.",
+  "Verify a DoD's proofs from canonical (locked) storage, mark pass/fail, update the markdown, and return a verdict. Commands run from MCP's locked copy — the markdown cannot influence results. Pass `step` to verify only that one step (fast iteration); a scoped run returns INCOMPLETE and never PASS. Run with NO `step` for the full verdict — use that as the /goal completion condition.",
   {
     dod_id: z.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
     cwd_override: z.string().optional().describe("Override working directory for this check run"),
+    step: z.number().int().positive().optional().describe("1-based step number to verify in isolation. Omit to run the full check. Scoped runs carry other steps forward unrun and always return INCOMPLETE (only a full run can return PASS)."),
   },
-  async ({ dod_id, path: mdPath, cwd_override }) => {
+  async ({ dod_id, path: mdPath, cwd_override, step }) => {
     let doc: DodDocument | null = null;
 
     if (dod_id) {
@@ -270,12 +324,27 @@ server.tool(
       };
     }
 
-    const result = await checkDocument(doc, cwd_override, buildConfirmer());
+    let stepId: string | undefined;
+    if (step !== undefined) {
+      const target = doc.steps[step - 1];
+      if (!target) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: `ERROR: step ${step} is out of range — this DoD has ${doc.steps.length} step(s). Use a 1-based step number, or omit \`step\` to run the full check.`,
+          }],
+        };
+      }
+      stepId = target.id;
+    }
 
-    // Tamper detection: compare stored fingerprint to current proof-set
+    const result = await checkDocument(doc, cwd_override, buildConfirmer(), { stepId });
+
+    // Tamper detection (blocking): a fingerprint mismatch forces the verdict to
+    // FAIL in checkDocument. Surface why, and how to legitimise a real change.
     let tamperWarning = "";
-    if (doc.proof_fingerprint && result.proof_fingerprint !== doc.proof_fingerprint) {
-      tamperWarning = `\n\n⚠️ TAMPER WARNING: Proof fingerprint mismatch!\n  Original: ${doc.proof_fingerprint}\n  Current:  ${result.proof_fingerprint}\n  Proofs in the store may have been modified outside of dod_amend.\n`;
+    if (result.tampered) {
+      tamperWarning = `\n\n🛑 TAMPER DETECTED — verdict forced to FAIL.\n  Stored:  ${doc.proof_fingerprint}\n  Current: ${result.proof_fingerprint}\n  The proof set was changed outside dod_amend. Revert the edit, or make the change through dod_amend (which re-locks the fingerprint with a logged reason).\n`;
     } else if (!doc.proof_fingerprint) {
       // Backfill fingerprint for pre-existing DoDs that lack one
       doc.proof_fingerprint = result.proof_fingerprint;

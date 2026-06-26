@@ -244,10 +244,16 @@ Instead of writing the spec file directly, call the `dod_create` MCP tool to cre
 
 **Call `dod_create` with this structure:**
 
+Every proof needs a `category` (company-baseline tag). `dod_create` **rejects** a DoD
+missing the mandatory categories `integration_wiring`, `integration_behavioral`, and
+`test`, and warns when `tdd` is absent or a step has only presence/structural proofs.
+The DoD also needs a `type` (`bug` or `general`) to select the baseline.
+
 ```json
 {
   "title": "[Feature Name]",
   "goal": "[One sentence goal from confirmed summary]",
+  "type": "general",
   "cwd": "[Absolute path to project root / working directory for running commands]",
   "markdown_path": "[Absolute path to docs/plans/YYYY-MM-DD-<topic>.md]",
   "sections": {
@@ -265,23 +271,33 @@ Instead of writing the spec file directly, call the `dod_create` MCP tool to cre
         {
           "command": "cargo test -- test_name",
           "predicate": {"type": "exit_code", "value": 0},
+          "category": "test",
           "description": "exit 0, all tests pass"
         },
         {
-          "command": "grep \"pattern\" src/file.rs",
+          "command": "grep -w \"register_route\" src/app.rs",
           "predicate": {"type": "exit_code", "value": 0},
-          "description": "pattern found in expected file"
+          "category": "integration_wiring",
+          "description": "feature is wired into the real router (word-boundary match)"
         },
         {
-          "command": "grep \"removed_thing\" src/file.rs",
-          "predicate": {"type": "exit_code", "value": 1},
-          "description": "exit 1 — grep found no matches (removed_thing is gone)"
+          "command": "curl -fs localhost:8080/feature",
+          "predicate": {"type": "exit_code", "value": 0},
+          "category": "integration_behavioral",
+          "description": "feature reachable through the running system's entry point"
         }
       ]
     }
   ]
 }
 ```
+
+**Proof categories:** `lint`, `format`, `tdd`, `structure`, `test`,
+`integration_wiring`, `integration_behavioral`, `manual`, `other`. Mandatory (enforced
+at create): `integration_wiring` + `integration_behavioral` + `test`. **Precision:**
+presence/removal proofs must match signatures or word boundaries (`grep -w`, `findstr /R`),
+never bare substrings — e.g. `TryStopTracking(dossierId)` vs `TryStopTracking(dossierId, clientId)`
+will collide on a bare substring match.
 
 **Predicate types for proofs:**
 
@@ -295,7 +311,8 @@ Instead of writing the spec file directly, call the `dod_create` MCP tool to cre
 | `output_not_contains` | `"text"` | stdout must NOT contain text (e.g. "no warnings", "no TODO") |
 | `output_not_matches` | `"regex"` | stdout must NOT match regex |
 | `tdd` | `0` | **TDD enforcer.** Must be observed FAILING before it can pass. Run `dod_check` after writing the failing test (RED), then implement (GREEN). Passes only when: seen_failing=true AND command exits with value. |
-| `manual` | _(none)_ | Human-only verification, skipped by checker |
+| `manual` | _(none)_ | Human-only verification, confirmed out-of-band (elicitation/dialog) — the model cannot self-pass it |
+| `review` | _(none)_ | Fresh-context code review. At check time the agent runs `/code-review` against the diff vs requirements and confirms PASS only if no correctness/requirement gaps remain. Verdict arrives via the same un-fakeable channel as `manual`; FAIL is never cached. Use for intent/edge-case correctness that command proofs can't assert. |
 
 **When to use `tdd` predicates:**
 
@@ -421,9 +438,21 @@ Use these categories to ensure coverage. Mandatory categories are marked below p
 | **Integration** (mandatory) | Feature wired into system AND works through real entry point | Two proofs: (1) grep for wiring (import/registration/route), (2) behavioral test through system entry point | `exit_code: 0` or `output_contains` | **Always** (last machine-checkable step) |
 | **Regression** | Bug doesn't recur | Run bug-specific test | `tdd: 0` (proves test was red) | Bug fixes (via TDD) |
 
+## Phase 4.5: Baseline Check
+
+Immediately after `dod_create` succeeds, run `dod_check` once — **before** any implementation. This is a baseline, and it validates two things:
+
+1. **All proofs are RED** — overall **FAIL** is expected and correct here; the feature does not exist yet. TDD proofs in particular MUST be red now (that records the required red phase).
+2. **Every proof command actually runs** — a `command not found` / OS error at baseline means the proof is mis-authored (wrong shell, wrong tool for this OS). Fix it via `dod_amend` now, while it's cheap — not mid-implementation after a 26-amend pileup.
+
+Interpreting the baseline:
+- Proofs failing because the code isn't written yet → good, proceed.
+- Proofs failing because the **command errored** (not found, bad path, tamper) → fix before handing off.
+- A proof that PASSES at baseline (before any code) is suspect — it likely doesn't test the new behavior. Strengthen it.
+
 ## Phase 5: Output /goal Prompt
 
-After creating the locked DoD, always output the `/goal` prompt directly — do NOT offer a choice menu. The user always wants a fresh-context /goal launch after DoD creation.
+After the baseline check, always output the `/goal` prompt directly — do NOT offer a choice menu. The user always wants a fresh-context /goal launch after DoD creation.
 
 Output this exact block:
 
@@ -436,9 +465,9 @@ Goal prompt for fresh context:
 <task>Implement all <N> steps in the DoD (ID: <dod_id>).</task>
 <reference>DoD markdown: docs/plans/<filename> — sections and steps are wrapped in semantic XML tags for precise parsing.</reference>
 <process>
-Work through each step sequentially. After completing a step, call dod_check to verify its proofs. If a proof is unreasonable, call dod_amend with a reason instead of forcing it.
+Work through each step sequentially. After completing a step, call dod_check with `step: N` to verify just that step (fast — other steps are carried, not re-run). If a proof is unreasonable, call dod_amend with a reason instead of forcing it. When all steps are done, call dod_check with no `step` for the full PASS verdict.
 </process>
-<success_criteria>dod_check returns overall PASS for every machine-checkable proof.</success_criteria>
+<success_criteria>A full dod_check (no `step`) returns overall PASS for every machine-checkable proof. Scoped (`step: N`) runs return INCOMPLETE and never satisfy completion.</success_criteria>
 <on_completion>List every remaining manual step the user must complete before this work is done.</on_completion>
 ```
 

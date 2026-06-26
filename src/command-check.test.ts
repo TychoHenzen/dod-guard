@@ -1,9 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { extractCommandNames, findMissingTools } from "./command-check.js";
+import { extractCommandNames, findMissingTools, suggestionFor } from "./command-check.js";
 
 test("extracts a simple command", () => {
   assert.deepEqual(extractCommandNames("grep -i foo file.txt"), ["grep"]);
+});
+
+// Regression (PC-3): a DoD authored with Unix `grep` on a Windows host must be
+// steered to `findstr` at create time, so the 26-amend grep→findstr batch from
+// PBI #31790 cannot recur.
+test("suggests the Windows-native equivalent for a Unix-only tool", () => {
+  assert.equal(suggestionFor("grep"), "findstr");
+  assert.equal(suggestionFor("GREP"), "findstr");
+  assert.equal(suggestionFor("cat"), "type");
+  assert.equal(suggestionFor("npm"), undefined);
 });
 
 test("extracts both sides of a pipe", () => {

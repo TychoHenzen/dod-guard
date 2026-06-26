@@ -1,7 +1,23 @@
 export interface Predicate {
-  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual";
+  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review";
   value?: number | string;
 }
+
+/**
+ * Company-baseline proof category (see standards/dod-baselines.md). Declared
+ * per proof so `dod_create` can enforce that the mandatory categories are present
+ * instead of trusting the author to follow the standard.
+ */
+export type ProofCategory =
+  | "lint"
+  | "format"
+  | "tdd"
+  | "structure"
+  | "test"
+  | "integration_wiring"
+  | "integration_behavioral"
+  | "manual"
+  | "other";
 
 /**
  * Record of a human's confirmation of a `manual` proof.
@@ -27,6 +43,8 @@ export interface Proof {
   command: string;
   predicate: Predicate;
   description: string;
+  /** Baseline category (optional on legacy/imported docs; required by dod_create). */
+  category?: ProofCategory;
   last_status: "pending" | "pass" | "fail" | "skipped";
   last_output?: string;
   last_checked?: string;
@@ -60,6 +78,8 @@ export interface DodDocument {
   markdown_path: string;
   created_at: string;
   locked: boolean;
+  /** Work type, selects the applicable company baseline. Optional on legacy docs. */
+  type?: "bug" | "general";
   sections: DodSections;
   steps: Step[];
   proof_fingerprint?: string;
@@ -81,11 +101,23 @@ export interface DodSections {
 }
 
 export interface CheckResult {
-  overall: "pass" | "fail";
+  /**
+   * "incomplete" is reserved for scoped (single-step) runs: they verify only the
+   * target step and carry other steps forward, so they can never assert that the
+   * whole DoD is done. Only a full (unscoped) run yields "pass"/"fail".
+   */
+  overall: "pass" | "fail" | "incomplete";
   steps: StepResult[];
   summary: string;
   timestamp: string;
   proof_fingerprint: string;
+  /** True when only one step was executed (`dod_check --step N`); others carried. */
+  scoped?: boolean;
+  /** The step id that was freshly executed on a scoped run. */
+  ran_step_id?: string;
+  /** True when the recomputed proof-set fingerprint differs from the stored one
+   * (store edited outside dod_amend). Forces overall to "fail". */
+  tampered?: boolean;
 }
 
 export interface StepResult {

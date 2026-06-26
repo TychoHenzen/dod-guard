@@ -31,6 +31,8 @@ function evaluatePredicate(
       // checks the "green" condition (command exits with expected code).
       return exitCode === (predicate.value as number ?? 0);
     case "manual":
+    case "review":
+      // Out-of-band verdicts are resolved in executeProof, not here.
       return true;
     default:
       return false;
@@ -72,27 +74,33 @@ async function runCommand(proof: Proof, cwd: string): Promise<{ exitCode: number
 }
 
 async function executeProof(proof: Proof, cwd: string, confirm?: Confirmer): Promise<ProofResult> {
-  if (proof.predicate.type === "manual") {
+  // Out-of-band proofs (manual, review) are verified through a channel the model
+  // cannot drive — never by running a command. `review` asks for a fresh-context
+  // code review (/code-review) against the diff vs requirements; the verdict
+  // arrives via the same elicitation/dialog channel as manual proofs.
+  if (proof.predicate.type === "manual" || proof.predicate.type === "review") {
+    const isReview = proof.predicate.type === "review";
+    const label = isReview ? "Code review" : "Manual verification";
     if (!confirm) {
-      // No confirmation channel (e.g. headless run). Fail safe — a manual proof
-      // must never pass without a human, and we never fabricate the answer.
+      // No confirmation channel (e.g. headless run). Fail safe — must never pass
+      // without the out-of-band verdict, and we never fabricate the answer.
       return {
         id: proof.id,
         description: proof.description,
         status: "fail",
         command: proof.command,
-        error: "Manual verification required but no confirmation channel is available (non-interactive run).",
-        output: "Manual verification not confirmed",
+        error: `${label} required but no confirmation channel is available (non-interactive run).`,
+        output: `${label} not confirmed`,
       };
     }
-    const resolution = await resolveManual(proof, confirm);
+    const resolution = await resolveManual(proof, confirm, label);
     return {
       id: proof.id,
       description: proof.description,
       status: resolution.status,
       command: proof.command,
       output: resolution.output,
-      error: resolution.status === "fail" ? "Manual verification was not confirmed as passing." : undefined,
+      error: resolution.status === "fail" ? `${label} was not confirmed as passing.` : undefined,
     };
   }
 
@@ -148,13 +156,47 @@ async function executeProof(proof: Proof, cwd: string, confirm?: Confirmer): Pro
   };
 }
 
-export async function checkDocument(doc: DodDocument, cwdOverride?: string, confirm?: Confirmer): Promise<CheckResult> {
+/**
+ * Build a step result from each proof's persisted last_status WITHOUT executing
+ * any command. Used for steps other than the target on a scoped run, so a
+ * `--step N` check costs only the target step's proofs.
+ */
+function carryForwardStep(step: DodDocument["steps"][number]): StepResult {
+  const proofs: ProofResult[] = step.proofs.map((p) => ({
+    id: p.id,
+    description: p.description,
+    // A never-run proof (last_status "pending") has no result to carry; surface
+    // it as "skipped" for display. It is not persisted on a scoped run.
+    status: p.last_status === "pending" ? "skipped" : p.last_status,
+    command: p.command,
+    output: p.last_output,
+  }));
+  const allPass = step.proofs.length > 0 && step.proofs.every((p) => p.last_status === "pass");
+  return { id: step.id, title: step.title, status: allPass ? "pass" : "fail", proofs };
+}
+
+export async function checkDocument(
+  doc: DodDocument,
+  cwdOverride?: string,
+  confirm?: Confirmer,
+  opts?: { stepId?: string },
+): Promise<CheckResult> {
   const cwd = cwdOverride ?? doc.cwd;
+  const scopedStepId = opts?.stepId;
   const stepResults: StepResult[] = [];
   let totalPass = 0;
   let totalFail = 0;
 
   for (const step of doc.steps) {
+    // Scoped run: execute only the target step; carry the rest forward unrun.
+    if (scopedStepId && step.id !== scopedStepId) {
+      const carried = carryForwardStep(step);
+      stepResults.push(carried);
+      if (carried.status === "pass") totalPass++;
+      else totalFail++;
+      continue;
+    }
+
     const proofResults: ProofResult[] = [];
     let stepPassed = true;
 
@@ -186,12 +228,34 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, conf
   ).join("\n");
   const proofFingerprint = createHash("sha256").update(fingerprintData).digest("hex").slice(0, 12);
 
-  const overall = totalFail === 0 ? "pass" : "fail";
+  // Tamper detection: the stored fingerprint was set by dod_create/dod_amend. If
+  // the recomputed set differs, the store was edited outside dod_amend — block.
+  const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
+
+  // A scoped run verifies only one step, so it can never assert the whole DoD is
+  // done — overall is always "incomplete". Only a full run yields pass/fail. This
+  // is what stops a `--step N` run from satisfying a /goal "dod_check PASS" gate.
+  // Tamper always forces "fail", overriding both pass and incomplete.
+  const overall: CheckResult["overall"] = tampered
+    ? "fail"
+    : scopedStepId
+      ? "incomplete"
+      : totalFail === 0 ? "pass" : "fail";
+
+  const baseSummary = scopedStepId
+    ? `SCOPED (step "${scopedStepId}"): ${totalPass}/${doc.steps.length} steps currently pass — run a full dod_check (no step) to verify completion`
+    : `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`;
+  const summary = tampered
+    ? `TAMPER DETECTED — proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}`
+    : baseSummary;
+
   return {
     overall,
     steps: stepResults,
-    summary: `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`,
+    summary,
     timestamp: new Date().toISOString(),
     proof_fingerprint: proofFingerprint,
+    ...(scopedStepId ? { scoped: true, ran_step_id: scopedStepId } : {}),
+    ...(tampered ? { tampered: true } : {}),
   };
 }

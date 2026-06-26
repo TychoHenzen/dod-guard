@@ -113,3 +113,15 @@ See language-commands.md for per-language delta commands and the <10 threshold l
 4. **Full test suite proof is always required** — verifies no regressions
 5. **Integration proof is always required (two layers)** — a wiring proof (structural grep that the feature is connected to the real system) AND a behavioral proof (exercised through the system's actual entry point, not test harnesses). Both are mandatory. Unit tests and mock-harness tests are not integration. This is the last machine-checkable step before manual proofs.
 6. **Manual proofs** are acceptable only for: code review, release verification, database cleanup, acceptance criteria sign-off
+7. **Categories are enforced at `dod_create`** — every proof declares a `category`, and the DoD declares a `type` (`bug`/`general`). Creation is **rejected** if `integration_wiring`, `integration_behavioral`, or `test` (full suite) is absent. Missing `tdd`, or a step with only presence/structural proofs, produces a **warning**. This makes the mandate machine-enforced rather than advisory.
+
+## Proof Strength
+
+A proof must verify **correctness**, not mere **presence**. Ranked weakest → strongest:
+
+- **Presence (weak):** `grep`/`findstr` that a name exists. Passes the moment any line contains the string — barely more than compilation. Allowed only as a *supplementary* `structure` or `integration_wiring` check, **never** as a step's sole acceptance.
+- **Behavioral (strong):** `test`, `tdd`, `integration_behavioral` — exercise the code and assert on results.
+
+Every step must carry at least one strong proof. A step proven only by presence checks is flagged at creation.
+
+**Precision:** presence/removal proofs must match **signatures or word boundaries**, not bare substrings. `findstr "TryStopTracking"` matches both `TryStopTracking(dossierId)` and `TryStopTracking(dossierId, clientId)` — a false positive. Use `grep -w` / `findstr /R` with anchors.

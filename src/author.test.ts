@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { renderMarkdown } from "./author.js";
-import type { DodDocument } from "./types.js";
+import { renderMarkdown, updateDocFromCheckResult } from "./author.js";
+import type { DodDocument, CheckResult } from "./types.js";
 
 function makeDoc(): DodDocument {
   return {
@@ -77,6 +77,30 @@ test("renderMarkdown omits XML tags for absent optional sections", () => {
   assert.doesNotMatch(md, /<research_notes>/);
   assert.doesNotMatch(md, /<decisions>/);
   assert.match(md, /<requirements>/);
+});
+
+// WS-A: a scoped check must persist only the target step and must NOT overwrite
+// the canonical last_check verdict (which only a full run produces).
+test("updateDocFromCheckResult: scoped run persists target step but leaves last_check intact", () => {
+  const doc = makeDoc();
+  doc.last_check = { timestamp: "2026-06-26T09:00:00Z", overall: "pass", summary: "prior full PASS" };
+
+  const scoped: CheckResult = {
+    overall: "incomplete",
+    scoped: true,
+    ran_step_id: "s1",
+    timestamp: "2026-06-26T11:00:00Z",
+    summary: "SCOPED",
+    proof_fingerprint: "abc",
+    steps: [{ id: "s1", title: "Add validation function", status: "pass",
+      proofs: [{ id: "p1", description: "exit 0, tests pass", status: "pass", command: "npm test -- email", output: "ok" }] }],
+  };
+
+  updateDocFromCheckResult(doc, scoped);
+
+  assert.equal(doc.steps[0].proofs[0].last_status, "pass", "target step proof was persisted");
+  assert.equal(doc.last_check?.overall, "pass", "prior full PASS verdict must not be clobbered by a scoped run");
+  assert.equal(doc.last_check?.summary, "prior full PASS");
 });
 
 test("renderMarkdown preserves goal, anti-cheat note and proof commands", () => {
