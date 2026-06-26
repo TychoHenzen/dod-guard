@@ -311,7 +311,8 @@ will collide on a bare substring match.
 | `output_not_contains` | `"text"` | stdout must NOT contain text (e.g. "no warnings", "no TODO") |
 | `output_not_matches` | `"regex"` | stdout must NOT match regex |
 | `tdd` | `0` | **TDD enforcer.** Must be observed FAILING before it can pass. Run `dod_check` after writing the failing test (RED), then implement (GREEN). Passes only when: seen_failing=true AND command exits with value. |
-| `manual` | _(none)_ | Human-only verification, skipped by checker |
+| `manual` | _(none)_ | Human-only verification, confirmed out-of-band (elicitation/dialog) — the model cannot self-pass it |
+| `review` | _(none)_ | Fresh-context code review. At check time the agent runs `/code-review` against the diff vs requirements and confirms PASS only if no correctness/requirement gaps remain. Verdict arrives via the same un-fakeable channel as `manual`; FAIL is never cached. Use for intent/edge-case correctness that command proofs can't assert. |
 
 **When to use `tdd` predicates:**
 

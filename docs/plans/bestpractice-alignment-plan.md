@@ -271,7 +271,7 @@ Author a dod-guard DoD per workstream (`dod_create`) before coding. Each must in
 - [x] Verify-and-close: PC-3 (command-check rejects grep-on-Windows; regression test added) and PC-9 (one-commit-per-step added to rendered `<claude_instructions>`) CLOSED. PC-6 (integration mandate not code-enforced) → folded into WS-B as create-time enforcement.
 - [x] WS-A implemented (`dod_check` `step` param; scoped run → INCOMPLETE, carries other steps unrun; `last_check` untouched by scoped runs; docs updated). 33 tests green. **Not yet committed.**
 - [x] WS-B implemented (proof `category` + DoD `type`; `validateBaseline` rejects missing integration two-layer + full-suite, warns on missing TDD / presence-only steps; wired into `dod_create`; standards + interview updated for categories & precision). 39 tests green; behavioral demo confirms reject/accept. **Not yet committed.**
-- [ ] WS-C implemented, DoD green, committed.
+- [x] WS-C implemented (`review` predicate — out-of-band like manual, runs `/code-review` vs requirements, verdict via un-fakeable channel, FAIL never cached). Dispatch decision revised mid-build: checker can't call skills, so review is orchestrator-satisfied via the manual elicitation channel. 43 tests green. **Not yet committed.**
 - [ ] WS-E implemented, DoD green, committed.
 - [ ] WS-F implemented, DoD green, committed.
 - [ ] README + `standards/` + `skills/interview/SKILL.md` updated.

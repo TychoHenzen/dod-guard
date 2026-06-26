@@ -31,6 +31,8 @@ function evaluatePredicate(
       // checks the "green" condition (command exits with expected code).
       return exitCode === (predicate.value as number ?? 0);
     case "manual":
+    case "review":
+      // Out-of-band verdicts are resolved in executeProof, not here.
       return true;
     default:
       return false;
@@ -72,27 +74,33 @@ async function runCommand(proof: Proof, cwd: string): Promise<{ exitCode: number
 }
 
 async function executeProof(proof: Proof, cwd: string, confirm?: Confirmer): Promise<ProofResult> {
-  if (proof.predicate.type === "manual") {
+  // Out-of-band proofs (manual, review) are verified through a channel the model
+  // cannot drive — never by running a command. `review` asks for a fresh-context
+  // code review (/code-review) against the diff vs requirements; the verdict
+  // arrives via the same elicitation/dialog channel as manual proofs.
+  if (proof.predicate.type === "manual" || proof.predicate.type === "review") {
+    const isReview = proof.predicate.type === "review";
+    const label = isReview ? "Code review" : "Manual verification";
     if (!confirm) {
-      // No confirmation channel (e.g. headless run). Fail safe — a manual proof
-      // must never pass without a human, and we never fabricate the answer.
+      // No confirmation channel (e.g. headless run). Fail safe — must never pass
+      // without the out-of-band verdict, and we never fabricate the answer.
       return {
         id: proof.id,
         description: proof.description,
         status: "fail",
         command: proof.command,
-        error: "Manual verification required but no confirmation channel is available (non-interactive run).",
-        output: "Manual verification not confirmed",
+        error: `${label} required but no confirmation channel is available (non-interactive run).`,
+        output: `${label} not confirmed`,
       };
     }
-    const resolution = await resolveManual(proof, confirm);
+    const resolution = await resolveManual(proof, confirm, label);
     return {
       id: proof.id,
       description: proof.description,
       status: resolution.status,
       command: proof.command,
       output: resolution.output,
-      error: resolution.status === "fail" ? "Manual verification was not confirmed as passing." : undefined,
+      error: resolution.status === "fail" ? `${label} was not confirmed as passing.` : undefined,
     };
   }
 

@@ -46,7 +46,7 @@ export function perProofFingerprint(proof: Proof): string {
  * The answer is sourced solely from `confirm`; this function never reads a
  * Claude-supplied value, preserving the anti-cheat guarantee.
  */
-export async function resolveManual(proof: Proof, confirm: Confirmer): Promise<ManualResolution> {
+export async function resolveManual(proof: Proof, confirm: Confirmer, label = "Manual verification"): Promise<ManualResolution> {
   const fingerprint = perProofFingerprint(proof);
   const cached = proof.manual_result;
 
@@ -54,7 +54,7 @@ export async function resolveManual(proof: Proof, confirm: Confirmer): Promise<M
     return {
       status: "pass",
       cached: true,
-      output: `Manual verification cached: PASS at ${cached.confirmed_at} via ${cached.channel}${cached.note ? ` — "${cached.note}"` : ""}`,
+      output: `${label} cached: PASS at ${cached.confirmed_at} via ${cached.channel}${cached.note ? ` — "${cached.note}"` : ""}`,
     };
   }
 
@@ -70,6 +70,6 @@ export async function resolveManual(proof: Proof, confirm: Confirmer): Promise<M
   return {
     status: answer.answer,
     cached: false,
-    output: `Manual verification ${answer.answer.toUpperCase()} via ${answer.channel}${answer.note ? ` — "${answer.note}"` : ""}`,
+    output: `${label} ${answer.answer.toUpperCase()} via ${answer.channel}${answer.note ? ` — "${answer.note}"` : ""}`,
   };
 }

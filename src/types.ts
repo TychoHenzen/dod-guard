@@ -1,5 +1,5 @@
 export interface Predicate {
-  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual";
+  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review";
   value?: number | string;
 }
 

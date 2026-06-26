@@ -21,7 +21,7 @@ const server = new McpServer({
 // ── Shared schemas ──────────────────────────────────────────────────
 
 const PredicateSchema = z.object({
-  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual"]),
+  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review"]),
   value: z.union([z.number(), z.string()]).optional(),
 });
 
@@ -210,16 +210,27 @@ server.tool(
 const MANUAL_TIMEOUT_MS = 10 * 60 * 1000;
 
 function manualInstructions(proof: Proof): string {
+  const isReview = proof.predicate.type === "review";
   const lines = [proof.description];
-  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual") {
+  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual" && !isReview) {
     lines.push("", `Steps / command: ${proof.command}`);
   }
-  lines.push("", "Confirm PASS only after you have personally verified this works as described.");
+  if (isReview) {
+    lines.push(
+      "",
+      "Run `/code-review` (fresh context) against the current diff vs the DoD requirements.",
+      "Confirm PASS only if it reports no gaps affecting correctness or the stated requirements.",
+    );
+  } else {
+    lines.push("", "Confirm PASS only after you have personally verified this works as described.");
+  }
   return lines.join("\n");
 }
 
 function buildConfirmer(): Confirmer {
   return async (proof: Proof): Promise<ManualAnswer> => {
+    const isReview = proof.predicate.type === "review";
+    const promptLabel = isReview ? "Code review required" : "Manual verification required";
     const instructions = manualInstructions(proof);
 
     // Draw attention with a distinctive jingle before prompting.
@@ -231,7 +242,7 @@ function buildConfirmer(): Confirmer {
       try {
         const result = await server.server.elicitInput(
           {
-            message: `Manual verification required:\n\n${instructions}`,
+            message: `${promptLabel}:\n\n${instructions}`,
             requestedSchema: {
               type: "object",
               properties: {

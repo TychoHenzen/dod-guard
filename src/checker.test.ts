@@ -58,6 +58,42 @@ test("confirmed manual PASS is cached — a second check does not re-ask the hum
   assert.equal(second.overall, "pass");
 });
 
+// ── WS-C: adversarial review proof (out-of-band, like manual) ──────
+
+function reviewProof(id: string, desc: string): Proof {
+  return { id, command: "code-review", predicate: { type: "review" }, description: desc, last_status: "pending" };
+}
+
+test("review proof passes when the reviewer confirms PASS", async () => {
+  const doc = docWith([reviewProof("proof-1-1", "review diff vs requirements")]);
+  const res = await checkDocument(doc, undefined, async () => ({ answer: "pass", channel: "elicitation" }));
+  assert.equal(res.overall, "pass");
+  assert.equal(res.steps[0].proofs[0].status, "pass");
+});
+
+test("review proof fails when the reviewer reports gaps", async () => {
+  const doc = docWith([reviewProof("proof-1-1", "review diff vs requirements")]);
+  const res = await checkDocument(doc, undefined, async () => ({ answer: "fail", channel: "elicitation" }));
+  assert.equal(res.overall, "fail");
+  assert.equal(res.steps[0].proofs[0].status, "fail");
+});
+
+test("review proof fails safely with no review channel (headless) — never auto-passes", async () => {
+  const doc = docWith([reviewProof("proof-1-1", "review diff vs requirements")]);
+  const res = await checkDocument(doc); // no confirmer
+  assert.equal(res.steps[0].proofs[0].status, "fail");
+});
+
+test("a confirmed review PASS is cached — a second check does not re-ask", async () => {
+  const doc = docWith([reviewProof("proof-1-1", "review diff vs requirements")]);
+  let asks = 0;
+  const confirm = async () => { asks++; return { answer: "pass" as const, channel: "elicitation" as const }; };
+  await checkDocument(doc, undefined, confirm);
+  const second = await checkDocument(doc, undefined, confirm);
+  assert.equal(asks, 1, "cached review PASS must not re-prompt");
+  assert.equal(second.overall, "pass");
+});
+
 // ── WS-A: incremental scoped checking (dod_check --step N) ──────────
 
 function cmdProof(id: string, command: string, expectExit = 0): Proof {
