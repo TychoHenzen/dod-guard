@@ -7,10 +7,10 @@ function step(title: string, ...cats: ProofCategory[]): BaselineStepInput {
   return { title, proofs: cats.map((category) => ({ category, predicate: { type: "exit_code" } })) };
 }
 
-/** A DoD that satisfies every hard-mandatory category plus TDD. */
+/** A DoD that satisfies every hard-mandatory category plus TDD and mutation. */
 function completeSteps(): BaselineStepInput[] {
   return [
-    step("Logic", "tdd", "test"),
+    step("Logic", "tdd", "test", "mutation"),
     step("Wire it up", "integration_wiring", "integration_behavioral"),
   ];
 }
@@ -45,6 +45,19 @@ test("missing TDD proof is a warning, not an error", () => {
   const r = validateBaseline("general", steps);
   assert.deepEqual(r.errors, [], "TDD absence must not block creation");
   assert.ok(r.warnings.some((w) => /TDD/i.test(w)));
+});
+
+test("mutation baseline warns when no mutation proof is present", () => {
+  const steps = [step("Logic", "tdd", "test"), step("Wire", "integration_wiring", "integration_behavioral")];
+  const r = validateBaseline("general", steps);
+  assert.deepEqual(r.errors, [], "mutation absence must never block creation");
+  assert.ok(r.warnings.some((w) => /mutation/i.test(w)), "expected a soft warning nudging toward mutation testing");
+});
+
+test("mutation baseline does not warn when a mutation proof is present", () => {
+  const steps = [step("Logic", "tdd", "test", "mutation"), step("Wire", "integration_wiring", "integration_behavioral")];
+  const r = validateBaseline("general", steps);
+  assert.ok(!r.warnings.some((w) => /mutation/i.test(w)), "mutation present → no mutation warning");
 });
 
 test("a presence-only step is warned (structure without any behavioral/test proof)", () => {

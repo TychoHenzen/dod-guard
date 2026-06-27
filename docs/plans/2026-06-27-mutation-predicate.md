@@ -116,10 +116,10 @@ None — all design points settled in the interview.
 - [x] Proof: `findstr /C:"could not parse mutation" src\checker.ts` → Fail-safe reason string present in checker for unparseable mutation output.
 - [x] Proof: `npm test` → Full test suite green — no regressions across all existing + new tests.
 
-### Step 3: Step 3 — Baseline soft-warning when mutation absent (TDD). validateBaseline emits a non-blocking warning when no proof carries category `mutation`; must NOT be added to HARD_MANDATORY (never blocks dod_create). [ ]
+### Step 3: Step 3 — Baseline soft-warning when mutation absent (TDD). validateBaseline emits a non-blocking warning when no proof carries category `mutation`; must NOT be added to HARD_MANDATORY (never blocks dod_create). [x]
 
-- [ ] Proof (TDD ⬜ AWAITING RED): `npx tsc && node --test --test-name-pattern="mutation baseline" "dist/baseline.test.js"` → TDD: test asserting validateBaseline warns (in warnings, not errors) when mutation absent, and does NOT warn when present — fails first, passes after.
-- [ ] Proof: `findstr /C:"mutation" src\baseline.ts` → Mutation-absent warning wired into validateBaseline.
+- [x] Proof (TDD 🟢 GREEN): `npx tsc && node --test --test-name-pattern="mutation baseline" "dist/baseline.test.js"` → TDD: test asserting validateBaseline warns (in warnings, not errors) when mutation absent, and does NOT warn when present — fails first, passes after.
+- [x] Proof: `findstr /C:"mutation" src\baseline.ts` → Mutation-absent warning wired into validateBaseline.
 - [x] Proof: `findstr /C:"mutation" src\baseline.ts | findstr /C:"HARD_MANDATORY"` → Mutation is NOT on the same line as HARD_MANDATORY — exit 1 (no match) confirms it stays a warning, not a hard block.
 
 ### Step 4: Step 4 — Integration: predicate registered in MCP schema (wiring) and exercised end-to-end through checkDocument (behavioral). [ ]

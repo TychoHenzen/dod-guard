@@ -63,6 +63,15 @@ export function validateBaseline(type: "bug" | "general", steps: BaselineStepInp
     );
   }
 
+  // Mutation testing is the strongest signal that the tests actually catch bugs
+  // (a passing suite can still kill zero mutants). Soft, non-blocking nudge —
+  // deliberately NOT in HARD_MANDATORY, so it never blocks dod_create.
+  if (!present.has("mutation")) {
+    warnings.push(
+      'No "mutation" proof. A green suite can still catch zero bugs — for critical logic, add a mutation proof asserting surviving mutants stay <= N (cargo-mutants / mutmut / Stryker).',
+    );
+  }
+
   // Presence-only step: confirms code exists, not that it works (PC-1).
   for (const s of steps) {
     if (s.proofs.length === 0) continue;
