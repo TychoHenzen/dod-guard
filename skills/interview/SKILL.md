@@ -85,6 +85,28 @@ Work through these as relevant (not all apply to every task):
 - **Integration** — How does this connect to existing code? What contracts must it honor?
 - **Scope boundaries** — What is explicitly NOT included?
 
+### Minimum Questions by Scope
+
+Scale clarifying questions to the change's blast radius. PBI #31790 — a 17-file, 6-project
+change — shipped after only **3** questions, leaving real ambiguities unprobed (`Copy()`
+semantics for the new property, separate-flag vs shared-logic, rollback on validation failure).
+Use the floor below as a **minimum**, derived from the scope you established in Phase 1 research:
+
+| Estimated scope (from Phase 1) | Minimum clarifying questions |
+|--------------------------------|------------------------------|
+| Trivial — 1 file, single function | 1–2 |
+| Small — 1–3 files, one component/layer | 2–3 |
+| Medium — 4–8 files, or 2+ layers | 4–5 |
+| Large — 9+ files, or 3+ projects/layers | 6+ |
+
+Rules:
+- The floor is a **minimum, not a target**. Hitting it does not mean you are done — if competing
+  interpretations, undefined error behavior, or unprobed cross-cutting concerns remain, keep asking.
+- Count **distinct decision-driving questions**, not the option choices inside a single question.
+- Ambiguity scales with cross-layer reach. A change crossing DB → logic → events → UI introduces a
+  contract question at **each seam** (clone/copy semantics, shared vs separate logic, failure/rollback
+  paths) — probe the seams explicitly for medium/large scope.
+
 ### On-Demand Research
 
 When a question reveals you need more context:
@@ -101,6 +123,7 @@ Stop and ask more questions if:
 - You have competing interpretations of a requirement
 - You don't know what the error behavior should be
 - You're unsure about the scope boundary
+- You've asked fewer questions than the scope floor (see Minimum Questions by Scope), or haven't probed each layer seam of a multi-layer change
 - You haven't discussed how to verify correctness
 
 ## Phase 3: Requirements Summary
@@ -508,6 +531,7 @@ That's it. No AskUserQuestion. No choice menu. Just the goal prompt.
 ## Common Mistakes
 
 - **Asking generic questions** — "What do you want?" is useless. Research first, then ask specific questions.
+- **Too few questions for the scope** — 3 questions for a 17-file, multi-project change is light. Hit the scope floor (Minimum Questions by Scope) and probe every layer seam.
 - **Asking multiple questions at once** — One question per message. Always.
 - **Skipping research** — Don't ask the user what's already in the code.
 - **Premature summarizing** — Don't present the summary until you've genuinely explored all relevant categories.
