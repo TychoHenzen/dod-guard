@@ -260,3 +260,18 @@ test("mutation predicate fails safely on unparseable output (never auto-passes)"
   assert.equal(res.steps[0].proofs[0].status, "fail");
   assert.match(res.steps[0].proofs[0].error ?? "", /could not parse mutation/);
 });
+
+// ── WS-D: end-to-end through checkDocument (the real dod_check entry) ─
+
+test("mutation end-to-end: checkDocument runs the command and gates on survivors vs value", async () => {
+  // survivors (2) <= value (2): PASS through the genuine runCommand path,
+  // not a mock — the proof's command is actually executed and its output parsed.
+  const passRes = await checkDocument(docWith([mutationProof("proof-1-1", "echo 2 missed, 30 caught", 2)]));
+  assert.equal(passRes.overall, "pass");
+  assert.equal(passRes.steps[0].proofs[0].status, "pass");
+
+  // survivors (2) > value (1): FAIL.
+  const failRes = await checkDocument(docWith([mutationProof("proof-1-1", "echo 2 missed, 30 caught", 1)]));
+  assert.equal(failRes.overall, "fail");
+  assert.equal(failRes.steps[0].proofs[0].status, "fail");
+});

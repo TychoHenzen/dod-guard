@@ -122,9 +122,9 @@ None — all design points settled in the interview.
 - [x] Proof: `findstr /C:"mutation" src\baseline.ts` → Mutation-absent warning wired into validateBaseline.
 - [x] Proof: `findstr /C:"mutation" src\baseline.ts | findstr /C:"HARD_MANDATORY"` → Mutation is NOT on the same line as HARD_MANDATORY — exit 1 (no match) confirms it stays a warning, not a hard block.
 
-### Step 4: Step 4 — Integration: predicate registered in MCP schema (wiring) and exercised end-to-end through checkDocument (behavioral). [ ]
+### Step 4: Step 4 — Integration: predicate registered in MCP schema (wiring) and exercised end-to-end through checkDocument (behavioral). [x]
 
-- [ ] Proof: `findstr /C:"mutation" src\index.ts` → Wiring: `mutation` present in index.ts PredicateSchema + ProofCategorySchema — the predicate is registered in the MCP tool surface, not just defined in types.
+- [x] Proof: `findstr /C:"mutation" src\index.ts` → Wiring: `mutation` present in index.ts PredicateSchema + ProofCategorySchema — the predicate is registered in the MCP tool surface, not just defined in types.
 - [x] Proof: `npx tsc && node --test --test-name-pattern="mutation end-to-end" "dist/*.test.js"` → Behavioral: a test builds a DoD with a mutation proof and runs checkDocument (the real dod_check entry point) against a fixture command echoing tool output — asserts PASS when survivors<=value and FAIL when survivors>value. Exercises the genuine command-execution path, not a mock.
 
 ### Step 5: Step 5 — Standards + docs. Document the mutation predicate and changed-functions-scoped commands per language. [ ]
