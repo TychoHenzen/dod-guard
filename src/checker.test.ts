@@ -226,3 +226,37 @@ test("parseSurvivors returns null on unrecognised output (fail-safe)", () => {
   assert.equal(parseSurvivors(UNPARSEABLE_OUTPUT), null);
   assert.equal(parseSurvivors(""), null);
 });
+
+// ── WS-D: mutation predicate evaluation (in-band, via runCommand) ────
+
+function mutationProof(id: string, command: string, value?: number): Proof {
+  return { id, command, predicate: { type: "mutation", value }, description: id, last_status: "pending" };
+}
+
+test("mutation predicate passes when survivors are within budget", async () => {
+  const doc = docWith([mutationProof("proof-1-1", "echo 3 missed, 10 caught", 5)]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "pass");
+  assert.equal(res.overall, "pass");
+});
+
+test("mutation predicate fails when survivors exceed budget", async () => {
+  const doc = docWith([mutationProof("proof-1-1", "echo 3 missed, 10 caught", 0)]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "fail");
+  assert.equal(res.overall, "fail");
+});
+
+test("mutation predicate defaults the budget to 0 survivors", async () => {
+  const pass = await checkDocument(docWith([mutationProof("proof-1-1", "echo 0 missed, 20 caught")]));
+  assert.equal(pass.steps[0].proofs[0].status, "pass");
+  const fail = await checkDocument(docWith([mutationProof("proof-1-1", "echo 1 missed, 19 caught")]));
+  assert.equal(fail.steps[0].proofs[0].status, "fail");
+});
+
+test("mutation predicate fails safely on unparseable output (never auto-passes)", async () => {
+  const doc = docWith([mutationProof("proof-1-1", "echo no recognised summary here", 0)]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "fail");
+  assert.match(res.steps[0].proofs[0].error ?? "", /could not parse mutation/);
+});

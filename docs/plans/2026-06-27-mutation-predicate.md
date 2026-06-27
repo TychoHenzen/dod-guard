@@ -110,10 +110,10 @@ None — all design points settled in the interview.
 - [x] Proof: `findstr /C:"mutation" src\types.ts` → `mutation` added to the Predicate type union and ProofCategory in types.ts.
 - [x] Proof: `npx tsc --noEmit` → Type-check clean after type/schema additions.
 
-### Step 2: Step 2 — Mutation predicate evaluation + fail-safe in checker (TDD). Wire parseSurvivors into proof execution: PASS iff survivors <= value (default 0); unparseable output → FAIL with reason 'could not parse mutation results'. Runs in-band via runCommand. [ ]
+### Step 2: Step 2 — Mutation predicate evaluation + fail-safe in checker (TDD). Wire parseSurvivors into proof execution: PASS iff survivors <= value (default 0); unparseable output → FAIL with reason 'could not parse mutation results'. Runs in-band via runCommand. [x]
 
-- [ ] Proof (TDD ⬜ AWAITING RED): `npx tsc && node --test --test-name-pattern="mutation predicate" "dist/*.test.js"` → TDD: mutation-predicate eval tests fail first, pass after implementation. Cover survivors<=value PASS, survivors>value FAIL, unparseable FAIL.
-- [ ] Proof: `findstr /C:"could not parse mutation" src\checker.ts` → Fail-safe reason string present in checker for unparseable mutation output.
+- [x] Proof (TDD 🟢 GREEN): `npx tsc && node --test --test-name-pattern="mutation predicate" "dist/*.test.js"` → TDD: mutation-predicate eval tests fail first, pass after implementation. Cover survivors<=value PASS, survivors>value FAIL, unparseable FAIL.
+- [x] Proof: `findstr /C:"could not parse mutation" src\checker.ts` → Fail-safe reason string present in checker for unparseable mutation output.
 - [x] Proof: `npm test` → Full test suite green — no regressions across all existing + new tests.
 
 ### Step 3: Step 3 — Baseline soft-warning when mutation absent (TDD). validateBaseline emits a non-blocking warning when no proof carries category `mutation`; must NOT be added to HARD_MANDATORY (never blocks dod_create). [ ]

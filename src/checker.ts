@@ -158,6 +158,32 @@ async function executeProof(proof: Proof, cwd: string, confirm?: Confirmer): Pro
     };
   }
 
+  // Mutation predicate: parse the surviving-mutant count from the tool output
+  // and PASS iff survivors <= value (default 0). Fail-safe — output we cannot
+  // parse FAILS with an explicit reason, never passes. Runs in-band: tool
+  // not-found / timeout already returned above via runCommand's notFound/killed.
+  if (proof.predicate.type === "mutation") {
+    const maxAllowed = (proof.predicate.value as number) ?? 0;
+    const survivors = parseSurvivors(run.combined);
+
+    if (survivors === null) {
+      return {
+        id: proof.id, description: proof.description, status: "fail",
+        command: proof.command, output: run.combined,
+        error: "could not parse mutation results (no recognized Stryker/mutmut/cargo-mutants summary)",
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    const passed = survivors <= maxAllowed;
+    return {
+      id: proof.id, description: proof.description, status: passed ? "pass" : "fail",
+      command: proof.command, output: run.combined,
+      error: passed ? undefined : `mutation: ${survivors} surviving mutant(s) exceeds the allowed maximum of ${maxAllowed}`,
+      exit_code: run.exitCode, duration_ms: run.duration,
+    };
+  }
+
   // TDD predicate: must have been observed failing before it can pass
   if (proof.predicate.type === "tdd") {
     const greenExitCode = (proof.predicate.value as number) ?? 0;
