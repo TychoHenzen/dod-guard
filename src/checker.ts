@@ -8,6 +8,50 @@ const execAsync = promisify(exec);
 
 const TIMEOUT_MS = 120_000;
 
+/**
+ * Extract the surviving-mutant count from a mutation tool's combined output.
+ *
+ * Tries built-in patterns for the three supported tools in order: Stryker
+ * (JS/TS), mutmut (Python), cargo-mutants (Rust). A "surviving" mutant is one
+ * the test suite failed to kill — cargo-mutants calls these "missed", Stryker
+ * and mutmut call them "survived". Returns the count, or `null` when no
+ * recognised summary matched (the caller treats null as a fail-safe FAIL —
+ * never a pass on output it cannot parse).
+ */
+export function parseSurvivors(output: string): number | null {
+  for (const parser of [parseStryker, parseMutmut, parseCargoMutants]) {
+    const survivors = parser(output);
+    if (survivors !== null) return survivors;
+  }
+  return null;
+}
+
+/** Stryker clear-text reporter: read the "# survived" column of the table. */
+function parseStryker(output: string): number | null {
+  const lines = output.split(/\r?\n/);
+  const headerIdx = lines.findIndex((l) => l.includes("|") && /#\s*survived/i.test(l));
+  if (headerIdx === -1) return null;
+  const headerCells = lines[headerIdx].split("|").map((c) => c.trim().toLowerCase());
+  const col = headerCells.findIndex((c) => /survived/.test(c));
+  if (col === -1) return null;
+  const dataLine = lines.find((l) => l.includes("|") && l.trim().toLowerCase().startsWith("all files"));
+  if (!dataLine) return null;
+  const value = Number(dataLine.split("|").map((c) => c.trim())[col]);
+  return Number.isFinite(value) ? value : null;
+}
+
+/** mutmut: the 🙁 marker in run-progress and `mutmut results` legend. */
+function parseMutmut(output: string): number | null {
+  const match = output.match(/🙁[^\d]*(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
+/** cargo-mutants summary: "N missed" — missed mutants are survivors. */
+function parseCargoMutants(output: string): number | null {
+  const match = output.match(/(\d+)\s+missed\b/);
+  return match ? Number(match[1]) : null;
+}
+
 function evaluatePredicate(
   predicate: Predicate,
   exitCode: number,

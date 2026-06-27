@@ -1,5 +1,5 @@
 export interface Predicate {
-  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review";
+  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation";
   value?: number | string;
 }
 
@@ -14,6 +14,7 @@ export type ProofCategory =
   | "tdd"
   | "structure"
   | "test"
+  | "mutation"
   | "integration_wiring"
   | "integration_behavioral"
   | "manual"

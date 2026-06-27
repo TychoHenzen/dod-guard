@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkDocument } from "./checker.js";
+import { checkDocument, parseSurvivors } from "./checker.js";
 import type { DodDocument, Proof } from "./types.js";
 
 function manualProof(id: string, desc: string): Proof {
@@ -169,4 +169,60 @@ test("a matching stored fingerprint is not flagged as tamper", async () => {
   const second = await checkDocument(doc);
   assert.notEqual(second.tampered, true);
   assert.equal(second.overall, "pass");
+});
+
+// ── WS-D: mutation survivor-count parser ────────────────────────────
+//
+// Fixtures are representative real reporter output captured from each tool's
+// docs/runs. The parser must extract the surviving (== missed) mutant count and
+// fail-safe to null on anything it does not recognise.
+
+// cargo-mutants summary line: "N missed" means N survivors.
+const CARGO_MUTANTS_SURVIVORS = `cargo-mutants 24.11.0
+Found 1832 mutants to test
+... (snipped) ...
+1832 mutants tested in 39:18: 152 missed, 1832 caught, 326 unviable, 0 timeout`;
+
+const CARGO_MUTANTS_CLEAN = `20 mutants tested in 0:12: 0 missed, 20 caught`;
+
+// Stryker clear-text reporter ends with a per-file table; "# survived" column.
+const STRYKER_SURVIVORS = `Ran 1.00 tests per mutant on average.
+--------------|---------|----------|-----------|------------|----------|
+File          | % score | # killed | # timeout | # survived | # no cov |
+--------------|---------|----------|-----------|------------|----------|
+All files     |   90.00 |       18 |         0 |          2 |        0 |
+--------------|---------|----------|-----------|------------|----------|`;
+
+const STRYKER_CLEAN = `File          | % score | # killed | # timeout | # survived | # no cov |
+--------------|---------|----------|-----------|------------|----------|
+All files     |  100.00 |       20 |         0 |          0 |        0 |`;
+
+// mutmut run progress line and `mutmut results` legend both report 🙁 survivors.
+const MUTMUT_SURVIVORS_PROGRESS = `⠼ 22/22  🎉 17 🫥 0  ⏰ 0  🤔 0  🙁 5  🔇 0`;
+const MUTMUT_SURVIVORS_RESULTS = `Survived 🙁 (3)
+
+To apply a mutant on disk:
+    mutmut apply <id>`;
+
+const UNPARSEABLE_OUTPUT = `error: could not compile project
+warning: nothing useful to report here`;
+
+test("parseSurvivors reads the cargo-mutants 'missed' count", () => {
+  assert.equal(parseSurvivors(CARGO_MUTANTS_SURVIVORS), 152);
+  assert.equal(parseSurvivors(CARGO_MUTANTS_CLEAN), 0);
+});
+
+test("parseSurvivors reads the Stryker '# survived' table column", () => {
+  assert.equal(parseSurvivors(STRYKER_SURVIVORS), 2);
+  assert.equal(parseSurvivors(STRYKER_CLEAN), 0);
+});
+
+test("parseSurvivors reads the mutmut 🙁 survivor count", () => {
+  assert.equal(parseSurvivors(MUTMUT_SURVIVORS_PROGRESS), 5);
+  assert.equal(parseSurvivors(MUTMUT_SURVIVORS_RESULTS), 3);
+});
+
+test("parseSurvivors returns null on unrecognised output (fail-safe)", () => {
+  assert.equal(parseSurvivors(UNPARSEABLE_OUTPUT), null);
+  assert.equal(parseSurvivors(""), null);
 });
