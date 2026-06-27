@@ -124,4 +124,19 @@ A proof must verify **correctness**, not mere **presence**. Ranked weakest → s
 
 Every step must carry at least one strong proof. A step proven only by presence checks is flagged at creation.
 
+### Mutation testing — the strongest test-quality proof
+
+`test` and `tdd` prove the suite runs and was red-first, but a passing suite can still kill
+**zero** bugs. The `mutation` predicate closes that gap: it runs a mutation tool (cargo-mutants /
+mutmut / Stryker), parses the surviving (un-killed) mutant count, and passes iff survivors `<= N`
+(default `0`). Output it cannot parse FAILs (fail-safe — never auto-passes).
+
+- **Optional, not mandatory.** A DoD with no `mutation` proof gets a soft, non-blocking warning
+  (like the `tdd`-absent warning) — it is **never** added to the hard-mandatory categories and
+  never blocks `dod_create`.
+- **Scope to critical logic / changed functions.** Don't mutate the whole codebase; use each
+  tool's changed-set mode (see [language-commands.md](language-commands.md), Mutation Testing).
+- **When to add one:** complex branching, money/permission/validation logic, or anywhere "the
+  tests are green" is not enough assurance that real defects would be caught.
+
 **Precision:** presence/removal proofs must match **signatures or word boundaries**, not bare substrings. `findstr "TryStopTracking"` matches both `TryStopTracking(dossierId)` and `TryStopTracking(dossierId, clientId)` — a false positive. Use `grep -w` / `findstr /R` with anchors.

@@ -313,6 +313,7 @@ will collide on a bare substring match.
 | `tdd` | `0` | **TDD enforcer.** Must be observed FAILING before it can pass. Run `dod_check` after writing the failing test (RED), then implement (GREEN). Passes only when: seen_failing=true AND command exits with value. |
 | `manual` | _(none)_ | Human-only verification, confirmed out-of-band (elicitation/dialog) — the model cannot self-pass it |
 | `review` | _(none)_ | Fresh-context code review. At check time the agent runs `/code-review` against the diff vs requirements and confirms PASS only if no correctness/requirement gaps remain. Verdict arrives via the same un-fakeable channel as `manual`; FAIL is never cached. Use for intent/edge-case correctness that command proofs can't assert. |
+| `mutation` | `N` _(default 0)_ | **Mutation testing.** Runs the command in-band and parses surviving (un-killed) mutants from Stryker / mutmut / cargo-mutants output; passes iff survivors `<= N`. Unparseable output FAILs (fail-safe). The strongest test-quality proof — scope to changed/critical functions. See `standards/language-commands.md` for per-tool changed-functions commands. |
 
 **When to use `tdd` predicates:**
 
@@ -428,6 +429,7 @@ Use these categories to ensure coverage. Mandatory categories are marked below p
 | **Test** (mandatory) | Full test suite passes | Run full test suite | `exit_code: 0` | Always |
 | **TDD** (mandatory) | Test written before implementation | Run specific new test | `tdd: 0` (must fail first) | Always (regression for bugs, unit for general) |
 | **Structure** (mandatory) | Test has real assertions | grep for assertion patterns | `output_matches` | Always (paired with TDD) |
+| **Mutation** (optional, warned) | Tests actually kill bugs | Run a mutation tool scoped to changed functions | `mutation: N` (survivors ≤ N) | Recommended for critical logic — strongest test-quality signal |
 | **Code Review** (mandatory) | Reviewed by another developer | — | `manual` | Always |
 | **Documentation** (mandatory) | New components documented | find/grep for docs | `exit_code: 0` | General only |
 | **Build** | Compiles without errors | Build command | `exit_code: 0` | Recommended |

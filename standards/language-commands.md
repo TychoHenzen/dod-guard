@@ -173,6 +173,33 @@ Structural proof regex: `"(assert |self\\.assert|pytest\\.(raises|approx))"`
 
 ---
 
+## Mutation Testing (test quality)
+
+A green test suite can still catch **zero** bugs. The `mutation` predicate proves the
+tests actually kill mutants: it parses the surviving-mutant count from the tool's output
+and passes iff survivors `<= N` (default `0`). It is **optional** (a missing mutation proof
+is a soft warning, never a hard block) and is the **strongest test-quality proof** — reserve
+it for **critical logic**.
+
+**Scope to changed functions, not the whole codebase.** Full-codebase mutation runs are slow
+and dominated by untouched code; the delta/brownfield philosophy applies here too. Each tool
+has a built-in changed-set mode:
+
+| Language | Tool | Changed-functions-scoped command | Predicate |
+|----------|------|----------------------------------|-----------|
+| **Rust** | cargo-mutants | `git diff origin/main > changed.diff && cargo mutants --in-diff changed.diff` | `mutation: 0` |
+| **Python** | mutmut | `mutmut run --paths-to-mutate $(git diff --name-only origin/main -- '*.py')` | `mutation: 0` |
+| **TypeScript/JavaScript** | Stryker | `npx stryker run --since origin/main` (or `--mutate $(git diff --name-only origin/main -- '*.ts')`) | `mutation: 0` |
+
+Notes:
+- **cargo-mutants** reports survivors as `N missed` in its summary line; the parser reads that count.
+- **Stryker** survivors come from the `# survived` column of the clear-text reporter table.
+- **mutmut** survivors are the 🙁 count in the run progress / `mutmut results` legend.
+- **Fail-safe:** if the tool output cannot be parsed, the proof FAILS with an explicit reason — it never passes on output it does not recognise. If a tool's format genuinely cannot be parsed, fall back to an `exit_code` proof and document the exception.
+- Raise `N` above `0` only with justification — e.g. a known-equivalent mutant that cannot be killed.
+
+---
+
 ## Choosing Commands
 
 When constructing proofs during the interview:

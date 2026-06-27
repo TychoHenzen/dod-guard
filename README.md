@@ -99,6 +99,7 @@ The output is a self-contained spec with testable proofs that can be passed to `
 | `tdd` | `0` | **TDD enforcer.** Must be observed failing before it can pass |
 | `manual` | — | **Human-verified.** Confirmed by the user during `dod_check` via a channel Claude cannot drive — see Manual verification |
 | `review` | — | **Fresh-context code review.** The agent runs `/code-review` against the diff vs requirements; the PASS/FAIL verdict arrives through the same out-of-band channel as `manual` (model cannot self-pass). For intent/edge-case correctness commands can't assert |
+| `mutation` | `N` (default `0`) | **Mutation testing.** Runs the command in-band, parses surviving (un-killed) mutants from Stryker / mutmut / cargo-mutants output, and passes iff survivors `<= N`. Output it cannot parse FAILs (fail-safe — never auto-passes). The strongest signal that tests actually catch bugs; scope to changed/critical functions |
 
 ### TDD enforcement
 
