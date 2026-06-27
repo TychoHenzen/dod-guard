@@ -21205,6 +21205,33 @@ async function resolveManual(proof, confirm, label = "Manual verification") {
 // src/checker.ts
 var execAsync = promisify(exec);
 var TIMEOUT_MS = 12e4;
+function parseSurvivors(output) {
+  for (const parser of [parseStryker, parseMutmut, parseCargoMutants]) {
+    const survivors = parser(output);
+    if (survivors !== null) return survivors;
+  }
+  return null;
+}
+function parseStryker(output) {
+  const lines = output.split(/\r?\n/);
+  const headerIdx = lines.findIndex((l) => l.includes("|") && /#\s*survived/i.test(l));
+  if (headerIdx === -1) return null;
+  const headerCells = lines[headerIdx].split("|").map((c) => c.trim().toLowerCase());
+  const col = headerCells.findIndex((c) => /survived/.test(c));
+  if (col === -1) return null;
+  const dataLine = lines.find((l) => l.includes("|") && l.trim().toLowerCase().startsWith("all files"));
+  if (!dataLine) return null;
+  const value = Number(dataLine.split("|").map((c) => c.trim())[col]);
+  return Number.isFinite(value) ? value : null;
+}
+function parseMutmut(output) {
+  const match = output.match(/🙁[^\d]*(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+function parseCargoMutants(output) {
+  const match = output.match(/(\d+)\s+missed\b/);
+  return match ? Number(match[1]) : null;
+}
 function evaluatePredicate(predicate, exitCode, stdout) {
   switch (predicate.type) {
     case "exit_code":
@@ -21290,6 +21317,33 @@ async function executeProof(proof, cwd, confirm) {
       command: proof.command,
       output: run.combined,
       error: run.error,
+      exit_code: run.exitCode,
+      duration_ms: run.duration
+    };
+  }
+  if (proof.predicate.type === "mutation") {
+    const maxAllowed = proof.predicate.value ?? 0;
+    const survivors = parseSurvivors(run.combined);
+    if (survivors === null) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: "could not parse mutation results (no recognized Stryker/mutmut/cargo-mutants summary)",
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    const passed2 = survivors <= maxAllowed;
+    return {
+      id: proof.id,
+      description: proof.description,
+      status: passed2 ? "pass" : "fail",
+      command: proof.command,
+      output: run.combined,
+      error: passed2 ? void 0 : `mutation: ${survivors} surviving mutant(s) exceeds the allowed maximum of ${maxAllowed}`,
       exit_code: run.exitCode,
       duration_ms: run.duration
     };
@@ -22034,6 +22088,11 @@ function validateBaseline(type, steps) {
       type === "bug" ? 'No "tdd" proof. A bug fix should include a regression test that fails first (red), then passes.' : 'No "tdd" proof. New functionality should include a fail-first unit test.'
     );
   }
+  if (!present.has("mutation")) {
+    warnings.push(
+      'No "mutation" proof. A green suite can still catch zero bugs \u2014 for critical logic, add a mutation proof asserting surviving mutants stay <= N (cargo-mutants / mutmut / Stryker).'
+    );
+  }
   for (const s of steps) {
     if (s.proofs.length === 0) continue;
     const hasStrong = s.proofs.some((p) => STRONG.includes(p.category));
@@ -22051,7 +22110,7 @@ var server = new McpServer({
   version: "1.0.0"
 });
 var PredicateSchema = external_exports.object({
-  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review"]),
+  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation"]),
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional()
 });
 var ProofCategorySchema = external_exports.enum([
@@ -22060,6 +22119,7 @@ var ProofCategorySchema = external_exports.enum([
   "tdd",
   "structure",
   "test",
+  "mutation",
   "integration_wiring",
   "integration_behavioral",
   "manual",

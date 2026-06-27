@@ -25,3 +25,6 @@ Thumbs.db
 
 # Code review graph cache
 .code-review-graph/
+
+# Local DoD plan documents (not distributed)
+docs/plans/
