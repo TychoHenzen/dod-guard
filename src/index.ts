@@ -2,9 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import * as path from "node:path";
-import { createHash } from "node:crypto";
 import * as store from "./store.js";
-import { checkDocument } from "./checker.js";
+import { checkDocument, computeProofFingerprint } from "./checker.js";
 import { writeMarkdown, updateDocFromCheckResult, formatCheckResult } from "./author.js";
 import { parseMarkdown } from "./parser.js";
 import { playJingle, showMessageBox } from "./notify.js";
@@ -148,10 +147,7 @@ server.tool(
     }));
 
     // Compute proof-set fingerprint and store it for tamper detection
-    const fpData = dodSteps.flatMap(s =>
-      s.proofs.map(p => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
-    ).join("\n");
-    const fingerprint = createHash("sha256").update(fpData).digest("hex").slice(0, 12);
+    const fingerprint = computeProofFingerprint(dodSteps);
 
     const doc: DodDocument = {
       id,
@@ -476,10 +472,7 @@ server.tool(
     });
 
     // Recompute stored fingerprint so dod_check doesn't flag the amendment as tampering
-    const fpData = doc.steps.flatMap(s =>
-      s.proofs.map(p => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
-    ).join("\n");
-    doc.proof_fingerprint = createHash("sha256").update(fpData).digest("hex").slice(0, 12);
+    doc.proof_fingerprint = computeProofFingerprint(doc.steps);
 
     await store.save(doc);
     await writeMarkdown(doc);

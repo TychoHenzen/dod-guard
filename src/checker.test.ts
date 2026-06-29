@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkDocument, parseSurvivors } from "./checker.js";
+import { createHash } from "node:crypto";
+import { checkDocument, parseSurvivors, computeProofFingerprint } from "./checker.js";
 import type { DodDocument, Proof } from "./types.js";
 
 function manualProof(id: string, desc: string): Proof {
@@ -329,4 +330,63 @@ test("regression compare: unparseable output fails safe (never auto-passes)", as
   const res = await checkDocument(doc);
   assert.equal(res.steps[0].proofs[0].status, "fail");
   assert.match(res.steps[0].proofs[0].error ?? "", /could not parse|regression/i);
+});
+
+// ── advisory tier: a failing advisory proof warns but does not block ──
+
+test("advisory failing proof does NOT fail the step or the overall result", async () => {
+  const advisory: Proof = {
+    id: "proof-1-1", command: "exit 1", predicate: { type: "exit_code", value: 0 },
+    description: "advisory regression budget", last_status: "pending", advisory: true,
+  };
+  const doc = docWith([advisory]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "fail", "the proof itself still reports fail (warns loudly)");
+  assert.equal(res.steps[0].status, "pass", "advisory failure must not fail the step");
+  assert.equal(res.overall, "pass", "advisory failure must not fail the overall result");
+});
+
+test("advisory absent (hard proof) still fails the step and overall as before", async () => {
+  const hard: Proof = {
+    id: "proof-1-1", command: "exit 1", predicate: { type: "exit_code", value: 0 },
+    description: "hard gate", last_status: "pending",
+  };
+  const res = await checkDocument(docWith([hard]));
+  assert.equal(res.steps[0].status, "fail");
+  assert.equal(res.overall, "fail");
+});
+
+// ── fingerprint backward-compat ─────────────────────────────────────
+
+/** The pre-change fingerprint formula: command|type|value only. */
+function legacyFingerprint(steps: Array<{ proofs: Proof[] }>): string {
+  const data = steps
+    .flatMap((s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`))
+    .join("\n");
+  return createHash("sha256").update(data).digest("hex").slice(0, 12);
+}
+
+test("fingerprint backward: legacy proofs (no new fields) hash identically to the pre-change formula", () => {
+  const steps = [{
+    proofs: [
+      cmdProof("p1", "exit 0"),
+      { id: "p2", command: "echo 0 missed", predicate: { type: "mutation", value: 0 } as const, description: "m", last_status: "pending" as const },
+    ],
+  }];
+  assert.equal(computeProofFingerprint(steps), legacyFingerprint(steps), "existing locked docs must not false-trip tamper detection");
+});
+
+test("fingerprint backward: setting or flipping advisory / lower_is_better changes the fingerprint", () => {
+  const base = cmdProof("p1", "exit 0");
+  const wrap = (p: Proof) => [{ proofs: [p] }];
+  const fpNone = computeProofFingerprint(wrap(base));
+  const fpAdvTrue = computeProofFingerprint(wrap({ ...base, advisory: true }));
+  const fpAdvFalse = computeProofFingerprint(wrap({ ...base, advisory: false }));
+  assert.notEqual(fpNone, fpAdvTrue, "adding advisory must change the hash (cannot silently flip a hard gate to advisory)");
+  assert.notEqual(fpAdvTrue, fpAdvFalse, "flipping advisory true→false must change the hash");
+
+  const regBase: Proof = { id: "r", command: "echo 1", predicate: { type: "regression", value: 0.1 }, description: "r", last_status: "pending" };
+  const fpReg = computeProofFingerprint(wrap(regBase));
+  const fpRegLib = computeProofFingerprint(wrap({ ...regBase, predicate: { type: "regression", value: 0.1, lower_is_better: false } }));
+  assert.notEqual(fpReg, fpRegLib, "changing lower_is_better must change the hash");
 });

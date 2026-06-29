@@ -53,6 +53,29 @@ function parseCargoMutants(output: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
+/**
+ * Proof-set fingerprint for tamper detection. Hashes each proof's
+ * command|type|value (tolerance), plus lower_is_better and advisory ONLY when
+ * those fields are present. The conditional append is what keeps the change
+ * backward-compatible: a legacy proof (no new fields) hashes exactly as it did
+ * before, so existing locked docs do not false-trip tamper detection. New
+ * fields, once set, are covered — a hard gate cannot be silently flipped to
+ * advisory, nor the compare direction quietly changed, without the hash moving.
+ */
+export function computeProofFingerprint(steps: Array<{ proofs: Proof[] }>): string {
+  const data = steps
+    .flatMap((s) =>
+      s.proofs.map((p) => {
+        let line = `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`;
+        if (p.predicate.lower_is_better !== undefined) line += `|lib:${p.predicate.lower_is_better}`;
+        if (p.advisory !== undefined) line += `|adv:${p.advisory}`;
+        return line;
+      }),
+    )
+    .join("\n");
+  return createHash("sha256").update(data).digest("hex").slice(0, 12);
+}
+
 function evaluatePredicate(
   predicate: Predicate,
   exitCode: number,
@@ -321,7 +344,9 @@ export async function checkDocument(
     for (const proof of step.proofs) {
       const result = await executeProof(proof, cwd, confirm);
       proofResults.push(result);
-      if (result.status === "fail") stepPassed = false;
+      // Advisory tier: a failing advisory proof is reported (status stays "fail",
+      // warning loudly) but does NOT fail the step or the overall result.
+      if (result.status === "fail" && !proof.advisory) stepPassed = false;
     }
 
     // A step with no proofs at all cannot pass. Manual proofs are now first-class
@@ -338,13 +363,10 @@ export async function checkDocument(
     else totalFail++;
   }
 
-  // Proof-set fingerprint: hash of all (command, predicate) pairs.
-  // If proofs are tampered in the store, the fingerprint changes —
+  // Proof-set fingerprint: hash of all (command, predicate) pairs (+ new fields
+  // when present). If proofs are tampered in the store, the fingerprint changes —
   // humans reviewing the transcript can compare it to the original.
-  const fingerprintData = doc.steps.flatMap(s =>
-    s.proofs.map(p => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
-  ).join("\n");
-  const proofFingerprint = createHash("sha256").update(fingerprintData).digest("hex").slice(0, 12);
+  const proofFingerprint = computeProofFingerprint(doc.steps);
 
   // Tamper detection: the stored fingerprint was set by dod_create/dod_amend. If
   // the recomputed set differs, the store was edited outside dod_amend — block.
