@@ -21099,7 +21099,6 @@ var StdioServerTransport = class {
 
 // src/index.ts
 import * as path4 from "node:path";
-import { createHash as createHash3 } from "node:crypto";
 
 // src/store.ts
 import { promises as fs } from "node:fs";
@@ -21202,6 +21201,20 @@ async function resolveManual(proof, confirm, label = "Manual verification") {
   };
 }
 
+// src/regression.ts
+function extractNumber(stdout, extract) {
+  if (extract) {
+    const match = stdout.match(new RegExp(extract));
+    if (!match || match[1] === void 0) return null;
+    const value2 = Number(match[1]);
+    return Number.isFinite(value2) ? value2 : null;
+  }
+  const numbers = stdout.match(/-?\d+(?:\.\d+)?/g);
+  if (!numbers || numbers.length === 0) return null;
+  const value = Number(numbers[numbers.length - 1]);
+  return Number.isFinite(value) ? value : null;
+}
+
 // src/checker.ts
 var execAsync = promisify(exec);
 var TIMEOUT_MS = 12e4;
@@ -21231,6 +21244,17 @@ function parseMutmut(output) {
 function parseCargoMutants(output) {
   const match = output.match(/(\d+)\s+missed\b/);
   return match ? Number(match[1]) : null;
+}
+function computeProofFingerprint(steps) {
+  const data = steps.flatMap(
+    (s) => s.proofs.map((p) => {
+      let line = `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`;
+      if (p.predicate.lower_is_better !== void 0) line += `|lib:${p.predicate.lower_is_better}`;
+      if (p.advisory !== void 0) line += `|adv:${p.advisory}`;
+      return line;
+    })
+  ).join("\n");
+  return createHash2("sha256").update(data).digest("hex").slice(0, 12);
 }
 function evaluatePredicate(predicate, exitCode, stdout) {
   switch (predicate.type) {
@@ -21348,6 +21372,51 @@ async function executeProof(proof, cwd, confirm) {
       duration_ms: run.duration
     };
   }
+  if (proof.predicate.type === "regression") {
+    const measured = extractNumber(run.combined, proof.predicate.extract);
+    if (measured === null) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: "regression: could not parse a metric number from output (fail-safe \u2014 never auto-passes)",
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    if (proof.baseline_value === void 0) {
+      proof.baseline_value = measured;
+      proof.baseline_captured_at = (/* @__PURE__ */ new Date()).toISOString();
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "pass",
+        command: proof.command,
+        output: run.combined,
+        error: `regression: baseline captured (N0=${measured}). Re-run after the change to compare.`,
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    const baseline = proof.baseline_value;
+    const tol = proof.predicate.value ?? 0;
+    const lowerIsBetter = proof.predicate.lower_is_better ?? true;
+    const passed2 = lowerIsBetter ? measured <= baseline * (1 + tol) : measured >= baseline * (1 - tol);
+    const direction = lowerIsBetter ? "<=" : ">=";
+    const threshold = lowerIsBetter ? baseline * (1 + tol) : baseline * (1 - tol);
+    return {
+      id: proof.id,
+      description: proof.description,
+      status: passed2 ? "pass" : "fail",
+      command: proof.command,
+      output: run.combined,
+      error: passed2 ? void 0 : `regression: ${measured} fails ${direction} ${threshold} (baseline ${baseline}, tolerance ${tol})`,
+      exit_code: run.exitCode,
+      duration_ms: run.duration
+    };
+  }
   if (proof.predicate.type === "tdd") {
     const greenExitCode = proof.predicate.value ?? 0;
     const isGreen = run.exitCode === greenExitCode;
@@ -21431,7 +21500,7 @@ async function checkDocument(doc, cwdOverride, confirm, opts) {
     for (const proof of step.proofs) {
       const result = await executeProof(proof, cwd, confirm);
       proofResults.push(result);
-      if (result.status === "fail") stepPassed = false;
+      if (result.status === "fail" && !proof.advisory) stepPassed = false;
     }
     if (step.proofs.length === 0) stepPassed = false;
     stepResults.push({
@@ -21443,10 +21512,7 @@ async function checkDocument(doc, cwdOverride, confirm, opts) {
     if (stepPassed) totalPass++;
     else totalFail++;
   }
-  const fingerprintData = doc.steps.flatMap(
-    (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
-  ).join("\n");
-  const proofFingerprint = createHash2("sha256").update(fingerprintData).digest("hex").slice(0, 12);
+  const proofFingerprint = computeProofFingerprint(doc.steps);
   const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
   const overall = tampered ? "fail" : scopedStepId ? "incomplete" : totalFail === 0 ? "pass" : "fail";
   const baseSummary = scopedStepId ? `SCOPED (step "${scopedStepId}"): ${totalPass}/${doc.steps.length} steps currently pass \u2014 run a full dod_check (no step) to verify completion` : `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`;
@@ -22110,8 +22176,10 @@ var server = new McpServer({
   version: "1.0.0"
 });
 var PredicateSchema = external_exports.object({
-  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation"]),
-  value: external_exports.union([external_exports.number(), external_exports.string()]).optional()
+  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression"]),
+  value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
+  extract: external_exports.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
+  lower_is_better: external_exports.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage).")
 });
 var ProofCategorySchema = external_exports.enum([
   "lint",
@@ -22122,6 +22190,10 @@ var ProofCategorySchema = external_exports.enum([
   "mutation",
   "integration_wiring",
   "integration_behavioral",
+  "performance",
+  "complexity",
+  "coverage",
+  "duplication",
   "manual",
   "other"
 ]);
@@ -22129,7 +22201,8 @@ var ProofInputSchema = external_exports.object({
   command: external_exports.string(),
   predicate: PredicateSchema,
   description: external_exports.string(),
-  category: ProofCategorySchema.describe("Company-baseline category. Mandatory categories (integration_wiring, integration_behavioral, test) are enforced at creation \u2014 see standards/dod-baselines.md.")
+  category: ProofCategorySchema.describe("Company-baseline category. Mandatory categories (integration_wiring, integration_behavioral, test) are enforced at creation \u2014 see standards/dod-baselines.md."),
+  advisory: external_exports.boolean().optional().describe("Advisory tier: a failing advisory proof warns but does not block. regression proofs default to advisory.")
 });
 var StepInputSchema = external_exports.object({
   title: external_exports.string(),
@@ -22185,7 +22258,7 @@ server.tool(
     if (osError) return osError;
     const baseline = validateBaseline(type, steps.map((s) => ({
       title: s.title,
-      proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type } }))
+      proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type }, advisory: p.advisory }))
     })));
     if (baseline.errors.length > 0) {
       return {
@@ -22213,13 +22286,14 @@ server.tool(
         predicate: p.predicate,
         description: p.description,
         category: p.category,
+        // regression proofs default to advisory at authoring time (decision);
+        // an explicit advisory value always wins, including advisory:false for a
+        // hard SLA gate.
+        ...p.advisory !== void 0 ? { advisory: p.advisory } : p.predicate.type === "regression" ? { advisory: true } : {},
         last_status: "pending"
       }))
     }));
-    const fpData = dodSteps.flatMap(
-      (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
-    ).join("\n");
-    const fingerprint = createHash3("sha256").update(fpData).digest("hex").slice(0, 12);
+    const fingerprint = computeProofFingerprint(dodSteps);
     const doc = {
       id,
       title,
@@ -22496,10 +22570,7 @@ server.tool(
       new_value: { command: proof.command, predicate: { ...proof.predicate }, description: proof.description },
       reason
     });
-    const fpData = doc.steps.flatMap(
-      (s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`)
-    ).join("\n");
-    doc.proof_fingerprint = createHash3("sha256").update(fpData).digest("hex").slice(0, 12);
+    doc.proof_fingerprint = computeProofFingerprint(doc.steps);
     await save(doc);
     await writeMarkdown(doc);
     return {

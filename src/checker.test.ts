@@ -390,3 +390,33 @@ test("fingerprint backward: setting or flipping advisory / lower_is_better chang
   const fpRegLib = computeProofFingerprint(wrap({ ...regBase, predicate: { type: "regression", value: 0.1, lower_is_better: false } }));
   assert.notEqual(fpReg, fpRegLib, "changing lower_is_better must change the hash");
 });
+
+// ── end-to-end: regression proof through the real checkDocument entry ─
+
+test("e2e regression capture-compare: capture then compare a regression proof through checkDocument", async () => {
+  // A single proof reused across two real checkDocument runs — the proof's
+  // baseline_value mutates between calls exactly as it would in production.
+  const proof = regressionProof("proof-1-1", "echo 100", { value: 0.1, lower_is_better: true });
+  const doc = docWith([proof]);
+
+  // First run = CAPTURE phase: no baseline yet → store N0 and pass.
+  const capture = await checkDocument(doc);
+  assert.equal(capture.steps[0].proofs[0].status, "pass", "capture phase passes");
+  assert.equal(capture.overall, "pass");
+  assert.equal(proof.baseline_value, 100, "baseline N0 captured onto the proof");
+  assert.ok(proof.baseline_captured_at, "capture timestamp recorded");
+
+  // Second run = COMPARE phase: same metric (100) is within 10% of N0 → pass.
+  const compare = await checkDocument(doc);
+  assert.equal(compare.steps[0].proofs[0].status, "pass", "within-tolerance compare passes");
+  assert.equal(compare.overall, "pass");
+  assert.equal(proof.baseline_value, 100, "baseline is not re-captured on the compare run");
+});
+
+test("e2e regression capture-compare: an over-tolerance compare run fails through checkDocument", async () => {
+  // Baseline already captured at 100; a measured 130 (>10% worse) must FAIL.
+  const proof = regressionProof("proof-1-1", "echo 130", { value: 0.1, lower_is_better: true, baseline_value: 100 });
+  const res = await checkDocument(docWith([proof]));
+  assert.equal(res.steps[0].proofs[0].status, "fail", "regression beyond tolerance fails");
+  assert.equal(res.overall, "fail");
+});
