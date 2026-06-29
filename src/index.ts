@@ -22,11 +22,15 @@ const server = new McpServer({
 const PredicateSchema = z.object({
   type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression"]),
   value: z.union([z.number(), z.string()]).optional(),
+  extract: z.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
+  lower_is_better: z.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage)."),
 });
 
 const ProofCategorySchema = z.enum([
   "lint", "format", "tdd", "structure", "test", "mutation",
-  "integration_wiring", "integration_behavioral", "manual", "other",
+  "integration_wiring", "integration_behavioral",
+  "performance", "complexity", "coverage", "duplication",
+  "manual", "other",
 ]);
 
 const ProofInputSchema = z.object({
@@ -34,6 +38,7 @@ const ProofInputSchema = z.object({
   predicate: PredicateSchema,
   description: z.string(),
   category: ProofCategorySchema.describe("Company-baseline category. Mandatory categories (integration_wiring, integration_behavioral, test) are enforced at creation — see standards/dod-baselines.md."),
+  advisory: z.boolean().optional().describe("Advisory tier: a failing advisory proof warns but does not block. regression proofs default to advisory."),
 });
 
 const StepInputSchema = z.object({
@@ -112,7 +117,7 @@ server.tool(
     // instead of trusting the author to follow the standard.
     const baseline = validateBaseline(type, steps.map((s) => ({
       title: s.title,
-      proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type } })),
+      proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type }, advisory: p.advisory })),
     })));
     if (baseline.errors.length > 0) {
       return {
@@ -142,6 +147,14 @@ server.tool(
         predicate: p.predicate as Predicate,
         description: p.description,
         category: p.category,
+        // regression proofs default to advisory at authoring time (decision);
+        // an explicit advisory value always wins, including advisory:false for a
+        // hard SLA gate.
+        ...(p.advisory !== undefined
+          ? { advisory: p.advisory }
+          : p.predicate.type === "regression"
+            ? { advisory: true }
+            : {}),
         last_status: "pending" as const,
       })),
     }));

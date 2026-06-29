@@ -60,6 +60,23 @@ test("mutation baseline does not warn when a mutation proof is present", () => {
   assert.ok(!r.warnings.some((w) => /mutation/i.test(w)), "mutation present → no mutation warning");
 });
 
+test("regression: a regression+advisory DoD validates without new mandatory errors", () => {
+  // The four regression categories are optional — they must never become
+  // mandatory, and validateBaseline must accept the advisory proof flag.
+  const steps: BaselineStepInput[] = [
+    { title: "Perf gate", proofs: [{ category: "performance", predicate: { type: "regression" }, advisory: true }] },
+    { title: "Coverage gate", proofs: [{ category: "coverage", predicate: { type: "regression" }, advisory: true }] },
+    step("Logic", "tdd", "test"),
+    step("Wire", "integration_wiring", "integration_behavioral"),
+  ];
+  const r = validateBaseline("general", steps);
+  assert.deepEqual(r.errors, [], "new regression categories must not become mandatory");
+  assert.ok(
+    !r.errors.some((e) => /performance|complexity|coverage|duplication/.test(e)),
+    "regression categories must not be reported as missing mandatory categories",
+  );
+});
+
 test("a presence-only step is warned (structure without any behavioral/test proof)", () => {
   const steps = [
     step("Add field", "structure"), // weak only

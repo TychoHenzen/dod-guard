@@ -13,6 +13,8 @@ import type { ProofCategory } from "./types.js";
 export interface BaselineProofInput {
   category: ProofCategory;
   predicate: { type: string };
+  /** Advisory tier (regression proofs default to this) — accepted, never makes a category mandatory. */
+  advisory?: boolean;
 }
 
 export interface BaselineStepInput {
