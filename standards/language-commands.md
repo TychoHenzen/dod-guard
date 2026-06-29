@@ -200,6 +200,51 @@ Notes:
 
 ---
 
+## Regression Metrics (performance / complexity / coverage / duplication)
+
+The `regression` predicate proves a numeric quality metric does not regress vs a **captured
+baseline** — never an impossible absolute target (see
+[dod-baselines.md](dod-baselines.md), *Non-regression over absolutes*). It is two-phase: an early
+**capture step** runs the metric command on PRE-change code (stores N0, PASSes), and a later
+**compare step** re-runs it and gates N1 against N0 with tolerance `tol`.
+
+- Use `extract` (regex, capture group 1) to pull the metric out of noisy tool output; omit it to
+  use the last number in stdout.
+- `lower_is_better` defaults to **true** (performance, complexity, duplication). Set it **false**
+  for **coverage** (higher is better).
+- `regression` proofs default to **advisory** (warn, don't block). Set `advisory: false` for a hard
+  SLA gate. Categories: `performance`, `complexity`, `coverage`, `duplication`.
+
+The capture and compare steps run the **same command**; only the ordering (pre- vs post-change) and
+the stored baseline differ. Author both steps with identical commands.
+
+| Metric | Language / Tool | Command | extract (capture group 1) | lower_is_better |
+|--------|-----------------|---------|---------------------------|-----------------|
+| **Performance** | Rust / criterion | `cargo bench -- --output-format bencher` | `test .* \.\.\. bench:\s*([0-9]+)` | true |
+| **Performance** | TS/JS / vitest bench | `npx vitest bench --run` | `([0-9.]+)\s*ms` | true |
+| **Performance** | Python / pytest-benchmark | `python -m pytest --benchmark-only` | `Mean[^0-9]*([0-9.]+)` | true |
+| **Performance** | .NET / BenchmarkDotNet | `dotnet run -c Release --project bench` | `Mean[^0-9]*([0-9.]+)` | true |
+| **Complexity** | TS/JS | `npx eslintcc src --format json` (or `npx complexity-report`) | `"average":\s*([0-9.]+)` | true |
+| **Complexity** | Python / radon | `radon cc -s -a src` | `Average complexity:\s*\w+\s*\(([0-9.]+)\)` | true |
+| **Complexity** | C# / Roslyn metrics | `dotnet build /t:Metrics` then read the report | `CyclomaticComplexity[^0-9]*([0-9]+)` | true |
+| **Coverage** | TS/JS / c8/jest | `npx jest --coverage` | `All files[^0-9]*([0-9.]+)` | **false** |
+| **Coverage** | Python / coverage.py | `python -m pytest --cov=src` | `TOTAL[^0-9]*([0-9]+)%` | **false** |
+| **Coverage** | Rust / tarpaulin | `cargo tarpaulin --print-summary` | `([0-9.]+)%\s*coverage` | **false** |
+| **Coverage** | .NET / coverlet | `dotnet test /p:CollectCoverage=true` | `Total[^0-9]*([0-9.]+)%` | **false** |
+| **Duplication** | any / jscpd | `npx jscpd src --reporters json --silent` | `"percentage":\s*([0-9.]+)` | true |
+| **Duplication** | Python / pylint | `pylint --disable=all --enable=duplicate-code src` | `([0-9.]+)\s*%\s*duplicated` | true |
+
+Notes:
+- **Coverage of changed lines** is the strongest coverage signal — prefer a diff-scoped run
+  (e.g. `diff-cover`, `jest --changedSince`) so untouched legacy gaps don't dominate the metric.
+- **Windows hosts:** capture group regexes are stored in the predicate's `extract` field (engine
+  applies them), so the command itself only needs to print the number — no `grep`/`findstr` piping
+  required.
+- If a tool's output cannot be parsed, the proof FAILs (fail-safe). Adjust `extract`, or fall back
+  to an `exit_code` proof and document the exception.
+
+---
+
 ## Choosing Commands
 
 When constructing proofs during the interview:

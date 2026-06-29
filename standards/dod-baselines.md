@@ -140,3 +140,41 @@ mutmut / Stryker), parses the surviving (un-killed) mutant count, and passes iff
   tests are green" is not enough assurance that real defects would be caught.
 
 **Precision:** presence/removal proofs must match **signatures or word boundaries**, not bare substrings. `findstr "TryStopTracking"` matches both `TryStopTracking(dossierId)` and `TryStopTracking(dossierId, clientId)` — a false positive. Use `grep -w` / `findstr /R` with anchors.
+
+### Non-regression over absolutes — the `regression` predicate
+
+Absolute quality targets ("coverage must be ≥ 90%", "this endpoint must respond in < 50ms")
+make **impossible goals** on real brownfield code: the baseline is already below the target, so
+the proof can never pass and the DoD is dead on arrival. The same delta philosophy that governs
+lint and format applies to every numeric quality metric: **prove the change does not regress vs a
+captured baseline, never that it meets an absolute.**
+
+The `regression` predicate encodes this. It is **two-phase**, keyed by whether a baseline has been
+captured (the exact mirror of how `tdd` keys on `seen_failing`):
+
+1. **Capture step (pre-change).** An early, ordered step runs the metric command on the
+   PRE-change code. The predicate extracts the number N0 (via the optional `extract` regex's
+   capture group 1, else the last number in stdout), stores it on the proof, and **PASSes** with a
+   "baseline captured" note. The engine never manipulates the target repo's git state — capture
+   relies on this step running before the change lands.
+2. **Compare step (post-change).** Later runs extract N1 and compare:
+   - `lower_is_better: true` (default — perf, complexity, duplication): pass iff `N1 <= N0*(1+tol)`.
+   - `lower_is_better: false` (coverage): pass iff `N1 >= N0*(1-tol)`.
+
+`tol` is the predicate `value` (a fraction, e.g. `0.10` for ±10%). Output with no parseable number
+**FAILs** (fail-safe — a regression proof never auto-passes on unparseable output).
+
+### The advisory tier
+
+A proof may set `advisory: true`: a failing advisory proof is reported **loudly as a warning** but
+does **not** fail its step or the overall verdict. This is what makes a non-regression metric safe
+to gate on without turning a noisy benchmark into a hard build-breaker.
+
+- `regression` proofs **default to advisory.** Set `advisory: false` to make one a hard SLA gate.
+- The advisory flag and `lower_is_better` are part of the **proof fingerprint**, so a hard gate
+  cannot be silently downgraded to advisory, nor the compare direction quietly flipped, without
+  tamper detection firing.
+- **Optional, never mandatory.** The `performance`/`complexity`/`coverage`/`duplication` categories
+  are never added to the hard-mandatory set and never block `dod_create`.
+
+See [language-commands.md](language-commands.md) (Regression Metrics) for per-language commands.

@@ -315,9 +315,12 @@ The DoD also needs a `type` (`bug` or `general`) to select the baseline.
 }
 ```
 
-**Proof categories:** `lint`, `format`, `tdd`, `structure`, `test`,
-`integration_wiring`, `integration_behavioral`, `manual`, `other`. Mandatory (enforced
-at create): `integration_wiring` + `integration_behavioral` + `test`. **Precision:**
+**Proof categories:** `lint`, `format`, `tdd`, `structure`, `test`, `mutation`,
+`integration_wiring`, `integration_behavioral`, `performance`, `complexity`, `coverage`,
+`duplication`, `manual`, `other`. Mandatory (enforced
+at create): `integration_wiring` + `integration_behavioral` + `test`. The
+`performance`/`complexity`/`coverage`/`duplication` categories pair with `regression`
+proofs and are optional (never mandatory). **Precision:**
 presence/removal proofs must match signatures or word boundaries (`grep -w`, `findstr /R`),
 never bare substrings — e.g. `TryStopTracking(dossierId)` vs `TryStopTracking(dossierId, clientId)`
 will collide on a bare substring match.
@@ -337,6 +340,9 @@ will collide on a bare substring match.
 | `manual` | _(none)_ | Human-only verification, confirmed out-of-band (elicitation/dialog) — the model cannot self-pass it |
 | `review` | _(none)_ | Fresh-context code review. At check time the agent runs `/code-review` against the diff vs requirements and confirms PASS only if no correctness/requirement gaps remain. Verdict arrives via the same un-fakeable channel as `manual`; FAIL is never cached. Use for intent/edge-case correctness that command proofs can't assert. |
 | `mutation` | `N` _(default 0)_ | **Mutation testing.** Runs the command in-band and parses surviving (un-killed) mutants from Stryker / mutmut / cargo-mutants output; passes iff survivors `<= N`. Unparseable output FAILs (fail-safe). The strongest test-quality proof — scope to changed/critical functions. See `standards/language-commands.md` for per-tool changed-functions commands. |
+| `regression` | `tol` _(fraction, e.g. `0.10`)_ | **Non-regression gate.** Two-phase: a capture step run on PRE-change code stores the metric baseline N0 and PASSes; later runs compare the new metric N1 against N0 with tolerance `tol`. Optional `extract` (regex, capture group 1) picks the number, else the last number in stdout; unparseable output FAILs (fail-safe). `lower_is_better` (default true) for perf/complexity/duplication; set false for coverage. Defaults to **advisory** (warns, does not block) — set `advisory: false` for a hard SLA gate. Proves perf/complexity/coverage/duplication don't regress vs a baseline, never an impossible absolute target. See `standards/language-commands.md` for per-language metric commands. |
+
+**The `advisory` proof flag:** any proof may set `"advisory": true` — a failing advisory proof is reported loudly as a warning but does NOT fail its step or the overall verdict. `regression` proofs default to advisory; set `advisory: false` to make one a hard gate. The flag is part of the proof fingerprint, so a hard gate cannot be silently downgraded to advisory.
 
 **When to use `tdd` predicates:**
 
