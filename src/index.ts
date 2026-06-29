@@ -21,7 +21,7 @@ const server = new McpServer({
 // ── Shared schemas ──────────────────────────────────────────────────
 
 const PredicateSchema = z.object({
-  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation"]),
+  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression"]),
   value: z.union([z.number(), z.string()]).optional(),
 });
 

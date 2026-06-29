@@ -1,6 +1,17 @@
 export interface Predicate {
-  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation";
+  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation" | "regression";
   value?: number | string;
+  /**
+   * `regression` only: regex applied to stdout; capture group 1 is the metric
+   * number. Omitted => fall back to the last number in stdout.
+   */
+  extract?: string;
+  /**
+   * `regression` only: true => smaller metric is better (perf/complexity/
+   * duplication) and the compare passes iff N1 <= N0*(1+tol). false/absent =>
+   * larger is better (coverage) and it passes iff N1 >= N0*(1-tol).
+   */
+  lower_is_better?: boolean;
 }
 
 /**
@@ -17,6 +28,10 @@ export type ProofCategory =
   | "mutation"
   | "integration_wiring"
   | "integration_behavioral"
+  | "performance"
+  | "complexity"
+  | "coverage"
+  | "duplication"
   | "manual"
   | "other";
 
@@ -52,6 +67,19 @@ export interface Proof {
   seen_failing?: boolean;
   seen_failing_at?: string;
   manual_result?: ManualResult;
+  /**
+   * `regression` advisory tier: a failing advisory proof is reported loudly but
+   * does NOT make the step or overall result fail. `regression` proofs default
+   * to advisory; set false for a hard SLA gate.
+   */
+  advisory?: boolean;
+  /**
+   * `regression` two-phase state. Undefined => capture phase (run command, store
+   * the metric here, PASS). Defined => compare phase (evaluate N1 vs this N0).
+   * Mutable like seen_failing; NOT part of the proof-set fingerprint.
+   */
+  baseline_value?: number;
+  baseline_captured_at?: string;
 }
 
 export interface Step {
