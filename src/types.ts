@@ -7,9 +7,11 @@ export interface Predicate {
    */
   extract?: string;
   /**
-   * `regression` only: true => smaller metric is better (perf/complexity/
-   * duplication) and the compare passes iff N1 <= N0*(1+tol). false/absent =>
-   * larger is better (coverage) and it passes iff N1 >= N0*(1-tol).
+   * `regression` only: true (default when absent) => smaller metric is better
+   * (perf/complexity/duplication) and the compare passes iff N1 <= N0*(1+tol).
+   * false => larger is better (coverage) and it passes iff N1 >= N0*(1-tol).
+   * Defaulting to lower-is-better is the fail-safe choice: it catches the common
+   * regression even when the author forgets to set the direction.
    */
   lower_is_better?: boolean;
 }

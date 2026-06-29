@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 import { createHash } from "node:crypto";
 import type { DodDocument, CheckResult, StepResult, ProofResult, Predicate, Proof } from "./types.js";
 import { resolveManual, type Confirmer } from "./manual.js";
+import { extractNumber } from "./regression.js";
 
 const execAsync = promisify(exec);
 
@@ -180,6 +181,53 @@ async function executeProof(proof: Proof, cwd: string, confirm?: Confirmer): Pro
       id: proof.id, description: proof.description, status: passed ? "pass" : "fail",
       command: proof.command, output: run.combined,
       error: passed ? undefined : `mutation: ${survivors} surviving mutant(s) exceeds the allowed maximum of ${maxAllowed}`,
+      exit_code: run.exitCode, duration_ms: run.duration,
+    };
+  }
+
+  // Regression predicate: two-phase, keyed by whether a baseline is captured.
+  // Fail-safe — output with no parseable metric FAILS, never auto-passes.
+  if (proof.predicate.type === "regression") {
+    const measured = extractNumber(run.combined, proof.predicate.extract);
+
+    if (measured === null) {
+      return {
+        id: proof.id, description: proof.description, status: "fail",
+        command: proof.command, output: run.combined,
+        error: "regression: could not parse a metric number from output (fail-safe — never auto-passes)",
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    // Capture phase: no baseline yet → store this PRE-change metric and PASS.
+    // This run is expected on pre-change code (ordered capture step).
+    if (proof.baseline_value === undefined) {
+      proof.baseline_value = measured;
+      proof.baseline_captured_at = new Date().toISOString();
+      return {
+        id: proof.id, description: proof.description, status: "pass",
+        command: proof.command, output: run.combined,
+        error: `regression: baseline captured (N0=${measured}). Re-run after the change to compare.`,
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    // Compare phase: evaluate the new metric against the stored baseline.
+    const baseline = proof.baseline_value;
+    const tol = (proof.predicate.value as number) ?? 0;
+    const lowerIsBetter = proof.predicate.lower_is_better ?? true;
+    const passed = lowerIsBetter
+      ? measured <= baseline * (1 + tol)
+      : measured >= baseline * (1 - tol);
+
+    const direction = lowerIsBetter ? "<=" : ">=";
+    const threshold = lowerIsBetter ? baseline * (1 + tol) : baseline * (1 - tol);
+    return {
+      id: proof.id, description: proof.description, status: passed ? "pass" : "fail",
+      command: proof.command, output: run.combined,
+      error: passed
+        ? undefined
+        : `regression: ${measured} fails ${direction} ${threshold} (baseline ${baseline}, tolerance ${tol})`,
       exit_code: run.exitCode, duration_ms: run.duration,
     };
   }

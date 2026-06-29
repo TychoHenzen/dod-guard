@@ -275,3 +275,58 @@ test("mutation end-to-end: checkDocument runs the command and gates on survivors
   assert.equal(failRes.overall, "fail");
   assert.equal(failRes.steps[0].proofs[0].status, "fail");
 });
+
+// ── regression predicate: two-phase capture/compare ─────────────────
+
+function regressionProof(
+  id: string,
+  command: string,
+  opts: { value?: number; lower_is_better?: boolean; extract?: string; baseline_value?: number } = {},
+): Proof {
+  return {
+    id,
+    command,
+    predicate: { type: "regression", value: opts.value, lower_is_better: opts.lower_is_better, extract: opts.extract },
+    description: id,
+    last_status: "pending",
+    baseline_value: opts.baseline_value,
+  };
+}
+
+test("regression compare: capture phase stores the baseline and passes", async () => {
+  const proof = regressionProof("proof-1-1", "echo 100", { value: 0.1 });
+  const doc = docWith([proof]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "pass", "capture phase always passes");
+  assert.equal(proof.baseline_value, 100, "baseline value captured onto the proof");
+  assert.ok(proof.baseline_captured_at, "capture timestamp recorded");
+});
+
+test("regression compare: within tolerance passes (lower_is_better)", async () => {
+  // baseline 100, tol 10% → ceiling 110. measured 105 <= 110 → pass.
+  const doc = docWith([regressionProof("proof-1-1", "echo 105", { value: 0.1, lower_is_better: true, baseline_value: 100 })]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "pass");
+});
+
+test("regression compare: over tolerance fails (lower_is_better)", async () => {
+  // baseline 100, tol 10% → ceiling 110. measured 120 > 110 → fail.
+  const doc = docWith([regressionProof("proof-1-1", "echo 120", { value: 0.1, lower_is_better: true, baseline_value: 100 })]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "fail");
+});
+
+test("regression compare: coverage direction higher-is-better (lower_is_better=false)", async () => {
+  // baseline 80, tol 10% → floor 72. measured 78 >= 72 → pass; 70 < 72 → fail.
+  const pass = await checkDocument(docWith([regressionProof("proof-1-1", "echo 78", { value: 0.1, lower_is_better: false, baseline_value: 80 })]));
+  assert.equal(pass.steps[0].proofs[0].status, "pass");
+  const fail = await checkDocument(docWith([regressionProof("proof-1-1", "echo 70", { value: 0.1, lower_is_better: false, baseline_value: 80 })]));
+  assert.equal(fail.steps[0].proofs[0].status, "fail");
+});
+
+test("regression compare: unparseable output fails safe (never auto-passes)", async () => {
+  const doc = docWith([regressionProof("proof-1-1", "echo no metric here", { value: 0.1, lower_is_better: true, baseline_value: 100 })]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "fail");
+  assert.match(res.steps[0].proofs[0].error ?? "", /could not parse|regression/i);
+});
