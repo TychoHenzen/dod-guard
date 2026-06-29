@@ -100,6 +100,9 @@ The output is a self-contained spec with testable proofs that can be passed to `
 | `manual` | — | **Human-verified.** Confirmed by the user during `dod_check` via a channel Claude cannot drive — see Manual verification |
 | `review` | — | **Fresh-context code review.** The agent runs `/code-review` against the diff vs requirements; the PASS/FAIL verdict arrives through the same out-of-band channel as `manual` (model cannot self-pass). For intent/edge-case correctness commands can't assert |
 | `mutation` | `N` (default `0`) | **Mutation testing.** Runs the command in-band, parses surviving (un-killed) mutants from Stryker / mutmut / cargo-mutants output, and passes iff survivors `<= N`. Output it cannot parse FAILs (fail-safe — never auto-passes). The strongest signal that tests actually catch bugs; scope to changed/critical functions |
+| `regression` | `tol` (fraction, e.g. `0.10`) | **Non-regression gate.** Two-phase: a capture run on pre-change code stores the metric baseline N0; later runs compare N1 against N0 with tolerance `tol`. `extract` (regex, group 1) or the last number in stdout picks the metric; unparseable output FAILs. `lower_is_better` (default true) for perf/complexity/duplication, false for coverage. Defaults to **advisory** — set `advisory: false` for a hard SLA gate. Proves quality doesn't regress vs a baseline, never an impossible absolute target |
+
+**Advisory tier.** Any proof may set `advisory: true`: a failing advisory proof warns loudly but does not fail its step or the overall verdict. `regression` proofs default to advisory. The flag is part of the proof fingerprint, so a hard gate cannot be silently downgraded.
 
 ### TDD enforcement
 
