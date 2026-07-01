@@ -31,44 +31,104 @@ export function playJingle(): void {
   }
 }
 
-export type MessageBoxResult = "yes" | "no" | "timeout";
+export interface VerifyDialogResult {
+  result: "yes" | "no";
+  note?: string;
+}
 
-// WScript.Shell.Popup return codes.
-const POPUP_YES = 6;
-const POPUP_TIMEOUT = -1;
+// A WinForms dialog (instead of WScript.Shell.Popup) so the human can attach a
+// free-text note alongside the pass/fail verdict. Built inline via
+// Add-Type — no compiled assembly, no extra files to ship.
+const VERIFY_DIALOG_SCRIPT = `
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+$form = New-Object System.Windows.Forms.Form
+$form.Text = $env:DODG_TITLE
+$form.Width = 520
+$form.Height = 420
+$form.StartPosition = "CenterScreen"
+$form.Topmost = $true
+$form.FormBorderStyle = "FixedDialog"
+$form.MaximizeBox = $false
+$form.MinimizeBox = $false
+
+$msgBox = New-Object System.Windows.Forms.TextBox
+$msgBox.Multiline = $true
+$msgBox.ReadOnly = $true
+$msgBox.ScrollBars = "Vertical"
+$msgBox.Text = $env:DODG_MSG
+$msgBox.Location = New-Object System.Drawing.Point(10,10)
+$msgBox.Size = New-Object System.Drawing.Size(484,220)
+$form.Controls.Add($msgBox)
+
+$noteLabel = New-Object System.Windows.Forms.Label
+$noteLabel.Text = "Notes (optional):"
+$noteLabel.Location = New-Object System.Drawing.Point(10,238)
+$noteLabel.Size = New-Object System.Drawing.Size(200,20)
+$form.Controls.Add($noteLabel)
+
+$noteBox = New-Object System.Windows.Forms.TextBox
+$noteBox.Multiline = $true
+$noteBox.ScrollBars = "Vertical"
+$noteBox.Location = New-Object System.Drawing.Point(10,260)
+$noteBox.Size = New-Object System.Drawing.Size(484,60)
+$form.Controls.Add($noteBox)
+
+$passBtn = New-Object System.Windows.Forms.Button
+$passBtn.Text = "PASS"
+$passBtn.DialogResult = [System.Windows.Forms.DialogResult]::Yes
+$passBtn.Location = New-Object System.Drawing.Point(300,335)
+$passBtn.Size = New-Object System.Drawing.Size(90,30)
+$form.Controls.Add($passBtn)
+$form.AcceptButton = $passBtn
+
+$failBtn = New-Object System.Windows.Forms.Button
+$failBtn.Text = "FAIL"
+$failBtn.DialogResult = [System.Windows.Forms.DialogResult]::No
+$failBtn.Location = New-Object System.Drawing.Point(400,335)
+$failBtn.Size = New-Object System.Drawing.Size(90,30)
+$form.Controls.Add($failBtn)
+$form.CancelButton = $failBtn
+
+$dialogResult = $form.ShowDialog()
+
+$verdict = "no"
+if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) { $verdict = "yes" }
+
+$payload = @{ result = $verdict; note = $noteBox.Text } | ConvertTo-Json -Compress
+[Console]::Out.Write($payload)
+`;
 
 /**
- * Show a blocking Windows Yes/No dialog spawned by THIS (server) process and
- * resolve with the human's choice. This is the anti-cheat fallback when the MCP
- * client does not support elicitation.
+ * Show a blocking Windows dialog (PASS / FAIL + an optional free-text note)
+ * spawned by THIS (server) process, and resolve with the human's verdict. This
+ * is the primary out-of-band channel for manual/review verification; MCP
+ * elicitation is only used as a fallback where a popup cannot run (non-Windows
+ * hosts).
  *
  * The dialog belongs to the server process — Claude cannot programmatically
  * answer another process's modal dialog through normal tool use. Message and
  * title are passed via environment variables to avoid shell-escaping issues.
  *
- * Resolves "no" on any failure or on a non-Windows host, and "timeout" if the
- * dialog auto-dismisses — callers MUST treat anything other than "yes" as a
- * failed verification so a missing human can never yield a pass.
+ * No timeout: the human may take a while to respond, so the dialog waits
+ * indefinitely rather than auto-failing on a clock. Resolves `{ result: "no" }`
+ * on any launch failure, on a non-Windows host, or when the human explicitly
+ * clicks FAIL / closes the dialog — callers MUST treat anything other than
+ * "yes" as a failed verification so a missing human can never yield a pass.
  */
-export function showMessageBox(title: string, body: string, timeoutSec: number): Promise<MessageBoxResult> {
-  if (!isWindows) return Promise.resolve("no");
-
-  // 4 = Yes/No buttons, 48 = exclamation icon, 4096 = system-modal (stays on top).
-  const script =
-    "$w = New-Object -ComObject WScript.Shell; " +
-    "$r = $w.Popup($env:DODG_MSG, [int]$env:DODG_TIMEOUT, $env:DODG_TITLE, 4 + 48 + 4096); " +
-    "[Console]::Out.Write($r)";
+export function showVerifyDialog(title: string, body: string): Promise<VerifyDialogResult> {
+  if (!isWindows) return Promise.resolve({ result: "no" });
 
   return new Promise((resolve) => {
     try {
-      const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+      const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", VERIFY_DIALOG_SCRIPT], {
         stdio: ["ignore", "pipe", "ignore"],
         windowsHide: true,
         env: {
           ...process.env,
           DODG_MSG: body,
           DODG_TITLE: title,
-          DODG_TIMEOUT: String(Math.max(0, Math.floor(timeoutSec))),
         },
       });
 
@@ -76,15 +136,19 @@ export function showMessageBox(title: string, body: string, timeoutSec: number):
       child.stdout.on("data", (chunk) => {
         out += chunk.toString();
       });
-      child.on("error", () => resolve("no"));
+      child.on("error", () => resolve({ result: "no" }));
       child.on("close", () => {
-        const code = parseInt(out.trim(), 10);
-        if (code === POPUP_YES) resolve("yes");
-        else if (code === POPUP_TIMEOUT) resolve("timeout");
-        else resolve("no");
+        try {
+          const parsed = JSON.parse(out.trim()) as { result?: string; note?: string };
+          const result = parsed.result === "yes" ? "yes" : "no";
+          const note = typeof parsed.note === "string" && parsed.note.trim() ? parsed.note.trim() : undefined;
+          resolve({ result, note });
+        } catch {
+          resolve({ result: "no" });
+        }
       });
     } catch {
-      resolve("no");
+      resolve({ result: "no" });
     }
   });
 }

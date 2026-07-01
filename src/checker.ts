@@ -2,7 +2,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { createHash } from "node:crypto";
 import type { DodDocument, CheckResult, StepResult, ProofResult, Predicate, Proof } from "./types.js";
-import { resolveManual, type Confirmer } from "./manual.js";
+import { perProofFingerprint } from "./manual.js";
 import { extractNumber } from "./regression.js";
 
 const execAsync = promisify(exec);
@@ -141,34 +141,37 @@ async function runCommand(proof: Proof, cwd: string): Promise<{ exitCode: number
   }
 }
 
-async function executeProof(proof: Proof, cwd: string, confirm?: Confirmer): Promise<ProofResult> {
+async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
   // Out-of-band proofs (manual, review) are verified through a channel the model
-  // cannot drive — never by running a command. `review` asks for a fresh-context
-  // code review (/code-review) against the diff vs requirements; the verdict
-  // arrives via the same elicitation/dialog channel as manual proofs.
+  // cannot drive — never by running a command, and never auto-triggered by
+  // dod_check. `dod_check` only reads back whatever verdict the dedicated
+  // `dod_verify` tool already recorded on `proof.manual_result` (Claude calls
+  // dod_verify explicitly when it judges verification is actually relevant,
+  // e.g. right after implementing the step). No matching record => unverified.
   if (proof.predicate.type === "manual" || proof.predicate.type === "review") {
     const isReview = proof.predicate.type === "review";
     const label = isReview ? "Code review" : "Manual verification";
-    if (!confirm) {
-      // No confirmation channel (e.g. headless run). Fail safe — must never pass
-      // without the out-of-band verdict, and we never fabricate the answer.
+    const fingerprint = perProofFingerprint(proof);
+    const mr = proof.manual_result;
+
+    if (mr && mr.proof_fingerprint === fingerprint) {
+      const output = `${label} ${mr.answer.toUpperCase()} (via dod_verify) at ${mr.confirmed_at} via ${mr.channel}${mr.note ? ` — "${mr.note}"` : ""}`;
       return {
         id: proof.id,
         description: proof.description,
-        status: "fail",
+        status: mr.answer,
         command: proof.command,
-        error: `${label} required but no confirmation channel is available (non-interactive run).`,
-        output: `${label} not confirmed`,
+        output,
+        error: mr.answer === "fail" ? `${label} was confirmed as failing by the human.` : undefined,
       };
     }
-    const resolution = await resolveManual(proof, confirm, label);
+
     return {
       id: proof.id,
       description: proof.description,
-      status: resolution.status,
+      status: "skipped",
       command: proof.command,
-      output: resolution.output,
-      error: resolution.status === "fail" ? `${label} was not confirmed as passing.` : undefined,
+      output: `${label} not yet verified — call dod_verify(dod_id, "${proof.id}") to request human confirmation.`,
     };
   }
 
@@ -319,7 +322,6 @@ function carryForwardStep(step: DodDocument["steps"][number]): StepResult {
 export async function checkDocument(
   doc: DodDocument,
   cwdOverride?: string,
-  confirm?: Confirmer,
   opts?: { stepId?: string },
 ): Promise<CheckResult> {
   const cwd = cwdOverride ?? doc.cwd;
@@ -327,6 +329,11 @@ export async function checkDocument(
   const stepResults: StepResult[] = [];
   let totalPass = 0;
   let totalFail = 0;
+  // Distinguish a real failure (blocks overall FAIL) from a manual/review proof
+  // that simply hasn't been verified yet via dod_verify this run (blocks overall
+  // only to INCOMPLETE — "not yet checked", not "checked and failed").
+  let anyRealFail = false;
+  let anyUnverified = false;
 
   for (const step of doc.steps) {
     // Scoped run: execute only the target step; carry the rest forward unrun.
@@ -342,15 +349,19 @@ export async function checkDocument(
     let stepPassed = true;
 
     for (const proof of step.proofs) {
-      const result = await executeProof(proof, cwd, confirm);
+      const result = await executeProof(proof, cwd);
       proofResults.push(result);
       // Advisory tier: a failing advisory proof is reported (status stays "fail",
       // warning loudly) but does NOT fail the step or the overall result.
-      if (result.status === "fail" && !proof.advisory) stepPassed = false;
+      if (result.status === "fail" && !proof.advisory) { stepPassed = false; anyRealFail = true; }
+      // An unverified manual/review proof holds the step (and overall) short of
+      // PASS too, but as "incomplete" rather than "fail" — see anyUnverified above.
+      if (result.status === "skipped" && !proof.advisory) { stepPassed = false; anyUnverified = true; }
     }
 
     // A step with no proofs at all cannot pass. Manual proofs are now first-class
-    // (verified by a human via the confirmer), so an all-manual step CAN pass.
+    // (verified by a human via dod_verify), so an all-manual step CAN pass once
+    // dod_verify has recorded a PASS for each of them.
     if (step.proofs.length === 0) stepPassed = false;
 
     stepResults.push({
@@ -373,21 +384,28 @@ export async function checkDocument(
   const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
 
   // A scoped run verifies only one step, so it can never assert the whole DoD is
-  // done — overall is always "incomplete". Only a full run yields pass/fail. This
-  // is what stops a `--step N` run from satisfying a /goal "dod_check PASS" gate.
-  // Tamper always forces "fail", overriding both pass and incomplete.
+  // done — overall is always "incomplete". Only a full run yields pass/fail/
+  // incomplete. Tamper always forces "fail", overriding everything else; a real
+  // failure forces "fail" over "incomplete"; an unverified manual/review proof
+  // (and nothing worse) holds the verdict at "incomplete" until dod_verify runs.
   const overall: CheckResult["overall"] = tampered
     ? "fail"
     : scopedStepId
       ? "incomplete"
-      : totalFail === 0 ? "pass" : "fail";
+      : anyRealFail
+        ? "fail"
+        : anyUnverified
+          ? "incomplete"
+          : "pass";
 
   const baseSummary = scopedStepId
     ? `SCOPED (step "${scopedStepId}"): ${totalPass}/${doc.steps.length} steps currently pass — run a full dod_check (no step) to verify completion`
     : `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`;
   const summary = tampered
     ? `TAMPER DETECTED — proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}`
-    : baseSummary;
+    : !scopedStepId && anyUnverified && !anyRealFail
+      ? `${baseSummary} — one or more manual/review proofs await dod_verify`
+      : baseSummary;
 
   return {
     overall,

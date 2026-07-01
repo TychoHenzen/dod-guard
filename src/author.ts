@@ -21,6 +21,10 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("2. Call `dod_check` to verify proofs — do NOT mark proofs manually.");
   l.push("   While iterating on one step, pass `step: N` to verify just that step fast (other steps are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
   l.push("3. A step is complete when ALL its proofs pass via `dod_check`.");
+  l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts — it only reports what's already");
+  l.push("    on record (`skipped` = not yet verified, holds overall at INCOMPLETE). Call");
+  l.push("    `dod_verify(dod_id, proof_id)` explicitly once verification is actually relevant — typically");
+  l.push("    right after implementing that step — then re-run `dod_check` to fold in the verdict.");
   l.push("4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
   l.push("4b. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
   l.push("4c. After a step's proofs all pass, commit that step before starting the next — one commit per step (clean, bisectable history).");
@@ -32,8 +36,9 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("`dod_check` executes commands from the canonical copy, not this markdown file.");
   l.push("Editing proof text here has no effect on verification.");
   l.push("Store tampering is **logged and detectable** — each check prints a proof-set fingerprint.");
-  l.push("Manual proofs are confirmed by the human directly (elicitation / dialog) during `dod_check` —");
-  l.push("Claude cannot self-confirm them. A confirmed PASS is cached until the proof changes.");
+  l.push("Manual/review proofs are confirmed by the human directly (popup / elicitation) via `dod_verify` —");
+  l.push("Claude cannot self-confirm them, and an unrequested one holds the DoD at INCOMPLETE, never PASS.");
+  l.push("A confirmed verdict is recorded until the proof changes.");
   l.push("</claude_instructions>");
   l.push("");
   l.push(`**Goal:** ${doc.goal}`);
@@ -160,7 +165,7 @@ export function updateDocFromCheckResult(doc: DodDocument, result: CheckResult):
 
   doc.last_check = {
     timestamp: result.timestamp,
-    overall: result.overall === "pass" ? "pass" : "fail",
+    overall: result.overall,
     summary: result.summary,
   };
 }
@@ -193,7 +198,7 @@ export function formatCheckResult(result: CheckResult): string {
           l.push(`  ✓ \`${proof.command}\` (${proof.duration_ms ?? 0}ms)`);
         }
       } else if (proof.status === "skipped") {
-        l.push(`  ⚠ \`${proof.command}\` (MANUAL — not machine-verified, skipped)`);
+        l.push(`  ⏳ \`${proof.command}\` — not verified this run${proof.output ? `: ${proof.output}` : ""}`);
       } else if (isManual) {
         l.push(`  ✗ MANUAL — ${proof.description}`);
         if (proof.error) l.push(`    ${proof.error}`);

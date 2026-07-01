@@ -103,6 +103,26 @@ test("updateDocFromCheckResult: scoped run persists target step but leaves last_
   assert.equal(doc.last_check?.summary, "prior full PASS");
 });
 
+// A full (non-scoped) run can now report "incomplete" when a manual/review
+// proof is unverified but nothing has actually failed — that must survive
+// into doc.last_check verbatim, not get collapsed into "fail".
+test("updateDocFromCheckResult: full run persists INCOMPLETE overall, not collapsed to fail", () => {
+  const doc = makeDoc();
+
+  const full: CheckResult = {
+    overall: "incomplete",
+    timestamp: "2026-06-26T11:00:00Z",
+    summary: "1/1 steps pass — one or more manual/review proofs await dod_verify",
+    proof_fingerprint: "abc",
+    steps: [{ id: "s1", title: "Add validation function", status: "fail",
+      proofs: [{ id: "p1", description: "exit 0, tests pass", status: "skipped", command: "manual", output: "awaiting dod_verify" }] }],
+  };
+
+  updateDocFromCheckResult(doc, full);
+
+  assert.equal(doc.last_check?.overall, "incomplete");
+});
+
 test("renderMarkdown preserves goal, anti-cheat note and proof commands", () => {
   const md = renderMarkdown(makeDoc());
   assert.match(md, /Validate email addresses on signup/);

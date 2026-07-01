@@ -6,10 +6,10 @@ import * as store from "./store.js";
 import { checkDocument, computeProofFingerprint } from "./checker.js";
 import { writeMarkdown, updateDocFromCheckResult, formatCheckResult } from "./author.js";
 import { parseMarkdown } from "./parser.js";
-import { playJingle, showMessageBox } from "./notify.js";
+import { playJingle, showVerifyDialog } from "./notify.js";
 import { findMissingTools, suggestionFor, currentOs, type MissingTool } from "./command-check.js";
 import { validateBaseline } from "./baseline.js";
-import type { Confirmer, ManualAnswer } from "./manual.js";
+import { resolveManual, type Confirmer, type ManualAnswer } from "./manual.js";
 import type { DodDocument, Predicate, Proof, Step } from "./types.js";
 
 const server = new McpServer({
@@ -217,11 +217,21 @@ server.tool(
 // ── Manual verification confirmer ───────────────────────────────────
 //
 // Anti-cheat core: the human's answer is obtained ONLY through a channel the
-// model cannot drive — MCP elicitation (a client↔server message Claude never
-// authors) or a server-spawned Windows dialog. dod_check takes NO parameter
-// that could carry a "passed" verdict, so Claude cannot fake confirmation.
+// model cannot drive — a server-spawned Windows dialog, or MCP elicitation (a
+// client↔server message Claude never authors) as a fallback where the dialog
+// cannot run. Neither dod_check nor dod_verify takes a parameter that could
+// carry a "passed" verdict, so Claude cannot fake confirmation.
+//
+// This confirmer is invoked ONLY by dod_verify, on a single proof, when Claude
+// explicitly requests it — never automatically by dod_check on every run.
 
-const MANUAL_TIMEOUT_MS = 10 * 60 * 1000;
+// No timeout: the human may take a while to respond. Only used for the
+// elicitation fallback, whose SDK requires a value (its own default is a mere
+// 60s) — 0x7fffffff ms (~24.8 days, Node/V8's max setTimeout delay) stands in
+// for "wait indefinitely" without overflowing. The popup channel has no timer
+// at all; see notify.ts.
+const ELICITATION_MAX_WAIT_MS = 0x7fffffff;
+const isWindowsHost = process.platform === "win32";
 
 function manualInstructions(proof: Proof): string {
   const isReview = proof.predicate.type === "review";
@@ -250,7 +260,22 @@ function buildConfirmer(): Confirmer {
     // Draw attention with a distinctive jingle before prompting.
     playJingle();
 
-    // Preferred channel: MCP elicitation, if the client advertises support.
+    // Preferred channel: a server-spawned popup with PASS/FAIL buttons and a
+    // free-text notes field. Windows-only.
+    if (isWindowsHost) {
+      const dialog = await showVerifyDialog(
+        `DoD manual verification — ${proof.id}`,
+        `${instructions}\n\nClick PASS only if it passed.`,
+      );
+      return {
+        answer: dialog.result === "yes" ? "pass" : "fail",
+        note: dialog.note,
+        channel: "messagebox",
+      };
+    }
+
+    // Fallback channel: MCP elicitation, when the popup cannot run (non-Windows
+    // host) and the client advertises support.
     const caps = server.server.getClientCapabilities();
     if (caps?.elicitation) {
       try {
@@ -275,7 +300,7 @@ function buildConfirmer(): Confirmer {
               required: ["result"],
             },
           },
-          { timeout: MANUAL_TIMEOUT_MS },
+          { timeout: ELICITATION_MAX_WAIT_MS },
         );
 
         if (result.action === "accept") {
@@ -286,21 +311,12 @@ function buildConfirmer(): Confirmer {
         // decline / cancel → not verified.
         return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
       } catch {
-        // Client claimed support but failed — fall through to the dialog.
+        // Client claimed support but failed — fail safe below.
       }
     }
 
-    // Fallback channel: server-spawned Windows dialog.
-    const choice = await showMessageBox(
-      `DoD manual verification — ${proof.id}`,
-      `${instructions}\n\nClick YES only if it passed.`,
-      Math.floor(MANUAL_TIMEOUT_MS / 1000),
-    );
-    return {
-      answer: choice === "yes" ? "pass" : "fail",
-      note: choice === "timeout" ? "dialog timed out" : undefined,
-      channel: "messagebox",
-    };
+    // No usable channel on this host — fail safe. A missing human never passes.
+    return { answer: "fail", note: "no verification channel available on this host", channel: "messagebox" };
   };
 }
 
@@ -308,7 +324,7 @@ function buildConfirmer(): Confirmer {
 
 server.tool(
   "dod_check",
-  "Verify a DoD's proofs from canonical (locked) storage, mark pass/fail, update the markdown, and return a verdict. Commands run from MCP's locked copy — the markdown cannot influence results. Pass `step` to verify only that one step (fast iteration); a scoped run returns INCOMPLETE and never PASS. Run with NO `step` for the full verdict — use that as the /goal completion condition.",
+  "Verify a DoD's proofs from canonical (locked) storage, mark pass/fail, update the markdown, and return a verdict. Commands run from MCP's locked copy — the markdown cannot influence results. Pass `step` to verify only that one step (fast iteration); a scoped run returns INCOMPLETE and never PASS. Run with NO `step` for the full verdict — use that as the /goal completion condition. Manual/review proofs are NEVER auto-prompted here — an unverified one reports 'skipped' and holds the overall verdict at INCOMPLETE; call dod_verify on that proof_id when verification is actually relevant (e.g. right after implementing its step).",
   {
     dod_id: z.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
@@ -347,7 +363,7 @@ server.tool(
       stepId = target.id;
     }
 
-    const result = await checkDocument(doc, cwd_override, buildConfirmer(), { stepId });
+    const result = await checkDocument(doc, cwd_override, { stepId });
 
     // Tamper detection (blocking): a fingerprint mismatch forces the verdict to
     // FAIL in checkDocument. Surface why, and how to legitimise a real change.
@@ -367,6 +383,95 @@ server.tool(
       content: [{
         type: "text" as const,
         text: formatCheckResult(result) + tamperWarning,
+      }],
+    };
+  },
+);
+
+// ── dod_verify ──────────────────────────────────────────────────────
+//
+// The ONLY path that triggers out-of-band human verification of a manual or
+// review proof. dod_check never auto-prompts (see above) — Claude must call
+// dod_verify explicitly, on the specific proof it judges is actually ready to
+// be checked right now. This keeps the human from being nagged about proofs
+// that aren't relevant yet, while preserving the anti-cheat guarantee: the
+// verdict always comes from the popup/elicitation channel, never a parameter
+// Claude supplies, and an unrequested manual/review proof simply holds the
+// overall dod_check verdict at INCOMPLETE rather than silently passing.
+
+function findProof(doc: DodDocument, proofId: string): { step: Step; proof: Proof } | null {
+  for (const step of doc.steps) {
+    const proof = step.proofs.find((p) => p.id === proofId);
+    if (proof) return { step, proof };
+  }
+  return null;
+}
+
+server.tool(
+  "dod_verify",
+  "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now — e.g. right after implementing the step the proof belongs to — NOT on every dod_check. dod_check itself never auto-prompts; an unverified manual/review proof reports as 'skipped' there and holds the overall verdict at INCOMPLETE until dod_verify records a verdict.",
+  {
+    dod_id: z.string().optional().describe("DoD ID (from dod_create or dod_list)"),
+    path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
+    proof_id: z.string().describe("The proof id to verify (see dod_check output for ids, e.g. \"proof-1-1\")."),
+  },
+  async ({ dod_id, path: mdPath, proof_id }) => {
+    let doc: DodDocument | null = null;
+    if (dod_id) {
+      doc = await store.load(dod_id);
+    } else if (mdPath) {
+      doc = await store.findByPath(mdPath);
+    }
+
+    if (!doc) {
+      return {
+        content: [{
+          type: "text" as const,
+          text: `ERROR: DoD not found. ${dod_id ? `ID "${dod_id}" not in store.` : `No DoD registered for path "${mdPath}".`}\nUse dod_list to see tracked DoDs, or dod_import to register an existing file.`,
+        }],
+      };
+    }
+
+    const found = findProof(doc, proof_id);
+    if (!found) {
+      return {
+        content: [{
+          type: "text" as const,
+          text: `ERROR: proof "${proof_id}" not found in DoD "${doc.id}". Run dod_check to see current proof ids.`,
+        }],
+      };
+    }
+
+    const { proof } = found;
+    if (proof.predicate.type !== "manual" && proof.predicate.type !== "review") {
+      return {
+        content: [{
+          type: "text" as const,
+          text: `ERROR: proof "${proof_id}" is a "${proof.predicate.type}" predicate — only manual/review proofs are verified out-of-band via dod_verify. Machine-checkable proofs are verified by dod_check.`,
+        }],
+      };
+    }
+
+    const label = proof.predicate.type === "review" ? "Code review" : "Manual verification";
+    const resolution = await resolveManual(proof, buildConfirmer(), label);
+
+    proof.last_status = resolution.status;
+    proof.last_output = resolution.output;
+    proof.last_checked = new Date().toISOString();
+
+    await store.save(doc);
+    await writeMarkdown(doc);
+
+    return {
+      content: [{
+        type: "text" as const,
+        text: [
+          `## Manual verification: ${resolution.status.toUpperCase()}`,
+          "",
+          resolution.output,
+          "",
+          "Run dod_check (no `step`) to fold this into the overall verdict.",
+        ].join("\n"),
       }],
     };
   },

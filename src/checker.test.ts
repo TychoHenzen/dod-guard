@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { checkDocument, parseSurvivors, computeProofFingerprint } from "./checker.js";
+import { perProofFingerprint } from "./manual.js";
 import type { DodDocument, Proof } from "./types.js";
 
 function manualProof(id: string, desc: string): Proof {
@@ -24,39 +25,60 @@ function docWith(proofs: Proof[]): DodDocument {
   };
 }
 
-test("all-manual step passes when the human confirms PASS", async () => {
+// dod_check itself never auto-confirms manual/review proofs anymore — that is
+// now gated behind the dedicated dod_verify tool, which Claude must call
+// explicitly when verification is actually relevant. checkDocument only ever
+// reads whatever verdict dod_verify already recorded on proof.manual_result.
+
+test("uncached manual proof is not auto-verified — reports skipped, overall INCOMPLETE", async () => {
   const doc = docWith([manualProof("proof-1-1", "device smoke test")]);
-  const res = await checkDocument(doc, undefined, async () => ({ answer: "pass", channel: "messagebox" }));
+  const res = await checkDocument(doc);
+  assert.equal(res.overall, "incomplete", "dod_check must never auto-confirm a manual proof");
+  assert.equal(res.steps[0].proofs[0].status, "skipped");
+  assert.match(res.steps[0].proofs[0].output ?? "", /dod_verify/);
+});
+
+test("a dod_verify PASS record (fingerprint matches) is honored by dod_check", async () => {
+  const proof = manualProof("proof-1-1", "device smoke test");
+  proof.manual_result = {
+    answer: "pass",
+    confirmed_at: "2026-01-01T00:00:00Z",
+    channel: "messagebox",
+    proof_fingerprint: perProofFingerprint(proof),
+  };
+  const doc = docWith([proof]);
+  const res = await checkDocument(doc);
   assert.equal(res.overall, "pass");
   assert.equal(res.steps[0].status, "pass");
   assert.equal(res.steps[0].proofs[0].status, "pass");
 });
 
-test("all-manual step fails when the human rejects", async () => {
-  const doc = docWith([manualProof("proof-1-1", "device smoke test")]);
-  const res = await checkDocument(doc, undefined, async () => ({ answer: "fail", channel: "messagebox" }));
-  assert.equal(res.overall, "fail");
-  assert.equal(res.steps[0].proofs[0].status, "fail");
-});
-
-test("manual proof fails safely when no confirmer is available (headless)", async () => {
-  const doc = docWith([manualProof("proof-1-1", "device smoke test")]);
-  const res = await checkDocument(doc); // no confirmer supplied
-  assert.equal(res.overall, "fail");
-  assert.equal(res.steps[0].proofs[0].status, "fail");
-});
-
-test("confirmed manual PASS is cached — a second check does not re-ask the human", async () => {
-  const doc = docWith([manualProof("proof-1-1", "device smoke test")]);
-  let asks = 0;
-  const confirm = async () => {
-    asks++;
-    return { answer: "pass" as const, channel: "messagebox" as const };
+test("a dod_verify FAIL record (fingerprint matches) fails the overall check", async () => {
+  const proof = manualProof("proof-1-1", "device smoke test");
+  proof.manual_result = {
+    answer: "fail",
+    confirmed_at: "2026-01-01T00:00:00Z",
+    channel: "messagebox",
+    proof_fingerprint: perProofFingerprint(proof),
   };
-  await checkDocument(doc, undefined, confirm);
-  const second = await checkDocument(doc, undefined, confirm);
-  assert.equal(asks, 1, "cached PASS must not trigger a second prompt");
-  assert.equal(second.overall, "pass");
+  const doc = docWith([proof]);
+  const res = await checkDocument(doc);
+  assert.equal(res.overall, "fail");
+  assert.equal(res.steps[0].proofs[0].status, "fail");
+});
+
+test("a stale manual_result (proof amended since verification) is treated as unverified again", async () => {
+  const proof = manualProof("proof-1-1", "device smoke test");
+  proof.manual_result = {
+    answer: "pass",
+    confirmed_at: "2026-01-01T00:00:00Z",
+    channel: "messagebox",
+    proof_fingerprint: "stale-does-not-match-current-proof-text",
+  };
+  const doc = docWith([proof]);
+  const res = await checkDocument(doc);
+  assert.equal(res.overall, "incomplete");
+  assert.equal(res.steps[0].proofs[0].status, "skipped");
 });
 
 // ── WS-C: adversarial review proof (out-of-band, like manual) ──────
@@ -65,34 +87,39 @@ function reviewProof(id: string, desc: string): Proof {
   return { id, command: "code-review", predicate: { type: "review" }, description: desc, last_status: "pending" };
 }
 
-test("review proof passes when the reviewer confirms PASS", async () => {
+test("uncached review proof is not auto-verified — reports skipped, overall INCOMPLETE", async () => {
   const doc = docWith([reviewProof("proof-1-1", "review diff vs requirements")]);
-  const res = await checkDocument(doc, undefined, async () => ({ answer: "pass", channel: "elicitation" }));
+  const res = await checkDocument(doc);
+  assert.equal(res.overall, "incomplete");
+  assert.equal(res.steps[0].proofs[0].status, "skipped");
+});
+
+test("a dod_verify PASS record (fingerprint matches) is honored for a review proof", async () => {
+  const proof = reviewProof("proof-1-1", "review diff vs requirements");
+  proof.manual_result = {
+    answer: "pass",
+    confirmed_at: "2026-01-01T00:00:00Z",
+    channel: "elicitation",
+    proof_fingerprint: perProofFingerprint(proof),
+  };
+  const doc = docWith([proof]);
+  const res = await checkDocument(doc);
   assert.equal(res.overall, "pass");
   assert.equal(res.steps[0].proofs[0].status, "pass");
 });
 
-test("review proof fails when the reviewer reports gaps", async () => {
-  const doc = docWith([reviewProof("proof-1-1", "review diff vs requirements")]);
-  const res = await checkDocument(doc, undefined, async () => ({ answer: "fail", channel: "elicitation" }));
+test("a dod_verify FAIL record (fingerprint matches) fails a review proof", async () => {
+  const proof = reviewProof("proof-1-1", "review diff vs requirements");
+  proof.manual_result = {
+    answer: "fail",
+    confirmed_at: "2026-01-01T00:00:00Z",
+    channel: "elicitation",
+    proof_fingerprint: perProofFingerprint(proof),
+  };
+  const doc = docWith([proof]);
+  const res = await checkDocument(doc);
   assert.equal(res.overall, "fail");
   assert.equal(res.steps[0].proofs[0].status, "fail");
-});
-
-test("review proof fails safely with no review channel (headless) — never auto-passes", async () => {
-  const doc = docWith([reviewProof("proof-1-1", "review diff vs requirements")]);
-  const res = await checkDocument(doc); // no confirmer
-  assert.equal(res.steps[0].proofs[0].status, "fail");
-});
-
-test("a confirmed review PASS is cached — a second check does not re-ask", async () => {
-  const doc = docWith([reviewProof("proof-1-1", "review diff vs requirements")]);
-  let asks = 0;
-  const confirm = async () => { asks++; return { answer: "pass" as const, channel: "elicitation" as const }; };
-  await checkDocument(doc, undefined, confirm);
-  const second = await checkDocument(doc, undefined, confirm);
-  assert.equal(asks, 1, "cached review PASS must not re-prompt");
-  assert.equal(second.overall, "pass");
 });
 
 // ── WS-A: incremental scoped checking (dod_check --step N) ──────────
@@ -118,7 +145,7 @@ function twoStepDoc(): DodDocument {
 
 test("scoped check runs only the target step and reports overall 'incomplete'", async () => {
   const doc = twoStepDoc();
-  const res = await checkDocument(doc, undefined, undefined, { stepId: "step-1" });
+  const res = await checkDocument(doc, undefined, { stepId: "step-1" });
   assert.equal(res.overall, "incomplete", "a scoped run must never report PASS — only a full run can");
   assert.equal(res.scoped, true);
   assert.equal(res.ran_step_id, "step-1");
@@ -131,7 +158,7 @@ test("scoped check carries other steps' last_status without re-running them", as
   // step-2's proof would FAIL if executed (exit 1 vs predicate 0). Mark it
   // previously passed; a scoped run on step-1 must carry that, not re-run it.
   doc.steps[1].proofs[0].last_status = "pass";
-  const res = await checkDocument(doc, undefined, undefined, { stepId: "step-1" });
+  const res = await checkDocument(doc, undefined, { stepId: "step-1" });
   const step2 = res.steps.find(s => s.id === "step-2")!;
   assert.equal(step2.proofs[0].status, "pass", "carried from last_status, proving step-2 was not executed");
 });

@@ -117,7 +117,7 @@ export interface DodDocument {
   amendments: Amendment[];
   last_check?: {
     timestamp: string;
-    overall: "pass" | "fail";
+    overall: "pass" | "fail" | "incomplete";
     summary: string;
   };
 }

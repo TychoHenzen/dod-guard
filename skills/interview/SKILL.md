@@ -337,8 +337,8 @@ will collide on a bare substring match.
 | `output_not_contains` | `"text"` | stdout must NOT contain text (e.g. "no warnings", "no TODO") |
 | `output_not_matches` | `"regex"` | stdout must NOT match regex |
 | `tdd` | `0` | **TDD enforcer.** Must be observed FAILING before it can pass. Run `dod_check` after writing the failing test (RED), then implement (GREEN). Passes only when: seen_failing=true AND command exits with value. |
-| `manual` | _(none)_ | Human-only verification, confirmed out-of-band (elicitation/dialog) — the model cannot self-pass it |
-| `review` | _(none)_ | Fresh-context code review. At check time the agent runs `/code-review` against the diff vs requirements and confirms PASS only if no correctness/requirement gaps remain. Verdict arrives via the same un-fakeable channel as `manual`; FAIL is never cached. Use for intent/edge-case correctness that command proofs can't assert. |
+| `manual` | _(none)_ | Human-only verification, confirmed out-of-band (popup/elicitation) via `dod_verify` — the model cannot self-pass it. `dod_check` never auto-prompts; call `dod_verify(dod_id, proof_id)` when verification is actually relevant, then re-run `dod_check` |
+| `review` | _(none)_ | Fresh-context code review. Run `/code-review` against the diff vs requirements, then call `dod_verify` and confirm PASS only if no correctness/requirement gaps remain. Verdict arrives via the same un-fakeable channel as `manual`. Use for intent/edge-case correctness that command proofs can't assert. |
 | `mutation` | `N` _(default 0)_ | **Mutation testing.** Runs the command in-band and parses surviving (un-killed) mutants from Stryker / mutmut / cargo-mutants output; passes iff survivors `<= N`. Unparseable output FAILs (fail-safe). The strongest test-quality proof — scope to changed/critical functions. See `standards/language-commands.md` for per-tool changed-functions commands. |
 | `regression` | `tol` _(fraction, e.g. `0.10`)_ | **Non-regression gate.** Two-phase: a capture step run on PRE-change code stores the metric baseline N0 and PASSes; later runs compare the new metric N1 against N0 with tolerance `tol`. Optional `extract` (regex, capture group 1) picks the number, else the last number in stdout; unparseable output FAILs (fail-safe). `lower_is_better` (default true) for perf/complexity/duplication; set false for coverage. Defaults to **advisory** (warns, does not block) — set `advisory: false` for a hard SLA gate. Proves perf/complexity/coverage/duplication don't regress vs a baseline, never an impossible absolute target. See `standards/language-commands.md` for per-language metric commands. |
 
@@ -496,9 +496,9 @@ Goal prompt for fresh context:
 <task>Implement all <N> steps in the DoD (ID: <dod_id>).</task>
 <reference>DoD markdown: docs/plans/<filename> — sections and steps are wrapped in semantic XML tags for precise parsing.</reference>
 <process>
-Work through each step sequentially. After completing a step, call dod_check with `step: N` to verify just that step (fast — other steps are carried, not re-run). If a proof is unreasonable, call dod_amend with a reason instead of forcing it. When all steps are done, call dod_check with no `step` for the full PASS verdict.
+Work through each step sequentially. After completing a step, call dod_check with `step: N` to verify just that step (fast — other steps are carried, not re-run). If a step has a `manual`/`review` proof, call dod_verify(dod_id, proof_id) once that step's implementation is actually done — dod_check never auto-prompts these. If a proof is unreasonable, call dod_amend with a reason instead of forcing it. When all steps are done, call dod_check with no `step` for the full verdict.
 </process>
-<success_criteria>A full dod_check (no `step`) returns overall PASS for every machine-checkable proof. Scoped (`step: N`) runs return INCOMPLETE and never satisfy completion.</success_criteria>
+<success_criteria>A full dod_check (no `step`) returns overall PASS: every machine-checkable proof passes AND every manual/review proof has been verified via dod_verify. An unverified manual/review proof holds the verdict at INCOMPLETE, not PASS. Scoped (`step: N`) runs also return INCOMPLETE and never satisfy completion.</success_criteria>
 <on_completion>List every remaining manual step the user must complete before this work is done.</on_completion>
 ```
 
