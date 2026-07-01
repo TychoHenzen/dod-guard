@@ -14,7 +14,7 @@ import type { DodDocument, Predicate, Proof, Step } from "./types.js";
 
 const server = new McpServer({
   name: "dod-guard",
-  version: "1.0.0",
+  version: "1.8.0",
 });
 
 // ── Shared schemas ──────────────────────────────────────────────────

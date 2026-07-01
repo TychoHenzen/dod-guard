@@ -21308,28 +21308,29 @@ async function runCommand(proof, cwd) {
     return { exitCode, combined, duration: duration3, error: stderr.slice(0, 2e3) || void 0 };
   }
 }
-async function executeProof(proof, cwd, confirm) {
+async function executeProof(proof, cwd) {
   if (proof.predicate.type === "manual" || proof.predicate.type === "review") {
     const isReview = proof.predicate.type === "review";
     const label = isReview ? "Code review" : "Manual verification";
-    if (!confirm) {
+    const fingerprint = perProofFingerprint(proof);
+    const mr = proof.manual_result;
+    if (mr && mr.proof_fingerprint === fingerprint) {
+      const output = `${label} ${mr.answer.toUpperCase()} (via dod_verify) at ${mr.confirmed_at} via ${mr.channel}${mr.note ? ` \u2014 "${mr.note}"` : ""}`;
       return {
         id: proof.id,
         description: proof.description,
-        status: "fail",
+        status: mr.answer,
         command: proof.command,
-        error: `${label} required but no confirmation channel is available (non-interactive run).`,
-        output: `${label} not confirmed`
+        output,
+        error: mr.answer === "fail" ? `${label} was confirmed as failing by the human.` : void 0
       };
     }
-    const resolution = await resolveManual(proof, confirm, label);
     return {
       id: proof.id,
       description: proof.description,
-      status: resolution.status,
+      status: "skipped",
       command: proof.command,
-      output: resolution.output,
-      error: resolution.status === "fail" ? `${label} was not confirmed as passing.` : void 0
+      output: `${label} not yet verified \u2014 call dod_verify(dod_id, "${proof.id}") to request human confirmation.`
     };
   }
   const run = await runCommand(proof, cwd);
@@ -21481,12 +21482,14 @@ function carryForwardStep(step) {
   const allPass = step.proofs.length > 0 && step.proofs.every((p) => p.last_status === "pass");
   return { id: step.id, title: step.title, status: allPass ? "pass" : "fail", proofs };
 }
-async function checkDocument(doc, cwdOverride, confirm, opts) {
+async function checkDocument(doc, cwdOverride, opts) {
   const cwd = cwdOverride ?? doc.cwd;
   const scopedStepId = opts?.stepId;
   const stepResults = [];
   let totalPass = 0;
   let totalFail = 0;
+  let anyRealFail = false;
+  let anyUnverified = false;
   for (const step of doc.steps) {
     if (scopedStepId && step.id !== scopedStepId) {
       const carried = carryForwardStep(step);
@@ -21498,9 +21501,16 @@ async function checkDocument(doc, cwdOverride, confirm, opts) {
     const proofResults = [];
     let stepPassed = true;
     for (const proof of step.proofs) {
-      const result = await executeProof(proof, cwd, confirm);
+      const result = await executeProof(proof, cwd);
       proofResults.push(result);
-      if (result.status === "fail" && !proof.advisory) stepPassed = false;
+      if (result.status === "fail" && !proof.advisory) {
+        stepPassed = false;
+        anyRealFail = true;
+      }
+      if (result.status === "skipped" && !proof.advisory) {
+        stepPassed = false;
+        anyUnverified = true;
+      }
     }
     if (step.proofs.length === 0) stepPassed = false;
     stepResults.push({
@@ -21514,9 +21524,9 @@ async function checkDocument(doc, cwdOverride, confirm, opts) {
   }
   const proofFingerprint = computeProofFingerprint(doc.steps);
   const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
-  const overall = tampered ? "fail" : scopedStepId ? "incomplete" : totalFail === 0 ? "pass" : "fail";
+  const overall = tampered ? "fail" : scopedStepId ? "incomplete" : anyRealFail ? "fail" : anyUnverified ? "incomplete" : "pass";
   const baseSummary = scopedStepId ? `SCOPED (step "${scopedStepId}"): ${totalPass}/${doc.steps.length} steps currently pass \u2014 run a full dod_check (no step) to verify completion` : `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`;
-  const summary = tampered ? `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}` : baseSummary;
+  const summary = tampered ? `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}` : !scopedStepId && anyUnverified && !anyRealFail ? `${baseSummary} \u2014 one or more manual/review proofs await dod_verify` : baseSummary;
   return {
     overall,
     steps: stepResults,
@@ -21551,6 +21561,10 @@ function renderMarkdown(doc) {
   l.push("2. Call `dod_check` to verify proofs \u2014 do NOT mark proofs manually.");
   l.push("   While iterating on one step, pass `step: N` to verify just that step fast (other steps are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
   l.push("3. A step is complete when ALL its proofs pass via `dod_check`.");
+  l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts \u2014 it only reports what's already");
+  l.push("    on record (`skipped` = not yet verified, holds overall at INCOMPLETE). Call");
+  l.push("    `dod_verify(dod_id, proof_id)` explicitly once verification is actually relevant \u2014 typically");
+  l.push("    right after implementing that step \u2014 then re-run `dod_check` to fold in the verdict.");
   l.push("4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
   l.push("4b. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
   l.push("4c. After a step's proofs all pass, commit that step before starting the next \u2014 one commit per step (clean, bisectable history).");
@@ -21562,8 +21576,9 @@ function renderMarkdown(doc) {
   l.push("`dod_check` executes commands from the canonical copy, not this markdown file.");
   l.push("Editing proof text here has no effect on verification.");
   l.push("Store tampering is **logged and detectable** \u2014 each check prints a proof-set fingerprint.");
-  l.push("Manual proofs are confirmed by the human directly (elicitation / dialog) during `dod_check` \u2014");
-  l.push("Claude cannot self-confirm them. A confirmed PASS is cached until the proof changes.");
+  l.push("Manual/review proofs are confirmed by the human directly (popup / elicitation) via `dod_verify` \u2014");
+  l.push("Claude cannot self-confirm them, and an unrequested one holds the DoD at INCOMPLETE, never PASS.");
+  l.push("A confirmed verdict is recorded until the proof changes.");
   l.push("</claude_instructions>");
   l.push("");
   l.push(`**Goal:** ${doc.goal}`);
@@ -21662,7 +21677,7 @@ function updateDocFromCheckResult(doc, result) {
   if (result.scoped) return;
   doc.last_check = {
     timestamp: result.timestamp,
-    overall: result.overall === "pass" ? "pass" : "fail",
+    overall: result.overall,
     summary: result.summary
   };
 }
@@ -21690,7 +21705,7 @@ function formatCheckResult(result) {
           l.push(`  \u2713 \`${proof.command}\` (${proof.duration_ms ?? 0}ms)`);
         }
       } else if (proof.status === "skipped") {
-        l.push(`  \u26A0 \`${proof.command}\` (MANUAL \u2014 not machine-verified, skipped)`);
+        l.push(`  \u23F3 \`${proof.command}\` \u2014 not verified this run${proof.output ? `: ${proof.output}` : ""}`);
       } else if (isManual) {
         l.push(`  \u2717 MANUAL \u2014 ${proof.description}`);
         if (proof.error) l.push(`    ${proof.error}`);
@@ -21914,36 +21929,96 @@ function playJingle() {
   } catch {
   }
 }
-var POPUP_YES = 6;
-var POPUP_TIMEOUT = -1;
-function showMessageBox(title, body, timeoutSec) {
-  if (!isWindows) return Promise.resolve("no");
-  const script = "$w = New-Object -ComObject WScript.Shell; $r = $w.Popup($env:DODG_MSG, [int]$env:DODG_TIMEOUT, $env:DODG_TITLE, 4 + 48 + 4096); [Console]::Out.Write($r)";
+var VERIFY_DIALOG_SCRIPT = `
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+$form = New-Object System.Windows.Forms.Form
+$form.Text = $env:DODG_TITLE
+$form.Width = 520
+$form.Height = 420
+$form.StartPosition = "CenterScreen"
+$form.Topmost = $true
+$form.FormBorderStyle = "FixedDialog"
+$form.MaximizeBox = $false
+$form.MinimizeBox = $false
+
+$msgBox = New-Object System.Windows.Forms.TextBox
+$msgBox.Multiline = $true
+$msgBox.ReadOnly = $true
+$msgBox.ScrollBars = "Vertical"
+$msgBox.Text = $env:DODG_MSG
+$msgBox.Location = New-Object System.Drawing.Point(10,10)
+$msgBox.Size = New-Object System.Drawing.Size(484,220)
+$form.Controls.Add($msgBox)
+
+$noteLabel = New-Object System.Windows.Forms.Label
+$noteLabel.Text = "Notes (optional):"
+$noteLabel.Location = New-Object System.Drawing.Point(10,238)
+$noteLabel.Size = New-Object System.Drawing.Size(200,20)
+$form.Controls.Add($noteLabel)
+
+$noteBox = New-Object System.Windows.Forms.TextBox
+$noteBox.Multiline = $true
+$noteBox.ScrollBars = "Vertical"
+$noteBox.Location = New-Object System.Drawing.Point(10,260)
+$noteBox.Size = New-Object System.Drawing.Size(484,60)
+$form.Controls.Add($noteBox)
+
+$passBtn = New-Object System.Windows.Forms.Button
+$passBtn.Text = "PASS"
+$passBtn.DialogResult = [System.Windows.Forms.DialogResult]::Yes
+$passBtn.Location = New-Object System.Drawing.Point(300,335)
+$passBtn.Size = New-Object System.Drawing.Size(90,30)
+$form.Controls.Add($passBtn)
+$form.AcceptButton = $passBtn
+
+$failBtn = New-Object System.Windows.Forms.Button
+$failBtn.Text = "FAIL"
+$failBtn.DialogResult = [System.Windows.Forms.DialogResult]::No
+$failBtn.Location = New-Object System.Drawing.Point(400,335)
+$failBtn.Size = New-Object System.Drawing.Size(90,30)
+$form.Controls.Add($failBtn)
+$form.CancelButton = $failBtn
+
+$dialogResult = $form.ShowDialog()
+
+$verdict = "no"
+if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) { $verdict = "yes" }
+
+$payload = @{ result = $verdict; note = $noteBox.Text } | ConvertTo-Json -Compress
+[Console]::Out.Write($payload)
+`;
+function showVerifyDialog(title, body) {
+  if (!isWindows) return Promise.resolve({ result: "no" });
   return new Promise((resolve4) => {
     try {
-      const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+      const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", VERIFY_DIALOG_SCRIPT], {
         stdio: ["ignore", "pipe", "ignore"],
         windowsHide: true,
         env: {
           ...process.env,
           DODG_MSG: body,
-          DODG_TITLE: title,
-          DODG_TIMEOUT: String(Math.max(0, Math.floor(timeoutSec)))
+          DODG_TITLE: title
         }
       });
       let out = "";
       child.stdout.on("data", (chunk) => {
         out += chunk.toString();
       });
-      child.on("error", () => resolve4("no"));
+      child.on("error", () => resolve4({ result: "no" }));
       child.on("close", () => {
-        const code = parseInt(out.trim(), 10);
-        if (code === POPUP_YES) resolve4("yes");
-        else if (code === POPUP_TIMEOUT) resolve4("timeout");
-        else resolve4("no");
+        try {
+          const parsed = JSON.parse(out.trim());
+          const result = parsed.result === "yes" ? "yes" : "no";
+          const note = typeof parsed.note === "string" && parsed.note.trim() ? parsed.note.trim() : void 0;
+          resolve4({ result, note });
+        } catch {
+          resolve4({ result: "no" });
+        }
       });
     } catch {
-      resolve4("no");
+      resolve4({ result: "no" });
     }
   });
 }
@@ -22173,7 +22248,7 @@ function validateBaseline(type, steps) {
 // src/index.ts
 var server = new McpServer({
   name: "dod-guard",
-  version: "1.0.0"
+  version: "1.8.0"
 });
 var PredicateSchema = external_exports.object({
   type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression"]),
@@ -22339,7 +22414,8 @@ server.tool(
     };
   }
 );
-var MANUAL_TIMEOUT_MS = 10 * 60 * 1e3;
+var ELICITATION_MAX_WAIT_MS = 2147483647;
+var isWindowsHost = process.platform === "win32";
 function manualInstructions(proof) {
   const isReview = proof.predicate.type === "review";
   const lines = [proof.description];
@@ -22363,6 +22439,19 @@ function buildConfirmer() {
     const promptLabel = isReview ? "Code review required" : "Manual verification required";
     const instructions = manualInstructions(proof);
     playJingle();
+    if (isWindowsHost) {
+      const dialog = await showVerifyDialog(
+        `DoD manual verification \u2014 ${proof.id}`,
+        `${instructions}
+
+Click PASS only if it passed.`
+      );
+      return {
+        answer: dialog.result === "yes" ? "pass" : "fail",
+        note: dialog.note,
+        channel: "messagebox"
+      };
+    }
     const caps = server.server.getClientCapabilities();
     if (caps?.elicitation) {
       try {
@@ -22389,7 +22478,7 @@ ${instructions}`,
               required: ["result"]
             }
           },
-          { timeout: MANUAL_TIMEOUT_MS }
+          { timeout: ELICITATION_MAX_WAIT_MS }
         );
         if (result.action === "accept") {
           const passed = result.content?.result === "pass";
@@ -22400,23 +22489,12 @@ ${instructions}`,
       } catch {
       }
     }
-    const choice = await showMessageBox(
-      `DoD manual verification \u2014 ${proof.id}`,
-      `${instructions}
-
-Click YES only if it passed.`,
-      Math.floor(MANUAL_TIMEOUT_MS / 1e3)
-    );
-    return {
-      answer: choice === "yes" ? "pass" : "fail",
-      note: choice === "timeout" ? "dialog timed out" : void 0,
-      channel: "messagebox"
-    };
+    return { answer: "fail", note: "no verification channel available on this host", channel: "messagebox" };
   };
 }
 server.tool(
   "dod_check",
-  "Verify a DoD's proofs from canonical (locked) storage, mark pass/fail, update the markdown, and return a verdict. Commands run from MCP's locked copy \u2014 the markdown cannot influence results. Pass `step` to verify only that one step (fast iteration); a scoped run returns INCOMPLETE and never PASS. Run with NO `step` for the full verdict \u2014 use that as the /goal completion condition.",
+  "Verify a DoD's proofs from canonical (locked) storage, mark pass/fail, update the markdown, and return a verdict. Commands run from MCP's locked copy \u2014 the markdown cannot influence results. Pass `step` to verify only that one step (fast iteration); a scoped run returns INCOMPLETE and never PASS. Run with NO `step` for the full verdict \u2014 use that as the /goal completion condition. Manual/review proofs are NEVER auto-prompted here \u2014 an unverified one reports 'skipped' and holds the overall verdict at INCOMPLETE; call dod_verify on that proof_id when verification is actually relevant (e.g. right after implementing its step).",
   {
     dod_id: external_exports.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: external_exports.string().optional().describe("Markdown file path \u2014 resolves to DoD by path if no ID given"),
@@ -22452,7 +22530,7 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
       }
       stepId = target.id;
     }
-    const result = await checkDocument(doc, cwd_override, buildConfirmer(), { stepId });
+    const result = await checkDocument(doc, cwd_override, { stepId });
     let tamperWarning = "";
     if (result.tampered) {
       tamperWarning = `
@@ -22472,6 +22550,76 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
       content: [{
         type: "text",
         text: formatCheckResult(result) + tamperWarning
+      }]
+    };
+  }
+);
+function findProof(doc, proofId) {
+  for (const step of doc.steps) {
+    const proof = step.proofs.find((p) => p.id === proofId);
+    if (proof) return { step, proof };
+  }
+  return null;
+}
+server.tool(
+  "dod_verify",
+  "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now \u2014 e.g. right after implementing the step the proof belongs to \u2014 NOT on every dod_check. dod_check itself never auto-prompts; an unverified manual/review proof reports as 'skipped' there and holds the overall verdict at INCOMPLETE until dod_verify records a verdict.",
+  {
+    dod_id: external_exports.string().optional().describe("DoD ID (from dod_create or dod_list)"),
+    path: external_exports.string().optional().describe("Markdown file path \u2014 resolves to DoD by path if no ID given"),
+    proof_id: external_exports.string().describe('The proof id to verify (see dod_check output for ids, e.g. "proof-1-1").')
+  },
+  async ({ dod_id, path: mdPath, proof_id }) => {
+    let doc = null;
+    if (dod_id) {
+      doc = await load(dod_id);
+    } else if (mdPath) {
+      doc = await findByPath(mdPath);
+    }
+    if (!doc) {
+      return {
+        content: [{
+          type: "text",
+          text: `ERROR: DoD not found. ${dod_id ? `ID "${dod_id}" not in store.` : `No DoD registered for path "${mdPath}".`}
+Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
+        }]
+      };
+    }
+    const found = findProof(doc, proof_id);
+    if (!found) {
+      return {
+        content: [{
+          type: "text",
+          text: `ERROR: proof "${proof_id}" not found in DoD "${doc.id}". Run dod_check to see current proof ids.`
+        }]
+      };
+    }
+    const { proof } = found;
+    if (proof.predicate.type !== "manual" && proof.predicate.type !== "review") {
+      return {
+        content: [{
+          type: "text",
+          text: `ERROR: proof "${proof_id}" is a "${proof.predicate.type}" predicate \u2014 only manual/review proofs are verified out-of-band via dod_verify. Machine-checkable proofs are verified by dod_check.`
+        }]
+      };
+    }
+    const label = proof.predicate.type === "review" ? "Code review" : "Manual verification";
+    const resolution = await resolveManual(proof, buildConfirmer(), label);
+    proof.last_status = resolution.status;
+    proof.last_output = resolution.output;
+    proof.last_checked = (/* @__PURE__ */ new Date()).toISOString();
+    await save(doc);
+    await writeMarkdown(doc);
+    return {
+      content: [{
+        type: "text",
+        text: [
+          `## Manual verification: ${resolution.status.toUpperCase()}`,
+          "",
+          resolution.output,
+          "",
+          "Run dod_check (no `step`) to fold this into the overall verdict."
+        ].join("\n")
       }]
     };
   }
