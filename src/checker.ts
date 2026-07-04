@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import type { DodDocument, CheckResult, StepResult, ProofResult, Predicate, Proof } from "./types.js";
 import { perProofFingerprint } from "./manual.js";
 import { extractNumber } from "./regression.js";
+import { analyseAssertions } from "./assertions.js";
 
 const execAsync = promisify(exec);
 
@@ -100,6 +101,9 @@ function evaluatePredicate(
       return exitCode === (predicate.value as number ?? 0);
     case "manual":
     case "review":
+    case "mutation":
+    case "regression":
+    case "assertions":
       // Out-of-band verdicts are resolved in executeProof, not here.
       return true;
     default:
@@ -258,7 +262,78 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
     };
   }
 
-  // TDD predicate: must have been observed failing before it can pass
+  // Assertions predicate: runs the test command AND validates that test files
+  // contain non-trivial behavioural assertions — not just `assert True` or
+  // `expect(true).toBe(true)`. Prevents the "grep for assert keyword" loophole
+  // where a proof appears to check assertions but actually verifies nothing.
+  if (proof.predicate.type === "assertions") {
+    const minNonTrivial = (proof.predicate.value as number) ?? 1;
+    const report = analyseAssertions(proof.command, cwd);
+
+    const exitPass = run.exitCode === 0;
+    const noFiles = !report;
+    const tooFew = report && report.nonTrivial < minNonTrivial;
+    const allTrivial = report && report.total > 0 && report.nonTrivial === 0;
+
+    if (!exitPass) {
+      // Tests didn't pass — same as the first half of the TDD check.
+      return {
+        id: proof.id, description: proof.description, status: "fail",
+        command: proof.command, output: run.combined,
+        error: `tests failed with exit code ${run.exitCode}${report ? `. Test files have ${report.total} assertion(s), ${report.nonTrivial} non-trivial.` : ""}`,
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    if (noFiles) {
+      return {
+        id: proof.id, description: proof.description, status: "fail",
+        command: proof.command, output: run.combined,
+        error: "assertions: could not identify any test files from the command. Ensure the command references test files by path (e.g. `python -m pytest tests/test_foo.py`).",
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    if (allTrivial) {
+      return {
+        id: proof.id, description: proof.description, status: "fail",
+        command: proof.command, output: run.combined,
+        error: [
+          `ASSERTION QUALITY FAIL: all ${report.total} assertion(s) in ${report.files.length} test file(s) are trivial (constant-on-constant).`,
+          "These tests pass unconditionally and exercise zero production logic.",
+          ...report.perFile.map((f) => `  ${f.file}: ${f.total} assertion(s), ${f.trivial} trivial`),
+          "Replace trivial assertions with behavioural checks against real inputs/outputs.",
+        ].join("\n"),
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    if (tooFew) {
+      return {
+        id: proof.id, description: proof.description, status: "fail",
+        command: proof.command, output: run.combined,
+        error: [
+          `assertions: only ${report.nonTrivial} non-trivial assertion(s) found across ${report.files.length} test file(s), need at least ${minNonTrivial}.`,
+          ...report.perFile.map((f) => `  ${f.file}: ${f.total} total, ${f.trivial} trivial, ${f.total - f.trivial} non-trivial`),
+        ].join("\n"),
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    // Tests pass AND sufficient non-trivial assertions exist.
+    return {
+      id: proof.id, description: proof.description, status: "pass",
+      command: proof.command, output: run.combined,
+      error: `assertions: ${report.nonTrivial} non-trivial assertion(s) across ${report.files.length} test file(s) (${report.total} total, ${report.trivial} trivial)`,
+      exit_code: run.exitCode, duration_ms: run.duration,
+    };
+  }
+
+  // TDD predicate: must have been observed failing before it can pass.
+  // Also scans test files for trivial assertions (assert True,
+  // expect(true).toBe(true)) so the "grep for assert keyword" loophole is
+  // closed — TDD proofs now require meaningful behavioural assertions, not
+  // just the word "assert" in a file.
   if (proof.predicate.type === "tdd") {
     const greenExitCode = (proof.predicate.value as number) ?? 0;
     const isGreen = run.exitCode === greenExitCode;
@@ -284,10 +359,33 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
       };
     }
 
+    // isGreen && seen_failing — TDD cycle satisfied. Now validate assertion
+    // quality: scan test files for trivial constant-on-constant assertions.
+    const assertionReport = analyseAssertions(proof.command, cwd);
+
+    if (assertionReport && assertionReport.total > 0 && assertionReport.nonTrivial === 0) {
+      return {
+        id: proof.id, description: proof.description, status: "fail",
+        command: proof.command, output: run.combined,
+        error: [
+          `TDD ASSERTION QUALITY FAIL: all ${assertionReport.total} assertion(s) in ${assertionReport.files.length} test file(s) are trivial (constant-on-constant).`,
+          "The RED→GREEN cycle was observed, but these tests exercise zero production logic.",
+          ...assertionReport.perFile.map((f) => `  ${f.file}: ${f.total} assertion(s), ${f.trivial} trivial`),
+          "Replace trivial assertions with behavioural checks against real inputs/outputs, then re-run dod_check.",
+        ].join("\n"),
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    const assertionNote = assertionReport
+      ? ` | assertions: ${assertionReport.nonTrivial} non-trivial across ${assertionReport.files.length} file(s)`
+      : "";
+
     // isGreen && seen_failing — TDD complete
     return {
       id: proof.id, description: proof.description, status: "pass",
       command: proof.command, output: run.combined,
+      error: `TDD cycle verified (seen failing → now passing)${assertionNote}`,
       exit_code: run.exitCode, duration_ms: run.duration,
     };
   }
