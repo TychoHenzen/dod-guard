@@ -5,7 +5,13 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __commonJS = (cb, mod) => function __require() {
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined") return require.apply(this, arguments);
+  throw Error('Dynamic require of "' + x + '" is not supported');
+});
+var __commonJS = (cb, mod) => function __require2() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 var __export = (target, all) => {
@@ -2980,7 +2986,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve4.call(this, root, ref);
+      let _sch = resolve5.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3007,7 +3013,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve4(root, ref) {
+    function resolve5(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3225,8 +3231,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path5) {
-      let input = path5;
+    function removeDotSegments(path6) {
+      let input = path6;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3478,8 +3484,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path5, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path5 && path5 !== "/" ? path5 : void 0;
+        const [path6, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path6 && path6 !== "/" ? path6 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3638,55 +3644,55 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve4(baseURI, relativeURI, options) {
+    function resolve5(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse3(baseURI, schemelessOptions), parse3(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative, options, skipNormalization) {
+    function resolveComponent(base, relative2, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative = parse3(serialize(relative, options), options);
+        relative2 = parse3(serialize(relative2, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative.scheme) {
-        target.scheme = relative.scheme;
-        target.userinfo = relative.userinfo;
-        target.host = relative.host;
-        target.port = relative.port;
-        target.path = removeDotSegments(relative.path || "");
-        target.query = relative.query;
+      if (!options.tolerant && relative2.scheme) {
+        target.scheme = relative2.scheme;
+        target.userinfo = relative2.userinfo;
+        target.host = relative2.host;
+        target.port = relative2.port;
+        target.path = removeDotSegments(relative2.path || "");
+        target.query = relative2.query;
       } else {
-        if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
-          target.userinfo = relative.userinfo;
-          target.host = relative.host;
-          target.port = relative.port;
-          target.path = removeDotSegments(relative.path || "");
-          target.query = relative.query;
+        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
+          target.userinfo = relative2.userinfo;
+          target.host = relative2.host;
+          target.port = relative2.port;
+          target.path = removeDotSegments(relative2.path || "");
+          target.query = relative2.query;
         } else {
-          if (!relative.path) {
+          if (!relative2.path) {
             target.path = base.path;
-            if (relative.query !== void 0) {
-              target.query = relative.query;
+            if (relative2.query !== void 0) {
+              target.query = relative2.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative.path[0] === "/") {
-              target.path = removeDotSegments(relative.path);
+            if (relative2.path[0] === "/") {
+              target.path = removeDotSegments(relative2.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative.path;
+                target.path = "/" + relative2.path;
               } else if (!base.path) {
-                target.path = relative.path;
+                target.path = relative2.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative.query;
+            target.query = relative2.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3694,7 +3700,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative.fragment;
+      target.fragment = relative2.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3896,7 +3902,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve4,
+      resolve: resolve5,
       resolveComponent,
       equal,
       serialize,
@@ -7363,8 +7369,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path5, errorMaps, issueData } = params;
-  const fullPath = [...path5, ...issueData.path || []];
+  const { data, path: path6, errorMaps, issueData } = params;
+  const fullPath = [...path6, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7480,11 +7486,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path5, key) {
+  constructor(parent, value, path6, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path5;
+    this._path = path6;
     this._key = key;
   }
   get path() {
@@ -11121,10 +11127,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path5) {
-  if (!path5)
+function getElementAtPath(obj, path6) {
+  if (!path6)
     return obj;
-  return path5.reduce((acc, key) => acc?.[key], obj);
+  return path6.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11444,11 +11450,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path5, issues) {
+function prefixIssues(path6, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path5);
+    iss.path.unshift(path6);
     return iss;
   });
 }
@@ -18976,7 +18982,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
+        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -18993,7 +18999,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19071,7 +19077,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve4(parseResult.data);
+            resolve5(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19332,12 +19338,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve4, interval);
+      const timeoutId = setTimeout(resolve5, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20437,7 +20443,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
+      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21086,19 +21092,19 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve4) => {
+    return new Promise((resolve5) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve4();
+        resolve5();
       } else {
-        this._stdout.once("drain", resolve4);
+        this._stdout.once("drain", resolve5);
       }
     });
   }
 };
 
 // src/index.ts
-import * as path4 from "node:path";
+import * as path5 from "node:path";
 
 // src/store.ts
 import { promises as fs } from "node:fs";
@@ -21215,6 +21221,128 @@ function extractNumber(stdout, extract) {
   return Number.isFinite(value) ? value : null;
 }
 
+// src/assertions.ts
+import { readFileSync, existsSync } from "node:fs";
+import * as path2 from "node:path";
+var PY_TRIVIAL = [
+  // assert True / assert False / assert None
+  /^\s*assert\s+(True|False|None)\s*(#.*)?$/,
+  // assert 1, assert 3.14, assert "hello"
+  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
+  // assert CONST OP CONST (both sides literal)
+  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
+  // self.assertX(CONST, CONST)
+  /^\s*self\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\s*\(\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(?:,\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*)?\)\s*(#.*)?$/
+];
+var JS_TRIVIAL = [
+  // expect(CONST).toXxx(CONST)
+  /^\s*expect\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)\s*\.\s*(?:not\s*\.\s*)?(?:toBe|toEqual|toBeTruthy|toBeFalsy|toBeNull|toBeUndefined|toStrictEqual|toMatchObject|toContain|toHaveLength)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
+  // assert.equal(CONST, CONST) / assert.strictEqual(CONST, CONST)
+  /^\s*assert\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
+  // assert.ok(true) / assert.fail()
+  /^\s*assert\.(?:ok|fail)\s*\(\s*(true|false)\s*\)/
+];
+var PY_ASSERT = /^\s*(assert\b|self\.assert)/;
+var JS_ASSERT = /^\s*(expect\s*\(|assert\.)/;
+function isTrivial(line, patterns) {
+  return patterns.some((p) => p.test(line));
+}
+function isAssertion(line, detector) {
+  return detector.test(line);
+}
+function classifyLine(line, detector, trivialPatterns) {
+  if (!isAssertion(line, detector)) return { isAssertion: false, trivial: false };
+  return { isAssertion: true, trivial: isTrivial(line, trivialPatterns) };
+}
+function languageForFile(file) {
+  const ext = path2.extname(file).toLowerCase();
+  if (ext === ".py") return "py";
+  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
+  return null;
+}
+function scanFile(file) {
+  const lang = languageForFile(file);
+  if (!lang) return { total: 0, trivial: 0 };
+  const detector = lang === "py" ? PY_ASSERT : JS_ASSERT;
+  const trivialPatterns = lang === "py" ? PY_TRIVIAL : JS_TRIVIAL;
+  const content = readFileSync(file, "utf-8");
+  const lines = content.split(/\r?\n/);
+  let total = 0;
+  let trivial = 0;
+  for (const line of lines) {
+    const result = classifyLine(line, detector, trivialPatterns);
+    if (result.isAssertion) {
+      total++;
+      if (result.trivial) trivial++;
+    }
+  }
+  return { total, trivial };
+}
+var TEST_FILE_PATTERNS = [
+  /^test_.*\.py$/,
+  /^.*_test\.py$/,
+  /\.test\.(ts|js|tsx|jsx|mts|mjs)$/,
+  /\.spec\.(ts|js|tsx|jsx|mts|mjs)$/
+];
+function isTestFile(filePath) {
+  const base = path2.basename(filePath);
+  return TEST_FILE_PATTERNS.some((p) => p.test(base));
+}
+function extractTestFilesFromCommand(command, cwd) {
+  const tokens = command.split(/\s+/);
+  const files = [];
+  for (const token of tokens) {
+    if (token.startsWith("-") || token.startsWith("--")) continue;
+    if (/^(python|python3?|pytest|node|npm|npx|pnpm|yarn|jest|vitest|mocha|ts-node|tsx)$/.test(token)) continue;
+    if (/^(test|run|exec)$/.test(token)) continue;
+    if (token.includes(".") || token.includes("/") || token.includes("\\")) {
+      const resolved = path2.resolve(cwd, token);
+      if (existsSync(resolved) && isTestFile(resolved)) {
+        files.push(resolved);
+      }
+      const dir = path2.dirname(resolved);
+      const pat = path2.basename(resolved);
+      if (existsSync(dir) && pat.includes("*")) {
+        try {
+          const { readdirSync } = __require("node:fs");
+          const entries = readdirSync(dir);
+          const regex = new RegExp("^" + pat.replace(/\*/g, ".*").replace(/\./g, "\\.") + "$");
+          for (const entry of entries) {
+            if (regex.test(entry)) {
+              const full = path2.join(dir, entry);
+              if (isTestFile(full)) files.push(full);
+            }
+          }
+        } catch {
+        }
+      }
+    }
+  }
+  return [...new Set(files)];
+}
+function analyseAssertions(command, cwd) {
+  const files = extractTestFilesFromCommand(command, cwd);
+  if (files.length === 0) {
+    return null;
+  }
+  const perFile = [];
+  let total = 0;
+  let trivial = 0;
+  for (const file of files) {
+    const counts = scanFile(file);
+    perFile.push({ file: path2.relative(cwd, file), ...counts });
+    total += counts.total;
+    trivial += counts.trivial;
+  }
+  return {
+    total,
+    trivial,
+    nonTrivial: total - trivial,
+    files: files.map((f) => path2.relative(cwd, f)),
+    perFile
+  };
+}
+
 // src/checker.ts
 var execAsync = promisify(exec);
 var TIMEOUT_MS = 12e4;
@@ -21274,6 +21402,9 @@ function evaluatePredicate(predicate, exitCode, stdout) {
       return exitCode === (predicate.value ?? 0);
     case "manual":
     case "review":
+    case "mutation":
+    case "regression":
+    case "assertions":
       return true;
     default:
       return false;
@@ -21418,6 +21549,80 @@ async function executeProof(proof, cwd) {
       duration_ms: run.duration
     };
   }
+  if (proof.predicate.type === "assertions") {
+    const minNonTrivial = proof.predicate.value ?? 1;
+    const report = analyseAssertions(proof.command, cwd);
+    const exitPass = run.exitCode === 0;
+    const noFiles = !report;
+    const tooFew = report && report.nonTrivial < minNonTrivial;
+    const allTrivial = report && report.total > 0 && report.nonTrivial === 0;
+    if (!exitPass) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: `tests failed with exit code ${run.exitCode}${report ? `. Test files have ${report.total} assertion(s), ${report.nonTrivial} non-trivial.` : ""}`,
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    if (noFiles) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: "assertions: could not identify any test files from the command. Ensure the command references test files by path (e.g. `python -m pytest tests/test_foo.py`).",
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    if (allTrivial) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: [
+          `ASSERTION QUALITY FAIL: all ${report.total} assertion(s) in ${report.files.length} test file(s) are trivial (constant-on-constant).`,
+          "These tests pass unconditionally and exercise zero production logic.",
+          ...report.perFile.map((f) => `  ${f.file}: ${f.total} assertion(s), ${f.trivial} trivial`),
+          "Replace trivial assertions with behavioural checks against real inputs/outputs."
+        ].join("\n"),
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    if (tooFew) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: [
+          `assertions: only ${report.nonTrivial} non-trivial assertion(s) found across ${report.files.length} test file(s), need at least ${minNonTrivial}.`,
+          ...report.perFile.map((f) => `  ${f.file}: ${f.total} total, ${f.trivial} trivial, ${f.total - f.trivial} non-trivial`)
+        ].join("\n"),
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    return {
+      id: proof.id,
+      description: proof.description,
+      status: "pass",
+      command: proof.command,
+      output: run.combined,
+      error: `assertions: ${report.nonTrivial} non-trivial assertion(s) across ${report.files.length} test file(s) (${report.total} total, ${report.trivial} trivial)`,
+      exit_code: run.exitCode,
+      duration_ms: run.duration
+    };
+  }
   if (proof.predicate.type === "tdd") {
     const greenExitCode = proof.predicate.value ?? 0;
     const isGreen = run.exitCode === greenExitCode;
@@ -21447,12 +21652,32 @@ async function executeProof(proof, cwd) {
         duration_ms: run.duration
       };
     }
+    const assertionReport = analyseAssertions(proof.command, cwd);
+    if (assertionReport && assertionReport.total > 0 && assertionReport.nonTrivial === 0) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: [
+          `TDD ASSERTION QUALITY FAIL: all ${assertionReport.total} assertion(s) in ${assertionReport.files.length} test file(s) are trivial (constant-on-constant).`,
+          "The RED\u2192GREEN cycle was observed, but these tests exercise zero production logic.",
+          ...assertionReport.perFile.map((f) => `  ${f.file}: ${f.total} assertion(s), ${f.trivial} trivial`),
+          "Replace trivial assertions with behavioural checks against real inputs/outputs, then re-run dod_check."
+        ].join("\n"),
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    const assertionNote = assertionReport ? ` | assertions: ${assertionReport.nonTrivial} non-trivial across ${assertionReport.files.length} file(s)` : "";
     return {
       id: proof.id,
       description: proof.description,
       status: "pass",
       command: proof.command,
       output: run.combined,
+      error: `TDD cycle verified (seen failing \u2192 now passing)${assertionNote}`,
       exit_code: run.exitCode,
       duration_ms: run.duration
     };
@@ -21540,7 +21765,7 @@ async function checkDocument(doc, cwdOverride, opts) {
 
 // src/author.ts
 import { promises as fs2 } from "node:fs";
-import * as path2 from "node:path";
+import * as path3 from "node:path";
 function proofMark(status) {
   switch (status) {
     case "pass":
@@ -21657,7 +21882,7 @@ function renderMarkdown(doc) {
 }
 async function writeMarkdown(doc) {
   const content = renderMarkdown(doc);
-  const dir = path2.dirname(doc.markdown_path);
+  const dir = path3.dirname(doc.markdown_path);
   await fs2.mkdir(dir, { recursive: true });
   await fs2.writeFile(doc.markdown_path, content, "utf-8");
 }
@@ -21991,7 +22216,7 @@ $payload = @{ result = $verdict; note = $noteBox.Text } | ConvertTo-Json -Compre
 `;
 function showVerifyDialog(title, body) {
   if (!isWindows) return Promise.resolve({ result: "no" });
-  return new Promise((resolve4) => {
+  return new Promise((resolve5) => {
     try {
       const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", VERIFY_DIALOG_SCRIPT], {
         stdio: ["ignore", "pipe", "ignore"],
@@ -22006,19 +22231,19 @@ function showVerifyDialog(title, body) {
       child.stdout.on("data", (chunk) => {
         out += chunk.toString();
       });
-      child.on("error", () => resolve4({ result: "no" }));
+      child.on("error", () => resolve5({ result: "no" }));
       child.on("close", () => {
         try {
           const parsed = JSON.parse(out.trim());
           const result = parsed.result === "yes" ? "yes" : "no";
           const note = typeof parsed.note === "string" && parsed.note.trim() ? parsed.note.trim() : void 0;
-          resolve4({ result, note });
+          resolve5({ result, note });
         } catch {
-          resolve4({ result: "no" });
+          resolve5({ result: "no" });
         }
       });
     } catch {
-      resolve4({ result: "no" });
+      resolve5({ result: "no" });
     }
   });
 }
@@ -22026,8 +22251,8 @@ function showVerifyDialog(title, body) {
 // src/command-check.ts
 import { execFile } from "node:child_process";
 import { promisify as promisify2 } from "node:util";
-import { existsSync } from "node:fs";
-import * as path3 from "node:path";
+import { existsSync as existsSync2 } from "node:fs";
+import * as path4 from "node:path";
 var execFileAsync = promisify2(execFile);
 var isWindows2 = process.platform === "win32";
 var CMD_BUILTINS = /* @__PURE__ */ new Set([
@@ -22180,9 +22405,9 @@ async function toolExists(name, cwd) {
   if (isWindows2 && CMD_BUILTINS.has(name.toLowerCase())) {
     ok = true;
   } else if (looksLikePath(name)) {
-    const base = path3.isAbsolute(name) ? name : path3.resolve(cwd, name);
+    const base = path4.isAbsolute(name) ? name : path4.resolve(cwd, name);
     const candidates = isWindows2 ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
-    ok = candidates.some((p) => existsSync(p));
+    ok = candidates.some((p) => existsSync2(p));
   } else {
     ok = await onPath(name);
   }
@@ -22251,7 +22476,7 @@ var server = new McpServer({
   version: "1.8.0"
 });
 var PredicateSchema = external_exports.object({
-  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression"]),
+  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions"]),
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
   extract: external_exports.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
   lower_is_better: external_exports.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage).")
@@ -22325,7 +22550,7 @@ server.tool(
     steps: external_exports.array(StepInputSchema).describe("DoD steps with proof commands and predicates")
   },
   async ({ title, goal, type, cwd, markdown_path, sections, steps }) => {
-    const resolvedCwd = path4.resolve(cwd);
+    const resolvedCwd = path5.resolve(cwd);
     const osError = await checkCommandsForOs(
       steps.map((s) => ({ proofs: s.proofs.map((p) => ({ command: p.command, predicate: p.predicate })) })),
       resolvedCwd
@@ -22376,7 +22601,7 @@ server.tool(
       date: date3,
       type,
       cwd: resolvedCwd,
-      markdown_path: path4.resolve(markdown_path),
+      markdown_path: path5.resolve(markdown_path),
       created_at: (/* @__PURE__ */ new Date()).toISOString(),
       locked: true,
       sections,
@@ -22781,7 +23006,7 @@ server.tool(
     }
     try {
       const parsed = await parseMarkdown(mdPath);
-      const resolvedCwd = path4.resolve(cwd);
+      const resolvedCwd = path5.resolve(cwd);
       const osError = await checkCommandsForOs(parsed.steps, resolvedCwd);
       if (osError) return osError;
       const id = generateId();
@@ -22791,7 +23016,7 @@ server.tool(
         goal: parsed.goal,
         date: parsed.date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
         cwd: resolvedCwd,
-        markdown_path: path4.resolve(mdPath),
+        markdown_path: path5.resolve(mdPath),
         created_at: (/* @__PURE__ */ new Date()).toISOString(),
         locked: true,
         sections: parsed.sections,
