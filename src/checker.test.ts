@@ -447,3 +447,52 @@ test("e2e regression capture-compare: an over-tolerance compare run fails throug
   assert.equal(res.steps[0].proofs[0].status, "fail", "regression beyond tolerance fails");
   assert.equal(res.overall, "fail");
 });
+
+// ── streamline predicate: absence verification ─────────────────────
+
+function streamlineProof(id: string, command: string, value?: number): Proof {
+  return { id, command, predicate: { type: "streamline", value }, description: id, last_status: "pending" };
+}
+
+test("streamline passes when search finds nothing (grep exit 1)", async () => {
+  // node -e "process.exit(1)" simulates grep exit 1: no matches
+  const doc = docWith([streamlineProof("proof-1-1", "node -e \"process.exit(1)\"")]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "pass", "exit 1 → no matches → old code removed → PASS");
+  assert.equal(res.overall, "pass");
+});
+
+test("streamline fails when search finds matches (old code remains)", async () => {
+  // grep exits 0 when matches found — old code still exists → FAIL
+  const doc = docWith([streamlineProof("proof-1-1", "echo found: match here")]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "fail", "matches found → old code remains → FAIL");
+  assert.equal(res.overall, "fail");
+});
+
+test("streamline passes when matches are within allowed threshold (value > 0)", async () => {
+  // 1 match line → count=1, value=3 → within budget → PASS
+  const doc = docWith([streamlineProof("proof-1-1", "echo ref1", 3)]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "pass", "1 match ≤ value 3 → PASS");
+});
+
+test("streamline fails when matches exceed allowed threshold", async () => {
+  // 2 match lines → count=2, value=1 → over budget → FAIL
+  const doc = docWith([streamlineProof("proof-1-1", "printf 'ref1\\nref2'", 1)]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "fail", "2 matches > value 1 → FAIL");
+});
+
+test("streamline defaults value to 0 — any match fails", async () => {
+  const doc = docWith([streamlineProof("proof-1-1", "echo one match")]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "fail", "value absent → default 0 → any match fails");
+});
+
+test("streamline passes exit 0 but empty output (value=0, zero matches)", async () => {
+  // node -e "" exits 0 with no stdout — zero non-empty lines
+  const doc = docWith([streamlineProof("proof-1-1", "node -e \"\"")]);
+  const res = await checkDocument(doc);
+  assert.equal(res.steps[0].proofs[0].status, "pass", "exit 0 with empty output → 0 matches → PASS");
+});

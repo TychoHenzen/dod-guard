@@ -21405,6 +21405,7 @@ function evaluatePredicate(predicate, exitCode, stdout) {
     case "mutation":
     case "regression":
     case "assertions":
+    case "streamline":
       return true;
     default:
       return false;
@@ -21545,6 +21546,45 @@ async function executeProof(proof, cwd) {
       command: proof.command,
       output: run.combined,
       error: passed2 ? void 0 : `regression: ${measured} fails ${direction} ${threshold} (baseline ${baseline}, tolerance ${tol})`,
+      exit_code: run.exitCode,
+      duration_ms: run.duration
+    };
+  }
+  if (proof.predicate.type === "streamline") {
+    const maxAllowed = proof.predicate.value ?? 0;
+    if (run.exitCode > 1) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "fail",
+        command: proof.command,
+        output: run.combined,
+        error: `streamline: search command failed with exit code ${run.exitCode} (fail-safe \u2014 never auto-passes on tool errors)`,
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    if (run.exitCode === 1) {
+      return {
+        id: proof.id,
+        description: proof.description,
+        status: "pass",
+        command: proof.command,
+        output: run.combined,
+        error: "streamline: no matches \u2014 old code fully removed",
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    const matchCount = run.combined.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
+    const passed2 = matchCount <= maxAllowed;
+    return {
+      id: proof.id,
+      description: proof.description,
+      status: passed2 ? "pass" : "fail",
+      command: proof.command,
+      output: run.combined,
+      error: passed2 ? `streamline: ${matchCount} match(es) \u2264 allowed ${maxAllowed}` : `streamline: ${matchCount} remaining reference(s) exceeds allowed maximum of ${maxAllowed} \u2014 old code has not been fully removed`,
       exit_code: run.exitCode,
       duration_ms: run.duration
     };
@@ -22459,6 +22499,11 @@ function validateBaseline(type, steps) {
       'No "mutation" proof. A green suite can still catch zero bugs \u2014 for critical logic, add a mutation proof asserting surviving mutants stay <= N (cargo-mutants / mutmut / Stryker).'
     );
   }
+  if (!present.has("streamline")) {
+    warnings.push(
+      'No "streamline" proof. When revising existing functionality, add a streamline proof to verify old implementations were removed \u2014 a search (grep/rg/findstr) that must return zero matches.'
+    );
+  }
   for (const s of steps) {
     if (s.proofs.length === 0) continue;
     const hasStrong = s.proofs.some((p) => STRONG.includes(p.category));
@@ -22473,10 +22518,10 @@ function validateBaseline(type, steps) {
 // src/index.ts
 var server = new McpServer({
   name: "dod-guard",
-  version: "1.8.0"
+  version: "1.10.0"
 });
 var PredicateSchema = external_exports.object({
-  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions"]),
+  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline"]),
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
   extract: external_exports.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
   lower_is_better: external_exports.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage).")
@@ -22494,6 +22539,7 @@ var ProofCategorySchema = external_exports.enum([
   "complexity",
   "coverage",
   "duplication",
+  "streamline",
   "manual",
   "other"
 ]);

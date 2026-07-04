@@ -139,6 +139,26 @@ mutmut / Stryker), parses the surviving (un-killed) mutant count, and passes iff
 - **When to add one:** complex branching, money/permission/validation logic, or anywhere "the
   tests are green" is not enough assurance that real defects would be caught.
 
+### Streamline — proving old code was removed
+
+When revising existing functionality, Claude and other LLMs tend to keep old implementations
+alongside new ones "for backward compatibility" — creating bloat, complexity, and future
+confusion risk where later sessions modify the **old** code path instead of the new one.
+The `streamline` predicate closes this gap: it proves **absence**, not presence.
+
+- **Command:** a search for old symbols/patterns (e.g. `rg "oldFunctionName" src/`,
+  `grep -rw "deprecated_handler" src/`, `findstr /R "OldClass\b" src\*.py`).
+- **Semantics:** PASSES when the search finds nothing (exit 1 — old code fully removed).
+  FAILS when matches are found (exit 0 — old code remains). FAILS on tool errors (exit >1 —
+  fail-safe, never auto-passes).
+- **`value`:** max allowed remaining references (default `0`). Set to N for gradual cleanup
+  where N references are acceptable during a transition.
+- **Optional, not mandatory.** A DoD with no `streamline` proof gets a soft, non-blocking
+  warning (like `mutation`) — it is **never** added to the hard-mandatory categories and
+  never blocks `dod_create`.
+- **When to add one:** any step that revises or replaces an existing function, module, class,
+  or code path. The streamline proof names the old symbols and proves they were removed.
+
 **Precision:** presence/removal proofs must match **signatures or word boundaries**, not bare substrings. `findstr "TryStopTracking"` matches both `TryStopTracking(dossierId)` and `TryStopTracking(dossierId, clientId)` — a false positive. Use `grep -w` / `findstr /R` with anchors.
 
 ### Non-regression over absolutes — the `regression` predicate

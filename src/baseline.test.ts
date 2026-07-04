@@ -10,7 +10,7 @@ function step(title: string, ...cats: ProofCategory[]): BaselineStepInput {
 /** A DoD that satisfies every hard-mandatory category plus TDD and mutation. */
 function completeSteps(): BaselineStepInput[] {
   return [
-    step("Logic", "tdd", "test", "mutation"),
+    step("Logic", "tdd", "test", "mutation", "streamline"),
     step("Wire it up", "integration_wiring", "integration_behavioral"),
   ];
 }
@@ -75,6 +75,19 @@ test("regression: a regression+advisory DoD validates without new mandatory erro
     !r.errors.some((e) => /performance|complexity|coverage|duplication/.test(e)),
     "regression categories must not be reported as missing mandatory categories",
   );
+});
+
+test("streamline baseline warns when no streamline proof is present", () => {
+  const steps = [step("Logic", "tdd", "test"), step("Wire", "integration_wiring", "integration_behavioral")];
+  const r = validateBaseline("general", steps);
+  assert.deepEqual(r.errors, [], "streamline absence must never block creation");
+  assert.ok(r.warnings.some((w) => /streamline/i.test(w)), "expected a soft warning nudging toward streamline proofs");
+});
+
+test("streamline baseline does not warn when a streamline proof is present", () => {
+  const steps = [step("Logic", "tdd", "test", "streamline"), step("Wire", "integration_wiring", "integration_behavioral")];
+  const r = validateBaseline("general", steps);
+  assert.ok(!r.warnings.some((w) => /streamline/i.test(w)), "streamline present → no streamline warning");
 });
 
 test("a presence-only step is warned (structure without any behavioral/test proof)", () => {

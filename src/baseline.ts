@@ -74,6 +74,14 @@ export function validateBaseline(type: "bug" | "general", steps: BaselineStepInp
     );
   }
 
+  // Streamline: when revising functionality, prove old implementations were removed.
+  // Soft, non-blocking nudge — deliberately NOT in HARD_MANDATORY.
+  if (!present.has("streamline")) {
+    warnings.push(
+      'No "streamline" proof. When revising existing functionality, add a streamline proof to verify old implementations were removed — a search (grep/rg/findstr) that must return zero matches.',
+    );
+  }
+
   // Presence-only step: confirms code exists, not that it works (PC-1).
   for (const s of steps) {
     if (s.proofs.length === 0) continue;

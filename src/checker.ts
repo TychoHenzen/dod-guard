@@ -104,6 +104,7 @@ function evaluatePredicate(
     case "mutation":
     case "regression":
     case "assertions":
+    case "streamline":
       // Out-of-band verdicts are resolved in executeProof, not here.
       return true;
     default:
@@ -258,6 +259,50 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
       error: passed
         ? undefined
         : `regression: ${measured} fails ${direction} ${threshold} (baseline ${baseline}, tolerance ${tol})`,
+      exit_code: run.exitCode, duration_ms: run.duration,
+    };
+  }
+
+  // Streamline predicate: proves absence — the search command must find NOTHING.
+  // Used to verify old implementations were removed when revising functionality.
+  // Exit 1 (grep: no matches) → PASS. Exit 0 (matches found) → count lines,
+  // PASS iff count <= value (default 0). Exit >1 → FAIL (search tool error).
+  if (proof.predicate.type === "streamline") {
+    const maxAllowed = (proof.predicate.value as number) ?? 0;
+
+    // Exit > 1: search tool error (e.g. file not found, permission denied)
+    if (run.exitCode > 1) {
+      return {
+        id: proof.id, description: proof.description, status: "fail",
+        command: proof.command, output: run.combined,
+        error: `streamline: search command failed with exit code ${run.exitCode} (fail-safe — never auto-passes on tool errors)`,
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    // Exit 1: no matches found (grep/rg/findstr convention)
+    if (run.exitCode === 1) {
+      return {
+        id: proof.id, description: proof.description, status: "pass",
+        command: proof.command, output: run.combined,
+        error: "streamline: no matches — old code fully removed",
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    // Exit 0: count non-empty output lines as matches
+    const matchCount = run.combined
+      .split(/\r?\n/)
+      .filter((l) => l.trim().length > 0)
+      .length;
+
+    const passed = matchCount <= maxAllowed;
+    return {
+      id: proof.id, description: proof.description, status: passed ? "pass" : "fail",
+      command: proof.command, output: run.combined,
+      error: passed
+        ? `streamline: ${matchCount} match(es) ≤ allowed ${maxAllowed}`
+        : `streamline: ${matchCount} remaining reference(s) exceeds allowed maximum of ${maxAllowed} — old code has not been fully removed`,
       exit_code: run.exitCode, duration_ms: run.duration,
     };
   }

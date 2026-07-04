@@ -14,13 +14,13 @@ import type { DodDocument, Predicate, Proof, Step } from "./types.js";
 
 const server = new McpServer({
   name: "dod-guard",
-  version: "1.8.0",
+  version: "1.10.0",
 });
 
 // ── Shared schemas ──────────────────────────────────────────────────
 
 const PredicateSchema = z.object({
-  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions"]),
+  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline"]),
   value: z.union([z.number(), z.string()]).optional(),
   extract: z.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
   lower_is_better: z.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage)."),
@@ -30,7 +30,7 @@ const ProofCategorySchema = z.enum([
   "lint", "format", "tdd", "structure", "test", "mutation",
   "integration_wiring", "integration_behavioral",
   "performance", "complexity", "coverage", "duplication",
-  "manual", "other",
+  "streamline", "manual", "other",
 ]);
 
 const ProofInputSchema = z.object({
