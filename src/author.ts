@@ -1,14 +1,91 @@
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import type { DodDocument, CheckResult } from "./types.js";
+import type { DodDocument, CheckResult, TaskNode } from "./types.js";
+import { findNodeByPath, hasDraftNodes, isBranchLocked } from "./checker.js";
 
 function proofMark(status: string): string {
   switch (status) {
     case "pass": return "[x]";
     case "skipped": return "[~]";
+    case "draft": return "[~]";
     default: return "[ ]";
   }
 }
+
+// ── Render helpers ────────────────────────────────────────────────────
+
+/** Render a TaskNode subtree recursively with indentation. */
+function renderNode(node: TaskNode, depth: number, lines: string[]): void {
+  const indent = "  ".repeat(depth);
+  const isLeaf = !node.children || node.children.length === 0;
+
+  if (isLeaf) {
+    renderLeaf(node, indent, lines);
+  } else {
+    renderGroup(node, depth, indent, lines);
+  }
+}
+
+function renderGroup(node: TaskNode, depth: number, indent: string, lines: string[]): void {
+  const hasDrafts = hasDraftNodes(node.children!);
+  const allPass = isBranchLocked(node.children!)
+    && node.children!.every(c => c.refinement === "concrete" && (c.last_status === "pass" || c.last_status === "skipped"))
+    // Also check deep
+    && allLeavesPass(node.children!);
+
+  let mark: string;
+  if (hasDrafts) mark = "[~]";
+  else if (allPass && node.children!.length > 0) mark = "[x]";
+  else mark = "[ ]";
+
+  lines.push(`${indent}**${node.title}** ${mark}`);
+  lines.push("");
+
+  for (const child of node.children!) {
+    renderNode(child, depth + 1, lines);
+  }
+}
+
+function allLeavesPass(nodes: TaskNode[]): boolean {
+  for (const n of nodes) {
+    if (n.children && n.children.length > 0) {
+      if (!allLeavesPass(n.children)) return false;
+    } else if (n.refinement === "concrete") {
+      if (n.last_status !== "pass" && n.last_status !== "skipped") return false;
+    } else if (n.refinement === "draft") {
+      return false;
+    }
+  }
+  return true;
+}
+
+function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
+  if (node.refinement === "draft") {
+    const mark = proofMark("draft");
+    lines.push(`${indent}- ${mark} **Draft**: ${node.intent ?? node.title}`);
+    return;
+  }
+
+  // Concrete leaf
+  const mark = proofMark(node.last_status);
+
+  if (node.predicate?.type === "manual") {
+    const mr = node.manual_result;
+    const state = mr
+      ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_`
+      : " _(awaiting human verification)_";
+    lines.push(`${indent}- ${mark} Proof: Manual — ${node.description}${state}`);
+  } else if (node.predicate?.type === "tdd") {
+    const tddState = node.seen_failing
+      ? (node.last_status === "pass" ? "🟢 GREEN" : "🔴 RED")
+      : "⬜ AWAITING RED";
+    lines.push(`${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` → ${node.description}`);
+  } else {
+    lines.push(`${indent}- ${mark} Proof: \`${node.command}\` → ${node.description}`);
+  }
+}
+
+// ── Main render ───────────────────────────────────────────────────────
 
 export function renderMarkdown(doc: DodDocument): string {
   const l: string[] = [];
@@ -16,19 +93,18 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push(`# ${doc.title} — Requirements Spec`);
   l.push("");
   l.push("<claude_instructions>");
-  l.push("**For Claude (/goal):** Work through each incomplete step below.");
-  l.push("1. Mark a step `[>]` when you begin working on it.");
+  l.push("**For Claude (/goal):** Work through each incomplete task below.");
+  l.push("1. Mark a task `[>]` when you begin working on it.");
   l.push("2. Call `dod_check` to verify proofs — do NOT mark proofs manually.");
-  l.push("   While iterating on one step, pass `step: N` to verify just that step fast (other steps are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
-  l.push("3. A step is complete when ALL its proofs pass via `dod_check`.");
-  l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts — it only reports what's already");
-  l.push("    on record (`skipped` = not yet verified, holds overall at INCOMPLETE). Call");
-  l.push("    `dod_verify(dod_id, proof_id)` explicitly once verification is actually relevant — typically");
-  l.push("    right after implementing that step — then re-run `dod_check` to fold in the verdict.");
-  l.push("4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("4b. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
-  l.push("4c. After a step's proofs all pass, commit that step before starting the next — one commit per step (clean, bisectable history).");
-  l.push("5. Continue until `dod_check` returns PASS — then stop and report done.");
+  l.push("   While iterating on one subtree, pass `nodePath` to verify just that part fast (others are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
+  l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
+  l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts — call");
+  l.push("    `dod_verify(dod_id, proof_id)` explicitly when verification is actually relevant.");
+  l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof with a command.");
+  l.push("4b. Use `dod_add_node` to add new nodes discovered during implementation.");
+  l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
+  l.push("5b. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
+  l.push("6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass) — then stop and report done.");
   l.push("");
   l.push(`**Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
   l.push("");
@@ -38,7 +114,6 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("Store tampering is **logged and detectable** — each check prints a proof-set fingerprint.");
   l.push("Manual/review proofs are confirmed by the human directly (popup / elicitation) via `dod_verify` —");
   l.push("Claude cannot self-confirm them, and an unrequested one holds the DoD at INCOMPLETE, never PASS.");
-  l.push("A confirmed verdict is recorded until the proof changes.");
   l.push("</claude_instructions>");
   l.push("");
   l.push(`**Goal:** ${doc.goal}`);
@@ -88,28 +163,30 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("");
   l.push("<definition_of_done>");
 
-  for (let i = 0; i < doc.steps.length; i++) {
-    const step = doc.steps[i];
-    const allPass = step.proofs.every(p => p.last_status === "pass" || p.last_status === "skipped");
-    const stepMark = allPass && step.proofs.length > 0 ? "[x]" : "[ ]";
-    l.push("");
-    l.push(`### Step ${i + 1}: ${step.title} ${stepMark}`);
-    l.push("");
-    for (const proof of step.proofs) {
-      const mark = proofMark(proof.last_status);
-      if (proof.predicate.type === "manual") {
-        const mr = proof.manual_result;
-        const state = mr
-          ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_`
-          : " _(awaiting human verification)_";
-        l.push(`- ${mark} Proof: Manual — ${proof.description}${state}`);
-      } else if (proof.predicate.type === "tdd") {
-        const tddState = proof.seen_failing
-          ? (proof.last_status === "pass" ? "🟢 GREEN" : "🔴 RED")
-          : "⬜ AWAITING RED";
-        l.push(`- ${mark} Proof (TDD ${tddState}): \`${proof.command}\` → ${proof.description}`);
-      } else {
-        l.push(`- ${mark} Proof: \`${proof.command}\` → ${proof.description}`);
+  for (let i = 0; i < doc.roots.length; i++) {
+    const root = doc.roots[i];
+    const isLeaf = !root.children || root.children.length === 0;
+
+    if (isLeaf) {
+      l.push("");
+      renderLeaf(root, "", l);
+    } else {
+      const hasDrafts = hasDraftNodes(root.children!);
+      const allPass = isBranchLocked(root.children!)
+        && root.children!.length > 0
+        && allLeavesPass(root.children!);
+
+      let mark: string;
+      if (hasDrafts) mark = "[~]";
+      else if (allPass) mark = "[x]";
+      else mark = "[ ]";
+
+      l.push("");
+      l.push(`### ${root.title} ${mark}`);
+      l.push("");
+
+      for (const child of root.children!) {
+        renderNode(child, 1, l);
       }
     }
   }
@@ -126,7 +203,7 @@ export function renderMarkdown(doc: DodDocument): string {
     l.push("## Amendment log");
     l.push("");
     for (const a of doc.amendments) {
-      l.push(`- **${a.timestamp}** [${a.step_id}/${a.proof_id}] ${a.action}: ${a.reason}`);
+      l.push(`- **${a.timestamp}** [${a.node_path}] ${a.action}: ${a.reason}`);
     }
   }
 
@@ -141,26 +218,27 @@ export async function writeMarkdown(doc: DodDocument): Promise<void> {
   await fs.writeFile(doc.markdown_path, content, "utf-8");
 }
 
-export function updateDocFromCheckResult(doc: DodDocument, result: CheckResult): void {
-  for (const stepResult of result.steps) {
-    // Scoped run: only the freshly-executed step has real new results. Other
-    // steps were carried from persisted state — do not write them back (that
-    // would clobber a never-run proof's "pending" with "skipped").
-    if (result.scoped && stepResult.id !== result.ran_step_id) continue;
+// ── Update from check result ──────────────────────────────────────────
 
-    const step = doc.steps.find(s => s.id === stepResult.id);
-    if (!step) continue;
-    for (const proofResult of stepResult.proofs) {
-      const proof = step.proofs.find(p => p.id === proofResult.id);
-      if (!proof) continue;
-      proof.last_status = proofResult.status;
-      proof.last_output = proofResult.output;
-      proof.last_checked = result.timestamp;
+export function updateDocFromCheckResult(doc: DodDocument, result: CheckResult): void {
+  for (const leafResult of result.leaves) {
+    // Scoped run: only write back leaves that were actually executed (not carried forward)
+    // Carried-forward leaves have draft/skipped status from persisted state.
+    const node = findNodeByPath(doc.roots, leafResult.node_path);
+    if (!node) continue;
+
+    // Don't clobber a pending proof with "skipped" on scoped runs
+    if (result.scoped && leafResult.node_path !== result.ran_node_path
+      && !leafResult.node_path.startsWith(result.ran_node_path ?? "")) continue;
+
+    if (leafResult.status !== "draft") {
+      node.last_status = leafResult.status as TaskNode["last_status"];
+      node.last_output = leafResult.output;
+      node.last_checked = result.timestamp;
     }
   }
 
-  // A scoped run is not a completion verdict — leave the canonical last_check
-  // (set only by full runs) untouched so a prior PASS isn't masked as incomplete.
+  // A scoped run is not a completion verdict
   if (result.scoped) return;
 
   doc.last_check = {
@@ -170,48 +248,83 @@ export function updateDocFromCheckResult(doc: DodDocument, result: CheckResult):
   };
 }
 
+// ── Format check result ───────────────────────────────────────────────
+
 export function formatCheckResult(result: CheckResult): string {
   const l: string[] = [];
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
   l.push("");
-  if (result.scoped) {
-    l.push(`⏳ **Scoped run — step "${result.ran_step_id}" only.** Other steps shown from their last check, not re-run.`);
-    l.push("This is NOT a completion verdict. Run `dod_check` with no `step` to verify the whole DoD.");
+
+  if (result.tampered) {
+    l.push("🔴 **TAMPER DETECTED** — proof-set fingerprint mismatch. Store was edited outside dod_amend.");
     l.push("");
   }
 
-  for (const step of result.steps) {
-    const passCount = step.proofs.filter(p => p.status === "pass").length;
-    const skipCount = step.proofs.filter(p => p.status === "skipped").length;
-    const icon = step.status === "pass" ? "✅" : "❌";
-    const countStr = skipCount > 0
-      ? `${passCount} pass, ${skipCount} manual-skip, ${step.proofs.length - passCount - skipCount} fail`
-      : `${passCount}/${step.proofs.length} proofs`;
-    l.push(`${icon} **Step: ${step.title}** — ${step.status.toUpperCase()} (${countStr})`);
+  if (result.scoped) {
+    l.push(`⏳ **Scoped run — node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`);
+    l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
+    l.push("");
+  }
 
-    for (const proof of step.proofs) {
-      const isManual = proof.command === "manual";
-      if (proof.status === "pass") {
+  if (result.draft_count > 0) {
+    l.push(`📝 **${result.draft_count} draft node(s)** — use dod_refine to concretize before a final pass is possible.`);
+    l.push("");
+  }
+
+  // Group leaves by root-level path prefix for hierarchical display
+  const byRoot = new Map<string, typeof result.leaves>();
+  for (const leaf of result.leaves) {
+    const rootIdx = leaf.node_path.split(".")[0];
+    if (!byRoot.has(rootIdx)) byRoot.set(rootIdx, []);
+    byRoot.get(rootIdx)!.push(leaf);
+  }
+
+  for (const [rootIdx, leaves] of byRoot) {
+    const passCount = leaves.filter(p => p.status === "pass").length;
+    const failCount = leaves.filter(p => p.status === "fail").length;
+    const skipCount = leaves.filter(p => p.status === "skipped").length;
+    const draftCount = leaves.filter(p => p.status === "draft").length;
+
+    const hasFail = failCount > 0;
+    const hasDraft = draftCount > 0;
+    const icon = hasFail ? "❌" : hasDraft ? "📝" : "✅";
+    const status = hasFail ? "FAIL" : hasDraft ? "INCOMPLETE" : "PASS";
+
+    const rootTitle = leaves[0]?.title ?? `Root ${rootIdx}`;
+    const countStr = [
+      passCount > 0 ? `${passCount} pass` : "",
+      failCount > 0 ? `${failCount} fail` : "",
+      skipCount > 0 ? `${skipCount} skipped` : "",
+      draftCount > 0 ? `${draftCount} draft` : "",
+    ].filter(Boolean).join(", ");
+
+    l.push(`${icon} **${rootTitle}** — ${status} (${countStr})`);
+
+    for (const leaf of leaves) {
+      const depth = leaf.node_path.split(".children.").length - 1;
+      const indent = "  ".repeat(depth + 1);
+
+      if (leaf.status === "draft") {
+        l.push(`${indent}📝 ${leaf.description} — DRAFT (use dod_refine to concretize)`);
+      } else if (leaf.status === "pass") {
+        const isManual = leaf.command === "manual";
         if (isManual) {
-          l.push(`  ✓ MANUAL — ${proof.description} (${proof.output ?? "human-confirmed"})`);
+          l.push(`${indent}✓ MANUAL — ${leaf.description} (${leaf.output ?? "human-confirmed"})`);
         } else {
-          l.push(`  ✓ \`${proof.command}\` (${proof.duration_ms ?? 0}ms)`);
+          l.push(`${indent}✓ \`${leaf.command}\` (${leaf.duration_ms ?? 0}ms)`);
         }
-      } else if (proof.status === "skipped") {
-        l.push(`  ⏳ \`${proof.command}\` — not verified this run${proof.output ? `: ${proof.output}` : ""}`);
-      } else if (isManual) {
-        l.push(`  ✗ MANUAL — ${proof.description}`);
-        if (proof.error) l.push(`    ${proof.error}`);
+      } else if (leaf.status === "skipped") {
+        l.push(`${indent}⏳ \`${leaf.command}\` — not verified this run${leaf.output ? `: ${leaf.output}` : ""}`);
       } else {
-        l.push(`  ✗ \`${proof.command}\``);
-        if (proof.exit_code !== undefined) {
-          l.push(`    exit code: ${proof.exit_code}`);
-        }
-        if (proof.error) {
-          l.push(`    stderr: ${proof.error.split("\n").slice(0, 5).join("\n    ")}`);
-        }
-        if (proof.output) {
-          l.push(`    output: ${proof.output.split("\n").slice(0, 5).join("\n    ")}`);
+        const isManual = leaf.command === "manual";
+        if (isManual) {
+          l.push(`${indent}✗ MANUAL — ${leaf.description}`);
+          if (leaf.error) l.push(`${indent}  ${leaf.error}`);
+        } else {
+          l.push(`${indent}✗ \`${leaf.command}\``);
+          if (leaf.exit_code !== undefined) l.push(`${indent}  exit code: ${leaf.exit_code}`);
+          if (leaf.error) l.push(`${indent}  stderr: ${leaf.error.split("\n").slice(0, 5).join(`\n${indent}  `)}`);
+          if (leaf.output) l.push(`${indent}  output: ${leaf.output.split("\n").slice(0, 5).join(`\n${indent}  `)}`);
         }
       }
     }

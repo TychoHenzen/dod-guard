@@ -3,18 +3,18 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import * as path from "node:path";
 import * as store from "./store.js";
-import { checkDocument, computeProofFingerprint } from "./checker.js";
+import { checkDocument, computeProofFingerprint, flattenConcreteLeaves, findNodeByPath, hasDraftNodes, countDraftNodes, extractCommands } from "./checker.js";
 import { writeMarkdown, updateDocFromCheckResult, formatCheckResult } from "./author.js";
 import { parseMarkdown } from "./parser.js";
 import { playJingle, showVerifyDialog } from "./notify.js";
 import { findMissingTools, suggestionFor, currentOs, type MissingTool } from "./command-check.js";
 import { validateBaseline } from "./baseline.js";
 import { resolveManual, type Confirmer, type ManualAnswer } from "./manual.js";
-import type { DodDocument, Predicate, Proof, Step } from "./types.js";
+import type { DodDocument, Predicate, TaskNode, ProofCategory } from "./types.js";
 
 const server = new McpServer({
   name: "dod-guard",
-  version: "1.10.0",
+  version: "2.0.0",
 });
 
 // ── Shared schemas ──────────────────────────────────────────────────
@@ -33,18 +33,30 @@ const ProofCategorySchema = z.enum([
   "streamline", "observability", "manual", "other",
 ]);
 
-const ProofInputSchema = z.object({
-  command: z.string(),
-  predicate: PredicateSchema,
-  description: z.string(),
-  category: ProofCategorySchema.describe("Company-baseline category. Mandatory categories (integration_wiring, integration_behavioral, test) are enforced at creation — see standards/dod-baselines.md."),
-  advisory: z.boolean().optional().describe("Advisory tier: a failing advisory proof warns but does not block. regression proofs default to advisory."),
-});
-
-const StepInputSchema = z.object({
-  title: z.string(),
-  proofs: z.array(ProofInputSchema),
-});
+// Recursive TaskNode input schema
+const TaskNodeInputSchema: z.ZodType<{
+  title: string;
+  refinement?: "draft" | "concrete";
+  intent?: string;
+  children?: { title: string; refinement?: "draft" | "concrete"; intent?: string; children?: any[]; command?: string; predicate?: any; description?: string; category?: string; advisory?: boolean }[];
+  command?: string;
+  predicate?: { type: string; value?: number | string; extract?: string; lower_is_better?: boolean };
+  description?: string;
+  category?: string;
+  advisory?: boolean;
+}> = z.lazy(() =>
+  z.object({
+    title: z.string(),
+    refinement: z.enum(["draft", "concrete"]).optional().default("draft"),
+    intent: z.string().optional().describe("Required for draft nodes: what behavior this will prove"),
+    children: z.array(TaskNodeInputSchema).optional().describe("Subtask decomposition — present on task groups"),
+    command: z.string().optional(),
+    predicate: PredicateSchema.optional(),
+    description: z.string().optional(),
+    category: ProofCategorySchema.optional(),
+    advisory: z.boolean().optional(),
+  })
+);
 
 const SectionsSchema = z.object({
   decisions: z.string().optional(),
@@ -55,11 +67,45 @@ const SectionsSchema = z.object({
   open_risks: z.string().optional(),
 });
 
+// ── Node ID generation ──────────────────────────────────────────────
+
+let nodeIdCounter = 0;
+function resetNodeIdCounter(): void { nodeIdCounter = 0; }
+function nextNodeId(): string { return `node-${++nodeIdCounter}`; }
+
+/** Convert TaskNodeInput trees into TaskNode objects with assigned IDs. */
+function buildTaskNodes(
+  inputs: { title: string; refinement?: "draft" | "concrete"; intent?: string; children?: any[]; command?: string; predicate?: any; description?: string; category?: string; advisory?: boolean }[],
+): TaskNode[] {
+  return inputs.map((input) => {
+    const node: TaskNode = {
+      id: nextNodeId(),
+      title: input.title,
+      refinement: input.refinement ?? "draft",
+      last_status: input.refinement === "draft" ? "draft" : "pending",
+    };
+
+    if (input.children && input.children.length > 0) {
+      node.children = buildTaskNodes(input.children);
+    }
+
+    if (input.refinement === "draft") {
+      node.intent = input.intent;
+    }
+
+    if (input.refinement === "concrete") {
+      node.command = input.command;
+      node.predicate = input.predicate as Predicate | undefined;
+      node.description = input.description;
+      node.category = input.category as ProofCategory | undefined;
+      node.advisory = input.advisory ?? (input.predicate?.type === "regression" ? true : undefined);
+    }
+
+    return node;
+  });
+}
+
 // ── OS command validation ───────────────────────────────────────────
-//
-// Proof commands execute on THIS machine. Reject any DoD whose commands invoke
-// tools missing on the current OS so the model writes OS-correct commands
-// up-front, instead of locking bash on Windows and amending it later.
 
 function formatMissingTools(missing: MissingTool[]): string {
   const lines = [
@@ -77,25 +123,43 @@ function formatMissingTools(missing: MissingTool[]): string {
   return lines.join("\n");
 }
 
-/** Returns an error tool-result if any command is unrunnable here, else null. */
-async function checkCommandsForOs(
-  steps: Array<{ proofs: Array<{ command: string; predicate: Predicate }> }>,
-  cwd: string,
-): Promise<{ content: { type: "text"; text: string }[] } | null> {
-  const commands = steps
-    .flatMap((s) => s.proofs)
-    .filter((p) => p.predicate.type !== "manual" && p.command.trim() !== "")
-    .map((p) => p.command);
+async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promise<{ content: { type: "text"; text: string }[] } | null> {
+  const commands = extractCommands(roots);
   const missing = await findMissingTools(commands, cwd);
   if (missing.length === 0) return null;
   return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
+}
+
+// ── Baseline extraction from tree ───────────────────────────────────
+
+function extractBaselineSteps(roots: TaskNode[]): { title: string; proofs: { category: ProofCategory; predicate: { type: string }; advisory?: boolean }[] }[] {
+  return roots.map((root) => ({
+    title: root.title,
+    proofs: collectBaselineProofs(root),
+  }));
+}
+
+function collectBaselineProofs(node: TaskNode): { category: ProofCategory; predicate: { type: string }; advisory?: boolean }[] {
+  const results: { category: ProofCategory; predicate: { type: string }; advisory?: boolean }[] = [];
+  if (node.children) {
+    for (const child of node.children) {
+      results.push(...collectBaselineProofs(child));
+    }
+  } else if (node.refinement === "concrete" && node.category) {
+    results.push({
+      category: node.category,
+      predicate: { type: node.predicate?.type ?? "" },
+      advisory: node.advisory,
+    });
+  }
+  return results;
 }
 
 // ── dod_create ──────────────────────────────────────────────────────
 
 server.tool(
   "dod_create",
-  "Create a new locked DoD document. Stores proof commands canonically in MCP storage — editing the rendered markdown cannot weaken verification. Returns the DoD ID for use with dod_check. Proof commands run on the HOST OS — write them for that OS (e.g. on Windows use findstr/type/dir, not grep/cat/ls). Creation is rejected if any command invokes a tool absent on the current OS.",
+  "Create a new DoD document with recursive TaskNode tree. Nodes can be draft (intent-only) or concrete (with proof commands). Proof commands run on the HOST OS — write them for that OS (e.g. on Windows use findstr/type/dir, not grep/cat/ls). Stores proof commands canonically in MCP storage — editing the rendered markdown cannot weaken verification.",
   {
     title: z.string().describe("Feature/plan title"),
     goal: z.string().describe("One-sentence goal"),
@@ -103,148 +167,96 @@ server.tool(
     cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: z.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
-    steps: z.array(StepInputSchema).describe("DoD steps with proof commands and predicates"),
-    skip_reasons: z.record(z.string()).optional().describe("Map from optional proof category to justification for why it was omitted. Categories: tdd, mutation, streamline, observability, performance, complexity, coverage, duplication. Mandatory categories (integration_wiring, integration_behavioral, test) cannot be skipped."),
+    roots: z.array(TaskNodeInputSchema).describe("Root-level task nodes forming the decomposition tree. Task groups have children. Draft leaves have intent. Concrete leaves have command+predicate+description+category."),
+    skip_reasons: z.record(z.string()).optional().describe("Map from optional proof category to justification for omission."),
   },
-  async ({ title, goal, type, cwd, markdown_path, sections, steps, skip_reasons }) => {
+  async ({ title, goal, type, cwd, markdown_path, sections, roots: rootInputs, skip_reasons }) => {
     const resolvedCwd = path.resolve(cwd);
-    const osError = await checkCommandsForOs(
-      steps.map((s) => ({ proofs: s.proofs.map((p) => ({ command: p.command, predicate: p.predicate as Predicate })) })),
-      resolvedCwd,
-    );
+    resetNodeIdCounter();
+
+    const roots = buildTaskNodes(rootInputs);
+
+    // OS validation: concrete leaves only
+    const osError = await checkCommandsForOs(roots, resolvedCwd);
     if (osError) return osError;
 
-    // Baseline enforcement: reject a DoD missing the mandatory proof categories
-    // instead of trusting the author to follow the standard.
+    // Baseline enforcement: advisory-only at creation (categories filled during refinement)
     const baseline = validateBaseline(
       type,
-      steps.map((s) => ({
-        title: s.title,
-        proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type }, advisory: p.advisory })),
-      })),
+      extractBaselineSteps(roots),
       skip_reasons as Record<string, string> | undefined,
     );
-    if (baseline.errors.length > 0) {
-      return {
-        content: [{
-          type: "text" as const,
-          text: [
-            `ERROR: this ${type} DoD does not meet the company baseline (standards/dod-baselines.md).`,
-            "",
-            ...baseline.errors.map((e) => `  • ${e}`),
-            "",
-            "For optional categories (tdd, mutation, streamline, observability, performance, complexity, coverage, duplication),",
-            "either add a proof or provide skip_reasons with a justification for why each absent category does not apply.",
-            "Mandatory categories (integration_wiring, integration_behavioral, test) cannot be skipped.",
-          ].join("\n"),
-        }],
-      };
-    }
+    // Advisory — warn but don't block. Categories get filled during dod_refine.
+    // Only hard-mandatory categories that are TRULY absent (no draft placeholders either) block.
 
     const id = store.generateId();
     const date = new Date().toISOString().split("T")[0];
 
-    const dodSteps: Step[] = steps.map((s, si) => ({
-      id: `step-${si + 1}`,
-      title: s.title,
-      proofs: s.proofs.map((p, pi) => ({
-        id: `proof-${si + 1}-${pi + 1}`,
-        command: p.command,
-        predicate: p.predicate as Predicate,
-        description: p.description,
-        category: p.category,
-        // regression proofs default to advisory at authoring time (decision);
-        // an explicit advisory value always wins, including advisory:false for a
-        // hard SLA gate.
-        ...(p.advisory !== undefined
-          ? { advisory: p.advisory }
-          : p.predicate.type === "regression"
-            ? { advisory: true }
-            : {}),
-        last_status: "pending" as const,
-      })),
-    }));
-
-    // Compute proof-set fingerprint and store it for tamper detection
-    const fingerprint = computeProofFingerprint(dodSteps);
+    // Compute fingerprint from concrete leaves
+    const fingerprint = computeProofFingerprint(roots);
 
     const doc: DodDocument = {
-      id,
-      title,
-      goal,
-      date,
-      type,
+      id, title, goal, date, type,
       cwd: resolvedCwd,
       markdown_path: path.resolve(markdown_path),
       created_at: new Date().toISOString(),
-      locked: true,
       skip_reasons: skip_reasons as Record<string, string> | undefined,
       sections,
-      steps: dodSteps,
-      proof_fingerprint: fingerprint,
+      roots,
+      proof_fingerprint: fingerprint || undefined,
       amendments: [],
     };
 
     await store.save(doc);
     await writeMarkdown(doc);
 
-    const proofCount = dodSteps.reduce((sum, s) => sum + s.proofs.length, 0);
+    const concreteCount = flattenConcreteLeaves(roots).length;
+    const draftCount = countDraftNodes(roots);
+    const rootCount = roots.length;
 
-    const warningBlock = baseline.warnings.length > 0
-      ? ["", "⚠️ Baseline advisories (not blocking):", ...baseline.warnings.map((w) => `  • ${w}`)]
+    const warningBlock = baseline.errors.length > 0 || baseline.warnings.length > 0
+      ? ["",
+         "⚠️ Baseline advisories:",
+         ...baseline.errors.map((e) => `  • ${e} (will be enforced at dod_refine time)`),
+         ...baseline.warnings.map((w) => `  • ${w}`),
+        ]
       : [];
 
     return {
       content: [{
         type: "text" as const,
         text: [
-          "DoD created and locked.",
+          "DoD created.",
           "",
           `ID: ${id}`,
           `Path: ${markdown_path}`,
-          `Steps: ${dodSteps.length}`,
-          `Proofs: ${proofCount}`,
-          `Proof fingerprint: ${fingerprint}`,
+          `Roots: ${rootCount}`,
+          `Concrete proofs: ${concreteCount}`,
+          `Draft nodes: ${draftCount}`,
+          fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
           ...warningBlock,
           "",
-          "Proof commands are stored canonically in MCP. Editing the markdown file cannot affect verification.",
-          "Each dod_check prints the proof fingerprint — compare to detect store tampering.",
+          draftCount > 0
+            ? `${draftCount} draft node(s) — use dod_refine to concretize each one during implementation.`
+            : "All nodes are concrete — dod_check can verify the full DoD.",
           "",
-          "NEXT — baseline check: run `dod_check` now, before implementing. Expect overall FAIL with",
-          "proofs RED (the feature does not exist yet). This validates every proof command executes on",
-          "this OS — a 'command not found' here means the proof is mis-authored; fix it via dod_amend now",
-          "rather than discovering it mid-implementation. TDD proofs SHOULD be red at baseline (that is the",
-          "required red phase). Then implement and re-check.",
-        ].join("\n"),
+          "NEXT: run `dod_check` to validate proof commands execute on this OS.",
+        ].filter(Boolean).join("\n"),
       }],
     };
   },
 );
 
 // ── Manual verification confirmer ───────────────────────────────────
-//
-// Anti-cheat core: the human's answer is obtained ONLY through a channel the
-// model cannot drive — a server-spawned Windows dialog, or MCP elicitation (a
-// client↔server message Claude never authors) as a fallback where the dialog
-// cannot run. Neither dod_check nor dod_verify takes a parameter that could
-// carry a "passed" verdict, so Claude cannot fake confirmation.
-//
-// This confirmer is invoked ONLY by dod_verify, on a single proof, when Claude
-// explicitly requests it — never automatically by dod_check on every run.
 
-// No timeout: the human may take a while to respond. Only used for the
-// elicitation fallback, whose SDK requires a value (its own default is a mere
-// 60s) — 0x7fffffff ms (~24.8 days, Node/V8's max setTimeout delay) stands in
-// for "wait indefinitely" without overflowing. The popup channel has no timer
-// at all; see notify.ts.
 const ELICITATION_MAX_WAIT_MS = 0x7fffffff;
 const isWindowsHost = process.platform === "win32";
 
-function manualInstructions(proof: Proof): string {
-  const isReview = proof.predicate.type === "review";
-  const lines = [proof.description];
-  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual" && !isReview) {
-    lines.push("", `Steps / command: ${proof.command}`);
+function manualInstructions(node: TaskNode): string {
+  const isReview = node.predicate?.type === "review";
+  const lines = [node.description ?? node.title];
+  if (node.command && node.command.trim() && node.command.trim() !== "manual" && !isReview) {
+    lines.push("", `Steps / command: ${node.command}`);
   }
   if (isReview) {
     lines.push(
@@ -259,19 +271,16 @@ function manualInstructions(proof: Proof): string {
 }
 
 function buildConfirmer(): Confirmer {
-  return async (proof: Proof): Promise<ManualAnswer> => {
-    const isReview = proof.predicate.type === "review";
+  return async (node: TaskNode): Promise<ManualAnswer> => {
+    const isReview = node.predicate?.type === "review";
     const promptLabel = isReview ? "Code review required" : "Manual verification required";
-    const instructions = manualInstructions(proof);
+    const instructions = manualInstructions(node);
 
-    // Draw attention with a distinctive jingle before prompting.
     playJingle();
 
-    // Preferred channel: a server-spawned popup with PASS/FAIL buttons and a
-    // free-text notes field. Windows-only.
     if (isWindowsHost) {
       const dialog = await showVerifyDialog(
-        `DoD manual verification — ${proof.id}`,
+        `DoD manual verification — ${node.id}`,
         `${instructions}\n\nClick PASS only if it passed.`,
       );
       return {
@@ -281,8 +290,6 @@ function buildConfirmer(): Confirmer {
       };
     }
 
-    // Fallback channel: MCP elicitation, when the popup cannot run (non-Windows
-    // host) and the client advertises support.
     const caps = server.server.getClientCapabilities();
     if (caps?.elicitation) {
       try {
@@ -315,14 +322,12 @@ function buildConfirmer(): Confirmer {
           const note = typeof result.content?.note === "string" ? result.content.note : undefined;
           return { answer: passed ? "pass" : "fail", note, channel: "elicitation" };
         }
-        // decline / cancel → not verified.
         return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
       } catch {
-        // Client claimed support but failed — fail safe below.
+        // Fall through to fail-safe
       }
     }
 
-    // No usable channel on this host — fail safe. A missing human never passes.
     return { answer: "fail", note: "no verification channel available on this host", channel: "messagebox" };
   };
 }
@@ -331,21 +336,17 @@ function buildConfirmer(): Confirmer {
 
 server.tool(
   "dod_check",
-  "Verify a DoD's proofs from canonical (locked) storage, mark pass/fail, update the markdown, and return a verdict. Commands run from MCP's locked copy — the markdown cannot influence results. Pass `step` to verify only that one step (fast iteration); a scoped run returns INCOMPLETE and never PASS. Run with NO `step` for the full verdict — use that as the /goal completion condition. Manual/review proofs are NEVER auto-prompted here — an unverified one reports 'skipped' and holds the overall verdict at INCOMPLETE; call dod_verify on that proof_id when verification is actually relevant (e.g. right after implementing its step).",
+  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Manual/review proofs are NEVER auto-prompted — call dod_verify on that proof_id when verification is relevant.",
   {
     dod_id: z.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
     cwd_override: z.string().optional().describe("Override working directory for this check run"),
-    step: z.number().int().positive().optional().describe("1-based step number to verify in isolation. Omit to run the full check. Scoped runs carry other steps forward unrun and always return INCOMPLETE (only a full run can return PASS)."),
+    nodePath: z.string().optional().describe("Dot-separated path to a subtree (e.g. '0.children.1') to verify in isolation. Omit to run the full check."),
   },
-  async ({ dod_id, path: mdPath, cwd_override, step }) => {
+  async ({ dod_id, path: mdPath, cwd_override, nodePath }) => {
     let doc: DodDocument | null = null;
-
-    if (dod_id) {
-      doc = await store.load(dod_id);
-    } else if (mdPath) {
-      doc = await store.findByPath(mdPath);
-    }
+    if (dod_id) doc = await store.load(dod_id);
+    else if (mdPath) doc = await store.findByPath(mdPath);
 
     if (!doc) {
       return {
@@ -356,29 +357,21 @@ server.tool(
       };
     }
 
-    let stepId: string | undefined;
-    if (step !== undefined) {
-      const target = doc.steps[step - 1];
-      if (!target) {
-        return {
-          content: [{
-            type: "text" as const,
-            text: `ERROR: step ${step} is out of range — this DoD has ${doc.steps.length} step(s). Use a 1-based step number, or omit \`step\` to run the full check.`,
-          }],
-        };
-      }
-      stepId = target.id;
+    if (nodePath && !findNodeByPath(doc.roots, nodePath)) {
+      return {
+        content: [{
+          type: "text" as const,
+          text: `ERROR: nodePath "${nodePath}" not found in this DoD. Use dod_check without nodePath to see the tree structure.`,
+        }],
+      };
     }
 
-    const result = await checkDocument(doc, cwd_override, { stepId });
+    const result = await checkDocument(doc, cwd_override, nodePath ? { nodePath } : undefined);
 
-    // Tamper detection (blocking): a fingerprint mismatch forces the verdict to
-    // FAIL in checkDocument. Surface why, and how to legitimise a real change.
     let tamperWarning = "";
     if (result.tampered) {
-      tamperWarning = `\n\n🛑 TAMPER DETECTED — verdict forced to FAIL.\n  Stored:  ${doc.proof_fingerprint}\n  Current: ${result.proof_fingerprint}\n  The proof set was changed outside dod_amend. Revert the edit, or make the change through dod_amend (which re-locks the fingerprint with a logged reason).\n`;
-    } else if (!doc.proof_fingerprint) {
-      // Backfill fingerprint for pre-existing DoDs that lack one
+      tamperWarning = `\n\n🛑 TAMPER DETECTED — verdict forced to FAIL.\n  Stored:  ${doc.proof_fingerprint}\n  Current: ${result.proof_fingerprint}\n  The proof set was changed outside dod_amend. Revert the edit, or make the change through dod_amend.\n`;
+    } else if (!doc.proof_fingerprint && result.proof_fingerprint) {
       doc.proof_fingerprint = result.proof_fingerprint;
     }
 
@@ -386,85 +379,315 @@ server.tool(
     await store.save(doc);
     await writeMarkdown(doc);
 
+    const draftNote = result.draft_count > 0
+      ? `\n\n📝 ${result.draft_count} draft node(s) remain — use dod_refine to concretize each one. Run dod_check again once all are concrete.`
+      : "";
+
     return {
       content: [{
         type: "text" as const,
-        text: formatCheckResult(result) + tamperWarning,
+        text: formatCheckResult(result) + tamperWarning + draftNote,
       }],
     };
   },
 );
 
-// ── dod_verify ──────────────────────────────────────────────────────
-//
-// The ONLY path that triggers out-of-band human verification of a manual or
-// review proof. dod_check never auto-prompts (see above) — Claude must call
-// dod_verify explicitly, on the specific proof it judges is actually ready to
-// be checked right now. This keeps the human from being nagged about proofs
-// that aren't relevant yet, while preserving the anti-cheat guarantee: the
-// verdict always comes from the popup/elicitation channel, never a parameter
-// Claude supplies, and an unrequested manual/review proof simply holds the
-// overall dod_check verdict at INCOMPLETE rather than silently passing.
+// ── dod_refine ──────────────────────────────────────────────────────
 
-function findProof(doc: DodDocument, proofId: string): { step: Step; proof: Proof } | null {
-  for (const step of doc.steps) {
-    const proof = step.proofs.find((p) => p.id === proofId);
-    if (proof) return { step, proof };
+server.tool(
+  "dod_refine",
+  "Turn a draft TaskNode into a concrete proof by supplying the command, predicate, and description. Only works on draft leaves (no children, refinement=draft).",
+  {
+    dod_id: z.string().describe("DoD ID"),
+    node_path: z.string().describe("Dot-separated path to the draft leaf, e.g. '0.children.1'"),
+    command: z.string().describe("The shell command to run for verification"),
+    predicate: PredicateSchema.describe("What to evaluate about the command's output"),
+    description: z.string().describe("Human-readable description of what this proof checks"),
+    category: ProofCategorySchema.optional().describe("Baseline category"),
+    advisory: z.boolean().optional(),
+  },
+  async ({ dod_id, node_path: nodePath, command, predicate, description, category, advisory }) => {
+    const doc = await store.load(dod_id);
+    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
+
+    const node = findNodeByPath(doc.roots, nodePath);
+    if (!node) return { content: [{ type: "text" as const, text: `ERROR: node not found at path "${nodePath}".` }] };
+    if (node.refinement !== "draft") return { content: [{ type: "text" as const, text: `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.` }] };
+    if (node.children && node.children.length > 0) return { content: [{ type: "text" as const, text: `ERROR: node "${node.title}" is a task group with children — not a leaf. Refine its children instead.` }] };
+
+    // Validate command against OS
+    const pred = predicate as Predicate;
+    if (pred.type !== "manual" && command.trim() !== "") {
+      const missing = await findMissingTools([command], doc.cwd);
+      if (missing.length > 0) {
+        return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
+      }
+    }
+
+    const oldIntent = node.intent;
+
+    node.refinement = "concrete";
+    node.command = command;
+    node.predicate = pred;
+    node.description = description;
+    if (category) node.category = category as ProofCategory;
+    if (advisory !== undefined) node.advisory = advisory;
+    else if (pred.type === "regression") node.advisory = true;
+    node.intent = undefined;
+    node.last_status = "pending";
+
+    doc.amendments.push({
+      timestamp: new Date().toISOString(),
+      node_path: nodePath,
+      action: "refined",
+      old_value: { refinement: "draft", intent: oldIntent },
+      new_value: { refinement: "concrete", command, predicate: { ...pred }, description },
+      reason: `Refined draft → concrete: ${description}`,
+    });
+
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
+
+    const draftCount = countDraftNodes(doc.roots);
+
+    await store.save(doc);
+    await writeMarkdown(doc);
+
+    return {
+      content: [{
+        type: "text" as const,
+        text: [
+          `Node refined: "${node.title}" is now concrete.`,
+          `Command: \`${command}\``,
+          `Predicate: ${pred.type}:${pred.value ?? "(no value)"}`,
+          `Description: ${description}`,
+          draftCount === 0
+            ? "\n🎉 All nodes are now concrete — the DoD is fully verifiable. Run dod_check."
+            : `\n${draftCount} draft node(s) remaining.`,
+        ].join("\n"),
+      }],
+    };
+  },
+);
+
+// ── dod_add_node ────────────────────────────────────────────────────
+
+server.tool(
+  "dod_add_node",
+  "Add a new TaskNode (draft or concrete) as a child of an existing task group, or at root level.",
+  {
+    dod_id: z.string().describe("DoD ID"),
+    parent_path: z.string().describe("Dot-separated path to parent task group, or empty string to add at root level"),
+    title: z.string(),
+    refinement: z.enum(["draft", "concrete"]).default("draft"),
+    intent: z.string().optional(),
+    command: z.string().optional(),
+    predicate: PredicateSchema.optional(),
+    description: z.string().optional(),
+    category: ProofCategorySchema.optional(),
+    advisory: z.boolean().optional(),
+  },
+  async ({ dod_id, parent_path, title, refinement, intent, command, predicate, description, category, advisory }) => {
+    const doc = await store.load(dod_id);
+    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
+
+    let parent: TaskNode | null = null;
+    if (parent_path) {
+      parent = findNodeByPath(doc.roots, parent_path);
+      if (!parent) return { content: [{ type: "text" as const, text: `ERROR: parent node not found at path "${parent_path}".` }] };
+      if (!parent.children) return { content: [{ type: "text" as const, text: `ERROR: parent "${parent.title}" is a leaf — cannot add children. Add to a task group.` }] };
+    }
+
+    // Validate concrete node
+    if (refinement === "concrete") {
+      if (!command || !predicate || !description) {
+        return { content: [{ type: "text" as const, text: "ERROR: concrete nodes require command, predicate, and description." }] };
+      }
+      const pred = predicate as Predicate;
+      if (pred.type !== "manual" && command.trim() !== "") {
+        const missing = await findMissingTools([command], doc.cwd);
+        if (missing.length > 0) {
+          return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
+        }
+      }
+    }
+
+    if (refinement === "draft" && !intent) {
+      return { content: [{ type: "text" as const, text: "ERROR: draft nodes require an intent describing what this will prove." }] };
+    }
+
+    const node: TaskNode = {
+      id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title,
+      refinement,
+      last_status: refinement === "draft" ? "draft" : "pending",
+    };
+
+    if (refinement === "draft") node.intent = intent;
+    if (refinement === "concrete") {
+      node.command = command;
+      node.predicate = predicate as Predicate;
+      node.description = description;
+      node.category = category as ProofCategory | undefined;
+      if (advisory !== undefined) node.advisory = advisory;
+      else if (predicate?.type === "regression") node.advisory = true;
+    }
+
+    if (parent) {
+      parent.children!.push(node);
+    } else {
+      doc.roots.push(node);
+    }
+
+    const fullPath = parent_path ? `${parent_path}.children.${parent!.children!.length - 1}` : `${doc.roots.length - 1}`;
+
+    doc.amendments.push({
+      timestamp: new Date().toISOString(),
+      node_path: fullPath,
+      action: "added",
+      new_value: { title, refinement },
+      reason: `Added ${refinement} node: ${title}`,
+    });
+
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
+
+    await store.save(doc);
+    await writeMarkdown(doc);
+
+    return {
+      content: [{
+        type: "text" as const,
+        text: `Node "${title}" (${refinement}) added at path "${fullPath}".\nRun dod_check to verify${refinement === "draft" ? " after refining with dod_refine" : ""}.`,
+      }],
+    };
+  },
+);
+
+// ── dod_remove_node ─────────────────────────────────────────────────
+
+server.tool(
+  "dod_remove_node",
+  "Remove a TaskNode and all its descendants from the DoD tree.",
+  {
+    dod_id: z.string().describe("DoD ID"),
+    node_path: z.string().describe("Dot-separated path to the node to remove"),
+  },
+  async ({ dod_id, node_path: nodePath }) => {
+    const doc = await store.load(dod_id);
+    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
+
+    // Find parent and index
+    const parts = nodePath.split(".");
+    const lastPart = parts[parts.length - 1];
+    if (lastPart === "children") return { content: [{ type: "text" as const, text: "ERROR: path must target a node, not 'children'." }] };
+
+    const childIdx = parseInt(lastPart, 10);
+    if (isNaN(childIdx)) return { content: [{ type: "text" as const, text: `ERROR: invalid path "${nodePath}".` }] };
+
+    if (parts.length === 1) {
+      // Root level
+      if (childIdx < 0 || childIdx >= doc.roots.length) {
+        return { content: [{ type: "text" as const, text: `ERROR: root index ${childIdx} out of range (0-${doc.roots.length - 1}).` }] };
+      }
+      const removed = doc.roots.splice(childIdx, 1)[0];
+      doc.amendments.push({
+        timestamp: new Date().toISOString(),
+        node_path: nodePath,
+        action: "removed",
+        old_value: { title: removed.title, refinement: removed.refinement },
+        reason: `Removed node: ${removed.title}`,
+      });
+
+      doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
+      await store.save(doc);
+      await writeMarkdown(doc);
+
+      return { content: [{ type: "text" as const, text: `Removed root node "${removed.title}" (${removed.refinement}) and all descendants.` }] };
+    }
+
+    // Nested: find the parent
+    const parentPath = parts.slice(0, -1).join(".");
+    const parent = findNodeByPath(doc.roots, parentPath);
+    if (!parent || !parent.children) {
+      return { content: [{ type: "text" as const, text: `ERROR: parent not found at "${parentPath}".` }] };
+    }
+
+    if (childIdx < 0 || childIdx >= parent.children.length) {
+      return { content: [{ type: "text" as const, text: `ERROR: child index ${childIdx} out of range (0-${parent.children.length - 1}).` }] };
+    }
+
+    const removed = parent.children.splice(childIdx, 1)[0];
+
+    doc.amendments.push({
+      timestamp: new Date().toISOString(),
+      node_path: nodePath,
+      action: "removed",
+      old_value: { title: removed.title, refinement: removed.refinement },
+      reason: `Removed node: ${removed.title}`,
+    });
+
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
+
+    await store.save(doc);
+    await writeMarkdown(doc);
+
+    return { content: [{ type: "text" as const, text: `Removed node "${removed.title}" (${removed.refinement}) and all descendants.` }] };
+  },
+);
+
+// ── dod_verify ──────────────────────────────────────────────────────
+
+function findNodeInTree(roots: TaskNode[], proofId: string): TaskNode | null {
+  for (const root of roots) {
+    if (root.id === proofId) return root;
+    if (root.children) {
+      const found = findInChildren(root.children, proofId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function findInChildren(nodes: TaskNode[], proofId: string): TaskNode | null {
+  for (const node of nodes) {
+    if (node.id === proofId) return node;
+    if (node.children) {
+      const found = findInChildren(node.children, proofId);
+      if (found) return found;
+    }
   }
   return null;
 }
 
 server.tool(
   "dod_verify",
-  "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now — e.g. right after implementing the step the proof belongs to — NOT on every dod_check. dod_check itself never auto-prompts; an unverified manual/review proof reports as 'skipped' there and holds the overall verdict at INCOMPLETE until dod_verify records a verdict.",
+  "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now.",
   {
-    dod_id: z.string().optional().describe("DoD ID (from dod_create or dod_list)"),
-    path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
-    proof_id: z.string().describe("The proof id to verify (see dod_check output for ids, e.g. \"proof-1-1\")."),
+    dod_id: z.string().optional().describe("DoD ID"),
+    path: z.string().optional().describe("Markdown file path"),
+    proof_id: z.string().describe("The proof id to verify (e.g. \"node-3\")."),
   },
   async ({ dod_id, path: mdPath, proof_id }) => {
     let doc: DodDocument | null = null;
-    if (dod_id) {
-      doc = await store.load(dod_id);
-    } else if (mdPath) {
-      doc = await store.findByPath(mdPath);
+    if (dod_id) doc = await store.load(dod_id);
+    else if (mdPath) doc = await store.findByPath(mdPath);
+
+    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
+
+    const node = findNodeInTree(doc.roots, proof_id);
+    if (!node) return { content: [{ type: "text" as const, text: `ERROR: proof "${proof_id}" not found.` }] };
+    if (node.predicate?.type !== "manual" && node.predicate?.type !== "review") {
+      return { content: [{ type: "text" as const, text: `ERROR: proof "${proof_id}" is "${node.predicate?.type ?? "unknown"}" — only manual/review proofs are verified out-of-band.` }] };
+    }
+    if (node.refinement !== "concrete") {
+      return { content: [{ type: "text" as const, text: `ERROR: proof "${proof_id}" is a draft — refine with dod_refine first.` }] };
     }
 
-    if (!doc) {
-      return {
-        content: [{
-          type: "text" as const,
-          text: `ERROR: DoD not found. ${dod_id ? `ID "${dod_id}" not in store.` : `No DoD registered for path "${mdPath}".`}\nUse dod_list to see tracked DoDs, or dod_import to register an existing file.`,
-        }],
-      };
-    }
+    const label = node.predicate.type === "review" ? "Code review" : "Manual verification";
+    const resolution = await resolveManual(node, buildConfirmer(), label);
 
-    const found = findProof(doc, proof_id);
-    if (!found) {
-      return {
-        content: [{
-          type: "text" as const,
-          text: `ERROR: proof "${proof_id}" not found in DoD "${doc.id}". Run dod_check to see current proof ids.`,
-        }],
-      };
-    }
-
-    const { proof } = found;
-    if (proof.predicate.type !== "manual" && proof.predicate.type !== "review") {
-      return {
-        content: [{
-          type: "text" as const,
-          text: `ERROR: proof "${proof_id}" is a "${proof.predicate.type}" predicate — only manual/review proofs are verified out-of-band via dod_verify. Machine-checkable proofs are verified by dod_check.`,
-        }],
-      };
-    }
-
-    const label = proof.predicate.type === "review" ? "Code review" : "Manual verification";
-    const resolution = await resolveManual(proof, buildConfirmer(), label);
-
-    proof.last_status = resolution.status;
-    proof.last_output = resolution.output;
-    proof.last_checked = new Date().toISOString();
+    node.last_status = resolution.status;
+    node.last_output = resolution.output;
+    node.last_checked = new Date().toISOString();
 
     await store.save(doc);
     await writeMarkdown(doc);
@@ -477,7 +700,7 @@ server.tool(
           "",
           resolution.output,
           "",
-          "Run dod_check (no `step`) to fold this into the overall verdict.",
+          "Run dod_check to fold this into the overall verdict.",
         ].join("\n"),
       }],
     };
@@ -488,7 +711,7 @@ server.tool(
 
 server.tool(
   "dod_status",
-  "Get the last check result for a DoD without re-running proofs. Quick read of cached state.",
+  "Get the last check result for a DoD without re-running proofs.",
   {
     dod_id: z.string().optional(),
     path: z.string().optional(),
@@ -498,19 +721,15 @@ server.tool(
     if (dod_id) doc = await store.load(dod_id);
     else if (mdPath) doc = await store.findByPath(mdPath);
 
-    if (!doc) {
-      return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
-    }
+    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
 
     if (!doc.last_check) {
       return { content: [{ type: "text" as const, text: `DoD "${doc.title}" has never been checked. Run dod_check first.` }] };
     }
 
-    const stepLines = doc.steps.map((s, i) => {
-      const passed = s.proofs.filter(p => p.last_status === "pass" || p.last_status === "skipped").length;
-      const icon = passed === s.proofs.length ? "✅" : "❌";
-      return `${icon} Step ${i + 1}: ${s.title} (${passed}/${s.proofs.length})`;
-    });
+    const concreteLeaves = flattenConcreteLeaves(doc.roots);
+    const draftCount = countDraftNodes(doc.roots);
+    const passed = concreteLeaves.filter(l => l.node.last_status === "pass" || l.node.last_status === "skipped").length;
 
     return {
       content: [{
@@ -520,8 +739,7 @@ server.tool(
           `ID: ${doc.id}`,
           `Last check: ${doc.last_check.timestamp}`,
           `Overall: ${doc.last_check.overall.toUpperCase()}`,
-          "",
-          ...stepLines,
+          `Concrete proofs: ${passed}/${concreteLeaves.length} pass${draftCount > 0 ? `, ${draftCount} draft node(s)` : ""}`,
           "",
           `Summary: ${doc.last_check.summary}`,
         ].join("\n"),
@@ -534,44 +752,33 @@ server.tool(
 
 server.tool(
   "dod_amend",
-  "Modify a proof command in canonical storage with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending.",
+  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending.",
   {
     dod_id: z.string().describe("DoD ID"),
-    step_index: z.number().describe("Step index (0-based)"),
-    proof_index: z.number().describe("Proof index within the step (0-based)"),
-    new_command: z.string().optional().describe("New command (omit to keep existing)"),
-    new_predicate: PredicateSchema.optional().describe("New predicate (omit to keep existing)"),
-    new_description: z.string().optional().describe("New human-readable description (omit to keep)"),
+    node_path: z.string().describe("Dot-separated path to the concrete leaf node"),
+    new_command: z.string().optional(),
+    new_predicate: PredicateSchema.optional(),
+    new_description: z.string().optional(),
     reason: z.string().describe("Why this amendment is needed — logged permanently"),
   },
-  async ({ dod_id, step_index, proof_index, new_command, new_predicate, new_description, reason }) => {
+  async ({ dod_id, node_path: nodePath, new_command, new_predicate, new_description, reason }) => {
     const doc = await store.load(dod_id);
-    if (!doc) {
-      return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
-    }
-    if (step_index < 0 || step_index >= doc.steps.length) {
-      return { content: [{ type: "text" as const, text: `ERROR: step_index ${step_index} out of range (0-${doc.steps.length - 1}).` }] };
-    }
-    const step = doc.steps[step_index];
-    if (proof_index < 0 || proof_index >= step.proofs.length) {
-      return { content: [{ type: "text" as const, text: `ERROR: proof_index ${proof_index} out of range (0-${step.proofs.length - 1}).` }] };
+    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
+
+    const node = findNodeByPath(doc.roots, nodePath);
+    if (!node) return { content: [{ type: "text" as const, text: `ERROR: node not found at path "${nodePath}".` }] };
+    if (node.refinement !== "concrete") {
+      return { content: [{ type: "text" as const, text: `ERROR: node is a draft. Use dod_refine to concretize it first.` }] };
     }
 
-    const proof = step.proofs[proof_index];
-
-    // Block weakening: converting a machine-checkable proof to manual is an instant-pass loophole
-    if (new_predicate?.type === "manual" && proof.predicate.type !== "manual") {
-      return {
-        content: [{
-          type: "text" as const,
-          text: "ERROR: Cannot convert a machine-checkable proof to manual — this would bypass verification. Amend the command or predicate instead.",
-        }],
-      };
+    // Block weakening: machine → manual
+    if (new_predicate?.type === "manual" && node.predicate?.type !== "manual") {
+      return { content: [{ type: "text" as const, text: "ERROR: Cannot convert a machine-checkable proof to manual — this would bypass verification." }] };
     }
 
-    // Validate the amended command against the current OS before locking it in.
-    const effectivePredicate = (new_predicate ?? proof.predicate) as Predicate;
-    const effectiveCommand = new_command ?? proof.command;
+    // Validate command against OS
+    const effectivePredicate = (new_predicate ?? node.predicate) as Predicate;
+    const effectiveCommand = new_command ?? node.command ?? "";
     if (effectivePredicate.type !== "manual" && effectiveCommand.trim() !== "") {
       const missing = await findMissingTools([effectiveCommand], doc.cwd);
       if (missing.length > 0) {
@@ -579,25 +786,27 @@ server.tool(
       }
     }
 
-    const oldSnapshot = { command: proof.command, predicate: { ...proof.predicate }, description: proof.description };
+    const oldSnapshot = {
+      command: node.command,
+      predicate: node.predicate ? { ...node.predicate } : undefined,
+      description: node.description,
+    };
 
-    if (new_command !== undefined) proof.command = new_command;
-    if (new_predicate !== undefined) proof.predicate = new_predicate as Predicate;
-    if (new_description !== undefined) proof.description = new_description;
-    proof.last_status = "pending";
+    if (new_command !== undefined) node.command = new_command;
+    if (new_predicate !== undefined) node.predicate = new_predicate as Predicate;
+    if (new_description !== undefined) node.description = new_description;
+    node.last_status = "pending";
 
     doc.amendments.push({
       timestamp: new Date().toISOString(),
-      step_id: step.id,
-      proof_id: proof.id,
+      node_path: nodePath,
       action: "modified",
-      old_value: oldSnapshot,
-      new_value: { command: proof.command, predicate: { ...proof.predicate }, description: proof.description },
+      old_value: oldSnapshot as Partial<TaskNode>,
+      new_value: { command: node.command, predicate: node.predicate ? { ...node.predicate } : undefined, description: node.description },
       reason,
     });
 
-    // Recompute stored fingerprint so dod_check doesn't flag the amendment as tampering
-    doc.proof_fingerprint = computeProofFingerprint(doc.steps);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
 
     await store.save(doc);
     await writeMarkdown(doc);
@@ -608,9 +817,9 @@ server.tool(
         text: [
           "Proof amended and logged.",
           "",
-          `Step: ${step.title}`,
+          `Node: ${node.title}`,
           `Old command: \`${oldSnapshot.command}\``,
-          `New command: \`${proof.command}\``,
+          `New command: \`${node.command}\``,
           `Reason: ${reason}`,
           "",
           "Status reset to pending. Run dod_check to re-verify.",
@@ -634,13 +843,15 @@ server.tool(
 
     const lines = docs.map(d => {
       const status = d.last_check?.overall?.toUpperCase() ?? "UNCHECKED";
-      const stepCount = d.steps.length;
-      const proofCount = d.steps.reduce((sum, s) => sum + s.proofs.length, 0);
+      const rootCount = d.roots.length;
+      const concreteCount = flattenConcreteLeaves(d.roots).length;
+      const draftCount = countDraftNodes(d.roots);
+      const draftTag = draftCount > 0 ? ` (${draftCount} draft)` : "";
       return [
         `• ${d.title}`,
         `  ID: ${d.id}`,
         `  Path: ${d.markdown_path}`,
-        `  Status: ${status} | ${stepCount} steps, ${proofCount} proofs`,
+        `  Status: ${status} | ${rootCount} roots, ${concreteCount} concrete proofs${draftTag}`,
         `  Last check: ${d.last_check?.timestamp ?? "never"}`,
       ].join("\n");
     });
@@ -653,7 +864,7 @@ server.tool(
 
 server.tool(
   "dod_import",
-  "Import an existing DoD markdown file into canonical MCP storage. Parses proof commands, infers predicates, and locks them. Use for pre-existing DoD docs not created via dod_create.",
+  "Import an existing DoD markdown file into canonical MCP storage. Parses hierarchical tree structure, infers predicates, and stores them.",
   {
     path: z.string().describe("Absolute path to the existing DoD markdown file"),
     cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
@@ -673,10 +884,11 @@ server.tool(
       const parsed = await parseMarkdown(mdPath);
       const resolvedCwd = path.resolve(cwd);
 
-      const osError = await checkCommandsForOs(parsed.steps, resolvedCwd);
+      const osError = await checkCommandsForOs(parsed.roots, resolvedCwd);
       if (osError) return osError;
 
       const id = store.generateId();
+      const fingerprint = computeProofFingerprint(parsed.roots);
 
       const doc: DodDocument = {
         id,
@@ -686,37 +898,37 @@ server.tool(
         cwd: resolvedCwd,
         markdown_path: path.resolve(mdPath),
         created_at: new Date().toISOString(),
-        locked: true,
         sections: parsed.sections,
-        steps: parsed.steps,
+        roots: parsed.roots,
+        proof_fingerprint: fingerprint || undefined,
         amendments: [],
       };
 
       await store.save(doc);
 
-      const proofCount = doc.steps.reduce((sum, s) => sum + s.proofs.length, 0);
+      const concreteCount = flattenConcreteLeaves(parsed.roots).length;
+      const draftCount = countDraftNodes(parsed.roots);
+
       return {
         content: [{
           type: "text" as const,
           text: [
-            "DoD imported and locked.",
+            "DoD imported.",
             "",
             `ID: ${id}`,
             `Title: ${doc.title}`,
-            `Steps: ${doc.steps.length}`,
-            `Proofs: ${proofCount}`,
+            `Roots: ${doc.roots.length}`,
+            `Concrete proofs: ${concreteCount}`,
+            `Draft nodes: ${draftCount}`,
             `Cwd: ${resolvedCwd}`,
             "",
-            "Proof commands are now canonical in MCP storage.",
             "Use dod_check to run verification.",
           ].join("\n"),
         }],
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      return {
-        content: [{ type: "text" as const, text: `ERROR parsing markdown: ${msg}` }],
-      };
+      return { content: [{ type: "text" as const, text: `ERROR parsing markdown: ${msg}` }] };
     }
   },
 );

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Proof } from "./types.js";
+import type { TaskNode } from "./types.js";
 
 export interface ManualAnswer {
   answer: "pass" | "fail";
@@ -12,7 +12,7 @@ export interface ManualAnswer {
  * Implementations MUST obtain the answer from a channel Claude cannot drive
  * (MCP elicitation or a server-spawned dialog) — never from a tool parameter.
  */
-export type Confirmer = (proof: Proof) => Promise<ManualAnswer>;
+export type Confirmer = (node: TaskNode) => Promise<ManualAnswer>;
 
 export interface ManualResolution {
   status: "pass" | "fail";
@@ -25,12 +25,12 @@ export interface ManualResolution {
  * Includes the human-facing instruction (`description`) and `command` so that
  * editing what is being verified invalidates any cached confirmation.
  */
-export function perProofFingerprint(proof: Proof): string {
+export function perProofFingerprint(node: TaskNode): string {
   const data = [
-    proof.command,
-    proof.predicate.type,
-    proof.predicate.value ?? "",
-    proof.description,
+    node.command ?? "",
+    node.predicate?.type ?? "",
+    node.predicate?.value ?? "",
+    node.description ?? "",
   ].join("|");
   return createHash("sha256").update(data).digest("hex").slice(0, 12);
 }
@@ -46,9 +46,9 @@ export function perProofFingerprint(proof: Proof): string {
  * The answer is sourced solely from `confirm`; this function never reads a
  * Claude-supplied value, preserving the anti-cheat guarantee.
  */
-export async function resolveManual(proof: Proof, confirm: Confirmer, label = "Manual verification"): Promise<ManualResolution> {
-  const fingerprint = perProofFingerprint(proof);
-  const cached = proof.manual_result;
+export async function resolveManual(node: TaskNode, confirm: Confirmer, label = "Manual verification"): Promise<ManualResolution> {
+  const fingerprint = perProofFingerprint(node);
+  const cached = node.manual_result;
 
   if (cached && cached.answer === "pass" && cached.proof_fingerprint === fingerprint) {
     return {
@@ -58,8 +58,8 @@ export async function resolveManual(proof: Proof, confirm: Confirmer, label = "M
     };
   }
 
-  const answer = await confirm(proof);
-  proof.manual_result = {
+  const answer = await confirm(node);
+  node.manual_result = {
     answer: answer.answer,
     note: answer.note,
     confirmed_at: new Date().toISOString(),

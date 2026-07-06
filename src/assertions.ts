@@ -45,18 +45,19 @@ const PY_TRIVIAL = [
 ];
 
 const JS_TRIVIAL = [
-  // expect(CONST).toXxx(CONST)
-  /^\s*expect\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)\s*\.\s*(?:not\s*\.\s*)?(?:toBe|toEqual|toBeTruthy|toBeFalsy|toBeNull|toBeUndefined|toStrictEqual|toMatchObject|toContain|toHaveLength)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
+  // expect(CONST).toXxx(CONST) — inline, no ^\s* anchor
+  /expect\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)\s*\.\s*(?:not\s*\.\s*)?(?:toBe|toEqual|toBeTruthy|toBeFalsy|toBeNull|toBeUndefined|toStrictEqual|toMatchObject|toContain|toHaveLength)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
   // assert.equal(CONST, CONST) / assert.strictEqual(CONST, CONST)
-  /^\s*assert\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
+  /assert\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
   // assert.ok(true) / assert.fail()
-  /^\s*assert\.(?:ok|fail)\s*\(\s*(true|false)\s*\)/,
+  /assert\.(?:ok|fail)\s*\(\s*(true|false)\s*\)/,
 ];
 
 // ── Assertion-detection patterns (broad) ──────────────────────────────
 
 const PY_ASSERT = /^\s*(assert\b|self\.assert)/;
-const JS_ASSERT = /^\s*(expect\s*\(|assert\.)/;
+// No ^\s* anchor — JS/TS assertions are often inline (e.g. inside test callbacks)
+const JS_ASSERT = /(expect\s*\(|assert\.)/;
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -68,9 +69,14 @@ function isAssertion(line: string, detector: RegExp): boolean {
   return detector.test(line);
 }
 
-function classifyLine(line: string, detector: RegExp, trivialPatterns: RegExp[]): { isAssertion: boolean; trivial: boolean } {
-  if (!isAssertion(line, detector)) return { isAssertion: false, trivial: false };
-  return { isAssertion: true, trivial: isTrivial(line, trivialPatterns) };
+function classifyLine(line: string, detector: RegExp, trivialPatterns: RegExp[]): { count: number; trivialCount: number } {
+  // Count all assertion occurrences on the line (JS/TS often has multiple assertions per line)
+  const globalDetector = new RegExp(detector.source, "g");
+  const matches = line.match(globalDetector);
+  if (!matches) return { count: 0, trivialCount: 0 };
+  // Trivial detection stays boolean per-line (prevents double-counting from overlapping patterns)
+  const lineHasTrivial = trivialPatterns.some((p) => p.test(line));
+  return { count: matches.length, trivialCount: lineHasTrivial ? matches.length : 0 };
 }
 
 function languageForFile(file: string): "py" | "js" | null {
@@ -94,10 +100,8 @@ function scanFile(file: string): { total: number; trivial: number } {
 
   for (const line of lines) {
     const result = classifyLine(line, detector, trivialPatterns);
-    if (result.isAssertion) {
-      total++;
-      if (result.trivial) trivial++;
-    }
+    total += result.count;
+    trivial += result.trivialCount;
   }
 
   return { total, trivial };

@@ -1,498 +1,275 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { checkDocument, parseSurvivors, computeProofFingerprint } from "./checker.js";
+import { describe, it, before } from "node:test";
+import * as assert from "node:assert/strict";
+import { checkDocument, parseSurvivors, computeProofFingerprint, flattenConcreteLeaves, hasDraftNodes, findNodeByPath, countDraftNodes } from "./checker.js";
 import { perProofFingerprint } from "./manual.js";
-import type { DodDocument, Proof } from "./types.js";
+import type { DodDocument, TaskNode } from "./types.js";
 
-function manualProof(id: string, desc: string): Proof {
-  return { id, command: "manual", predicate: { type: "manual" }, description: desc, last_status: "pending" };
+// ── Test helpers ─────────────────────────────────────────────────────
+
+type Pred = TaskNode["predicate"];
+
+let nodeId = 0;
+function nid(): string { return `n${++nodeId}`; }
+
+function draftLeaf(id: string, title: string, intent: string): TaskNode {
+  return { id, title, refinement: "draft", intent, last_status: "draft" };
 }
 
-function docWith(proofs: Proof[]): DodDocument {
+function concLeaf(id: string, title: string, command: string, desc: string, predicate?: Pred, extra?: Partial<TaskNode>): TaskNode {
+  const base: TaskNode = {
+    id, title, refinement: "concrete",
+    command, predicate: predicate ?? { type: "exit_code", value: 0 },
+    description: desc, last_status: "pending",
+  };
+  return Object.assign(base, extra);
+}
+
+function manualLeaf(id: string, title: string, desc: string, extra?: Partial<TaskNode>): TaskNode {
+  return concLeaf(id, title, "manual", desc, { type: "manual" }, extra);
+}
+
+function groupNode(id: string, title: string, children: TaskNode[]): TaskNode {
+  return { id, title, refinement: "concrete", children, last_status: "draft" };
+}
+
+function makeDoc(roots: TaskNode[], overrides?: Partial<DodDocument>): DodDocument {
   return {
-    id: "test",
-    title: "t",
-    goal: "g",
-    date: "2026-01-01",
-    cwd: process.cwd(),
-    markdown_path: "X",
+    id: "test-doc", title: "Test", goal: "Test",
+    date: "2026-01-01", cwd: process.cwd(), markdown_path: "/tmp/X",
     created_at: "2026-01-01",
-    locked: true,
     sections: { requirements: "r" },
-    steps: [{ id: "step-1", title: "Manual step", proofs }],
+    roots,
     amendments: [],
+    ...overrides,
   };
 }
 
-// dod_check itself never auto-confirms manual/review proofs anymore — that is
-// now gated behind the dedicated dod_verify tool, which Claude must call
-// explicitly when verification is actually relevant. checkDocument only ever
-// reads whatever verdict dod_verify already recorded on proof.manual_result.
+before(() => { nodeId = 0; });
 
-test("uncached manual proof is not auto-verified — reports skipped, overall INCOMPLETE", async () => {
-  const doc = docWith([manualProof("proof-1-1", "device smoke test")]);
-  const res = await checkDocument(doc);
-  assert.equal(res.overall, "incomplete", "dod_check must never auto-confirm a manual proof");
-  assert.equal(res.steps[0].proofs[0].status, "skipped");
-  assert.match(res.steps[0].proofs[0].output ?? "", /dod_verify/);
+// ── Tree utilities ────────────────────────────────────────────────────
+
+describe("flattenConcreteLeaves", () => {
+  it("returns concrete leaves with paths", () => {
+    const leaves = flattenConcreteLeaves([
+      concLeaf(nid(), "a", "exit 0", "test a"),
+      concLeaf(nid(), "b", "exit 0", "test b"),
+    ]);
+    assert.equal(leaves.length, 2);
+    assert.equal(leaves[0].node_path, "0");
+    assert.equal(leaves[1].node_path, "1");
+  });
+
+  it("skips draft leaves", () => {
+    const leaves = flattenConcreteLeaves([
+      concLeaf(nid(), "a", "exit 0", "test"),
+      draftLeaf(nid(), "b", "draft only"),
+    ]);
+    assert.equal(leaves.length, 1);
+  });
+
+  it("recurses into task groups", () => {
+    const leaves = flattenConcreteLeaves([
+      groupNode(nid(), "group", [
+        concLeaf(nid(), "child", "exit 0", "test"),
+      ]),
+    ]);
+    assert.equal(leaves.length, 1);
+    assert.ok(leaves[0].node_path.includes("children.0"));
+  });
+
+  it("returns empty for all-draft tree", () => {
+    const leaves = flattenConcreteLeaves([
+      draftLeaf(nid(), "a", "intent a"),
+      draftLeaf(nid(), "b", "intent b"),
+    ]);
+    assert.equal(leaves.length, 0);
+  });
 });
 
-test("a dod_verify PASS record (fingerprint matches) is honored by dod_check", async () => {
-  const proof = manualProof("proof-1-1", "device smoke test");
-  proof.manual_result = {
-    answer: "pass",
-    confirmed_at: "2026-01-01T00:00:00Z",
-    channel: "messagebox",
-    proof_fingerprint: perProofFingerprint(proof),
-  };
-  const doc = docWith([proof]);
-  const res = await checkDocument(doc);
-  assert.equal(res.overall, "pass");
-  assert.equal(res.steps[0].status, "pass");
-  assert.equal(res.steps[0].proofs[0].status, "pass");
+describe("hasDraftNodes", () => {
+  it("detects draft leaves", () => {
+    assert.equal(hasDraftNodes([draftLeaf(nid(), "a", "intent")]), true);
+  });
+
+  it("detects nested drafts", () => {
+    assert.equal(hasDraftNodes([
+      groupNode(nid(), "g", [draftLeaf(nid(), "a", "intent")]),
+    ]), true);
+  });
+
+  it("returns false for all-concrete", () => {
+    assert.equal(hasDraftNodes([concLeaf(nid(), "a", "exit 0", "x")]), false);
+  });
 });
 
-test("a dod_verify FAIL record (fingerprint matches) fails the overall check", async () => {
-  const proof = manualProof("proof-1-1", "device smoke test");
-  proof.manual_result = {
-    answer: "fail",
-    confirmed_at: "2026-01-01T00:00:00Z",
-    channel: "messagebox",
-    proof_fingerprint: perProofFingerprint(proof),
-  };
-  const doc = docWith([proof]);
-  const res = await checkDocument(doc);
-  assert.equal(res.overall, "fail");
-  assert.equal(res.steps[0].proofs[0].status, "fail");
+describe("findNodeByPath", () => {
+  it("finds root-level node", () => {
+    const node = concLeaf("findme", "a", "exit 0", "x");
+    assert.equal(findNodeByPath([node], "0"), node);
+  });
+
+  it("finds nested node", () => {
+    const child = concLeaf("child", "c", "exit 0", "x");
+    const root = groupNode("root", "g", [child]);
+    assert.equal(findNodeByPath([root], "0.children.0"), child);
+  });
+
+  it("returns null for bad path", () => {
+    assert.equal(findNodeByPath([concLeaf("x", "a", "e", "d")], "99"), null);
+  });
 });
 
-test("a stale manual_result (proof amended since verification) is treated as unverified again", async () => {
-  const proof = manualProof("proof-1-1", "device smoke test");
-  proof.manual_result = {
-    answer: "pass",
-    confirmed_at: "2026-01-01T00:00:00Z",
-    channel: "messagebox",
-    proof_fingerprint: "stale-does-not-match-current-proof-text",
-  };
-  const doc = docWith([proof]);
-  const res = await checkDocument(doc);
-  assert.equal(res.overall, "incomplete");
-  assert.equal(res.steps[0].proofs[0].status, "skipped");
+// ── Fingerprint ───────────────────────────────────────────────────────
+
+describe("computeProofFingerprint", () => {
+  it("empty for all-draft tree", () => {
+    assert.equal(computeProofFingerprint([draftLeaf(nid(), "a", "i")]), "");
+  });
+
+  it("hashes concrete leaves", () => {
+    const fp = computeProofFingerprint([concLeaf(nid(), "a", "echo x", "t")]);
+    assert.ok(fp.length > 0);
+  });
+
+  it("changes when command changes", () => {
+    const r: TaskNode[] = [concLeaf(nid(), "a", "cmd1", "t")];
+    const fp1 = computeProofFingerprint(r);
+    r[0].command = "cmd2";
+    assert.notEqual(fp1, computeProofFingerprint(r));
+  });
+
+  it("includes advisory in hash", () => {
+    const fp1 = computeProofFingerprint([concLeaf(nid(), "a", "e", "t")]);
+    const fp2 = computeProofFingerprint([concLeaf(nid(), "a", "e", "t", undefined, { advisory: true })]);
+    assert.notEqual(fp1, fp2);
+  });
 });
 
-// ── WS-C: adversarial review proof (out-of-band, like manual) ──────
+// ── checkDocument: drafts ─────────────────────────────────────────────
 
-function reviewProof(id: string, desc: string): Proof {
-  return { id, command: "code-review", predicate: { type: "review" }, description: desc, last_status: "pending" };
-}
+describe("checkDocument drafts", () => {
+  it("incomplete when drafts present", async () => {
+    const doc = makeDoc([
+      concLeaf(nid(), "a", "exit 0", "ok"),
+      draftLeaf(nid(), "b", "pending"),
+    ]);
+    const res = await checkDocument(doc);
+    assert.equal(res.overall, "incomplete");
+    assert.equal(res.draft_count, 1);
+  });
 
-test("uncached review proof is not auto-verified — reports skipped, overall INCOMPLETE", async () => {
-  const doc = docWith([reviewProof("proof-1-1", "review diff vs requirements")]);
-  const res = await checkDocument(doc);
-  assert.equal(res.overall, "incomplete");
-  assert.equal(res.steps[0].proofs[0].status, "skipped");
+  it("reports draft leaves as status draft", async () => {
+    const doc = makeDoc([draftLeaf(nid(), "a", "intent")]);
+    const res = await checkDocument(doc);
+    const d = res.leaves.find(l => l.status === "draft");
+    assert.ok(d);
+    assert.ok(d.output?.includes("DRAFT"));
+  });
+
+  it("pass when all concrete and no drafts", async () => {
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")]);
+    const res = await checkDocument(doc);
+    assert.equal(res.overall, "pass");
+  });
 });
 
-test("a dod_verify PASS record (fingerprint matches) is honored for a review proof", async () => {
-  const proof = reviewProof("proof-1-1", "review diff vs requirements");
-  proof.manual_result = {
-    answer: "pass",
-    confirmed_at: "2026-01-01T00:00:00Z",
-    channel: "elicitation",
-    proof_fingerprint: perProofFingerprint(proof),
-  };
-  const doc = docWith([proof]);
-  const res = await checkDocument(doc);
-  assert.equal(res.overall, "pass");
-  assert.equal(res.steps[0].proofs[0].status, "pass");
+// ── checkDocument: execution ──────────────────────────────────────────
+
+describe("checkDocument execution", () => {
+  it("exit_code 0 passes", async () => {
+    const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "ok")]);
+    assert.equal((await checkDocument(doc)).leaves[0].status, "pass");
+  });
+
+  it("exit_code mismatch fails", async () => {
+    const doc = makeDoc([concLeaf(nid(), "x", "exit 1", "fail", { type: "exit_code", value: 0 })]);
+    assert.equal((await checkDocument(doc)).leaves[0].status, "fail");
+  });
+
+  it("output_contains matches", async () => {
+    const doc = makeDoc([concLeaf(nid(), "x", "echo hello", "t", { type: "output_contains", value: "hello" })]);
+    assert.equal((await checkDocument(doc)).leaves[0].status, "pass");
+  });
+
+  it("output_contains mismatch fails", async () => {
+    const doc = makeDoc([concLeaf(nid(), "x", "echo hi", "t", { type: "output_contains", value: "world" })]);
+    assert.equal((await checkDocument(doc)).leaves[0].status, "fail");
+  });
 });
 
-test("a dod_verify FAIL record (fingerprint matches) fails a review proof", async () => {
-  const proof = reviewProof("proof-1-1", "review diff vs requirements");
-  proof.manual_result = {
-    answer: "fail",
-    confirmed_at: "2026-01-01T00:00:00Z",
-    channel: "elicitation",
-    proof_fingerprint: perProofFingerprint(proof),
-  };
-  const doc = docWith([proof]);
-  const res = await checkDocument(doc);
-  assert.equal(res.overall, "fail");
-  assert.equal(res.steps[0].proofs[0].status, "fail");
+// ── checkDocument: manual ─────────────────────────────────────────────
+
+describe("checkDocument manual", () => {
+  it("skipped when unverified", async () => {
+    const doc = makeDoc([manualLeaf(nid(), "m", "check")]);
+    assert.equal((await checkDocument(doc)).leaves[0].status, "skipped");
+  });
+
+  it("pass when verified with matching fingerprint", async () => {
+    const n = manualLeaf(nid(), "m", "check");
+    n.manual_result = { answer: "pass", confirmed_at: new Date().toISOString(), channel: "elicitation", proof_fingerprint: perProofFingerprint(n) };
+    assert.equal((await checkDocument(makeDoc([n]))).leaves[0].status, "pass");
+  });
 });
 
-// ── WS-A: incremental scoped checking (dod_check --step N) ──────────
+// ── parseSurvivors ────────────────────────────────────────────────────
 
-function cmdProof(id: string, command: string, expectExit = 0): Proof {
-  return { id, command, predicate: { type: "exit_code", value: expectExit }, description: id, last_status: "pending" };
-}
-
-/** step-1 proof passes (`exit 0`), step-2 proof fails (`exit 1` vs predicate exit_code 0). */
-function twoStepDoc(): DodDocument {
-  return {
-    id: "test-2step",
-    title: "t", goal: "g", date: "2026-01-01",
-    cwd: process.cwd(), markdown_path: "X", created_at: "2026-01-01", locked: true,
-    sections: { requirements: "r" },
-    steps: [
-      { id: "step-1", title: "First", proofs: [cmdProof("proof-1-1", "exit 0")] },
-      { id: "step-2", title: "Second", proofs: [cmdProof("proof-2-1", "exit 1")] },
-    ],
-    amendments: [],
-  };
-}
-
-test("scoped check runs only the target step and reports overall 'incomplete'", async () => {
-  const doc = twoStepDoc();
-  const res = await checkDocument(doc, undefined, { stepId: "step-1" });
-  assert.equal(res.overall, "incomplete", "a scoped run must never report PASS — only a full run can");
-  assert.equal(res.scoped, true);
-  assert.equal(res.ran_step_id, "step-1");
-  const step1 = res.steps.find(s => s.id === "step-1")!;
-  assert.equal(step1.proofs[0].status, "pass");
+describe("parseSurvivors", () => {
+  it("cargo-mutants", () => {
+    assert.equal(parseSurvivors("152 missed"), 152);
+    assert.equal(parseSurvivors("0 missed"), 0);
+  });
+  it("mutmut", () => { assert.equal(parseSurvivors("Survived 🙁 (5)"), 5); });
+  it("unrecognized", () => { assert.equal(parseSurvivors("garbage"), null); });
 });
 
-test("scoped check carries other steps' last_status without re-running them", async () => {
-  const doc = twoStepDoc();
-  // step-2's proof would FAIL if executed (exit 1 vs predicate 0). Mark it
-  // previously passed; a scoped run on step-1 must carry that, not re-run it.
-  doc.steps[1].proofs[0].last_status = "pass";
-  const res = await checkDocument(doc, undefined, { stepId: "step-1" });
-  const step2 = res.steps.find(s => s.id === "step-2")!;
-  assert.equal(step2.proofs[0].status, "pass", "carried from last_status, proving step-2 was not executed");
+// ── checkDocument: TDD ────────────────────────────────────────────────
+
+describe("checkDocument TDD", () => {
+  it("fails without prior red", async () => {
+    const doc = makeDoc([concLeaf(nid(), "t", "exit 0", "tdd", { type: "tdd", value: 0 })]);
+    const r = await checkDocument(doc);
+    assert.equal(r.leaves[0].status, "fail");
+    assert.ok(r.leaves[0].error?.includes("TDD VIOLATION"));
+  });
+
+  it("records seen_failing on red", async () => {
+    const n = concLeaf(nid(), "t", "exit 1", "tdd", { type: "tdd", value: 0 });
+    await checkDocument(makeDoc([n]));
+    assert.equal(n.seen_failing, true);
+  });
+
+  it("passes after red→green", async () => {
+    const n = concLeaf(nid(), "t", "exit 0", "tdd", { type: "tdd", value: 0 });
+    n.seen_failing = true; n.seen_failing_at = new Date().toISOString();
+    assert.equal((await checkDocument(makeDoc([n]))).leaves[0].status, "pass");
+  });
 });
 
-test("full check (no stepId) still computes overall pass/fail across all steps", async () => {
-  const doc = twoStepDoc();
-  const res = await checkDocument(doc);
-  assert.equal(res.overall, "fail");
-  assert.equal(res.scoped ?? false, false);
+// ── Scoped run ────────────────────────────────────────────────────────
+
+describe("checkDocument scoped", () => {
+  it("incomplete for subtree scope", async () => {
+    const g = groupNode(nid(), "g", [concLeaf(nid(), "a", "exit 0", "ok")]);
+    const r = await checkDocument(makeDoc([g]), undefined, { nodePath: "0.children.0" });
+    assert.equal(r.overall, "incomplete");
+    assert.equal(r.scoped, true);
+  });
 });
 
-// ── WS-F: blocking tamper detection ────────────────────────────────
+// ── Advisory ──────────────────────────────────────────────────────────
 
-function onePassDoc(): DodDocument {
-  return {
-    id: "test-1pass", title: "t", goal: "g", date: "2026-01-01",
-    cwd: process.cwd(), markdown_path: "X", created_at: "2026-01-01", locked: true,
-    sections: { requirements: "r" },
-    steps: [{ id: "step-1", title: "Only", proofs: [cmdProof("proof-1-1", "exit 0")] }],
-    amendments: [],
-  };
-}
+describe("checkDocument advisory", () => {
+  it("advisory fail does not block", async () => {
+    const doc = makeDoc([
+      concLeaf(nid(), "a", "exit 0", "ok"),
+      concLeaf(nid(), "adv", "exit 1", "warn", { type: "exit_code", value: 0 }, { advisory: true }),
+    ]);
+    assert.equal((await checkDocument(doc)).overall, "pass");
+  });
 
-test("a proof-set fingerprint mismatch forces overall FAIL even when all proofs pass", async () => {
-  const doc = onePassDoc();
-  doc.proof_fingerprint = "staleffffff"; // does not match the real proof set → store was edited outside dod_amend
-  const res = await checkDocument(doc);
-  assert.equal(res.tampered, true);
-  assert.equal(res.overall, "fail", "tamper must block, not just warn");
-});
-
-test("a matching stored fingerprint is not flagged as tamper", async () => {
-  const doc = onePassDoc();
-  const first = await checkDocument(doc);          // no stored fingerprint yet
-  doc.proof_fingerprint = first.proof_fingerprint; // lock the real fingerprint (as dod_create/amend do)
-  const second = await checkDocument(doc);
-  assert.notEqual(second.tampered, true);
-  assert.equal(second.overall, "pass");
-});
-
-// ── WS-D: mutation survivor-count parser ────────────────────────────
-//
-// Fixtures are representative real reporter output captured from each tool's
-// docs/runs. The parser must extract the surviving (== missed) mutant count and
-// fail-safe to null on anything it does not recognise.
-
-// cargo-mutants summary line: "N missed" means N survivors.
-const CARGO_MUTANTS_SURVIVORS = `cargo-mutants 24.11.0
-Found 1832 mutants to test
-... (snipped) ...
-1832 mutants tested in 39:18: 152 missed, 1832 caught, 326 unviable, 0 timeout`;
-
-const CARGO_MUTANTS_CLEAN = `20 mutants tested in 0:12: 0 missed, 20 caught`;
-
-// Stryker clear-text reporter ends with a per-file table; "# survived" column.
-const STRYKER_SURVIVORS = `Ran 1.00 tests per mutant on average.
---------------|---------|----------|-----------|------------|----------|
-File          | % score | # killed | # timeout | # survived | # no cov |
---------------|---------|----------|-----------|------------|----------|
-All files     |   90.00 |       18 |         0 |          2 |        0 |
---------------|---------|----------|-----------|------------|----------|`;
-
-const STRYKER_CLEAN = `File          | % score | # killed | # timeout | # survived | # no cov |
---------------|---------|----------|-----------|------------|----------|
-All files     |  100.00 |       20 |         0 |          0 |        0 |`;
-
-// mutmut run progress line and `mutmut results` legend both report 🙁 survivors.
-const MUTMUT_SURVIVORS_PROGRESS = `⠼ 22/22  🎉 17 🫥 0  ⏰ 0  🤔 0  🙁 5  🔇 0`;
-const MUTMUT_SURVIVORS_RESULTS = `Survived 🙁 (3)
-
-To apply a mutant on disk:
-    mutmut apply <id>`;
-
-const UNPARSEABLE_OUTPUT = `error: could not compile project
-warning: nothing useful to report here`;
-
-test("parseSurvivors reads the cargo-mutants 'missed' count", () => {
-  assert.equal(parseSurvivors(CARGO_MUTANTS_SURVIVORS), 152);
-  assert.equal(parseSurvivors(CARGO_MUTANTS_CLEAN), 0);
-});
-
-test("parseSurvivors reads the Stryker '# survived' table column", () => {
-  assert.equal(parseSurvivors(STRYKER_SURVIVORS), 2);
-  assert.equal(parseSurvivors(STRYKER_CLEAN), 0);
-});
-
-test("parseSurvivors reads the mutmut 🙁 survivor count", () => {
-  assert.equal(parseSurvivors(MUTMUT_SURVIVORS_PROGRESS), 5);
-  assert.equal(parseSurvivors(MUTMUT_SURVIVORS_RESULTS), 3);
-});
-
-test("parseSurvivors returns null on unrecognised output (fail-safe)", () => {
-  assert.equal(parseSurvivors(UNPARSEABLE_OUTPUT), null);
-  assert.equal(parseSurvivors(""), null);
-});
-
-// ── WS-D: mutation predicate evaluation (in-band, via runCommand) ────
-
-function mutationProof(id: string, command: string, value?: number): Proof {
-  return { id, command, predicate: { type: "mutation", value }, description: id, last_status: "pending" };
-}
-
-test("mutation predicate passes when survivors are within budget", async () => {
-  const doc = docWith([mutationProof("proof-1-1", "echo 3 missed, 10 caught", 5)]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "pass");
-  assert.equal(res.overall, "pass");
-});
-
-test("mutation predicate fails when survivors exceed budget", async () => {
-  const doc = docWith([mutationProof("proof-1-1", "echo 3 missed, 10 caught", 0)]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "fail");
-  assert.equal(res.overall, "fail");
-});
-
-test("mutation predicate defaults the budget to 0 survivors", async () => {
-  const pass = await checkDocument(docWith([mutationProof("proof-1-1", "echo 0 missed, 20 caught")]));
-  assert.equal(pass.steps[0].proofs[0].status, "pass");
-  const fail = await checkDocument(docWith([mutationProof("proof-1-1", "echo 1 missed, 19 caught")]));
-  assert.equal(fail.steps[0].proofs[0].status, "fail");
-});
-
-test("mutation predicate fails safely on unparseable output (never auto-passes)", async () => {
-  const doc = docWith([mutationProof("proof-1-1", "echo no recognised summary here", 0)]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "fail");
-  assert.match(res.steps[0].proofs[0].error ?? "", /could not parse mutation/);
-});
-
-// ── WS-D: end-to-end through checkDocument (the real dod_check entry) ─
-
-test("mutation end-to-end: checkDocument runs the command and gates on survivors vs value", async () => {
-  // survivors (2) <= value (2): PASS through the genuine runCommand path,
-  // not a mock — the proof's command is actually executed and its output parsed.
-  const passRes = await checkDocument(docWith([mutationProof("proof-1-1", "echo 2 missed, 30 caught", 2)]));
-  assert.equal(passRes.overall, "pass");
-  assert.equal(passRes.steps[0].proofs[0].status, "pass");
-
-  // survivors (2) > value (1): FAIL.
-  const failRes = await checkDocument(docWith([mutationProof("proof-1-1", "echo 2 missed, 30 caught", 1)]));
-  assert.equal(failRes.overall, "fail");
-  assert.equal(failRes.steps[0].proofs[0].status, "fail");
-});
-
-// ── regression predicate: two-phase capture/compare ─────────────────
-
-function regressionProof(
-  id: string,
-  command: string,
-  opts: { value?: number; lower_is_better?: boolean; extract?: string; baseline_value?: number } = {},
-): Proof {
-  return {
-    id,
-    command,
-    predicate: { type: "regression", value: opts.value, lower_is_better: opts.lower_is_better, extract: opts.extract },
-    description: id,
-    last_status: "pending",
-    baseline_value: opts.baseline_value,
-  };
-}
-
-test("regression compare: capture phase stores the baseline and passes", async () => {
-  const proof = regressionProof("proof-1-1", "echo 100", { value: 0.1 });
-  const doc = docWith([proof]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "pass", "capture phase always passes");
-  assert.equal(proof.baseline_value, 100, "baseline value captured onto the proof");
-  assert.ok(proof.baseline_captured_at, "capture timestamp recorded");
-});
-
-test("regression compare: within tolerance passes (lower_is_better)", async () => {
-  // baseline 100, tol 10% → ceiling 110. measured 105 <= 110 → pass.
-  const doc = docWith([regressionProof("proof-1-1", "echo 105", { value: 0.1, lower_is_better: true, baseline_value: 100 })]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "pass");
-});
-
-test("regression compare: over tolerance fails (lower_is_better)", async () => {
-  // baseline 100, tol 10% → ceiling 110. measured 120 > 110 → fail.
-  const doc = docWith([regressionProof("proof-1-1", "echo 120", { value: 0.1, lower_is_better: true, baseline_value: 100 })]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "fail");
-});
-
-test("regression compare: coverage direction higher-is-better (lower_is_better=false)", async () => {
-  // baseline 80, tol 10% → floor 72. measured 78 >= 72 → pass; 70 < 72 → fail.
-  const pass = await checkDocument(docWith([regressionProof("proof-1-1", "echo 78", { value: 0.1, lower_is_better: false, baseline_value: 80 })]));
-  assert.equal(pass.steps[0].proofs[0].status, "pass");
-  const fail = await checkDocument(docWith([regressionProof("proof-1-1", "echo 70", { value: 0.1, lower_is_better: false, baseline_value: 80 })]));
-  assert.equal(fail.steps[0].proofs[0].status, "fail");
-});
-
-test("regression compare: unparseable output fails safe (never auto-passes)", async () => {
-  const doc = docWith([regressionProof("proof-1-1", "echo no metric here", { value: 0.1, lower_is_better: true, baseline_value: 100 })]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "fail");
-  assert.match(res.steps[0].proofs[0].error ?? "", /could not parse|regression/i);
-});
-
-// ── advisory tier: a failing advisory proof warns but does not block ──
-
-test("advisory failing proof does NOT fail the step or the overall result", async () => {
-  const advisory: Proof = {
-    id: "proof-1-1", command: "exit 1", predicate: { type: "exit_code", value: 0 },
-    description: "advisory regression budget", last_status: "pending", advisory: true,
-  };
-  const doc = docWith([advisory]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "fail", "the proof itself still reports fail (warns loudly)");
-  assert.equal(res.steps[0].status, "pass", "advisory failure must not fail the step");
-  assert.equal(res.overall, "pass", "advisory failure must not fail the overall result");
-});
-
-test("advisory absent (hard proof) still fails the step and overall as before", async () => {
-  const hard: Proof = {
-    id: "proof-1-1", command: "exit 1", predicate: { type: "exit_code", value: 0 },
-    description: "hard gate", last_status: "pending",
-  };
-  const res = await checkDocument(docWith([hard]));
-  assert.equal(res.steps[0].status, "fail");
-  assert.equal(res.overall, "fail");
-});
-
-// ── fingerprint backward-compat ─────────────────────────────────────
-
-/** The pre-change fingerprint formula: command|type|value only. */
-function legacyFingerprint(steps: Array<{ proofs: Proof[] }>): string {
-  const data = steps
-    .flatMap((s) => s.proofs.map((p) => `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`))
-    .join("\n");
-  return createHash("sha256").update(data).digest("hex").slice(0, 12);
-}
-
-test("fingerprint backward: legacy proofs (no new fields) hash identically to the pre-change formula", () => {
-  const steps = [{
-    proofs: [
-      cmdProof("p1", "exit 0"),
-      { id: "p2", command: "echo 0 missed", predicate: { type: "mutation", value: 0 } as const, description: "m", last_status: "pending" as const },
-    ],
-  }];
-  assert.equal(computeProofFingerprint(steps), legacyFingerprint(steps), "existing locked docs must not false-trip tamper detection");
-});
-
-test("fingerprint backward: setting or flipping advisory / lower_is_better changes the fingerprint", () => {
-  const base = cmdProof("p1", "exit 0");
-  const wrap = (p: Proof) => [{ proofs: [p] }];
-  const fpNone = computeProofFingerprint(wrap(base));
-  const fpAdvTrue = computeProofFingerprint(wrap({ ...base, advisory: true }));
-  const fpAdvFalse = computeProofFingerprint(wrap({ ...base, advisory: false }));
-  assert.notEqual(fpNone, fpAdvTrue, "adding advisory must change the hash (cannot silently flip a hard gate to advisory)");
-  assert.notEqual(fpAdvTrue, fpAdvFalse, "flipping advisory true→false must change the hash");
-
-  const regBase: Proof = { id: "r", command: "echo 1", predicate: { type: "regression", value: 0.1 }, description: "r", last_status: "pending" };
-  const fpReg = computeProofFingerprint(wrap(regBase));
-  const fpRegLib = computeProofFingerprint(wrap({ ...regBase, predicate: { type: "regression", value: 0.1, lower_is_better: false } }));
-  assert.notEqual(fpReg, fpRegLib, "changing lower_is_better must change the hash");
-});
-
-// ── end-to-end: regression proof through the real checkDocument entry ─
-
-test("e2e regression capture-compare: capture then compare a regression proof through checkDocument", async () => {
-  // A single proof reused across two real checkDocument runs — the proof's
-  // baseline_value mutates between calls exactly as it would in production.
-  const proof = regressionProof("proof-1-1", "echo 100", { value: 0.1, lower_is_better: true });
-  const doc = docWith([proof]);
-
-  // First run = CAPTURE phase: no baseline yet → store N0 and pass.
-  const capture = await checkDocument(doc);
-  assert.equal(capture.steps[0].proofs[0].status, "pass", "capture phase passes");
-  assert.equal(capture.overall, "pass");
-  assert.equal(proof.baseline_value, 100, "baseline N0 captured onto the proof");
-  assert.ok(proof.baseline_captured_at, "capture timestamp recorded");
-
-  // Second run = COMPARE phase: same metric (100) is within 10% of N0 → pass.
-  const compare = await checkDocument(doc);
-  assert.equal(compare.steps[0].proofs[0].status, "pass", "within-tolerance compare passes");
-  assert.equal(compare.overall, "pass");
-  assert.equal(proof.baseline_value, 100, "baseline is not re-captured on the compare run");
-});
-
-test("e2e regression capture-compare: an over-tolerance compare run fails through checkDocument", async () => {
-  // Baseline already captured at 100; a measured 130 (>10% worse) must FAIL.
-  const proof = regressionProof("proof-1-1", "echo 130", { value: 0.1, lower_is_better: true, baseline_value: 100 });
-  const res = await checkDocument(docWith([proof]));
-  assert.equal(res.steps[0].proofs[0].status, "fail", "regression beyond tolerance fails");
-  assert.equal(res.overall, "fail");
-});
-
-// ── streamline predicate: absence verification ─────────────────────
-
-function streamlineProof(id: string, command: string, value?: number): Proof {
-  return { id, command, predicate: { type: "streamline", value }, description: id, last_status: "pending" };
-}
-
-test("streamline passes when search finds nothing (grep exit 1)", async () => {
-  // node -e "process.exit(1)" simulates grep exit 1: no matches
-  const doc = docWith([streamlineProof("proof-1-1", "node -e \"process.exit(1)\"")]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "pass", "exit 1 → no matches → old code removed → PASS");
-  assert.equal(res.overall, "pass");
-});
-
-test("streamline fails when search finds matches (old code remains)", async () => {
-  // grep exits 0 when matches found — old code still exists → FAIL
-  const doc = docWith([streamlineProof("proof-1-1", "echo found: match here")]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "fail", "matches found → old code remains → FAIL");
-  assert.equal(res.overall, "fail");
-});
-
-test("streamline passes when matches are within allowed threshold (value > 0)", async () => {
-  // 1 match line → count=1, value=3 → within budget → PASS
-  const doc = docWith([streamlineProof("proof-1-1", "echo ref1", 3)]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "pass", "1 match ≤ value 3 → PASS");
-});
-
-test("streamline fails when matches exceed allowed threshold", async () => {
-  // 2 match lines → count=2, value=1 → over budget → FAIL
-  const doc = docWith([streamlineProof("proof-1-1", "printf 'ref1\\nref2'", 1)]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "fail", "2 matches > value 1 → FAIL");
-});
-
-test("streamline defaults value to 0 — any match fails", async () => {
-  const doc = docWith([streamlineProof("proof-1-1", "echo one match")]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "fail", "value absent → default 0 → any match fails");
-});
-
-test("streamline passes exit 0 but empty output (value=0, zero matches)", async () => {
-  // node -e "" exits 0 with no stdout — zero non-empty lines
-  const doc = docWith([streamlineProof("proof-1-1", "node -e \"\"")]);
-  const res = await checkDocument(doc);
-  assert.equal(res.steps[0].proofs[0].status, "pass", "exit 0 with empty output → 0 matches → PASS");
+  it("hard fail blocks overall", async () => {
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 1", "fail", { type: "exit_code", value: 0 })]);
+    assert.equal((await checkDocument(doc)).overall, "fail");
+  });
 });

@@ -156,6 +156,70 @@ When you believe you understand everything, present a structured summary:
 
 The user MUST explicitly confirm before you proceed. If they identify gaps, return to Phase 2.
 
+## Phase 3.4: Hierarchical Decomposition — Build a Task Tree
+
+**Replace flat step lists with a recursive task tree.** The old `steps → proofs[]` pattern produced shallow DoDs with weak proofs. The new `roots → TaskNode[]` pattern enforces functional decomposition: each leaf must be one atomic, independently verifiable behavior.
+
+### TaskNode Structure
+
+A `TaskNode` is EITHER:
+- **Task group** — has `children: TaskNode[]`, represents a sub-goal. Decompose until children are pure leaves.
+- **Draft leaf** — `refinement: "draft"`, has `intent` (human-readable description of what it will prove). No command yet.
+- **Concrete leaf** — `refinement: "concrete"`, has `command`, `predicate`, `description`, `category`. Ready to verify.
+
+### When to Use Draft vs Concrete
+
+- **Concrete when known upfront** — lint, format, full test suite, integration wiring. These are known at planning time. Write exact commands.
+- **Draft when implementation-dependent** — behavioral tests, TDD proofs, curl endpoints. You can't write the curl test for an endpoint that doesn't exist yet. Write a clear `intent` describing what behavior will be proven.
+
+Expect ~40-60% concrete (known upfront) and ~40-60% draft (discovered during implementation).
+
+### Decomposition Rules
+
+1. **Decompose until pure** — each leaf must be one atomic, independently verifiable behavior. If "Password hashing" has 3 things to prove, make it a task group with 3 leaf children.
+2. **3 levels max** — roots → 2-4 task groups per root → leaves. Deeper = over-decomposed.
+3. **Draft groups are fine** — a task group where all children are drafts means "I know what I need to verify here, but the exact commands depend on implementation."
+4. **Code quality is always a root** — lint, format, test suite live in their own root task group, separate from feature-specific work.
+
+### Example Tree Structure
+
+For a user auth feature:
+
+```
+roots:
+  "Code Quality" (task group)
+    - "Lint" (concrete): npm run lint → exit_code:0, category: lint
+    - "Full test suite" (concrete): npm test → exit_code:0, category: test
+
+  "User Authentication" (task group)
+    "Password Hashing" (task group)
+      - Draft: "hash_password uses bcrypt with cost >= 10"
+      - Draft: "verify_password rejects wrong password"
+    "Login Endpoint" (task group)
+      - Draft: "POST /login valid creds → 200 + JWT in response body"
+      - Draft: "POST /login bad creds → 401 with error message"
+    "Integration" (task group)
+      - Concrete: "grep 'auth' src/routes.ts" → output_contains:"auth" (wiring)
+      - Draft: "curl login endpoint returns JWT" (behavioral)
+
+  "Manual Verification" (task group)
+    - "Code review" (manual): peer review
+    - "Walkthrough" (manual): run app, verify login flow end-to-end
+```
+
+### How to Build the Tree
+
+1. Start with 2-3 root task groups (Code Quality, Feature Work, Manual).
+2. For Feature Work, decompose into sub-tasks (Password Hashing, Login Endpoint, etc.).
+3. For each sub-task, ask: "What exact behaviors must be verified?" Write each as a leaf.
+4. Mark leaves as concrete (known command) or draft (intent only).
+5. Run the contrarian (Phase 3.6) against the tree — it will argue for adding optional categories as draft leaves.
+
+**Anti-patterns:**
+- One concrete proof per task group claiming to cover the entire sub-goal (e.g., "Tests pass" for "User Auth" with no decomposition)
+- All leaves concrete with no drafts (means you're guessing at implementation details)
+- All leaves drafted with no concrete (means no structural verification)
+
 ## Phase 3.5: Apply Company DoD Baselines
 
 Before constructing the DoD steps, determine the work type and apply the company baseline from `standards/dod-baselines.md`.
@@ -361,104 +425,152 @@ Rules:
 - skip_reasons show up as warnings (not errors) in the dod_create output — they prove conscious choice, not laziness
 - Categories that ARE present in the DoD don't need skip_reasons
 
-## Phase 4: Create Locked DoD via dod-guard MCP
+## Phase 4: Create DoD via dod-guard MCP
 
-Instead of writing the spec file directly, call the `dod_create` MCP tool to create a **locked, anti-cheat DoD document**. This stores proof commands canonically in MCP storage — editing the rendered markdown cannot weaken verification.
-
-**XML-structured output:** The renderer wraps the agent guidance, each spec section, and the step list in semantic XML tags (`<claude_instructions>`, `<requirements>`, `<research_notes>`, `<definition_of_done>`, etc.) so the downstream `/goal` agent gets clean signal separation. Provide each section's content as **plain markdown** — the server adds the tags; do not wrap section content in XML yourself.
+Call `dod_create` to build a DoD with a hierarchical `roots` tree. DoDs start with a mix of concrete and draft nodes — drafts are refined during implementation via `dod_refine`. No global lifecycle field is needed.
 
 **Call `dod_create` with this structure:**
-
-Every proof needs a `category` (company-baseline tag). `dod_create` **rejects** a DoD
-missing the mandatory categories `integration_wiring`, `integration_behavioral`, and
-`test`, and warns when `tdd` is absent or a step has only presence/structural proofs.
-The DoD also needs a `type` (`bug` or `general`) to select the baseline.
 
 ```json
 {
   "title": "[Feature Name]",
-  "goal": "[One sentence goal from confirmed summary]",
+  "goal": "[One sentence goal]",
   "type": "general",
-  "cwd": "[Absolute path to project root / working directory for running commands]",
+  "cwd": "[Absolute project root]",
   "markdown_path": "[Absolute path to docs/plans/YYYY-MM-DD-<topic>.md]",
   "sections": {
-    "decisions": "[Optional: locked decisions with user]",
-    "current_state": "[Optional: verified current state]",
-    "requirements": "[Full requirements from confirmed summary — markdown]",
-    "research_notes": "[Key findings: file paths, patterns, API notes — markdown]",
-    "open_questions": "[Deferred items — markdown]",
-    "open_risks": "[Optional: identified risks — markdown]"
+    "decisions": "[Optional]",
+    "current_state": "[Optional]",
+    "requirements": "[Required — markdown]",
+    "research_notes": "[Key findings — markdown]",
+    "open_questions": "[Deferred items]",
+    "open_risks": "[Optional]"
   },
-  "steps": [
+  "roots": [
     {
-      "title": "Clear, self-contained step description",
-      "proofs": [
+      "title": "Code Quality",
+      "children": [
         {
-          "command": "cargo test -- test_name",
+          "title": "Lint",
+          "refinement": "concrete",
+          "command": "npm run lint",
           "predicate": {"type": "exit_code", "value": 0},
-          "category": "test",
-          "description": "exit 0, all tests pass"
+          "description": "lint passes with zero warnings",
+          "category": "lint"
         },
         {
-          "command": "grep -w \"register_route\" src/app.rs",
+          "title": "Full test suite",
+          "refinement": "concrete",
+          "command": "npm test",
           "predicate": {"type": "exit_code", "value": 0},
-          "category": "integration_wiring",
-          "description": "feature is wired into the real router (word-boundary match)"
+          "description": "all tests pass",
+          "category": "test"
+        }
+      ]
+    },
+    {
+      "title": "User Authentication",
+      "children": [
+        {
+          "title": "Password Hashing",
+          "children": [
+            {
+              "title": "bcrypt used for hashing",
+              "refinement": "concrete",
+              "command": "grep \"bcrypt\" src/auth.ts",
+              "predicate": {"type": "output_contains", "value": "bcrypt"},
+              "description": "uses bcrypt for password hashing",
+              "category": "structure"
+            },
+            {
+              "title": "Hash function TDD",
+              "refinement": "draft",
+              "intent": "hash_password uses bcrypt with cost >= 10 — write failing test first"
+            }
+          ]
         },
         {
-          "command": "curl -fs localhost:8080/feature",
-          "predicate": {"type": "exit_code", "value": 0},
-          "category": "integration_behavioral",
-          "description": "feature reachable through the running system's entry point"
+          "title": "Login Endpoint",
+          "children": [
+            {
+              "title": "Login valid creds → 200 + JWT",
+              "refinement": "draft",
+              "intent": "POST /login with valid credentials returns 200 and a JWT token"
+            },
+            {
+              "title": "Login bad creds → 401",
+              "refinement": "draft",
+              "intent": "POST /login with invalid credentials returns 401 with error message"
+            }
+          ]
+        },
+        {
+          "title": "Integration",
+          "children": [
+            {
+              "title": "Auth routes registered",
+              "refinement": "concrete",
+              "command": "grep \"auth\" src/routes.ts",
+              "predicate": {"type": "output_contains", "value": "auth"},
+              "description": "auth routes registered in the real router",
+              "category": "integration_wiring"
+            },
+            {
+              "title": "Login endpoint reachable",
+              "refinement": "draft",
+              "intent": "curl login endpoint returns JWT — exercising through the real entry point"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Manual Verification",
+      "children": [
+        {
+          "title": "Code review",
+          "refinement": "concrete",
+          "command": "manual",
+          "predicate": {"type": "review"},
+          "description": "peer review of auth implementation",
+          "category": "manual"
+        },
+        {
+          "title": "App walkthrough",
+          "refinement": "concrete",
+          "command": "manual",
+          "predicate": {"type": "manual"},
+          "description": "run app, verify login/register flow end-to-end",
+          "category": "manual"
         }
       ]
     }
-  ]
+  ],
+  "skip_reasons": {
+    "mutation": "trivial CRUD endpoints, mutation testing overkill"
+  }
 }
 ```
 
-**Proof categories:** `lint`, `format`, `tdd`, `structure`, `test`, `mutation`,
-`integration_wiring`, `integration_behavioral`, `performance`, `complexity`, `coverage`,
-`duplication`, `manual`, `other`. Mandatory (enforced
-at create): `integration_wiring` + `integration_behavioral` + `test`. The
-`performance`/`complexity`/`coverage`/`duplication` categories pair with `regression`
-proofs and are optional (never mandatory). **Precision:**
-presence/removal proofs must match signatures or word boundaries (`grep -w`, `findstr /R`),
-never bare substrings — e.g. `TryStopTracking(dossierId)` vs `TryStopTracking(dossierId, clientId)`
-will collide on a bare substring match.
+**TaskNode fields:**
 
-**Predicate types for proofs:**
+| Field | Required | Notes |
+|-------|----------|-------|
+| `title` | always | Human-readable name |
+| `refinement` | on leaves | `"draft"` = intent only, `"concrete"` = has command/predicate/description |
+| `children` | on task groups | Array of child TaskNodes. Task groups must not have command/predicate/description. |
+| `intent` | on draft leaves | What behavior this will prove. Cleared when refined. |
+| `command` | on concrete leaves | Shell command to run for verification |
+| `predicate` | on concrete leaves | Evaluation rule (see predicate types below) |
+| `description` | on concrete leaves | Human-readable description |
+| `category` | on concrete leaves | Baseline category (see categories below) |
+| `advisory` | optional | Advisory tier — failing advisory proof warns but does not block |
 
-| Type | Value | Meaning |
-|------|-------|---------|
-| `exit_code` | `0` | Command must exit with code 0 (success) |
-| `exit_code` | `1` | Command must exit with code 1 |
-| `exit_code_not` | `0` | Command must NOT exit 0. **Avoid for "no matches" — use `exit_code: 1` instead** (exit_code_not passes on command-not-found errors) |
-| `output_contains` | `"text"` | stdout must contain the given text |
-| `output_matches` | `"regex"` | stdout must match the regex |
-| `output_not_contains` | `"text"` | stdout must NOT contain text (e.g. "no warnings", "no TODO") |
-| `output_not_matches` | `"regex"` | stdout must NOT match regex |
-| `tdd` | `0` | **TDD enforcer.** Must be observed FAILING before it can pass. Run `dod_check` after writing the failing test (RED), then implement (GREEN). Passes only when: seen_failing=true AND command exits with value. |
-| `manual` | _(none)_ | Human-only verification, confirmed out-of-band (popup/elicitation) via `dod_verify` — the model cannot self-pass it. `dod_check` never auto-prompts; call `dod_verify(dod_id, proof_id)` when verification is actually relevant, then re-run `dod_check` |
-| `review` | _(none)_ | Fresh-context code review. Run `/code-review` against the diff vs requirements, then call `dod_verify` and confirm PASS only if no correctness/requirement gaps remain. Verdict arrives via the same un-fakeable channel as `manual`. Use for intent/edge-case correctness that command proofs can't assert. |
-| `mutation` | `N` _(default 0)_ | **Mutation testing.** Runs the command in-band and parses surviving (un-killed) mutants from Stryker / mutmut / cargo-mutants output; passes iff survivors `<= N`. Unparseable output FAILs (fail-safe). The strongest test-quality proof — scope to changed/critical functions. See `standards/language-commands.md` for per-tool changed-functions commands. |
-| `regression` | `tol` _(fraction, e.g. `0.10`)_ | **Non-regression gate.** Two-phase: a capture step run on PRE-change code stores the metric baseline N0 and PASSes; later runs compare the new metric N1 against N0 with tolerance `tol`. Optional `extract` (regex, capture group 1) picks the number, else the last number in stdout; unparseable output FAILs (fail-safe). `lower_is_better` (default true) for perf/complexity/duplication; set false for coverage. Defaults to **advisory** (warns, does not block) — set `advisory: false` for a hard SLA gate. Proves perf/complexity/coverage/duplication don't regress vs a baseline, never an impossible absolute target. See `standards/language-commands.md` for per-language metric commands. |
+**Predicate types** (unchanged from v1.x): `exit_code`, `exit_code_not`, `output_contains`, `output_matches`, `output_not_contains`, `output_not_matches`, `tdd`, `manual`, `review`, `mutation`, `regression`, `assertions`, `streamline`, `observability`.
 
-**The `advisory` proof flag:** any proof may set `"advisory": true` — a failing advisory proof is reported loudly as a warning but does NOT fail its step or the overall verdict. `regression` proofs default to advisory; set `advisory: false` to make one a hard gate. The flag is part of the proof fingerprint, so a hard gate cannot be silently downgraded to advisory.
+**Proof categories** (unchanged): `lint`, `format`, `tdd`, `structure`, `test`, `mutation`, `integration_wiring`, `integration_behavioral`, `performance`, `complexity`, `coverage`, `duplication`, `streamline`, `observability`, `manual`, `other`.
 
-**When to use `tdd` predicates:**
-
-Use `tdd` when a step involves writing new functionality that should be test-driven. The workflow:
-1. Write the test (it should fail — the feature doesn't exist yet)
-2. Run `dod_check` — the TDD proof records the failure (RED phase)
-3. Implement the feature
-4. Run `dod_check` again — test passes AND was previously seen failing → proof passes
-
-If a test passes without ever being seen failing, dod-guard rejects it with "TDD VIOLATION" — this prevents writing tests after implementation that merely confirm existing behavior.
-
-**Recommended TDD proof pattern — always pair structural + temporal:**
-
-A `tdd` predicate alone proves red-to-green, but not that the test is meaningful. The agent could write a trivially failing test, then fix it. Always pair TDD proofs with a structural check that verifies the test has real assertions:
+Baseline enforcement is **advisory only** at create time — categories are filled during `dod_refine`. Mandatory categories (integration_wiring, integration_behavioral, test) warn if absent but do not block creation.
 
 ```json
 {
@@ -495,134 +607,128 @@ Use for absence checks that go beyond exit codes:
 
 ### Definition of Done Guidelines
 
-#### Step Design
+#### Step Design → Task Tree Design
 
-Each step must be:
-- **Self-contained** — can be implemented and tested independently
-- **Ordered** — dependencies flow top to bottom
-- **Concrete** — "Add retry logic with exponential backoff (base 1s, max 30s, 5 attempts) to the API client" not "handle retries"
+Replace flat step lists with recursive task trees. See Phase 3.4 for full decomposition rules.
 
-#### Proof Design
+- **Task groups** — decompose sub-goals into children. Group heading with `**Title** [mark]`.
+- **Draft leaves** — `[~] **Draft**: intent`. Use when implementation-dependent.
+- **Concrete leaves** — `- [mark] Proof: \`cmd\` → desc`. Use when command is known upfront.
 
-Each proof must be:
-- **LLM-invokable** — a command the AI can run directly (shell command, test runner, grep, curl, file read + pattern match, etc.)
-- **Falsifiable** — has a clear pass/fail answer; no ambiguity
-- **Expected value is exact** — specify the exact output, exit code, pattern, or measurable condition
-- **Outcome-verifying, not process-verifying** — prove the thing works, not that a file was created
+#### Proof Design (unchanged from v1.x)
 
-Good proofs (language-agnostic patterns):
-```
-- [ ] Proof: `<test-runner> <test-filter>` → exit code 0, targeted tests pass
-- [ ] Proof: `curl -s localhost:3000/api/health` → response body contains `{"status":"ok"}`
-- [ ] Proof: `grep "validate_email" src/auth.*` → function exists in expected location
-- [ ] Proof: `<linter> $(git diff --name-only HEAD~1)` → exit 0, no new lint violations in changed files
-```
+Each leaf proof must be:
+- **LLM-invokable** — a command the AI can run directly
+- **Falsifiable** — clear pass/fail answer
+- **Atomic** — one independently verifiable behavior per leaf
 
-Bad proofs (vague, not invokable, not falsifiable):
-```
-- [ ] Proof: "code is clean" → expected: "it looks good"
-- [ ] Proof: "feature works" → expected: "no bugs"
-- [ ] Proof: "lines of code reduced" → expected: "significantly smaller"
-```
+Good proofs: `npm test -- test/auth`, `curl -s localhost:3000/api/health`, `grep "bcrypt" src/auth.ts`.
 
-#### The `dod_amend` Escape Hatch (Critical)
+#### Draft Proof Intents
 
-Some proofs will turn out to be unreasonable when the code is actually written. This is normal — requirements discovered during implementation can contradict initial assumptions. **Do not get stuck** trying to satisfy an impossible proof.
+When writing draft intents, be specific about what behavior will be verified, but leave the exact mechanism for implementation time:
 
-When a proof cannot be met, call `dod_amend` to modify the canonical proof:
+Good intents:
+- "hash_password uses bcrypt with cost >= 10"
+- "POST /login valid creds → 200 + JWT in response body"
+
+Bad intents:
+- "password works" (vague)
+- "login endpoint" (not a proof — this is a task group title)
+
+### The dod_refine + dod_amend Workflow
+
+During implementation, draft leaves become concrete via `dod_refine`. Concrete proofs that become unreasonable are modified via `dod_amend`.
+
+#### dod_refine — concretize a draft
+
 ```json
 {
   "dod_id": "<id>",
-  "step_index": 2,
-  "proof_index": 0,
-  "new_command": "wc -l src/parser.rs",
-  "new_predicate": {"type": "exit_code", "value": 0},
-  "new_description": "parser.rs exists and is under 200 lines",
-  "reason": "Original 80-line target unreasonable — parser needs full error recovery. All functions ≤15 lines."
+  "node_path": "0.children.1.children.0",
+  "command": "curl -s localhost:3000/api/auth/login -d '{\"email\":\"test@test.com\",\"password\":\"correct\"}' | findstr JWT",
+  "predicate": {"type": "output_contains", "value": "JWT"},
+  "description": "login endpoint returns JWT on valid credentials",
+  "category": "integration_behavioral"
 }
 ```
 
-Rules for amendments:
-- Only amend when the proof is genuinely unreasonable, not when you don't feel like satisfying it
-- The replacement must be a concrete, machine-checkable claim — not a weakened version of the original
-- **Cannot convert a machine-checkable proof to manual** — this is blocked by dod-guard to prevent instant-pass loopholes
-- All amendments are permanently logged with reason in the DoD's audit trail
-- `dod_check` runs the amended proof going forward
+#### dod_amend — modify a concrete proof
 
-#### Proof Categories
+```json
+{
+  "dod_id": "<id>",
+  "node_path": "0.children.0.children.0",
+  "new_command": "npm run lint -- --fix",
+  "new_description": "lint autofixes all issues",
+  "reason": "original broke CI — lint --fix is idempotent"
+}
+```
 
-Use these categories to ensure coverage. Mandatory categories are marked below per company DoD baselines (see Phase 3.5). For concrete commands per language, see `standards/language-commands.md`.
+#### dod_add_node — add discovered proofs
 
-| Category | What it verifies | Example approach | Predicate | Required? |
-|----------|-----------------|-----------------|-----------|-----------|
-| **Lint** (mandatory) | Code quality / SonarQube clean | Run linter on changed files | `output_not_contains` or `exit_code: 0` | Always (delta-scoped in brownfield) |
-| **Format** (mandatory) | Code standards / formatting | Dry-run formatter, count violations, assert `<= FORMAT_BASELINE` | `exit_code: 0` | Always (never auto-format) |
-| **Test** (mandatory) | Full test suite passes | Run full test suite | `exit_code: 0` | Always |
-| **TDD** (mandatory) | Test written before implementation | Run specific new test | `tdd: 0` (must fail first) | Always (regression for bugs, unit for general) |
-| **Structure** (mandatory) | Test has real assertions | grep for assertion patterns | `output_matches` | Always (paired with TDD) |
-| **Mutation** (optional, warned) | Tests actually kill bugs | Run a mutation tool scoped to changed functions | `mutation: N` (survivors ≤ N) | Recommended for critical logic — strongest test-quality signal |
-| **Code Review** (mandatory) | Reviewed by another developer | — | `manual` | Always |
-| **Documentation** (mandatory) | New components documented | find/grep for docs | `exit_code: 0` | General only |
-| **Build** | Compiles without errors | Build command | `exit_code: 0` | Recommended |
-| **Behavior** | Correct runtime behavior | curl/HTTP check | `output_contains` | Feature-specific |
-| **Absence** | Something is NOT present | grep for removed pattern | `exit_code: 1` | Feature-specific |
-| **Pattern absence** | Specific pattern not in output | grep for anti-pattern in new code | `output_not_matches` | Feature-specific |
-| **Contract** | Interface/schema matches spec | grep for function/type signature | `output_matches` | Feature-specific |
-| **Integration** (mandatory) | Feature wired into system AND works through real entry point | Two proofs: (1) grep for wiring (import/registration/route), (2) behavioral test through system entry point | `exit_code: 0` or `output_contains` | **Always** (last machine-checkable step) |
-| **Regression** | Bug doesn't recur | Run bug-specific test | `tdd: 0` (proves test was red) | Bug fixes (via TDD) |
+```json
+{
+  "dod_id": "<id>",
+  "parent_path": "1.children.2",
+  "title": "Rate limiting returns 429",
+  "refinement": "draft",
+  "intent": "POST /login after 5 rapid attempts returns 429"
+}
+```
 
 ## Phase 4.5: Baseline Check
 
-Immediately after `dod_create` succeeds, run `dod_check` once — **before** any implementation. This is a baseline, and it validates two things:
+Immediately after `dod_create` succeeds, run `dod_check` — **before** any implementation. Draft nodes are reported but skipped. Concrete nodes are executed. This validates:
 
-1. **All proofs are RED** — overall **FAIL** is expected and correct here; the feature does not exist yet. TDD proofs in particular MUST be red now (that records the required red phase).
-2. **Every proof command actually runs** — a `command not found` / OS error at baseline means the proof is mis-authored (wrong shell, wrong tool for this OS). Fix it via `dod_amend` now, while it's cheap — not mid-implementation after a 26-amend pileup.
+1. **Concrete proofs that SHOULD be red ARE red** — e.g., TDD proofs fail (records required red phase), `grep` for not-yet-existing code returns exit 1. Expected.
+2. **Every concrete proof command actually runs** — a `command not found` / OS error at baseline means the proof is mis-authored. Fix it via `dod_amend` now.
+3. **Draft nodes are shown** — confirms the structure is correct.
 
 Interpreting the baseline:
-- Proofs failing because the code isn't written yet → good, proceed.
-- Proofs failing because the **command errored** (not found, bad path, tamper) → fix before handing off.
-- A proof that PASSES at baseline (before any code) is suspect — it likely doesn't test the new behavior. Strengthen it.
+- Concrete proofs failing because code doesn't exist yet → good, proceed.
+- Concrete proofs failing because the command errored (not found, bad path) → fix before handing off.
+- A concrete proof that PASSES at baseline (before any code) is suspect — strengthen or turn into draft.
+
+### Phase 4.6: Incremental Refinement During Implementation
+
+The `/goal` agent refines drafts as it implements. The workflow:
+
+1. Agent picks a task group to implement
+2. For each draft leaf in that group, decides the exact command that proves the intent
+3. Calls `dod_refine` to concretize the draft
+4. Runs `dod_check` with `nodePath` to verify just that subtree (fast — scoped)
+5. If proof fails: fix the code, re-run `dod_check`
+6. If proof is unreasonable: `dod_amend` with reason
+7. After all drafts in the DoD are refined and pass: full `dod_check` returns PASS
+
+**Key rule:** Refine drafts only when implementing that part of the code. Don't refine everything upfront — that defeats the purpose.
 
 ## Phase 5: Output /goal Prompt
 
-After the baseline check, always output the `/goal` prompt directly — do NOT offer a choice menu. The user always wants a fresh-context /goal launch after DoD creation.
-
-Output this exact block:
+After the baseline check, output the `/goal` prompt directly:
 
 ```
-DoD created and locked. ID: <dod_id>. Saved to docs/plans/<filename>. <N> steps, <M> proofs.
-
-Goal prompt for fresh context:
+DoD created. ID: <dod_id>. <N> root groups, <M> concrete proofs, <K> draft nodes.
 
 /goal
-<task>Implement all <N> steps in the DoD (ID: <dod_id>).</task>
-<reference>DoD markdown: docs/plans/<filename> — sections and steps are wrapped in semantic XML tags for precise parsing.</reference>
+<task>Implement the DoD (ID: <dod_id>), refining drafts as you go.</task>
+<reference>DoD markdown: docs/plans/<filename></reference>
 <process>
-Work through each step sequentially. After completing a step, call dod_check with `step: N` to verify just that step (fast — other steps are carried, not re-run). If a step has a `manual`/`review` proof, call dod_verify(dod_id, proof_id) once that step's implementation is actually done — dod_check never auto-prompts these. If a proof is unreasonable, call dod_amend with a reason instead of forcing it. When all steps are done, call dod_check with no `step` for the full verdict.
+Work through task groups sequentially. Concrete proofs are verified by dod_check.
+For draft leaves in your current task group: determine the exact command that proves
+the intent, call dod_refine to concretize it, then dod_check with nodePath to verify
+just that subtree. If a concrete proof is unreasonable, dod_amend with a reason.
+Concrete manual/review proofs: call dod_verify once that subtree's implementation is done.
+When all drafts are refined and all concrete proofs pass, run dod_check with no nodePath
+for the full PASS verdict.
 </process>
-<success_criteria>A full dod_check (no `step`) returns overall PASS: every machine-checkable proof passes AND every manual/review proof has been verified via dod_verify. An unverified manual/review proof holds the verdict at INCOMPLETE, not PASS. Scoped (`step: N`) runs also return INCOMPLETE and never satisfy completion.</success_criteria>
-<on_completion>List every remaining manual step the user must complete before this work is done.</on_completion>
+<success_criteria>A full dod_check (no nodePath) returns overall PASS with zero draft nodes.
+An unverified manual/review proof holds the verdict at INCOMPLETE.</success_criteria>
+<on_completion>List every remaining manual step the user must complete.</on_completion>
 ```
 
-Use real XML tags (not placeholders) so the fresh `/goal` agent gets clear signal separation between task, reference, process, and exit conditions. Do NOT add a `<reasoning>` or "think step by step" tag — it competes with the model's native reasoning.
-
-The goal agent must end its work by listing all manual proofs that require human action:
-
-```
-## Manual steps remaining
-
-All machine-checkable proofs pass. The following manual steps still need to happen:
-
-- [ ] Code review: code reviewed by another developer, comments discussed
-- [ ] Application walkthrough: manually verify the running application — check the changed functionality works and existing features aren't broken
-- [ ] Release: deploy to correct environment
-- [ ] Cleanup: remove test databases
-- [ ] (any other manual proofs from the DoD)
-```
-
-This list must be printed even if the goal agent considers the work "done" — machine proofs passing is not the full DoD.
-
-That's it. No AskUserQuestion. No choice menu. Just the goal prompt.
+The goal agent must end by listing all manual proofs requiring human action.
 
 ## Anti-Rationalization Rules
 

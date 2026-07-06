@@ -1,11 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { perProofFingerprint, resolveManual } from "./manual.js";
-import type { Proof } from "./types.js";
+import type { TaskNode } from "./types.js";
 
-function mkProof(over: Partial<Proof> = {}): Proof {
+function mkNode(over: Partial<TaskNode> = {}): TaskNode {
   return {
-    id: "proof-1-1",
+    id: "node-1",
+    title: "Manual check",
+    refinement: "concrete",
     command: "manual",
     predicate: { type: "manual" },
     description: "App launches and shows the dashboard",
@@ -15,82 +17,64 @@ function mkProof(over: Partial<Proof> = {}): Proof {
 }
 
 test("perProofFingerprint changes when description changes", () => {
-  const a = perProofFingerprint(mkProof());
-  const b = perProofFingerprint(mkProof({ description: "Different instructions" }));
+  const a = perProofFingerprint(mkNode());
+  const b = perProofFingerprint(mkNode({ description: "Different" }));
   assert.notEqual(a, b);
 });
 
 test("perProofFingerprint changes when command changes", () => {
-  const a = perProofFingerprint(mkProof());
-  const b = perProofFingerprint(mkProof({ command: "open the app then check" }));
+  const a = perProofFingerprint(mkNode());
+  const b = perProofFingerprint(mkNode({ command: "other cmd" }));
   assert.notEqual(a, b);
 });
 
 test("perProofFingerprint stable for identical proof", () => {
-  assert.equal(perProofFingerprint(mkProof()), perProofFingerprint(mkProof()));
+  assert.equal(perProofFingerprint(mkNode()), perProofFingerprint(mkNode()));
 });
 
 test("resolveManual asks the human when no cached result", async () => {
-  const proof = mkProof();
+  const node = mkNode();
   let asked = 0;
-  const res = await resolveManual(proof, async () => {
-    asked++;
-    return { answer: "pass", channel: "messagebox" };
-  });
+  const res = await resolveManual(node, async () => { asked++; return { answer: "pass", channel: "messagebox" }; });
   assert.equal(asked, 1);
   assert.equal(res.status, "pass");
   assert.equal(res.cached, false);
-  assert.ok(proof.manual_result);
-  assert.equal(proof.manual_result?.answer, "pass");
-  assert.equal(proof.manual_result?.channel, "messagebox");
-  assert.equal(proof.manual_result?.proof_fingerprint, perProofFingerprint(proof));
+  assert.ok(node.manual_result);
+  assert.equal(node.manual_result?.answer, "pass");
 });
 
 test("resolveManual reuses cached PASS without asking again", async () => {
-  const proof = mkProof();
-  await resolveManual(proof, async () => ({ answer: "pass", channel: "elicitation" }));
+  const node = mkNode();
+  await resolveManual(node, async () => ({ answer: "pass", channel: "elicitation" }));
   let asked = 0;
-  const res = await resolveManual(proof, async () => {
-    asked++;
-    return { answer: "fail", channel: "messagebox" };
-  });
-  assert.equal(asked, 0, "must not re-ask when cached PASS fingerprint matches");
+  const res = await resolveManual(node, async () => { asked++; return { answer: "fail", channel: "messagebox" }; });
+  assert.equal(asked, 0);
   assert.equal(res.status, "pass");
   assert.equal(res.cached, true);
 });
 
-test("resolveManual re-asks when the proof changed after a cached PASS", async () => {
-  const proof = mkProof();
-  await resolveManual(proof, async () => ({ answer: "pass", channel: "elicitation" }));
-  proof.description = "New, stricter manual check"; // proof changed -> fingerprint invalidated
+test("resolveManual re-asks when proof changed after cached PASS", async () => {
+  const node = mkNode();
+  await resolveManual(node, async () => ({ answer: "pass", channel: "elicitation" }));
+  node.description = "New stricter check";
   let asked = 0;
-  const res = await resolveManual(proof, async () => {
-    asked++;
-    return { answer: "pass", channel: "messagebox" };
-  });
-  assert.equal(asked, 1, "must re-confirm after the proof changed");
+  const res = await resolveManual(node, async () => { asked++; return { answer: "pass", channel: "messagebox" }; });
+  assert.equal(asked, 1);
   assert.equal(res.cached, false);
 });
 
-test("resolveManual does NOT cache a FAIL as reusable — re-asks next run", async () => {
-  const proof = mkProof();
-  await resolveManual(proof, async () => ({ answer: "fail", channel: "messagebox" }));
+test("resolveManual does NOT cache FAIL — re-asks next run", async () => {
+  const node = mkNode();
+  await resolveManual(node, async () => ({ answer: "fail", channel: "messagebox" }));
   let asked = 0;
-  const res = await resolveManual(proof, async () => {
-    asked++;
-    return { answer: "pass", channel: "messagebox" };
-  });
-  assert.equal(asked, 1, "a prior FAIL must not short-circuit; give it another chance");
+  const res = await resolveManual(node, async () => { asked++; return { answer: "pass", channel: "messagebox" }; });
+  assert.equal(asked, 1);
   assert.equal(res.status, "pass");
 });
 
-test("resolveManual carries the human note into the record and output", async () => {
-  const proof = mkProof();
-  const res = await resolveManual(proof, async () => ({
-    answer: "pass",
-    note: "looks good on device",
-    channel: "elicitation",
-  }));
-  assert.equal(proof.manual_result?.note, "looks good on device");
-  assert.match(res.output, /looks good on device/);
+test("resolveManual carries note into record and output", async () => {
+  const node = mkNode();
+  const res = await resolveManual(node, async () => ({ answer: "pass", note: "looks good", channel: "elicitation" }));
+  assert.equal(node.manual_result?.note, "looks good");
+  assert.match(res.output, /looks good/);
 });

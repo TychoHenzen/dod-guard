@@ -10,8 +10,6 @@ export interface Predicate {
    * `regression` only: true (default when absent) => smaller metric is better
    * (perf/complexity/duplication) and the compare passes iff N1 <= N0*(1+tol).
    * false => larger is better (coverage) and it passes iff N1 >= N0*(1-tol).
-   * Defaulting to lower-is-better is the fail-safe choice: it catches the common
-   * regression even when the author forgets to set the direction.
    */
   lower_is_better?: boolean;
 }
@@ -58,47 +56,54 @@ export interface ManualResult {
   proof_fingerprint: string;
 }
 
-export interface Proof {
+export type ProofRefinement = "draft" | "concrete";
+export type ProofStatus = "draft" | "pending" | "pass" | "fail" | "skipped";
+
+/**
+ * Uniform recursive node type replacing the old Step/Proof split.
+ *
+ * A TaskNode is EITHER:
+ * - A **task group** (has `children`) — further decomposition into sub-tasks.
+ * - A **leaf proof** (no `children`, `refinement` determines state):
+ *   - `draft`: intent-only placeholder, not yet ready to verify.
+ *   - `concrete`: has `command`, `predicate`, `description` — ready to execute.
+ *
+ * Decompose until each leaf is "pure" — one atomic, independently verifiable
+ * behavior. A branch is "locked" when `hasDraftNodes(subtree) === false`.
+ * Locking is computed, never stored.
+ */
+export interface TaskNode {
   id: string;
-  command: string;
-  predicate: Predicate;
-  description: string;
-  /** Baseline category (optional on legacy/imported docs; required by dod_create). */
+  title: string;
+  refinement: ProofRefinement;
+  /** Required when draft: what behavior this node will eventually prove. Cleared on refine. */
+  intent?: string;
+  /** Present → task group (internal node, further decomposition). Absent → leaf. */
+  children?: TaskNode[];
+  // Leaf proof fields (only meaningful when refinement === "concrete"):
+  command?: string;
+  predicate?: Predicate;
+  description?: string;
   category?: ProofCategory;
-  last_status: "pending" | "pass" | "fail" | "skipped";
+  advisory?: boolean;
+  // Runtime state:
+  last_status: ProofStatus;
   last_output?: string;
   last_checked?: string;
   seen_failing?: boolean;
   seen_failing_at?: string;
   manual_result?: ManualResult;
-  /**
-   * `regression` advisory tier: a failing advisory proof is reported loudly but
-   * does NOT make the step or overall result fail. `regression` proofs default
-   * to advisory; set false for a hard SLA gate.
-   */
-  advisory?: boolean;
-  /**
-   * `regression` two-phase state. Undefined => capture phase (run command, store
-   * the metric here, PASS). Defined => compare phase (evaluate N1 vs this N0).
-   * Mutable like seen_failing; NOT part of the proof-set fingerprint.
-   */
   baseline_value?: number;
   baseline_captured_at?: string;
 }
 
-export interface Step {
-  id: string;
-  title: string;
-  proofs: Proof[];
-}
-
 export interface Amendment {
   timestamp: string;
-  step_id: string;
-  proof_id: string;
-  action: "added" | "modified" | "removed";
-  old_value?: Partial<Proof>;
-  new_value?: Partial<Proof>;
+  /** Dot-separated path into doc.roots tree, e.g. "0.children.1". */
+  node_path: string;
+  action: "added" | "modified" | "removed" | "refined";
+  old_value?: Partial<TaskNode>;
+  new_value?: Partial<TaskNode>;
   reason: string;
 }
 
@@ -110,21 +115,25 @@ export interface DodDocument {
   cwd: string;
   markdown_path: string;
   created_at: string;
-  locked: boolean;
   /**
    * Record of why optional baseline categories were deliberately omitted.
-   * Keys are ProofCategory values (e.g. "mutation", "streamline", "observability"),
-   * values are the justification. When an optional category is absent from all
-   * steps AND has no skip_reason entry, dod_create escalates the soft warning to
-   * a hard error — the author must either add the proof or explain the omission.
-   * HARD_MANDATORY categories (integration_wiring, integration_behavioral, test)
-   * cannot be skipped — they are always required regardless of skip_reasons.
+   * Keys are ProofCategory values (e.g. "mutation", "streamline"), values are
+   * the justification. When an optional category is absent from all nodes AND
+   * has no skip_reason entry, baseline validation warns (advisory-only at
+   * creation — categories are filled during refinement).
    */
   skip_reasons?: Record<string, string>;
-  /** Work type, selects the applicable company baseline. Optional on legacy docs. */
+  /** Work type, selects the applicable company baseline. */
   type?: "bug" | "general";
   sections: DodSections;
-  steps: Step[];
+  /** Root-level task nodes — the top of the decomposition tree. */
+  roots: TaskNode[];
+  /**
+   * SHA256 hash of all concrete leaf proofs (command|type|value|advisory|lib).
+   * Recomputes on every mutation (create, refine, amend, add/remove node).
+   * Draft nodes excluded — nothing to hash. Grow as leaves are refined.
+   * Checked for tamper detection on every dod_check.
+   */
   proof_fingerprint?: string;
   amendments: Amendment[];
   last_check?: {
@@ -145,35 +154,34 @@ export interface DodSections {
 
 export interface CheckResult {
   /**
-   * "incomplete" is reserved for scoped (single-step) runs: they verify only the
-   * target step and carry other steps forward, so they can never assert that the
-   * whole DoD is done. Only a full (unscoped) run yields "pass"/"fail".
+   * "incomplete" is reserved for scoped runs AND runs with draft nodes present.
+   * Only a full (unscoped) run with zero drafts yields "pass"/"fail".
+   * "draft" status on individual leaves never blocks pass — only the presence of
+   * unevaluated draft nodes does (via draft_count > 0).
    */
   overall: "pass" | "fail" | "incomplete";
-  steps: StepResult[];
+  leaves: LeafResult[];
   summary: string;
   timestamp: string;
   proof_fingerprint: string;
-  /** True when only one step was executed (`dod_check --step N`); others carried. */
+  /** Number of draft leaves skipped (not executed). >0 means overall "incomplete". */
+  draft_count: number;
+  /** True when only a subtree was executed (`dod_check --node-path ...`); others carried. */
   scoped?: boolean;
-  /** The step id that was freshly executed on a scoped run. */
-  ran_step_id?: string;
+  /** The node path that was freshly executed on a scoped run. */
+  ran_node_path?: string;
   /** True when the recomputed proof-set fingerprint differs from the stored one
    * (store edited outside dod_amend). Forces overall to "fail". */
   tampered?: boolean;
 }
 
-export interface StepResult {
+export interface LeafResult {
+  /** Dot-separated path into doc.roots tree, e.g. "0.children.1". */
+  node_path: string;
   id: string;
   title: string;
-  status: "pass" | "fail";
-  proofs: ProofResult[];
-}
-
-export interface ProofResult {
-  id: string;
   description: string;
-  status: "pass" | "fail" | "skipped";
+  status: "pass" | "fail" | "skipped" | "draft";
   command: string;
   output?: string;
   error?: string;

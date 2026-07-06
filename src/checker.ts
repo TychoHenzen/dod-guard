@@ -1,7 +1,7 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { createHash } from "node:crypto";
-import type { DodDocument, CheckResult, StepResult, ProofResult, Predicate, Proof } from "./types.js";
+import type { DodDocument, CheckResult, LeafResult, Predicate, TaskNode } from "./types.js";
 import { perProofFingerprint } from "./manual.js";
 import { extractNumber } from "./regression.js";
 import { analyseAssertions } from "./assertions.js";
@@ -11,15 +11,90 @@ const execAsync = promisify(exec);
 
 const TIMEOUT_MS = 120_000;
 
+// ── Tree utilities ────────────────────────────────────────────────────
+
+/**
+ * Walk the TaskNode tree depth-first, collecting every concrete leaf
+ * (refinement === "concrete", no children) with its dot-separated path.
+ * Draft leaves and task groups are excluded.
+ */
+export function flattenConcreteLeaves(
+  nodes: TaskNode[],
+  parentPath?: string,
+): { node: TaskNode; node_path: string }[] {
+  const results: { node: TaskNode; node_path: string }[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      results.push(...flattenConcreteLeaves(node.children, currentPath));
+    } else if (node.refinement === "concrete") {
+      results.push({ node, node_path: currentPath });
+    }
+    // Draft leaves are intentionally skipped
+  }
+  return results;
+}
+
+/** True when any node in the subtree is a draft leaf (refinement === "draft"). */
+export function hasDraftNodes(nodes: TaskNode[]): boolean {
+  for (const node of nodes) {
+    if (node.refinement === "draft") return true;
+    if (node.children && hasDraftNodes(node.children)) return true;
+  }
+  return false;
+}
+
+/** Find a node by its dot-separated path, e.g. "0.children.1.children.2". */
+export function findNodeByPath(nodes: TaskNode[], path: string): TaskNode | null {
+  if (!path) return null;
+  const parts = path.split(".");
+  let current: TaskNode[] = nodes;
+  for (let i = 0; i < parts.length; i++) {
+    // Every other segment is "children" (skip it)
+    if (parts[i] === "children") continue;
+    const idx = Number(parts[i]);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= current.length) return null;
+    const node = current[idx];
+    if (i === parts.length - 1 || (i === parts.length - 2 && parts[parts.length - 1] === "children")) {
+      return node;
+    }
+    if (!node.children) return null;
+    current = node.children;
+  }
+  return null;
+}
+
+/** Collect commands from all concrete leaves for OS validation. */
+export function extractCommands(nodes: TaskNode[]): string[] {
+  const cmds: string[] = [];
+  for (const { node } of flattenConcreteLeaves(nodes)) {
+    if (node.command && node.predicate && node.predicate.type !== "manual") {
+      cmds.push(node.command);
+    }
+  }
+  return cmds;
+}
+
+/** True when every leaf in the subtree is concrete (no drafts remaining). */
+export function isBranchLocked(nodes: TaskNode[]): boolean {
+  return !hasDraftNodes(nodes);
+}
+
+/** Count draft leaves in a subtree. */
+export function countDraftNodes(nodes: TaskNode[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.refinement === "draft") count++;
+    if (node.children) count += countDraftNodes(node.children);
+  }
+  return count;
+}
+
+// ── Mutation output parsing ───────────────────────────────────────────
+
 /**
  * Extract the surviving-mutant count from a mutation tool's combined output.
- *
- * Tries built-in patterns for the three supported tools in order: Stryker
- * (JS/TS), mutmut (Python), cargo-mutants (Rust). A "surviving" mutant is one
- * the test suite failed to kill — cargo-mutants calls these "missed", Stryker
- * and mutmut call them "survived". Returns the count, or `null` when no
- * recognised summary matched (the caller treats null as a fail-safe FAIL —
- * never a pass on output it cannot parse).
  */
 export function parseSurvivors(output: string): number | null {
   for (const parser of [parseStryker, parseMutmut, parseCargoMutants]) {
@@ -29,7 +104,6 @@ export function parseSurvivors(output: string): number | null {
   return null;
 }
 
-/** Stryker clear-text reporter: read the "# survived" column of the table. */
 function parseStryker(output: string): number | null {
   const lines = output.split(/\r?\n/);
   const headerIdx = lines.findIndex((l) => l.includes("|") && /#\s*survived/i.test(l));
@@ -43,40 +117,38 @@ function parseStryker(output: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-/** mutmut: the 🙁 marker in run-progress and `mutmut results` legend. */
 function parseMutmut(output: string): number | null {
   const match = output.match(/🙁[^\d]*(\d+)/);
   return match ? Number(match[1]) : null;
 }
 
-/** cargo-mutants summary: "N missed" — missed mutants are survivors. */
 function parseCargoMutants(output: string): number | null {
   const match = output.match(/(\d+)\s+missed\b/);
   return match ? Number(match[1]) : null;
 }
 
+// ── Proof-set fingerprint ─────────────────────────────────────────────
+
 /**
- * Proof-set fingerprint for tamper detection. Hashes each proof's
- * command|type|value (tolerance), plus lower_is_better and advisory ONLY when
- * those fields are present. The conditional append is what keeps the change
- * backward-compatible: a legacy proof (no new fields) hashes exactly as it did
- * before, so existing locked docs do not false-trip tamper detection. New
- * fields, once set, are covered — a hard gate cannot be silently flipped to
- * advisory, nor the compare direction quietly changed, without the hash moving.
+ * Proof-set fingerprint for tamper detection. Hashes every concrete leaf's
+ * command|type|value (+ advisory and lower_is_better when present).
+ * Draft nodes excluded — nothing to hash. Grows as leaves are refined.
  */
-export function computeProofFingerprint(steps: Array<{ proofs: Proof[] }>): string {
-  const data = steps
-    .flatMap((s) =>
-      s.proofs.map((p) => {
-        let line = `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`;
-        if (p.predicate.lower_is_better !== undefined) line += `|lib:${p.predicate.lower_is_better}`;
-        if (p.advisory !== undefined) line += `|adv:${p.advisory}`;
-        return line;
-      }),
-    )
+export function computeProofFingerprint(roots: TaskNode[]): string {
+  const leaves = flattenConcreteLeaves(roots);
+  if (leaves.length === 0) return "";
+  const data = leaves
+    .map(({ node }) => {
+      let line = `${node.command}|${node.predicate!.type}|${node.predicate!.value ?? ""}`;
+      if (node.predicate!.lower_is_better !== undefined) line += `|lib:${node.predicate!.lower_is_better}`;
+      if (node.advisory !== undefined) line += `|adv:${node.advisory}`;
+      return line;
+    })
     .join("\n");
   return createHash("sha256").update(data).digest("hex").slice(0, 12);
 }
+
+// ── Predicate evaluation ──────────────────────────────────────────────
 
 function evaluatePredicate(
   predicate: Predicate,
@@ -97,9 +169,7 @@ function evaluatePredicate(
     case "output_not_matches":
       return !new RegExp(predicate.value as string, "m").test(stdout);
     case "tdd":
-      // TDD evaluation is handled separately in executeProof — this only
-      // checks the "green" condition (command exits with expected code).
-      return exitCode === (predicate.value as number ?? 0);
+      return exitCode === ((predicate.value as number) ?? 0);
     case "manual":
     case "review":
     case "mutation":
@@ -107,18 +177,22 @@ function evaluatePredicate(
     case "assertions":
     case "streamline":
     case "observability":
-      // Out-of-band verdicts are resolved in executeProof, not here.
       return true;
     default:
       return false;
   }
 }
 
-async function runCommand(proof: Proof, cwd: string): Promise<{ exitCode: number; combined: string; duration: number; error?: string; killed?: boolean; notFound?: boolean }> {
+// ── Command execution ─────────────────────────────────────────────────
+
+async function runCommand(command: string, cwd: string): Promise<{
+  exitCode: number; combined: string; duration: number;
+  error?: string; killed?: boolean; notFound?: boolean;
+}> {
   const start = Date.now();
   try {
     const shellCmd = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
-    const { stdout, stderr } = await execAsync(proof.command, {
+    const { stdout, stderr } = await execAsync(command, {
       cwd,
       timeout: TIMEOUT_MS,
       maxBuffer: 10 * 1024 * 1024,
@@ -148,107 +222,110 @@ async function runCommand(proof: Proof, cwd: string): Promise<{ exitCode: number
   }
 }
 
-async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
-  // Out-of-band proofs (manual, review) are verified through a channel the model
-  // cannot drive — never by running a command, and never auto-triggered by
-  // dod_check. `dod_check` only reads back whatever verdict the dedicated
-  // `dod_verify` tool already recorded on `proof.manual_result` (Claude calls
-  // dod_verify explicitly when it judges verification is actually relevant,
-  // e.g. right after implementing the step). No matching record => unverified.
-  if (proof.predicate.type === "manual" || proof.predicate.type === "review") {
-    const isReview = proof.predicate.type === "review";
+// ── Proof execution ───────────────────────────────────────────────────
+
+async function executeProof(node: TaskNode, cwd: string): Promise<LeafResult> {
+  const cmd = node.command!;
+  const leafBase = {
+    node_path: "",
+    id: node.id,
+    title: node.title,
+    description: node.description!,
+    command: cmd,
+  };
+
+  // Out-of-band proofs (manual, review)
+  if (node.predicate!.type === "manual" || node.predicate!.type === "review") {
+    const isReview = node.predicate!.type === "review";
     const label = isReview ? "Code review" : "Manual verification";
-    const fingerprint = perProofFingerprint(proof);
-    const mr = proof.manual_result;
+    const fingerprint = perProofFingerprint(node);
+    const mr = node.manual_result;
 
     if (mr && mr.proof_fingerprint === fingerprint) {
       const output = `${label} ${mr.answer.toUpperCase()} (via dod_verify) at ${mr.confirmed_at} via ${mr.channel}${mr.note ? ` — "${mr.note}"` : ""}`;
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: mr.answer,
-        command: proof.command,
         output,
         error: mr.answer === "fail" ? `${label} was confirmed as failing by the human.` : undefined,
       };
     }
 
     return {
-      id: proof.id,
-      description: proof.description,
+      ...leafBase,
       status: "skipped",
-      command: proof.command,
-      output: `${label} not yet verified — call dod_verify(dod_id, "${proof.id}") to request human confirmation.`,
+      output: `${label} not yet verified — call dod_verify(dod_id, "${node.id}") to request human confirmation.`,
     };
   }
 
-  const run = await runCommand(proof, cwd);
+  const run = await runCommand(cmd, cwd);
 
   if (run.killed || run.notFound) {
     return {
-      id: proof.id, description: proof.description, status: "fail",
-      command: proof.command, output: run.combined, error: run.error,
-      exit_code: run.exitCode, duration_ms: run.duration,
+      ...leafBase,
+      status: "fail",
+      output: run.combined,
+      error: run.error,
+      exit_code: run.exitCode,
+      duration_ms: run.duration,
     };
   }
 
-  // Mutation predicate: parse the surviving-mutant count from the tool output
-  // and PASS iff survivors <= value (default 0). Fail-safe — output we cannot
-  // parse FAILS with an explicit reason, never passes. Runs in-band: tool
-  // not-found / timeout already returned above via runCommand's notFound/killed.
-  if (proof.predicate.type === "mutation") {
-    const maxAllowed = (proof.predicate.value as number) ?? 0;
+  // Mutation predicate
+  if (node.predicate!.type === "mutation") {
+    const maxAllowed = (node.predicate!.value as number) ?? 0;
     const survivors = parseSurvivors(run.combined);
-
     if (survivors === null) {
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: "could not parse mutation results (no recognized Stryker/mutmut/cargo-mutants summary)",
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
-
     const passed = survivors <= maxAllowed;
     return {
-      id: proof.id, description: proof.description, status: passed ? "pass" : "fail",
-      command: proof.command, output: run.combined,
+      ...leafBase,
+      status: passed ? "pass" : "fail",
+      output: run.combined,
       error: passed ? undefined : `mutation: ${survivors} surviving mutant(s) exceeds the allowed maximum of ${maxAllowed}`,
-      exit_code: run.exitCode, duration_ms: run.duration,
+      exit_code: run.exitCode,
+      duration_ms: run.duration,
     };
   }
 
-  // Regression predicate: two-phase, keyed by whether a baseline is captured.
-  // Fail-safe — output with no parseable metric FAILS, never auto-passes.
-  if (proof.predicate.type === "regression") {
-    const measured = extractNumber(run.combined, proof.predicate.extract);
-
+  // Regression predicate
+  if (node.predicate!.type === "regression") {
+    const measured = extractNumber(run.combined, node.predicate!.extract);
     if (measured === null) {
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: "regression: could not parse a metric number from output (fail-safe — never auto-passes)",
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
-    // Capture phase: no baseline yet → store this PRE-change metric and PASS.
-    // This run is expected on pre-change code (ordered capture step).
-    if (proof.baseline_value === undefined) {
-      proof.baseline_value = measured;
-      proof.baseline_captured_at = new Date().toISOString();
+    if (node.baseline_value === undefined) {
+      node.baseline_value = measured;
+      node.baseline_captured_at = new Date().toISOString();
       return {
-        id: proof.id, description: proof.description, status: "pass",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "pass",
+        output: run.combined,
         error: `regression: baseline captured (N0=${measured}). Re-run after the change to compare.`,
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
-    // Compare phase: evaluate the new metric against the stored baseline.
-    const baseline = proof.baseline_value;
-    const tol = (proof.predicate.value as number) ?? 0;
-    const lowerIsBetter = proof.predicate.lower_is_better ?? true;
+    const baseline = node.baseline_value;
+    const tol = (node.predicate!.value as number) ?? 0;
+    const lowerIsBetter = node.predicate!.lower_is_better ?? true;
     const passed = lowerIsBetter
       ? measured <= baseline * (1 + tol)
       : measured >= baseline * (1 - tol);
@@ -256,43 +333,43 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
     const direction = lowerIsBetter ? "<=" : ">=";
     const threshold = lowerIsBetter ? baseline * (1 + tol) : baseline * (1 - tol);
     return {
-      id: proof.id, description: proof.description, status: passed ? "pass" : "fail",
-      command: proof.command, output: run.combined,
+      ...leafBase,
+      status: passed ? "pass" : "fail",
+      output: run.combined,
       error: passed
         ? undefined
         : `regression: ${measured} fails ${direction} ${threshold} (baseline ${baseline}, tolerance ${tol})`,
-      exit_code: run.exitCode, duration_ms: run.duration,
+      exit_code: run.exitCode,
+      duration_ms: run.duration,
     };
   }
 
-  // Streamline predicate: proves absence — the search command must find NOTHING.
-  // Used to verify old implementations were removed when revising functionality.
-  // Exit 1 (grep: no matches) → PASS. Exit 0 (matches found) → count lines,
-  // PASS iff count <= value (default 0). Exit >1 → FAIL (search tool error).
-  if (proof.predicate.type === "streamline") {
-    const maxAllowed = (proof.predicate.value as number) ?? 0;
+  // Streamline predicate
+  if (node.predicate!.type === "streamline") {
+    const maxAllowed = (node.predicate!.value as number) ?? 0;
 
-    // Exit > 1: search tool error (e.g. file not found, permission denied)
     if (run.exitCode > 1) {
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: `streamline: search command failed with exit code ${run.exitCode} (fail-safe — never auto-passes on tool errors)`,
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
-    // Exit 1: no matches found (grep/rg/findstr convention)
     if (run.exitCode === 1) {
       return {
-        id: proof.id, description: proof.description, status: "pass",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "pass",
+        output: run.combined,
         error: "streamline: no matches — old code fully removed",
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
-    // Exit 0: count non-empty output lines as matches
     const matchCount = run.combined
       .split(/\r?\n/)
       .filter((l) => l.trim().length > 0)
@@ -300,22 +377,21 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
 
     const passed = matchCount <= maxAllowed;
     return {
-      id: proof.id, description: proof.description, status: passed ? "pass" : "fail",
-      command: proof.command, output: run.combined,
+      ...leafBase,
+      status: passed ? "pass" : "fail",
+      output: run.combined,
       error: passed
         ? `streamline: ${matchCount} match(es) ≤ allowed ${maxAllowed}`
         : `streamline: ${matchCount} remaining reference(s) exceeds allowed maximum of ${maxAllowed} — old code has not been fully removed`,
-      exit_code: run.exitCode, duration_ms: run.duration,
+      exit_code: run.exitCode,
+      duration_ms: run.duration,
     };
   }
 
-  // Assertions predicate: runs the test command AND validates that test files
-  // contain non-trivial behavioural assertions — not just `assert True` or
-  // `expect(true).toBe(true)`. Prevents the "grep for assert keyword" loophole
-  // where a proof appears to check assertions but actually verifies nothing.
-  if (proof.predicate.type === "assertions") {
-    const minNonTrivial = (proof.predicate.value as number) ?? 1;
-    const report = analyseAssertions(proof.command, cwd);
+  // Assertions predicate
+  if (node.predicate!.type === "assertions") {
+    const minNonTrivial = (node.predicate!.value as number) ?? 1;
+    const report = analyseAssertions(cmd, cwd);
 
     const exitPass = run.exitCode === 0;
     const noFiles = !report;
@@ -323,94 +399,91 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
     const allTrivial = report && report.total > 0 && report.nonTrivial === 0;
 
     if (!exitPass) {
-      // Tests didn't pass — same as the first half of the TDD check.
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: `tests failed with exit code ${run.exitCode}${report ? `. Test files have ${report.total} assertion(s), ${report.nonTrivial} non-trivial.` : ""}`,
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
     if (noFiles) {
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: "assertions: could not identify any test files from the command. Ensure the command references test files by path (e.g. `python -m pytest tests/test_foo.py`).",
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
     if (allTrivial) {
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: [
           `ASSERTION QUALITY FAIL: all ${report.total} assertion(s) in ${report.files.length} test file(s) are trivial (constant-on-constant).`,
           "These tests pass unconditionally and exercise zero production logic.",
           ...report.perFile.map((f) => `  ${f.file}: ${f.total} assertion(s), ${f.trivial} trivial`),
           "Replace trivial assertions with behavioural checks against real inputs/outputs.",
         ].join("\n"),
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
     if (tooFew) {
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: [
           `assertions: only ${report.nonTrivial} non-trivial assertion(s) found across ${report.files.length} test file(s), need at least ${minNonTrivial}.`,
           ...report.perFile.map((f) => `  ${f.file}: ${f.total} total, ${f.trivial} trivial, ${f.total - f.trivial} non-trivial`),
         ].join("\n"),
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
-    // Tests pass AND sufficient non-trivial assertions exist.
     return {
-      id: proof.id, description: proof.description, status: "pass",
-      command: proof.command, output: run.combined,
+      ...leafBase,
+      status: "pass",
+      output: run.combined,
       error: `assertions: ${report.nonTrivial} non-trivial assertion(s) across ${report.files.length} test file(s) (${report.total} total, ${report.trivial} trivial)`,
-      exit_code: run.exitCode, duration_ms: run.duration,
+      exit_code: run.exitCode,
+      duration_ms: run.duration,
     };
   }
 
-  // Observability predicate: scans changed source files for logging patterns,
-  // error handlers with instrumentation, and anti-patterns (empty catch,
-  // swallowed errors, bare static log messages). Runs the command to discover
-  // which files to scan, then statically analyzes each one — same two-tier
-  // approach as assertions (command tokens + command output).
-  if (proof.predicate.type === "observability") {
-    const minLogStatements = (proof.predicate.value as number) ?? 1;
-
-    // Try command tokens first (e.g. `python -m pytest tests/test_foo.py`)
-    let report = analyseObservability(proof.command, cwd);
-    // If no files found from tokens, try parsing the command output
+  // Observability predicate
+  if (node.predicate!.type === "observability") {
+    const minLogStatements = (node.predicate!.value as number) ?? 1;
+    let report = analyseObservability(cmd, cwd);
     if (!report) {
       report = analyseObservabilityFromOutput(run.combined, cwd);
     }
 
     if (!report) {
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: "observability: could not identify any source files from the command or its output. Ensure the command references source files by path (e.g. `git diff --name-only HEAD~1 -- '*.ts'` or `python -m pytest tests/test_foo.py`).",
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
-    // Log statement count check
     const tooFewLogs = report.totalLogStatements < minLogStatements;
-
-    // Error handlers without logging
     const unloggedErrors = report.totalErrorHandlers - report.errorHandlersLogged;
-
-    // Anti-patterns
     const hasAntiPatterns = report.antiPatterns.length > 0;
 
     if (!tooFewLogs && unloggedErrors === 0 && !hasAntiPatterns) {
-      // Everything passes
       const lines: string[] = [
         `observability: ${report.totalLogStatements} log statement(s) across ${report.files.length} file(s)`,
         `  error handlers: ${report.totalErrorHandlers} total, ${report.errorHandlersLogged} logged`,
@@ -419,25 +492,20 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
         lines.push(`  ${f.file}: ${f.logCount} logs, ${f.errorHandlers} handlers (${f.errorHandlersLogged} logged)${f.antiPatterns.length > 0 ? `, ${f.antiPatterns.length} anti-pattern(s)` : ""}`);
       }
       return {
-        id: proof.id, description: proof.description, status: "pass",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "pass",
+        output: run.combined,
         error: lines.join("\n"),
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
-    // Build failure report
     const errors: string[] = [];
     if (tooFewLogs) {
       errors.push(`OBSERVABILITY FAIL: only ${report.totalLogStatements} log statement(s) found across ${report.files.length} file(s), need at least ${minLogStatements}.`);
     }
     if (unloggedErrors > 0) {
-      const list = report.perFile
-        .flatMap((f) => {
-          // Re-scan to get error handler details
-          return [];
-        })
-        .join("\n");
       errors.push(`OBSERVABILITY FAIL: ${unloggedErrors} error handler(s) without logging across ${report.files.length} file(s). Every catch/except/Err branch must log before handling.`);
     }
     if (hasAntiPatterns) {
@@ -447,7 +515,6 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
         errors.push(`  ${ap.file}:${ap.line} — ${kindLabel}: ${ap.snippet}`);
       }
     }
-    // Per-file summary
     errors.push("", "Per-file breakdown:");
     for (const f of report.perFile) {
       const status = f.logCount >= 1 && f.errorHandlersLogged === f.errorHandlers && f.antiPatterns.length === 0 ? "✓" : "✗";
@@ -455,58 +522,58 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
     }
 
     return {
-      id: proof.id, description: proof.description, status: "fail",
-      command: proof.command, output: run.combined,
+      ...leafBase,
+      status: "fail",
+      output: run.combined,
       error: errors.join("\n"),
-      exit_code: run.exitCode, duration_ms: run.duration,
+      exit_code: run.exitCode,
+      duration_ms: run.duration,
     };
   }
 
-  // TDD predicate: must have been observed failing before it can pass.
-  // Also scans test files for trivial assertions (assert True,
-  // expect(true).toBe(true)) so the "grep for assert keyword" loophole is
-  // closed — TDD proofs now require meaningful behavioural assertions, not
-  // just the word "assert" in a file.
-  if (proof.predicate.type === "tdd") {
-    const greenExitCode = (proof.predicate.value as number) ?? 0;
+  // TDD predicate
+  if (node.predicate!.type === "tdd") {
+    const greenExitCode = (node.predicate!.value as number) ?? 0;
     const isGreen = run.exitCode === greenExitCode;
 
     if (!isGreen) {
-      // Test is currently failing (RED phase) — record it
-      proof.seen_failing = true;
-      proof.seen_failing_at = proof.seen_failing_at ?? new Date().toISOString();
+      node.seen_failing = true;
+      node.seen_failing_at = node.seen_failing_at ?? new Date().toISOString();
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined, error: run.error,
-        exit_code: run.exitCode, duration_ms: run.duration,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
+        error: run.error,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
-    if (isGreen && !proof.seen_failing) {
-      // Test passes but was never seen failing — TDD violation
+    if (isGreen && !node.seen_failing) {
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: "TDD VIOLATION: test passed without ever failing. Write a failing test first, run dod_check to record the red phase, then implement.",
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
-    // isGreen && seen_failing — TDD cycle satisfied. Now validate assertion
-    // quality: scan test files for trivial constant-on-constant assertions.
-    const assertionReport = analyseAssertions(proof.command, cwd);
-
+    const assertionReport = analyseAssertions(cmd, cwd);
     if (assertionReport && assertionReport.total > 0 && assertionReport.nonTrivial === 0) {
       return {
-        id: proof.id, description: proof.description, status: "fail",
-        command: proof.command, output: run.combined,
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
         error: [
           `TDD ASSERTION QUALITY FAIL: all ${assertionReport.total} assertion(s) in ${assertionReport.files.length} test file(s) are trivial (constant-on-constant).`,
           "The RED→GREEN cycle was observed, but these tests exercise zero production logic.",
           ...assertionReport.perFile.map((f) => `  ${f.file}: ${f.total} assertion(s), ${f.trivial} trivial`),
           "Replace trivial assertions with behavioural checks against real inputs/outputs, then re-run dod_check.",
         ].join("\n"),
-        exit_code: run.exitCode, duration_ms: run.duration,
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
       };
     }
 
@@ -514,137 +581,277 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
       ? ` | assertions: ${assertionReport.nonTrivial} non-trivial across ${assertionReport.files.length} file(s)`
       : "";
 
-    // isGreen && seen_failing — TDD complete
     return {
-      id: proof.id, description: proof.description, status: "pass",
-      command: proof.command, output: run.combined,
+      ...leafBase,
+      status: "pass",
+      output: run.combined,
       error: `TDD cycle verified (seen failing → now passing)${assertionNote}`,
-      exit_code: run.exitCode, duration_ms: run.duration,
+      exit_code: run.exitCode,
+      duration_ms: run.duration,
     };
   }
 
-  const passed = evaluatePredicate(proof.predicate, run.exitCode, run.combined);
+  // Fallthrough: basic predicates
+  const passed = evaluatePredicate(node.predicate!, run.exitCode, run.combined);
   return {
-    id: proof.id, description: proof.description, status: passed ? "pass" : "fail",
-    command: proof.command, output: run.combined, error: run.error,
-    exit_code: run.exitCode, duration_ms: run.duration,
+    ...leafBase,
+    status: passed ? "pass" : "fail",
+    output: run.combined,
+    error: run.error,
+    exit_code: run.exitCode,
+    duration_ms: run.duration,
+  };
+}
+
+// ── Carry-forward (scoped runs) ───────────────────────────────────────
+
+/**
+ * Build a LeafResult from a concrete node's persisted state, without executing.
+ * Used for nodes outside the target subtree on scoped runs.
+ */
+function carryForwardNode(node: TaskNode, node_path: string): LeafResult {
+  return {
+    node_path,
+    id: node.id,
+    title: node.title,
+    description: node.description ?? node.intent ?? node.title,
+    status: node.last_status === "pending" || node.last_status === "draft" ? "skipped" : node.last_status as LeafResult["status"],
+    command: node.command ?? "",
+    output: node.last_output,
   };
 }
 
 /**
- * Build a step result from each proof's persisted last_status WITHOUT executing
- * any command. Used for steps other than the target on a scoped run, so a
- * `--step N` check costs only the target step's proofs.
+ * Flatten all concrete leaves, carrying forward all of them without execution.
+ * Used for nodes outside the scoped subtree.
  */
-function carryForwardStep(step: DodDocument["steps"][number]): StepResult {
-  const proofs: ProofResult[] = step.proofs.map((p) => ({
-    id: p.id,
-    description: p.description,
-    // A never-run proof (last_status "pending") has no result to carry; surface
-    // it as "skipped" for display. It is not persisted on a scoped run.
-    status: p.last_status === "pending" ? "skipped" : p.last_status,
-    command: p.command,
-    output: p.last_output,
-  }));
-  const allPass = step.proofs.length > 0 && step.proofs.every((p) => p.last_status === "pass");
-  return { id: step.id, title: step.title, status: allPass ? "pass" : "fail", proofs };
+function carryForwardAll(nodes: TaskNode[], parentPath?: string): LeafResult[] {
+  const results: LeafResult[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      results.push(...carryForwardAll(node.children, currentPath));
+    } else if (node.refinement === "concrete") {
+      results.push(carryForwardNode(node, currentPath));
+    }
+    // Draft leaves: also carried forward
+    if (node.refinement === "draft") {
+      results.push({
+        node_path: currentPath,
+        id: node.id,
+        title: node.title,
+        description: node.intent ?? node.title,
+        status: "draft",
+        command: "",
+        output: "DRAFT — refine with dod_refine before this proof can be verified.",
+      });
+    }
+  }
+  return results;
 }
+
+/**
+ * Collect all leaves (concrete + draft) under a specific node path.
+ * Returns {inScope, outOfScope} where inScope are the matching subtree.
+ */
+function partitionLeaves(
+  roots: TaskNode[],
+  targetPath?: string,
+): { inScope: { node: TaskNode; node_path: string }[]; outOfScope: { node: TaskNode; node_path: string }[] } {
+  if (!targetPath) {
+    // No scoping: everything is in-scope
+    const allLeaves: { node: TaskNode; node_path: string }[] = [];
+    const allDrafts: { node: TaskNode; node_path: string }[] = [];
+    collectAllLeaves(roots, "", allLeaves, allDrafts);
+    return { inScope: allLeaves.filter(l => l.node.refinement === "concrete"), outOfScope: [] };
+  }
+
+  // Find the target node
+  const target = findNodeByPath(roots, targetPath);
+  if (!target) return { inScope: [], outOfScope: [] };
+
+  // Collect leaves under target (in scope)
+  const inScope: { node: TaskNode; node_path: string }[] = [];
+  if (target.children) {
+    flattenTargetLeaves(target.children, targetPath, inScope);
+  } else if (target.refinement === "concrete") {
+    inScope.push({ node: target, node_path: targetPath });
+  }
+
+  // Collect ALL leaves, then filter out those in scope
+  const allLeaves = flattenConcreteLeaves(roots);
+  const inScopePaths = new Set(inScope.map(l => l.node_path));
+  const outOfScope = allLeaves.filter(l => !inScopePaths.has(l.node_path));
+
+  return { inScope, outOfScope };
+}
+
+function flattenTargetLeaves(
+  nodes: TaskNode[],
+  parentPath: string,
+  out: { node: TaskNode; node_path: string }[],
+): void {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = `${parentPath}.children.${i}`;
+    if (node.children && node.children.length > 0) {
+      flattenTargetLeaves(node.children, currentPath, out);
+    } else if (node.refinement === "concrete") {
+      out.push({ node, node_path: currentPath });
+    }
+  }
+}
+
+function collectAllLeaves(
+  nodes: TaskNode[],
+  parentPath: string,
+  concrete: { node: TaskNode; node_path: string }[],
+  drafts: { node: TaskNode; node_path: string }[],
+): void {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      collectAllLeaves(node.children, currentPath, concrete, drafts);
+    } else if (node.refinement === "concrete") {
+      concrete.push({ node, node_path: currentPath });
+    } else if (node.refinement === "draft") {
+      drafts.push({ node, node_path: currentPath });
+    }
+  }
+}
+
+// ── Main entry point ──────────────────────────────────────────────────
 
 export async function checkDocument(
   doc: DodDocument,
   cwdOverride?: string,
-  opts?: { stepId?: string },
+  opts?: { nodePath?: string },
 ): Promise<CheckResult> {
   const cwd = cwdOverride ?? doc.cwd;
-  const scopedStepId = opts?.stepId;
-  const stepResults: StepResult[] = [];
-  let totalPass = 0;
-  let totalFail = 0;
-  // Distinguish a real failure (blocks overall FAIL) from a manual/review proof
-  // that simply hasn't been verified yet via dod_verify this run (blocks overall
-  // only to INCOMPLETE — "not yet checked", not "checked and failed").
+  const targetPath = opts?.nodePath;
+
+  const { inScope, outOfScope } = partitionLeaves(doc.roots, targetPath);
+  const draftCount = countDraftNodes(doc.roots);
+
+  const leafResults: LeafResult[] = [];
+
+  // Carry forward out-of-scope leaves (scoped runs only)
+  if (targetPath && outOfScope.length > 0) {
+    for (const { node, node_path } of outOfScope) {
+      leafResults.push(carryForwardNode(node, node_path));
+    }
+    // Also carry forward draft leaves
+    carryForwardDrafts(doc.roots, "", targetPath, leafResults);
+  }
+
+  // Execute in-scope leaves
   let anyRealFail = false;
   let anyUnverified = false;
 
-  for (const step of doc.steps) {
-    // Scoped run: execute only the target step; carry the rest forward unrun.
-    if (scopedStepId && step.id !== scopedStepId) {
-      const carried = carryForwardStep(step);
-      stepResults.push(carried);
-      if (carried.status === "pass") totalPass++;
-      else totalFail++;
-      continue;
+  for (const { node, node_path } of inScope) {
+    // Attach the path for result identification
+    const result = await executeProof(node, cwd);
+    result.node_path = node_path;
+    leafResults.push(result);
+
+    if (result.status === "fail" && !node.advisory) {
+      anyRealFail = true;
     }
-
-    const proofResults: ProofResult[] = [];
-    let stepPassed = true;
-
-    for (const proof of step.proofs) {
-      const result = await executeProof(proof, cwd);
-      proofResults.push(result);
-      // Advisory tier: a failing advisory proof is reported (status stays "fail",
-      // warning loudly) but does NOT fail the step or the overall result.
-      if (result.status === "fail" && !proof.advisory) { stepPassed = false; anyRealFail = true; }
-      // An unverified manual/review proof holds the step (and overall) short of
-      // PASS too, but as "incomplete" rather than "fail" — see anyUnverified above.
-      if (result.status === "skipped" && !proof.advisory) { stepPassed = false; anyUnverified = true; }
+    if (result.status === "skipped" && !node.advisory) {
+      anyUnverified = true;
     }
-
-    // A step with no proofs at all cannot pass. Manual proofs are now first-class
-    // (verified by a human via dod_verify), so an all-manual step CAN pass once
-    // dod_verify has recorded a PASS for each of them.
-    if (step.proofs.length === 0) stepPassed = false;
-
-    stepResults.push({
-      id: step.id,
-      title: step.title,
-      status: stepPassed ? "pass" : "fail",
-      proofs: proofResults,
-    });
-    if (stepPassed) totalPass++;
-    else totalFail++;
   }
 
-  // Proof-set fingerprint: hash of all (command, predicate) pairs (+ new fields
-  // when present). If proofs are tampered in the store, the fingerprint changes —
-  // humans reviewing the transcript can compare it to the original.
-  const proofFingerprint = computeProofFingerprint(doc.steps);
+  // If not scoped, also add draft leaf results
+  if (!targetPath) {
+    addDraftLeafResults(doc.roots, "", leafResults);
+  }
 
-  // Tamper detection: the stored fingerprint was set by dod_create/dod_amend. If
-  // the recomputed set differs, the store was edited outside dod_amend — block.
+  // Proof-set fingerprint
+  const proofFingerprint = computeProofFingerprint(doc.roots);
+
+  // Tamper detection
   const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
 
-  // A scoped run verifies only one step, so it can never assert the whole DoD is
-  // done — overall is always "incomplete". Only a full run yields pass/fail/
-  // incomplete. Tamper always forces "fail", overriding everything else; a real
-  // failure forces "fail" over "incomplete"; an unverified manual/review proof
-  // (and nothing worse) holds the verdict at "incomplete" until dod_verify runs.
+  // Overall verdict
   const overall: CheckResult["overall"] = tampered
     ? "fail"
-    : scopedStepId
+    : targetPath
       ? "incomplete"
-      : anyRealFail
-        ? "fail"
-        : anyUnverified
-          ? "incomplete"
-          : "pass";
+      : draftCount > 0
+        ? "incomplete"
+        : anyRealFail
+          ? "fail"
+          : anyUnverified
+            ? "incomplete"
+            : "pass";
 
-  const baseSummary = scopedStepId
-    ? `SCOPED (step "${scopedStepId}"): ${totalPass}/${doc.steps.length} steps currently pass — run a full dod_check (no step) to verify completion`
-    : `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`;
+  const baseSummary = targetPath
+    ? `SCOPED (node "${targetPath}"): run a full dod_check (no nodePath) to verify completion`
+    : `${leafResults.filter(r => r.status === "pass").length}/${leafResults.filter(r => r.status !== "draft").length} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
+
   const summary = tampered
     ? `TAMPER DETECTED — proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}`
-    : !scopedStepId && anyUnverified && !anyRealFail
-      ? `${baseSummary} — one or more manual/review proofs await dod_verify`
-      : baseSummary;
+    : !targetPath && draftCount > 0
+      ? `${baseSummary} — use dod_refine to concretize draft nodes`
+      : !targetPath && anyUnverified && !anyRealFail
+        ? `${baseSummary} — one or more manual/review proofs await dod_verify`
+        : baseSummary;
 
   return {
     overall,
-    steps: stepResults,
+    leaves: leafResults,
     summary,
     timestamp: new Date().toISOString(),
     proof_fingerprint: proofFingerprint,
-    ...(scopedStepId ? { scoped: true, ran_step_id: scopedStepId } : {}),
+    draft_count: draftCount,
+    ...(targetPath ? { scoped: true, ran_node_path: targetPath } : {}),
     ...(tampered ? { tampered: true } : {}),
   };
+}
+
+/** Helper: add draft LeafResults for all draft nodes in the tree. */
+function addDraftLeafResults(nodes: TaskNode[], parentPath: string, out: LeafResult[]): void {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      addDraftLeafResults(node.children, currentPath, out);
+    } else if (node.refinement === "draft") {
+      out.push({
+        node_path: currentPath,
+        id: node.id,
+        title: node.title,
+        description: node.intent ?? node.title,
+        status: "draft",
+        command: "",
+        output: "DRAFT — refine with dod_refine before this proof can be verified.",
+      });
+    }
+  }
+}
+
+/** Helper: carry forward draft leaves for scoped runs. */
+function carryForwardDrafts(nodes: TaskNode[], parentPath: string, targetPath: string, out: LeafResult[]): void {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      // Only descend into children if targetPath starts with this prefix
+      if (targetPath.startsWith(currentPath)) continue; // in scope, handled by execute
+      carryForwardDrafts(node.children, currentPath, targetPath, out);
+    } else if (node.refinement === "draft" && !targetPath.startsWith(currentPath)) {
+      out.push({
+        node_path: currentPath,
+        id: node.id,
+        title: node.title,
+        description: node.intent ?? node.title,
+        status: "draft",
+        command: "",
+        output: "DRAFT — refine with dod_refine before this proof can be verified.",
+      });
+    }
+  }
 }
