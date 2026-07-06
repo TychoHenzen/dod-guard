@@ -2,11 +2,16 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import * as path from "node:path";
+import * as os from "node:os";
 import { analyseObservability, analyseObservabilityFromOutput } from "./observability.js";
 
 // ── Test fixtures ────────────────────────────────────────────────────────
 
-const TMP = path.resolve(process.cwd(), "test-observability-tmp");
+let TMP: string;
+
+test.beforeEach(() => {
+  TMP = path.resolve(os.tmpdir(), `obs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+});
 
 function setup(...files: Array<{ name: string; content: string }>) {
   if (existsSync(TMP)) rmSync(TMP, { recursive: true, force: true });
@@ -64,7 +69,7 @@ test("detects uppercase extension files (.TS)", () => {
   setup({ name: "app.TS", content: "console.log('hi');" });
   const report = analyseObservability("node app.TS", TMP);
   assert.ok(report, "should detect uppercase .TS files");
-  assert.ok(report!.files.length >= 1, "should find at least one file");
+  assert.equal(report!.files.length, 1, "should find exactly one file");
   assert.ok(report!.files[0].endsWith("app.TS"), "report should reference the uppercase file");
 });
 
@@ -210,8 +215,8 @@ test("detects Rust error handlers", () => {
   });
   const report = analyseObservability("cargo build lib.rs", TMP);
   assert.ok(report, "should return a report for Rust error handlers");
-  assert.ok(report!.totalErrorHandlers >= 1, "should detect at least one error handler");
-  assert.equal(report!.errorHandlersLogged, report!.totalErrorHandlers, "all error handlers should be logged");
+  assert.equal(report!.totalErrorHandlers, 2, "should detect two error handler constructs");
+  assert.equal(report!.errorHandlersLogged, 2, "both error handler constructs should count as logged");
 });
 
 // ── Anti-pattern detection ────────────────────────────────────────────────
@@ -312,7 +317,7 @@ test("flags bare static log messages (Python)", () => {
   const report = analyseObservability("python app.py", TMP);
   assert.ok(report, "should return a report for Python bare logs");
   const bare = report!.antiPatterns.filter((a) => a.kind === "bare_log");
-  assert.ok(bare.length >= 1, "at least one bare string log should be flagged");
+  assert.equal(bare.length, 2, '"failed" and "ok" should be flagged as bare');
 });
 
 test("flags bare static log messages (Rust)", () => {
@@ -396,8 +401,9 @@ test("PASSES when all conditions met", () => {
   });
   const report = analyseObservability("tsc app.ts", TMP);
   assert.ok(report, "should return a report for composite pass test");
-  assert.ok(report!.totalLogStatements >= 2, "should have enough log statements");
-  assert.equal(report!.errorHandlersLogged, report!.totalErrorHandlers, "all error handlers logged");
+  assert.equal(report!.totalLogStatements, 3, "should have 3 log statements");
+  assert.equal(report!.errorHandlersLogged, 1, "the one error handler should be logged");
+  assert.equal(report!.totalErrorHandlers, 1, "should detect exactly one error handler");
   assert.equal(report!.antiPatterns.length, 0, "no anti-patterns");
 });
 
@@ -451,8 +457,8 @@ test("provides per-file breakdown in report", () => {
   const bad = report!.perFile.find((f) => f.file.includes("bad"));
   assert.ok(good, "should have good.ts entry");
   assert.ok(bad, "should have bad.ts entry");
-  assert.ok(good!.logCount >= 2, "good.ts should have at least 2 log statements");
-  assert.ok(bad!.antiPatterns.length >= 1, "bad.ts should have at least 1 anti-pattern");
+  assert.equal(good!.logCount, 2, "good.ts should have exactly 2 log statements");
+  assert.equal(bad!.antiPatterns.length, 1, "bad.ts should have exactly 1 anti-pattern");
 });
 
 // ── Python f-string not flagged as bare ───────────────────────────────────
@@ -509,4 +515,42 @@ test("handles whitespace-only source files", () => {
 test("handles missing source file gracefully", () => {
   const report = analyseObservability("tsc nonexistent.ts", TMP);
   assert.equal(report, null, "missing file should produce null report");
+});
+
+// ── Deep nesting & mixed environments ────────────────────────────────────
+
+test("scans deeply nested source files", () => {
+  const nestedPath = path.join("src", "lib", "util", "helpers", "strings.ts");
+  setup({ name: nestedPath, content: 'console.log("nested");' });
+  const report = analyseObservability(`tsc ${nestedPath}`, TMP);
+  assert.ok(report, "should scan deeply nested files");
+  assert.equal(report!.files.length, 1, "should find the deeply nested file");
+  assert.equal(report!.totalLogStatements, 1, "should count the nested file's log");
+});
+
+test("handles mixed-language projects in single scan", () => {
+  setup(
+    { name: "src/app.ts", content: 'console.log("ts");' },
+    { name: "src/util.py", content: 'logger.info("py")' },
+    { name: "src/lib.rs", content: 'error!("rs");' },
+  );
+  const report = analyseObservability("make build src/app.ts src/util.py src/lib.rs", TMP);
+  assert.ok(report, "should handle mixed-language projects");
+  assert.equal(report!.files.length, 3, "should find all three source files");
+  assert.equal(report!.totalLogStatements, 3, "should count one log per language");
+});
+
+test("handles Windows backslash path separators in command", () => {
+  setup({ name: "src\\app.ts", content: 'console.log("win");' });
+  const report = analyseObservability("tsc src\\app.ts", TMP);
+  assert.ok(report, "should handle backslash paths");
+  assert.equal(report!.files.length, 1, "should find the win-path file");
+});
+
+test("handles Windows backslash paths from output", () => {
+  setup({ name: "src\\lib\\util.ts", content: 'console.error("err");' });
+  const output = "src\\lib\\util.ts\npackage.json\n";
+  const report = analyseObservabilityFromOutput(output, TMP);
+  assert.ok(report, "should handle backslash paths from output");
+  assert.equal(report!.files.length, 1, "should find file with backslash path");
 });

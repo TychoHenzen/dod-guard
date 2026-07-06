@@ -47,6 +47,8 @@ test("does NOT split on operators inside quotes", () => {
 
 test("ignores command substitution punctuation, keeps inner command", () => {
   const names = extractCommandNames("echo $(date)");
+  // Sort because $(date) may be extracted before or after echo depending on
+  // token position — order is non-deterministic for inline substitution.
   assert.deepEqual([...names].sort(), ["date", "echo"], "should extract echo and date, no $ punctuation");
 });
 
@@ -68,26 +70,52 @@ test("findMissingTools passes a tool that exists (node)", async () => {
 
 // ── Edge cases: redirection & substitution ───────────────────────────────
 
-test("handles output redirection — extracts all path-like tokens", () => {
+test("handles output redirection — extracts command and fd target", () => {
   const names = extractCommandNames("node app.js > out.txt 2>&1");
   assert.ok(names.includes("node"), "should include node");
-  // The function extracts path-like tokens including redirection targets as a known limitation
-  assert.ok(names.length >= 1, "should extract at least the main command");
+  // 2>&1 redirects stderr to stdout — the fd number 1 is treated as a path-like token
+  assert.ok(names.includes("1"), "should include fd target from 2>&1");
+  assert.equal(names.length, 2, "should extract exactly node and the fd target");
 });
 
 test("handles input redirection — extracts command before <", () => {
   const names = extractCommandNames("node < input.txt");
-  assert.ok(names.includes("node"), "should include node");
-  assert.ok(names.length >= 1, "should extract at least the main command");
+  assert.deepEqual(names, ["node"], "should extract only node from input redirection");
 });
 
 test("backtick command substitution", () => {
   const names = extractCommandNames("echo `date`");
-  assert.ok(names.includes("echo"), "should include echo");
-  assert.ok(names.includes("date"), "should include date from backtick substitution");
+  assert.deepEqual(names, ["echo", "date"], "should extract echo and date from backtick substitution");
 });
 
-test("handles pipes in env assignment values", () => {
+test("handles double-dash separator and equals-sign argument tokens", () => {
   const names = extractCommandNames("npm run test -- --reporter=dot");
   assert.deepEqual(names, ["npm"], "should extract npm, not treat --reporter as pipe target");
+});
+
+// ── findMissingTools coverage ────────────────────────────────────────────
+
+test("findMissingTools returns empty for empty input", async () => {
+  const missing = await findMissingTools([], process.cwd());
+  assert.deepEqual(missing, [], "empty input should produce empty missing list");
+});
+
+test("findMissingTools with mixed existing and missing tools", async () => {
+  const missing = await findMissingTools(
+    ["node --version", "definitely_not_a_real_tool_xyz123 --run"],
+    process.cwd(),
+  );
+  assert.equal(missing.length, 1, "should find exactly one missing tool");
+  assert.equal(missing[0].tool, "definitely_not_a_real_tool_xyz123", "should flag only the fake tool");
+});
+
+// ── suggestionFor coverage ───────────────────────────────────────────────
+
+test("suggestionFor covers common Unix-to-Windows mappings", () => {
+  assert.equal(suggestionFor("ls"), "dir", "ls should map to dir");
+  assert.equal(suggestionFor("rm"), "del  (or rmdir /s for dirs)", "rm should map to del");
+  assert.equal(suggestionFor("which"), "where", "which should map to where");
+  assert.equal(suggestionFor("sed"), "PowerShell -replace", "sed maps to PowerShell -replace");
+  assert.equal(suggestionFor("awk"), "PowerShell", "awk maps to PowerShell");
+  assert.equal(suggestionFor("echo"), undefined, "echo exists on both platforms — no suggestion needed");
 });

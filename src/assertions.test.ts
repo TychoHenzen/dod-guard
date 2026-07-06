@@ -37,7 +37,10 @@ test("analyseAssertions detects trivial Python assertions", () => {
   writeFiles(dir, { "test_trivial.py": "def test_one():\n    assert True\n    assert False\ndef test_two():\n    assert None\n" });
   try {
     const report = analyseAssertions("python -m pytest test_trivial.py", dir);
-    assert.ok(report, "should return a report"); assert.equal(report!.total, 3, `total=3, got ${report!.total}`); assert.equal(report!.trivial, 3, `trivial=3, got ${report!.trivial}`); assert.equal(report!.nonTrivial, 0, `nonTrivial=0, got ${report!.nonTrivial}`);
+    assert.ok(report, "should return a report");
+    assert.equal(report!.total, 3, `total=3, got ${report!.total}`);
+    assert.equal(report!.trivial, 3, `trivial=3, got ${report!.trivial}`);
+    assert.equal(report!.nonTrivial, 0, `nonTrivial=0, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -46,7 +49,9 @@ test("analyseAssertions counts non-trivial Python assertions", () => {
   writeFiles(dir, { "test_real.py": "import math\ndef test_sqrt():\n    assert math.sqrt(4) == 2.0\ndef test_upper():\n    assert 'hello'.upper() == 'HELLO'\n" });
   try {
     const report = analyseAssertions("python -m pytest test_real.py", dir);
-    assert.ok(report, "should return a report"); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.nonTrivial, 2, `nonTrivial=2, got ${report!.nonTrivial}`);
+    assert.ok(report, "should return a report");
+    assert.equal(report!.total, 2, `total=2, got ${report!.total}`);
+    assert.equal(report!.nonTrivial, 2, `nonTrivial=2, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -55,7 +60,10 @@ test("analyseAssertions splits trivial from non-trivial in mixed file", () => {
   writeFiles(dir, { "test_mixed.py": "def test_real():\n    x = 1 + 1\n    assert x == 2\ndef test_fake():\n    assert True\n" });
   try {
     const report = analyseAssertions("python -m pytest test_mixed.py", dir);
-    assert.ok(report, "should return a report"); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.trivial, 1, `trivial=1, got ${report!.trivial}`); assert.equal(report!.nonTrivial, 1, `nonTrivial=1, got ${report!.nonTrivial}`);
+    assert.ok(report, "should return a report");
+    assert.equal(report!.total, 2, `total=2, got ${report!.total}`);
+    assert.equal(report!.trivial, 1, `trivial=1, got ${report!.trivial}`);
+    assert.equal(report!.nonTrivial, 1, `nonTrivial=1, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -64,7 +72,10 @@ test("analyseAssertions detects trivial JS assertions", () => {
   writeFiles(dir, { "e.test.ts": "test('t', () => { expect(true).toBe(true); expect(1).toEqual(1); });\n" });
   try {
     const report = analyseAssertions("npx jest e.test.ts", dir);
-    assert.ok(report, "should return a report"); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.trivial, 2, `trivial=2, got ${report!.trivial}`); assert.equal(report!.nonTrivial, 0, `nonTrivial=0, got ${report!.nonTrivial}`);
+    assert.ok(report, "should return a report");
+    assert.equal(report!.total, 2, `total=2, got ${report!.total}`);
+    assert.equal(report!.trivial, 2, `trivial=2, got ${report!.trivial}`);
+    assert.equal(report!.nonTrivial, 0, `nonTrivial=0, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -73,7 +84,9 @@ test("analyseAssertions counts non-trivial JS assertions", () => {
   writeFiles(dir, { "m.test.ts": "import { add } from './math';\ntest('add', () => { expect(add(2,3)).toBe(5); expect(add(-1,1)).toEqual(0); });\n" });
   try {
     const report = analyseAssertions("npx jest m.test.ts", dir);
-    assert.ok(report, "should return a report"); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.nonTrivial, 2, `nonTrivial=2, got ${report!.nonTrivial}`);
+    assert.ok(report, "should return a report");
+    assert.equal(report!.total, 2, `total=2, got ${report!.total}`);
+    assert.equal(report!.nonTrivial, 2, `nonTrivial=2, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -82,7 +95,11 @@ test("analyseAssertions scans multiple test files", () => {
   writeFiles(dir, { "test_a.py": "def test():\n    assert True\n", "test_b.py": "def test():\n    x = 1\n    assert x == 1\n" });
   try {
     const report = analyseAssertions("python -m pytest test_a.py test_b.py", dir);
-    assert.ok(report, "should return a report"); assert.equal(report!.files.length, 2, `files=2, got ${report!.files.length}`); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.trivial, 1, `trivial=1, got ${report!.trivial}`); assert.equal(report!.nonTrivial, 1, `nonTrivial=1, got ${report!.nonTrivial}`);
+    assert.ok(report, "should return a report");
+    assert.equal(report!.files.length, 2, `files=2, got ${report!.files.length}`);
+    assert.equal(report!.total, 2, `total=2, got ${report!.total}`);
+    assert.equal(report!.trivial, 1, `trivial=1, got ${report!.trivial}`);
+    assert.equal(report!.nonTrivial, 1, `nonTrivial=1, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -295,5 +312,67 @@ test("assertions predicate: handles non-existent test file", async () => {
     }
     assert.notEqual(leaf.exit_code, 0, `expected non-zero exit for missing file, got ${leaf.exit_code}: ${leaf.error}`);
     assert.equal(leaf.status, "fail", `expected fail for missing file, got ${leaf.status}: ${leaf.error}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── JS mixed trivial / non-trivial ──────────────────────────────────────
+
+test("analyseAssertions splits trivial from non-trivial in JS mixed file", () => {
+  const dir = makeTempDir();
+  writeFiles(dir, { "mixed.test.ts": [
+    "import { add } from './math';",
+    "test('real', () => { expect(add(2,3)).toBe(5); });",
+    "test('fake', () => { expect(true).toBe(true); });",
+  ].join("\n") });
+  try {
+    const report = analyseAssertions("npx jest mixed.test.ts", dir);
+    assert.ok(report, "should return a report");
+    assert.equal(report!.total, 2, `total=2, got ${report!.total}`);
+    assert.equal(report!.trivial, 1, `trivial=1, got ${report!.trivial}`);
+    assert.equal(report!.nonTrivial, 1, `nonTrivial=1, got ${report!.nonTrivial}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── Alternative JS assertion library styles ─────────────────────────────
+
+test("analyseAssertions detects trivial node:assert style assertions", () => {
+  const dir = makeTempDir();
+  writeFiles(dir, { "node.test.ts": "import assert from 'node:assert';\ntest('t', () => { assert.strictEqual(1, 1); assert.ok(true); });\n" });
+  try {
+    const report = analyseAssertions("node --test node.test.ts", dir);
+    assert.ok(report, "should return a report for node:assert");
+    assert.equal(report!.total, 2, `total=2, got ${report!.total}`);
+    assert.equal(report!.trivial, 2, `trivial=2, got ${report!.trivial}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("analyseAssertions detects Chai-style assertions by count", () => {
+  const dir = makeTempDir();
+  // Chai property chains (to.be.true, to.be.null) are detected as assertions
+  // but the trivial/non-trivial heuristic is Jest-oriented and may not classify
+  // all Chai patterns correctly — this test verifies detection, not classification.
+  writeFiles(dir, { "chai.test.ts": "import { expect } from 'chai';\nit('math', () => { expect(2 + 2).to.equal(4); expect(items).to.have.length(3); });\n" });
+  try {
+    const report = analyseAssertions("npx mocha chai.test.ts", dir);
+    assert.ok(report, "should return a report for Chai assertions");
+    assert.equal(report!.total, 2, `total=2, got ${report!.total}`);
+    assert.equal(report!.nonTrivial, 2, `nonTrivial=2, got ${report!.nonTrivial}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── Command referencing non-test source file ─────────────────────────────
+
+test("analyseAssertions correctly ignores non-test source files in command", () => {
+  const dir = makeTempDir();
+  writeFiles(dir, {
+    "app.ts": "console.log('hello');",
+    "test_app.py": "def test():\n    assert 2 + 2 == 4\n",
+  });
+  try {
+    // Command references a source file — should scan test_app.py only
+    const report = analyseAssertions("python -m pytest app.ts test_app.py", dir);
+    assert.ok(report, "should return a report despite non-test file in command");
+    // Only test_app.py is a test file; app.ts is not
+    assert.equal(report!.files.length, 1, `files=1, got ${report!.files.length}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
