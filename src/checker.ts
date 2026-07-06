@@ -5,6 +5,7 @@ import type { DodDocument, CheckResult, StepResult, ProofResult, Predicate, Proo
 import { perProofFingerprint } from "./manual.js";
 import { extractNumber } from "./regression.js";
 import { analyseAssertions } from "./assertions.js";
+import { analyseObservability, analyseObservabilityFromOutput } from "./observability.js";
 
 const execAsync = promisify(exec);
 
@@ -105,6 +106,7 @@ function evaluatePredicate(
     case "regression":
     case "assertions":
     case "streamline":
+    case "observability":
       // Out-of-band verdicts are resolved in executeProof, not here.
       return true;
     default:
@@ -370,6 +372,92 @@ async function executeProof(proof: Proof, cwd: string): Promise<ProofResult> {
       id: proof.id, description: proof.description, status: "pass",
       command: proof.command, output: run.combined,
       error: `assertions: ${report.nonTrivial} non-trivial assertion(s) across ${report.files.length} test file(s) (${report.total} total, ${report.trivial} trivial)`,
+      exit_code: run.exitCode, duration_ms: run.duration,
+    };
+  }
+
+  // Observability predicate: scans changed source files for logging patterns,
+  // error handlers with instrumentation, and anti-patterns (empty catch,
+  // swallowed errors, bare static log messages). Runs the command to discover
+  // which files to scan, then statically analyzes each one — same two-tier
+  // approach as assertions (command tokens + command output).
+  if (proof.predicate.type === "observability") {
+    const minLogStatements = (proof.predicate.value as number) ?? 1;
+
+    // Try command tokens first (e.g. `python -m pytest tests/test_foo.py`)
+    let report = analyseObservability(proof.command, cwd);
+    // If no files found from tokens, try parsing the command output
+    if (!report) {
+      report = analyseObservabilityFromOutput(run.combined, cwd);
+    }
+
+    if (!report) {
+      return {
+        id: proof.id, description: proof.description, status: "fail",
+        command: proof.command, output: run.combined,
+        error: "observability: could not identify any source files from the command or its output. Ensure the command references source files by path (e.g. `git diff --name-only HEAD~1 -- '*.ts'` or `python -m pytest tests/test_foo.py`).",
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    // Log statement count check
+    const tooFewLogs = report.totalLogStatements < minLogStatements;
+
+    // Error handlers without logging
+    const unloggedErrors = report.totalErrorHandlers - report.errorHandlersLogged;
+
+    // Anti-patterns
+    const hasAntiPatterns = report.antiPatterns.length > 0;
+
+    if (!tooFewLogs && unloggedErrors === 0 && !hasAntiPatterns) {
+      // Everything passes
+      const lines: string[] = [
+        `observability: ${report.totalLogStatements} log statement(s) across ${report.files.length} file(s)`,
+        `  error handlers: ${report.totalErrorHandlers} total, ${report.errorHandlersLogged} logged`,
+      ];
+      for (const f of report.perFile) {
+        lines.push(`  ${f.file}: ${f.logCount} logs, ${f.errorHandlers} handlers (${f.errorHandlersLogged} logged)${f.antiPatterns.length > 0 ? `, ${f.antiPatterns.length} anti-pattern(s)` : ""}`);
+      }
+      return {
+        id: proof.id, description: proof.description, status: "pass",
+        command: proof.command, output: run.combined,
+        error: lines.join("\n"),
+        exit_code: run.exitCode, duration_ms: run.duration,
+      };
+    }
+
+    // Build failure report
+    const errors: string[] = [];
+    if (tooFewLogs) {
+      errors.push(`OBSERVABILITY FAIL: only ${report.totalLogStatements} log statement(s) found across ${report.files.length} file(s), need at least ${minLogStatements}.`);
+    }
+    if (unloggedErrors > 0) {
+      const list = report.perFile
+        .flatMap((f) => {
+          // Re-scan to get error handler details
+          return [];
+        })
+        .join("\n");
+      errors.push(`OBSERVABILITY FAIL: ${unloggedErrors} error handler(s) without logging across ${report.files.length} file(s). Every catch/except/Err branch must log before handling.`);
+    }
+    if (hasAntiPatterns) {
+      errors.push(`OBSERVABILITY FAIL: ${report.antiPatterns.length} anti-pattern(s) detected:`);
+      for (const ap of report.antiPatterns) {
+        const kindLabel = ap.kind === "empty_catch" ? "empty catch" : ap.kind === "swallowed_error" ? "swallowed error (no log)" : "bare static log";
+        errors.push(`  ${ap.file}:${ap.line} — ${kindLabel}: ${ap.snippet}`);
+      }
+    }
+    // Per-file summary
+    errors.push("", "Per-file breakdown:");
+    for (const f of report.perFile) {
+      const status = f.logCount >= 1 && f.errorHandlersLogged === f.errorHandlers && f.antiPatterns.length === 0 ? "✓" : "✗";
+      errors.push(`  ${status} ${f.file}: ${f.logCount} logs, ${f.errorHandlers} handlers (${f.errorHandlersLogged} logged)${f.antiPatterns.length > 0 ? ` — ${f.antiPatterns.length} anti-pattern(s)` : ""}`);
+    }
+
+    return {
+      id: proof.id, description: proof.description, status: "fail",
+      command: proof.command, output: run.combined,
+      error: errors.join("\n"),
       exit_code: run.exitCode, duration_ms: run.duration,
     };
   }

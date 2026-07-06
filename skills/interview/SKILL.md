@@ -259,6 +259,108 @@ Both layers are needed because:
 
 **Step ordering rule:** The integration proof must be in the **final implementation step** of the DoD (the last step before any manual-only steps). This ensures all pieces are built before integration is verified, and prevents "done" claims when units pass but nothing is wired.
 
+## Phase 3.6: Contrarian Agent — Push for Maximum Proof Coverage
+
+Models are lazy — they skip optional proofs to save effort. The contrarian agent acts as an adversarial counterweight: it reviews the planned DoD, argues for adding every optional proof category that could reasonably apply, and forces conscious opt-out with justification for any that are omitted.
+
+**When:** After constructing the DoD steps in Phase 3.5 but BEFORE calling `dod_create`.
+
+### The Contrarian's Mandate
+
+Spawn a contrarian agent. Its job is to be skeptical of every omission:
+
+> You are a contrarian quality reviewer. Review the planned DoD steps below. For each of these optional proof categories, argue WHY it should be ADDED to this DoD. Be specific — reference the actual change and code. If the category genuinely does not apply, say so and suggest a one-line skip_reason. Your goal is maximum proof coverage, not comfort.
+>
+> Optional categories:
+> - **tdd** — fail-first test for new/changed behavior
+> - **mutation** — prove tests actually catch bugs (cargo-mutants / mutmut / Stryker)
+> - **streamline** — prove old code was removed when revising functionality
+> - **observability** — prove changed files have logging, no empty catch, no swallowed errors
+> - **performance** — prove no perf regression (benchmark)
+> - **complexity** — prove cyclomatic complexity doesn't regress
+> - **coverage** — prove test coverage doesn't drop
+> - **duplication** — prove code duplication doesn't increase
+>
+> Planned DoD steps: [steps summary]
+> Work type: [bug|general]
+> Project language/stack: [from Phase 1 research]
+>
+> Output format:
+> - For each category, one of: "MUST ADD — [reason]" or "SKIP — [one-line justification]"
+> - Then a skip_reasons JSON object for categories being skipped
+> - Then concrete proof commands for categories being added
+
+### Integration Flow
+
+1. **Draft DoD steps** (Phase 3.5 output)
+2. **Spawn contrarian agent** with the steps and project context
+3. **Present contrarian's recommendations** to the user:
+   - "The contrarian agent found X proofs we should add and Y we can skip with justification"
+   - Show the proposed additions and skip_reasons
+4. **User decides** — accept, reject, or modify each recommendation
+5. **Apply accepted additions** to the DoD steps
+6. **Collect skip_reasons** for all omitted optional categories
+7. **Call dod_create** with the final steps AND skip_reasons
+
+### Contrarian Prompt Template
+
+Use this prompt when spawning the contrarian agent:
+
+```
+You are an adversarial quality reviewer. Your job is to maximize DoD proof coverage.
+Given the planned implementation below, argue for adding every optional proof category
+that could reasonably apply. Be aggressive — if there's even a 50% chance a category
+is relevant, argue for it.
+
+PLANNED WORK:
+- Type: {bug|general}
+- Goal: {goal}
+- Language/stack: {language}
+- Scope: {scope — files/layers involved}
+- Existing DoD steps: {step summary}
+
+For EACH of these 8 categories, output ONE of:
+  "MUST ADD: <concrete proof command suggestion with specific file paths>"
+  "SKIP: <one-line justification why this category does not apply>"
+
+Categories to review:
+1. tdd — TDD fail-first test for new/changed behavior
+2. mutation — Mutation testing (prove tests catch bugs)
+3. streamline — Prove old implementations were removed
+4. observability — Prove changed files are instrumented (logging, no empty catch)
+5. performance — Prove no performance regression
+6. complexity — Prove cyclomatic complexity does not regress  
+7. coverage — Prove test coverage does not drop
+8. duplication — Prove code duplication does not increase
+
+After your per-category analysis, output:
+- A JSON skip_reasons object for categories you recommend skipping
+- Concrete proof objects for categories you recommend adding
+```
+
+### skip_reasons Format
+
+The `skip_reasons` parameter is a flat JSON map from ProofCategory name to one-line justification:
+
+```json
+{
+  "tdd": "config-only change, no logic to test",
+  "mutation": "trivial CRUD endpoints, mutation testing overkill",
+  "streamline": "greenfield — no old code to remove",
+  "observability": "documentation update, no runtime code changed",
+  "performance": "no perf-sensitive paths touched",
+  "complexity": "no algorithmic code added",
+  "coverage": "no new testable surface — purely config",
+  "duplication": "no shared logic extracted"
+}
+```
+
+Rules:
+- HARD_MANDATORY categories (integration_wiring, integration_behavioral, test) CANNOT be skipped — skip_reasons for them are silently ignored
+- Every optional category absent from the DoD MUST have a skip_reason entry OR dod_create will reject
+- skip_reasons show up as warnings (not errors) in the dod_create output — they prove conscious choice, not laziness
+- Categories that ARE present in the DoD don't need skip_reasons
+
 ## Phase 4: Create Locked DoD via dod-guard MCP
 
 Instead of writing the spec file directly, call the `dod_create` MCP tool to create a **locked, anti-cheat DoD document**. This stores proof commands canonically in MCP storage — editing the rendered markdown cannot weaken verification.

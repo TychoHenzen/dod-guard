@@ -20,7 +20,7 @@ const server = new McpServer({
 // ── Shared schemas ──────────────────────────────────────────────────
 
 const PredicateSchema = z.object({
-  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline"]),
+  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline", "observability"]),
   value: z.union([z.number(), z.string()]).optional(),
   extract: z.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
   lower_is_better: z.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage)."),
@@ -30,7 +30,7 @@ const ProofCategorySchema = z.enum([
   "lint", "format", "tdd", "structure", "test", "mutation",
   "integration_wiring", "integration_behavioral",
   "performance", "complexity", "coverage", "duplication",
-  "streamline", "manual", "other",
+  "streamline", "observability", "manual", "other",
 ]);
 
 const ProofInputSchema = z.object({
@@ -104,8 +104,9 @@ server.tool(
     markdown_path: z.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
     steps: z.array(StepInputSchema).describe("DoD steps with proof commands and predicates"),
+    skip_reasons: z.record(z.string()).optional().describe("Map from optional proof category to justification for why it was omitted. Categories: tdd, mutation, streamline, observability, performance, complexity, coverage, duplication. Mandatory categories (integration_wiring, integration_behavioral, test) cannot be skipped."),
   },
-  async ({ title, goal, type, cwd, markdown_path, sections, steps }) => {
+  async ({ title, goal, type, cwd, markdown_path, sections, steps, skip_reasons }) => {
     const resolvedCwd = path.resolve(cwd);
     const osError = await checkCommandsForOs(
       steps.map((s) => ({ proofs: s.proofs.map((p) => ({ command: p.command, predicate: p.predicate as Predicate })) })),
@@ -115,10 +116,14 @@ server.tool(
 
     // Baseline enforcement: reject a DoD missing the mandatory proof categories
     // instead of trusting the author to follow the standard.
-    const baseline = validateBaseline(type, steps.map((s) => ({
-      title: s.title,
-      proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type }, advisory: p.advisory })),
-    })));
+    const baseline = validateBaseline(
+      type,
+      steps.map((s) => ({
+        title: s.title,
+        proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type }, advisory: p.advisory })),
+      })),
+      skip_reasons as Record<string, string> | undefined,
+    );
     if (baseline.errors.length > 0) {
       return {
         content: [{
@@ -128,8 +133,9 @@ server.tool(
             "",
             ...baseline.errors.map((e) => `  • ${e}`),
             "",
-            "Add proofs for the missing categories, then retry. If a category genuinely cannot apply",
-            "(e.g. no runnable entry point), say so to the user and document the exception.",
+            "For optional categories (tdd, mutation, streamline, observability, performance, complexity, coverage, duplication),",
+            "either add a proof or provide skip_reasons with a justification for why each absent category does not apply.",
+            "Mandatory categories (integration_wiring, integration_behavioral, test) cannot be skipped.",
           ].join("\n"),
         }],
       };
@@ -172,6 +178,7 @@ server.tool(
       markdown_path: path.resolve(markdown_path),
       created_at: new Date().toISOString(),
       locked: true,
+      skip_reasons: skip_reasons as Record<string, string> | undefined,
       sections,
       steps: dodSteps,
       proof_fingerprint: fingerprint,

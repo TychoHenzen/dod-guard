@@ -1,5 +1,5 @@
 export interface Predicate {
-  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation" | "regression" | "assertions" | "streamline";
+  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation" | "regression" | "assertions" | "streamline" | "observability";
   value?: number | string;
   /**
    * `regression` only: regex applied to stdout; capture group 1 is the metric
@@ -35,6 +35,7 @@ export type ProofCategory =
   | "coverage"
   | "duplication"
   | "streamline"
+  | "observability"
   | "manual"
   | "other";
 
@@ -110,6 +111,16 @@ export interface DodDocument {
   markdown_path: string;
   created_at: string;
   locked: boolean;
+  /**
+   * Record of why optional baseline categories were deliberately omitted.
+   * Keys are ProofCategory values (e.g. "mutation", "streamline", "observability"),
+   * values are the justification. When an optional category is absent from all
+   * steps AND has no skip_reason entry, dod_create escalates the soft warning to
+   * a hard error — the author must either add the proof or explain the omission.
+   * HARD_MANDATORY categories (integration_wiring, integration_behavioral, test)
+   * cannot be skipped — they are always required regardless of skip_reasons.
+   */
+  skip_reasons?: Record<string, string>;
   /** Work type, selects the applicable company baseline. Optional on legacy docs. */
   type?: "bug" | "general";
   sections: DodSections;

@@ -256,3 +256,80 @@ When constructing proofs during the interview:
 5. **Combine tools** when needed — the project may use multiple languages (e.g., C# backend + Python scripts)
 6. **Record the baseline** — if using baseline count comparison, document the current count in `research_notes` so it can be referenced in proofs
 7. **Fall back to generic** if the language isn't listed: `grep` for assertions, language-specific test runner for TDD, any linter configured in the project
+
+---
+
+## Observability (logging and instrumentation)
+
+The `observability` predicate scans changed source files for logging patterns, error handler instrumentation, and anti-patterns. The command should identify which files to scan — typically changed files from git diff, or source files referenced by a test command.
+
+File discovery works two ways:
+1. **Command tokens** — source-file-looking arguments in the command string (e.g. `python -m pytest tests/test_foo.py`)
+2. **Command output** — stdout lines that look like file paths (e.g. `git diff --name-only` output)
+
+If neither works, the proof fails with "could not identify any source files."
+
+### Recommended commands
+
+| Strategy | Command | Notes |
+|----------|---------|-------|
+| **Changed files (recommended)** | `git diff --name-only HEAD~1 -- '*.ts' '*.py' '*.rs' '*.cs'` | Scans all changed source files across languages |
+| **Per-language changed files** | `git diff --name-only HEAD~1 -- '*.ts' '*.tsx'` | Scoped to one language |
+| **Test file references** | `python -m pytest tests/test_module.py` or `npx jest app.test.ts` | Extracts test file paths from the command, scans those |
+| **Directory scope** | `npx jest src/new-module/` | Scans all source files referenced by the test run |
+
+### Predicate configuration
+
+| Field | Value | Notes |
+|-------|-------|-------|
+| `type` | `"observability"` | |
+| `value` | minimum log count (default `1`) | Set higher for complex modules |
+| `category` | `"observability"` | Soft warning if absent; hard gate when present |
+
+### Example DoD proofs
+
+**JavaScript/TypeScript (changed files):**
+```
+category: observability
+command: git diff --name-only HEAD~1 -- '*.ts' '*.tsx'
+predicate: observability: 2
+```
+
+**Python (test file references):**
+```
+category: observability
+command: python -m pytest tests/test_auth.py tests/test_handlers.py
+predicate: observability: 3
+```
+
+**Rust (changed files):**
+```
+category: observability
+command: git diff --name-only HEAD~1 -- '*.rs'
+predicate: observability: 1
+```
+
+**C# (changed files):**
+```
+category: observability
+command: git diff --name-only HEAD~1 -- '*.cs'
+predicate: observability: 2
+```
+
+### What gets checked
+
+The engine runs the command, extracts source file paths, then scans each file for:
+
+1. **Log statements** — `console.log/error/warn/info/debug`, `logger.info/error`, `log!()`, `logging.info()`, etc.
+2. **Error handlers with logging** — every `catch`/`except`/`Err(_)` must contain a log statement
+3. **Anti-patterns flagged:**
+   - Empty catch: `catch (e) { }`, `except: pass`
+   - Swallowed error: `catch (e) { return null }` without logging
+   - Bare static log: `console.error("failed")` without variable context
+
+### What passes vs fails
+
+- **PASS:** sufficient log statements, all error handlers logged, no anti-patterns
+- **FAIL:** detailed report showing exactly which files and lines have issues
+
+Unlike `regression`, observability proofs are **not advisory** — if present, they must pass.

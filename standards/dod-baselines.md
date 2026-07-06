@@ -159,6 +159,34 @@ The `streamline` predicate closes this gap: it proves **absence**, not presence.
 - **When to add one:** any step that revises or replaces an existing function, module, class,
   or code path. The streamline proof names the old symbols and proves they were removed.
 
+### Observability — proving code is debuggable
+
+Claude-generated code routinely ships without logging, instrumentation, or any way to
+diagnose failures in production. The `observability` predicate closes this gap: it scans
+changed source files and proves they are instrumented for debugging.
+
+- **Command:** identifies the files to scan — typically `git diff --name-only HEAD~1 -- '*.ts' '*.py'` or a test command that references source files (e.g. `python -m pytest tests/test_module.py`).
+- **Semantics:** statically analyzes each source file for:
+  1. **Log statements** — `console.*`, `logger.*`, `log!()`, `logging.*`, etc. (per-language).
+  2. **Error handlers** — `catch`, `except`, `Err(_)` blocks — with at least one log statement inside.
+  3. **Anti-patterns:**
+     - Empty catch (`catch { }`, `except: pass`)
+     - Swallowed errors (catch block with return/continue but no log or rethrow)
+     - Bare static log messages (`console.error("failed")` — no variable interpolation)
+- **PASS:** at least `value` log statements found, every error handler is logged, and no anti-patterns detected.
+- **FAIL:** insufficient log statements, unlogged error handlers, or anti-patterns — with explicit file:line details.
+- **`value`:** minimum log statement count expected (default `1`).
+- **Optional, not mandatory.** A DoD with no `observability` proof gets a soft, non-blocking
+  warning (like `mutation` and `streamline`) — it is **never** added to the hard-mandatory categories and
+  never blocks `dod_create`.
+- **When to add one:** any step that changes source code. The observability proof names the changed files and proves they are instrumented.
+- **Advisory tier:** observability proofs are NOT advisory — failures fail the step. If you add one, it's expected to pass.
+- **File discovery:** The engine extracts file paths from the command tokens (e.g. test file arguments)
+  AND from the command's stdout (e.g. `git diff --name-only` output). If no source files are found,
+  the proof fails with an explicit reason.
+
+Supported languages: JavaScript/TypeScript, Python, Rust, C#.
+
 **Precision:** presence/removal proofs must match **signatures or word boundaries**, not bare substrings. `findstr "TryStopTracking"` matches both `TryStopTracking(dossierId)` and `TryStopTracking(dossierId, clientId)` — a false positive. Use `grep -w` / `findstr /R` with anchors.
 
 ### Non-regression over absolutes — the `regression` predicate
