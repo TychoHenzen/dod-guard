@@ -2986,7 +2986,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve5.call(this, root, ref);
+      let _sch = resolve6.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3013,7 +3013,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve5(root, ref) {
+    function resolve6(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3231,8 +3231,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path6) {
-      let input = path6;
+    function removeDotSegments(path7) {
+      let input = path7;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3484,8 +3484,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path6, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path6 && path6 !== "/" ? path6 : void 0;
+        const [path7, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path7 && path7 !== "/" ? path7 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3644,55 +3644,55 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve5(baseURI, relativeURI, options) {
+    function resolve6(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse3(baseURI, schemelessOptions), parse3(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative2, options, skipNormalization) {
+    function resolveComponent(base, relative3, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative2 = parse3(serialize(relative2, options), options);
+        relative3 = parse3(serialize(relative3, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative2.scheme) {
-        target.scheme = relative2.scheme;
-        target.userinfo = relative2.userinfo;
-        target.host = relative2.host;
-        target.port = relative2.port;
-        target.path = removeDotSegments(relative2.path || "");
-        target.query = relative2.query;
+      if (!options.tolerant && relative3.scheme) {
+        target.scheme = relative3.scheme;
+        target.userinfo = relative3.userinfo;
+        target.host = relative3.host;
+        target.port = relative3.port;
+        target.path = removeDotSegments(relative3.path || "");
+        target.query = relative3.query;
       } else {
-        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
-          target.userinfo = relative2.userinfo;
-          target.host = relative2.host;
-          target.port = relative2.port;
-          target.path = removeDotSegments(relative2.path || "");
-          target.query = relative2.query;
+        if (relative3.userinfo !== void 0 || relative3.host !== void 0 || relative3.port !== void 0) {
+          target.userinfo = relative3.userinfo;
+          target.host = relative3.host;
+          target.port = relative3.port;
+          target.path = removeDotSegments(relative3.path || "");
+          target.query = relative3.query;
         } else {
-          if (!relative2.path) {
+          if (!relative3.path) {
             target.path = base.path;
-            if (relative2.query !== void 0) {
-              target.query = relative2.query;
+            if (relative3.query !== void 0) {
+              target.query = relative3.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative2.path[0] === "/") {
-              target.path = removeDotSegments(relative2.path);
+            if (relative3.path[0] === "/") {
+              target.path = removeDotSegments(relative3.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative2.path;
+                target.path = "/" + relative3.path;
               } else if (!base.path) {
-                target.path = relative2.path;
+                target.path = relative3.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative3.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative2.query;
+            target.query = relative3.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3700,7 +3700,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative2.fragment;
+      target.fragment = relative3.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3902,7 +3902,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve5,
+      resolve: resolve6,
       resolveComponent,
       equal,
       serialize,
@@ -7369,8 +7369,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path6, errorMaps, issueData } = params;
-  const fullPath = [...path6, ...issueData.path || []];
+  const { data, path: path7, errorMaps, issueData } = params;
+  const fullPath = [...path7, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7486,11 +7486,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path6, key) {
+  constructor(parent, value, path7, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path6;
+    this._path = path7;
     this._key = key;
   }
   get path() {
@@ -11127,10 +11127,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path6) {
-  if (!path6)
+function getElementAtPath(obj, path7) {
+  if (!path7)
     return obj;
-  return path6.reduce((acc, key) => acc?.[key], obj);
+  return path7.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11450,11 +11450,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path6, issues) {
+function prefixIssues(path7, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path6);
+    iss.path.unshift(path7);
     return iss;
   });
 }
@@ -18982,7 +18982,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+        await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -18999,7 +18999,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19077,7 +19077,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve5(parseResult.data);
+            resolve6(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19338,12 +19338,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve5, interval);
+      const timeoutId = setTimeout(resolve6, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20443,7 +20443,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+      await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21092,19 +21092,19 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve5) => {
+    return new Promise((resolve6) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve5();
+        resolve6();
       } else {
-        this._stdout.once("drain", resolve5);
+        this._stdout.once("drain", resolve6);
       }
     });
   }
 };
 
 // src/index.ts
-import * as path5 from "node:path";
+import * as path6 from "node:path";
 
 // src/store.ts
 import { promises as fs } from "node:fs";
@@ -21173,18 +21173,18 @@ import { createHash as createHash2 } from "node:crypto";
 
 // src/manual.ts
 import { createHash } from "node:crypto";
-function perProofFingerprint(proof) {
+function perProofFingerprint(node) {
   const data = [
-    proof.command,
-    proof.predicate.type,
-    proof.predicate.value ?? "",
-    proof.description
+    node.command ?? "",
+    node.predicate?.type ?? "",
+    node.predicate?.value ?? "",
+    node.description ?? ""
   ].join("|");
   return createHash("sha256").update(data).digest("hex").slice(0, 12);
 }
-async function resolveManual(proof, confirm, label = "Manual verification") {
-  const fingerprint = perProofFingerprint(proof);
-  const cached2 = proof.manual_result;
+async function resolveManual(node, confirm, label = "Manual verification") {
+  const fingerprint = perProofFingerprint(node);
+  const cached2 = node.manual_result;
   if (cached2 && cached2.answer === "pass" && cached2.proof_fingerprint === fingerprint) {
     return {
       status: "pass",
@@ -21192,8 +21192,8 @@ async function resolveManual(proof, confirm, label = "Manual verification") {
       output: `${label} cached: PASS at ${cached2.confirmed_at} via ${cached2.channel}${cached2.note ? ` \u2014 "${cached2.note}"` : ""}`
     };
   }
-  const answer = await confirm(proof);
-  proof.manual_result = {
+  const answer = await confirm(node);
+  node.manual_result = {
     answer: answer.answer,
     note: answer.note,
     confirmed_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -21235,24 +21235,21 @@ var PY_TRIVIAL = [
   /^\s*self\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\s*\(\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(?:,\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*)?\)\s*(#.*)?$/
 ];
 var JS_TRIVIAL = [
-  // expect(CONST).toXxx(CONST)
-  /^\s*expect\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)\s*\.\s*(?:not\s*\.\s*)?(?:toBe|toEqual|toBeTruthy|toBeFalsy|toBeNull|toBeUndefined|toStrictEqual|toMatchObject|toContain|toHaveLength)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
+  // expect(CONST).toXxx(CONST) — inline, no ^\s* anchor
+  /expect\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)\s*\.\s*(?:not\s*\.\s*)?(?:toBe|toEqual|toBeTruthy|toBeFalsy|toBeNull|toBeUndefined|toStrictEqual|toMatchObject|toContain|toHaveLength)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
   // assert.equal(CONST, CONST) / assert.strictEqual(CONST, CONST)
-  /^\s*assert\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
+  /assert\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
   // assert.ok(true) / assert.fail()
-  /^\s*assert\.(?:ok|fail)\s*\(\s*(true|false)\s*\)/
+  /assert\.(?:ok|fail)\s*\(\s*(true|false)\s*\)/
 ];
 var PY_ASSERT = /^\s*(assert\b|self\.assert)/;
-var JS_ASSERT = /^\s*(expect\s*\(|assert\.)/;
-function isTrivial(line, patterns) {
-  return patterns.some((p) => p.test(line));
-}
-function isAssertion(line, detector) {
-  return detector.test(line);
-}
+var JS_ASSERT = /(expect\s*\(|assert\.)/;
 function classifyLine(line, detector, trivialPatterns) {
-  if (!isAssertion(line, detector)) return { isAssertion: false, trivial: false };
-  return { isAssertion: true, trivial: isTrivial(line, trivialPatterns) };
+  const globalDetector = new RegExp(detector.source, "g");
+  const matches = line.match(globalDetector);
+  if (!matches) return { count: 0, trivialCount: 0 };
+  const lineHasTrivial = trivialPatterns.some((p) => p.test(line));
+  return { count: matches.length, trivialCount: lineHasTrivial ? matches.length : 0 };
 }
 function languageForFile(file) {
   const ext = path2.extname(file).toLowerCase();
@@ -21271,10 +21268,8 @@ function scanFile(file) {
   let trivial = 0;
   for (const line of lines) {
     const result = classifyLine(line, detector, trivialPatterns);
-    if (result.isAssertion) {
-      total++;
-      if (result.trivial) trivial++;
-    }
+    total += result.count;
+    trivial += result.trivialCount;
   }
   return { total, trivial };
 }
@@ -21343,9 +21338,570 @@ function analyseAssertions(command, cwd) {
   };
 }
 
+// src/observability.ts
+import { readFileSync as readFileSync2, existsSync as existsSync2 } from "node:fs";
+import * as path3 from "node:path";
+function detectLanguage(file) {
+  const ext = path3.extname(file).toLowerCase();
+  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
+  if (ext === ".py") return "py";
+  if (ext === ".rs") return "rs";
+  if (ext === ".cs") return "cs";
+  return null;
+}
+var LOG_PATTERNS = {
+  js: [
+    /\bconsole\.(log|error|warn|info|debug|trace)\s*\(/,
+    /\b(logger|log)\.(error|warn|info|debug|trace|fatal)\s*\(/,
+    /\bpino\./,
+    /\bwinston\./,
+    /\bbunyan\./
+  ],
+  py: [
+    /\blogging\.(debug|info|warning|error|critical|exception|log)\s*\(/,
+    /\b(logger|log|self\.logger|self\._logger)\.(debug|info|warning|warn|error|critical|exception|log)\s*\(/,
+    /\bloguru\./
+  ],
+  rs: [
+    /(?:\blog|error|warn|info|debug|trace)!\s*\(/,
+    /\beprintln!\s*\(/,
+    /\bdbg!\s*\(/,
+    /\btracing::(?:info|error|warn|debug|trace)\s*\(/
+  ],
+  cs: [
+    /\b(?:Log|_logger|logger|Logger)\.(?:Log(?:Information|Warning|Error|Debug|Critical|Trace)?|Information|Warning|Error|Debug|Fatal)\s*\(/,
+    /\bConsole\.Write(?:Line)?\s*\(/,
+    /\bDebug\.Write(?:Line)?\s*\(/
+  ]
+};
+function isLogStatement(line, lang) {
+  if (!lang) return false;
+  const patterns = LOG_PATTERNS[lang];
+  return patterns ? patterns.some((p) => p.test(line)) : false;
+}
+function findErrorHandlers(lines, lang) {
+  switch (lang) {
+    case "js":
+      return findJsErrorHandlers(lines);
+    case "py":
+      return findPyErrorHandlers(lines);
+    case "rs":
+      return findRsErrorHandlers(lines);
+    case "cs":
+      return findCsErrorHandlers(lines);
+    default:
+      return [];
+  }
+}
+function findJsErrorHandlers(lines) {
+  const results = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
+      const endLine = findBlockEnd(lines, i, "{", "}");
+      const blockLines = lines.slice(i, endLine + 1);
+      const hasLog = blockLines.some((l) => isLogStatement(l, "js"));
+      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
+    }
+  }
+  return results;
+}
+function findPyErrorHandlers(lines) {
+  const results = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*except\b/.test(line)) {
+      const endLine = findPyBlockEnd(lines, i);
+      const blockLines = lines.slice(i, endLine + 1);
+      const hasLog = blockLines.some((l) => isLogStatement(l, "py"));
+      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
+    }
+  }
+  return results;
+}
+function findRsErrorHandlers(lines) {
+  const results = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/\bErr\s*\([^)]*\)\s*=>/.test(line) || /\bmatch\b.*\{/.test(line)) {
+      const endLine = findBlockEnd(lines, i, "{", "}");
+      const blockLines = lines.slice(i, endLine + 1);
+      const hasLog = blockLines.some((l) => isLogStatement(l, "rs"));
+      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
+    }
+  }
+  return results;
+}
+function findCsErrorHandlers(lines) {
+  const results = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
+      const endLine = findBlockEnd(lines, i, "{", "}");
+      const blockLines = lines.slice(i, endLine + 1);
+      const hasLog = blockLines.some((l) => isLogStatement(l, "cs"));
+      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
+    }
+  }
+  return results;
+}
+function findBlockEnd(lines, startIdx, open, close) {
+  const baseIndent = getIndent(lines[startIdx]);
+  const openLine = lines[startIdx];
+  let braceIdx = -1;
+  for (let j = 0; j < openLine.length; j++) {
+    if (openLine[j] === open) {
+      braceIdx = j;
+      break;
+    }
+  }
+  if (braceIdx === -1) return lines.length - 1;
+  let depth = 0;
+  for (let i = startIdx; i < lines.length; i++) {
+    const line = lines[i];
+    let inString = null;
+    const startCol = i === startIdx ? braceIdx : 0;
+    for (let j = startCol; j < line.length; j++) {
+      const ch = line[j];
+      const prev = j > 0 ? line[j - 1] : "";
+      if (inString) {
+        if (ch === inString && prev !== "\\") inString = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === "`") {
+        inString = ch;
+        continue;
+      }
+      if (ch === "/" && j + 1 < line.length && line[j + 1] === "/") {
+        break;
+      }
+      if (ch === open) depth++;
+      else if (ch === close) {
+        depth--;
+        if (depth === 0 && getIndent(line) <= baseIndent) {
+          return i;
+        }
+      }
+    }
+  }
+  return lines.length - 1;
+}
+function getIndent(line) {
+  const match = line.match(/^(\s*)/);
+  return match ? match[1].length : 0;
+}
+function isInlineEmptyCatch(line) {
+  return /\bcatch\b\s*(\([^)]*\))?\s*\{\s*\}\s*$/.test(line);
+}
+function findPyBlockEnd(lines, startIdx) {
+  const match = lines[startIdx].match(/^(\s*)/);
+  const baseIndent = match ? match[1].length : 0;
+  let i = startIdx + 1;
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+    if (trimmed === "") {
+      i++;
+      continue;
+    }
+    const lineIndent = lines[i].match(/^(\s*)/)?.[1].length ?? 0;
+    if (lineIndent <= baseIndent) return i - 1;
+    i++;
+  }
+  return lines.length - 1;
+}
+function detectAntiPatterns(lines, lang, filePath) {
+  switch (lang) {
+    case "js":
+      return detectJsAntiPatterns(lines, filePath);
+    case "py":
+      return detectPyAntiPatterns(lines, filePath);
+    case "rs":
+      return detectRsAntiPatterns(lines, filePath);
+    default:
+      return [];
+  }
+}
+function detectJsAntiPatterns(lines, file) {
+  const hits = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (/^\s*\/\/|^\s*\/\*|^\s*\*/.test(trimmed)) continue;
+    if (isInlineEmptyCatch(line)) {
+      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      continue;
+    }
+    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
+      const endLine = findBlockEnd(lines, i, "{", "}");
+      const body = lines.slice(i + 1, endLine).map((l) => l.trim()).filter((l) => l.length > 0);
+      if (body.length === 0) {
+        hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      }
+    }
+    if (isLogStatement(line, "js") && isBareStaticLog(line, "js")) {
+      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
+    }
+  }
+  return hits;
+}
+function detectPyAntiPatterns(lines, file) {
+  const hits = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*except\b.*:\s*pass\s*(#.*)?$/.test(line)) {
+      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      continue;
+    }
+    if (/^\s*except\b/.test(line)) {
+      const endLine = findPyBlockEnd(lines, i);
+      const body = lines.slice(i + 1, endLine + 1).map((l) => l.trim()).filter((l) => l.length > 0);
+      const allPass = body.length > 0 && body.every((l) => l === "pass" || /^\s*pass\s*(#.*)?$/.test(l));
+      if (allPass) {
+        hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      }
+    }
+    if (isLogStatement(line, "py") && isBareStaticLog(line, "py")) {
+      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
+    }
+  }
+  return hits;
+}
+function detectRsAntiPatterns(lines, file) {
+  const hits = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/\bErr\s*\([^)]*\)\s*=>\s*\{\s*\}\s*,?$/.test(line)) {
+      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      continue;
+    }
+    if (isLogStatement(line, "rs") && isBareStaticLog(line, "rs")) {
+      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
+    }
+  }
+  return hits;
+}
+function isBareStaticLog(line, lang) {
+  switch (lang) {
+    case "js":
+      return isBareStaticJs(line);
+    case "py":
+      return isBareStaticPy(line);
+    case "rs":
+      return isBareStaticRs(line);
+    default:
+      return false;
+  }
+}
+function isBareStaticJs(line) {
+  const match = line.match(/\b(?:console|logger|log|pino|winston)\.\w+\s*\(([^)]+)\)/);
+  if (!match) return false;
+  const args = match[1];
+  const argsList = splitArgs(args);
+  if (argsList.length === 0) return false;
+  if (argsList.some((a) => a.includes("`") && a.includes("${"))) return false;
+  if (argsList.length >= 2) return false;
+  const first = argsList[0].trim();
+  if (/^"[^"]*"$/.test(first) || /^'[^']*'$/.test(first) || /^`[^`]*`$/.test(first)) return true;
+  return false;
+}
+function isBareStaticPy(line) {
+  const match = line.match(/\b(?:logging|logger|log|self\.logger|self\._logger)\.\w+\s*\(([^)]+)\)/);
+  if (!match) return false;
+  const args = match[1];
+  const argsList = splitArgs(args);
+  if (argsList.length === 0) return false;
+  if (argsList.some((a) => a.startsWith('f"') || a.startsWith("f'"))) return false;
+  if (argsList.length >= 2) return false;
+  if (/%[sdfr]/.test(args)) return false;
+  const first = argsList[0].trim();
+  if (/^"[^"]*"$/.test(first) || /^'[^']*'$/.test(first)) return true;
+  return false;
+}
+function isBareStaticRs(line) {
+  const match = line.match(/\b(?:log|error|warn|info|debug|trace|eprintln|dbg)!\s*\(\s*("[^"]*")/);
+  if (!match) return false;
+  const msg = match[1];
+  if (/\{\}/.test(msg) || /\{[^}]*\}/.test(msg)) return false;
+  const afterStr = line.slice(line.indexOf(msg) + msg.length);
+  if (afterStr.includes(",") && afterStr.indexOf(",") < afterStr.indexOf(")")) return false;
+  return true;
+}
+function splitArgs(s) {
+  const args = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of s) {
+    if (ch === "(" || ch === "{" || ch === "[") depth++;
+    else if (ch === ")" || ch === "}" || ch === "]") depth--;
+    if (ch === "," && depth === 0) {
+      args.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  const trimmed = current.trim();
+  if (trimmed.length > 0) args.push(trimmed);
+  return args;
+}
+function detectSwallowedErrors(lines, lang, filePath) {
+  const hits = [];
+  if (lang !== "js" && lang !== "cs") return hits;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) continue;
+    const endLine = findBlockEnd(lines, i, "{", "}");
+    const blockLines = lines.slice(i + 1, endLine);
+    const codeLines = blockLines.map((l) => l.trim()).filter((l) => l.length > 0);
+    const hasLog = blockLines.some((l) => isLogStatement(l, lang));
+    const hasReturn = codeLines.some((l) => /\breturn\b/.test(l));
+    const hasThrow = codeLines.some((l) => /\bthrow\b/.test(l));
+    if (!hasLog && !hasThrow && codeLines.length > 0) {
+      hits.push({
+        file: filePath,
+        line: i + 1,
+        kind: "swallowed_error",
+        snippet: line.trim()
+      });
+    }
+  }
+  return hits;
+}
+var SOURCE_EXTS = /* @__PURE__ */ new Set([
+  ".js",
+  ".ts",
+  ".mjs",
+  ".cjs",
+  ".mts",
+  ".cts",
+  ".jsx",
+  ".tsx",
+  ".py",
+  ".rs",
+  ".cs",
+  ".go",
+  ".java",
+  ".rb",
+  ".swift",
+  ".kt"
+]);
+var SKIP_DIRS = /* @__PURE__ */ new Set(["dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git"]);
+function isSourceFile(filePath) {
+  const ext = path3.extname(filePath).toLowerCase();
+  return SOURCE_EXTS.has(ext);
+}
+function isInSkipDir(filePath) {
+  const parts = filePath.split(path3.sep);
+  return parts.some((p) => SKIP_DIRS.has(p));
+}
+function extractSourceFilesFromOutput(output, cwd) {
+  const files = [];
+  for (const line of output.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^[a-z_]+:/i.test(trimmed) && !trimmed.includes("/") && !trimmed.includes("\\")) continue;
+    if (trimmed.includes(".") || trimmed.includes("/") || trimmed.includes("\\")) {
+      const pathMatch = trimmed.match(/([^\s:]+\.[a-z]{1,6})\b/gi);
+      if (pathMatch) {
+        for (const candidate of pathMatch) {
+          const resolved = path3.resolve(cwd, candidate.trim());
+          if (isInSkipDir(resolved)) continue;
+          if (existsSync2(resolved) && isSourceFile(resolved)) {
+            files.push(resolved);
+          }
+        }
+      }
+    }
+  }
+  return [...new Set(files)];
+}
+function extractSourceFilesFromCommand(command, cwd) {
+  const tokens = command.split(/\s+/);
+  const files = [];
+  for (const token of tokens) {
+    if (token.startsWith("-")) continue;
+    if (/^(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go)$/.test(token)) continue;
+    if (token.includes("/") || token.includes("\\") || token.includes(".")) {
+      const resolved = path3.resolve(cwd, token);
+      if (isInSkipDir(resolved)) continue;
+      if (existsSync2(resolved) && isSourceFile(resolved)) {
+        files.push(resolved);
+      } else {
+        const dir = path3.dirname(resolved);
+        const pat = path3.basename(resolved);
+        if (existsSync2(dir) && pat.includes("*")) {
+          try {
+            const { readdirSync } = __require("node:fs");
+            const entries = readdirSync(dir);
+            const regex = new RegExp("^" + pat.replace(/\*/g, ".*").replace(/\./g, "\\.") + "$");
+            for (const entry of entries) {
+              const full = path3.join(dir, entry);
+              if (isInSkipDir(full)) continue;
+              if (!existsSync2(full)) continue;
+              const stat = __require("node:fs").statSync(full);
+              if (stat.isFile() && isSourceFile(full)) {
+                files.push(full);
+              }
+            }
+          } catch {
+          }
+        }
+      }
+    }
+  }
+  return [...new Set(files)];
+}
+function scanFile2(filePath, cwd) {
+  const lang = detectLanguage(filePath);
+  if (!lang) return { logCount: 0, errorHandlers: [], antiPatterns: [] };
+  const content = readFileSync2(filePath, "utf-8");
+  const lines = content.split(/\r?\n/);
+  let logCount = 0;
+  for (const line of lines) {
+    if (isLogStatement(line, lang)) logCount++;
+  }
+  const errorHandlerResults = findErrorHandlers(lines, lang);
+  const errorHandlers = errorHandlerResults.map((r) => ({
+    file: path3.relative(cwd, filePath),
+    line: r.line,
+    logged: r.logged,
+    snippet: r.snippet
+  }));
+  const antiPatterns = [
+    ...detectAntiPatterns(lines, lang, path3.relative(cwd, filePath)),
+    ...detectSwallowedErrors(lines, lang, path3.relative(cwd, filePath))
+  ];
+  return { logCount, errorHandlers, antiPatterns };
+}
+function analyseObservability(command, cwd) {
+  let files = extractSourceFilesFromCommand(command, cwd);
+  if (files.length === 0) {
+    if (/\bgit\s+diff\b/.test(command) || /\bgit diff/.test(command)) {
+    }
+  }
+  if (files.length === 0) {
+    return null;
+  }
+  const perFile = [];
+  let totalLogStatements = 0;
+  let totalErrorHandlers = 0;
+  let errorHandlersLogged = 0;
+  const allAntiPatterns = [];
+  for (const file of files) {
+    const result = scanFile2(file, cwd);
+    perFile.push({
+      file: path3.relative(cwd, file),
+      logCount: result.logCount,
+      errorHandlers: result.errorHandlers.length,
+      errorHandlersLogged: result.errorHandlers.filter((h) => h.logged).length,
+      antiPatterns: result.antiPatterns
+    });
+    totalLogStatements += result.logCount;
+    totalErrorHandlers += result.errorHandlers.length;
+    errorHandlersLogged += result.errorHandlers.filter((h) => h.logged).length;
+    allAntiPatterns.push(...result.antiPatterns);
+  }
+  return {
+    totalLogStatements,
+    totalErrorHandlers,
+    errorHandlersLogged,
+    antiPatterns: allAntiPatterns,
+    files: files.map((f) => path3.relative(cwd, f)),
+    perFile
+  };
+}
+function analyseObservabilityFromOutput(commandOutput, cwd) {
+  const files = extractSourceFilesFromOutput(commandOutput, cwd);
+  if (files.length === 0) return null;
+  const perFile = [];
+  let totalLogStatements = 0;
+  let totalErrorHandlers = 0;
+  let errorHandlersLogged = 0;
+  const allAntiPatterns = [];
+  for (const file of files) {
+    const result = scanFile2(file, cwd);
+    perFile.push({
+      file: path3.relative(cwd, file),
+      logCount: result.logCount,
+      errorHandlers: result.errorHandlers.length,
+      errorHandlersLogged: result.errorHandlers.filter((h) => h.logged).length,
+      antiPatterns: result.antiPatterns
+    });
+    totalLogStatements += result.logCount;
+    totalErrorHandlers += result.errorHandlers.length;
+    errorHandlersLogged += result.errorHandlers.filter((h) => h.logged).length;
+    allAntiPatterns.push(...result.antiPatterns);
+  }
+  return {
+    totalLogStatements,
+    totalErrorHandlers,
+    errorHandlersLogged,
+    antiPatterns: allAntiPatterns,
+    files: files.map((f) => path3.relative(cwd, f)),
+    perFile
+  };
+}
+
 // src/checker.ts
 var execAsync = promisify(exec);
 var TIMEOUT_MS = 12e4;
+function flattenConcreteLeaves(nodes, parentPath) {
+  const results = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      results.push(...flattenConcreteLeaves(node.children, currentPath));
+    } else if (node.refinement === "concrete") {
+      results.push({ node, node_path: currentPath });
+    }
+  }
+  return results;
+}
+function hasDraftNodes(nodes) {
+  for (const node of nodes) {
+    if (node.refinement === "draft") return true;
+    if (node.children && hasDraftNodes(node.children)) return true;
+  }
+  return false;
+}
+function findNodeByPath(nodes, path7) {
+  if (!path7) return null;
+  const parts = path7.split(".");
+  let current = nodes;
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] === "children") continue;
+    const idx = Number(parts[i]);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= current.length) return null;
+    const node = current[idx];
+    if (i === parts.length - 1 || i === parts.length - 2 && parts[parts.length - 1] === "children") {
+      return node;
+    }
+    if (!node.children) return null;
+    current = node.children;
+  }
+  return null;
+}
+function extractCommands(nodes) {
+  const cmds = [];
+  for (const { node } of flattenConcreteLeaves(nodes)) {
+    if (node.command && node.predicate && node.predicate.type !== "manual") {
+      cmds.push(node.command);
+    }
+  }
+  return cmds;
+}
+function isBranchLocked(nodes) {
+  return !hasDraftNodes(nodes);
+}
+function countDraftNodes(nodes) {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.refinement === "draft") count++;
+    if (node.children) count += countDraftNodes(node.children);
+  }
+  return count;
+}
 function parseSurvivors(output) {
   for (const parser of [parseStryker, parseMutmut, parseCargoMutants]) {
     const survivors = parser(output);
@@ -21373,15 +21929,15 @@ function parseCargoMutants(output) {
   const match = output.match(/(\d+)\s+missed\b/);
   return match ? Number(match[1]) : null;
 }
-function computeProofFingerprint(steps) {
-  const data = steps.flatMap(
-    (s) => s.proofs.map((p) => {
-      let line = `${p.command}|${p.predicate.type}|${p.predicate.value ?? ""}`;
-      if (p.predicate.lower_is_better !== void 0) line += `|lib:${p.predicate.lower_is_better}`;
-      if (p.advisory !== void 0) line += `|adv:${p.advisory}`;
-      return line;
-    })
-  ).join("\n");
+function computeProofFingerprint(roots) {
+  const leaves = flattenConcreteLeaves(roots);
+  if (leaves.length === 0) return "";
+  const data = leaves.map(({ node }) => {
+    let line = `${node.command}|${node.predicate.type}|${node.predicate.value ?? ""}`;
+    if (node.predicate.lower_is_better !== void 0) line += `|lib:${node.predicate.lower_is_better}`;
+    if (node.advisory !== void 0) line += `|adv:${node.advisory}`;
+    return line;
+  }).join("\n");
   return createHash2("sha256").update(data).digest("hex").slice(0, 12);
 }
 function evaluatePredicate(predicate, exitCode, stdout) {
@@ -21406,16 +21962,17 @@ function evaluatePredicate(predicate, exitCode, stdout) {
     case "regression":
     case "assertions":
     case "streamline":
+    case "observability":
       return true;
     default:
       return false;
   }
 }
-async function runCommand(proof, cwd) {
+async function runCommand(command, cwd) {
   const start = Date.now();
   try {
     const shellCmd = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
-    const { stdout, stderr } = await execAsync(proof.command, {
+    const { stdout, stderr } = await execAsync(command, {
       cwd,
       timeout: TIMEOUT_MS,
       maxBuffer: 10 * 1024 * 1024,
@@ -21440,53 +21997,53 @@ async function runCommand(proof, cwd) {
     return { exitCode, combined, duration: duration3, error: stderr.slice(0, 2e3) || void 0 };
   }
 }
-async function executeProof(proof, cwd) {
-  if (proof.predicate.type === "manual" || proof.predicate.type === "review") {
-    const isReview = proof.predicate.type === "review";
+async function executeProof(node, cwd) {
+  const cmd = node.command;
+  const leafBase = {
+    node_path: "",
+    id: node.id,
+    title: node.title,
+    description: node.description,
+    command: cmd
+  };
+  if (node.predicate.type === "manual" || node.predicate.type === "review") {
+    const isReview = node.predicate.type === "review";
     const label = isReview ? "Code review" : "Manual verification";
-    const fingerprint = perProofFingerprint(proof);
-    const mr = proof.manual_result;
+    const fingerprint = perProofFingerprint(node);
+    const mr = node.manual_result;
     if (mr && mr.proof_fingerprint === fingerprint) {
       const output = `${label} ${mr.answer.toUpperCase()} (via dod_verify) at ${mr.confirmed_at} via ${mr.channel}${mr.note ? ` \u2014 "${mr.note}"` : ""}`;
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: mr.answer,
-        command: proof.command,
         output,
         error: mr.answer === "fail" ? `${label} was confirmed as failing by the human.` : void 0
       };
     }
     return {
-      id: proof.id,
-      description: proof.description,
+      ...leafBase,
       status: "skipped",
-      command: proof.command,
-      output: `${label} not yet verified \u2014 call dod_verify(dod_id, "${proof.id}") to request human confirmation.`
+      output: `${label} not yet verified \u2014 call dod_verify(dod_id, "${node.id}") to request human confirmation.`
     };
   }
-  const run = await runCommand(proof, cwd);
+  const run = await runCommand(cmd, cwd);
   if (run.killed || run.notFound) {
     return {
-      id: proof.id,
-      description: proof.description,
+      ...leafBase,
       status: "fail",
-      command: proof.command,
       output: run.combined,
       error: run.error,
       exit_code: run.exitCode,
       duration_ms: run.duration
     };
   }
-  if (proof.predicate.type === "mutation") {
-    const maxAllowed = proof.predicate.value ?? 0;
+  if (node.predicate.type === "mutation") {
+    const maxAllowed = node.predicate.value ?? 0;
     const survivors = parseSurvivors(run.combined);
     if (survivors === null) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: "could not parse mutation results (no recognized Stryker/mutmut/cargo-mutants summary)",
         exit_code: run.exitCode,
@@ -21495,69 +22052,59 @@ async function executeProof(proof, cwd) {
     }
     const passed2 = survivors <= maxAllowed;
     return {
-      id: proof.id,
-      description: proof.description,
+      ...leafBase,
       status: passed2 ? "pass" : "fail",
-      command: proof.command,
       output: run.combined,
       error: passed2 ? void 0 : `mutation: ${survivors} surviving mutant(s) exceeds the allowed maximum of ${maxAllowed}`,
       exit_code: run.exitCode,
       duration_ms: run.duration
     };
   }
-  if (proof.predicate.type === "regression") {
-    const measured = extractNumber(run.combined, proof.predicate.extract);
+  if (node.predicate.type === "regression") {
+    const measured = extractNumber(run.combined, node.predicate.extract);
     if (measured === null) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: "regression: could not parse a metric number from output (fail-safe \u2014 never auto-passes)",
         exit_code: run.exitCode,
         duration_ms: run.duration
       };
     }
-    if (proof.baseline_value === void 0) {
-      proof.baseline_value = measured;
-      proof.baseline_captured_at = (/* @__PURE__ */ new Date()).toISOString();
+    if (node.baseline_value === void 0) {
+      node.baseline_value = measured;
+      node.baseline_captured_at = (/* @__PURE__ */ new Date()).toISOString();
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "pass",
-        command: proof.command,
         output: run.combined,
         error: `regression: baseline captured (N0=${measured}). Re-run after the change to compare.`,
         exit_code: run.exitCode,
         duration_ms: run.duration
       };
     }
-    const baseline = proof.baseline_value;
-    const tol = proof.predicate.value ?? 0;
-    const lowerIsBetter = proof.predicate.lower_is_better ?? true;
+    const baseline = node.baseline_value;
+    const tol = node.predicate.value ?? 0;
+    const lowerIsBetter = node.predicate.lower_is_better ?? true;
     const passed2 = lowerIsBetter ? measured <= baseline * (1 + tol) : measured >= baseline * (1 - tol);
     const direction = lowerIsBetter ? "<=" : ">=";
     const threshold = lowerIsBetter ? baseline * (1 + tol) : baseline * (1 - tol);
     return {
-      id: proof.id,
-      description: proof.description,
+      ...leafBase,
       status: passed2 ? "pass" : "fail",
-      command: proof.command,
       output: run.combined,
       error: passed2 ? void 0 : `regression: ${measured} fails ${direction} ${threshold} (baseline ${baseline}, tolerance ${tol})`,
       exit_code: run.exitCode,
       duration_ms: run.duration
     };
   }
-  if (proof.predicate.type === "streamline") {
-    const maxAllowed = proof.predicate.value ?? 0;
+  if (node.predicate.type === "streamline") {
+    const maxAllowed = node.predicate.value ?? 0;
     if (run.exitCode > 1) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: `streamline: search command failed with exit code ${run.exitCode} (fail-safe \u2014 never auto-passes on tool errors)`,
         exit_code: run.exitCode,
@@ -21566,10 +22113,8 @@ async function executeProof(proof, cwd) {
     }
     if (run.exitCode === 1) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "pass",
-        command: proof.command,
         output: run.combined,
         error: "streamline: no matches \u2014 old code fully removed",
         exit_code: run.exitCode,
@@ -21579,29 +22124,25 @@ async function executeProof(proof, cwd) {
     const matchCount = run.combined.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
     const passed2 = matchCount <= maxAllowed;
     return {
-      id: proof.id,
-      description: proof.description,
+      ...leafBase,
       status: passed2 ? "pass" : "fail",
-      command: proof.command,
       output: run.combined,
       error: passed2 ? `streamline: ${matchCount} match(es) \u2264 allowed ${maxAllowed}` : `streamline: ${matchCount} remaining reference(s) exceeds allowed maximum of ${maxAllowed} \u2014 old code has not been fully removed`,
       exit_code: run.exitCode,
       duration_ms: run.duration
     };
   }
-  if (proof.predicate.type === "assertions") {
-    const minNonTrivial = proof.predicate.value ?? 1;
-    const report = analyseAssertions(proof.command, cwd);
+  if (node.predicate.type === "assertions") {
+    const minNonTrivial = node.predicate.value ?? 1;
+    const report = analyseAssertions(cmd, cwd);
     const exitPass = run.exitCode === 0;
     const noFiles = !report;
     const tooFew = report && report.nonTrivial < minNonTrivial;
     const allTrivial = report && report.total > 0 && report.nonTrivial === 0;
     if (!exitPass) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: `tests failed with exit code ${run.exitCode}${report ? `. Test files have ${report.total} assertion(s), ${report.nonTrivial} non-trivial.` : ""}`,
         exit_code: run.exitCode,
@@ -21610,10 +22151,8 @@ async function executeProof(proof, cwd) {
     }
     if (noFiles) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: "assertions: could not identify any test files from the command. Ensure the command references test files by path (e.g. `python -m pytest tests/test_foo.py`).",
         exit_code: run.exitCode,
@@ -21622,10 +22161,8 @@ async function executeProof(proof, cwd) {
     }
     if (allTrivial) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: [
           `ASSERTION QUALITY FAIL: all ${report.total} assertion(s) in ${report.files.length} test file(s) are trivial (constant-on-constant).`,
@@ -21639,10 +22176,8 @@ async function executeProof(proof, cwd) {
     }
     if (tooFew) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: [
           `assertions: only ${report.nonTrivial} non-trivial assertion(s) found across ${report.files.length} test file(s), need at least ${minNonTrivial}.`,
@@ -21653,52 +22188,108 @@ async function executeProof(proof, cwd) {
       };
     }
     return {
-      id: proof.id,
-      description: proof.description,
+      ...leafBase,
       status: "pass",
-      command: proof.command,
       output: run.combined,
       error: `assertions: ${report.nonTrivial} non-trivial assertion(s) across ${report.files.length} test file(s) (${report.total} total, ${report.trivial} trivial)`,
       exit_code: run.exitCode,
       duration_ms: run.duration
     };
   }
-  if (proof.predicate.type === "tdd") {
-    const greenExitCode = proof.predicate.value ?? 0;
+  if (node.predicate.type === "observability") {
+    const minLogStatements = node.predicate.value ?? 1;
+    let report = analyseObservability(cmd, cwd);
+    if (!report) {
+      report = analyseObservabilityFromOutput(run.combined, cwd);
+    }
+    if (!report) {
+      return {
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
+        error: "observability: could not identify any source files from the command or its output. Ensure the command references source files by path (e.g. `git diff --name-only HEAD~1 -- '*.ts'` or `python -m pytest tests/test_foo.py`).",
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    const tooFewLogs = report.totalLogStatements < minLogStatements;
+    const unloggedErrors = report.totalErrorHandlers - report.errorHandlersLogged;
+    const hasAntiPatterns = report.antiPatterns.length > 0;
+    if (!tooFewLogs && unloggedErrors === 0 && !hasAntiPatterns) {
+      const lines = [
+        `observability: ${report.totalLogStatements} log statement(s) across ${report.files.length} file(s)`,
+        `  error handlers: ${report.totalErrorHandlers} total, ${report.errorHandlersLogged} logged`
+      ];
+      for (const f of report.perFile) {
+        lines.push(`  ${f.file}: ${f.logCount} logs, ${f.errorHandlers} handlers (${f.errorHandlersLogged} logged)${f.antiPatterns.length > 0 ? `, ${f.antiPatterns.length} anti-pattern(s)` : ""}`);
+      }
+      return {
+        ...leafBase,
+        status: "pass",
+        output: run.combined,
+        error: lines.join("\n"),
+        exit_code: run.exitCode,
+        duration_ms: run.duration
+      };
+    }
+    const errors = [];
+    if (tooFewLogs) {
+      errors.push(`OBSERVABILITY FAIL: only ${report.totalLogStatements} log statement(s) found across ${report.files.length} file(s), need at least ${minLogStatements}.`);
+    }
+    if (unloggedErrors > 0) {
+      errors.push(`OBSERVABILITY FAIL: ${unloggedErrors} error handler(s) without logging across ${report.files.length} file(s). Every catch/except/Err branch must log before handling.`);
+    }
+    if (hasAntiPatterns) {
+      errors.push(`OBSERVABILITY FAIL: ${report.antiPatterns.length} anti-pattern(s) detected:`);
+      for (const ap of report.antiPatterns) {
+        const kindLabel = ap.kind === "empty_catch" ? "empty catch" : ap.kind === "swallowed_error" ? "swallowed error (no log)" : "bare static log";
+        errors.push(`  ${ap.file}:${ap.line} \u2014 ${kindLabel}: ${ap.snippet}`);
+      }
+    }
+    errors.push("", "Per-file breakdown:");
+    for (const f of report.perFile) {
+      const status = f.logCount >= 1 && f.errorHandlersLogged === f.errorHandlers && f.antiPatterns.length === 0 ? "\u2713" : "\u2717";
+      errors.push(`  ${status} ${f.file}: ${f.logCount} logs, ${f.errorHandlers} handlers (${f.errorHandlersLogged} logged)${f.antiPatterns.length > 0 ? ` \u2014 ${f.antiPatterns.length} anti-pattern(s)` : ""}`);
+    }
+    return {
+      ...leafBase,
+      status: "fail",
+      output: run.combined,
+      error: errors.join("\n"),
+      exit_code: run.exitCode,
+      duration_ms: run.duration
+    };
+  }
+  if (node.predicate.type === "tdd") {
+    const greenExitCode = node.predicate.value ?? 0;
     const isGreen = run.exitCode === greenExitCode;
     if (!isGreen) {
-      proof.seen_failing = true;
-      proof.seen_failing_at = proof.seen_failing_at ?? (/* @__PURE__ */ new Date()).toISOString();
+      node.seen_failing = true;
+      node.seen_failing_at = node.seen_failing_at ?? (/* @__PURE__ */ new Date()).toISOString();
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: run.error,
         exit_code: run.exitCode,
         duration_ms: run.duration
       };
     }
-    if (isGreen && !proof.seen_failing) {
+    if (isGreen && !node.seen_failing) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: "TDD VIOLATION: test passed without ever failing. Write a failing test first, run dod_check to record the red phase, then implement.",
         exit_code: run.exitCode,
         duration_ms: run.duration
       };
     }
-    const assertionReport = analyseAssertions(proof.command, cwd);
+    const assertionReport = analyseAssertions(cmd, cwd);
     if (assertionReport && assertionReport.total > 0 && assertionReport.nonTrivial === 0) {
       return {
-        id: proof.id,
-        description: proof.description,
+        ...leafBase,
         status: "fail",
-        command: proof.command,
         output: run.combined,
         error: [
           `TDD ASSERTION QUALITY FAIL: all ${assertionReport.total} assertion(s) in ${assertionReport.files.length} test file(s) are trivial (constant-on-constant).`,
@@ -21712,108 +22303,228 @@ async function executeProof(proof, cwd) {
     }
     const assertionNote = assertionReport ? ` | assertions: ${assertionReport.nonTrivial} non-trivial across ${assertionReport.files.length} file(s)` : "";
     return {
-      id: proof.id,
-      description: proof.description,
+      ...leafBase,
       status: "pass",
-      command: proof.command,
       output: run.combined,
       error: `TDD cycle verified (seen failing \u2192 now passing)${assertionNote}`,
       exit_code: run.exitCode,
       duration_ms: run.duration
     };
   }
-  const passed = evaluatePredicate(proof.predicate, run.exitCode, run.combined);
+  const passed = evaluatePredicate(node.predicate, run.exitCode, run.combined);
   return {
-    id: proof.id,
-    description: proof.description,
+    ...leafBase,
     status: passed ? "pass" : "fail",
-    command: proof.command,
     output: run.combined,
     error: run.error,
     exit_code: run.exitCode,
     duration_ms: run.duration
   };
 }
-function carryForwardStep(step) {
-  const proofs = step.proofs.map((p) => ({
-    id: p.id,
-    description: p.description,
-    // A never-run proof (last_status "pending") has no result to carry; surface
-    // it as "skipped" for display. It is not persisted on a scoped run.
-    status: p.last_status === "pending" ? "skipped" : p.last_status,
-    command: p.command,
-    output: p.last_output
-  }));
-  const allPass = step.proofs.length > 0 && step.proofs.every((p) => p.last_status === "pass");
-  return { id: step.id, title: step.title, status: allPass ? "pass" : "fail", proofs };
+function carryForwardNode(node, node_path) {
+  return {
+    node_path,
+    id: node.id,
+    title: node.title,
+    description: node.description ?? node.intent ?? node.title,
+    status: node.last_status === "pending" || node.last_status === "draft" ? "skipped" : node.last_status,
+    command: node.command ?? "",
+    output: node.last_output
+  };
+}
+function partitionLeaves(roots, targetPath) {
+  if (!targetPath) {
+    const allLeaves2 = [];
+    const allDrafts = [];
+    collectAllLeaves(roots, "", allLeaves2, allDrafts);
+    return { inScope: allLeaves2.filter((l) => l.node.refinement === "concrete"), outOfScope: [] };
+  }
+  const target = findNodeByPath(roots, targetPath);
+  if (!target) return { inScope: [], outOfScope: [] };
+  const inScope = [];
+  if (target.children) {
+    flattenTargetLeaves(target.children, targetPath, inScope);
+  } else if (target.refinement === "concrete") {
+    inScope.push({ node: target, node_path: targetPath });
+  }
+  const allLeaves = flattenConcreteLeaves(roots);
+  const inScopePaths = new Set(inScope.map((l) => l.node_path));
+  const outOfScope = allLeaves.filter((l) => !inScopePaths.has(l.node_path));
+  return { inScope, outOfScope };
+}
+function flattenTargetLeaves(nodes, parentPath, out) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = `${parentPath}.children.${i}`;
+    if (node.children && node.children.length > 0) {
+      flattenTargetLeaves(node.children, currentPath, out);
+    } else if (node.refinement === "concrete") {
+      out.push({ node, node_path: currentPath });
+    }
+  }
+}
+function collectAllLeaves(nodes, parentPath, concrete, drafts) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      collectAllLeaves(node.children, currentPath, concrete, drafts);
+    } else if (node.refinement === "concrete") {
+      concrete.push({ node, node_path: currentPath });
+    } else if (node.refinement === "draft") {
+      drafts.push({ node, node_path: currentPath });
+    }
+  }
 }
 async function checkDocument(doc, cwdOverride, opts) {
   const cwd = cwdOverride ?? doc.cwd;
-  const scopedStepId = opts?.stepId;
-  const stepResults = [];
-  let totalPass = 0;
-  let totalFail = 0;
+  const targetPath = opts?.nodePath;
+  const { inScope, outOfScope } = partitionLeaves(doc.roots, targetPath);
+  const draftCount = countDraftNodes(doc.roots);
+  const leafResults = [];
+  if (targetPath && outOfScope.length > 0) {
+    for (const { node, node_path } of outOfScope) {
+      leafResults.push(carryForwardNode(node, node_path));
+    }
+    carryForwardDrafts(doc.roots, "", targetPath, leafResults);
+  }
   let anyRealFail = false;
   let anyUnverified = false;
-  for (const step of doc.steps) {
-    if (scopedStepId && step.id !== scopedStepId) {
-      const carried = carryForwardStep(step);
-      stepResults.push(carried);
-      if (carried.status === "pass") totalPass++;
-      else totalFail++;
-      continue;
+  for (const { node, node_path } of inScope) {
+    const result = await executeProof(node, cwd);
+    result.node_path = node_path;
+    leafResults.push(result);
+    if (result.status === "fail" && !node.advisory) {
+      anyRealFail = true;
     }
-    const proofResults = [];
-    let stepPassed = true;
-    for (const proof of step.proofs) {
-      const result = await executeProof(proof, cwd);
-      proofResults.push(result);
-      if (result.status === "fail" && !proof.advisory) {
-        stepPassed = false;
-        anyRealFail = true;
-      }
-      if (result.status === "skipped" && !proof.advisory) {
-        stepPassed = false;
-        anyUnverified = true;
-      }
+    if (result.status === "skipped" && !node.advisory) {
+      anyUnverified = true;
     }
-    if (step.proofs.length === 0) stepPassed = false;
-    stepResults.push({
-      id: step.id,
-      title: step.title,
-      status: stepPassed ? "pass" : "fail",
-      proofs: proofResults
-    });
-    if (stepPassed) totalPass++;
-    else totalFail++;
   }
-  const proofFingerprint = computeProofFingerprint(doc.steps);
+  if (!targetPath) {
+    addDraftLeafResults(doc.roots, "", leafResults);
+  }
+  const proofFingerprint = computeProofFingerprint(doc.roots);
   const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
-  const overall = tampered ? "fail" : scopedStepId ? "incomplete" : anyRealFail ? "fail" : anyUnverified ? "incomplete" : "pass";
-  const baseSummary = scopedStepId ? `SCOPED (step "${scopedStepId}"): ${totalPass}/${doc.steps.length} steps currently pass \u2014 run a full dod_check (no step) to verify completion` : `${totalPass}/${doc.steps.length} steps pass${totalFail > 0 ? `, ${totalFail} failing` : ""}`;
-  const summary = tampered ? `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}` : !scopedStepId && anyUnverified && !anyRealFail ? `${baseSummary} \u2014 one or more manual/review proofs await dod_verify` : baseSummary;
+  const overall = tampered ? "fail" : targetPath ? "incomplete" : draftCount > 0 ? "incomplete" : anyRealFail ? "fail" : anyUnverified ? "incomplete" : "pass";
+  const baseSummary = targetPath ? `SCOPED (node "${targetPath}"): run a full dod_check (no nodePath) to verify completion` : `${leafResults.filter((r) => r.status === "pass").length}/${leafResults.filter((r) => r.status !== "draft").length} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
+  const summary = tampered ? `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}` : !targetPath && draftCount > 0 ? `${baseSummary} \u2014 use dod_refine to concretize draft nodes` : !targetPath && anyUnverified && !anyRealFail ? `${baseSummary} \u2014 one or more manual/review proofs await dod_verify` : baseSummary;
   return {
     overall,
-    steps: stepResults,
+    leaves: leafResults,
     summary,
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     proof_fingerprint: proofFingerprint,
-    ...scopedStepId ? { scoped: true, ran_step_id: scopedStepId } : {},
+    draft_count: draftCount,
+    ...targetPath ? { scoped: true, ran_node_path: targetPath } : {},
     ...tampered ? { tampered: true } : {}
   };
+}
+function addDraftLeafResults(nodes, parentPath, out) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      addDraftLeafResults(node.children, currentPath, out);
+    } else if (node.refinement === "draft") {
+      out.push({
+        node_path: currentPath,
+        id: node.id,
+        title: node.title,
+        description: node.intent ?? node.title,
+        status: "draft",
+        command: "",
+        output: "DRAFT \u2014 refine with dod_refine before this proof can be verified."
+      });
+    }
+  }
+}
+function carryForwardDrafts(nodes, parentPath, targetPath, out) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      if (targetPath.startsWith(currentPath)) continue;
+      carryForwardDrafts(node.children, currentPath, targetPath, out);
+    } else if (node.refinement === "draft" && !targetPath.startsWith(currentPath)) {
+      out.push({
+        node_path: currentPath,
+        id: node.id,
+        title: node.title,
+        description: node.intent ?? node.title,
+        status: "draft",
+        command: "",
+        output: "DRAFT \u2014 refine with dod_refine before this proof can be verified."
+      });
+    }
+  }
 }
 
 // src/author.ts
 import { promises as fs2 } from "node:fs";
-import * as path3 from "node:path";
+import * as path4 from "node:path";
 function proofMark(status) {
   switch (status) {
     case "pass":
       return "[x]";
     case "skipped":
       return "[~]";
+    case "draft":
+      return "[~]";
     default:
       return "[ ]";
+  }
+}
+function renderNode(node, depth, lines) {
+  const indent = "  ".repeat(depth);
+  const isLeaf = !node.children || node.children.length === 0;
+  if (isLeaf) {
+    renderLeaf(node, indent, lines);
+  } else {
+    renderGroup(node, depth, indent, lines);
+  }
+}
+function renderGroup(node, depth, indent, lines) {
+  const hasDrafts = hasDraftNodes(node.children);
+  const allPass = isBranchLocked(node.children) && node.children.every((c) => c.refinement === "concrete" && (c.last_status === "pass" || c.last_status === "skipped")) && allLeavesPass(node.children);
+  let mark;
+  if (hasDrafts) mark = "[~]";
+  else if (allPass && node.children.length > 0) mark = "[x]";
+  else mark = "[ ]";
+  lines.push(`${indent}**${node.title}** ${mark}`);
+  lines.push("");
+  for (const child of node.children) {
+    renderNode(child, depth + 1, lines);
+  }
+}
+function allLeavesPass(nodes) {
+  for (const n of nodes) {
+    if (n.children && n.children.length > 0) {
+      if (!allLeavesPass(n.children)) return false;
+    } else if (n.refinement === "concrete") {
+      if (n.last_status !== "pass" && n.last_status !== "skipped") return false;
+    } else if (n.refinement === "draft") {
+      return false;
+    }
+  }
+  return true;
+}
+function renderLeaf(node, indent, lines) {
+  if (node.refinement === "draft") {
+    const mark2 = proofMark("draft");
+    lines.push(`${indent}- ${mark2} **Draft**: ${node.intent ?? node.title}`);
+    return;
+  }
+  const mark = proofMark(node.last_status);
+  if (node.predicate?.type === "manual") {
+    const mr = node.manual_result;
+    const state = mr ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_` : " _(awaiting human verification)_";
+    lines.push(`${indent}- ${mark} Proof: Manual \u2014 ${node.description}${state}`);
+  } else if (node.predicate?.type === "tdd") {
+    const tddState = node.seen_failing ? node.last_status === "pass" ? "\u{1F7E2} GREEN" : "\u{1F534} RED" : "\u2B1C AWAITING RED";
+    lines.push(`${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` \u2192 ${node.description}`);
+  } else {
+    lines.push(`${indent}- ${mark} Proof: \`${node.command}\` \u2192 ${node.description}`);
   }
 }
 function renderMarkdown(doc) {
@@ -21821,19 +22532,18 @@ function renderMarkdown(doc) {
   l.push(`# ${doc.title} \u2014 Requirements Spec`);
   l.push("");
   l.push("<claude_instructions>");
-  l.push("**For Claude (/goal):** Work through each incomplete step below.");
-  l.push("1. Mark a step `[>]` when you begin working on it.");
+  l.push("**For Claude (/goal):** Work through each incomplete task below.");
+  l.push("1. Mark a task `[>]` when you begin working on it.");
   l.push("2. Call `dod_check` to verify proofs \u2014 do NOT mark proofs manually.");
-  l.push("   While iterating on one step, pass `step: N` to verify just that step fast (other steps are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
-  l.push("3. A step is complete when ALL its proofs pass via `dod_check`.");
-  l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts \u2014 it only reports what's already");
-  l.push("    on record (`skipped` = not yet verified, holds overall at INCOMPLETE). Call");
-  l.push("    `dod_verify(dod_id, proof_id)` explicitly once verification is actually relevant \u2014 typically");
-  l.push("    right after implementing that step \u2014 then re-run `dod_check` to fold in the verdict.");
-  l.push("4. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("4b. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
-  l.push("4c. After a step's proofs all pass, commit that step before starting the next \u2014 one commit per step (clean, bisectable history).");
-  l.push("5. Continue until `dod_check` returns PASS \u2014 then stop and report done.");
+  l.push("   While iterating on one subtree, pass `nodePath` to verify just that part fast (others are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
+  l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
+  l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts \u2014 call");
+  l.push("    `dod_verify(dod_id, proof_id)` explicitly when verification is actually relevant.");
+  l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof with a command.");
+  l.push("4b. Use `dod_add_node` to add new nodes discovered during implementation.");
+  l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
+  l.push("5b. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
+  l.push("6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass) \u2014 then stop and report done.");
   l.push("");
   l.push(`**Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
   l.push("");
@@ -21843,7 +22553,6 @@ function renderMarkdown(doc) {
   l.push("Store tampering is **logged and detectable** \u2014 each check prints a proof-set fingerprint.");
   l.push("Manual/review proofs are confirmed by the human directly (popup / elicitation) via `dod_verify` \u2014");
   l.push("Claude cannot self-confirm them, and an unrequested one holds the DoD at INCOMPLETE, never PASS.");
-  l.push("A confirmed verdict is recorded until the proof changes.");
   l.push("</claude_instructions>");
   l.push("");
   l.push(`**Goal:** ${doc.goal}`);
@@ -21883,24 +22592,24 @@ function renderMarkdown(doc) {
   l.push("## Definition of Done");
   l.push("");
   l.push("<definition_of_done>");
-  for (let i = 0; i < doc.steps.length; i++) {
-    const step = doc.steps[i];
-    const allPass = step.proofs.every((p) => p.last_status === "pass" || p.last_status === "skipped");
-    const stepMark = allPass && step.proofs.length > 0 ? "[x]" : "[ ]";
-    l.push("");
-    l.push(`### Step ${i + 1}: ${step.title} ${stepMark}`);
-    l.push("");
-    for (const proof of step.proofs) {
-      const mark = proofMark(proof.last_status);
-      if (proof.predicate.type === "manual") {
-        const mr = proof.manual_result;
-        const state = mr ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_` : " _(awaiting human verification)_";
-        l.push(`- ${mark} Proof: Manual \u2014 ${proof.description}${state}`);
-      } else if (proof.predicate.type === "tdd") {
-        const tddState = proof.seen_failing ? proof.last_status === "pass" ? "\u{1F7E2} GREEN" : "\u{1F534} RED" : "\u2B1C AWAITING RED";
-        l.push(`- ${mark} Proof (TDD ${tddState}): \`${proof.command}\` \u2192 ${proof.description}`);
-      } else {
-        l.push(`- ${mark} Proof: \`${proof.command}\` \u2192 ${proof.description}`);
+  for (let i = 0; i < doc.roots.length; i++) {
+    const root = doc.roots[i];
+    const isLeaf = !root.children || root.children.length === 0;
+    if (isLeaf) {
+      l.push("");
+      renderLeaf(root, "", l);
+    } else {
+      const hasDrafts = hasDraftNodes(root.children);
+      const allPass = isBranchLocked(root.children) && root.children.length > 0 && allLeavesPass(root.children);
+      let mark;
+      if (hasDrafts) mark = "[~]";
+      else if (allPass) mark = "[x]";
+      else mark = "[ ]";
+      l.push("");
+      l.push(`### ${root.title} ${mark}`);
+      l.push("");
+      for (const child of root.children) {
+        renderNode(child, 1, l);
       }
     }
   }
@@ -21914,7 +22623,7 @@ function renderMarkdown(doc) {
     l.push("## Amendment log");
     l.push("");
     for (const a of doc.amendments) {
-      l.push(`- **${a.timestamp}** [${a.step_id}/${a.proof_id}] ${a.action}: ${a.reason}`);
+      l.push(`- **${a.timestamp}** [${a.node_path}] ${a.action}: ${a.reason}`);
     }
   }
   l.push("");
@@ -21922,21 +22631,19 @@ function renderMarkdown(doc) {
 }
 async function writeMarkdown(doc) {
   const content = renderMarkdown(doc);
-  const dir = path3.dirname(doc.markdown_path);
+  const dir = path4.dirname(doc.markdown_path);
   await fs2.mkdir(dir, { recursive: true });
   await fs2.writeFile(doc.markdown_path, content, "utf-8");
 }
 function updateDocFromCheckResult(doc, result) {
-  for (const stepResult of result.steps) {
-    if (result.scoped && stepResult.id !== result.ran_step_id) continue;
-    const step = doc.steps.find((s) => s.id === stepResult.id);
-    if (!step) continue;
-    for (const proofResult of stepResult.proofs) {
-      const proof = step.proofs.find((p) => p.id === proofResult.id);
-      if (!proof) continue;
-      proof.last_status = proofResult.status;
-      proof.last_output = proofResult.output;
-      proof.last_checked = result.timestamp;
+  for (const leafResult of result.leaves) {
+    const node = findNodeByPath(doc.roots, leafResult.node_path);
+    if (!node) continue;
+    if (result.scoped && leafResult.node_path !== result.ran_node_path && !leafResult.node_path.startsWith(result.ran_node_path ?? "")) continue;
+    if (leafResult.status !== "draft") {
+      node.last_status = leafResult.status;
+      node.last_output = leafResult.output;
+      node.last_checked = result.timestamp;
     }
   }
   if (result.scoped) return;
@@ -21950,40 +22657,68 @@ function formatCheckResult(result) {
   const l = [];
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
   l.push("");
-  if (result.scoped) {
-    l.push(`\u23F3 **Scoped run \u2014 step "${result.ran_step_id}" only.** Other steps shown from their last check, not re-run.`);
-    l.push("This is NOT a completion verdict. Run `dod_check` with no `step` to verify the whole DoD.");
+  if (result.tampered) {
+    l.push("\u{1F534} **TAMPER DETECTED** \u2014 proof-set fingerprint mismatch. Store was edited outside dod_amend.");
     l.push("");
   }
-  for (const step of result.steps) {
-    const passCount = step.proofs.filter((p) => p.status === "pass").length;
-    const skipCount = step.proofs.filter((p) => p.status === "skipped").length;
-    const icon = step.status === "pass" ? "\u2705" : "\u274C";
-    const countStr = skipCount > 0 ? `${passCount} pass, ${skipCount} manual-skip, ${step.proofs.length - passCount - skipCount} fail` : `${passCount}/${step.proofs.length} proofs`;
-    l.push(`${icon} **Step: ${step.title}** \u2014 ${step.status.toUpperCase()} (${countStr})`);
-    for (const proof of step.proofs) {
-      const isManual = proof.command === "manual";
-      if (proof.status === "pass") {
+  if (result.scoped) {
+    l.push(`\u23F3 **Scoped run \u2014 node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`);
+    l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
+    l.push("");
+  }
+  if (result.draft_count > 0) {
+    l.push(`\u{1F4DD} **${result.draft_count} draft node(s)** \u2014 use dod_refine to concretize before a final pass is possible.`);
+    l.push("");
+  }
+  const byRoot = /* @__PURE__ */ new Map();
+  for (const leaf of result.leaves) {
+    const rootIdx = leaf.node_path.split(".")[0];
+    if (!byRoot.has(rootIdx)) byRoot.set(rootIdx, []);
+    byRoot.get(rootIdx).push(leaf);
+  }
+  for (const [rootIdx, leaves] of byRoot) {
+    const passCount = leaves.filter((p) => p.status === "pass").length;
+    const failCount = leaves.filter((p) => p.status === "fail").length;
+    const skipCount = leaves.filter((p) => p.status === "skipped").length;
+    const draftCount = leaves.filter((p) => p.status === "draft").length;
+    const hasFail = failCount > 0;
+    const hasDraft = draftCount > 0;
+    const icon = hasFail ? "\u274C" : hasDraft ? "\u{1F4DD}" : "\u2705";
+    const status = hasFail ? "FAIL" : hasDraft ? "INCOMPLETE" : "PASS";
+    const rootTitle = leaves[0]?.title ?? `Root ${rootIdx}`;
+    const countStr = [
+      passCount > 0 ? `${passCount} pass` : "",
+      failCount > 0 ? `${failCount} fail` : "",
+      skipCount > 0 ? `${skipCount} skipped` : "",
+      draftCount > 0 ? `${draftCount} draft` : ""
+    ].filter(Boolean).join(", ");
+    l.push(`${icon} **${rootTitle}** \u2014 ${status} (${countStr})`);
+    for (const leaf of leaves) {
+      const depth = leaf.node_path.split(".children.").length - 1;
+      const indent = "  ".repeat(depth + 1);
+      if (leaf.status === "draft") {
+        l.push(`${indent}\u{1F4DD} ${leaf.description} \u2014 DRAFT (use dod_refine to concretize)`);
+      } else if (leaf.status === "pass") {
+        const isManual = leaf.command === "manual";
         if (isManual) {
-          l.push(`  \u2713 MANUAL \u2014 ${proof.description} (${proof.output ?? "human-confirmed"})`);
+          l.push(`${indent}\u2713 MANUAL \u2014 ${leaf.description} (${leaf.output ?? "human-confirmed"})`);
         } else {
-          l.push(`  \u2713 \`${proof.command}\` (${proof.duration_ms ?? 0}ms)`);
+          l.push(`${indent}\u2713 \`${leaf.command}\` (${leaf.duration_ms ?? 0}ms)`);
         }
-      } else if (proof.status === "skipped") {
-        l.push(`  \u23F3 \`${proof.command}\` \u2014 not verified this run${proof.output ? `: ${proof.output}` : ""}`);
-      } else if (isManual) {
-        l.push(`  \u2717 MANUAL \u2014 ${proof.description}`);
-        if (proof.error) l.push(`    ${proof.error}`);
+      } else if (leaf.status === "skipped") {
+        l.push(`${indent}\u23F3 \`${leaf.command}\` \u2014 not verified this run${leaf.output ? `: ${leaf.output}` : ""}`);
       } else {
-        l.push(`  \u2717 \`${proof.command}\``);
-        if (proof.exit_code !== void 0) {
-          l.push(`    exit code: ${proof.exit_code}`);
-        }
-        if (proof.error) {
-          l.push(`    stderr: ${proof.error.split("\n").slice(0, 5).join("\n    ")}`);
-        }
-        if (proof.output) {
-          l.push(`    output: ${proof.output.split("\n").slice(0, 5).join("\n    ")}`);
+        const isManual = leaf.command === "manual";
+        if (isManual) {
+          l.push(`${indent}\u2717 MANUAL \u2014 ${leaf.description}`);
+          if (leaf.error) l.push(`${indent}  ${leaf.error}`);
+        } else {
+          l.push(`${indent}\u2717 \`${leaf.command}\``);
+          if (leaf.exit_code !== void 0) l.push(`${indent}  exit code: ${leaf.exit_code}`);
+          if (leaf.error) l.push(`${indent}  stderr: ${leaf.error.split("\n").slice(0, 5).join(`
+${indent}  `)}`);
+          if (leaf.output) l.push(`${indent}  output: ${leaf.output.split("\n").slice(0, 5).join(`
+${indent}  `)}`);
         }
       }
     }
@@ -22027,22 +22762,52 @@ function inferPredicate(description) {
   }
   return { type: "exit_code", value: 0 };
 }
-function parseProofLine(line, proofIndex) {
-  const cmdMatch = line.match(/^-\s*\[([ x~>])\]\s*Proof:\s*`([^`]+)`\s*→\s*(.+)$/);
-  if (cmdMatch) {
-    const [, status, command, description] = cmdMatch;
+function parseLeafLine(line) {
+  const trimmed = line.trim();
+  const draftMatch = trimmed.match(/^-\s*\[[ ~]\s*\]\s*\*\*Draft\*\*:\s*(.+)$/i);
+  if (draftMatch) {
     return {
-      id: `proof-${proofIndex}`,
-      command: command.trim(),
-      predicate: inferPredicate(description.trim()),
-      description: description.trim(),
-      last_status: status === "x" ? "pass" : status === "~" ? "skipped" : "pending"
+      id: "",
+      title: draftMatch[1].trim(),
+      refinement: "draft",
+      intent: draftMatch[1].trim(),
+      last_status: "draft"
     };
   }
-  const manualMatch = line.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
+  const tddMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof\s*\(TDD\s+[^)]+\):\s*`([^`]+)`\s*→\s*(.+)$/);
+  if (tddMatch) {
+    const command = tddMatch[2].trim();
+    const description = tddMatch[3].trim();
+    return {
+      id: "",
+      title: description,
+      refinement: "concrete",
+      command,
+      predicate: { type: "tdd", value: 0 },
+      description,
+      last_status: tddMatch[1] === "x" ? "pass" : tddMatch[1] === "~" ? "skipped" : "pending"
+    };
+  }
+  const cmdMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*`([^`]+)`\s*→\s*(.+)$/);
+  if (cmdMatch) {
+    const command = cmdMatch[2].trim();
+    const description = cmdMatch[3].trim();
+    return {
+      id: "",
+      title: description,
+      refinement: "concrete",
+      command,
+      predicate: inferPredicate(description),
+      description,
+      last_status: cmdMatch[1] === "x" ? "pass" : cmdMatch[1] === "~" ? "skipped" : "pending"
+    };
+  }
+  const manualMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
   if (manualMatch) {
     return {
-      id: `proof-${proofIndex}`,
+      id: "",
+      title: manualMatch[2].trim(),
+      refinement: "concrete",
       command: "manual",
       predicate: { type: "manual" },
       description: manualMatch[2].trim(),
@@ -22128,41 +22893,79 @@ async function parseMarkdown(filePath) {
     if (currentSection) sectionBuf.push(line);
   }
   flushSection();
-  const steps = [];
-  let currentStep = null;
-  let proofCounter = 0;
+  const roots = [];
   let inDod = false;
+  let nodeCounter = 0;
+  const stack = [];
   for (const line of lines) {
     if (line.match(/^## Definition of Done/)) {
       inDod = true;
       continue;
     }
     if (!inDod) continue;
-    if (line.match(/^## /) && !line.match(/^### /)) {
-      if (currentStep) steps.push(currentStep);
-      currentStep = null;
-      break;
-    }
-    const stepMatch = line.match(/^### Step (\d+):\s*(.+?)(?:\s*\[.\])?$/);
-    if (stepMatch) {
-      if (currentStep) steps.push(currentStep);
-      currentStep = {
-        id: `step-${stepMatch[1]}`,
-        title: stepMatch[2].trim(),
-        proofs: []
+    if (line.match(/^## /)) break;
+    if (!line.trim()) continue;
+    const leadingSpaces = line.length - line.trimStart().length;
+    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
+    if (rootMatch) {
+      const node = {
+        id: `node-${nodeCounter++}`,
+        title: rootMatch[1].trim(),
+        refinement: "draft",
+        // May be updated to concrete when children parsed
+        children: [],
+        last_status: "draft"
       };
+      roots.push(node);
+      stack.length = 0;
+      stack.push({ node, depth: -1 });
       continue;
     }
-    if (currentStep && line.match(/^-\s*\[/)) {
-      const proof = parseProofLine(line.trim(), proofCounter++);
-      if (proof) {
-        proof.id = `proof-${currentStep.id.split("-")[1]}-${currentStep.proofs.length + 1}`;
-        currentStep.proofs.push(proof);
+    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
+    if (groupMatch) {
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
+        stack.pop();
+      }
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      const node = {
+        id: `node-${nodeCounter++}`,
+        title: groupMatch[1].trim(),
+        refinement: "draft",
+        children: [],
+        last_status: "draft"
+      };
+      if (parent && parent.children) {
+        parent.children.push(node);
+      }
+      stack.push({ node, depth });
+      continue;
+    }
+    const leaf = parseLeafLine(line);
+    if (leaf) {
+      leaf.id = `node-${nodeCounter++}`;
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
+        stack.pop();
+      }
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      if (parent && parent.children) {
+        parent.children.push(leaf);
+      } else if (!parent) {
+        roots.push(leaf);
       }
     }
   }
-  if (currentStep) steps.push(currentStep);
-  return { title, goal, date: date3, cwd, sections, steps };
+  function cleanupNode(node) {
+    if (node.children && node.children.length === 0) {
+      delete node.children;
+    }
+    if (node.children) {
+      for (const child of node.children) cleanupNode(child);
+    }
+  }
+  for (const root of roots) cleanupNode(root);
+  return { title, goal, date: date3, cwd, sections, roots };
 }
 
 // src/notify.ts
@@ -22256,7 +23059,7 @@ $payload = @{ result = $verdict; note = $noteBox.Text } | ConvertTo-Json -Compre
 `;
 function showVerifyDialog(title, body) {
   if (!isWindows) return Promise.resolve({ result: "no" });
-  return new Promise((resolve5) => {
+  return new Promise((resolve6) => {
     try {
       const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", VERIFY_DIALOG_SCRIPT], {
         stdio: ["ignore", "pipe", "ignore"],
@@ -22271,19 +23074,19 @@ function showVerifyDialog(title, body) {
       child.stdout.on("data", (chunk) => {
         out += chunk.toString();
       });
-      child.on("error", () => resolve5({ result: "no" }));
+      child.on("error", () => resolve6({ result: "no" }));
       child.on("close", () => {
         try {
           const parsed = JSON.parse(out.trim());
           const result = parsed.result === "yes" ? "yes" : "no";
           const note = typeof parsed.note === "string" && parsed.note.trim() ? parsed.note.trim() : void 0;
-          resolve5({ result, note });
+          resolve6({ result, note });
         } catch {
-          resolve5({ result: "no" });
+          resolve6({ result: "no" });
         }
       });
     } catch {
-      resolve5({ result: "no" });
+      resolve6({ result: "no" });
     }
   });
 }
@@ -22291,8 +23094,8 @@ function showVerifyDialog(title, body) {
 // src/command-check.ts
 import { execFile } from "node:child_process";
 import { promisify as promisify2 } from "node:util";
-import { existsSync as existsSync2 } from "node:fs";
-import * as path4 from "node:path";
+import { existsSync as existsSync3 } from "node:fs";
+import * as path5 from "node:path";
 var execFileAsync = promisify2(execFile);
 var isWindows2 = process.platform === "win32";
 var CMD_BUILTINS = /* @__PURE__ */ new Set([
@@ -22445,9 +23248,9 @@ async function toolExists(name, cwd) {
   if (isWindows2 && CMD_BUILTINS.has(name.toLowerCase())) {
     ok = true;
   } else if (looksLikePath(name)) {
-    const base = path4.isAbsolute(name) ? name : path4.resolve(cwd, name);
+    const base = path5.isAbsolute(name) ? name : path5.resolve(cwd, name);
     const candidates = isWindows2 ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
-    ok = candidates.some((p) => existsSync2(p));
+    ok = candidates.some((p) => existsSync3(p));
   } else {
     ok = await onPath(name);
   }
@@ -22477,9 +23280,37 @@ var HARD_MANDATORY = [
   { cat: "integration_behavioral", label: "Integration (behavioral): exercise the change through the system's actual entry point (API/CLI/page render), not a test harness." },
   { cat: "test", label: "Full test suite: a proof that the whole suite stays green (no regressions)." }
 ];
+var OPTIONAL_REQUIRING_JUSTIFICATION = [
+  {
+    cat: "tdd",
+    label: "TDD: a fail-first test for new/changed behavior.",
+    warnMsg: (type) => type === "bug" ? 'No "tdd" proof \u2014 a bug fix should include a regression test that fails first (red), then passes. Add a tdd proof, or provide a skip_reason.' : 'No "tdd" proof \u2014 new functionality should include a fail-first unit test. Add a tdd proof, or provide a skip_reason.'
+  },
+  {
+    cat: "mutation",
+    label: "Mutation testing: prove the test suite actually catches bugs.",
+    warnMsg: () => 'No "mutation" proof \u2014 a green suite can still catch zero bugs. For critical logic, add a mutation proof (cargo-mutants / mutmut / Stryker), or provide a skip_reason.'
+  },
+  {
+    cat: "streamline",
+    label: "Streamline: prove old implementations were removed when revising functionality.",
+    warnMsg: () => 'No "streamline" proof \u2014 when revising existing code, a streamline proof verifies old implementations were removed. Add one (grep/rg/findstr for old symbols), or provide a skip_reason.'
+  },
+  {
+    cat: "observability",
+    label: "Observability: prove changed files are instrumented for debugging.",
+    warnMsg: () => 'No "observability" proof \u2014 changed source files should have log statements at error paths, no empty catch/swallowed errors. Add an observability proof, or provide a skip_reason.'
+  }
+];
+var REGRESSION_CATEGORIES = [
+  { cat: "performance", label: "Performance: prove no perf regression via regression predicate." },
+  { cat: "complexity", label: "Complexity: prove cyclomatic complexity does not regress." },
+  { cat: "coverage", label: "Coverage: prove test coverage does not drop." },
+  { cat: "duplication", label: "Duplication: prove code duplication does not increase." }
+];
 var STRONG = ["test", "tdd", "integration_behavioral", "manual"];
 var WEAK = ["structure", "lint", "format"];
-function validateBaseline(type, steps) {
+function validateBaseline(type, steps, skipReasons) {
   const present = /* @__PURE__ */ new Set();
   for (const s of steps) for (const p of s.proofs) present.add(p.category);
   const errors = [];
@@ -22489,20 +23320,27 @@ function validateBaseline(type, steps) {
     }
   }
   const warnings = [];
-  if (!present.has("tdd")) {
-    warnings.push(
-      type === "bug" ? 'No "tdd" proof. A bug fix should include a regression test that fails first (red), then passes.' : 'No "tdd" proof. New functionality should include a fail-first unit test.'
-    );
+  for (const opt of OPTIONAL_REQUIRING_JUSTIFICATION) {
+    if (present.has(opt.cat)) continue;
+    const reason = skipReasons?.[opt.cat];
+    if (reason) {
+      warnings.push(`\u26A0 "${opt.cat}" omitted (skip_reason: "${reason}").`);
+    } else {
+      errors.push(
+        `Missing "${opt.cat}" proof. ${opt.label} Either add a proof for this category, or provide skip_reasons["${opt.cat}"] with a justification for why it does not apply to this change.`
+      );
+    }
   }
-  if (!present.has("mutation")) {
-    warnings.push(
-      'No "mutation" proof. A green suite can still catch zero bugs \u2014 for critical logic, add a mutation proof asserting surviving mutants stay <= N (cargo-mutants / mutmut / Stryker).'
-    );
-  }
-  if (!present.has("streamline")) {
-    warnings.push(
-      'No "streamline" proof. When revising existing functionality, add a streamline proof to verify old implementations were removed \u2014 a search (grep/rg/findstr) that must return zero matches.'
-    );
+  for (const rc of REGRESSION_CATEGORIES) {
+    if (present.has(rc.cat)) continue;
+    const reason = skipReasons?.[rc.cat];
+    if (reason) {
+      warnings.push(`\u26A0 "${rc.cat}" omitted (skip_reason: "${reason}").`);
+    } else {
+      errors.push(
+        `Missing "${rc.cat}" proof. ${rc.label} Either add a regression proof for this metric, or provide skip_reasons["${rc.cat}"] with a justification for why it does not apply to this change.`
+      );
+    }
   }
   for (const s of steps) {
     if (s.proofs.length === 0) continue;
@@ -22518,10 +23356,10 @@ function validateBaseline(type, steps) {
 // src/index.ts
 var server = new McpServer({
   name: "dod-guard",
-  version: "1.10.0"
+  version: "2.0.0"
 });
 var PredicateSchema = external_exports.object({
-  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline"]),
+  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline", "observability"]),
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
   extract: external_exports.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
   lower_is_better: external_exports.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage).")
@@ -22540,20 +23378,23 @@ var ProofCategorySchema = external_exports.enum([
   "coverage",
   "duplication",
   "streamline",
+  "observability",
   "manual",
   "other"
 ]);
-var ProofInputSchema = external_exports.object({
-  command: external_exports.string(),
-  predicate: PredicateSchema,
-  description: external_exports.string(),
-  category: ProofCategorySchema.describe("Company-baseline category. Mandatory categories (integration_wiring, integration_behavioral, test) are enforced at creation \u2014 see standards/dod-baselines.md."),
-  advisory: external_exports.boolean().optional().describe("Advisory tier: a failing advisory proof warns but does not block. regression proofs default to advisory.")
-});
-var StepInputSchema = external_exports.object({
-  title: external_exports.string(),
-  proofs: external_exports.array(ProofInputSchema)
-});
+var TaskNodeInputSchema = external_exports.lazy(
+  () => external_exports.object({
+    title: external_exports.string(),
+    refinement: external_exports.enum(["draft", "concrete"]).optional().default("draft"),
+    intent: external_exports.string().optional().describe("Required for draft nodes: what behavior this will prove"),
+    children: external_exports.array(TaskNodeInputSchema).optional().describe("Subtask decomposition \u2014 present on task groups"),
+    command: external_exports.string().optional(),
+    predicate: PredicateSchema.optional(),
+    description: external_exports.string().optional(),
+    category: ProofCategorySchema.optional(),
+    advisory: external_exports.boolean().optional()
+  })
+);
 var SectionsSchema = external_exports.object({
   decisions: external_exports.string().optional(),
   current_state: external_exports.string().optional(),
@@ -22562,6 +23403,37 @@ var SectionsSchema = external_exports.object({
   open_questions: external_exports.string().optional(),
   open_risks: external_exports.string().optional()
 });
+var nodeIdCounter = 0;
+function resetNodeIdCounter() {
+  nodeIdCounter = 0;
+}
+function nextNodeId() {
+  return `node-${++nodeIdCounter}`;
+}
+function buildTaskNodes(inputs) {
+  return inputs.map((input) => {
+    const node = {
+      id: nextNodeId(),
+      title: input.title,
+      refinement: input.refinement ?? "draft",
+      last_status: input.refinement === "draft" ? "draft" : "pending"
+    };
+    if (input.children && input.children.length > 0) {
+      node.children = buildTaskNodes(input.children);
+    }
+    if (input.refinement === "draft") {
+      node.intent = input.intent;
+    }
+    if (input.refinement === "concrete") {
+      node.command = input.command;
+      node.predicate = input.predicate;
+      node.description = input.description;
+      node.category = input.category;
+      node.advisory = input.advisory ?? (input.predicate?.type === "regression" ? true : void 0);
+    }
+    return node;
+  });
+}
 function formatMissingTools(missing) {
   const lines = [
     `ERROR: ${missing.length} proof command(s) invoke tool(s) not available on this OS (${currentOs}).`,
@@ -22577,15 +23449,36 @@ function formatMissingTools(missing) {
   lines.push("Rewrite these commands for the current OS, then retry. (For human-only checks, use a `manual` proof instead.)");
   return lines.join("\n");
 }
-async function checkCommandsForOs(steps, cwd) {
-  const commands = steps.flatMap((s) => s.proofs).filter((p) => p.predicate.type !== "manual" && p.command.trim() !== "").map((p) => p.command);
+async function checkCommandsForOs(roots, cwd) {
+  const commands = extractCommands(roots);
   const missing = await findMissingTools(commands, cwd);
   if (missing.length === 0) return null;
   return { content: [{ type: "text", text: formatMissingTools(missing) }] };
 }
+function extractBaselineSteps(roots) {
+  return roots.map((root) => ({
+    title: root.title,
+    proofs: collectBaselineProofs(root)
+  }));
+}
+function collectBaselineProofs(node) {
+  const results = [];
+  if (node.children) {
+    for (const child of node.children) {
+      results.push(...collectBaselineProofs(child));
+    }
+  } else if (node.refinement === "concrete" && node.category) {
+    results.push({
+      category: node.category,
+      predicate: { type: node.predicate?.type ?? "" },
+      advisory: node.advisory
+    });
+  }
+  return results;
+}
 server.tool(
   "dod_create",
-  "Create a new locked DoD document. Stores proof commands canonically in MCP storage \u2014 editing the rendered markdown cannot weaken verification. Returns the DoD ID for use with dod_check. Proof commands run on the HOST OS \u2014 write them for that OS (e.g. on Windows use findstr/type/dir, not grep/cat/ls). Creation is rejected if any command invokes a tool absent on the current OS.",
+  "Create a new DoD document with recursive TaskNode tree. Nodes can be draft (intent-only) or concrete (with proof commands). Proof commands run on the HOST OS \u2014 write them for that OS (e.g. on Windows use findstr/type/dir, not grep/cat/ls). Stores proof commands canonically in MCP storage \u2014 editing the rendered markdown cannot weaken verification.",
   {
     title: external_exports.string().describe("Feature/plan title"),
     goal: external_exports.string().describe("One-sentence goal"),
@@ -22593,53 +23486,23 @@ server.tool(
     cwd: external_exports.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: external_exports.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
-    steps: external_exports.array(StepInputSchema).describe("DoD steps with proof commands and predicates")
+    roots: external_exports.array(TaskNodeInputSchema).describe("Root-level task nodes forming the decomposition tree. Task groups have children. Draft leaves have intent. Concrete leaves have command+predicate+description+category."),
+    skip_reasons: external_exports.record(external_exports.string()).optional().describe("Map from optional proof category to justification for omission.")
   },
-  async ({ title, goal, type, cwd, markdown_path, sections, steps }) => {
-    const resolvedCwd = path5.resolve(cwd);
-    const osError = await checkCommandsForOs(
-      steps.map((s) => ({ proofs: s.proofs.map((p) => ({ command: p.command, predicate: p.predicate })) })),
-      resolvedCwd
-    );
+  async ({ title, goal, type, cwd, markdown_path, sections, roots: rootInputs, skip_reasons }) => {
+    const resolvedCwd = path6.resolve(cwd);
+    resetNodeIdCounter();
+    const roots = buildTaskNodes(rootInputs);
+    const osError = await checkCommandsForOs(roots, resolvedCwd);
     if (osError) return osError;
-    const baseline = validateBaseline(type, steps.map((s) => ({
-      title: s.title,
-      proofs: s.proofs.map((p) => ({ category: p.category, predicate: { type: p.predicate.type }, advisory: p.advisory }))
-    })));
-    if (baseline.errors.length > 0) {
-      return {
-        content: [{
-          type: "text",
-          text: [
-            `ERROR: this ${type} DoD does not meet the company baseline (standards/dod-baselines.md).`,
-            "",
-            ...baseline.errors.map((e) => `  \u2022 ${e}`),
-            "",
-            "Add proofs for the missing categories, then retry. If a category genuinely cannot apply",
-            "(e.g. no runnable entry point), say so to the user and document the exception."
-          ].join("\n")
-        }]
-      };
-    }
+    const baseline = validateBaseline(
+      type,
+      extractBaselineSteps(roots),
+      skip_reasons
+    );
     const id = generateId();
     const date3 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-    const dodSteps = steps.map((s, si) => ({
-      id: `step-${si + 1}`,
-      title: s.title,
-      proofs: s.proofs.map((p, pi) => ({
-        id: `proof-${si + 1}-${pi + 1}`,
-        command: p.command,
-        predicate: p.predicate,
-        description: p.description,
-        category: p.category,
-        // regression proofs default to advisory at authoring time (decision);
-        // an explicit advisory value always wins, including advisory:false for a
-        // hard SLA gate.
-        ...p.advisory !== void 0 ? { advisory: p.advisory } : p.predicate.type === "regression" ? { advisory: true } : {},
-        last_status: "pending"
-      }))
-    }));
-    const fingerprint = computeProofFingerprint(dodSteps);
+    const fingerprint = computeProofFingerprint(roots);
     const doc = {
       id,
       title,
@@ -22647,51 +23510,54 @@ server.tool(
       date: date3,
       type,
       cwd: resolvedCwd,
-      markdown_path: path5.resolve(markdown_path),
+      markdown_path: path6.resolve(markdown_path),
       created_at: (/* @__PURE__ */ new Date()).toISOString(),
-      locked: true,
+      skip_reasons,
       sections,
-      steps: dodSteps,
-      proof_fingerprint: fingerprint,
+      roots,
+      proof_fingerprint: fingerprint || void 0,
       amendments: []
     };
     await save(doc);
     await writeMarkdown(doc);
-    const proofCount = dodSteps.reduce((sum, s) => sum + s.proofs.length, 0);
-    const warningBlock = baseline.warnings.length > 0 ? ["", "\u26A0\uFE0F Baseline advisories (not blocking):", ...baseline.warnings.map((w) => `  \u2022 ${w}`)] : [];
+    const concreteCount = flattenConcreteLeaves(roots).length;
+    const draftCount = countDraftNodes(roots);
+    const rootCount = roots.length;
+    const warningBlock = baseline.errors.length > 0 || baseline.warnings.length > 0 ? [
+      "",
+      "\u26A0\uFE0F Baseline advisories:",
+      ...baseline.errors.map((e) => `  \u2022 ${e} (will be enforced at dod_refine time)`),
+      ...baseline.warnings.map((w) => `  \u2022 ${w}`)
+    ] : [];
     return {
       content: [{
         type: "text",
         text: [
-          "DoD created and locked.",
+          "DoD created.",
           "",
           `ID: ${id}`,
           `Path: ${markdown_path}`,
-          `Steps: ${dodSteps.length}`,
-          `Proofs: ${proofCount}`,
-          `Proof fingerprint: ${fingerprint}`,
+          `Roots: ${rootCount}`,
+          `Concrete proofs: ${concreteCount}`,
+          `Draft nodes: ${draftCount}`,
+          fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
           ...warningBlock,
           "",
-          "Proof commands are stored canonically in MCP. Editing the markdown file cannot affect verification.",
-          "Each dod_check prints the proof fingerprint \u2014 compare to detect store tampering.",
+          draftCount > 0 ? `${draftCount} draft node(s) \u2014 use dod_refine to concretize each one during implementation.` : "All nodes are concrete \u2014 dod_check can verify the full DoD.",
           "",
-          "NEXT \u2014 baseline check: run `dod_check` now, before implementing. Expect overall FAIL with",
-          "proofs RED (the feature does not exist yet). This validates every proof command executes on",
-          "this OS \u2014 a 'command not found' here means the proof is mis-authored; fix it via dod_amend now",
-          "rather than discovering it mid-implementation. TDD proofs SHOULD be red at baseline (that is the",
-          "required red phase). Then implement and re-check."
-        ].join("\n")
+          "NEXT: run `dod_check` to validate proof commands execute on this OS."
+        ].filter(Boolean).join("\n")
       }]
     };
   }
 );
 var ELICITATION_MAX_WAIT_MS = 2147483647;
 var isWindowsHost = process.platform === "win32";
-function manualInstructions(proof) {
-  const isReview = proof.predicate.type === "review";
-  const lines = [proof.description];
-  if (proof.command && proof.command.trim() && proof.command.trim() !== "manual" && !isReview) {
-    lines.push("", `Steps / command: ${proof.command}`);
+function manualInstructions(node) {
+  const isReview = node.predicate?.type === "review";
+  const lines = [node.description ?? node.title];
+  if (node.command && node.command.trim() && node.command.trim() !== "manual" && !isReview) {
+    lines.push("", `Steps / command: ${node.command}`);
   }
   if (isReview) {
     lines.push(
@@ -22705,14 +23571,14 @@ function manualInstructions(proof) {
   return lines.join("\n");
 }
 function buildConfirmer() {
-  return async (proof) => {
-    const isReview = proof.predicate.type === "review";
+  return async (node) => {
+    const isReview = node.predicate?.type === "review";
     const promptLabel = isReview ? "Code review required" : "Manual verification required";
-    const instructions = manualInstructions(proof);
+    const instructions = manualInstructions(node);
     playJingle();
     if (isWindowsHost) {
       const dialog = await showVerifyDialog(
-        `DoD manual verification \u2014 ${proof.id}`,
+        `DoD manual verification \u2014 ${node.id}`,
         `${instructions}
 
 Click PASS only if it passed.`
@@ -22765,20 +23631,17 @@ ${instructions}`,
 }
 server.tool(
   "dod_check",
-  "Verify a DoD's proofs from canonical (locked) storage, mark pass/fail, update the markdown, and return a verdict. Commands run from MCP's locked copy \u2014 the markdown cannot influence results. Pass `step` to verify only that one step (fast iteration); a scoped run returns INCOMPLETE and never PASS. Run with NO `step` for the full verdict \u2014 use that as the /goal completion condition. Manual/review proofs are NEVER auto-prompted here \u2014 an unverified one reports 'skipped' and holds the overall verdict at INCOMPLETE; call dod_verify on that proof_id when verification is actually relevant (e.g. right after implementing its step).",
+  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Manual/review proofs are NEVER auto-prompted \u2014 call dod_verify on that proof_id when verification is relevant.",
   {
     dod_id: external_exports.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: external_exports.string().optional().describe("Markdown file path \u2014 resolves to DoD by path if no ID given"),
     cwd_override: external_exports.string().optional().describe("Override working directory for this check run"),
-    step: external_exports.number().int().positive().optional().describe("1-based step number to verify in isolation. Omit to run the full check. Scoped runs carry other steps forward unrun and always return INCOMPLETE (only a full run can return PASS).")
+    nodePath: external_exports.string().optional().describe("Dot-separated path to a subtree (e.g. '0.children.1') to verify in isolation. Omit to run the full check.")
   },
-  async ({ dod_id, path: mdPath, cwd_override, step }) => {
+  async ({ dod_id, path: mdPath, cwd_override, nodePath }) => {
     let doc = null;
-    if (dod_id) {
-      doc = await load(dod_id);
-    } else if (mdPath) {
-      doc = await findByPath(mdPath);
-    }
+    if (dod_id) doc = await load(dod_id);
+    else if (mdPath) doc = await findByPath(mdPath);
     if (!doc) {
       return {
         content: [{
@@ -22788,20 +23651,15 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
         }]
       };
     }
-    let stepId;
-    if (step !== void 0) {
-      const target = doc.steps[step - 1];
-      if (!target) {
-        return {
-          content: [{
-            type: "text",
-            text: `ERROR: step ${step} is out of range \u2014 this DoD has ${doc.steps.length} step(s). Use a 1-based step number, or omit \`step\` to run the full check.`
-          }]
-        };
-      }
-      stepId = target.id;
+    if (nodePath && !findNodeByPath(doc.roots, nodePath)) {
+      return {
+        content: [{
+          type: "text",
+          text: `ERROR: nodePath "${nodePath}" not found in this DoD. Use dod_check without nodePath to see the tree structure.`
+        }]
+      };
     }
-    const result = await checkDocument(doc, cwd_override, { stepId });
+    const result = await checkDocument(doc, cwd_override, nodePath ? { nodePath } : void 0);
     let tamperWarning = "";
     if (result.tampered) {
       tamperWarning = `
@@ -22809,76 +23667,267 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
 \u{1F6D1} TAMPER DETECTED \u2014 verdict forced to FAIL.
   Stored:  ${doc.proof_fingerprint}
   Current: ${result.proof_fingerprint}
-  The proof set was changed outside dod_amend. Revert the edit, or make the change through dod_amend (which re-locks the fingerprint with a logged reason).
+  The proof set was changed outside dod_amend. Revert the edit, or make the change through dod_amend.
 `;
-    } else if (!doc.proof_fingerprint) {
+    } else if (!doc.proof_fingerprint && result.proof_fingerprint) {
       doc.proof_fingerprint = result.proof_fingerprint;
     }
     updateDocFromCheckResult(doc, result);
     await save(doc);
     await writeMarkdown(doc);
+    const draftNote = result.draft_count > 0 ? `
+
+\u{1F4DD} ${result.draft_count} draft node(s) remain \u2014 use dod_refine to concretize each one. Run dod_check again once all are concrete.` : "";
     return {
       content: [{
         type: "text",
-        text: formatCheckResult(result) + tamperWarning
+        text: formatCheckResult(result) + tamperWarning + draftNote
       }]
     };
   }
 );
-function findProof(doc, proofId) {
-  for (const step of doc.steps) {
-    const proof = step.proofs.find((p) => p.id === proofId);
-    if (proof) return { step, proof };
+server.tool(
+  "dod_refine",
+  "Turn a draft TaskNode into a concrete proof by supplying the command, predicate, and description. Only works on draft leaves (no children, refinement=draft).",
+  {
+    dod_id: external_exports.string().describe("DoD ID"),
+    node_path: external_exports.string().describe("Dot-separated path to the draft leaf, e.g. '0.children.1'"),
+    command: external_exports.string().describe("The shell command to run for verification"),
+    predicate: PredicateSchema.describe("What to evaluate about the command's output"),
+    description: external_exports.string().describe("Human-readable description of what this proof checks"),
+    category: ProofCategorySchema.optional().describe("Baseline category"),
+    advisory: external_exports.boolean().optional()
+  },
+  async ({ dod_id, node_path: nodePath, command, predicate, description, category, advisory }) => {
+    const doc = await load(dod_id);
+    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
+    const node = findNodeByPath(doc.roots, nodePath);
+    if (!node) return { content: [{ type: "text", text: `ERROR: node not found at path "${nodePath}".` }] };
+    if (node.refinement !== "draft") return { content: [{ type: "text", text: `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.` }] };
+    if (node.children && node.children.length > 0) return { content: [{ type: "text", text: `ERROR: node "${node.title}" is a task group with children \u2014 not a leaf. Refine its children instead.` }] };
+    const pred = predicate;
+    if (pred.type !== "manual" && command.trim() !== "") {
+      const missing = await findMissingTools([command], doc.cwd);
+      if (missing.length > 0) {
+        return { content: [{ type: "text", text: formatMissingTools(missing) }] };
+      }
+    }
+    const oldIntent = node.intent;
+    node.refinement = "concrete";
+    node.command = command;
+    node.predicate = pred;
+    node.description = description;
+    if (category) node.category = category;
+    if (advisory !== void 0) node.advisory = advisory;
+    else if (pred.type === "regression") node.advisory = true;
+    node.intent = void 0;
+    node.last_status = "pending";
+    doc.amendments.push({
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      node_path: nodePath,
+      action: "refined",
+      old_value: { refinement: "draft", intent: oldIntent },
+      new_value: { refinement: "concrete", command, predicate: { ...pred }, description },
+      reason: `Refined draft \u2192 concrete: ${description}`
+    });
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
+    const draftCount = countDraftNodes(doc.roots);
+    await save(doc);
+    await writeMarkdown(doc);
+    return {
+      content: [{
+        type: "text",
+        text: [
+          `Node refined: "${node.title}" is now concrete.`,
+          `Command: \`${command}\``,
+          `Predicate: ${pred.type}:${pred.value ?? "(no value)"}`,
+          `Description: ${description}`,
+          draftCount === 0 ? "\n\u{1F389} All nodes are now concrete \u2014 the DoD is fully verifiable. Run dod_check." : `
+${draftCount} draft node(s) remaining.`
+        ].join("\n")
+      }]
+    };
+  }
+);
+server.tool(
+  "dod_add_node",
+  "Add a new TaskNode (draft or concrete) as a child of an existing task group, or at root level.",
+  {
+    dod_id: external_exports.string().describe("DoD ID"),
+    parent_path: external_exports.string().describe("Dot-separated path to parent task group, or empty string to add at root level"),
+    title: external_exports.string(),
+    refinement: external_exports.enum(["draft", "concrete"]).default("draft"),
+    intent: external_exports.string().optional(),
+    command: external_exports.string().optional(),
+    predicate: PredicateSchema.optional(),
+    description: external_exports.string().optional(),
+    category: ProofCategorySchema.optional(),
+    advisory: external_exports.boolean().optional()
+  },
+  async ({ dod_id, parent_path, title, refinement, intent, command, predicate, description, category, advisory }) => {
+    const doc = await load(dod_id);
+    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
+    let parent = null;
+    if (parent_path) {
+      parent = findNodeByPath(doc.roots, parent_path);
+      if (!parent) return { content: [{ type: "text", text: `ERROR: parent node not found at path "${parent_path}".` }] };
+      if (!parent.children) return { content: [{ type: "text", text: `ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children. Add to a task group.` }] };
+    }
+    if (refinement === "concrete") {
+      if (!command || !predicate || !description) {
+        return { content: [{ type: "text", text: "ERROR: concrete nodes require command, predicate, and description." }] };
+      }
+      const pred = predicate;
+      if (pred.type !== "manual" && command.trim() !== "") {
+        const missing = await findMissingTools([command], doc.cwd);
+        if (missing.length > 0) {
+          return { content: [{ type: "text", text: formatMissingTools(missing) }] };
+        }
+      }
+    }
+    if (refinement === "draft" && !intent) {
+      return { content: [{ type: "text", text: "ERROR: draft nodes require an intent describing what this will prove." }] };
+    }
+    const node = {
+      id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title,
+      refinement,
+      last_status: refinement === "draft" ? "draft" : "pending"
+    };
+    if (refinement === "draft") node.intent = intent;
+    if (refinement === "concrete") {
+      node.command = command;
+      node.predicate = predicate;
+      node.description = description;
+      node.category = category;
+      if (advisory !== void 0) node.advisory = advisory;
+      else if (predicate?.type === "regression") node.advisory = true;
+    }
+    if (parent) {
+      parent.children.push(node);
+    } else {
+      doc.roots.push(node);
+    }
+    const fullPath = parent_path ? `${parent_path}.children.${parent.children.length - 1}` : `${doc.roots.length - 1}`;
+    doc.amendments.push({
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      node_path: fullPath,
+      action: "added",
+      new_value: { title, refinement },
+      reason: `Added ${refinement} node: ${title}`
+    });
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
+    await save(doc);
+    await writeMarkdown(doc);
+    return {
+      content: [{
+        type: "text",
+        text: `Node "${title}" (${refinement}) added at path "${fullPath}".
+Run dod_check to verify${refinement === "draft" ? " after refining with dod_refine" : ""}.`
+      }]
+    };
+  }
+);
+server.tool(
+  "dod_remove_node",
+  "Remove a TaskNode and all its descendants from the DoD tree.",
+  {
+    dod_id: external_exports.string().describe("DoD ID"),
+    node_path: external_exports.string().describe("Dot-separated path to the node to remove")
+  },
+  async ({ dod_id, node_path: nodePath }) => {
+    const doc = await load(dod_id);
+    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
+    const parts = nodePath.split(".");
+    const lastPart = parts[parts.length - 1];
+    if (lastPart === "children") return { content: [{ type: "text", text: "ERROR: path must target a node, not 'children'." }] };
+    const childIdx = parseInt(lastPart, 10);
+    if (isNaN(childIdx)) return { content: [{ type: "text", text: `ERROR: invalid path "${nodePath}".` }] };
+    if (parts.length === 1) {
+      if (childIdx < 0 || childIdx >= doc.roots.length) {
+        return { content: [{ type: "text", text: `ERROR: root index ${childIdx} out of range (0-${doc.roots.length - 1}).` }] };
+      }
+      const removed2 = doc.roots.splice(childIdx, 1)[0];
+      doc.amendments.push({
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        node_path: nodePath,
+        action: "removed",
+        old_value: { title: removed2.title, refinement: removed2.refinement },
+        reason: `Removed node: ${removed2.title}`
+      });
+      doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
+      await save(doc);
+      await writeMarkdown(doc);
+      return { content: [{ type: "text", text: `Removed root node "${removed2.title}" (${removed2.refinement}) and all descendants.` }] };
+    }
+    const parentPath = parts.slice(0, -1).join(".");
+    const parent = findNodeByPath(doc.roots, parentPath);
+    if (!parent || !parent.children) {
+      return { content: [{ type: "text", text: `ERROR: parent not found at "${parentPath}".` }] };
+    }
+    if (childIdx < 0 || childIdx >= parent.children.length) {
+      return { content: [{ type: "text", text: `ERROR: child index ${childIdx} out of range (0-${parent.children.length - 1}).` }] };
+    }
+    const removed = parent.children.splice(childIdx, 1)[0];
+    doc.amendments.push({
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      node_path: nodePath,
+      action: "removed",
+      old_value: { title: removed.title, refinement: removed.refinement },
+      reason: `Removed node: ${removed.title}`
+    });
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
+    await save(doc);
+    await writeMarkdown(doc);
+    return { content: [{ type: "text", text: `Removed node "${removed.title}" (${removed.refinement}) and all descendants.` }] };
+  }
+);
+function findNodeInTree(roots, proofId) {
+  for (const root of roots) {
+    if (root.id === proofId) return root;
+    if (root.children) {
+      const found = findInChildren(root.children, proofId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+function findInChildren(nodes, proofId) {
+  for (const node of nodes) {
+    if (node.id === proofId) return node;
+    if (node.children) {
+      const found = findInChildren(node.children, proofId);
+      if (found) return found;
+    }
   }
   return null;
 }
 server.tool(
   "dod_verify",
-  "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now \u2014 e.g. right after implementing the step the proof belongs to \u2014 NOT on every dod_check. dod_check itself never auto-prompts; an unverified manual/review proof reports as 'skipped' there and holds the overall verdict at INCOMPLETE until dod_verify records a verdict.",
+  "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now.",
   {
-    dod_id: external_exports.string().optional().describe("DoD ID (from dod_create or dod_list)"),
-    path: external_exports.string().optional().describe("Markdown file path \u2014 resolves to DoD by path if no ID given"),
-    proof_id: external_exports.string().describe('The proof id to verify (see dod_check output for ids, e.g. "proof-1-1").')
+    dod_id: external_exports.string().optional().describe("DoD ID"),
+    path: external_exports.string().optional().describe("Markdown file path"),
+    proof_id: external_exports.string().describe('The proof id to verify (e.g. "node-3").')
   },
   async ({ dod_id, path: mdPath, proof_id }) => {
     let doc = null;
-    if (dod_id) {
-      doc = await load(dod_id);
-    } else if (mdPath) {
-      doc = await findByPath(mdPath);
+    if (dod_id) doc = await load(dod_id);
+    else if (mdPath) doc = await findByPath(mdPath);
+    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
+    const node = findNodeInTree(doc.roots, proof_id);
+    if (!node) return { content: [{ type: "text", text: `ERROR: proof "${proof_id}" not found.` }] };
+    if (node.predicate?.type !== "manual" && node.predicate?.type !== "review") {
+      return { content: [{ type: "text", text: `ERROR: proof "${proof_id}" is "${node.predicate?.type ?? "unknown"}" \u2014 only manual/review proofs are verified out-of-band.` }] };
     }
-    if (!doc) {
-      return {
-        content: [{
-          type: "text",
-          text: `ERROR: DoD not found. ${dod_id ? `ID "${dod_id}" not in store.` : `No DoD registered for path "${mdPath}".`}
-Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
-        }]
-      };
+    if (node.refinement !== "concrete") {
+      return { content: [{ type: "text", text: `ERROR: proof "${proof_id}" is a draft \u2014 refine with dod_refine first.` }] };
     }
-    const found = findProof(doc, proof_id);
-    if (!found) {
-      return {
-        content: [{
-          type: "text",
-          text: `ERROR: proof "${proof_id}" not found in DoD "${doc.id}". Run dod_check to see current proof ids.`
-        }]
-      };
-    }
-    const { proof } = found;
-    if (proof.predicate.type !== "manual" && proof.predicate.type !== "review") {
-      return {
-        content: [{
-          type: "text",
-          text: `ERROR: proof "${proof_id}" is a "${proof.predicate.type}" predicate \u2014 only manual/review proofs are verified out-of-band via dod_verify. Machine-checkable proofs are verified by dod_check.`
-        }]
-      };
-    }
-    const label = proof.predicate.type === "review" ? "Code review" : "Manual verification";
-    const resolution = await resolveManual(proof, buildConfirmer(), label);
-    proof.last_status = resolution.status;
-    proof.last_output = resolution.output;
-    proof.last_checked = (/* @__PURE__ */ new Date()).toISOString();
+    const label = node.predicate.type === "review" ? "Code review" : "Manual verification";
+    const resolution = await resolveManual(node, buildConfirmer(), label);
+    node.last_status = resolution.status;
+    node.last_output = resolution.output;
+    node.last_checked = (/* @__PURE__ */ new Date()).toISOString();
     await save(doc);
     await writeMarkdown(doc);
     return {
@@ -22889,7 +23938,7 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
           "",
           resolution.output,
           "",
-          "Run dod_check (no `step`) to fold this into the overall verdict."
+          "Run dod_check to fold this into the overall verdict."
         ].join("\n")
       }]
     };
@@ -22897,7 +23946,7 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
 );
 server.tool(
   "dod_status",
-  "Get the last check result for a DoD without re-running proofs. Quick read of cached state.",
+  "Get the last check result for a DoD without re-running proofs.",
   {
     dod_id: external_exports.string().optional(),
     path: external_exports.string().optional()
@@ -22906,17 +23955,13 @@ server.tool(
     let doc = null;
     if (dod_id) doc = await load(dod_id);
     else if (mdPath) doc = await findByPath(mdPath);
-    if (!doc) {
-      return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
-    }
+    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
     if (!doc.last_check) {
       return { content: [{ type: "text", text: `DoD "${doc.title}" has never been checked. Run dod_check first.` }] };
     }
-    const stepLines = doc.steps.map((s, i) => {
-      const passed = s.proofs.filter((p) => p.last_status === "pass" || p.last_status === "skipped").length;
-      const icon = passed === s.proofs.length ? "\u2705" : "\u274C";
-      return `${icon} Step ${i + 1}: ${s.title} (${passed}/${s.proofs.length})`;
-    });
+    const concreteLeaves = flattenConcreteLeaves(doc.roots);
+    const draftCount = countDraftNodes(doc.roots);
+    const passed = concreteLeaves.filter((l) => l.node.last_status === "pass" || l.node.last_status === "skipped").length;
     return {
       content: [{
         type: "text",
@@ -22925,8 +23970,7 @@ server.tool(
           `ID: ${doc.id}`,
           `Last check: ${doc.last_check.timestamp}`,
           `Overall: ${doc.last_check.overall.toUpperCase()}`,
-          "",
-          ...stepLines,
+          `Concrete proofs: ${passed}/${concreteLeaves.length} pass${draftCount > 0 ? `, ${draftCount} draft node(s)` : ""}`,
           "",
           `Summary: ${doc.last_check.summary}`
         ].join("\n")
@@ -22936,60 +23980,52 @@ server.tool(
 );
 server.tool(
   "dod_amend",
-  "Modify a proof command in canonical storage with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending.",
+  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending.",
   {
     dod_id: external_exports.string().describe("DoD ID"),
-    step_index: external_exports.number().describe("Step index (0-based)"),
-    proof_index: external_exports.number().describe("Proof index within the step (0-based)"),
-    new_command: external_exports.string().optional().describe("New command (omit to keep existing)"),
-    new_predicate: PredicateSchema.optional().describe("New predicate (omit to keep existing)"),
-    new_description: external_exports.string().optional().describe("New human-readable description (omit to keep)"),
+    node_path: external_exports.string().describe("Dot-separated path to the concrete leaf node"),
+    new_command: external_exports.string().optional(),
+    new_predicate: PredicateSchema.optional(),
+    new_description: external_exports.string().optional(),
     reason: external_exports.string().describe("Why this amendment is needed \u2014 logged permanently")
   },
-  async ({ dod_id, step_index, proof_index, new_command, new_predicate, new_description, reason }) => {
+  async ({ dod_id, node_path: nodePath, new_command, new_predicate, new_description, reason }) => {
     const doc = await load(dod_id);
-    if (!doc) {
-      return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
+    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
+    const node = findNodeByPath(doc.roots, nodePath);
+    if (!node) return { content: [{ type: "text", text: `ERROR: node not found at path "${nodePath}".` }] };
+    if (node.refinement !== "concrete") {
+      return { content: [{ type: "text", text: `ERROR: node is a draft. Use dod_refine to concretize it first.` }] };
     }
-    if (step_index < 0 || step_index >= doc.steps.length) {
-      return { content: [{ type: "text", text: `ERROR: step_index ${step_index} out of range (0-${doc.steps.length - 1}).` }] };
+    if (new_predicate?.type === "manual" && node.predicate?.type !== "manual") {
+      return { content: [{ type: "text", text: "ERROR: Cannot convert a machine-checkable proof to manual \u2014 this would bypass verification." }] };
     }
-    const step = doc.steps[step_index];
-    if (proof_index < 0 || proof_index >= step.proofs.length) {
-      return { content: [{ type: "text", text: `ERROR: proof_index ${proof_index} out of range (0-${step.proofs.length - 1}).` }] };
-    }
-    const proof = step.proofs[proof_index];
-    if (new_predicate?.type === "manual" && proof.predicate.type !== "manual") {
-      return {
-        content: [{
-          type: "text",
-          text: "ERROR: Cannot convert a machine-checkable proof to manual \u2014 this would bypass verification. Amend the command or predicate instead."
-        }]
-      };
-    }
-    const effectivePredicate = new_predicate ?? proof.predicate;
-    const effectiveCommand = new_command ?? proof.command;
+    const effectivePredicate = new_predicate ?? node.predicate;
+    const effectiveCommand = new_command ?? node.command ?? "";
     if (effectivePredicate.type !== "manual" && effectiveCommand.trim() !== "") {
       const missing = await findMissingTools([effectiveCommand], doc.cwd);
       if (missing.length > 0) {
         return { content: [{ type: "text", text: formatMissingTools(missing) }] };
       }
     }
-    const oldSnapshot = { command: proof.command, predicate: { ...proof.predicate }, description: proof.description };
-    if (new_command !== void 0) proof.command = new_command;
-    if (new_predicate !== void 0) proof.predicate = new_predicate;
-    if (new_description !== void 0) proof.description = new_description;
-    proof.last_status = "pending";
+    const oldSnapshot = {
+      command: node.command,
+      predicate: node.predicate ? { ...node.predicate } : void 0,
+      description: node.description
+    };
+    if (new_command !== void 0) node.command = new_command;
+    if (new_predicate !== void 0) node.predicate = new_predicate;
+    if (new_description !== void 0) node.description = new_description;
+    node.last_status = "pending";
     doc.amendments.push({
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      step_id: step.id,
-      proof_id: proof.id,
+      node_path: nodePath,
       action: "modified",
       old_value: oldSnapshot,
-      new_value: { command: proof.command, predicate: { ...proof.predicate }, description: proof.description },
+      new_value: { command: node.command, predicate: node.predicate ? { ...node.predicate } : void 0, description: node.description },
       reason
     });
-    doc.proof_fingerprint = computeProofFingerprint(doc.steps);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
     await save(doc);
     await writeMarkdown(doc);
     return {
@@ -22998,9 +24034,9 @@ server.tool(
         text: [
           "Proof amended and logged.",
           "",
-          `Step: ${step.title}`,
+          `Node: ${node.title}`,
           `Old command: \`${oldSnapshot.command}\``,
-          `New command: \`${proof.command}\``,
+          `New command: \`${node.command}\``,
           `Reason: ${reason}`,
           "",
           "Status reset to pending. Run dod_check to re-verify."
@@ -23020,13 +24056,15 @@ server.tool(
     }
     const lines = docs.map((d) => {
       const status = d.last_check?.overall?.toUpperCase() ?? "UNCHECKED";
-      const stepCount = d.steps.length;
-      const proofCount = d.steps.reduce((sum, s) => sum + s.proofs.length, 0);
+      const rootCount = d.roots.length;
+      const concreteCount = flattenConcreteLeaves(d.roots).length;
+      const draftCount = countDraftNodes(d.roots);
+      const draftTag = draftCount > 0 ? ` (${draftCount} draft)` : "";
       return [
         `\u2022 ${d.title}`,
         `  ID: ${d.id}`,
         `  Path: ${d.markdown_path}`,
-        `  Status: ${status} | ${stepCount} steps, ${proofCount} proofs`,
+        `  Status: ${status} | ${rootCount} roots, ${concreteCount} concrete proofs${draftTag}`,
         `  Last check: ${d.last_check?.timestamp ?? "never"}`
       ].join("\n");
     });
@@ -23035,7 +24073,7 @@ server.tool(
 );
 server.tool(
   "dod_import",
-  "Import an existing DoD markdown file into canonical MCP storage. Parses proof commands, infers predicates, and locks them. Use for pre-existing DoD docs not created via dod_create.",
+  "Import an existing DoD markdown file into canonical MCP storage. Parses hierarchical tree structure, infers predicates, and stores them.",
   {
     path: external_exports.string().describe("Absolute path to the existing DoD markdown file"),
     cwd: external_exports.string().describe("Working directory for running proof commands (absolute path)")
@@ -23052,47 +24090,47 @@ server.tool(
     }
     try {
       const parsed = await parseMarkdown(mdPath);
-      const resolvedCwd = path5.resolve(cwd);
-      const osError = await checkCommandsForOs(parsed.steps, resolvedCwd);
+      const resolvedCwd = path6.resolve(cwd);
+      const osError = await checkCommandsForOs(parsed.roots, resolvedCwd);
       if (osError) return osError;
       const id = generateId();
+      const fingerprint = computeProofFingerprint(parsed.roots);
       const doc = {
         id,
         title: parsed.title,
         goal: parsed.goal,
         date: parsed.date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
         cwd: resolvedCwd,
-        markdown_path: path5.resolve(mdPath),
+        markdown_path: path6.resolve(mdPath),
         created_at: (/* @__PURE__ */ new Date()).toISOString(),
-        locked: true,
         sections: parsed.sections,
-        steps: parsed.steps,
+        roots: parsed.roots,
+        proof_fingerprint: fingerprint || void 0,
         amendments: []
       };
       await save(doc);
-      const proofCount = doc.steps.reduce((sum, s) => sum + s.proofs.length, 0);
+      const concreteCount = flattenConcreteLeaves(parsed.roots).length;
+      const draftCount = countDraftNodes(parsed.roots);
       return {
         content: [{
           type: "text",
           text: [
-            "DoD imported and locked.",
+            "DoD imported.",
             "",
             `ID: ${id}`,
             `Title: ${doc.title}`,
-            `Steps: ${doc.steps.length}`,
-            `Proofs: ${proofCount}`,
+            `Roots: ${doc.roots.length}`,
+            `Concrete proofs: ${concreteCount}`,
+            `Draft nodes: ${draftCount}`,
             `Cwd: ${resolvedCwd}`,
             "",
-            "Proof commands are now canonical in MCP storage.",
             "Use dod_check to run verification."
           ].join("\n")
         }]
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      return {
-        content: [{ type: "text", text: `ERROR parsing markdown: ${msg}` }]
-      };
+      return { content: [{ type: "text", text: `ERROR parsing markdown: ${msg}` }] };
     }
   }
 );
