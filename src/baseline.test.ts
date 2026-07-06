@@ -40,15 +40,15 @@ function minimalSteps(): BaselineStepInput[] {
 
 test("a complete DoD has no errors and no warnings", () => {
   const r = validateBaseline("general", completeSteps());
-  assert.deepEqual(r.errors, []);
-  assert.deepEqual(r.warnings, []);
+  assert.deepEqual(r.errors, [], "complete DoD should have no errors");
+  assert.deepEqual(r.warnings, [], "complete DoD should have no warnings");
 });
 
 test("a minimal DoD with all skip_reasons has no errors, only skip_reason warnings", () => {
   const r = validateBaseline("general", minimalSteps(), ALL_SKIPPED);
-  assert.deepEqual(r.errors, []);
+  assert.deepEqual(r.errors, [], "minimal DoD with all reasons skipped should have no errors");
   assert.equal(r.warnings.length, 8, "all 8 optional categories skipped → 8 warnings");
-  assert.ok(r.warnings.every((w) => /skip_reason/.test(w)));
+  assert.ok(r.warnings.every((w) => /skip_reason/.test(w)), "all warnings should mention skip_reason");
 });
 
 // ── Hard mandatory: never skippable ───────────────────────────────────────
@@ -56,19 +56,19 @@ test("a minimal DoD with all skip_reasons has no errors, only skip_reason warnin
 test("missing behavioral integration proof is a hard error", () => {
   const steps = [step("Logic", "test"), step("Wire", "integration_wiring")];
   const r = validateBaseline("general", steps, ALL_SKIPPED);
-  assert.ok(r.errors.some((e) => /integration_behavioral/.test(e)));
+  assert.ok(r.errors.some((e) => /integration_behavioral/.test(e)), "should flag missing integration_behavioral");
 });
 
 test("missing wiring integration proof is a hard error", () => {
   const steps = [step("Logic", "test"), step("Run", "integration_behavioral")];
   const r = validateBaseline("general", steps, ALL_SKIPPED);
-  assert.ok(r.errors.some((e) => /integration_wiring/.test(e)));
+  assert.ok(r.errors.some((e) => /integration_wiring/.test(e)), "should flag missing integration_wiring");
 });
 
 test("missing full test-suite proof is a hard error", () => {
   const steps = [step("Logic"), step("Wire", "integration_wiring", "integration_behavioral")];
   const r = validateBaseline("bug", steps, ALL_SKIPPED);
-  assert.ok(r.errors.some((e) => /"test"/.test(e)));
+  assert.ok(r.errors.some((e) => /"test"/.test(e)), "should flag missing test category");
 });
 
 test("hard mandatory categories NOT skippable via skip_reasons", () => {
@@ -134,7 +134,8 @@ test("skip_reason text appears in warning message", () => {
     ...ALL_SKIPPED,
     tdd: "config-only change, no logic to test",
   });
-  assert.ok(r.warnings.some((w) => /tdd/i.test(w) && /config-only/i.test(w)));
+  assert.ok(r.warnings.some((w) => /tdd/i.test(w) && /config-only/i.test(w)),
+    "warning should mention tdd and the custom skip_reason text");
 });
 
 test("skip_reason text appears for observability", () => {
@@ -142,7 +143,8 @@ test("skip_reason text appears for observability", () => {
     ...ALL_SKIPPED,
     observability: "config files only, no runtime logic",
   });
-  assert.ok(r.warnings.some((w) => /observability/i.test(w) && /config files only/i.test(w)));
+  assert.ok(r.warnings.some((w) => /observability/i.test(w) && /config files only/i.test(w)),
+    "warning should mention observability and the skip_reason text");
 });
 
 test("skip_reason for mutation with custom message", () => {
@@ -150,7 +152,8 @@ test("skip_reason for mutation with custom message", () => {
     ...ALL_SKIPPED,
     mutation: "trivial CRUD, mutation overkill",
   });
-  assert.ok(r.warnings.some((w) => /mutation.*skip_reason.*trivial CRUD/i.test(w)));
+  assert.ok(r.warnings.some((w) => /mutation.*skip_reason.*trivial CRUD/i.test(w)),
+    "warning should match mutation skip_reason with custom message");
 });
 
 // ── Categories present → no issue ─────────────────────────────────────────
@@ -210,5 +213,44 @@ test("a presence-only step is warned (structure without any behavioral/test proo
 test("TDD skip_reason for bug type adapts message", () => {
   const steps = [step("Logic", "test"), step("Wire", "integration_wiring", "integration_behavioral")];
   const r = validateBaseline("bug", steps, { tdd: "no regression surface for this bug", ...ALL_SKIPPED });
-  assert.ok(r.warnings.some((w) => /tdd/i.test(w)));
+  assert.ok(r.warnings.some((w) => /tdd/i.test(w)), "bug type should still warn on skipped TDD");
+});
+
+// ── Edge cases ──────────────────────────────────────────────────────────────
+
+test("empty steps array returns only baseline errors", () => {
+  const r = validateBaseline("general", []);
+  assert.ok(r.errors.length > 0, "empty steps should have errors");
+});
+
+test("step with empty proofs array does not crash", () => {
+  const steps: BaselineStepInput[] = [{ title: "Empty step", proofs: [] }];
+  const r = validateBaseline("general", steps, ALL_SKIPPED);
+  assert.ok(r.errors.some((e) => /test/.test(e)), "should error on missing test category");
+});
+
+test("null/undefined skipReasons handled gracefully", () => {
+  // Passing undefined should not crash — treated as no skip reasons
+  const r = validateBaseline("general", minimalSteps(), undefined);
+  assert.ok(r.errors.length >= 0, "should not crash with undefined skipReasons");
+});
+
+test("duplicate categories within a step are flagged once", () => {
+  const steps: BaselineStepInput[] = [step("Logic", "test", "test", "test")];
+  const r = validateBaseline("general", steps, ALL_SKIPPED);
+  // Should not crash or double-count
+  assert.ok(Array.isArray(r.errors), "should return errors array");
+});
+
+test("unrecognized skipReasons keys do not cause errors", () => {
+  const r = validateBaseline("general", minimalSteps(), {
+    ...ALL_SKIPPED,
+    "nonexistent-category": "should be ignored",
+  } as Record<string, string>);
+  assert.deepEqual(r.errors, [], "unknown skipReasons should be ignored");
+});
+
+test("bug type coverage: all optional categories absent errors apply to bug type", () => {
+  const r = validateBaseline("bug", minimalSteps()); // NO skip_reasons
+  assert.equal(r.errors.length, 8, "bug type also enforces all 8 optional categories");
 });

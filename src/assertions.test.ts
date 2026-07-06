@@ -28,7 +28,7 @@ function docWithNode(dir: string, node: TaskNode): DodDocument {
 test("analyseAssertions returns null when no test files are referenced", () => {
   const dir = makeTempDir();
   writeFiles(dir, { "test_foo.py": "assert True\n" });
-  try { assert.equal(analyseAssertions("echo hello", dir), null); }
+  try { assert.equal(analyseAssertions("echo hello", dir), null, "should return null for non-test commands"); }
   finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -37,7 +37,7 @@ test("analyseAssertions detects trivial Python assertions", () => {
   writeFiles(dir, { "test_trivial.py": "def test_one():\n    assert True\n    assert False\ndef test_two():\n    assert None\n" });
   try {
     const report = analyseAssertions("python -m pytest test_trivial.py", dir);
-    assert.ok(report); assert.equal(report!.total, 3); assert.equal(report!.trivial, 3); assert.equal(report!.nonTrivial, 0);
+    assert.ok(report, "should return a report"); assert.equal(report!.total, 3, `total=3, got ${report!.total}`); assert.equal(report!.trivial, 3, `trivial=3, got ${report!.trivial}`); assert.equal(report!.nonTrivial, 0, `nonTrivial=0, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -46,7 +46,7 @@ test("analyseAssertions counts non-trivial Python assertions", () => {
   writeFiles(dir, { "test_real.py": "import math\ndef test_sqrt():\n    assert math.sqrt(4) == 2.0\ndef test_upper():\n    assert 'hello'.upper() == 'HELLO'\n" });
   try {
     const report = analyseAssertions("python -m pytest test_real.py", dir);
-    assert.ok(report); assert.equal(report!.total, 2); assert.equal(report!.nonTrivial, 2);
+    assert.ok(report, "should return a report"); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.nonTrivial, 2, `nonTrivial=2, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -55,7 +55,7 @@ test("analyseAssertions splits trivial from non-trivial in mixed file", () => {
   writeFiles(dir, { "test_mixed.py": "def test_real():\n    x = 1 + 1\n    assert x == 2\ndef test_fake():\n    assert True\n" });
   try {
     const report = analyseAssertions("python -m pytest test_mixed.py", dir);
-    assert.ok(report); assert.equal(report!.total, 2); assert.equal(report!.trivial, 1); assert.equal(report!.nonTrivial, 1);
+    assert.ok(report, "should return a report"); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.trivial, 1, `trivial=1, got ${report!.trivial}`); assert.equal(report!.nonTrivial, 1, `nonTrivial=1, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -64,7 +64,7 @@ test("analyseAssertions detects trivial JS assertions", () => {
   writeFiles(dir, { "e.test.ts": "test('t', () => { expect(true).toBe(true); expect(1).toEqual(1); });\n" });
   try {
     const report = analyseAssertions("npx jest e.test.ts", dir);
-    assert.ok(report); assert.equal(report!.total, 2); assert.equal(report!.trivial, 2); assert.equal(report!.nonTrivial, 0);
+    assert.ok(report, "should return a report"); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.trivial, 2, `trivial=2, got ${report!.trivial}`); assert.equal(report!.nonTrivial, 0, `nonTrivial=0, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -73,7 +73,7 @@ test("analyseAssertions counts non-trivial JS assertions", () => {
   writeFiles(dir, { "m.test.ts": "import { add } from './math';\ntest('add', () => { expect(add(2,3)).toBe(5); expect(add(-1,1)).toEqual(0); });\n" });
   try {
     const report = analyseAssertions("npx jest m.test.ts", dir);
-    assert.ok(report); assert.equal(report!.total, 2); assert.equal(report!.nonTrivial, 2);
+    assert.ok(report, "should return a report"); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.nonTrivial, 2, `nonTrivial=2, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -82,7 +82,7 @@ test("analyseAssertions scans multiple test files", () => {
   writeFiles(dir, { "test_a.py": "def test():\n    assert True\n", "test_b.py": "def test():\n    x = 1\n    assert x == 1\n" });
   try {
     const report = analyseAssertions("python -m pytest test_a.py test_b.py", dir);
-    assert.ok(report); assert.equal(report!.files.length, 2); assert.equal(report!.total, 2); assert.equal(report!.trivial, 1); assert.equal(report!.nonTrivial, 1);
+    assert.ok(report, "should return a report"); assert.equal(report!.files.length, 2, `files=2, got ${report!.files.length}`); assert.equal(report!.total, 2, `total=2, got ${report!.total}`); assert.equal(report!.trivial, 1, `trivial=1, got ${report!.trivial}`); assert.equal(report!.nonTrivial, 1, `nonTrivial=1, got ${report!.nonTrivial}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -104,11 +104,13 @@ test("assertions predicate: passes with sufficient non-trivial assertions", asyn
     const res = await checkDocument(doc);
     const leaf = res.leaves[0];
     if (leaf.error?.includes("Command not found")) {
-      assert.equal(leaf.status, "fail");
-    } else if (leaf.exit_code === 0) {
-      assert.equal(leaf.status, "pass");
-      assert.match(leaf.error ?? "", /non-trivial assertion/);
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}, exit=${leaf.exit_code}`);
+      return;
     }
+    assert.equal(leaf.exit_code, 0, `expected exit 0, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "pass", `expected pass, got ${leaf.status}: ${leaf.error}`);
+    const errMsg = leaf.error ?? "";
+    assert.match(errMsg, /non-trivial assertion/, `expected non-trivial assertion msg, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -120,11 +122,13 @@ test("assertions predicate: fails when all assertions are trivial", async () => 
     const res = await checkDocument(doc);
     const leaf = res.leaves[0];
     if (leaf.error?.includes("Command not found")) {
-      assert.equal(leaf.status, "fail");
-    } else if (leaf.error?.includes("ASSERTION QUALITY FAIL")) {
-      assert.equal(leaf.status, "fail");
-      assert.match(leaf.error ?? "", /trivial/);
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
     }
+    assert.equal(leaf.exit_code, 0, `expected exit 0 for trivial tests, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "fail", `expected fail for trivial assertions, got ${leaf.status}: ${leaf.error}`);
+    const errMsg = leaf.error ?? "";
+    assert.match(errMsg, /ASSERTION QUALITY FAIL/, `expected ASSERTION QUALITY FAIL, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -136,11 +140,13 @@ test("assertions predicate: fails when count < value", async () => {
     const res = await checkDocument(doc);
     const leaf = res.leaves[0];
     if (leaf.error?.includes("Command not found")) {
-      assert.equal(leaf.status, "fail");
-    } else if (leaf.exit_code === 0) {
-      assert.equal(leaf.status, "fail");
-      assert.match(leaf.error ?? "", /only \d+ non-trivial/);
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
     }
+    assert.equal(leaf.exit_code, 0, `expected exit 0, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "fail", `expected fail for insufficient assertions, got ${leaf.status}: ${leaf.error}`);
+    const errMsg = leaf.error ?? "";
+    assert.match(errMsg, /only \d+ non-trivial/, `expected only-N-non-trivial msg, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -163,11 +169,13 @@ test("tdd: GREEN with trivial assertions fails", async () => {
     const res = await checkDocument(doc);
     const leaf = res.leaves[0];
     if (leaf.error?.includes("Command not found")) {
-      assert.equal(leaf.status, "fail");
-    } else if (leaf.exit_code === 0) {
-      assert.equal(leaf.status, "fail");
-      assert.match(leaf.error ?? "", /TDD ASSERTION QUALITY FAIL/);
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
     }
+    assert.equal(leaf.exit_code, 0, `expected exit 0 for trivial test, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "fail", `expected fail for trivial TDD, got ${leaf.status}: ${leaf.error}`);
+    const errMsg = leaf.error ?? "";
+    assert.match(errMsg, /TDD ASSERTION QUALITY FAIL/, `expected TDD ASSERTION QUALITY FAIL, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -179,11 +187,13 @@ test("tdd: GREEN with non-trivial assertions passes", async () => {
     const res = await checkDocument(doc);
     const leaf = res.leaves[0];
     if (leaf.error?.includes("Command not found")) {
-      assert.equal(leaf.status, "fail");
-    } else if (leaf.exit_code === 0) {
-      assert.equal(leaf.status, "pass");
-      assert.match(leaf.error ?? "", /TDD cycle verified/);
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
     }
+    assert.equal(leaf.exit_code, 0, `expected exit 0, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "pass", `expected pass for TDD cycle, got ${leaf.status}: ${leaf.error}`);
+    const errMsg = leaf.error ?? "";
+    assert.match(errMsg, /TDD cycle verified/, `expected TDD cycle verified, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -196,10 +206,12 @@ test("tdd: RED phase records seen_failing", async () => {
     const res = await checkDocument(doc);
     const leaf = res.leaves[0];
     if (leaf.error?.includes("Command not found")) {
-      assert.equal(leaf.status, "fail");
-    } else {
-      assert.equal(node.seen_failing, true);
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
     }
+    // Python ran — test has assert False, so it should fail (exit non-zero)
+    assert.notEqual(leaf.exit_code, 0, `expected non-zero exit for failing test, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(node.seen_failing, true, `expected seen_failing=true after RED phase, got ${node.seen_failing}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -211,10 +223,77 @@ test("tdd: GREEN without prior RED fails with TDD VIOLATION", async () => {
     const res = await checkDocument(doc);
     const leaf = res.leaves[0];
     if (leaf.error?.includes("Command not found")) {
-      assert.equal(leaf.status, "fail");
-    } else if (leaf.exit_code === 0) {
-      assert.equal(leaf.status, "fail");
-      assert.match(leaf.error ?? "", /TDD VIOLATION/);
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
     }
+    assert.equal(leaf.exit_code, 0, `expected exit 0 for passing test, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "fail", `expected fail for TDD violation, got ${leaf.status}: ${leaf.error}`);
+    const errMsg = leaf.error ?? "";
+    assert.match(errMsg, /TDD VIOLATION/, `expected TDD VIOLATION, got: ${leaf.error}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── Edge cases ────────────────────────────────────────────────────────
+
+test("assertions predicate: handles empty test file", async () => {
+  const dir = makeTempDir();
+  writeFiles(dir, { "test_empty.py": "" });
+  try {
+    const doc = docWithNode(dir, mkAssertionNode("python -m pytest test_empty.py -x"));
+    const res = await checkDocument(doc);
+    const leaf = res.leaves[0];
+    if (leaf.error?.includes("Command not found")) {
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
+    }
+    assert.notEqual(leaf.exit_code, 0, `expected non-zero exit for empty file, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "fail", `expected fail for empty file, got ${leaf.status}: ${leaf.error}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("assertions predicate: handles syntax error in test file", async () => {
+  const dir = makeTempDir();
+  writeFiles(dir, { "test_bad.py": "def test_with_syntax_error(\n" });
+  try {
+    const doc = docWithNode(dir, mkAssertionNode("python -m pytest test_bad.py -x"));
+    const res = await checkDocument(doc);
+    const leaf = res.leaves[0];
+    if (leaf.error?.includes("Command not found")) {
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
+    }
+    assert.notEqual(leaf.exit_code, 0, `expected non-zero exit for syntax error, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "fail", `expected fail for syntax error, got ${leaf.status}: ${leaf.error}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("assertions predicate: value=0 allows zero-assertion tests to pass", async () => {
+  const dir = makeTempDir();
+  writeFiles(dir, { "test_void.py": "def test_nothing():\n    pass\n" });
+  try {
+    const doc = docWithNode(dir, mkAssertionNode("python -m pytest test_void.py -x", 0));
+    const res = await checkDocument(doc);
+    const leaf = res.leaves[0];
+    if (leaf.error?.includes("Command not found")) {
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
+    }
+    assert.equal(leaf.exit_code, 0, `expected exit 0, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "pass", `expected pass with value=0, got ${leaf.status}: ${leaf.error}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("assertions predicate: handles non-existent test file", async () => {
+  const dir = makeTempDir();
+  try {
+    const doc = docWithNode(dir, mkAssertionNode("python -m pytest nonexistent.py -x"));
+    const res = await checkDocument(doc);
+    const leaf = res.leaves[0];
+    if (leaf.error?.includes("Command not found")) {
+      assert.equal(leaf.status, "fail", `python not found: status=${leaf.status}`);
+      return;
+    }
+    assert.notEqual(leaf.exit_code, 0, `expected non-zero exit for missing file, got ${leaf.exit_code}: ${leaf.error}`);
+    assert.equal(leaf.status, "fail", `expected fail for missing file, got ${leaf.status}: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

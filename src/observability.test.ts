@@ -30,23 +30,23 @@ test("detects JS/TS files by extension", () => {
   setup({ name: "foo.ts", content: "console.log('hi');" });
   const report = analyseObservability("node foo.ts", TMP);
   assert.ok(report, "should detect the source file");
-  assert.equal(report!.files.length, 1);
-  assert.ok(report!.files[0].endsWith("foo.ts"));
+  assert.equal(report!.files.length, 1, "should report exactly one file");
+  assert.ok(report!.files[0].endsWith("foo.ts"), "report should reference foo.ts");
 });
 
 test("detects Python files by extension", () => {
   setup({ name: "foo.py", content: "logger.info('hi')" });
   const report = analyseObservability("python foo.py", TMP);
-  assert.ok(report);
-  assert.equal(report!.files.length, 1);
-  assert.ok(report!.files[0].endsWith("foo.py"));
+  assert.ok(report, "should return a report for Python");
+  assert.equal(report!.files.length, 1, "should report exactly one file");
+  assert.ok(report!.files[0].endsWith("foo.py"), "report should reference foo.py");
 });
 
 test("detects Rust files by extension", () => {
-  setup({ name: "foo.rs", content: "error!(\"oops\");" });
+  setup({ name: "foo.rs", content: 'error!("oops");' });
   const report = analyseObservability("cargo test foo.rs", TMP);
-  assert.ok(report);
-  assert.equal(report!.files.length, 1);
+  assert.ok(report, "should return a report for Rust");
+  assert.equal(report!.files.length, 1, "should report exactly one file");
 });
 
 test("ignores non-source files", () => {
@@ -56,6 +56,29 @@ test("ignores non-source files", () => {
   );
   const report = analyseObservability("node foo.md foo.json", TMP);
   assert.equal(report, null, "non-source files should not be scanned");
+});
+
+// ── Extension edge cases ─────────────────────────────────────────────────
+
+test("detects uppercase extension files (.TS)", () => {
+  setup({ name: "app.TS", content: "console.log('hi');" });
+  const report = analyseObservability("node app.TS", TMP);
+  assert.ok(report, "should detect uppercase .TS files");
+  assert.ok(report!.files.length >= 1, "should find at least one file");
+  assert.ok(report!.files[0].endsWith("app.TS"), "report should reference the uppercase file");
+});
+
+test("detects multi-dot files (app.util.ts)", () => {
+  setup({ name: "app.util.ts", content: "console.log('util');" });
+  const report = analyseObservability("node app.util.ts", TMP);
+  assert.ok(report, "should detect multi-dot files");
+  assert.ok(report!.files[0].endsWith("app.util.ts"), "should find the multi-dot file");
+});
+
+test("ignores extensionless source files", () => {
+  setup({ name: "Makefile", content: "all: clean build" });
+  const report = analyseObservability("make Makefile", TMP);
+  assert.equal(report, null, "extensionless files should not be scanned");
 });
 
 // ── Log statement counting ────────────────────────────────────────────────
@@ -70,9 +93,9 @@ test("counts JS console.* statements", () => {
       'logger.info("auth ok", { userId });',
     ].join("\n"),
   });
-  const report = analyseObservability(`tsc app.ts`, TMP);
-  assert.ok(report);
-  assert.equal(report!.totalLogStatements, 4);
+  const report = analyseObservability("tsc app.ts", TMP);
+  assert.ok(report, "should return a report counting JS console.* statements");
+  assert.equal(report!.totalLogStatements, 4, "should count 4 log statements");
 });
 
 test("counts Python logging statements", () => {
@@ -84,9 +107,9 @@ test("counts Python logging statements", () => {
       'self.logger.warning("deprecated path")',
     ].join("\n"),
   });
-  const report = analyseObservability(`python app.py`, TMP);
-  assert.ok(report);
-  assert.equal(report!.totalLogStatements, 3);
+  const report = analyseObservability("python app.py", TMP);
+  assert.ok(report, "should return a report counting Python logging");
+  assert.equal(report!.totalLogStatements, 3, "should count 3 Python log statements");
 });
 
 test("counts Rust macro log statements", () => {
@@ -100,9 +123,9 @@ test("counts Rust macro log statements", () => {
       'tracing::info!("request processed");',
     ].join("\n"),
   });
-  const report = analyseObservability(`cargo build lib.rs`, TMP);
-  assert.ok(report);
-  assert.equal(report!.totalLogStatements, 5);
+  const report = analyseObservability("cargo build lib.rs", TMP);
+  assert.ok(report, "should return a report counting Rust macros");
+  assert.equal(report!.totalLogStatements, 5, "should count 5 Rust log statements");
 });
 
 test("counts C# log statements", () => {
@@ -114,9 +137,9 @@ test("counts C# log statements", () => {
       'Console.WriteLine("done");',
     ].join("\n"),
   });
-  const report = analyseObservability(`dotnet build Service.cs`, TMP);
-  assert.ok(report);
-  assert.equal(report!.totalLogStatements, 3);
+  const report = analyseObservability("dotnet build Service.cs", TMP);
+  assert.ok(report, "should return a report counting C# logs");
+  assert.equal(report!.totalLogStatements, 3, "should count 3 C# log statements");
 });
 
 // ── Error handler detection ───────────────────────────────────────────────
@@ -133,10 +156,10 @@ test("detects JS catch blocks with logging", () => {
       "}",
     ].join("\n"),
   });
-  const report = analyseObservability(`tsc app.ts`, TMP);
-  assert.ok(report);
-  assert.equal(report!.totalErrorHandlers, 1);
-  assert.equal(report!.errorHandlersLogged, 1);
+  const report = analyseObservability("tsc app.ts", TMP);
+  assert.ok(report, "should return a report for JS error handlers");
+  assert.equal(report!.totalErrorHandlers, 1, "should detect 1 error handler");
+  assert.equal(report!.errorHandlersLogged, 1, "should count 1 logged handler");
 });
 
 test("detects JS catch blocks WITHOUT logging", () => {
@@ -149,9 +172,9 @@ test("detects JS catch blocks WITHOUT logging", () => {
       "}",
     ].join("\n"),
   });
-  const report = analyseObservability(`tsc app.ts`, TMP);
-  assert.ok(report);
-  assert.equal(report!.totalErrorHandlers, 1);
+  const report = analyseObservability("tsc app.ts", TMP);
+  assert.ok(report, "should return a report for JS catch without logging");
+  assert.equal(report!.totalErrorHandlers, 1, "should detect 1 error handler");
   assert.equal(report!.errorHandlersLogged, 0, "catch block without logging should not count as logged");
 });
 
@@ -166,10 +189,10 @@ test("detects Python except blocks", () => {
       "    raise",
     ].join("\n"),
   });
-  const report = analyseObservability(`python app.py`, TMP);
-  assert.ok(report);
-  assert.equal(report!.totalErrorHandlers, 1);
-  assert.equal(report!.errorHandlersLogged, 1);
+  const report = analyseObservability("python app.py", TMP);
+  assert.ok(report, "should return a report for Python except blocks");
+  assert.equal(report!.totalErrorHandlers, 1, "should detect 1 error handler");
+  assert.equal(report!.errorHandlersLogged, 1, "should count 1 logged handler");
 });
 
 test("detects Rust error handlers", () => {
@@ -185,8 +208,8 @@ test("detects Rust error handlers", () => {
       "}",
     ].join("\n"),
   });
-  const report = analyseObservability(`cargo build lib.rs`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("cargo build lib.rs", TMP);
+  assert.ok(report, "should return a report for Rust error handlers");
   assert.ok(report!.totalErrorHandlers >= 1, "should detect at least one error handler");
   assert.equal(report!.errorHandlersLogged, report!.totalErrorHandlers, "all error handlers should be logged");
 });
@@ -202,8 +225,8 @@ test("flags empty catch blocks (JS)", () => {
       "try { doOther(); } catch { }",
     ].join("\n"),
   });
-  const report = analyseObservability(`tsc app.ts`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("tsc app.ts", TMP);
+  assert.ok(report, "should return a report for empty catch blocks");
   const emptyCatches = report!.antiPatterns.filter((a) => a.kind === "empty_catch");
   assert.equal(emptyCatches.length, 2, "both empty catch blocks should be flagged");
 });
@@ -223,8 +246,8 @@ test("flags empty except blocks (Python)", () => {
       "    pass  # ignored",
     ].join("\n"),
   });
-  const report = analyseObservability(`python app.py`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("python app.py", TMP);
+  assert.ok(report, "should return a report for Python empty except");
   const emptyCatches = report!.antiPatterns.filter((a) => a.kind === "empty_catch");
   assert.equal(emptyCatches.length, 2, "both except:pass blocks should be flagged");
 });
@@ -240,8 +263,8 @@ test("flags empty Err blocks (Rust)", () => {
       "};",
     ].join("\n"),
   });
-  const report = analyseObservability(`cargo build lib.rs`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("cargo build lib.rs", TMP);
+  assert.ok(report, "should return a report for Rust empty Err");
   const emptyCatches = report!.antiPatterns.filter((a) => a.kind === "empty_catch");
   assert.equal(emptyCatches.length, 1, "empty Err block should be flagged");
 });
@@ -252,14 +275,14 @@ test("flags bare static log messages (JS)", () => {
     content: [
       'console.error("failed");',
       'console.warn("something happened");',
-      'console.error("failed", err);',  // NOT bare — has variable
+      'console.error("failed", err);', // NOT bare — has variable
     ].join("\n"),
   });
-  const report = analyseObservability(`tsc app.ts`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("tsc app.ts", TMP);
+  assert.ok(report, "should return a report for bare log detection");
   const bare = report!.antiPatterns.filter((a) => a.kind === "bare_log");
   assert.equal(bare.length, 2, "static string logs should be flagged as bare");
-  assert.equal(report!.totalLogStatements, 3);
+  assert.equal(report!.totalLogStatements, 3, "should count 3 log statements total");
 });
 
 test("does NOT flag template literals as bare logs (JS)", () => {
@@ -270,8 +293,8 @@ test("does NOT flag template literals as bare logs (JS)", () => {
       "console.error(msg);",
     ].join("\n"),
   });
-  const report = analyseObservability(`tsc app.ts`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("tsc app.ts", TMP);
+  assert.ok(report, "should return a report for template literals");
   const bare = report!.antiPatterns.filter((a) => a.kind === "bare_log");
   // console.error(msg) — the arg is a variable, not a string literal
   assert.equal(bare.length, 0, "template literals should pass");
@@ -282,12 +305,12 @@ test("flags bare static log messages (Python)", () => {
     name: "app.py",
     content: [
       'logging.error("failed")',
-      'logger.warning("deprecated", extra={"user": uid})',  // NOT bare — has extra
+      'logger.warning("deprecated", extra={"user": uid})', // NOT bare — has extra
       'self.logger.info("ok")',
     ].join("\n"),
   });
-  const report = analyseObservability(`python app.py`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("python app.py", TMP);
+  assert.ok(report, "should return a report for Python bare logs");
   const bare = report!.antiPatterns.filter((a) => a.kind === "bare_log");
   assert.ok(bare.length >= 1, "at least one bare string log should be flagged");
 });
@@ -297,14 +320,14 @@ test("flags bare static log messages (Rust)", () => {
     name: "lib.rs",
     content: [
       'error!("failed");',
-      'info!("user {} logged in", name);',  // NOT bare — has format arg
+      'info!("user {} logged in", name);', // NOT bare — has format arg
     ].join("\n"),
   });
-  const report = analyseObservability(`cargo build lib.rs`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("cargo build lib.rs", TMP);
+  assert.ok(report, "should return a report for Rust bare logs");
   const bare = report!.antiPatterns.filter((a) => a.kind === "bare_log");
   assert.equal(bare.length, 1, "bare Rust macro should be flagged");
-  assert.ok(bare[0].line === 1);
+  assert.equal(bare[0].line, 1, "bare log should be on line 1");
 });
 
 test("flags swallowed errors (JS return-without-log)", () => {
@@ -318,19 +341,17 @@ test("flags swallowed errors (JS return-without-log)", () => {
       "}",
     ].join("\n"),
   });
-  const report = analyseObservability(`tsc app.ts`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("tsc app.ts", TMP);
+  assert.ok(report, "should return a report for swallowed errors");
   const swallowed = report!.antiPatterns.filter((a) => a.kind === "swallowed_error");
   assert.equal(swallowed.length, 1, "catch-return without log should be swallowed error");
 });
 
 // ── File extraction from command ──────────────────────────────────────────
 
-test("extracts files from test command tokens", () => {
+test("returns null when referenced source file does not exist", () => {
   setup({ name: "app.ts", content: "console.log('hi');" });
-  const report = analyseObservability(`npx jest app.test.ts --coverage`, TMP);
-  // app.test.ts doesn't exist but app.ts was found via the command? No — the
-  // command says "app.test.ts", not "app.ts". Let's create the right file.
+  const report = analyseObservability("npx jest app.test.ts --coverage", TMP);
   assert.equal(report, null, "non-existent file should return null");
 });
 
@@ -341,19 +362,19 @@ test("extracts files from git diff output", () => {
   );
   const output = "src/app.ts\nsrc/util.ts\nREADME.md\n";
   const report = analyseObservabilityFromOutput(output, TMP);
-  assert.ok(report);
+  assert.ok(report, "should return a report from git diff output");
   assert.equal(report!.files.length, 2, "should find both source files, skip README");
 });
 
 test("returns null when no source files found from command", () => {
   setup({ name: "foo.md", content: "## Title" });
   const report = analyseObservability("echo hello", TMP);
-  assert.equal(report, null);
+  assert.equal(report, null, "should return null when no source files found");
 });
 
 test("returns null when no source files found from output", () => {
   const report = analyseObservabilityFromOutput("All tests passed\n3 passed\n", TMP);
-  assert.equal(report, null);
+  assert.equal(report, null, "should return null when no source files in output");
 });
 
 // ── Composite pass/fail conditions ────────────────────────────────────────
@@ -373,38 +394,36 @@ test("PASSES when all conditions met", () => {
       "}",
     ].join("\n"),
   });
-  const report = analyseObservability(`tsc app.ts`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("tsc app.ts", TMP);
+  assert.ok(report, "should return a report for composite pass test");
   assert.ok(report!.totalLogStatements >= 2, "should have enough log statements");
   assert.equal(report!.errorHandlersLogged, report!.totalErrorHandlers, "all error handlers logged");
   assert.equal(report!.antiPatterns.length, 0, "no anti-patterns");
 });
 
 test("FAILS with multiple anti-pattern types in one report", () => {
-  setup(
-    {
-      name: "bad.ts",
-      content: [
-        'console.log("start");',  // bare log
-        "",
-        "try {",
-        "  fetch();",
-        "} catch (e) { }",  // empty catch
-        "",
-        "try {",
-        "  parse();",
-        "} catch (e) {",
-        "  return null;",  // swallowed error
-        "}",
-      ].join("\n"),
-    },
-  );
-  const report = analyseObservability(`tsc bad.ts`, TMP);
-  assert.ok(report);
+  setup({
+    name: "bad.ts",
+    content: [
+      'console.log("start");', // bare log
+      "",
+      "try {",
+      "  fetch();",
+      "} catch (e) { }", // empty catch
+      "",
+      "try {",
+      "  parse();",
+      "} catch (e) {",
+      "  return null;", // swallowed error
+      "}",
+    ].join("\n"),
+  });
+  const report = analyseObservability("tsc bad.ts", TMP);
+  assert.ok(report, "should return a report for multiple anti-patterns");
   const kinds = report!.antiPatterns.map((a) => a.kind);
-  assert.ok(kinds.includes("empty_catch"), "should flag empty catch");
-  assert.ok(kinds.includes("swallowed_error"), "should flag swallowed error");
-  assert.ok(kinds.includes("bare_log"), "should flag bare log");
+  assert.ok(kinds.includes("empty_catch"), `should include "empty_catch" -- actual kinds: [${kinds.join(", ")}]`);
+  assert.ok(kinds.includes("swallowed_error"), `should include "swallowed_error" -- actual kinds: [${kinds.join(", ")}]`);
+  assert.ok(kinds.includes("bare_log"), `should include "bare_log" -- actual kinds: [${kinds.join(", ")}]`);
 });
 
 // ── Per-file breakdown ────────────────────────────────────────────────────
@@ -425,15 +444,15 @@ test("provides per-file breakdown in report", () => {
       ].join("\n"),
     },
   );
-  const report = analyseObservability(`tsc src/good.ts src/bad.ts`, TMP);
-  assert.ok(report);
-  assert.equal(report!.perFile.length, 2);
+  const report = analyseObservability("tsc src/good.ts src/bad.ts", TMP);
+  assert.ok(report, "should return a report for per-file breakdown");
+  assert.equal(report!.perFile.length, 2, "should have entries for both files");
   const good = report!.perFile.find((f) => f.file.includes("good"));
   const bad = report!.perFile.find((f) => f.file.includes("bad"));
   assert.ok(good, "should have good.ts entry");
   assert.ok(bad, "should have bad.ts entry");
-  assert.ok(good!.logCount >= 2);
-  assert.ok(bad!.antiPatterns.length >= 1);
+  assert.ok(good!.logCount >= 2, "good.ts should have at least 2 log statements");
+  assert.ok(bad!.antiPatterns.length >= 1, "bad.ts should have at least 1 anti-pattern");
 });
 
 // ── Python f-string not flagged as bare ───────────────────────────────────
@@ -446,8 +465,8 @@ test("does NOT flag Python f-strings as bare logs", () => {
       'logging.info(f"processing {count} items")',
     ].join("\n"),
   });
-  const report = analyseObservability(`python app.py`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("python app.py", TMP);
+  assert.ok(report, "should return a report for Python f-strings");
   const bare = report!.antiPatterns.filter((a) => a.kind === "bare_log");
   assert.equal(bare.length, 0, "f-strings should not be bare");
 });
@@ -462,8 +481,32 @@ test("does NOT flag multi-arg JS log as bare", () => {
       'logger.info("user login", { userId, timestamp });',
     ].join("\n"),
   });
-  const report = analyseObservability(`tsc app.ts`, TMP);
-  assert.ok(report);
+  const report = analyseObservability("tsc app.ts", TMP);
+  assert.ok(report, "should return a report for JS multi-arg logs");
   const bare = report!.antiPatterns.filter((a) => a.kind === "bare_log");
   assert.equal(bare.length, 0, "multi-arg logs should not be bare");
+});
+
+// ── Boundary cases ────────────────────────────────────────────────────────
+
+test("handles empty source files", () => {
+  setup({ name: "empty.ts", content: "" });
+  const report = analyseObservability("tsc empty.ts", TMP);
+  assert.ok(report, "should return a report for empty files");
+  assert.equal(report!.totalLogStatements, 0, "empty file should have 0 log statements");
+  assert.equal(report!.totalErrorHandlers, 0, "empty file should have 0 error handlers");
+  assert.equal(report!.antiPatterns.length, 0, "empty file should have 0 anti-patterns");
+});
+
+test("handles whitespace-only source files", () => {
+  setup({ name: "whitespace.ts", content: "\n  \n\t\n" });
+  const report = analyseObservability("tsc whitespace.ts", TMP);
+  assert.ok(report, "should return a report for whitespace-only files");
+  assert.equal(report!.totalLogStatements, 0, "whitespace-only file should have 0 log statements");
+  assert.equal(report!.totalErrorHandlers, 0, "whitespace-only file should have 0 error handlers");
+});
+
+test("handles missing source file gracefully", () => {
+  const report = analyseObservability("tsc nonexistent.ts", TMP);
+  assert.equal(report, null, "missing file should produce null report");
 });
