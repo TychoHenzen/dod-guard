@@ -197,6 +197,16 @@ export interface CheckResult {
   /** True when the recomputed proof-set fingerprint differs from the stored one
    * (store edited outside dod_amend). Forces overall to "fail". */
   tampered?: boolean;
+  /** Number of manual/review proofs not yet verified by a human. >0 means
+   * those proofs can pass only via dod_verify — dod_check skips them. */
+  manual_unverified: number;
+  /** Nodes that have been amended more than twice (proof-tuning smell).
+   * Each amendment resets the proof to pending — repeated amendments suggest
+   * the proof is being tuned to pass rather than the code being fixed. */
+  amendment_warnings: { node_path: string; title: string; count: number }[];
+  /** When true: all concrete proofs pass but manual verification is still needed.
+   * The DoD is NOT complete — don't report done until manuals are verified. */
+  blocked_by_manuals: boolean;
 }
 
 export interface LeafResult {

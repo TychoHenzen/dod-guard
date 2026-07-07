@@ -100,11 +100,19 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
   l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts — call");
   l.push("    `dod_verify(dod_id, proof_id)` explicitly when verification is actually relevant.");
+  l.push("3c. **Manual verification is a HARD GATE.** DoD cannot PASS without it.");
+  l.push("    Proofs can pass against wrong code. Visual verification catches what metrics miss.");
   l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof with a command.");
-  l.push("4b. Use `dod_add_node` to add new nodes discovered during implementation.");
+  l.push("4b. **Refine incrementally per task group, not all at once.** Scoped dod_check is faster");
+  l.push("    than full runs — use it. Refining 7 drafts at session end = rubber-stamping.");
+  l.push("4c. Use `dod_add_node` to add new nodes discovered during implementation.");
   l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("5b. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
-  l.push("6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass) — then stop and report done.");
+  l.push("5b. **Amending a proof 3+ times is a red flag** — you're probably tuning proofs to pass");
+  l.push("    rather than fixing the bug. Re-examine the approach.");
+  l.push("5c. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
+  l.push("6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass, manuals verified) — then stop and report done.");
+  l.push("6b. **If the approach isn't working, stop and re-interview.** Don't silently pivot to");
+  l.push("    a different implementation while keeping the old DoD. The DoD must match what you're doing.");
   l.push("");
   l.push(`**Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
   l.push("");
@@ -260,6 +268,13 @@ export function formatCheckResult(result: CheckResult): string {
     l.push("");
   }
 
+  if (result.blocked_by_manuals) {
+    l.push("⛔ **BLOCKED: Manual verification required.** All automated proofs pass, but this DoD is NOT complete.");
+    l.push(`   ${result.manual_unverified} manual/review proof(s) await dod_verify. Call dod_verify for each, then re-run dod_check.`);
+    l.push("   Do NOT report done until manuals are verified — the fix may look correct to proofs but be visually wrong.");
+    l.push("");
+  }
+
   if (result.scoped) {
     l.push(`⏳ **Scoped run — node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`);
     l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
@@ -268,6 +283,15 @@ export function formatCheckResult(result: CheckResult): string {
 
   if (result.draft_count > 0) {
     l.push(`📝 **${result.draft_count} draft node(s)** — use dod_refine to concretize before a final pass is possible.`);
+    l.push("");
+  }
+
+  if (result.amendment_warnings.length > 0) {
+    l.push("⚠️ **Amendment cycle warnings:** These proofs have been amended 3+ times — possible proof-tuning:");
+    for (const w of result.amendment_warnings) {
+      l.push(`   • "${w.title}" — ${w.count} amendments`);
+    }
+    l.push("   Verify these proofs still test the right thing, not just whatever the code happens to do.");
     l.push("");
   }
 

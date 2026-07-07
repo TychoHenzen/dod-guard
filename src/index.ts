@@ -242,7 +242,7 @@ server.tool(
           ...warningBlock,
           "",
           draftCount > 0
-            ? `${draftCount} draft node(s) — use dod_refine to concretize each one during implementation.`
+            ? `${draftCount} draft node(s) — refine incrementally per task group with dod_refine, not all at once at the end. Use dod_check(nodePath="0") to verify one subtree at a time.`
             : "All nodes are concrete — dod_check can verify the full DoD.",
           "",
           "NEXT: run `dod_check` to validate proof commands execute on this OS.",
@@ -373,10 +373,7 @@ server.tool(
 
     const result = await checkDocument(doc, cwd_override, nodePath ? { nodePath } : undefined);
 
-    let tamperWarning = "";
-    if (result.tampered) {
-      tamperWarning = `\n\n🛑 TAMPER DETECTED — verdict forced to FAIL.\n  Stored:  ${doc.proof_fingerprint}\n  Current: ${result.proof_fingerprint}\n  The proof set was changed outside dod_amend. Revert the edit, or make the change through dod_amend.\n`;
-    } else if (!doc.proof_fingerprint && result.proof_fingerprint) {
+    if (!doc.proof_fingerprint && result.proof_fingerprint) {
       doc.proof_fingerprint = result.proof_fingerprint;
     }
 
@@ -384,14 +381,10 @@ server.tool(
     await store.save(doc);
     await writeMarkdown(doc);
 
-    const draftNote = result.draft_count > 0
-      ? `\n\n📝 ${result.draft_count} draft node(s) remain — use dod_refine to concretize each one. Run dod_check again once all are concrete.`
-      : "";
-
     return {
       content: [{
         type: "text" as const,
-        text: formatCheckResult(result) + tamperWarning + draftNote,
+        text: formatCheckResult(result),
       }],
     };
   },

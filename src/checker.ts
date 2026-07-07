@@ -837,6 +837,7 @@ export async function checkDocument(
   // Execute in-scope leaves
   let anyRealFail = false;
   let anyUnverified = false;
+  let manualUnverified = 0;
 
   for (const { node, node_path } of inScope) {
     // Attach the path for result identification
@@ -850,12 +851,42 @@ export async function checkDocument(
     if (result.status === "skipped" && !node.advisory) {
       anyUnverified = true;
     }
+    // Count unverified manual/review proofs separately
+    const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
+    if (result.status === "skipped" && isManualOrReview) {
+      manualUnverified++;
+    }
   }
 
   // If not scoped, also add draft leaf results
   if (!targetPath) {
     addDraftLeafResults(doc.roots, "", leafResults);
   }
+
+  // Amendment cycle detection: count amendments per node, warn on >2
+  const amendmentCounts = new Map<string, { title: string; count: number }>();
+  for (const a of doc.amendments) {
+    if (a.action === "modified" || a.action === "refined") {
+      const existing = amendmentCounts.get(a.node_path);
+      if (existing) {
+        existing.count++;
+      } else {
+        // Try to find the node title
+        const node = findNodeByPath(doc.roots, a.node_path);
+        amendmentCounts.set(a.node_path, { title: node?.title ?? a.node_path, count: 1 });
+      }
+    }
+  }
+  const amendmentWarnings = [...amendmentCounts.entries()]
+    .filter(([, v]) => v.count > 2)
+    .map(([node_path, v]) => ({ node_path, title: v.title, count: v.count }));
+
+  // Blocked by manuals: all automated proofs pass but manuals await verification
+  const blockedByManuals = !targetPath && draftCount === 0 && !anyRealFail && manualUnverified > 0;
+
+  // Scoped check suggestion: full run with many concrete leaves
+  const concreteCount = inScope.length + outOfScope.length;
+  const suggestScoped = !targetPath && concreteCount > 5 && draftCount > 0;
 
   // Proof-set fingerprint
   const proofFingerprint = computeProofFingerprint(doc.roots);
@@ -876,17 +907,40 @@ export async function checkDocument(
             ? "incomplete"
             : "pass";
 
+  const concreteTotal = leafResults.filter(r => r.status !== "draft").length;
+  const passCount = leafResults.filter(r => r.status === "pass").length;
+
   const baseSummary = targetPath
     ? `SCOPED (node "${targetPath}"): run a full dod_check (no nodePath) to verify completion`
-    : `${leafResults.filter(r => r.status === "pass").length}/${leafResults.filter(r => r.status !== "draft").length} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
+    : `${passCount}/${concreteTotal} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
+
+  // Build guidance lines
+  const guidance: string[] = [];
+
+  if (blockedByManuals) {
+    guidance.push(`⛔ ${manualUnverified} manual/review proof(s) await dod_verify — DoD CANNOT pass without human verification.`);
+  } else if (!targetPath && manualUnverified > 0) {
+    guidance.push(`${manualUnverified} manual/review proof(s) await dod_verify.`);
+  }
+
+  if (amendmentWarnings.length > 0) {
+    const names = amendmentWarnings.map(w => `"${w.title}" (${w.count} amendments)`).join(", ");
+    guidance.push(`⚠️ Excessive amendment cycles: ${names} — are proofs being tuned rather than code being fixed?`);
+  }
+
+  if (suggestScoped) {
+    guidance.push(`💡 ${concreteCount} concrete proofs — use dod_check(nodePath="0") to verify one subtree at a time (faster iteration).`);
+  }
+
+  if (!targetPath && draftCount > 0 && !suggestScoped) {
+    guidance.push(`${draftCount} draft node(s) — refine incrementally per task group with dod_refine, not all at once at the end.`);
+  }
 
   const summary = tampered
     ? `TAMPER DETECTED — proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}`
-    : !targetPath && draftCount > 0
-      ? `${baseSummary} — use dod_refine to concretize draft nodes`
-      : !targetPath && anyUnverified && !anyRealFail
-        ? `${baseSummary} — one or more manual/review proofs await dod_verify`
-        : baseSummary;
+    : guidance.length > 0
+      ? [baseSummary, "", ...guidance].join("\n")
+      : baseSummary;
 
   return {
     overall,
@@ -895,6 +949,9 @@ export async function checkDocument(
     timestamp: new Date().toISOString(),
     proof_fingerprint: proofFingerprint,
     draft_count: draftCount,
+    manual_unverified: manualUnverified,
+    amendment_warnings: amendmentWarnings,
+    blocked_by_manuals: blockedByManuals,
     ...(targetPath ? { scoped: true, ran_node_path: targetPath } : {}),
     ...(tampered ? { tampered: true } : {}),
   };

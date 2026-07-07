@@ -47,6 +47,9 @@ function makeCheckResult(overrides?: Partial<CheckResult>): CheckResult {
     summary: "all good",
     proof_fingerprint: "abc",
     draft_count: 0,
+    manual_unverified: 0,
+    amendment_warnings: [],
+    blocked_by_manuals: false,
     leaves: [{ node_path: "0", id: "n1", title: "t", description: "d", status: "pass", command: "exit 0", output: "ok" }],
     ...overrides,
   };
@@ -95,6 +98,9 @@ test("updateDocFromCheckResult: scoped run persists target but leaves last_check
     summary: "SCOPED",
     proof_fingerprint: "abc",
     draft_count: 0,
+    manual_unverified: 0,
+    amendment_warnings: [],
+    blocked_by_manuals: false,
     leaves: [{ node_path: "0", id: "n1", title: "Add validation", description: "tests pass", status: "pass", command: "npm test -- email", output: "ok" }],
   };
 
@@ -115,6 +121,9 @@ test("updateDocFromCheckResult: full run persists overall", () => {
     summary: "1/1 proofs pass — manual proofs await dod_verify",
     proof_fingerprint: "abc",
     draft_count: 0,
+    manual_unverified: 1,
+    amendment_warnings: [],
+    blocked_by_manuals: true,
     leaves: [{ node_path: "0", id: "n1", title: "Add validation", description: "tests pass", status: "skipped", command: "manual", output: "awaiting dod_verify" }],
   };
 
@@ -360,6 +369,9 @@ test("updateDocFromCheckResult: handles undefined ran_node_path in scoped run", 
     summary: "SCOPED",
     proof_fingerprint: "abc",
     draft_count: 0,
+    manual_unverified: 0,
+    amendment_warnings: [],
+    blocked_by_manuals: false,
     leaves: [{ node_path: "0", id: "n1", title: "Add validation", description: "tests pass", status: "pass", command: "npm test -- email", output: "ok" }],
   };
   updateDocFromCheckResult(doc, scoped);
@@ -374,6 +386,9 @@ test("updateDocFromCheckResult: handles non-matching leaf paths gracefully", () 
     summary: "ok",
     proof_fingerprint: "abc",
     draft_count: 0,
+    manual_unverified: 0,
+    amendment_warnings: [],
+    blocked_by_manuals: false,
     leaves: [
       { node_path: "999", id: "n99", title: "unknown", description: "ghost leaf", status: "pass", command: "exit 0", output: "" },
     ],

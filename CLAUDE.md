@@ -55,6 +55,7 @@ What gets evaluated about a proof command's output:
 3. Manual/review proofs check `manual_result` cache (fingerprint-match = reuse without re-prompting)
 4. TDD proofs track `seen_failing` state across runs (must fail before passing)
 5. `computeProofFingerprint()` hashes all concrete leaves → compared against stored hash for tamper detection
+6. Computes derived signals: `manual_unverified` count, `amendment_warnings` (nodes amended >2×), `blocked_by_manuals` (all automated pass but manuals unverified), scoped-check suggestion (>5 concrete proofs)
 
 ### MCP tools (index.ts)
 
