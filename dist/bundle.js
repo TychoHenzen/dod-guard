@@ -22353,10 +22353,13 @@ function findNodeByPath(nodes, path8) {
   }
   return null;
 }
-function extractCommands(nodes) {
+function isExecutablePredicate(type) {
+  return type !== "manual" && type !== "review";
+}
+function extractExecutableCommands(nodes) {
   const cmds = [];
   for (const { node } of flattenConcreteLeaves(nodes)) {
-    if (node.command && node.predicate && node.predicate.type !== "manual") {
+    if (node.command && node.predicate && isExecutablePredicate(node.predicate.type)) {
       cmds.push(node.command);
     }
   }
@@ -23994,7 +23997,7 @@ function formatMissingTools(missing) {
   return lines.join("\n");
 }
 async function checkCommandsForOs(roots, cwd) {
-  const commands = extractCommands(roots);
+  const commands = extractExecutableCommands(roots);
   const missing = await findMissingTools(commands, cwd);
   if (missing.length === 0) return null;
   return { content: [{ type: "text", text: formatMissingTools(missing) }] };
@@ -24250,7 +24253,7 @@ server.tool(
     if (node.refinement !== "draft") return { content: [{ type: "text", text: `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.` }] };
     if (node.children && node.children.length > 0) return { content: [{ type: "text", text: `ERROR: node "${node.title}" is a task group with children \u2014 not a leaf. Refine its children instead.` }] };
     const pred = predicate;
-    if (pred.type !== "manual" && command.trim() !== "") {
+    if (isExecutablePredicate(pred.type) && command.trim() !== "") {
       const missing = await findMissingTools([command], doc.cwd);
       if (missing.length > 0) {
         return { content: [{ type: "text", text: formatMissingTools(missing) }] };
@@ -24322,7 +24325,7 @@ server.tool(
         return { content: [{ type: "text", text: "ERROR: concrete nodes require command, predicate, and description." }] };
       }
       const pred = predicate;
-      if (pred.type !== "manual" && command.trim() !== "") {
+      if (isExecutablePredicate(pred.type) && command.trim() !== "") {
         const missing = await findMissingTools([command], doc.cwd);
         if (missing.length > 0) {
           return { content: [{ type: "text", text: formatMissingTools(missing) }] };
@@ -24541,12 +24544,12 @@ server.tool(
     if (node.refinement !== "concrete") {
       return { content: [{ type: "text", text: `ERROR: node is a draft. Use dod_refine to concretize it first.` }] };
     }
-    if (new_predicate?.type === "manual" && node.predicate?.type !== "manual") {
-      return { content: [{ type: "text", text: "ERROR: Cannot convert a machine-checkable proof to manual \u2014 this would bypass verification." }] };
+    if (new_predicate && !isExecutablePredicate(new_predicate.type) && node.predicate && isExecutablePredicate(node.predicate.type)) {
+      return { content: [{ type: "text", text: "ERROR: Cannot convert a machine-checkable proof to manual or review \u2014 this would bypass verification." }] };
     }
     const effectivePredicate = new_predicate ?? node.predicate;
     const effectiveCommand = new_command ?? node.command ?? "";
-    if (effectivePredicate.type !== "manual" && effectiveCommand.trim() !== "") {
+    if (isExecutablePredicate(effectivePredicate.type) && effectiveCommand.trim() !== "") {
       const missing = await findMissingTools([effectiveCommand], doc.cwd);
       if (missing.length > 0) {
         return { content: [{ type: "text", text: formatMissingTools(missing) }] };

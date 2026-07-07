@@ -64,7 +64,7 @@ What gets evaluated about a proof command's output:
 | `dod_check` | Run all (or scoped) proofs, produce pass/fail/incomplete verdict |
 | `dod_refine` | Turn a draft leaf into concrete (supply command + predicate + description) |
 | `dod_add_node` / `dod_remove_node` | Add/remove nodes anywhere in the tree |
-| `dod_amend` | Modify a concrete proof with audit trail. Blocks machine→manual conversion. |
+| `dod_amend` | Modify a concrete proof with audit trail. Blocks machine→out-of-band (manual/review) conversion. |
 | `dod_verify` | Popup/elicitation for one manual/review proof (must be called explicitly) |
 | `dod_status` | Read cached check result without re-running |
 | `dod_list` | List all tracked DoDs with status |
@@ -128,4 +128,8 @@ After `executeProof()` runs the command:
 
 ### OS awareness
 
-Proof commands run on the host OS. `dod_create`/`dod_refine`/`dod_amend` validate that commands reference tools available on the current platform (Windows/Linux/macOS) via `findMissingTools()` in `command-check.ts`. On Windows, `exec()` uses `cmd.exe` shell.
+Proof commands run on the host OS. `dod_create`/`dod_refine`/`dod_amend` validate that commands reference tools available on the current platform (Windows/Linux/macOS) via `findMissingTools()` in `command-check.ts`. Validation is skipped for out-of-band predicate types (manual, review) — use `isExecutablePredicate()` from checker.ts as the single gate. On Windows, `exec()` uses `cmd.exe` shell.
+
+### Adding a new predicate type — execution gate
+
+When adding a new predicate type, check whether it needs a runnable command or is out-of-band (human-verified). Update `isExecutablePredicate()` in checker.ts — this single function gates OS tool validation across `dod_create`, `dod_refine`, `dod_add_node`, `dod_amend`, and `extractExecutableCommands`. Never inline `pred.type !== "manual"` checks — use the helper so both manual and review are covered.

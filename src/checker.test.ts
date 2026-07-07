@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import * as assert from "node:assert/strict";
-import { checkDocument, parseSurvivors, computeProofFingerprint, flattenConcreteLeaves, hasDraftNodes, findNodeByPath, countDraftNodes } from "./checker.js";
+import { checkDocument, parseSurvivors, computeProofFingerprint, flattenConcreteLeaves, hasDraftNodes, findNodeByPath, countDraftNodes, isExecutablePredicate, extractExecutableCommands } from "./checker.js";
 import { perProofFingerprint } from "./manual.js";
 import type { DodDocument, TaskNode } from "./types.js";
 
@@ -451,5 +451,70 @@ describe("checkDocument tamper detection", () => {
     const res = await checkDocument(doc);
     assert.equal(res.overall, "pass", "no stored fingerprint should not be flagged as tampered");
     assert.equal(res.tampered, undefined, "tampered flag should be absent");
+  });
+});
+
+// ── isExecutablePredicate ──────────────────────────────────────────────
+
+describe("isExecutablePredicate", () => {
+  it("returns true for machine-checkable types", () => {
+    assert.equal(isExecutablePredicate("exit_code"), true);
+    assert.equal(isExecutablePredicate("tdd"), true);
+    assert.equal(isExecutablePredicate("mutation"), true);
+    assert.equal(isExecutablePredicate("regression"), true);
+    assert.equal(isExecutablePredicate("assertions"), true);
+    assert.equal(isExecutablePredicate("streamline"), true);
+    assert.equal(isExecutablePredicate("observability"), true);
+    assert.equal(isExecutablePredicate("brevity"), true);
+  });
+
+  it("returns false for out-of-band types", () => {
+    assert.equal(isExecutablePredicate("manual"), false);
+    assert.equal(isExecutablePredicate("review"), false);
+  });
+});
+
+// ── extractExecutableCommands ──────────────────────────────────────────
+
+describe("extractExecutableCommands", () => {
+  const { nid } = scope();
+
+  it("collects commands from machine-checkable concrete leaves", () => {
+    const cmds = extractExecutableCommands([
+      concLeaf(nid(), "a", "exit 0", "test"),
+      concLeaf(nid(), "b", "npm test", "test"),
+    ]);
+    assert.deepEqual(cmds, ["exit 0", "npm test"]);
+  });
+
+  it("excludes manual proofs", () => {
+    const cmds = extractExecutableCommands([
+      manualLeaf(nid(), "m", "check manually"),
+      concLeaf(nid(), "a", "exit 0", "test"),
+    ]);
+    assert.deepEqual(cmds, ["exit 0"]);
+  });
+
+  it("excludes review proofs", () => {
+    const node = concLeaf(nid(), "r", "review instructions here", "review", { type: "review" });
+    const cmds = extractExecutableCommands([node]);
+    assert.deepEqual(cmds, [], "review proof commands should be excluded from OS validation");
+  });
+
+  it("excludes both manual and review types", () => {
+    const cmds = extractExecutableCommands([
+      manualLeaf(nid(), "m", "manual check"),
+      concLeaf(nid(), "r", "review cmd", "review", { type: "review" }),
+      concLeaf(nid(), "a", "exit 0", "auto"),
+    ]);
+    assert.deepEqual(cmds, ["exit 0"], "only the machine-checkable proof command should remain");
+  });
+
+  it("skips draft nodes", () => {
+    const cmds = extractExecutableCommands([
+      draftLeaf(nid(), "d", "intent"),
+      concLeaf(nid(), "a", "exit 0", "auto"),
+    ]);
+    assert.deepEqual(cmds, ["exit 0"]);
   });
 });

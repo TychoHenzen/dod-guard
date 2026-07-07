@@ -66,16 +66,28 @@ export function findNodeByPath(nodes: TaskNode[], path: string): TaskNode | null
   return null;
 }
 
-/** Collect commands from all concrete leaves for OS validation. */
-export function extractCommands(nodes: TaskNode[]): string[] {
+/**
+ * True when the predicate type requires an executable command that runs on
+ * the host OS. Out-of-band types (manual, review) are verified by humans and
+ * never need tool-resolution checks.
+ */
+export function isExecutablePredicate(type: string): boolean {
+  return type !== "manual" && type !== "review";
+}
+
+/** Collect commands from all concrete leaves that need OS validation. */
+export function extractExecutableCommands(nodes: TaskNode[]): string[] {
   const cmds: string[] = [];
   for (const { node } of flattenConcreteLeaves(nodes)) {
-    if (node.command && node.predicate && node.predicate.type !== "manual") {
+    if (node.command && node.predicate && isExecutablePredicate(node.predicate.type)) {
       cmds.push(node.command);
     }
   }
   return cmds;
 }
+
+/** @deprecated Use extractExecutableCommands instead. */
+export const extractCommands = extractExecutableCommands;
 
 /** True when every leaf in the subtree is concrete (no drafts remaining). */
 export function isBranchLocked(nodes: TaskNode[]): boolean {

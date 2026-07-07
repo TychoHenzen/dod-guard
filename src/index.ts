@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import * as path from "node:path";
 import * as store from "./store.js";
-import { checkDocument, computeProofFingerprint, flattenConcreteLeaves, findNodeByPath, hasDraftNodes, countDraftNodes, extractCommands } from "./checker.js";
+import { checkDocument, computeProofFingerprint, flattenConcreteLeaves, findNodeByPath, hasDraftNodes, countDraftNodes, extractExecutableCommands, isExecutablePredicate } from "./checker.js";
 import { writeMarkdown, updateDocFromCheckResult, formatCheckResult } from "./author.js";
 import { parseMarkdown } from "./parser.js";
 import { playJingle, showVerifyDialog } from "./notify.js";
@@ -129,7 +129,7 @@ function formatMissingTools(missing: MissingTool[]): string {
 }
 
 async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promise<{ content: { type: "text"; text: string }[] } | null> {
-  const commands = extractCommands(roots);
+  const commands = extractExecutableCommands(roots);
   const missing = await findMissingTools(commands, cwd);
   if (missing.length === 0) return null;
   return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
@@ -420,9 +420,9 @@ server.tool(
     if (node.refinement !== "draft") return { content: [{ type: "text" as const, text: `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.` }] };
     if (node.children && node.children.length > 0) return { content: [{ type: "text" as const, text: `ERROR: node "${node.title}" is a task group with children — not a leaf. Refine its children instead.` }] };
 
-    // Validate command against OS
+    // Validate command against OS (skip out-of-band proofs: manual, review)
     const pred = predicate as Predicate;
-    if (pred.type !== "manual" && command.trim() !== "") {
+    if (isExecutablePredicate(pred.type) && command.trim() !== "") {
       const missing = await findMissingTools([command], doc.cwd);
       if (missing.length > 0) {
         return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
@@ -508,7 +508,7 @@ server.tool(
         return { content: [{ type: "text" as const, text: "ERROR: concrete nodes require command, predicate, and description." }] };
       }
       const pred = predicate as Predicate;
-      if (pred.type !== "manual" && command.trim() !== "") {
+      if (isExecutablePredicate(pred.type) && command.trim() !== "") {
         const missing = await findMissingTools([command], doc.cwd);
         if (missing.length > 0) {
           return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
@@ -776,15 +776,15 @@ server.tool(
       return { content: [{ type: "text" as const, text: `ERROR: node is a draft. Use dod_refine to concretize it first.` }] };
     }
 
-    // Block weakening: machine → manual
-    if (new_predicate?.type === "manual" && node.predicate?.type !== "manual") {
-      return { content: [{ type: "text" as const, text: "ERROR: Cannot convert a machine-checkable proof to manual — this would bypass verification." }] };
+    // Block weakening: machine → out-of-band (manual or review)
+    if (new_predicate && !isExecutablePredicate(new_predicate.type) && node.predicate && isExecutablePredicate(node.predicate.type)) {
+      return { content: [{ type: "text" as const, text: "ERROR: Cannot convert a machine-checkable proof to manual or review — this would bypass verification." }] };
     }
 
-    // Validate command against OS
+    // Validate command against OS (skip out-of-band proofs: manual, review)
     const effectivePredicate = (new_predicate ?? node.predicate) as Predicate;
     const effectiveCommand = new_command ?? node.command ?? "";
-    if (effectivePredicate.type !== "manual" && effectiveCommand.trim() !== "") {
+    if (isExecutablePredicate(effectivePredicate.type) && effectiveCommand.trim() !== "") {
       const missing = await findMissingTools([effectiveCommand], doc.cwd);
       if (missing.length > 0) {
         return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
