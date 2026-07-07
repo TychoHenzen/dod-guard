@@ -1,5 +1,5 @@
 export interface Predicate {
-  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation" | "regression" | "assertions" | "streamline" | "observability";
+  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation" | "regression" | "assertions" | "streamline" | "observability" | "brevity";
   value?: number | string;
   /**
    * `regression` only: regex applied to stdout; capture group 1 is the metric
@@ -12,6 +12,29 @@ export interface Predicate {
    * false => larger is better (coverage) and it passes iff N1 >= N0*(1-tol).
    */
   lower_is_better?: boolean;
+  /**
+   * `brevity` only: max characters per line (default 120).
+   */
+  max_line_length?: number;
+  /**
+   * `brevity` only: max lines per function (default 30).
+   */
+  max_function_lines?: number;
+  /**
+   * `brevity` only: max lines per file (default 300).
+   */
+  max_file_lines?: number;
+  /**
+   * `brevity` only: when true (default), flag functions that mix selection
+   * (if/switch) and iteration (for/while).
+   */
+  require_cohesion?: boolean;
+  /**
+   * `brevity` only: minimum deletion-to-insertion ratio for changed files
+   * with net >10 insertions (default 0.2). Low ratio = new code layered on
+   * top without removing old.
+   */
+  min_replacement_ratio?: number;
 }
 
 /**
@@ -34,6 +57,7 @@ export type ProofCategory =
   | "duplication"
   | "streamline"
   | "observability"
+  | "brevity"
   | "manual"
   | "other";
 

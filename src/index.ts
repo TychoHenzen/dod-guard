@@ -20,17 +20,22 @@ const server = new McpServer({
 // ── Shared schemas ──────────────────────────────────────────────────
 
 const PredicateSchema = z.object({
-  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline", "observability"]),
+  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline", "observability", "brevity"]),
   value: z.union([z.number(), z.string()]).optional(),
   extract: z.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
   lower_is_better: z.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage)."),
+  max_line_length: z.number().optional().describe("brevity only: max characters per line (default 120)."),
+  max_function_lines: z.number().optional().describe("brevity only: max lines per function (default 30)."),
+  max_file_lines: z.number().optional().describe("brevity only: max lines per file (default 300)."),
+  require_cohesion: z.boolean().optional().describe("brevity only: flag functions mixing selection + iteration (default true)."),
+  min_replacement_ratio: z.number().optional().describe("brevity only: minimum deletion/insertion ratio (default 0.2)."),
 });
 
 const ProofCategorySchema = z.enum([
   "lint", "format", "tdd", "structure", "test", "mutation",
   "integration_wiring", "integration_behavioral",
   "performance", "complexity", "coverage", "duplication",
-  "streamline", "observability", "manual", "other",
+  "streamline", "observability", "brevity", "manual", "other",
 ]);
 
 // Recursive TaskNode input schema
@@ -40,7 +45,7 @@ const TaskNodeInputSchema: z.ZodType<{
   intent?: string;
   children?: { title: string; refinement?: "draft" | "concrete"; intent?: string; children?: any[]; command?: string; predicate?: any; description?: string; category?: string; advisory?: boolean }[];
   command?: string;
-  predicate?: { type: string; value?: number | string; extract?: string; lower_is_better?: boolean };
+  predicate?: { type: string; value?: number | string; extract?: string; lower_is_better?: boolean; max_line_length?: number; max_function_lines?: number; max_file_lines?: number; require_cohesion?: boolean; min_replacement_ratio?: number };
   description?: string;
   category?: string;
   advisory?: boolean;

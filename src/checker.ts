@@ -6,6 +6,7 @@ import { perProofFingerprint } from "./manual.js";
 import { extractNumber } from "./regression.js";
 import { analyseAssertions } from "./assertions.js";
 import { analyseObservability, analyseObservabilityFromOutput } from "./observability.js";
+import { analyseBrevity, analyseBrevityFromOutput, DEFAULT_BREVITY_OPTS, type BrevityOpts } from "./brevity.js";
 
 const execAsync = promisify(exec);
 
@@ -177,6 +178,7 @@ function evaluatePredicate(
     case "assertions":
     case "streamline":
     case "observability":
+    case "brevity":
       return true;
     default:
       return false;
@@ -526,6 +528,80 @@ async function executeProof(node: TaskNode, cwd: string): Promise<LeafResult> {
       status: "fail",
       output: run.combined,
       error: errors.join("\n"),
+      exit_code: run.exitCode,
+      duration_ms: run.duration,
+    };
+  }
+
+  // Brevity predicate
+  if (node.predicate!.type === "brevity") {
+    const maxAllowed = (node.predicate!.value as number) ?? 0;
+    const pred = node.predicate!;
+
+    const brevityOpts: BrevityOpts = {
+      maxLineLength: pred.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
+      maxFunctionLines: pred.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines,
+      maxFileLines: pred.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines,
+      requireCohesion: pred.require_cohesion ?? DEFAULT_BREVITY_OPTS.requireCohesion,
+      minReplacementRatio: pred.min_replacement_ratio ?? DEFAULT_BREVITY_OPTS.minReplacementRatio,
+    };
+
+    // Try command tokens first, then command output (git diff --name-only etc.)
+    let report = analyseBrevity(cmd, cwd, brevityOpts);
+    if (!report) {
+      report = analyseBrevityFromOutput(run.combined, cwd, brevityOpts);
+    }
+
+    if (!report) {
+      return {
+        ...leafBase,
+        status: "fail",
+        output: run.combined,
+        error: "brevity: could not identify any source files from the command or its output. Ensure the command references source files by path (e.g. `git diff --name-only HEAD~1` or `node_modules/.bin/jest src/foo.test.ts`).",
+        exit_code: run.exitCode,
+        duration_ms: run.duration,
+      };
+    }
+
+    const passed = report.totalViolations <= maxAllowed;
+
+    const lines: string[] = [
+      passed
+        ? `brevity: ${report.totalViolations} violation(s) ≤ allowed ${maxAllowed}`
+        : `BREVITY FAIL: ${report.totalViolations} violation(s) exceeds allowed maximum of ${maxAllowed}`,
+      "",
+    ];
+
+    for (const f of report.perFile) {
+      const parts: string[] = [`  ${f.file}: ${f.lineCount} lines, ${f.functionCount} functions`];
+      if (f.longFunctions > 0) parts.push(`${f.longFunctions} too long`);
+      if (f.mixedCohesionFunctions > 0) parts.push(`${f.mixedCohesionFunctions} mixed cohesion`);
+      if (f.insertions !== undefined && f.deletions !== undefined) {
+        parts.push(`+${f.insertions}/-${f.deletions}`);
+      }
+      lines.push(parts.join(", "));
+      for (const v of f.violations) {
+        lines.push(`    • L${v.line}: ${v.kind} — ${v.detail}`);
+      }
+    }
+
+    if (!passed) {
+      lines.push(
+        "",
+        "Remediation:",
+        "  • Split functions >30 lines into focused single-purpose units",
+        "  • Separate selection (if/switch) from iteration (for/while) — each function does one thing",
+        "  • Delete old code when replacing functionality (low deletion ratio = accretion)",
+        "  • Keep lines under 120 chars — break long expressions across multiple lines",
+        "  • Split files >300 lines into modules",
+      );
+    }
+
+    return {
+      ...leafBase,
+      status: passed ? "pass" : "fail",
+      output: run.combined,
+      error: lines.join("\n"),
       exit_code: run.exitCode,
       duration_ms: run.duration,
     };

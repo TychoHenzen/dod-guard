@@ -81,6 +81,12 @@ const OPTIONAL_REQUIRING_JUSTIFICATION: ReadonlyArray<{ cat: ProofCategory; labe
     warnMsg: () =>
       'No "observability" proof — changed source files should have log statements at error paths, no empty catch/swallowed errors. Add an observability proof, or provide a skip_reason.',
   },
+  {
+    cat: "brevity",
+    label: "Brevity: prove code is clean — short functions, single-purpose, old code removed.",
+    warnMsg: () =>
+      'No "brevity" proof — changed source files should be scanned for structural bloat: functions >30 lines, mixed selection+iteration, files >300 lines, lines >120 chars, replacement without removal. Add a brevity proof, or provide a skip_reason.',
+  },
 ];
 
 /** Regression categories — same skip_reason enforcement as other optional cats. */

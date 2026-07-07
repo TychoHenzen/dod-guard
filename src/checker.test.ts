@@ -414,6 +414,13 @@ describe("checkDocument predicate types", () => {
     assert.equal(res.leaves[0].status, "fail", "observability should fail when no source files are identified");
     assert.ok(res.leaves[0].error?.includes("could not identify any source files"), "error should mention missing source files");
   });
+
+  it("brevity fails when no source files identified", async () => {
+    const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "brevity", { type: "brevity", value: 0 })]);
+    const res = await checkDocument(doc);
+    assert.equal(res.leaves[0].status, "fail", "brevity should fail when no source files are identified");
+    assert.ok(res.leaves[0].error?.includes("could not identify any source files"), "error should mention missing source files");
+  });
 });
 
 // ── checkDocument: tamper detection ────────────────────────────────────

@@ -13,6 +13,7 @@ const ALL_SKIPPED: Record<string, string> = {
   mutation: "no critical logic",
   streamline: "greenfield",
   observability: "config-only change",
+  brevity: "greenfield project, no structural debt yet",
   performance: "no perf-sensitive code",
   complexity: "no algorithmic code",
   coverage: "no new testable surface",
@@ -22,7 +23,7 @@ const ALL_SKIPPED: Record<string, string> = {
 /** All mandatory + all optional categories present, no skip_reasons needed. */
 function completeSteps(): BaselineStepInput[] {
   return [
-    step("Logic", "tdd", "test", "mutation", "streamline", "observability",
+    step("Logic", "tdd", "test", "mutation", "streamline", "observability", "brevity",
       "performance", "complexity", "coverage", "duplication"),
     step("Wire it up", "integration_wiring", "integration_behavioral"),
   ];
@@ -47,7 +48,7 @@ test("a complete DoD has no errors and no warnings", () => {
 test("a minimal DoD with all skip_reasons has no errors, only skip_reason warnings", () => {
   const r = validateBaseline("general", minimalSteps(), ALL_SKIPPED);
   assert.deepEqual(r.errors, [], "minimal DoD with all reasons skipped should have no errors");
-  assert.equal(r.warnings.length, 8, "all 8 optional categories skipped → 8 warnings");
+  assert.equal(r.warnings.length, 9, "all 9 optional categories skipped → 9 warnings");
   assert.ok(r.warnings.every((w) => /skip_reason/.test(w)), "all warnings should mention skip_reason");
 });
 
@@ -80,15 +81,15 @@ test("hard mandatory categories NOT skippable via skip_reasons", () => {
 
 // ── Optional: absent + no skip_reason → ERROR ─────────────────────────────
 
-test("all optional categories absent + no skip_reasons → 8 hard errors", () => {
+test("all optional categories absent + no skip_reasons → 9 hard errors", () => {
   const r = validateBaseline("general", minimalSteps()); // NO skip_reasons
-  assert.equal(r.errors.length, 8, "tdd + mutation + streamline + observability + 4 regression cats = 8 errors");
+  assert.equal(r.errors.length, 9, "tdd + mutation + streamline + observability + brevity + 4 regression cats = 9 errors");
 });
 
 test("one optional missing (tdd) while others skipped → single error", () => {
   const steps = minimalSteps();
   const reasons: Record<string, string> = {
-    mutation: "ok", streamline: "ok", observability: "ok",
+    mutation: "ok", streamline: "ok", observability: "ok", brevity: "ok",
     performance: "ok", complexity: "ok", coverage: "ok", duplication: "ok",
     // tdd deliberately omitted
   };
@@ -185,6 +186,30 @@ test("observability present → no observability warning or error", () => {
   assert.ok(!r.warnings.some((w) => /observability/i.test(w)));
 });
 
+test("brevity present → no brevity warning or error", () => {
+  const steps = [step("Logic", "test", "tdd", "brevity"), step("Wire", "integration_wiring", "integration_behavioral")];
+  const r = validateBaseline("general", steps, ALL_SKIPPED);
+  assert.ok(!r.errors.some((e) => /brevity/i.test(e)));
+  assert.ok(!r.warnings.some((w) => /brevity/i.test(w)));
+});
+
+test("brevity absent + skip_reason → warning", () => {
+  const r = validateBaseline("general", minimalSteps(), {
+    ...ALL_SKIPPED,
+    brevity: "prototype, will refactor later",
+  });
+  assert.ok(r.warnings.some((w) => /brevity/i.test(w) && /prototype/i.test(w)),
+    "warning should mention brevity and the skip_reason text");
+});
+
+test("brevity absent + no skip_reason → error", () => {
+  const reasons = { ...ALL_SKIPPED };
+  delete reasons.brevity;
+  const r = validateBaseline("general", minimalSteps(), reasons);
+  assert.equal(r.errors.length, 1, "only brevity should error");
+  assert.match(r.errors[0], /brevity/);
+});
+
 test("regression category present → no error or warning for that category", () => {
   const steps: BaselineStepInput[] = [
     step("Logic", "test", "tdd"),
@@ -252,5 +277,5 @@ test("unrecognized skipReasons keys do not cause errors", () => {
 
 test("bug type coverage: all optional categories absent errors apply to bug type", () => {
   const r = validateBaseline("bug", minimalSteps()); // NO skip_reasons
-  assert.equal(r.errors.length, 8, "bug type also enforces all 8 optional categories");
+  assert.equal(r.errors.length, 9, "bug type also enforces all 9 optional categories");
 });

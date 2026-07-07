@@ -45,6 +45,7 @@ What gets evaluated about a proof command's output:
 | `assertions` | Static analysis: count non-trivial assertions in test files |
 | `streamline` | Grep for old symbol references — prove old code was removed |
 | `observability` | Static analysis: log statement count, error handler coverage, anti-patterns |
+| `brevity` | Static analysis: line length, function size, file size, cohesion, replacement ratio |
 
 ### Proof execution flow (checker.ts)
 
@@ -98,6 +99,7 @@ Company baseline from `standards/dod-baselines.md` is machine-enforced at `dod_c
 | `manual.ts` | Human verification: fingerprint caching, `resolveManual()` with confirmer callback |
 | `assertions.ts` | Static analysis: scan test files for trivial assertions (constant-on-constant, always-passing) |
 | `observability.ts` | Static analysis: scan source files for log statements, error handler coverage, anti-patterns (empty catch, swallowed errors, bare static logs) |
+| `brevity.ts` | Static analysis: scan source files for line/function/file length, cohesion (mixed selection+iteration), replacement ratio |
 | `regression.ts` | Extract metric number from regression command output (last number or regex capture) |
 | `baseline.ts` | Baseline category enforcement with two-tier (hard error / warn-with-skip_reason) |
 | `notify.ts` | Windows messagebox + jingle for manual verification popups |
@@ -111,6 +113,7 @@ After `executeProof()` runs the command:
 - **streamline**: grep for old symbols, count matches, pass iff ≤ max allowed
 - **assertions**: run command, then static-analyze test files — pass iff ≥ min non-trivial assertions
 - **observability**: run command, then static-analyze source files — pass iff log counts + error handler coverage + zero anti-patterns
+- **brevity**: run command, then static-analyze source files — pass iff violations ≤ max allowed
 - **tdd**: reject GREEN without prior RED; on GREEN, also check assertion quality
 - **basic predicates** (exit_code, output_contains, etc.): evaluate directly against exit code + combined output
 
