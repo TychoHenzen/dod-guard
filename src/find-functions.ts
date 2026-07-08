@@ -59,22 +59,34 @@ export function findJsFunctions(lines: string[]): FunctionRange[] {
     let m = line.match(/^\s*(?:export\s+(?:default\s+)?)?(?:async\s+)?function\s+(\w+)/);
     if (m) {
       const end = findBlockEnd(lines, i, "{", "}");
-      if (end > i) { out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) }); i = end; continue; }
+      out.push({
+        startLine: i + 1, endLine: end + 1,
+        name: m[1], bodyLines: lines.slice(i + 1, end),
+      }); i = end; continue;
     }
     m = line.match(/^\s*(?:static\s+)?(?:async\s+)?(?:get\s+|set\s+)?(\w+)\s*\([^)]*\)\s*\{/);
     if (m && !CONTROL_KEYWORDS.has(m[1])) {
       const end = findBlockEnd(lines, i, "{", "}");
-      if (end > i) { out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) }); i = end; continue; }
+      out.push({
+        startLine: i + 1, endLine: end + 1,
+        name: m[1], bodyLines: lines.slice(i + 1, end),
+      }); i = end; continue;
     }
     m = line.match(/^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>\s*\{/);
     if (m) {
       const end = findBlockEnd(lines, i, "{", "}");
-      if (end > i) { out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) }); i = end; continue; }
+      out.push({
+        startLine: i + 1, endLine: end + 1,
+        name: m[1], bodyLines: lines.slice(i + 1, end),
+      }); i = end; continue;
     }
     m = line.match(/^\s*(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?function\s*\(/);
     if (m) {
       const end = findBlockEnd(lines, i, "{", "}");
-      if (end > i) { out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) }); i = end; continue; }
+      out.push({
+        startLine: i + 1, endLine: end + 1,
+        name: m[1], bodyLines: lines.slice(i + 1, end),
+      }); i = end; continue;
     }
   }
   return out;
@@ -116,7 +128,10 @@ export function findRsFunctions(lines: string[]): FunctionRange[] {
     const m = lines[i].match(/^\s*(?:pub(?:\s*\(\s*(?:crate|super|self)\s*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+(\w+)/);
     if (!m) continue;
     const end = findBlockEnd(lines, i, "{", "}");
-    if (end > i) { out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) }); i = end; }
+      out.push({
+        startLine: i + 1, endLine: end + 1,
+        name: m[1], bodyLines: lines.slice(i + 1, end),
+      }); i = end; continue;
   }
   return out;
 }
@@ -135,7 +150,10 @@ export function findCsFunctions(lines: string[]): FunctionRange[] {
     const nameToken = m[2];
     if (CONTROL_KEYWORDS.has(nameToken)) continue;
     const end = findBlockEnd(lines, i, "{", "}");
-    if (end > i) { out.push({ startLine: i + 1, endLine: end + 1, name: nameToken, bodyLines: lines.slice(i + 1, end) }); i = end; }
+      out.push({
+        startLine: i + 1, endLine: end + 1,
+        name: nameToken, bodyLines: lines.slice(i + 1, end),
+      }); i = end;
   }
   return out;
 }
