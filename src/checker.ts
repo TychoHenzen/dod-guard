@@ -10,6 +10,17 @@ const TIMEOUT_MS = 120_000;
 
 // ── Tree utilities
 
+/** Per-node helper: apply the flatten logic to a single node. */
+function flattenLeaf(node: TaskNode, index: number, parentPath?: string): { node: TaskNode; node_path: string }[] {
+  const currentPath = parentPath ? `${parentPath}.children.${index}` : `${index}`;
+  if (node.children && node.children.length > 0) {
+    return flattenConcreteLeaves(node.children, currentPath);
+  } else if (node.refinement === "concrete") {
+    return [{ node, node_path: currentPath }];
+  }
+  return [];
+}
+
 /**
  * Walk the TaskNode tree depth-first, collecting every concrete leaf
  * (refinement === "concrete", no children) with its dot-separated path.
@@ -21,45 +32,41 @@ export function flattenConcreteLeaves(
 ): { node: TaskNode; node_path: string }[] {
   const results: { node: TaskNode; node_path: string }[] = [];
   for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-    if (node.children && node.children.length > 0) {
-      results.push(...flattenConcreteLeaves(node.children, currentPath));
-    } else if (node.refinement === "concrete") {
-      results.push({ node, node_path: currentPath });
-    }
-    // Draft leaves are intentionally skipped
+    results.push(...flattenLeaf(nodes[i], i, parentPath));
   }
   return results;
 }
 
+/** Per-node helper: check if a single node is draft or has draft descendants. */
+function nodeDraftOrDescendant(node: TaskNode): boolean {
+  if (node.refinement === "draft") return true;
+  if (node.children && hasDraftNodes(node.children)) return true;
+  return false;
+}
+
 /** True when any node in the subtree is a draft leaf (refinement === "draft"). */
 export function hasDraftNodes(nodes: TaskNode[]): boolean {
-  for (const node of nodes) {
-    if (node.refinement === "draft") return true;
-    if (node.children && hasDraftNodes(node.children)) return true;
-  }
-  return false;
+  return nodes.some(nodeDraftOrDescendant);
+}
+
+/** Recursive path traversal: walk node tree by path segments. */
+function traverseNodePath(nodes: TaskNode[], parts: string[], depth: number): TaskNode | null {
+  if (depth >= parts.length) return null;
+  const segment = parts[depth];
+  if (segment === "children") return traverseNodePath(nodes, parts, depth + 1);
+  const idx = Number(segment);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= nodes.length) return null;
+  const node = nodes[idx];
+  const isLast = depth === parts.length - 1 || (depth === parts.length - 2 && parts[parts.length - 1] === "children");
+  if (isLast) return node;
+  if (!node.children) return null;
+  return traverseNodePath(node.children, parts, depth + 1);
 }
 
 /** Find a node by its dot-separated path, e.g. "0.children.1.children.2". */
 export function findNodeByPath(nodes: TaskNode[], path: string): TaskNode | null {
   if (!path) return null;
-  const parts = path.split(".");
-  let current: TaskNode[] = nodes;
-  for (let i = 0; i < parts.length; i++) {
-    // Every other segment is "children" (skip it)
-    if (parts[i] === "children") continue;
-    const idx = Number(parts[i]);
-    if (!Number.isInteger(idx) || idx < 0 || idx >= current.length) return null;
-    const node = current[idx];
-    if (i === parts.length - 1 || (i === parts.length - 2 && parts[parts.length - 1] === "children")) {
-      return node;
-    }
-    if (!node.children) return null;
-    current = node.children;
-  }
-  return null;
+  return traverseNodePath(nodes, path.split("."), 0);
 }
 
 /**
@@ -71,15 +78,15 @@ export function isExecutablePredicate(type: string): boolean {
   return type !== "manual" && type !== "review";
 }
 
+function isExecutableLeaf(leaf: { node: TaskNode }): boolean {
+  return !!(leaf.node.command && leaf.node.predicate && isExecutablePredicate(leaf.node.predicate.type));
+}
+
 /** Collect commands from all concrete leaves that need OS validation. */
 export function extractExecutableCommands(nodes: TaskNode[]): string[] {
-  const cmds: string[] = [];
-  for (const { node } of flattenConcreteLeaves(nodes)) {
-    if (node.command && node.predicate && isExecutablePredicate(node.predicate.type)) {
-      cmds.push(node.command);
-    }
-  }
-  return cmds;
+  return flattenConcreteLeaves(nodes)
+    .filter(isExecutableLeaf)
+    .map(({ node }) => node.command!);
 }
 
 /** @deprecated Use extractExecutableCommands instead. */
@@ -90,14 +97,16 @@ export function isBranchLocked(nodes: TaskNode[]): boolean {
   return !hasDraftNodes(nodes);
 }
 
+function countNodeDrafts(node: TaskNode): number {
+  let count = 0;
+  if (node.refinement === "draft") count++;
+  if (node.children) count += countDraftNodes(node.children);
+  return count;
+}
+
 /** Count draft leaves in a subtree. */
 export function countDraftNodes(nodes: TaskNode[]): number {
-  let count = 0;
-  for (const node of nodes) {
-    if (node.refinement === "draft") count++;
-    if (node.children) count += countDraftNodes(node.children);
-  }
-  return count;
+  return nodes.reduce((sum, node) => sum + countNodeDrafts(node), 0);
 }
 
 // ── Re-export parseSurvivors from evaluate-proof ──────────────────────────
@@ -286,6 +295,64 @@ function collectAllLeaves(
   }
 }
 
+// ── Main entry point helpers ──────────────────────────────────────────
+
+/** Carry forward out-of-scope leaves and their drafts for a scoped run. */
+function carryForwardOutOfScopeLeaves(
+  targetPath: string | undefined,
+  outOfScope: { node: TaskNode; node_path: string }[],
+  roots: TaskNode[],
+  leafResults: LeafResult[],
+): void {
+  if (!targetPath || outOfScope.length === 0) return;
+  for (const { node, node_path } of outOfScope) {
+    leafResults.push(carryForwardNode(node, node_path));
+  }
+  carryForwardDrafts(roots, "", targetPath, leafResults);
+}
+
+/** Execute all in-scope proofs, collecting results and aggregate flags. */
+async function executeInScopeLeaves(
+  inScope: { node: TaskNode; node_path: string }[],
+  cwd: string,
+  execFn: typeof runCommand,
+  leafResults: LeafResult[],
+): Promise<{ anyRealFail: boolean; anyUnverified: boolean; manualUnverified: number }> {
+  let anyRealFail = false;
+  let anyUnverified = false;
+  let manualUnverified = 0;
+  for (const { node, node_path } of inScope) {
+    const result = await executeProof(node, cwd, execFn);
+    result.node_path = node_path;
+    leafResults.push(result);
+    if (result.status === "fail" && !node.advisory) anyRealFail = true;
+    if (result.status === "skipped" && !node.advisory) anyUnverified = true;
+    const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
+    if (result.status === "skipped" && isManualOrReview) manualUnverified++;
+  }
+  return { anyRealFail, anyUnverified, manualUnverified };
+}
+
+/** Build amendment-count map from amendment history. */
+function collectAmendmentCounts(
+  amendments: DodDocument["amendments"],
+  roots: TaskNode[],
+): Map<string, { title: string; count: number }> {
+  const amendmentCounts = new Map<string, { title: string; count: number }>();
+  for (const a of amendments) {
+    if (a.action === "modified" || a.action === "refined") {
+      const existing = amendmentCounts.get(a.node_path);
+      if (existing) {
+        existing.count++;
+      } else {
+        const node = findNodeByPath(roots, a.node_path);
+        amendmentCounts.set(a.node_path, { title: node?.title ?? a.node_path, count: 1 });
+      }
+    }
+  }
+  return amendmentCounts;
+}
+
 // ── Main entry point ──────────────────────────────────────────────────
 
 export async function checkDocument(
@@ -301,58 +368,17 @@ export async function checkDocument(
 
   const leafResults: LeafResult[] = [];
 
-  // Carry forward out-of-scope leaves (scoped runs only)
-  if (targetPath && outOfScope.length > 0) {
-    for (const { node, node_path } of outOfScope) {
-      leafResults.push(carryForwardNode(node, node_path));
-    }
-    // Also carry forward draft leaves
-    carryForwardDrafts(doc.roots, "", targetPath, leafResults);
-  }
+  carryForwardOutOfScopeLeaves(targetPath, outOfScope, doc.roots, leafResults);
 
-  // Execute in-scope leaves
-  let anyRealFail = false;
-  let anyUnverified = false;
-  let manualUnverified = 0;
+  const { anyRealFail, anyUnverified, manualUnverified } = await executeInScopeLeaves(
+    inScope, cwd, opts?.execFn ?? runCommand, leafResults,
+  );
 
-  for (const { node, node_path } of inScope) {
-    // Attach the path for result identification
-    const result = await executeProof(node, cwd, opts?.execFn ?? runCommand);
-    result.node_path = node_path;
-    leafResults.push(result);
-
-    if (result.status === "fail" && !node.advisory) {
-      anyRealFail = true;
-    }
-    if (result.status === "skipped" && !node.advisory) {
-      anyUnverified = true;
-    }
-    // Count unverified manual/review proofs separately
-    const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
-    if (result.status === "skipped" && isManualOrReview) {
-      manualUnverified++;
-    }
-  }
-
-  // If not scoped, also add draft leaf results
   if (!targetPath) {
     addDraftLeafResults(doc.roots, "", leafResults);
   }
 
-  // Amendment cycle detection: count amendments per node, warn on >2
-  const amendmentCounts = new Map<string, { title: string; count: number }>();
-  for (const a of doc.amendments) {
-    if (a.action === "modified" || a.action === "refined") {
-      const existing = amendmentCounts.get(a.node_path);
-      if (existing) {
-        existing.count++;
-      } else {
-        // Try to find the node title
-        const node = findNodeByPath(doc.roots, a.node_path);
-        amendmentCounts.set(a.node_path, { title: node?.title ?? a.node_path, count: 1 });
-      }
-    }
-  }
+  const amendmentCounts = collectAmendmentCounts(doc.amendments, doc.roots);
   const amendmentWarnings = [...amendmentCounts.entries()]
     .filter(([, v]) => v.count > 2)
     .map(([node_path, v]) => ({ node_path, title: v.title, count: v.count }));

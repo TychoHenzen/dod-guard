@@ -1,3 +1,5 @@
+console.debug("evaluate-proof: module loaded", { pid: process.pid });
+
 import type { TaskNode, LeafResult, Predicate } from "./types.js";
 import type { AssertionReport } from "./assertions.js";
 import type { ObservabilityReport } from "./observability.js";
