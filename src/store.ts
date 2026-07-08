@@ -30,7 +30,7 @@ export async function load(id: string): Promise<DodDocument | null> {
     const data = await fs.readFile(docPath(id), "utf-8");
     return JSON.parse(data) as DodDocument;
   } catch (err: unknown) {
-    if (process.env.DOD_STORE_DIR) console.error("store: failed to load document", { id, err: err instanceof Error ? err.message : String(err) });
+    console.error("store: failed to load document", { id, err: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
@@ -47,7 +47,7 @@ export async function findByPath(markdownPath: string): Promise<DodDocument | nu
       const normalizedSearch = path.resolve(markdownPath).toLowerCase();
       if (normalizedStored === normalizedSearch) return doc;
     } catch (err: unknown) {
-      if (process.env.DOD_STORE_DIR) console.error("store: failed to read file during findByPath", { file, err: err instanceof Error ? err.message : String(err) });
+      console.error("store: failed to read file during findByPath", { file, err: err instanceof Error ? err.message : String(err) });
       continue;
     }
   }
@@ -64,7 +64,7 @@ export async function listAll(): Promise<DodDocument[]> {
       const data = await fs.readFile(path.join(getStoreDir(), file), "utf-8");
       docs.push(JSON.parse(data) as DodDocument);
     } catch (err: unknown) {
-      if (process.env.DOD_STORE_DIR) console.error("store: failed to read file during listAll", { file, err: err instanceof Error ? err.message : String(err) });
+      console.error("store: failed to read file during listAll", { file, err: err instanceof Error ? err.message : String(err) });
       continue;
     }
   }
@@ -76,7 +76,7 @@ export async function remove(id: string): Promise<boolean> {
     await fs.unlink(docPath(id));
     return true;
   } catch (err: unknown) {
-    if (process.env.DOD_STORE_DIR) console.error("store: failed to remove document", { id, err: err instanceof Error ? err.message : String(err) });
+    console.error("store: failed to remove document", { id, err: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }

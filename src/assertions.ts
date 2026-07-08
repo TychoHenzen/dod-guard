@@ -162,7 +162,7 @@ function extractTestFilesFromCommand(command: string, cwd: string): string[] {
         } catch (err: unknown) {
           // Directory unreadable — skip
           const msg = err instanceof Error ? err.message : String(err);
-          if (process.env.DOD_STORE_DIR) console.error("assertions: unreadable dir", { dir, err: msg });
+          console.error("assertions: unreadable dir", { dir, err: msg });
         }
       }
     }
