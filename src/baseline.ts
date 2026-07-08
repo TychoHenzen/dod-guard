@@ -195,6 +195,7 @@ export function validateBaseline(
   steps: BaselineStepInput[],
   skipReasons?: Record<string, string>,
 ): BaselineReport {
+  console.debug("baseline: validateBaseline", { type, stepCount: steps.length });
   const present = collectPresent(steps);
   const errors: string[] = [];
   const warnings: string[] = [];

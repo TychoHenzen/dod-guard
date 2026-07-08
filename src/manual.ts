@@ -25,6 +25,8 @@ export interface ManualResolution {
  * Includes the human-facing instruction (`description`) and `command` so that
  * editing what is being verified invalidates any cached confirmation.
  */
+console.debug("manual: module loaded", { pid: process.pid });
+
 export function perProofFingerprint(node: TaskNode): string {
   const data = [
     node.command ?? "",

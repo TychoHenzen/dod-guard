@@ -253,6 +253,7 @@ function parseDodTree(lines: string[], startIdx: number): TaskNode[] {
 // ── Main parser ───────────────────────────────────────────────────────────
 
 function parseContent(content: string): ParsedDod {
+  console.debug("parser: parseContent", { length: content.length });
   const lines = content.split("\n");
 
   let title = "", goal = "", date = "", cwd = ".";

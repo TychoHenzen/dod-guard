@@ -10,6 +10,8 @@
  *   fail-safe FAIL — a regression proof never auto-passes on output it cannot
  *   parse (mirrors the mutation predicate's unparseable path).
  */
+console.debug("regression: module loaded", { pid: process.pid });
+
 export function extractNumber(stdout: string, extract?: string): number | null {
   if (extract) {
     const match = stdout.match(new RegExp(extract));

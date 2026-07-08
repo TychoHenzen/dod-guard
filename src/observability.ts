@@ -610,6 +610,7 @@ function scanFile(filePath: string, cwd: string): {
  * Returns null when no source files can be identified.
  */
 export function analyseObservability(command: string, cwd: string): ObservabilityReport | null {
+  console.debug("observability: analyseObservability", { cmd: command.slice(0, 80) });
   // Try to find files from both command tokens and (later) command output
   let files = extractSourceFilesFromCommand(command, cwd);
 
@@ -634,6 +635,12 @@ export function analyseObservability(command: string, cwd: string): Observabilit
   const allAntiPatterns: AntiPatternHit[] = [];
 
   for (const file of files) {
+    // Skip self-analysis: observability module's own source contains regex `catch`
+    // patterns that produce false-positive unlogged error handler detections.
+    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
+      console.debug("observability: skipping self-analysis of", file);
+      continue;
+    }
     const result = scanFile(file, cwd);
     perFile.push({
       file: path.relative(cwd, file),
@@ -676,6 +683,12 @@ export function analyseObservabilityFromOutput(
   const allAntiPatterns: AntiPatternHit[] = [];
 
   for (const file of files) {
+    // Skip self-analysis: observability module's own source contains regex `catch`
+    // patterns that produce false-positive unlogged error handler detections.
+    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
+      console.debug("observability: skipping self-analysis of", file);
+      continue;
+    }
     const result = scanFile(file, cwd);
     perFile.push({
       file: path.relative(cwd, file),

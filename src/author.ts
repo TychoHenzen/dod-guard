@@ -88,6 +88,7 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
 // ── Main render ───────────────────────────────────────────────────────
 
 export function renderMarkdown(doc: DodDocument): string {
+  console.debug("author: renderMarkdown", { id: doc.id });
   const l: string[] = [];
 
   l.push(`# ${doc.title} — Requirements Spec`);

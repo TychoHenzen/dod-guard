@@ -1,6 +1,7 @@
 import type { CheckResult } from "./types.js";
 
 export function formatCheckResult(result: CheckResult): string {
+  console.debug("format-result: formatCheckResult", { overall: result.overall });
   const l: string[] = [];
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
   l.push("");
