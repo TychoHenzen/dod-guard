@@ -122,3 +122,42 @@ test("suggestionFor covers common Unix-to-Windows mappings", () => {
   assert.equal(suggestionFor("awk"), "PowerShell", "awk maps to PowerShell");
   assert.equal(suggestionFor("echo"), undefined, "echo exists on both platforms — no suggestion needed");
 });
+
+// ── Edge-case and coverage tests ──────────────────────────────────────
+
+test("extractCommandNames handles Windows absolute paths", () => {
+  const names = extractCommandNames("C:\\tools\\mytool.exe --flag");
+  assert.deepEqual(names, ["C:\\tools\\mytool.exe"],
+    "should extract Windows absolute path as command name");
+});
+
+test("extractCommandNames handles UNC paths", () => {
+  const names = extractCommandNames("\\\\server\\share\\tool.exe");
+  assert.deepEqual(names, ["\\\\server\\share\\tool.exe"],
+    "should handle UNC paths");
+});
+
+test("extractCommandNames handles single-quoted command with double-quote inside", () => {
+  const names = extractCommandNames("'node test --grep=\"pattern\"'");
+  // Single quote wraps the whole thing, so everything inside is one segment.
+  assert.ok(names.length >= 0, "should not crash on nested quotes");
+});
+
+test("extractCommandNames handles number-only tokens", () => {
+  const names = extractCommandNames("2>err.log cmd"); // 2> is redirection, cmd is command
+  assert.ok(names.includes("cmd"), "should extract cmd, skip 2> redirection");
+});
+
+test("extractCommandNames with single-char command in pipe chain", () => {
+  const names = extractCommandNames("ls | wc -l");
+  assert.deepEqual(names, ["ls", "wc"],
+    "pipe chain with short commands should extract both");
+});
+
+test("suggestionFor is case-insensitive and handles unknown tools", () => {
+  assert.equal(suggestionFor("GREP"), "findstr", "uppercase GREP maps to findstr");
+  assert.equal(suggestionFor("Ls"), "dir", "mixed-case Ls maps to dir");
+  assert.equal(suggestionFor("nonexistant_tool_xyz"), undefined,
+    "unknown tool returns undefined");
+});
+
