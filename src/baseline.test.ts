@@ -95,7 +95,7 @@ test("one optional missing (tdd) while others skipped → single error", () => {
   };
   const r = validateBaseline("general", steps, reasons);
   assert.equal(r.errors.length, 1, "only tdd should error");
-  assert.match(r.errors[0], /tdd/);
+  assert.match(r.errors[0], /tdd/, "error message should reference tdd category");
 });
 
 test("one optional missing (mutation) while others skipped → single error", () => {
@@ -103,7 +103,7 @@ test("one optional missing (mutation) while others skipped → single error", ()
   delete reasons.mutation;
   const r = validateBaseline("general", minimalSteps(), reasons);
   assert.equal(r.errors.length, 1, "only mutation should error");
-  assert.match(r.errors[0], /mutation/);
+  assert.match(r.errors[0], /mutation/, "error message should reference mutation category");
 });
 
 test("one optional missing (observability) while others skipped → single error", () => {
@@ -111,7 +111,7 @@ test("one optional missing (observability) while others skipped → single error
   delete reasons.observability;
   const r = validateBaseline("general", minimalSteps(), reasons);
   assert.equal(r.errors.length, 1);
-  assert.match(r.errors[0], /observability/);
+  assert.match(r.errors[0], /observability/, "error message should reference observability category");
 });
 
 test("one regression category missing while others skipped → single error", () => {
@@ -119,15 +119,16 @@ test("one regression category missing while others skipped → single error", ()
   delete reasons.performance;
   const r = validateBaseline("general", minimalSteps(), reasons);
   assert.equal(r.errors.length, 1);
-  assert.match(r.errors[0], /performance/);
+  assert.match(r.errors[0], /performance/, "error message should reference performance category");
 });
 
 // ── Optional: absent + skip_reason → WARNING ──────────────────────────────
 
 test("all optional categories with skip_reasons → all warnings, no errors", () => {
   const r = validateBaseline("general", minimalSteps(), ALL_SKIPPED);
-  assert.deepEqual(r.errors, []);
-  assert.ok(r.warnings.every((w) => /skip_reason/.test(w)));
+  assert.deepEqual(r.errors, [], "all skipped should produce no errors");
+  assert.ok(r.warnings.every((w) => /skip_reason/.test(w)),
+    "every warning should mention skip_reason");
 });
 
 test("skip_reason text appears in warning message", () => {
@@ -161,8 +162,8 @@ test("skip_reason for mutation with custom message", () => {
 
 test("all optional categories present → clean (no errors, no warnings)", () => {
   const r = validateBaseline("general", completeSteps());
-  assert.deepEqual(r.errors, []);
-  assert.deepEqual(r.warnings, []);
+  assert.deepEqual(r.errors, [], "complete DoD should produce no errors");
+  assert.deepEqual(r.warnings, [], "complete DoD should produce no warnings");
 });
 
 test("mutation present → no mutation warning or error", () => {
@@ -207,7 +208,7 @@ test("brevity absent + no skip_reason → error", () => {
   delete reasons.brevity;
   const r = validateBaseline("general", minimalSteps(), reasons);
   assert.equal(r.errors.length, 1, "only brevity should error");
-  assert.match(r.errors[0], /brevity/);
+  assert.match(r.errors[0], /brevity/, "error message should reference brevity category");
 });
 
 test("regression category present → no error or warning for that category", () => {
