@@ -129,7 +129,7 @@ function looksLikePath(name: string): boolean {
 }
 
 async function toolExists(name: string, cwd: string): Promise<boolean> {
-  const key = `${isWindows ? name.toLowerCase() : name}\x00${cwd}`;
+  const key = `${isWindows ? name.toLowerCase() : name}|${cwd}`;
   const cached = existsCache.get(key);
   if (cached !== undefined) return cached;
 
