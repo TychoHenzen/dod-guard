@@ -32,3 +32,4 @@ docs/plans/
 # Test verification artifacts (generated)
 *.audit.json
 .claude/test-verification/
+coverage/
