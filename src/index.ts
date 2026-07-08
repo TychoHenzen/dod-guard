@@ -328,8 +328,10 @@ function buildConfirmer(): Confirmer {
           return { answer: passed ? "pass" : "fail", note, channel: "elicitation" };
         }
         return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
-      } catch {
-        // Fall through to fail-safe
+      } catch (err: unknown) {
+        // Elicitation failed — fall through to fail-safe
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("dod-guard: elicitation request failed", { err: msg });
       }
     }
 
@@ -926,6 +928,7 @@ server.tool(
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error("dod-guard: dod_import parse failed", { err: msg });
       return { content: [{ type: "text" as const, text: `ERROR parsing markdown: ${msg}` }] };
     }
   },

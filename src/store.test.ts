@@ -1,10 +1,20 @@
-import { test } from "node:test";
+import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { generateId, save, load, findByPath, listAll, remove } from "./store.js";
 import type { DodDocument } from "./types.js";
+
+// Isolate test store to a temp directory — prevents contamination from
+// leftover files in real ~/.claude/dod-store/ and between test runs.
+const testStoreDir = mkdtempSync(join(tmpdir(), "dod-store-test-"));
+process.env.DOD_STORE_DIR = testStoreDir;
+
+after(() => {
+  delete process.env.DOD_STORE_DIR;
+  try { rmSync(testStoreDir, { recursive: true, force: true }); } catch { /* ok */ }
+});
 
 function makeDoc(id: string, overrides?: Partial<DodDocument>): DodDocument {
   return {
@@ -100,21 +110,20 @@ test("listAll returns all saved documents", async () => {
   await save(doc2);
   try {
     const all = await listAll();
-    const found1 = all.find((d) => d.id === id1);
-    const found2 = all.find((d) => d.id === id2);
-    assert.ok(found1, "should find first doc");
-    assert.ok(found2, "should find second doc");
+    const found1 = all.find((d: DodDocument) => d.id === id1);
+    const found2 = all.find((d: DodDocument) => d.id === id2);
+    assert.ok(found1, `should find first doc with ID: ${id1}`);
+    assert.ok(found2, `should find second doc with ID: ${id2}`);
   } finally {
     await remove(id1);
     await remove(id2);
   }
 });
 
-test("listAll returns empty array when no documents saved", async () => {
-  // listAll returns all docs in the store; there may be pre-existing ones
-  // so we just verify it returns an array
+test("listAll returns empty array from fresh temp store", async () => {
   const all = await listAll();
   assert.ok(Array.isArray(all), "should return an array");
+  assert.equal(all.length, 0, "fresh temp store should be empty");
 });
 
 // ── remove ───────────────────────────────────────────────────────────────

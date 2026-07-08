@@ -458,19 +458,19 @@ describe("checkDocument tamper detection", () => {
 
 describe("isExecutablePredicate", () => {
   it("returns true for machine-checkable types", () => {
-    assert.equal(isExecutablePredicate("exit_code"), true);
-    assert.equal(isExecutablePredicate("tdd"), true);
-    assert.equal(isExecutablePredicate("mutation"), true);
-    assert.equal(isExecutablePredicate("regression"), true);
-    assert.equal(isExecutablePredicate("assertions"), true);
-    assert.equal(isExecutablePredicate("streamline"), true);
-    assert.equal(isExecutablePredicate("observability"), true);
-    assert.equal(isExecutablePredicate("brevity"), true);
+    assert.equal(isExecutablePredicate("exit_code"), true, "exit_code should be executable");
+    assert.equal(isExecutablePredicate("tdd"), true, "tdd should be executable");
+    assert.equal(isExecutablePredicate("mutation"), true, "mutation should be executable");
+    assert.equal(isExecutablePredicate("regression"), true, "regression should be executable");
+    assert.equal(isExecutablePredicate("assertions"), true, "assertions should be executable");
+    assert.equal(isExecutablePredicate("streamline"), true, "streamline should be executable");
+    assert.equal(isExecutablePredicate("observability"), true, "observability should be executable");
+    assert.equal(isExecutablePredicate("brevity"), true, "brevity should be executable");
   });
 
   it("returns false for out-of-band types", () => {
-    assert.equal(isExecutablePredicate("manual"), false);
-    assert.equal(isExecutablePredicate("review"), false);
+    assert.equal(isExecutablePredicate("manual"), false, "manual should not be executable");
+    assert.equal(isExecutablePredicate("review"), false, "review should not be executable");
   });
 });
 
@@ -484,7 +484,7 @@ describe("extractExecutableCommands", () => {
       concLeaf(nid(), "a", "exit 0", "test"),
       concLeaf(nid(), "b", "npm test", "test"),
     ]);
-    assert.deepEqual(cmds, ["exit 0", "npm test"]);
+    assert.deepEqual(cmds, ["exit 0", "npm test"], "should collect commands from all concrete leaves");
   });
 
   it("excludes manual proofs", () => {
@@ -492,7 +492,7 @@ describe("extractExecutableCommands", () => {
       manualLeaf(nid(), "m", "check manually"),
       concLeaf(nid(), "a", "exit 0", "test"),
     ]);
-    assert.deepEqual(cmds, ["exit 0"]);
+    assert.deepEqual(cmds, ["exit 0"], "should exclude manual proof commands");
   });
 
   it("excludes review proofs", () => {
@@ -515,6 +515,65 @@ describe("extractExecutableCommands", () => {
       draftLeaf(nid(), "d", "intent"),
       concLeaf(nid(), "a", "exit 0", "auto"),
     ]);
-    assert.deepEqual(cmds, ["exit 0"]);
+    assert.deepEqual(cmds, ["exit 0"], "should exclude draft node commands");
+  });
+});
+
+// ── checkDocument: derived signals ──────────────────────────────────────
+
+describe("checkDocument derived signals", () => {
+  const { nid } = scope();
+
+  it("blocked_by_manuals: true when all automated pass but manuals unverified", async () => {
+    const doc = makeDoc([
+      concLeaf(nid(), "auto", "exit 0", "passing test"),
+      manualLeaf(nid(), "m", "needs human"),
+    ]);
+    const res = await checkDocument(doc);
+    assert.equal(res.blocked_by_manuals, true, "should report blocked_by_manuals when automated pass + manual unverified");
+    assert.equal(res.manual_unverified, 1, "should have 1 unverified manual leaf");
+    assert.equal(res.draft_count, 0, "should have no draft nodes");
+  });
+
+  it("blocked_by_manuals: false when a hard failure exists alongside unverified manuals", async () => {
+    const doc = makeDoc([
+      concLeaf(nid(), "fail", "exit 1", "broken", { type: "exit_code", value: 0 }),
+      manualLeaf(nid(), "m", "needs human"),
+    ]);
+    const res = await checkDocument(doc);
+    assert.equal(res.blocked_by_manuals, false, "blocked_by_manuals only true when ALL automated proofs pass");
+  });
+
+  it("blocked_by_manuals: false when all concrete pass and no manuals", async () => {
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")]);
+    const res = await checkDocument(doc);
+    assert.equal(res.blocked_by_manuals, false, "should be false when no manual proofs exist");
+  });
+
+  it("amendment_warnings: empty when no amendments in document", async () => {
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")]);
+    const res = await checkDocument(doc);
+    assert.deepEqual(res.amendment_warnings, [], "should have no amendment warnings");
+  });
+
+  it("amendment_warnings: warns on excessive amendments (> 2)", async () => {
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")]);
+    doc.amendments = [
+      { timestamp: "T1", node_path: "0", action: "modified", reason: "R1", old_value: {}, new_value: {} },
+      { timestamp: "T2", node_path: "0", action: "modified", reason: "R2", old_value: {}, new_value: {} },
+      { timestamp: "T3", node_path: "0", action: "modified", reason: "R3", old_value: {}, new_value: {} },
+    ];
+    const res = await checkDocument(doc);
+    assert.equal(res.amendment_warnings.length, 1, "should have 1 amendment warning for node at path 0");
+    assert.equal(res.amendment_warnings[0].count, 3, "should show amendment count > 2");
+    assert.equal(res.amendment_warnings[0].node_path, "0", "should reference the amended node path");
+  });
+
+  it("scoped-check suggestion: does not fire for <= 5 concrete leaves", async () => {
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")]);
+    const res = await checkDocument(doc);
+    assert.equal(res.overall, "pass", "single leaf should pass");
+    // No scoped flag — not a scoped run
+    assert.ok(!("ran_node_path" in res) || res.ran_node_path === undefined, "should not suggest scoped check for <= 5 leaves");
   });
 });

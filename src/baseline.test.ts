@@ -257,14 +257,16 @@ test("step with empty proofs array does not crash", () => {
 test("null/undefined skipReasons handled gracefully", () => {
   // Passing undefined should not crash — treated as no skip reasons
   const r = validateBaseline("general", minimalSteps(), undefined);
-  assert.ok(r.errors.length >= 0, "should not crash with undefined skipReasons");
+  assert.equal(r.errors.length, 9, "undefined skipReasons should be treated as absent, producing 9 errors for missing optional categories");
 });
 
-test("duplicate categories within a step are flagged once", () => {
+test("duplicate categories within a step are deduplicated", () => {
   const steps: BaselineStepInput[] = [step("Logic", "test", "test", "test")];
   const r = validateBaseline("general", steps, ALL_SKIPPED);
-  // Should not crash or double-count
-  assert.ok(Array.isArray(r.errors), "should return errors array");
+  // Only integration_wiring and integration_behavioral are missing — duplicates must not inflate count
+  assert.equal(r.errors.length, 2, "should have exactly 2 errors (missing integration_wiring and integration_behavioral) not 4+");
+  assert.ok(r.errors.some((e) => /integration_wiring/.test(e)), "should flag missing integration_wiring");
+  assert.ok(r.errors.some((e) => /integration_behavioral/.test(e)), "should flag missing integration_behavioral");
 });
 
 test("unrecognized skipReasons keys do not cause errors", () => {

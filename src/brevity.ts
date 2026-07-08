@@ -393,7 +393,10 @@ function extractSourceFilesFromCommand(command: string, cwd: string): string[] {
               const s = statSync(full);
               if (s.isFile() && !isInSkipDir(full) && isSourceFile(full)) files.push(full);
             }
-          } catch { /* unreadable */ }
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (process.env.DOD_STORE_DIR) console.error("brevity: unreadable dir", { dir, err: msg });
+          }
         }
       }
     }

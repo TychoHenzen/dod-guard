@@ -233,7 +233,180 @@ test("infers manual predicate from description", async () => {
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-// ── Draft nodes ─────────────────────────────────────────────────────────
+test("infers output_matches predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`npm run check\` → output matches "\\d+ tests passed"
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "output_matches", "should infer output_matches");
+    assert.equal((parsed.roots[0] as any).predicate.value, "\\d+ tests passed", "should extract regex pattern");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("infers output_not_matches predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`npm run lint\` → must not match "ERROR"
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "output_not_matches", "should infer output_not_matches");
+    assert.equal((parsed.roots[0] as any).predicate.value, "ERROR", "should extract forbidden pattern");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("infers exit_code_not predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`node app.js\` → must not exit 1
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "exit_code_not", "should infer exit_code_not");
+    assert.equal((parsed.roots[0] as any).predicate.value, 1, "should extract forbidden exit code");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("infers review predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`code review\` → review — peer must approve changes
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "review", "should infer review");
+    assert.equal(parsed.roots[0].command, "code review", "should extract review command");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("infers mutation predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`cargo mutants\` → mutation testing with 0 survivors
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "mutation", "should infer mutation");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("infers regression predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`npm run bench\` → regression baseline check
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "regression", "should infer regression");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("infers assertions predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`npm test\` → at least 5 non-trivial assertions
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "assertions", "should infer assertions");
+    assert.equal((parsed.roots[0] as any).predicate.value, 5, "should extract assertion count");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("infers streamline predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`grep -r oldFn src/\` → streamline — no old code left
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "streamline", "should infer streamline");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("infers observability predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`node check-logs.js\` → observability — log statements in all handlers
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "observability", "should infer observability");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("infers brevity predicate from description", async () => {
+  const dir = makeDir();
+  try {
+    const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`node analyze.js\` → brevity — code quality static analysis
+`;
+    const path = writeMd(dir, md);
+    const parsed = await parseMarkdown(path);
+
+    assert.equal((parsed.roots[0] as any).predicate.type, "brevity", "should infer brevity");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 
 test("parses draft leaf nodes", async () => {
   const dir = makeDir();

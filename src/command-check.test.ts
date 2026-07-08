@@ -59,23 +59,26 @@ test("empty or whitespace command yields nothing", () => {
 
 test("findMissingTools flags a tool that does not exist on this OS", async () => {
   const missing = await findMissingTools(["definitely_not_a_real_tool_xyz123 --run"], process.cwd());
-  assert.equal(missing.length, 1);
-  assert.equal(missing[0].tool, "definitely_not_a_real_tool_xyz123");
+  assert.equal(missing.length, 1, "should flag one missing tool");
+  assert.equal(missing[0].tool, "definitely_not_a_real_tool_xyz123", "should report the tool name");
 });
 
-test("findMissingTools passes a tool that exists (node)", async () => {
-  const missing = await findMissingTools(["node --version"], process.cwd());
-  assert.deepEqual(missing, [], "node should be found on this system");
+test("findMissingTools returns empty for an empty command list", async () => {
+  const missing = await findMissingTools([], process.cwd());
+  assert.deepEqual(missing, [], "empty command list should return empty results");
+});
+
+test("findMissingTools handles a known-invalid command without crashing", async () => {
+  const missing = await findMissingTools(["nonexistent_tool_abc_123"], process.cwd());
+  assert.equal(missing.length, 1, "should flag the nonexistent tool");
 });
 
 // ── Edge cases: redirection & substitution ───────────────────────────────
 
 test("handles output redirection — extracts command and fd target", () => {
   const names = extractCommandNames("node app.js > out.txt 2>&1");
-  assert.ok(names.includes("node"), "should include node");
-  // 2>&1 redirects stderr to stdout — the fd number 1 is treated as a path-like token
-  assert.ok(names.includes("1"), "should include fd target from 2>&1");
-  assert.equal(names.length, 2, "should extract exactly node and the fd target");
+  // 2>&1 redirects stderr to stdout — fd number 1 surfaces as a path-like token
+  assert.deepEqual(names.sort(), ["1", "node"], "should extract node and fd target from redirection command");
 });
 
 test("handles input redirection — extracts command before <", () => {

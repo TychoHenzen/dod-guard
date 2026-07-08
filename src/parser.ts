@@ -23,9 +23,19 @@ function inferPredicate(description: string): Predicate {
     if (quoted) return { type: "output_not_matches", value: quoted[1] };
   }
 
+  if (lower.includes("matches") || lower.includes("must match")) {
+    const quoted = description.match(/"([^"]+)"/);
+    if (quoted) return { type: "output_matches", value: quoted[1] };
+  }
+
   if (lower.includes("contains") || lower.includes("must contain")) {
     const quoted = description.match(/"([^"]+)"/);
     if (quoted) return { type: "output_contains", value: quoted[1] };
+  }
+
+  if (lower.includes("must not exit") || lower.includes("exit code must not be") || lower.includes("non-zero exit")) {
+    const exitMatch = lower.match(/exit\s*(?:\S+\s+)?(\d+)/);
+    return { type: "exit_code_not", value: exitMatch ? parseInt(exitMatch[1], 10) : 0 };
   }
 
   const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
@@ -35,6 +45,35 @@ function inferPredicate(description: string): Predicate {
 
   if (lower.startsWith("manual") || lower === "manual") {
     return { type: "manual" };
+  }
+
+  if (lower.startsWith("review") || lower.includes("review —") || lower.includes("review:")) {
+    return { type: "review" };
+  }
+
+  if (lower.includes("mutation") || lower.includes("mutants")) {
+    return { type: "mutation", value: 0 };
+  }
+
+  if (lower.includes("regression") || lower.includes("baseline")) {
+    return { type: "regression", value: 0 };
+  }
+
+  if (lower.includes("assertion count") || lower.includes("at least") || lower.includes("non-trivial")) {
+    const countMatch = lower.match(/at least (\d+)/);
+    return { type: "assertions", value: countMatch ? parseInt(countMatch[1], 10) : 1 };
+  }
+
+  if (lower.includes("streamline") || lower.includes("leftover") || lower.includes("old code")) {
+    return { type: "streamline", value: 0 };
+  }
+
+  if (lower.includes("observability") || lower.includes("log statements") || lower.includes("logging")) {
+    return { type: "observability", value: 0 };
+  }
+
+  if (lower.includes("brevity") || lower.includes("code quality") || lower.includes("static analysis")) {
+    return { type: "brevity", value: 0 };
   }
 
   return { type: "exit_code", value: 0 };

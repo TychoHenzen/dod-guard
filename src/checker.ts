@@ -216,6 +216,8 @@ async function runCommand(command: string, cwd: string): Promise<{
     return { exitCode: 0, combined: (stdout + stderr).slice(0, 4000), duration: Date.now() - start };
   } catch (err: unknown) {
     const duration = Date.now() - start;
+    const msg = err instanceof Error ? err.message : String(err);
+    if (process.env.DOD_STORE_DIR) console.error("checker: exec failed", { cmd: command.slice(0, 80), err: msg });
     const execErr = err as { code?: number; stdout?: string; stderr?: string; killed?: boolean; message?: string };
     const exitCode = execErr.code ?? 1;
     const stdout = (execErr.stdout ?? "") as string;
@@ -238,7 +240,7 @@ async function runCommand(command: string, cwd: string): Promise<{
 
 // ── Proof execution ───────────────────────────────────────────────────
 
-async function executeProof(node: TaskNode, cwd: string): Promise<LeafResult> {
+async function executeProof(node: TaskNode, cwd: string, execFn?: typeof runCommand): Promise<LeafResult> {
   const cmd = node.command!;
   const leafBase = {
     node_path: "",
@@ -272,7 +274,7 @@ async function executeProof(node: TaskNode, cwd: string): Promise<LeafResult> {
     };
   }
 
-  const run = await runCommand(cmd, cwd);
+  const run = await (execFn ?? runCommand)(cmd, cwd);
 
   if (run.killed || run.notFound) {
     return {
@@ -815,7 +817,7 @@ function collectAllLeaves(
 export async function checkDocument(
   doc: DodDocument,
   cwdOverride?: string,
-  opts?: { nodePath?: string },
+  opts?: { nodePath?: string; execFn?: typeof runCommand },
 ): Promise<CheckResult> {
   const cwd = cwdOverride ?? doc.cwd;
   const targetPath = opts?.nodePath;
@@ -841,7 +843,7 @@ export async function checkDocument(
 
   for (const { node, node_path } of inScope) {
     // Attach the path for result identification
-    const result = await executeProof(node, cwd);
+    const result = await executeProof(node, cwd, opts?.execFn);
     result.node_path = node_path;
     leafResults.push(result);
 

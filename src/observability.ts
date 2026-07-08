@@ -554,7 +554,10 @@ function extractSourceFilesFromCommand(command: string, cwd: string): string[] {
                 files.push(full);
               }
             }
-          } catch { /* unreadable dir */ }
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (process.env.DOD_STORE_DIR) console.error("observability: unreadable dir", { dir, err: msg });
+          }
         }
       }
     }

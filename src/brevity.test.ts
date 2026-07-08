@@ -9,22 +9,23 @@ import { analyseBrevity, analyseBrevityFromOutput, DEFAULT_BREVITY_OPTS } from "
 // ── Temp dir helpers ───────────────────────────────────────────────────
 
 let tmpDir: string;
-let _cleanup: (() => void) | null = null;
+const _cleanupFns: (() => void)[] = [];
 
 function setupTestDir() {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "brevity-test-"));
-  process.chdir(tmpDir);
 
   try { execSync("git init", { cwd: tmpDir, stdio: "ignore" }); } catch { /* git not available */ }
   try { execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: "ignore" }); } catch { /* */ }
   try { execSync('git config user.name "Test"', { cwd: tmpDir, stdio: "ignore" }); } catch { /* */ }
 
-  _cleanup = () => {
+  _cleanupFns.push(() => {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ok */ }
-  };
+  });
 }
 
-after(() => _cleanup?.());
+after(() => {
+  for (const fn of _cleanupFns) fn();
+});
 
 function writeFile(relPath: string, content: string) {
   const full = path.join(tmpDir, relPath);

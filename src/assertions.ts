@@ -159,8 +159,10 @@ function extractTestFilesFromCommand(command: string, cwd: string): string[] {
               if (isTestFile(full)) files.push(full);
             }
           }
-        } catch {
+        } catch (err: unknown) {
           // Directory unreadable — skip
+          const msg = err instanceof Error ? err.message : String(err);
+          if (process.env.DOD_STORE_DIR) console.error("assertions: unreadable dir", { dir, err: msg });
         }
       }
     }

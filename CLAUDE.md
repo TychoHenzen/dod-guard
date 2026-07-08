@@ -8,9 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 tsc                    # compile TypeScript to dist/
 tsc --watch            # dev mode with live rebuild
 npm test               # full tsc rebuild + run all tests
-node --test "dist/*.test.js"           # run tests without rebuild
-node --test "dist/checker.test.js"     # run a single test file
-node --test --test-name-pattern="tdd*" # run tests matching pattern
+node --experimental-test-module-mocks --test "dist/*.test.js"           # run tests without rebuild
+node --experimental-test-module-mocks --test "dist/checker.test.js"     # run a single test file
+node --test --test-name-pattern="tdd*" # run tests matching pattern (omit flag if no mock.module)
 npm run bundle         # esbuild bundle for distribution (prepublish)
 ```
 
@@ -134,3 +134,7 @@ Proof commands run on the host OS. `dod_create`/`dod_refine`/`dod_amend` validat
 ### Adding a new predicate type — execution gate
 
 When adding a new predicate type, check whether it needs a runnable command or is out-of-band (human-verified). Update `isExecutablePredicate()` in checker.ts — this single function gates OS tool validation across `dod_create`, `dod_refine`, `dod_add_node`, `dod_amend`, and `extractExecutableCommands`. Never inline `pred.type !== "manual"` checks — use the helper so both manual and review are covered.
+
+## Lessons
+
+- [LESSON] `mock.module` + ESM dynamic import: `mock.module("node:child_process", ...)` MUST run before the module under test is imported (ESM caching caches the original dependency). Use dynamic `import()` in `before` hooks after `mock.module` registration to get a mock-wired instance. The `--experimental-test-module-mocks` flag is required on Node 22. `mock.method()` does NOT work on named ESM exports — use `mock.module` with `namedExports` instead. Discovered when adding behavioral tests for `notify.test.ts` that needed to intercept `child_process.spawn`.
