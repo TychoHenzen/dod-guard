@@ -33,7 +33,7 @@ export function playJingle(): void {
   } catch (err: unknown) {
     // Audio is best-effort; never block verification on it.
     const msg = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`[dod-guard] playJingle failed: ${msg}\n`);
+    console.error("[dod-guard] playJingle failed", { err: msg });
   }
 }
 
@@ -151,13 +151,13 @@ export function showVerifyDialog(title: string, body: string): Promise<VerifyDia
           resolve({ result, note });
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
-          process.stderr.write(`[dod-guard] showVerifyDialog parse failed: ${msg}\n`);
+          console.error("[dod-guard] showVerifyDialog parse failed", { err: msg });
           resolve({ result: "no" });
         }
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      process.stderr.write(`[dod-guard] showVerifyDialog spawn failed: ${msg}\n`);
+      console.error("[dod-guard] showVerifyDialog spawn failed", { err: msg });
       resolve({ result: "no" });
     }
   });
