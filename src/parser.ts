@@ -1,144 +1,141 @@
 import { promises as fs } from "node:fs";
 import type { DodSections, TaskNode, Predicate } from "./types.js";
 
+// ── Predicate inference ───────────────────────────────────────────────────
+
+/** Extract the first quoted string ("...") from a text blurb. Returns null if none. */
+function extractQuoted(text: string): string | null {
+  const m = text.match(/"([^"]+)"/);
+  return m ? m[1] : null;
+}
+
+/** Extract an exit code number from a description string. */
+function extractExitCode(text: string, pattern: RegExp): number | null {
+  const m = text.match(pattern);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+const INFERENCE_RULES: Array<{ test: (s: string) => boolean; infer: (s: string, t: string) => Predicate }> = [
+  {
+    test: (l) => l.includes("tdd") || l.includes("must fail first") || l.includes("red before green"),
+    infer: (l) => ({ type: "tdd", value: extractExitCode(l, /exit\s*(?:code\s*)?(\d+)/) ?? 0 }),
+  },
+  {
+    test: (l) => l.includes("no match"),
+    infer: () => ({ type: "exit_code", value: 1 }),
+  },
+  {
+    test: (l) => ["not contain", "must not contain", "no warning", "no error"].some((k) => l.includes(k)),
+    infer: (_, t) => {
+      const q = extractQuoted(t);
+      return q ? { type: "output_not_contains", value: q } : { type: "exit_code", value: 0 };
+    },
+  },
+  {
+    test: (l) => l.includes("not match") || l.includes("must not match"),
+    infer: (_, t) => {
+      const q = extractQuoted(t);
+      return q ? { type: "output_not_matches", value: q } : { type: "exit_code", value: 0 };
+    },
+  },
+  {
+    test: (l) => l.includes("matches") || l.includes("must match"),
+    infer: (_, t) => {
+      const q = extractQuoted(t);
+      return q ? { type: "output_matches", value: q } : { type: "exit_code", value: 0 };
+    },
+  },
+  {
+    test: (l) => l.includes("contains") || l.includes("must contain"),
+    infer: (_, t) => {
+      const q = extractQuoted(t);
+      return q ? { type: "output_contains", value: q } : { type: "exit_code", value: 0 };
+    },
+  },
+  {
+    test: (l) => ["must not exit", "exit code must not be", "non-zero exit"].some((k) => l.includes(k)),
+    infer: (l) => ({ type: "exit_code_not", value: extractExitCode(l, /exit\s*(?:\S+\s+)?(\d+)/) ?? 0 }),
+  },
+];
+
+const CATEGORY_PATTERNS: Array<[string[], Predicate["type"]]> = [
+  [["mutation", "mutants"], "mutation"],
+  [["regression", "baseline"], "regression"],
+  [["assertion count", "at least", "non-trivial"], "assertions"],
+  [["streamline", "leftover", "old code"], "streamline"],
+  [["observability", "log statements", "logging"], "observability"],
+  [["brevity", "code quality", "static analysis"], "brevity"],
+];
+
 function inferPredicate(description: string): Predicate {
   const lower = description.toLowerCase();
 
-  if (lower.includes("tdd") || lower.includes("must fail first") || lower.includes("red before green")) {
-    const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
-    return { type: "tdd", value: exitMatch ? parseInt(exitMatch[1], 10) : 0 };
+  for (const rule of INFERENCE_RULES) {
+    if (rule.test(lower)) return rule.infer(lower, description);
   }
 
-  if (lower.includes("no match")) {
-    return { type: "exit_code", value: 1 };
-  }
-
-  if (lower.includes("not contain") || lower.includes("must not contain") || lower.includes("no warning") || lower.includes("no error")) {
-    const quoted = description.match(/"([^"]+)"/);
-    if (quoted) return { type: "output_not_contains", value: quoted[1] };
-  }
-
-  if (lower.includes("not match") || lower.includes("must not match")) {
-    const quoted = description.match(/"([^"]+)"/);
-    if (quoted) return { type: "output_not_matches", value: quoted[1] };
-  }
-
-  if (lower.includes("matches") || lower.includes("must match")) {
-    const quoted = description.match(/"([^"]+)"/);
-    if (quoted) return { type: "output_matches", value: quoted[1] };
-  }
-
-  if (lower.includes("contains") || lower.includes("must contain")) {
-    const quoted = description.match(/"([^"]+)"/);
-    if (quoted) return { type: "output_contains", value: quoted[1] };
-  }
-
-  if (lower.includes("must not exit") || lower.includes("exit code must not be") || lower.includes("non-zero exit")) {
-    const exitMatch = lower.match(/exit\s*(?:\S+\s+)?(\d+)/);
-    return { type: "exit_code_not", value: exitMatch ? parseInt(exitMatch[1], 10) : 0 };
-  }
-
+  // exit_code with explicit number
   const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
-  if (exitMatch) {
-    return { type: "exit_code", value: parseInt(exitMatch[1], 10) };
-  }
+  if (exitMatch) return { type: "exit_code", value: parseInt(exitMatch[1], 10) };
 
-  if (lower.startsWith("manual") || lower === "manual") {
-    return { type: "manual" };
-  }
+  // manual/review
+  if (lower.startsWith("manual") || lower === "manual") return { type: "manual" };
+  if (lower.startsWith("review") || lower.includes("review —") || lower.includes("review:")) return { type: "review" };
 
-  if (lower.startsWith("review") || lower.includes("review —") || lower.includes("review:")) {
-    return { type: "review" };
-  }
-
-  if (lower.includes("mutation") || lower.includes("mutants")) {
-    return { type: "mutation", value: 0 };
-  }
-
-  if (lower.includes("regression") || lower.includes("baseline")) {
-    return { type: "regression", value: 0 };
-  }
-
-  if (lower.includes("assertion count") || lower.includes("at least") || lower.includes("non-trivial")) {
-    const countMatch = lower.match(/at least (\d+)/);
-    return { type: "assertions", value: countMatch ? parseInt(countMatch[1], 10) : 1 };
-  }
-
-  if (lower.includes("streamline") || lower.includes("leftover") || lower.includes("old code")) {
-    return { type: "streamline", value: 0 };
-  }
-
-  if (lower.includes("observability") || lower.includes("log statements") || lower.includes("logging")) {
-    return { type: "observability", value: 0 };
-  }
-
-  if (lower.includes("brevity") || lower.includes("code quality") || lower.includes("static analysis")) {
-    return { type: "brevity", value: 0 };
+  // keyword categories
+  for (const [keywords, type] of CATEGORY_PATTERNS) {
+    if (keywords.some((k) => lower.includes(k))) {
+      const countMatch = type === "assertions" ? lower.match(/at least (\d+)/) : null;
+      const value = countMatch ? parseInt(countMatch[1], 10) : 0;
+      return { type, value };
+    }
   }
 
   return { type: "exit_code", value: 0 };
 }
 
-/**
- * Parse a leaf line. Returns null if not a leaf line.
- * Handles draft, concrete (command + manual), and TDD variants.
- */
+// ── Line parsing ──────────────────────────────────────────────────────────
+
 function parseLeafLine(line: string): TaskNode | null {
   const trimmed = line.trim();
 
-  // Draft leaf: "- [~] **Draft**: intent" or "- [ ] **Draft**: intent"
+  // Draft leaf
   const draftMatch = trimmed.match(/^-\s*\[[ ~]\s*\]\s*\*\*Draft\*\*:\s*(.+)$/i);
   if (draftMatch) {
     return {
-      id: "",
-      title: draftMatch[1].trim(),
-      refinement: "draft",
-      intent: draftMatch[1].trim(),
-      last_status: "draft",
+      id: "", title: draftMatch[1].trim(), refinement: "draft",
+      intent: draftMatch[1].trim(), last_status: "draft",
     };
   }
 
-  // Concrete TDD proof: "- [x] Proof (TDD STATE): `cmd` → desc"
+  // TDD proof
   const tddMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof\s*\(TDD\s+[^)]+\):\s*`([^`]+)`\s*→\s*(.+)$/);
   if (tddMatch) {
-    const command = tddMatch[2].trim();
-    const description = tddMatch[3].trim();
     return {
-      id: "",
-      title: description,
-      refinement: "concrete",
-      command,
-      predicate: { type: "tdd", value: 0 },
-      description,
+      id: "", title: tddMatch[3].trim(), refinement: "concrete",
+      command: tddMatch[2].trim(), predicate: { type: "tdd", value: 0 },
+      description: tddMatch[3].trim(),
       last_status: tddMatch[1] === "x" ? "pass" : tddMatch[1] === "~" ? "skipped" : "pending",
     };
   }
 
-  // Concrete command proof: "- [x] Proof: `cmd` → desc"
+  // Concrete command proof
   const cmdMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*`([^`]+)`\s*→\s*(.+)$/);
   if (cmdMatch) {
-    const command = cmdMatch[2].trim();
-    const description = cmdMatch[3].trim();
     return {
-      id: "",
-      title: description,
-      refinement: "concrete",
-      command,
-      predicate: inferPredicate(description),
-      description,
+      id: "", title: cmdMatch[3].trim(), refinement: "concrete",
+      command: cmdMatch[2].trim(), predicate: inferPredicate(cmdMatch[3]),
+      description: cmdMatch[3].trim(),
       last_status: cmdMatch[1] === "x" ? "pass" : cmdMatch[1] === "~" ? "skipped" : "pending",
     };
   }
 
-  // Manual proof: "- [x] Proof: Manual — desc"
+  // Manual proof
   const manualMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
   if (manualMatch) {
     return {
-      id: "",
-      title: manualMatch[2].trim(),
-      refinement: "concrete",
-      command: "manual",
-      predicate: { type: "manual" },
+      id: "", title: manualMatch[2].trim(), refinement: "concrete",
+      command: "manual", predicate: { type: "manual" },
       description: manualMatch[2].trim(),
       last_status: manualMatch[1] === "x" ? "pass" : manualMatch[1] === "~" ? "skipped" : "pending",
     };
@@ -147,26 +144,118 @@ function parseLeafLine(line: string): TaskNode | null {
   return null;
 }
 
+// ── Section parsing ───────────────────────────────────────────────────────
+
 interface ParsedDod {
-  title: string;
-  goal: string;
-  date: string;
-  cwd: string;
-  sections: DodSections;
-  roots: TaskNode[];
+  title: string; goal: string; date: string; cwd: string;
+  sections: DodSections; roots: TaskNode[];
 }
 
-/**
- * Parse a DoD markdown file into structured data.
- * Handles the hierarchical tree format produced by renderMarkdown().
- */
+const SECTION_MAP: Record<string, keyof DodSections> = {
+  "requirements": "requirements", "research notes": "research_notes",
+  "open questions": "open_questions", "open risks": "open_risks",
+  "decisions": "decisions", "current state": "current_state",
+};
+
+function parseSections(lines: string[]): DodSections {
+  const sections: DodSections = { requirements: "" };
+  let currentSection = "";
+  let buf: string[] = [];
+
+  function flush(): void {
+    if (!currentSection) return;
+    sections[currentSection as keyof DodSections] = buf.join("\n").trim();
+    currentSection = "";
+    buf = [];
+  }
+
+  for (const line of lines) {
+    const h2Match = line.match(/^## (.+?)(?:\s*\(.*\))?$/);
+    if (h2Match) {
+      flush();
+      const heading = h2Match[1].trim().toLowerCase();
+      for (const [key, val] of Object.entries(SECTION_MAP)) {
+        if (heading.startsWith(key)) { currentSection = val; break; }
+      }
+      continue;
+    }
+    if (line.match(/^---$/) && currentSection) { flush(); continue; }
+    if (currentSection) buf.push(line);
+  }
+  flush();
+  return sections;
+}
+
+// ── DoD tree parsing ──────────────────────────────────────────────────────
+
+function parseDodTree(lines: string[], startIdx: number): TaskNode[] {
+  const roots: TaskNode[] = [];
+  const stack: { node: TaskNode; depth: number }[] = [];
+  let nodeCounter = 0;
+
+  for (let i = startIdx; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.match(/^## /)) break; // Next heading ends DoD section
+    if (!line.trim()) continue;
+
+    const leadingSpaces = line.length - line.trimStart().length;
+
+    // `### Title` → root
+    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
+    if (rootMatch) {
+      const node: TaskNode = {
+        id: `node-${nodeCounter++}`, title: rootMatch[1].trim(),
+        refinement: "draft", children: [], last_status: "draft",
+      };
+      roots.push(node);
+      stack.length = 0;
+      stack.push({ node, depth: -1 });
+      continue;
+    }
+
+    // `  **Title** [x]` → task group
+    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
+    if (groupMatch) {
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      const node: TaskNode = {
+        id: `node-${nodeCounter++}`, title: groupMatch[1].trim(),
+        refinement: "draft", children: [], last_status: "draft",
+      };
+      if (parent?.children) parent.children.push(node);
+      stack.push({ node, depth });
+      continue;
+    }
+
+    // Leaf
+    const leaf = parseLeafLine(line);
+    if (leaf) {
+      leaf.id = `node-${nodeCounter++}`;
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      if (parent?.children) parent.children.push(leaf);
+      else if (!parent) roots.push(leaf);
+    }
+  }
+
+  // Remove empty children arrays
+  function cleanup(node: TaskNode): void {
+    if (node.children?.length === 0) delete node.children;
+    if (node.children) for (const c of node.children) cleanup(c);
+  }
+  for (const r of roots) cleanup(r);
+
+  return roots;
+}
+
+// ── Main parser ───────────────────────────────────────────────────────────
+
 function parseContent(content: string): ParsedDod {
   const lines = content.split("\n");
 
-  let title = "";
-  let goal = "";
-  let date = "";
-  let cwd = ".";
+  let title = "", goal = "", date = "", cwd = ".";
 
   for (const line of lines) {
     if (!title && line.startsWith("# ")) {
@@ -174,151 +263,23 @@ function parseContent(content: string): ParsedDod {
     }
     const goalMatch = line.match(/^\*\*Goal:\*\*\s*(.+)/);
     if (goalMatch) goal = goalMatch[1].trim();
-
     const dateMatch = line.match(/^\*\*Date:\*\*\s*(.+)/);
     if (dateMatch) date = dateMatch[1].trim();
-
     const targetMatch = line.match(/^\*\*Target:\*\*\s*`?([^`]+)`?/);
     if (targetMatch) cwd = targetMatch[1].trim();
-
     const cwdMatch = line.match(/All commands run from `([^`]+)`/);
     if (cwdMatch) cwd = cwdMatch[1].trim();
   }
 
-  // Parse sections (same as before)
-  const sections: DodSections = { requirements: "" };
-  let currentSection = "";
-  let sectionBuf: string[] = [];
+  const sections = parseSections(lines);
 
-  function flushSection(): void {
-    if (!currentSection) return;
-    const text = sectionBuf.join("\n").trim();
-    switch (currentSection) {
-      case "requirements": sections.requirements = text; break;
-      case "research_notes": sections.research_notes = text; break;
-      case "open_questions": sections.open_questions = text; break;
-      case "open_risks": sections.open_risks = text; break;
-      case "decisions": sections.decisions = text; break;
-      case "current_state": sections.current_state = text; break;
-    }
-    currentSection = "";
-    sectionBuf = [];
+  // Find ## Definition of Done start
+  let dodStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].match(/^## Definition of Done/)) { dodStart = i + 1; break; }
   }
 
-  const sectionMap: Record<string, string> = {
-    "requirements": "requirements",
-    "research notes": "research_notes",
-    "open questions": "open_questions",
-    "open risks": "open_risks",
-    "decisions": "decisions",
-    "current state": "current_state",
-  };
-
-  for (const line of lines) {
-    const h2Match = line.match(/^## (.+?)(?:\s*\(.*\))?$/);
-    if (h2Match) {
-      flushSection();
-      const heading = h2Match[1].trim().toLowerCase();
-      for (const [key, val] of Object.entries(sectionMap)) {
-        if (heading.startsWith(key)) { currentSection = val; break; }
-      }
-      continue;
-    }
-    if (line.match(/^---$/) && currentSection) { flushSection(); continue; }
-    if (currentSection) sectionBuf.push(line);
-  }
-  flushSection();
-
-  // Parse hierarchical DoD tree
-  const roots: TaskNode[] = [];
-  let inDod = false;
-  let nodeCounter = 0;
-
-  // Stack: [{node, depth}] where depth is computed from leading spaces
-  const stack: { node: TaskNode; depth: number }[] = [];
-
-  for (const line of lines) {
-    if (line.match(/^## Definition of Done/)) {
-      inDod = true; continue;
-    }
-    if (!inDod) continue;
-
-    // H2 after DoD ends it
-    if (line.match(/^## /)) break;
-
-    // Skip empty lines
-    if (!line.trim()) continue;
-
-    const leadingSpaces = line.length - line.trimStart().length;
-
-    // `### Title [mark]` → depth 0 root node
-    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
-    if (rootMatch) {
-      const node: TaskNode = {
-        id: `node-${nodeCounter++}`,
-        title: rootMatch[1].trim(),
-        refinement: "draft", // May be updated to concrete when children parsed
-        children: [],
-        last_status: "draft",
-      };
-      roots.push(node);
-      stack.length = 0;
-      stack.push({ node, depth: -1 }); // Root has depth -1 (its children have depth 0+)
-      continue;
-    }
-
-    // `  **Title** [mark]` → task group (non-leaf)
-    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
-    if (groupMatch) {
-      const depth = Math.floor(leadingSpaces / 2);
-      // Pop to find parent at depth-1
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
-        stack.pop();
-      }
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      const node: TaskNode = {
-        id: `node-${nodeCounter++}`,
-        title: groupMatch[1].trim(),
-        refinement: "draft",
-        children: [],
-        last_status: "draft",
-      };
-      if (parent && parent.children) {
-        parent.children.push(node);
-      }
-      stack.push({ node, depth });
-      continue;
-    }
-
-    // Leaf lines: `  - [mark] ...` — parse with parseLeafLine
-    const leaf = parseLeafLine(line);
-    if (leaf) {
-      leaf.id = `node-${nodeCounter++}`;
-      const depth = Math.floor(leadingSpaces / 2);
-      // Pop to find parent at depth-1
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
-        stack.pop();
-      }
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      if (parent && parent.children) {
-        parent.children.push(leaf);
-      } else if (!parent) {
-        // Leaf at root level
-        roots.push(leaf);
-      }
-    }
-  }
-
-  // Clean up: remove empty children arrays on nodes that were never populated
-  function cleanupNode(node: TaskNode): void {
-    if (node.children && node.children.length === 0) {
-      delete node.children;
-    }
-    if (node.children) {
-      for (const child of node.children) cleanupNode(child);
-    }
-  }
-  for (const root of roots) cleanupNode(root);
+  const roots = dodStart >= 0 ? parseDodTree(lines, dodStart) : [];
 
   return { title, goal, date, cwd, sections, roots };
 }
