@@ -8,6 +8,22 @@ import type { DodDocument, TaskNode } from "./types.js";
 
 type Pred = TaskNode["predicate"];
 
+/** Injectable exec for fast, deterministic tests — no real subprocess. */
+function fakeExec(
+  output: string,
+  exitCode = 0,
+): (cmd: string, cwd: string) => Promise<{
+  exitCode: number; combined: string; duration: number;
+}> {
+  return async (_cmd, _cwd) => ({
+    exitCode,
+    combined: output,
+    duration: 0,
+  });
+}
+
+const DEADBEEF_ID = "deadbeef-dead-beef-dead-beefdeadbeef";
+
 /** Create per-describe-block scoped helpers for generating unique IDs. */
 function scope() {
   let nodeId = 0;
@@ -420,6 +436,32 @@ describe("checkDocument predicate types", () => {
     const res = await checkDocument(doc);
     assert.equal(res.leaves[0].status, "fail", "brevity should fail when no source files are identified");
     assert.ok(res.leaves[0].error?.includes("could not identify any source files"), "error should mention missing source files");
+  });
+
+  // ── success paths ─────────────────────────────────────────────────
+
+  it("regression captures baseline metric and passes on same value", async () => {
+    const doc = makeDoc([concLeaf(nid(), "r", "echo 42", "regression 42", { type: "regression", value: 0 })]);
+    const res = await checkDocument(doc, undefined, { execFn: fakeExec("42") });
+    assert.equal(res.leaves[0].status, "pass",
+      "regression should pass on first run (baseline captured)");
+  });
+
+  it("mutation passes when survivors ≤ allowed value", async () => {
+    const doc = makeDoc([concLeaf(nid(), "m", "cargo mutants", "mutation", { type: "mutation", value: 0 })]);
+    // cargo-mutants format: "N missed"
+    const out = "0 missed mutants. All good.";
+    const res = await checkDocument(doc, undefined, { execFn: fakeExec(out) });
+    assert.equal(res.leaves[0].status, "pass",
+      "mutation should pass with 0 survivors when max=0");
+  });
+
+  it("mutation fails when survivors > allowed value", async () => {
+    const doc = makeDoc([concLeaf(nid(), "m2", "cargo mutants", "mutation", { type: "mutation", value: 0 })]);
+    const out = "2 missed mutants.";
+    const res = await checkDocument(doc, undefined, { execFn: fakeExec(out) });
+    assert.equal(res.leaves[0].status, "fail",
+      "2 survivors > 0 allowed → fail");
   });
 });
 
