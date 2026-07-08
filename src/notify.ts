@@ -24,7 +24,11 @@ export function playJingle(): void {
       detached: true,
       windowsHide: true,
     });
-    child.on("error", () => {});
+    child.on("error", () => {
+      // fire-and-forget jingle: spawn errors are best-effort and non-fatal.
+      // Sync errors already caught below; async errors on a detached process
+      // (e.g. powershell.exe not found mid-flight) cannot be recovered.
+    });
     child.unref();
   } catch (err: unknown) {
     // Audio is best-effort; never block verification on it.
