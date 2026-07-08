@@ -299,7 +299,7 @@ describe("checkDocument TDD", () => {
     const doc = makeDoc([concLeaf(nid(), "t", "exit 0", "tdd", { type: "tdd", value: 0 })]);
     const r = await checkDocument(doc);
     assert.equal(r.leaves[0].status, "fail", "TDD should fail when no prior red was recorded");
-    assert.ok(r.leaves[0].error?.includes("TDD VIOLATION"), "error should mention TDD VIOLATION");
+    assert.ok(r.leaves[0].error?.includes("TDD: GREEN w/o prior RED"), "error should mention TDD violation");
   });
 
   it("records seen_failing on red", async () => {
@@ -408,14 +408,14 @@ describe("checkDocument predicate types", () => {
     const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "regression", { type: "regression", value: 0 })]);
     const res = await checkDocument(doc);
     assert.equal(res.leaves[0].status, "fail", "regression should fail when no metric number is found in output");
-    assert.ok(res.leaves[0].error?.includes("could not parse a metric number"), "error should mention the missing metric number");
+    assert.ok(res.leaves[0].error?.includes("regression: no metric"), "error should mention the missing metric number");
   });
 
   it("assertions fails when no test files identified", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "assertions", { type: "assertions", value: 1 })]);
     const res = await checkDocument(doc);
     assert.equal(res.leaves[0].status, "fail", "assertions should fail when command does not reference test files");
-    assert.ok(res.leaves[0].error?.includes("could not identify any test files"), "error should mention missing test files");
+    assert.ok(res.leaves[0].error?.includes("assertions: no test files"), "error should mention missing test files");
   });
 
   it("streamline passes with clean output", async () => {
@@ -428,14 +428,14 @@ describe("checkDocument predicate types", () => {
     const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "observability", { type: "observability", value: 1 })]);
     const res = await checkDocument(doc);
     assert.equal(res.leaves[0].status, "fail", "observability should fail when no source files are identified");
-    assert.ok(res.leaves[0].error?.includes("could not identify any source files"), "error should mention missing source files");
+    assert.ok(res.leaves[0].error?.includes("observability: no source files"), "error should mention missing source files");
   });
 
   it("brevity fails when no source files identified", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "brevity", { type: "brevity", value: 0 })]);
     const res = await checkDocument(doc);
     assert.equal(res.leaves[0].status, "fail", "brevity should fail when no source files are identified");
-    assert.ok(res.leaves[0].error?.includes("could not identify any source files"), "error should mention missing source files");
+    assert.ok(res.leaves[0].error?.includes("brevity: no source files"), "error should mention missing source files");
   });
 
   // ── success paths ─────────────────────────────────────────────────

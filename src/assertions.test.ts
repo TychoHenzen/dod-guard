@@ -144,7 +144,7 @@ test("assertions predicate: passes with sufficient non-trivial assertions", asyn
     assert.equal(leaf.exit_code, 0, `expected exit 0, got ${leaf.exit_code}: ${leaf.error}`);
     assert.equal(leaf.status, "pass", `expected pass, got ${leaf.status}: ${leaf.error}`);
     const errMsg = leaf.error ?? "";
-    assert.match(errMsg, /non-trivial assertion/, `expected non-trivial assertion msg, got: ${leaf.error}`);
+    assert.match(errMsg, /non-trivial/, `expected non-trivial assertion msg, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -180,7 +180,7 @@ test("assertions predicate: fails when count < value", async () => {
     assert.equal(leaf.exit_code, 0, `expected exit 0, got ${leaf.exit_code}: ${leaf.error}`);
     assert.equal(leaf.status, "fail", `expected fail for insufficient assertions, got ${leaf.status}: ${leaf.error}`);
     const errMsg = leaf.error ?? "";
-    assert.match(errMsg, /only \d+ non-trivial/, `expected only-N-non-trivial msg, got: ${leaf.error}`);
+    assert.match(errMsg, /only \d+ nt/, `expected only-N-non-trivial msg, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -209,7 +209,7 @@ test("tdd: GREEN with trivial assertions fails", async () => {
     assert.equal(leaf.exit_code, 0, `expected exit 0 for trivial test, got ${leaf.exit_code}: ${leaf.error}`);
     assert.equal(leaf.status, "fail", `expected fail for trivial TDD, got ${leaf.status}: ${leaf.error}`);
     const errMsg = leaf.error ?? "";
-    assert.match(errMsg, /TDD ASSERTION QUALITY FAIL/, `expected TDD ASSERTION QUALITY FAIL, got: ${leaf.error}`);
+    assert.match(errMsg, /TDD.*GREEN but assertions trivial/, `expected TDD ASSERTION QUALITY FAIL, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -227,7 +227,7 @@ test("tdd: GREEN with non-trivial assertions passes", async () => {
     assert.equal(leaf.exit_code, 0, `expected exit 0, got ${leaf.exit_code}: ${leaf.error}`);
     assert.equal(leaf.status, "pass", `expected pass for TDD cycle, got ${leaf.status}: ${leaf.error}`);
     const errMsg = leaf.error ?? "";
-    assert.match(errMsg, /TDD cycle verified/, `expected TDD cycle verified, got: ${leaf.error}`);
+    assert.match(errMsg, /TDD verified/, `expected TDD cycle verified, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -263,7 +263,7 @@ test("tdd: GREEN without prior RED fails with TDD VIOLATION", async () => {
     assert.equal(leaf.exit_code, 0, `expected exit 0 for passing test, got ${leaf.exit_code}: ${leaf.error}`);
     assert.equal(leaf.status, "fail", `expected fail for TDD violation, got ${leaf.status}: ${leaf.error}`);
     const errMsg = leaf.error ?? "";
-    assert.match(errMsg, /TDD VIOLATION/, `expected TDD VIOLATION, got: ${leaf.error}`);
+    assert.match(errMsg, /TDD.*GREEN w\/o prior RED/, `expected TDD VIOLATION, got: ${leaf.error}`);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 

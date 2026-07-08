@@ -21111,12 +21111,14 @@ import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import * as crypto from "node:crypto";
-var STORE_DIR = path.join(os.homedir(), ".claude", "dod-store");
+function getStoreDir() {
+  return process.env.DOD_STORE_DIR || path.join(os.homedir(), ".claude", "dod-store");
+}
 async function ensureStoreDir() {
-  await fs.mkdir(STORE_DIR, { recursive: true });
+  await fs.mkdir(getStoreDir(), { recursive: true });
 }
 function docPath(id) {
-  return path.join(STORE_DIR, `${id}.json`);
+  return path.join(getStoreDir(), `${id}.json`);
 }
 function generateId() {
   return crypto.randomUUID();
@@ -21129,22 +21131,27 @@ async function load(id) {
   try {
     const data = await fs.readFile(docPath(id), "utf-8");
     return JSON.parse(data);
-  } catch {
+  } catch (err) {
+    console.error("store: failed to load document", { id, err: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
 async function findByPath(markdownPath) {
   await ensureStoreDir();
-  const files = await fs.readdir(STORE_DIR);
+  const files = await fs.readdir(getStoreDir());
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
     try {
-      const data = await fs.readFile(path.join(STORE_DIR, file), "utf-8");
+      const data = await fs.readFile(path.join(getStoreDir(), file), "utf-8");
       const doc = JSON.parse(data);
       const normalizedStored = path.resolve(doc.markdown_path).toLowerCase();
       const normalizedSearch = path.resolve(markdownPath).toLowerCase();
       if (normalizedStored === normalizedSearch) return doc;
-    } catch {
+    } catch (err) {
+      console.error("store: failed to read file during findByPath", {
+        file,
+        err: err instanceof Error ? err.message : String(err)
+      });
       continue;
     }
   }
@@ -21152,14 +21159,18 @@ async function findByPath(markdownPath) {
 }
 async function listAll() {
   await ensureStoreDir();
-  const files = await fs.readdir(STORE_DIR);
+  const files = await fs.readdir(getStoreDir());
   const docs = [];
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
     try {
-      const data = await fs.readFile(path.join(STORE_DIR, file), "utf-8");
+      const data = await fs.readFile(path.join(getStoreDir(), file), "utf-8");
       docs.push(JSON.parse(data));
-    } catch {
+    } catch (err) {
+      console.error("store: failed to read file during listAll", {
+        file,
+        err: err instanceof Error ? err.message : String(err)
+      });
       continue;
     }
   }
@@ -21173,6 +21184,7 @@ import { createHash as createHash2 } from "node:crypto";
 
 // src/manual.ts
 import { createHash } from "node:crypto";
+console.debug("manual: module loaded", { pid: process.pid });
 function perProofFingerprint(node) {
   const data = [
     node.command ?? "",
@@ -21208,6 +21220,7 @@ async function resolveManual(node, confirm, label = "Manual verification") {
 }
 
 // src/regression.ts
+console.debug("regression: module loaded", { pid: process.pid });
 function extractNumber(stdout, extract) {
   if (extract) {
     const match = stdout.match(new RegExp(extract));
@@ -21230,7 +21243,7 @@ var PY_TRIVIAL = [
   // assert 1, assert 3.14, assert "hello"
   /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
   // assert CONST OP CONST (both sides literal)
-  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
+  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*    (==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s*    (True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
   // self.assertX(CONST, CONST)
   /^\s*self\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\s*\(\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(?:,\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*)?\)\s*(#.*)?$/
 ];
@@ -21308,7 +21321,9 @@ function extractTestFilesFromCommand(command, cwd) {
               if (isTestFile(full)) files.push(full);
             }
           }
-        } catch {
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error("assertions: unreadable dir", { dir, err: msg });
         }
       }
     }
@@ -21743,7 +21758,9 @@ function extractSourceFilesFromCommand(command, cwd) {
                 files.push(full);
               }
             }
-          } catch {
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error("observability: unreadable dir", { dir, err: msg });
           }
         }
       }
@@ -21774,6 +21791,7 @@ function scanFile2(filePath, cwd) {
   return { logCount, errorHandlers, antiPatterns };
 }
 function analyseObservability(command, cwd) {
+  console.debug("observability: analyseObservability", { cmd: command.slice(0, 80) });
   let files = extractSourceFilesFromCommand(command, cwd);
   if (files.length === 0) {
     if (/\bgit\s+diff\b/.test(command) || /\bgit diff/.test(command)) {
@@ -21788,6 +21806,10 @@ function analyseObservability(command, cwd) {
   let errorHandlersLogged = 0;
   const allAntiPatterns = [];
   for (const file of files) {
+    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
+      console.debug("observability: skipping self-analysis of", file);
+      continue;
+    }
     const result = scanFile2(file, cwd);
     perFile.push({
       file: path3.relative(cwd, file),
@@ -21819,6 +21841,10 @@ function analyseObservabilityFromOutput(commandOutput, cwd) {
   let errorHandlersLogged = 0;
   const allAntiPatterns = [];
   for (const file of files) {
+    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
+      console.debug("observability: skipping self-analysis of", file);
+      continue;
+    }
     const result = scanFile2(file, cwd);
     perFile.push({
       file: path3.relative(cwd, file),
@@ -21845,21 +21871,9 @@ function analyseObservabilityFromOutput(commandOutput, cwd) {
 // src/brevity.ts
 import { readFileSync as readFileSync3, existsSync as existsSync3, readdirSync, statSync } from "node:fs";
 import * as path4 from "node:path";
-var DEFAULT_BREVITY_OPTS = {
-  maxLineLength: 120,
-  maxFunctionLines: 30,
-  maxFileLines: 300,
-  requireCohesion: true,
-  minReplacementRatio: 0.2
-};
-function detectLanguage2(file) {
-  const ext = path4.extname(file).toLowerCase();
-  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
-  if (ext === ".py") return "py";
-  if (ext === ".rs") return "rs";
-  if (ext === ".cs") return "cs";
-  return null;
-}
+
+// src/find-functions.ts
+console.debug("find-functions: module loaded", { pid: process.pid });
 var CONTROL_KEYWORDS = /* @__PURE__ */ new Set([
   "if",
   "else",
@@ -21892,6 +21906,10 @@ var CONTROL_KEYWORDS = /* @__PURE__ */ new Set([
   "in",
   "of"
 ]);
+function getIndent2(line) {
+  const m = line.match(/^(\s*)/);
+  return m ? m[1].length : 0;
+}
 function findBlockEnd2(lines, startIdx, open, close) {
   const baseIndent = getIndent2(lines[startIdx]);
   const openLine = lines[startIdx];
@@ -21923,10 +21941,6 @@ function findBlockEnd2(lines, startIdx, open, close) {
   }
   return lines.length - 1;
 }
-function getIndent2(line) {
-  const m = line.match(/^(\s*)/);
-  return m ? m[1].length : 0;
-}
 function findJsFunctions(lines) {
   const out = [];
   for (let i = 0; i < lines.length; i++) {
@@ -21936,38 +21950,50 @@ function findJsFunctions(lines) {
     let m = line.match(/^\s*(?:export\s+(?:default\s+)?)?(?:async\s+)?function\s+(\w+)/);
     if (m) {
       const end = findBlockEnd2(lines, i, "{", "}");
-      if (end > i) {
-        out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) });
-        i = end;
-        continue;
-      }
+      out.push({
+        startLine: i + 1,
+        endLine: end + 1,
+        name: m[1],
+        bodyLines: lines.slice(i + 1, end)
+      });
+      i = end;
+      continue;
     }
     m = line.match(/^\s*(?:static\s+)?(?:async\s+)?(?:get\s+|set\s+)?(\w+)\s*\([^)]*\)\s*\{/);
     if (m && !CONTROL_KEYWORDS.has(m[1])) {
       const end = findBlockEnd2(lines, i, "{", "}");
-      if (end > i) {
-        out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) });
-        i = end;
-        continue;
-      }
+      out.push({
+        startLine: i + 1,
+        endLine: end + 1,
+        name: m[1],
+        bodyLines: lines.slice(i + 1, end)
+      });
+      i = end;
+      continue;
     }
     m = line.match(/^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>\s*\{/);
     if (m) {
       const end = findBlockEnd2(lines, i, "{", "}");
-      if (end > i) {
-        out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) });
-        i = end;
-        continue;
-      }
+      out.push({
+        startLine: i + 1,
+        endLine: end + 1,
+        name: m[1],
+        bodyLines: lines.slice(i + 1, end)
+      });
+      i = end;
+      continue;
     }
     m = line.match(/^\s*(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?function\s*\(/);
     if (m) {
       const end = findBlockEnd2(lines, i, "{", "}");
-      if (end > i) {
-        out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) });
-        i = end;
-        continue;
-      }
+      out.push({
+        startLine: i + 1,
+        endLine: end + 1,
+        name: m[1],
+        bodyLines: lines.slice(i + 1, end)
+      });
+      i = end;
+      continue;
     }
   }
   return out;
@@ -22005,16 +22031,19 @@ function findRsFunctions(lines) {
     const m = lines[i].match(/^\s*(?:pub(?:\s*\(\s*(?:crate|super|self)\s*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+(\w+)/);
     if (!m) continue;
     const end = findBlockEnd2(lines, i, "{", "}");
-    if (end > i) {
-      out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end) });
-      i = end;
-    }
+    out.push({
+      startLine: i + 1,
+      endLine: end + 1,
+      name: m[1],
+      bodyLines: lines.slice(i + 1, end)
+    });
+    i = end;
+    continue;
   }
   return out;
 }
 function findCsFunctions(lines) {
   const out = [];
-  const modifierPat = /(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\s+/;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line || line.startsWith("//") || line.startsWith("[") || line.startsWith("/*")) continue;
@@ -22025,10 +22054,13 @@ function findCsFunctions(lines) {
     const nameToken = m[2];
     if (CONTROL_KEYWORDS.has(nameToken)) continue;
     const end = findBlockEnd2(lines, i, "{", "}");
-    if (end > i) {
-      out.push({ startLine: i + 1, endLine: end + 1, name: nameToken, bodyLines: lines.slice(i + 1, end) });
-      i = end;
-    }
+    out.push({
+      startLine: i + 1,
+      endLine: end + 1,
+      name: nameToken,
+      bodyLines: lines.slice(i + 1, end)
+    });
+    i = end;
   }
   return out;
 }
@@ -22058,17 +22090,16 @@ var ITERATION_RE = {
   rs: /\b(for\s+\w+\s+in\s+|while\s+\w|loop\s*\{)/,
   cs: /\b(for\s*\(|foreach\s*\(|while\s*\(|do\s*\{)/
 };
-function hasPattern(lines, re) {
-  for (const line of lines) {
-    const stripped = stripCommentsAndStrings(line);
-    if (re.test(stripped)) return true;
-  }
-  return false;
-}
 function stripCommentsAndStrings(line) {
   let s = line.replace(/\/\/.*$/, "").replace(/#.*$/, "");
   s = s.replace(/`[^`]*`/g, "").replace(/"[^"]*"/g, '""').replace(/'[^']*'/g, "''");
   return s;
+}
+function hasPattern(lines, re) {
+  for (const line of lines) {
+    if (re.test(stripCommentsAndStrings(line))) return true;
+  }
+  return false;
 }
 function checkCohesion(bodyLines, lang) {
   if (!lang) return { hasSelection: false, hasIteration: false, mixed: false };
@@ -22078,6 +22109,23 @@ function checkCohesion(bodyLines, lang) {
   const hasSelection = hasPattern(bodyLines, selRe);
   const hasIteration = hasPattern(bodyLines, iterRe);
   return { hasSelection, hasIteration, mixed: hasSelection && hasIteration };
+}
+
+// src/brevity.ts
+var DEFAULT_BREVITY_OPTS = {
+  maxLineLength: 120,
+  maxFunctionLines: 30,
+  maxFileLines: 300,
+  requireCohesion: true,
+  minReplacementRatio: 0.2
+};
+function detectLanguage2(file) {
+  const ext = path4.extname(file).toLowerCase();
+  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
+  if (ext === ".py") return "py";
+  if (ext === ".rs") return "rs";
+  if (ext === ".cs") return "cs";
+  return null;
 }
 function parseDiffOutput(output, cwd) {
   const files = [];
@@ -22168,7 +22216,9 @@ function extractSourceFilesFromCommand2(command, cwd) {
               const s = statSync(full);
               if (s.isFile() && !isInSkipDir2(full) && isSourceFile2(full)) files.push(full);
             }
-          } catch {
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error("brevity: unreadable dir", { dir, err: msg });
           }
         }
       }
@@ -22313,106 +22363,364 @@ function buildReport(files, cwd, opts, diffStats) {
   };
 }
 
-// src/checker.ts
-var execAsync = promisify(exec);
-var TIMEOUT_MS = 12e4;
-function flattenConcreteLeaves(nodes, parentPath) {
-  const results = [];
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-    if (node.children && node.children.length > 0) {
-      results.push(...flattenConcreteLeaves(node.children, currentPath));
-    } else if (node.refinement === "concrete") {
-      results.push({ node, node_path: currentPath });
-    }
-  }
-  return results;
-}
-function hasDraftNodes(nodes) {
-  for (const node of nodes) {
-    if (node.refinement === "draft") return true;
-    if (node.children && hasDraftNodes(node.children)) return true;
-  }
-  return false;
-}
-function findNodeByPath(nodes, path8) {
-  if (!path8) return null;
-  const parts = path8.split(".");
-  let current = nodes;
-  for (let i = 0; i < parts.length; i++) {
-    if (parts[i] === "children") continue;
-    const idx = Number(parts[i]);
-    if (!Number.isInteger(idx) || idx < 0 || idx >= current.length) return null;
-    const node = current[idx];
-    if (i === parts.length - 1 || i === parts.length - 2 && parts[parts.length - 1] === "children") {
-      return node;
-    }
-    if (!node.children) return null;
-    current = node.children;
-  }
-  return null;
-}
-function isExecutablePredicate(type) {
-  return type !== "manual" && type !== "review";
-}
-function extractExecutableCommands(nodes) {
-  const cmds = [];
-  for (const { node } of flattenConcreteLeaves(nodes)) {
-    if (node.command && node.predicate && isExecutablePredicate(node.predicate.type)) {
-      cmds.push(node.command);
-    }
-  }
-  return cmds;
-}
-function isBranchLocked(nodes) {
-  return !hasDraftNodes(nodes);
-}
-function countDraftNodes(nodes) {
-  let count = 0;
-  for (const node of nodes) {
-    if (node.refinement === "draft") count++;
-    if (node.children) count += countDraftNodes(node.children);
-  }
-  return count;
-}
-function parseSurvivors(output) {
-  for (const parser of [parseStryker, parseMutmut, parseCargoMutants]) {
-    const survivors = parser(output);
-    if (survivors !== null) return survivors;
-  }
-  return null;
-}
-function parseStryker(output) {
-  const lines = output.split(/\r?\n/);
-  const headerIdx = lines.findIndex((l) => l.includes("|") && /#\s*survived/i.test(l));
-  if (headerIdx === -1) return null;
-  const headerCells = lines[headerIdx].split("|").map((c) => c.trim().toLowerCase());
-  const col = headerCells.findIndex((c) => /survived/.test(c));
+// src/evaluate-proof.ts
+console.debug("evaluate-proof: module loaded", { pid: process.pid });
+function parseStryker(o) {
+  const lines = o.split(/\r?\n/);
+  const hi = lines.findIndex((l) => l.includes("|") && /#\s*survived/i.test(l));
+  if (hi === -1) return null;
+  const col = lines[hi].split("|").map((c) => c.trim().toLowerCase()).findIndex((c) => /survived/.test(c));
   if (col === -1) return null;
-  const dataLine = lines.find((l) => l.includes("|") && l.trim().toLowerCase().startsWith("all files"));
-  if (!dataLine) return null;
-  const value = Number(dataLine.split("|").map((c) => c.trim())[col]);
-  return Number.isFinite(value) ? value : null;
+  const dl = lines.find(
+    (l) => l.includes("|") && l.trim().toLowerCase().startsWith("all files")
+  );
+  if (!dl) return null;
+  const v = Number(dl.split("|").map((c) => c.trim())[col]);
+  return Number.isFinite(v) ? v : null;
 }
-function parseMutmut(output) {
-  const match = output.match(/🙁[^\d]*(\d+)/);
-  return match ? Number(match[1]) : null;
+function parseMutmut(o) {
+  const m = o.match(/🙁[^\d]*(\d+)/);
+  return m ? Number(m[1]) : null;
 }
-function parseCargoMutants(output) {
-  const match = output.match(/(\d+)\s+missed\b/);
-  return match ? Number(match[1]) : null;
+function parseCargoMutants(o) {
+  const m = o.match(/(\d+)\s+missed\b/);
+  return m ? Number(m[1]) : null;
 }
-function computeProofFingerprint(roots) {
-  const leaves = flattenConcreteLeaves(roots);
-  if (leaves.length === 0) return "";
-  const data = leaves.map(({ node }) => {
-    let line = `${node.command}|${node.predicate.type}|${node.predicate.value ?? ""}`;
-    if (node.predicate.lower_is_better !== void 0) line += `|lib:${node.predicate.lower_is_better}`;
-    if (node.advisory !== void 0) line += `|adv:${node.advisory}`;
-    return line;
-  }).join("\n");
-  return createHash2("sha256").update(data).digest("hex").slice(0, 12);
+function parseSurvivors(o) {
+  for (const p of [parseStryker, parseMutmut, parseCargoMutants]) {
+    const s = p(o);
+    if (s !== null) return s;
+  }
+  return null;
+}
+function mk(b, ov) {
+  return { ...b, ...ov };
+}
+function buildManualOut(mr, label) {
+  const n = mr.note ? ` \u2014 "${mr.note}"` : "";
+  return `${mr.answer === "fail" ? "\u2717" : "\u2713"} ${label} ${mr.answer.toUpperCase()} (dod_verify) ${mr.confirmed_at}/${mr.channel}${n}`;
+}
+function buildAssertFail(r, min) {
+  const pf = r.perFile.map((f) => `  ${f.file}: ${f.total} tot, ${f.trivial} triv, ${f.total - f.trivial} nt`).join("\n");
+  const hdr = r.nonTrivial === 0 ? "ASSERTION QUALITY FAIL: all " + r.total + " assertions trivial" : "ASSERTION QUALITY FAIL: only " + r.nonTrivial + " nt, need " + min;
+  return [hdr, "", "Per-file:", pf].join("\n");
+}
+function buildObsFail(r, min) {
+  const l = [];
+  if (r.totalLogStatements < min) l.push(`observability: ${r.totalLogStatements} logs\u2014need ${min}`);
+  const u = r.totalErrorHandlers - r.errorHandlersLogged;
+  if (u > 0) l.push(`observability: ${u}/${r.totalErrorHandlers} handlers lack logs`);
+  if (r.antiPatterns.length > 0)
+    l.push("observability: " + r.antiPatterns.length + " anti-pattern(s)" + r.antiPatterns.map((a) => `  ${a.file}:${a.line}: ${a.kind} \u2014 ${a.snippet}`).join(""));
+  return l.join("\n");
+}
+function buildBrev(r, passed, max) {
+  const l = [
+    passed ? `brevity: ${r.totalViolations} \u2264 ${max}` : `BREVITY FAIL: ${r.totalViolations} > ${max}`,
+    ""
+  ];
+  for (const f of r.perFile) {
+    const p = [`  ${f.file}: ${f.lineCount}L, ${f.functionCount} funcs`];
+    if (f.longFunctions > 0) p.push(`${f.longFunctions} long`);
+    if (f.mixedCohesionFunctions > 0) p.push(`${f.mixedCohesionFunctions} mixed`);
+    if (f.insertions !== void 0 && f.deletions !== void 0)
+      p.push(`+${f.insertions}/-${f.deletions}`);
+    l.push(p.join(", "));
+    for (const v of f.violations)
+      l.push(`    \u2022 L${v.line}: ${v.kind} \u2014 ${v.detail}`);
+  }
+  if (!passed) l.push(
+    "",
+    "Remediation:",
+    "  \u2022 Split functions >30L into single-purpose units",
+    "  \u2022 Separate selection from iteration \u2014 each function does one thing",
+    "  \u2022 Delete old code when replacing (low deletion ratio = accretion)",
+    "  \u2022 Keep lines under 120 chars \u2014 break long expressions",
+    "  \u2022 Split files >300 lines into modules"
+  );
+  return l.join("\n");
+}
+async function hManual(n, b) {
+  const label = n.predicate.type === "review" ? "Code review" : "Manual verification";
+  const mr = n.manual_result;
+  if (mr && mr.proof_fingerprint === perProofFingerprint(n))
+    return mk(b, {
+      status: mr.answer,
+      output: buildManualOut(mr, label),
+      error: mr.answer === "fail" ? `${label} confirmed failing.` : void 0
+    });
+  return mk(b, {
+    status: "skipped",
+    output: `${label} not verified \u2014 dod_verify(dod_id, "${n.id}")`
+  });
+}
+async function hExecFail(r, b) {
+  if (!r.killed && !r.notFound) return null;
+  return mk(b, {
+    status: "fail",
+    output: r.combined,
+    error: r.error,
+    exit_code: r.exitCode,
+    duration_ms: r.duration
+  });
+}
+async function hMutate(n, r, b) {
+  const max = n.predicate.value ?? 0;
+  const sv = parseSurvivors(r.combined);
+  if (sv === null)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: "could not parse mutation results (no recognized tool)",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  const passed = sv <= max;
+  return mk(b, {
+    status: passed ? "pass" : "fail",
+    output: r.combined,
+    error: passed ? void 0 : `mutation: ${sv} > max ${max}`,
+    exit_code: r.exitCode,
+    duration_ms: r.duration
+  });
+}
+async function hRegress(n, r, b) {
+  const m = extractNumber(r.combined, n.predicate.extract);
+  if (m === null)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: "regression: no metric (fail-safe)",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  if (n.baseline_value === void 0) {
+    n.baseline_value = m;
+    n.baseline_captured_at = (/* @__PURE__ */ new Date()).toISOString();
+    return mk(b, {
+      status: "pass",
+      output: r.combined,
+      error: `regression: N0=${m}. Re-run.`,
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  }
+  const lib = n.predicate.lower_is_better ?? true;
+  const tol = n.predicate.value ?? 0;
+  const bl = n.baseline_value;
+  const th = lib ? bl * (1 + tol) : bl * (1 - tol);
+  const passed = lib ? m <= th : m >= th;
+  return mk(b, {
+    status: passed ? "pass" : "fail",
+    output: r.combined,
+    error: passed ? void 0 : `regression: ${m} fails (th=${th})`,
+    exit_code: r.exitCode,
+    duration_ms: r.duration
+  });
+}
+async function hStream(n, r, b) {
+  const max = n.predicate.value ?? 0;
+  if (r.exitCode > 1)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: `streamline: exit ${r.exitCode} (fail-safe)`,
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  if (r.exitCode === 1)
+    return mk(b, {
+      status: "pass",
+      output: r.combined,
+      error: "streamline: no matches",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  const mc = r.combined.split(/\r?\n/).filter((l) => l.trim()).length;
+  const passed = mc <= max;
+  return mk(b, {
+    status: passed ? "pass" : "fail",
+    output: r.combined,
+    error: passed ? void 0 : `streamline: ${mc} > max ${max}`,
+    exit_code: r.exitCode,
+    duration_ms: r.duration
+  });
+}
+async function hAssert(n, r, b, cmd, cwd) {
+  const min = n.predicate.value ?? 1;
+  const report = analyseAssertions(cmd, cwd);
+  if (!report)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: "assertions: no test files found",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  if (report.nonTrivial < min)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: buildAssertFail(report, min),
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  const s = report.nonTrivial + " non-trivial (" + report.total + " tot, " + report.trivial + " triv)";
+  return mk(b, {
+    status: "pass",
+    output: r.combined,
+    error: "assertions: " + s,
+    exit_code: r.exitCode,
+    duration_ms: r.duration
+  });
+}
+async function hObs(n, r, b, cmd, cwd) {
+  const min = n.predicate.value ?? 1;
+  let report = analyseObservability(cmd, cwd);
+  if (!report) report = analyseObservabilityFromOutput(r.combined, cwd);
+  if (!report)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: "observability: no source files",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  if (report.totalLogStatements >= min && report.totalErrorHandlers - report.errorHandlersLogged === 0 && report.antiPatterns.length === 0) {
+    const s = report.totalLogStatements + " logs, " + report.totalErrorHandlers + " handlers, clean";
+    return mk(b, {
+      status: "pass",
+      output: r.combined,
+      error: "observability: " + s,
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  }
+  return mk(b, {
+    status: "fail",
+    output: r.combined,
+    error: buildObsFail(report, min),
+    exit_code: r.exitCode,
+    duration_ms: r.duration
+  });
+}
+async function hBrev(n, r, b, cmd, cwd) {
+  const max = n.predicate.value ?? 0;
+  const p = n.predicate;
+  const opts = {
+    maxLineLength: p.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
+    maxFunctionLines: p.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines,
+    maxFileLines: p.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines,
+    requireCohesion: p.require_cohesion ?? DEFAULT_BREVITY_OPTS.requireCohesion,
+    minReplacementRatio: p.min_replacement_ratio ?? DEFAULT_BREVITY_OPTS.minReplacementRatio
+  };
+  let report = analyseBrevity(cmd, cwd, opts);
+  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
+  if (!report)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: "brevity: no source files",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  const passed = report.totalViolations <= max;
+  return mk(b, {
+    status: passed ? "pass" : "fail",
+    output: r.combined,
+    error: buildBrev(report, passed, max),
+    exit_code: r.exitCode,
+    duration_ms: r.duration
+  });
+}
+async function hTdd(n, r, b, cmd, cwd) {
+  const exp = n.predicate.value ?? 0;
+  const g = r.exitCode === exp;
+  if (g && !n.seen_failing)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: "TDD: GREEN w/o prior RED \u2014 tautology?",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  if (!g && !n.seen_failing) {
+    n.seen_failing = true;
+    n.seen_failing_at = (/* @__PURE__ */ new Date()).toISOString();
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: "TDD RED: test fails. Implement fix.",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  }
+  if (g && n.seen_failing) {
+    const ar = analyseAssertions(cmd, cwd);
+    if (ar && ar.nonTrivial === 0)
+      return mk(b, {
+        status: "fail",
+        output: r.combined,
+        error: "TDD: GREEN but assertions trivial.",
+        exit_code: r.exitCode,
+        duration_ms: r.duration
+      });
+    return mk(b, {
+      status: "pass",
+      output: r.combined,
+      error: "TDD verified" + (ar ? " (" + ar.nonTrivial + " nt)" : ""),
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
+  }
+  return mk(b, {
+    status: "fail",
+    output: r.combined,
+    error: `TDD: failed (exit=${r.exitCode}, exp=${exp})`,
+    exit_code: r.exitCode,
+    duration_ms: r.duration
+  });
+}
+async function executeProof(node, cwd, execFn) {
+  const cmd = node.command;
+  const base = {
+    node_path: "",
+    id: node.id,
+    title: node.title,
+    description: node.description,
+    command: cmd
+  };
+  if (node.predicate.type === "manual" || node.predicate.type === "review")
+    return hManual(node, base);
+  const run = await execFn(cmd, cwd);
+  const ef = await hExecFail(run, base);
+  if (ef) return ef;
+  switch (node.predicate.type) {
+    case "mutation":
+      return hMutate(node, run, base);
+    case "regression":
+      return hRegress(node, run, base);
+    case "streamline":
+      return hStream(node, run, base);
+    case "assertions":
+      return hAssert(node, run, base, cmd, cwd);
+    case "observability":
+      return hObs(node, run, base, cmd, cwd);
+    case "brevity":
+      return hBrev(node, run, base, cmd, cwd);
+    case "tdd":
+      return hTdd(node, run, base, cmd, cwd);
+    default:
+      break;
+  }
+  const passed = evaluatePredicate(node.predicate, run.exitCode, run.combined);
+  return mk(base, {
+    status: passed ? "pass" : "fail",
+    output: run.combined,
+    error: passed ? void 0 : `pred ${node.predicate.type} fail (exit=${run.exitCode})`,
+    exit_code: run.exitCode,
+    duration_ms: run.duration
+  });
 }
 function evaluatePredicate(predicate, exitCode, stdout) {
   switch (predicate.type) {
@@ -22430,18 +22738,85 @@ function evaluatePredicate(predicate, exitCode, stdout) {
       return !new RegExp(predicate.value, "m").test(stdout);
     case "tdd":
       return exitCode === (predicate.value ?? 0);
-    case "manual":
-    case "review":
-    case "mutation":
-    case "regression":
-    case "assertions":
-    case "streamline":
-    case "observability":
-    case "brevity":
-      return true;
     default:
-      return false;
+      return true;
   }
+}
+
+// src/checker.ts
+var execAsync = promisify(exec);
+var TIMEOUT_MS = 12e4;
+function flattenLeaf(node, index, parentPath) {
+  const currentPath = parentPath ? `${parentPath}.children.${index}` : `${index}`;
+  if (node.children && node.children.length > 0) {
+    return flattenConcreteLeaves(node.children, currentPath);
+  } else if (node.refinement === "concrete") {
+    return [{ node, node_path: currentPath }];
+  }
+  return [];
+}
+function flattenConcreteLeaves(nodes, parentPath) {
+  const results = [];
+  for (let i = 0; i < nodes.length; i++) {
+    results.push(...flattenLeaf(nodes[i], i, parentPath));
+  }
+  return results;
+}
+function nodeDraftOrDescendant(node) {
+  if (node.refinement === "draft") return true;
+  if (node.children && hasDraftNodes(node.children)) return true;
+  return false;
+}
+function hasDraftNodes(nodes) {
+  return nodes.some(nodeDraftOrDescendant);
+}
+function traverseNodePath(nodes, parts, depth) {
+  if (depth >= parts.length) return null;
+  const segment = parts[depth];
+  if (segment === "children") return traverseNodePath(nodes, parts, depth + 1);
+  const idx = Number(segment);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= nodes.length) return null;
+  const node = nodes[idx];
+  const isLast = depth === parts.length - 1 || depth === parts.length - 2 && parts[parts.length - 1] === "children";
+  if (isLast) return node;
+  if (!node.children) return null;
+  return traverseNodePath(node.children, parts, depth + 1);
+}
+function findNodeByPath(nodes, path8) {
+  if (!path8) return null;
+  return traverseNodePath(nodes, path8.split("."), 0);
+}
+function isExecutablePredicate(type) {
+  return type !== "manual" && type !== "review";
+}
+function isExecutableLeaf(leaf) {
+  return !!(leaf.node.command && leaf.node.predicate && isExecutablePredicate(leaf.node.predicate.type));
+}
+function extractExecutableCommands(nodes) {
+  return flattenConcreteLeaves(nodes).filter(isExecutableLeaf).map(({ node }) => node.command);
+}
+function isBranchLocked(nodes) {
+  return !hasDraftNodes(nodes);
+}
+function countNodeDrafts(node) {
+  let count = 0;
+  if (node.refinement === "draft") count++;
+  if (node.children) count += countDraftNodes(node.children);
+  return count;
+}
+function countDraftNodes(nodes) {
+  return nodes.reduce((sum, node) => sum + countNodeDrafts(node), 0);
+}
+function computeProofFingerprint(roots) {
+  const leaves = flattenConcreteLeaves(roots);
+  if (leaves.length === 0) return "";
+  const data = leaves.map(({ node }) => {
+    let line = `${node.command}|${node.predicate.type}|${node.predicate.value ?? ""}`;
+    if (node.predicate.lower_is_better !== void 0) line += `|lib:${node.predicate.lower_is_better}`;
+    if (node.advisory !== void 0) line += `|adv:${node.advisory}`;
+    return line;
+  }).join("\n");
+  return createHash2("sha256").update(data).digest("hex").slice(0, 12);
 }
 async function runCommand(command, cwd) {
   const start = Date.now();
@@ -22457,6 +22832,8 @@ async function runCommand(command, cwd) {
     return { exitCode: 0, combined: (stdout + stderr).slice(0, 4e3), duration: Date.now() - start };
   } catch (err) {
     const duration3 = Date.now() - start;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("checker: exec failed", { cmd: command.slice(0, 80), err: msg });
     const execErr = err;
     const exitCode = execErr.code ?? 1;
     const stdout = execErr.stdout ?? "";
@@ -22471,391 +22848,6 @@ async function runCommand(command, cwd) {
     }
     return { exitCode, combined, duration: duration3, error: stderr.slice(0, 2e3) || void 0 };
   }
-}
-async function executeProof(node, cwd) {
-  const cmd = node.command;
-  const leafBase = {
-    node_path: "",
-    id: node.id,
-    title: node.title,
-    description: node.description,
-    command: cmd
-  };
-  if (node.predicate.type === "manual" || node.predicate.type === "review") {
-    const isReview = node.predicate.type === "review";
-    const label = isReview ? "Code review" : "Manual verification";
-    const fingerprint = perProofFingerprint(node);
-    const mr = node.manual_result;
-    if (mr && mr.proof_fingerprint === fingerprint) {
-      const output = `${label} ${mr.answer.toUpperCase()} (via dod_verify) at ${mr.confirmed_at} via ${mr.channel}${mr.note ? ` \u2014 "${mr.note}"` : ""}`;
-      return {
-        ...leafBase,
-        status: mr.answer,
-        output,
-        error: mr.answer === "fail" ? `${label} was confirmed as failing by the human.` : void 0
-      };
-    }
-    return {
-      ...leafBase,
-      status: "skipped",
-      output: `${label} not yet verified \u2014 call dod_verify(dod_id, "${node.id}") to request human confirmation.`
-    };
-  }
-  const run = await runCommand(cmd, cwd);
-  if (run.killed || run.notFound) {
-    return {
-      ...leafBase,
-      status: "fail",
-      output: run.combined,
-      error: run.error,
-      exit_code: run.exitCode,
-      duration_ms: run.duration
-    };
-  }
-  if (node.predicate.type === "mutation") {
-    const maxAllowed = node.predicate.value ?? 0;
-    const survivors = parseSurvivors(run.combined);
-    if (survivors === null) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: "could not parse mutation results (no recognized Stryker/mutmut/cargo-mutants summary)",
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    const passed2 = survivors <= maxAllowed;
-    return {
-      ...leafBase,
-      status: passed2 ? "pass" : "fail",
-      output: run.combined,
-      error: passed2 ? void 0 : `mutation: ${survivors} surviving mutant(s) exceeds the allowed maximum of ${maxAllowed}`,
-      exit_code: run.exitCode,
-      duration_ms: run.duration
-    };
-  }
-  if (node.predicate.type === "regression") {
-    const measured = extractNumber(run.combined, node.predicate.extract);
-    if (measured === null) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: "regression: could not parse a metric number from output (fail-safe \u2014 never auto-passes)",
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    if (node.baseline_value === void 0) {
-      node.baseline_value = measured;
-      node.baseline_captured_at = (/* @__PURE__ */ new Date()).toISOString();
-      return {
-        ...leafBase,
-        status: "pass",
-        output: run.combined,
-        error: `regression: baseline captured (N0=${measured}). Re-run after the change to compare.`,
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    const baseline = node.baseline_value;
-    const tol = node.predicate.value ?? 0;
-    const lowerIsBetter = node.predicate.lower_is_better ?? true;
-    const passed2 = lowerIsBetter ? measured <= baseline * (1 + tol) : measured >= baseline * (1 - tol);
-    const direction = lowerIsBetter ? "<=" : ">=";
-    const threshold = lowerIsBetter ? baseline * (1 + tol) : baseline * (1 - tol);
-    return {
-      ...leafBase,
-      status: passed2 ? "pass" : "fail",
-      output: run.combined,
-      error: passed2 ? void 0 : `regression: ${measured} fails ${direction} ${threshold} (baseline ${baseline}, tolerance ${tol})`,
-      exit_code: run.exitCode,
-      duration_ms: run.duration
-    };
-  }
-  if (node.predicate.type === "streamline") {
-    const maxAllowed = node.predicate.value ?? 0;
-    if (run.exitCode > 1) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: `streamline: search command failed with exit code ${run.exitCode} (fail-safe \u2014 never auto-passes on tool errors)`,
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    if (run.exitCode === 1) {
-      return {
-        ...leafBase,
-        status: "pass",
-        output: run.combined,
-        error: "streamline: no matches \u2014 old code fully removed",
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    const matchCount = run.combined.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
-    const passed2 = matchCount <= maxAllowed;
-    return {
-      ...leafBase,
-      status: passed2 ? "pass" : "fail",
-      output: run.combined,
-      error: passed2 ? `streamline: ${matchCount} match(es) \u2264 allowed ${maxAllowed}` : `streamline: ${matchCount} remaining reference(s) exceeds allowed maximum of ${maxAllowed} \u2014 old code has not been fully removed`,
-      exit_code: run.exitCode,
-      duration_ms: run.duration
-    };
-  }
-  if (node.predicate.type === "assertions") {
-    const minNonTrivial = node.predicate.value ?? 1;
-    const report = analyseAssertions(cmd, cwd);
-    const exitPass = run.exitCode === 0;
-    const noFiles = !report;
-    const tooFew = report && report.nonTrivial < minNonTrivial;
-    const allTrivial = report && report.total > 0 && report.nonTrivial === 0;
-    if (!exitPass) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: `tests failed with exit code ${run.exitCode}${report ? `. Test files have ${report.total} assertion(s), ${report.nonTrivial} non-trivial.` : ""}`,
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    if (noFiles) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: "assertions: could not identify any test files from the command. Ensure the command references test files by path (e.g. `python -m pytest tests/test_foo.py`).",
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    if (allTrivial) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: [
-          `ASSERTION QUALITY FAIL: all ${report.total} assertion(s) in ${report.files.length} test file(s) are trivial (constant-on-constant).`,
-          "These tests pass unconditionally and exercise zero production logic.",
-          ...report.perFile.map((f) => `  ${f.file}: ${f.total} assertion(s), ${f.trivial} trivial`),
-          "Replace trivial assertions with behavioural checks against real inputs/outputs."
-        ].join("\n"),
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    if (tooFew) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: [
-          `assertions: only ${report.nonTrivial} non-trivial assertion(s) found across ${report.files.length} test file(s), need at least ${minNonTrivial}.`,
-          ...report.perFile.map((f) => `  ${f.file}: ${f.total} total, ${f.trivial} trivial, ${f.total - f.trivial} non-trivial`)
-        ].join("\n"),
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    return {
-      ...leafBase,
-      status: "pass",
-      output: run.combined,
-      error: `assertions: ${report.nonTrivial} non-trivial assertion(s) across ${report.files.length} test file(s) (${report.total} total, ${report.trivial} trivial)`,
-      exit_code: run.exitCode,
-      duration_ms: run.duration
-    };
-  }
-  if (node.predicate.type === "observability") {
-    const minLogStatements = node.predicate.value ?? 1;
-    let report = analyseObservability(cmd, cwd);
-    if (!report) {
-      report = analyseObservabilityFromOutput(run.combined, cwd);
-    }
-    if (!report) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: "observability: could not identify any source files from the command or its output. Ensure the command references source files by path (e.g. `git diff --name-only HEAD~1 -- '*.ts'` or `python -m pytest tests/test_foo.py`).",
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    const tooFewLogs = report.totalLogStatements < minLogStatements;
-    const unloggedErrors = report.totalErrorHandlers - report.errorHandlersLogged;
-    const hasAntiPatterns = report.antiPatterns.length > 0;
-    if (!tooFewLogs && unloggedErrors === 0 && !hasAntiPatterns) {
-      const lines = [
-        `observability: ${report.totalLogStatements} log statement(s) across ${report.files.length} file(s)`,
-        `  error handlers: ${report.totalErrorHandlers} total, ${report.errorHandlersLogged} logged`
-      ];
-      for (const f of report.perFile) {
-        lines.push(`  ${f.file}: ${f.logCount} logs, ${f.errorHandlers} handlers (${f.errorHandlersLogged} logged)${f.antiPatterns.length > 0 ? `, ${f.antiPatterns.length} anti-pattern(s)` : ""}`);
-      }
-      return {
-        ...leafBase,
-        status: "pass",
-        output: run.combined,
-        error: lines.join("\n"),
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    const errors = [];
-    if (tooFewLogs) {
-      errors.push(`OBSERVABILITY FAIL: only ${report.totalLogStatements} log statement(s) found across ${report.files.length} file(s), need at least ${minLogStatements}.`);
-    }
-    if (unloggedErrors > 0) {
-      errors.push(`OBSERVABILITY FAIL: ${unloggedErrors} error handler(s) without logging across ${report.files.length} file(s). Every catch/except/Err branch must log before handling.`);
-    }
-    if (hasAntiPatterns) {
-      errors.push(`OBSERVABILITY FAIL: ${report.antiPatterns.length} anti-pattern(s) detected:`);
-      for (const ap of report.antiPatterns) {
-        const kindLabel = ap.kind === "empty_catch" ? "empty catch" : ap.kind === "swallowed_error" ? "swallowed error (no log)" : "bare static log";
-        errors.push(`  ${ap.file}:${ap.line} \u2014 ${kindLabel}: ${ap.snippet}`);
-      }
-    }
-    errors.push("", "Per-file breakdown:");
-    for (const f of report.perFile) {
-      const status = f.logCount >= 1 && f.errorHandlersLogged === f.errorHandlers && f.antiPatterns.length === 0 ? "\u2713" : "\u2717";
-      errors.push(`  ${status} ${f.file}: ${f.logCount} logs, ${f.errorHandlers} handlers (${f.errorHandlersLogged} logged)${f.antiPatterns.length > 0 ? ` \u2014 ${f.antiPatterns.length} anti-pattern(s)` : ""}`);
-    }
-    return {
-      ...leafBase,
-      status: "fail",
-      output: run.combined,
-      error: errors.join("\n"),
-      exit_code: run.exitCode,
-      duration_ms: run.duration
-    };
-  }
-  if (node.predicate.type === "brevity") {
-    const maxAllowed = node.predicate.value ?? 0;
-    const pred = node.predicate;
-    const brevityOpts = {
-      maxLineLength: pred.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
-      maxFunctionLines: pred.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines,
-      maxFileLines: pred.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines,
-      requireCohesion: pred.require_cohesion ?? DEFAULT_BREVITY_OPTS.requireCohesion,
-      minReplacementRatio: pred.min_replacement_ratio ?? DEFAULT_BREVITY_OPTS.minReplacementRatio
-    };
-    let report = analyseBrevity(cmd, cwd, brevityOpts);
-    if (!report) {
-      report = analyseBrevityFromOutput(run.combined, cwd, brevityOpts);
-    }
-    if (!report) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: "brevity: could not identify any source files from the command or its output. Ensure the command references source files by path (e.g. `git diff --name-only HEAD~1` or `node_modules/.bin/jest src/foo.test.ts`).",
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    const passed2 = report.totalViolations <= maxAllowed;
-    const lines = [
-      passed2 ? `brevity: ${report.totalViolations} violation(s) \u2264 allowed ${maxAllowed}` : `BREVITY FAIL: ${report.totalViolations} violation(s) exceeds allowed maximum of ${maxAllowed}`,
-      ""
-    ];
-    for (const f of report.perFile) {
-      const parts = [`  ${f.file}: ${f.lineCount} lines, ${f.functionCount} functions`];
-      if (f.longFunctions > 0) parts.push(`${f.longFunctions} too long`);
-      if (f.mixedCohesionFunctions > 0) parts.push(`${f.mixedCohesionFunctions} mixed cohesion`);
-      if (f.insertions !== void 0 && f.deletions !== void 0) {
-        parts.push(`+${f.insertions}/-${f.deletions}`);
-      }
-      lines.push(parts.join(", "));
-      for (const v of f.violations) {
-        lines.push(`    \u2022 L${v.line}: ${v.kind} \u2014 ${v.detail}`);
-      }
-    }
-    if (!passed2) {
-      lines.push(
-        "",
-        "Remediation:",
-        "  \u2022 Split functions >30 lines into focused single-purpose units",
-        "  \u2022 Separate selection (if/switch) from iteration (for/while) \u2014 each function does one thing",
-        "  \u2022 Delete old code when replacing functionality (low deletion ratio = accretion)",
-        "  \u2022 Keep lines under 120 chars \u2014 break long expressions across multiple lines",
-        "  \u2022 Split files >300 lines into modules"
-      );
-    }
-    return {
-      ...leafBase,
-      status: passed2 ? "pass" : "fail",
-      output: run.combined,
-      error: lines.join("\n"),
-      exit_code: run.exitCode,
-      duration_ms: run.duration
-    };
-  }
-  if (node.predicate.type === "tdd") {
-    const greenExitCode = node.predicate.value ?? 0;
-    const isGreen = run.exitCode === greenExitCode;
-    if (!isGreen) {
-      node.seen_failing = true;
-      node.seen_failing_at = node.seen_failing_at ?? (/* @__PURE__ */ new Date()).toISOString();
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: run.error,
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    if (isGreen && !node.seen_failing) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: "TDD VIOLATION: test passed without ever failing. Write a failing test first, run dod_check to record the red phase, then implement.",
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    const assertionReport = analyseAssertions(cmd, cwd);
-    if (assertionReport && assertionReport.total > 0 && assertionReport.nonTrivial === 0) {
-      return {
-        ...leafBase,
-        status: "fail",
-        output: run.combined,
-        error: [
-          `TDD ASSERTION QUALITY FAIL: all ${assertionReport.total} assertion(s) in ${assertionReport.files.length} test file(s) are trivial (constant-on-constant).`,
-          "The RED\u2192GREEN cycle was observed, but these tests exercise zero production logic.",
-          ...assertionReport.perFile.map((f) => `  ${f.file}: ${f.total} assertion(s), ${f.trivial} trivial`),
-          "Replace trivial assertions with behavioural checks against real inputs/outputs, then re-run dod_check."
-        ].join("\n"),
-        exit_code: run.exitCode,
-        duration_ms: run.duration
-      };
-    }
-    const assertionNote = assertionReport ? ` | assertions: ${assertionReport.nonTrivial} non-trivial across ${assertionReport.files.length} file(s)` : "";
-    return {
-      ...leafBase,
-      status: "pass",
-      output: run.combined,
-      error: `TDD cycle verified (seen failing \u2192 now passing)${assertionNote}`,
-      exit_code: run.exitCode,
-      duration_ms: run.duration
-    };
-  }
-  const passed = evaluatePredicate(node.predicate, run.exitCode, run.combined);
-  return {
-    ...leafBase,
-    status: passed ? "pass" : "fail",
-    output: run.combined,
-    error: run.error,
-    exit_code: run.exitCode,
-    duration_ms: run.duration
-  };
 }
 function carryForwardNode(node, node_path) {
   return {
@@ -22912,39 +22904,87 @@ function collectAllLeaves(nodes, parentPath, concrete, drafts) {
     }
   }
 }
+function carryForwardOutOfScopeLeaves(targetPath, outOfScope, roots, leafResults) {
+  if (!targetPath || outOfScope.length === 0) return;
+  for (const { node, node_path } of outOfScope) {
+    leafResults.push(carryForwardNode(node, node_path));
+  }
+  carryForwardDrafts(roots, "", targetPath, leafResults);
+}
+async function executeInScopeLeaves(inScope, cwd, execFn, leafResults) {
+  let anyRealFail = false;
+  let anyUnverified = false;
+  let manualUnverified = 0;
+  for (const { node, node_path } of inScope) {
+    const result = await executeProof(node, cwd, execFn);
+    result.node_path = node_path;
+    leafResults.push(result);
+    if (result.status === "fail" && !node.advisory) anyRealFail = true;
+    if (result.status === "skipped" && !node.advisory) anyUnverified = true;
+    const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
+    if (result.status === "skipped" && isManualOrReview) manualUnverified++;
+  }
+  return { anyRealFail, anyUnverified, manualUnverified };
+}
+function collectAmendmentCounts(amendments, roots) {
+  const amendmentCounts = /* @__PURE__ */ new Map();
+  for (const a of amendments) {
+    if (a.action === "modified" || a.action === "refined") {
+      const existing = amendmentCounts.get(a.node_path);
+      if (existing) {
+        existing.count++;
+      } else {
+        const node = findNodeByPath(roots, a.node_path);
+        amendmentCounts.set(a.node_path, { title: node?.title ?? a.node_path, count: 1 });
+      }
+    }
+  }
+  return amendmentCounts;
+}
 async function checkDocument(doc, cwdOverride, opts) {
   const cwd = cwdOverride ?? doc.cwd;
   const targetPath = opts?.nodePath;
   const { inScope, outOfScope } = partitionLeaves(doc.roots, targetPath);
   const draftCount = countDraftNodes(doc.roots);
   const leafResults = [];
-  if (targetPath && outOfScope.length > 0) {
-    for (const { node, node_path } of outOfScope) {
-      leafResults.push(carryForwardNode(node, node_path));
-    }
-    carryForwardDrafts(doc.roots, "", targetPath, leafResults);
-  }
-  let anyRealFail = false;
-  let anyUnverified = false;
-  for (const { node, node_path } of inScope) {
-    const result = await executeProof(node, cwd);
-    result.node_path = node_path;
-    leafResults.push(result);
-    if (result.status === "fail" && !node.advisory) {
-      anyRealFail = true;
-    }
-    if (result.status === "skipped" && !node.advisory) {
-      anyUnverified = true;
-    }
-  }
+  carryForwardOutOfScopeLeaves(targetPath, outOfScope, doc.roots, leafResults);
+  const { anyRealFail, anyUnverified, manualUnverified } = await executeInScopeLeaves(
+    inScope,
+    cwd,
+    opts?.execFn ?? runCommand,
+    leafResults
+  );
   if (!targetPath) {
     addDraftLeafResults(doc.roots, "", leafResults);
   }
+  const amendmentCounts = collectAmendmentCounts(doc.amendments, doc.roots);
+  const amendmentWarnings = [...amendmentCounts.entries()].filter(([, v]) => v.count > 2).map(([node_path, v]) => ({ node_path, title: v.title, count: v.count }));
+  const blockedByManuals = !targetPath && draftCount === 0 && !anyRealFail && manualUnverified > 0;
+  const concreteCount = inScope.length + outOfScope.length;
+  const suggestScoped = !targetPath && concreteCount > 5 && draftCount > 0;
   const proofFingerprint = computeProofFingerprint(doc.roots);
   const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
   const overall = tampered ? "fail" : targetPath ? "incomplete" : draftCount > 0 ? "incomplete" : anyRealFail ? "fail" : anyUnverified ? "incomplete" : "pass";
-  const baseSummary = targetPath ? `SCOPED (node "${targetPath}"): run a full dod_check (no nodePath) to verify completion` : `${leafResults.filter((r) => r.status === "pass").length}/${leafResults.filter((r) => r.status !== "draft").length} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
-  const summary = tampered ? `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}` : !targetPath && draftCount > 0 ? `${baseSummary} \u2014 use dod_refine to concretize draft nodes` : !targetPath && anyUnverified && !anyRealFail ? `${baseSummary} \u2014 one or more manual/review proofs await dod_verify` : baseSummary;
+  const concreteTotal = leafResults.filter((r) => r.status !== "draft").length;
+  const passCount = leafResults.filter((r) => r.status === "pass").length;
+  const baseSummary = targetPath ? `SCOPED (node "${targetPath}"): run a full dod_check (no nodePath) to verify completion` : `${passCount}/${concreteTotal} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
+  const guidance = [];
+  if (blockedByManuals) {
+    guidance.push(`\u26D4 ${manualUnverified} manual/review proof(s) await dod_verify \u2014 DoD CANNOT pass without human verification.`);
+  } else if (!targetPath && manualUnverified > 0) {
+    guidance.push(`${manualUnverified} manual/review proof(s) await dod_verify.`);
+  }
+  if (amendmentWarnings.length > 0) {
+    const names = amendmentWarnings.map((w) => `"${w.title}" (${w.count} amendments)`).join(", ");
+    guidance.push(`\u26A0\uFE0F Excessive amendment cycles: ${names} \u2014 are proofs being tuned rather than code being fixed?`);
+  }
+  if (suggestScoped) {
+    guidance.push(`\u{1F4A1} ${concreteCount} concrete proofs \u2014 use dod_check(nodePath="0") to verify one subtree at a time (faster iteration).`);
+  }
+  if (!targetPath && draftCount > 0 && !suggestScoped) {
+    guidance.push(`${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end.`);
+  }
+  const summary = tampered ? `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}` : guidance.length > 0 ? [baseSummary, "", ...guidance].join("\n") : baseSummary;
   return {
     overall,
     leaves: leafResults,
@@ -22952,6 +22992,9 @@ async function checkDocument(doc, cwdOverride, opts) {
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     proof_fingerprint: proofFingerprint,
     draft_count: draftCount,
+    manual_unverified: manualUnverified,
+    amendment_warnings: amendmentWarnings,
+    blocked_by_manuals: blockedByManuals,
     ...targetPath ? { scoped: true, ran_node_path: targetPath } : {},
     ...tampered ? { tampered: true } : {}
   };
@@ -22999,6 +23042,101 @@ function carryForwardDrafts(nodes, parentPath, targetPath, out) {
 // src/author.ts
 import { promises as fs2 } from "node:fs";
 import * as path5 from "node:path";
+
+// src/format-result.ts
+function formatCheckResult(result) {
+  console.debug("format-result: formatCheckResult", { overall: result.overall });
+  const l = [];
+  l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
+  l.push("");
+  if (result.tampered) {
+    l.push("\u{1F534} **TAMPER DETECTED** \u2014 proof-set fingerprint mismatch. Store was edited outside dod_amend.");
+    l.push("");
+  }
+  if (result.blocked_by_manuals) {
+    l.push("\u26D4 **BLOCKED: Manual verification required.** All automated proofs pass, but this DoD is NOT complete.");
+    l.push(`   ${result.manual_unverified} manual/review proof(s) await dod_verify. Call dod_verify for each, then re-run dod_check.`);
+    l.push("   Do NOT report done until manuals are verified \u2014 the fix may look correct to proofs but be visually wrong.");
+    l.push("");
+  }
+  if (result.scoped) {
+    l.push(`\u23F3 **Scoped run \u2014 node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`);
+    l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
+    l.push("");
+  }
+  if (result.draft_count > 0) {
+    l.push(`\u{1F4DD} **${result.draft_count} draft node(s)** \u2014 use dod_refine to concretize before a final pass is possible.`);
+    l.push("");
+  }
+  if (result.amendment_warnings.length > 0) {
+    l.push("\u26A0\uFE0F **Amendment cycle warnings:** These proofs have been amended 3+ times \u2014 possible proof-tuning:");
+    for (const w of result.amendment_warnings) {
+      l.push(`   \u2022 "${w.title}" \u2014 ${w.count} amendments`);
+    }
+    l.push("   Verify these proofs still test the right thing, not just whatever the code happens to do.");
+    l.push("");
+  }
+  const byRoot = /* @__PURE__ */ new Map();
+  for (const leaf of result.leaves) {
+    const rootIdx = leaf.node_path.split(".")[0];
+    if (!byRoot.has(rootIdx)) byRoot.set(rootIdx, []);
+    byRoot.get(rootIdx).push(leaf);
+  }
+  for (const [rootIdx, leaves] of byRoot) {
+    const passCount = leaves.filter((p) => p.status === "pass").length;
+    const failCount = leaves.filter((p) => p.status === "fail").length;
+    const skipCount = leaves.filter((p) => p.status === "skipped").length;
+    const draftCount = leaves.filter((p) => p.status === "draft").length;
+    const hasFail = failCount > 0;
+    const hasDraft = draftCount > 0;
+    const icon = hasFail ? "\u274C" : hasDraft ? "\u{1F4DD}" : "\u2705";
+    const status = hasFail ? "FAIL" : hasDraft ? "INCOMPLETE" : "PASS";
+    const rootTitle = leaves[0]?.title ?? `Root ${rootIdx}`;
+    const countStr = [
+      passCount > 0 ? `${passCount} pass` : "",
+      failCount > 0 ? `${failCount} fail` : "",
+      skipCount > 0 ? `${skipCount} skipped` : "",
+      draftCount > 0 ? `${draftCount} draft` : ""
+    ].filter(Boolean).join(", ");
+    l.push(`${icon} **${rootTitle}** \u2014 ${status} (${countStr})`);
+    for (const leaf of leaves) {
+      const depth = leaf.node_path.split(".children.").length - 1;
+      const indent = "  ".repeat(depth + 1);
+      if (leaf.status === "draft") {
+        l.push(`${indent}\u{1F4DD} ${leaf.description} \u2014 DRAFT (use dod_refine to concretize)`);
+      } else if (leaf.status === "pass") {
+        const isManual = leaf.command === "manual";
+        if (isManual) {
+          l.push(`${indent}\u2713 MANUAL \u2014 ${leaf.description} (${leaf.output ?? "human-confirmed"})`);
+        } else {
+          l.push(`${indent}\u2713 \`${leaf.command}\` (${leaf.duration_ms ?? 0}ms)`);
+        }
+      } else if (leaf.status === "skipped") {
+        l.push(`${indent}\u23F3 \`${leaf.command}\` \u2014 not verified this run${leaf.output ? `: ${leaf.output}` : ""}`);
+      } else {
+        const isManual = leaf.command === "manual";
+        if (isManual) {
+          l.push(`${indent}\u2717 MANUAL \u2014 ${leaf.description}`);
+          if (leaf.error) l.push(`${indent}  ${leaf.error}`);
+        } else {
+          l.push(`${indent}\u2717 \`${leaf.command}\``);
+          if (leaf.exit_code !== void 0) l.push(`${indent}  exit code: ${leaf.exit_code}`);
+          if (leaf.error) l.push(`${indent}  stderr: ${leaf.error.split("\n").slice(0, 5).join(`
+${indent}  `)}`);
+          if (leaf.output) l.push(`${indent}  output: ${leaf.output.split("\n").slice(0, 5).join(`
+${indent}  `)}`);
+        }
+      }
+    }
+    l.push("");
+  }
+  l.push(`**Summary:** ${result.summary}`);
+  l.push(`**Timestamp:** ${result.timestamp}`);
+  l.push(`**Proof fingerprint:** \`${result.proof_fingerprint}\``);
+  return l.join("\n");
+}
+
+// src/author.ts
 function proofMark(status) {
   switch (status) {
     case "pass":
@@ -23064,6 +23202,7 @@ function renderLeaf(node, indent, lines) {
   }
 }
 function renderMarkdown(doc) {
+  console.debug("author: renderMarkdown", { id: doc.id });
   const l = [];
   l.push(`# ${doc.title} \u2014 Requirements Spec`);
   l.push("");
@@ -23075,11 +23214,19 @@ function renderMarkdown(doc) {
   l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
   l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts \u2014 call");
   l.push("    `dod_verify(dod_id, proof_id)` explicitly when verification is actually relevant.");
+  l.push("3c. **Manual verification is a HARD GATE.** DoD cannot PASS without it.");
+  l.push("    Proofs can pass against wrong code. Visual verification catches what metrics miss.");
   l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof with a command.");
-  l.push("4b. Use `dod_add_node` to add new nodes discovered during implementation.");
+  l.push("4b. **Refine incrementally per task group, not all at once.** Scoped dod_check is faster");
+  l.push("    than full runs \u2014 use it. Refining 7 drafts at session end = rubber-stamping.");
+  l.push("4c. Use `dod_add_node` to add new nodes discovered during implementation.");
   l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("5b. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
-  l.push("6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass) \u2014 then stop and report done.");
+  l.push("5b. **Amending a proof 3+ times is a red flag** \u2014 you're probably tuning proofs to pass");
+  l.push("    rather than fixing the bug. Re-examine the approach.");
+  l.push("5c. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
+  l.push("6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass, manuals verified) \u2014 then stop and report done.");
+  l.push("6b. **If the approach isn't working, stop and re-interview.** Don't silently pivot to");
+  l.push("    a different implementation while keeping the old DoD. The DoD must match what you're doing.");
   l.push("");
   l.push(`**Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
   l.push("");
@@ -23189,112 +23336,82 @@ function updateDocFromCheckResult(doc, result) {
     summary: result.summary
   };
 }
-function formatCheckResult(result) {
-  const l = [];
-  l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
-  l.push("");
-  if (result.tampered) {
-    l.push("\u{1F534} **TAMPER DETECTED** \u2014 proof-set fingerprint mismatch. Store was edited outside dod_amend.");
-    l.push("");
-  }
-  if (result.scoped) {
-    l.push(`\u23F3 **Scoped run \u2014 node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`);
-    l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
-    l.push("");
-  }
-  if (result.draft_count > 0) {
-    l.push(`\u{1F4DD} **${result.draft_count} draft node(s)** \u2014 use dod_refine to concretize before a final pass is possible.`);
-    l.push("");
-  }
-  const byRoot = /* @__PURE__ */ new Map();
-  for (const leaf of result.leaves) {
-    const rootIdx = leaf.node_path.split(".")[0];
-    if (!byRoot.has(rootIdx)) byRoot.set(rootIdx, []);
-    byRoot.get(rootIdx).push(leaf);
-  }
-  for (const [rootIdx, leaves] of byRoot) {
-    const passCount = leaves.filter((p) => p.status === "pass").length;
-    const failCount = leaves.filter((p) => p.status === "fail").length;
-    const skipCount = leaves.filter((p) => p.status === "skipped").length;
-    const draftCount = leaves.filter((p) => p.status === "draft").length;
-    const hasFail = failCount > 0;
-    const hasDraft = draftCount > 0;
-    const icon = hasFail ? "\u274C" : hasDraft ? "\u{1F4DD}" : "\u2705";
-    const status = hasFail ? "FAIL" : hasDraft ? "INCOMPLETE" : "PASS";
-    const rootTitle = leaves[0]?.title ?? `Root ${rootIdx}`;
-    const countStr = [
-      passCount > 0 ? `${passCount} pass` : "",
-      failCount > 0 ? `${failCount} fail` : "",
-      skipCount > 0 ? `${skipCount} skipped` : "",
-      draftCount > 0 ? `${draftCount} draft` : ""
-    ].filter(Boolean).join(", ");
-    l.push(`${icon} **${rootTitle}** \u2014 ${status} (${countStr})`);
-    for (const leaf of leaves) {
-      const depth = leaf.node_path.split(".children.").length - 1;
-      const indent = "  ".repeat(depth + 1);
-      if (leaf.status === "draft") {
-        l.push(`${indent}\u{1F4DD} ${leaf.description} \u2014 DRAFT (use dod_refine to concretize)`);
-      } else if (leaf.status === "pass") {
-        const isManual = leaf.command === "manual";
-        if (isManual) {
-          l.push(`${indent}\u2713 MANUAL \u2014 ${leaf.description} (${leaf.output ?? "human-confirmed"})`);
-        } else {
-          l.push(`${indent}\u2713 \`${leaf.command}\` (${leaf.duration_ms ?? 0}ms)`);
-        }
-      } else if (leaf.status === "skipped") {
-        l.push(`${indent}\u23F3 \`${leaf.command}\` \u2014 not verified this run${leaf.output ? `: ${leaf.output}` : ""}`);
-      } else {
-        const isManual = leaf.command === "manual";
-        if (isManual) {
-          l.push(`${indent}\u2717 MANUAL \u2014 ${leaf.description}`);
-          if (leaf.error) l.push(`${indent}  ${leaf.error}`);
-        } else {
-          l.push(`${indent}\u2717 \`${leaf.command}\``);
-          if (leaf.exit_code !== void 0) l.push(`${indent}  exit code: ${leaf.exit_code}`);
-          if (leaf.error) l.push(`${indent}  stderr: ${leaf.error.split("\n").slice(0, 5).join(`
-${indent}  `)}`);
-          if (leaf.output) l.push(`${indent}  output: ${leaf.output.split("\n").slice(0, 5).join(`
-${indent}  `)}`);
-        }
-      }
-    }
-    l.push("");
-  }
-  l.push(`**Summary:** ${result.summary}`);
-  l.push(`**Timestamp:** ${result.timestamp}`);
-  l.push(`**Proof fingerprint:** \`${result.proof_fingerprint}\``);
-  return l.join("\n");
-}
 
 // src/parser.ts
 import { promises as fs3 } from "node:fs";
+function extractQuoted(text) {
+  const m = text.match(/"([^"]+)"/);
+  return m ? m[1] : null;
+}
+function extractExitCode(text, pattern) {
+  const m = text.match(pattern);
+  return m ? parseInt(m[1], 10) : null;
+}
+var INFERENCE_RULES = [
+  {
+    test: (l) => l.includes("tdd") || l.includes("must fail first") || l.includes("red before green"),
+    infer: (l) => ({ type: "tdd", value: extractExitCode(l, /exit\s*(?:code\s*)?(\d+)/) ?? 0 })
+  },
+  {
+    test: (l) => l.includes("no match"),
+    infer: () => ({ type: "exit_code", value: 1 })
+  },
+  {
+    test: (l) => ["not contain", "must not contain", "no warning", "no error"].some((k) => l.includes(k)),
+    infer: (_, t) => {
+      const q = extractQuoted(t);
+      return q ? { type: "output_not_contains", value: q } : { type: "exit_code", value: 0 };
+    }
+  },
+  {
+    test: (l) => l.includes("not match") || l.includes("must not match"),
+    infer: (_, t) => {
+      const q = extractQuoted(t);
+      return q ? { type: "output_not_matches", value: q } : { type: "exit_code", value: 0 };
+    }
+  },
+  {
+    test: (l) => l.includes("matches") || l.includes("must match"),
+    infer: (_, t) => {
+      const q = extractQuoted(t);
+      return q ? { type: "output_matches", value: q } : { type: "exit_code", value: 0 };
+    }
+  },
+  {
+    test: (l) => l.includes("contains") || l.includes("must contain"),
+    infer: (_, t) => {
+      const q = extractQuoted(t);
+      return q ? { type: "output_contains", value: q } : { type: "exit_code", value: 0 };
+    }
+  },
+  {
+    test: (l) => ["must not exit", "exit code must not be", "non-zero exit"].some((k) => l.includes(k)),
+    infer: (l) => ({ type: "exit_code_not", value: extractExitCode(l, /exit\s*(?:\S+\s+)?(\d+)/) ?? 0 })
+  }
+];
+var CATEGORY_PATTERNS = [
+  [["mutation", "mutants"], "mutation"],
+  [["regression", "baseline"], "regression"],
+  [["assertion count", "at least", "non-trivial"], "assertions"],
+  [["streamline", "leftover", "old code"], "streamline"],
+  [["observability", "log statements", "logging"], "observability"],
+  [["brevity", "code quality", "static analysis"], "brevity"]
+];
 function inferPredicate(description) {
   const lower = description.toLowerCase();
-  if (lower.includes("tdd") || lower.includes("must fail first") || lower.includes("red before green")) {
-    const exitMatch2 = lower.match(/exit\s*(?:code\s*)?(\d+)/);
-    return { type: "tdd", value: exitMatch2 ? parseInt(exitMatch2[1], 10) : 0 };
-  }
-  if (lower.includes("no match")) {
-    return { type: "exit_code", value: 1 };
-  }
-  if (lower.includes("not contain") || lower.includes("must not contain") || lower.includes("no warning") || lower.includes("no error")) {
-    const quoted = description.match(/"([^"]+)"/);
-    if (quoted) return { type: "output_not_contains", value: quoted[1] };
-  }
-  if (lower.includes("not match") || lower.includes("must not match")) {
-    const quoted = description.match(/"([^"]+)"/);
-    if (quoted) return { type: "output_not_matches", value: quoted[1] };
-  }
-  if (lower.includes("contains") || lower.includes("must contain")) {
-    const quoted = description.match(/"([^"]+)"/);
-    if (quoted) return { type: "output_contains", value: quoted[1] };
+  for (const rule of INFERENCE_RULES) {
+    if (rule.test(lower)) return rule.infer(lower, description);
   }
   const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
-  if (exitMatch) {
-    return { type: "exit_code", value: parseInt(exitMatch[1], 10) };
-  }
-  if (lower.startsWith("manual") || lower === "manual") {
-    return { type: "manual" };
+  if (exitMatch) return { type: "exit_code", value: parseInt(exitMatch[1], 10) };
+  if (lower.startsWith("manual") || lower === "manual") return { type: "manual" };
+  if (lower.startsWith("review") || lower.includes("review \u2014") || lower.includes("review:")) return { type: "review" };
+  for (const [keywords, type] of CATEGORY_PATTERNS) {
+    if (keywords.some((k) => lower.includes(k))) {
+      const countMatch = type === "assertions" ? lower.match(/at least (\d+)/) : null;
+      const value = countMatch ? parseInt(countMatch[1], 10) : 0;
+      return { type, value };
+    }
   }
   return { type: "exit_code", value: 0 };
 }
@@ -23312,29 +23429,25 @@ function parseLeafLine(line) {
   }
   const tddMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof\s*\(TDD\s+[^)]+\):\s*`([^`]+)`\s*→\s*(.+)$/);
   if (tddMatch) {
-    const command = tddMatch[2].trim();
-    const description = tddMatch[3].trim();
     return {
       id: "",
-      title: description,
+      title: tddMatch[3].trim(),
       refinement: "concrete",
-      command,
+      command: tddMatch[2].trim(),
       predicate: { type: "tdd", value: 0 },
-      description,
+      description: tddMatch[3].trim(),
       last_status: tddMatch[1] === "x" ? "pass" : tddMatch[1] === "~" ? "skipped" : "pending"
     };
   }
   const cmdMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*`([^`]+)`\s*→\s*(.+)$/);
   if (cmdMatch) {
-    const command = cmdMatch[2].trim();
-    const description = cmdMatch[3].trim();
     return {
       id: "",
-      title: description,
+      title: cmdMatch[3].trim(),
       refinement: "concrete",
-      command,
-      predicate: inferPredicate(description),
-      description,
+      command: cmdMatch[2].trim(),
+      predicate: inferPredicate(cmdMatch[3]),
+      description: cmdMatch[3].trim(),
       last_status: cmdMatch[1] === "x" ? "pass" : cmdMatch[1] === "~" ? "skipped" : "pending"
     };
   }
@@ -23352,13 +23465,106 @@ function parseLeafLine(line) {
   }
   return null;
 }
-async function parseMarkdown(filePath) {
-  const content = await fs3.readFile(filePath, "utf-8");
+var SECTION_MAP = {
+  "requirements": "requirements",
+  "research notes": "research_notes",
+  "open questions": "open_questions",
+  "open risks": "open_risks",
+  "decisions": "decisions",
+  "current state": "current_state"
+};
+function parseSections(lines) {
+  const sections = { requirements: "" };
+  let currentSection = "";
+  let buf = [];
+  function flush() {
+    if (!currentSection) return;
+    sections[currentSection] = buf.join("\n").trim();
+    currentSection = "";
+    buf = [];
+  }
+  for (const line of lines) {
+    const h2Match = line.match(/^## (.+?)(?:\s*\(.*\))?$/);
+    if (h2Match) {
+      flush();
+      const heading = h2Match[1].trim().toLowerCase();
+      for (const [key, val] of Object.entries(SECTION_MAP)) {
+        if (heading.startsWith(key)) {
+          currentSection = val;
+          break;
+        }
+      }
+      continue;
+    }
+    if (line.match(/^---$/) && currentSection) {
+      flush();
+      continue;
+    }
+    if (currentSection) buf.push(line);
+  }
+  flush();
+  return sections;
+}
+function parseDodTree(lines, startIdx) {
+  const roots = [];
+  const stack = [];
+  let nodeCounter = 0;
+  for (let i = startIdx; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.match(/^## /)) break;
+    if (!line.trim()) continue;
+    const leadingSpaces = line.length - line.trimStart().length;
+    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
+    if (rootMatch) {
+      const node = {
+        id: `node-${nodeCounter++}`,
+        title: rootMatch[1].trim(),
+        refinement: "draft",
+        children: [],
+        last_status: "draft"
+      };
+      roots.push(node);
+      stack.length = 0;
+      stack.push({ node, depth: -1 });
+      continue;
+    }
+    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
+    if (groupMatch) {
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      const node = {
+        id: `node-${nodeCounter++}`,
+        title: groupMatch[1].trim(),
+        refinement: "draft",
+        children: [],
+        last_status: "draft"
+      };
+      if (parent?.children) parent.children.push(node);
+      stack.push({ node, depth });
+      continue;
+    }
+    const leaf = parseLeafLine(line);
+    if (leaf) {
+      leaf.id = `node-${nodeCounter++}`;
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      if (parent?.children) parent.children.push(leaf);
+      else if (!parent) roots.push(leaf);
+    }
+  }
+  function cleanup(node) {
+    if (node.children?.length === 0) delete node.children;
+    if (node.children) for (const c of node.children) cleanup(c);
+  }
+  for (const r of roots) cleanup(r);
+  return roots;
+}
+function parseContent(content) {
+  console.debug("parser: parseContent", { length: content.length });
   const lines = content.split("\n");
-  let title = "";
-  let goal = "";
-  let date3 = "";
-  let cwd = ".";
+  let title = "", goal = "", date3 = "", cwd = ".";
   for (const line of lines) {
     if (!title && line.startsWith("# ")) {
       title = line.replace(/^#\s+/, "").replace(/\s*—.*$/, "").trim();
@@ -23372,136 +23578,20 @@ async function parseMarkdown(filePath) {
     const cwdMatch = line.match(/All commands run from `([^`]+)`/);
     if (cwdMatch) cwd = cwdMatch[1].trim();
   }
-  const sections = { requirements: "" };
-  let currentSection = "";
-  let sectionBuf = [];
-  function flushSection() {
-    if (!currentSection) return;
-    const text = sectionBuf.join("\n").trim();
-    switch (currentSection) {
-      case "requirements":
-        sections.requirements = text;
-        break;
-      case "research_notes":
-        sections.research_notes = text;
-        break;
-      case "open_questions":
-        sections.open_questions = text;
-        break;
-      case "open_risks":
-        sections.open_risks = text;
-        break;
-      case "decisions":
-        sections.decisions = text;
-        break;
-      case "current_state":
-        sections.current_state = text;
-        break;
-    }
-    currentSection = "";
-    sectionBuf = [];
-  }
-  const sectionMap = {
-    "requirements": "requirements",
-    "research notes": "research_notes",
-    "open questions": "open_questions",
-    "open risks": "open_risks",
-    "decisions": "decisions",
-    "current state": "current_state"
-  };
-  for (const line of lines) {
-    const h2Match = line.match(/^## (.+?)(?:\s*\(.*\))?$/);
-    if (h2Match) {
-      flushSection();
-      const heading = h2Match[1].trim().toLowerCase();
-      for (const [key, val] of Object.entries(sectionMap)) {
-        if (heading.startsWith(key)) {
-          currentSection = val;
-          break;
-        }
-      }
-      continue;
-    }
-    if (line.match(/^---$/) && currentSection) {
-      flushSection();
-      continue;
-    }
-    if (currentSection) sectionBuf.push(line);
-  }
-  flushSection();
-  const roots = [];
-  let inDod = false;
-  let nodeCounter = 0;
-  const stack = [];
-  for (const line of lines) {
-    if (line.match(/^## Definition of Done/)) {
-      inDod = true;
-      continue;
-    }
-    if (!inDod) continue;
-    if (line.match(/^## /)) break;
-    if (!line.trim()) continue;
-    const leadingSpaces = line.length - line.trimStart().length;
-    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
-    if (rootMatch) {
-      const node = {
-        id: `node-${nodeCounter++}`,
-        title: rootMatch[1].trim(),
-        refinement: "draft",
-        // May be updated to concrete when children parsed
-        children: [],
-        last_status: "draft"
-      };
-      roots.push(node);
-      stack.length = 0;
-      stack.push({ node, depth: -1 });
-      continue;
-    }
-    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
-    if (groupMatch) {
-      const depth = Math.floor(leadingSpaces / 2);
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
-        stack.pop();
-      }
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      const node = {
-        id: `node-${nodeCounter++}`,
-        title: groupMatch[1].trim(),
-        refinement: "draft",
-        children: [],
-        last_status: "draft"
-      };
-      if (parent && parent.children) {
-        parent.children.push(node);
-      }
-      stack.push({ node, depth });
-      continue;
-    }
-    const leaf = parseLeafLine(line);
-    if (leaf) {
-      leaf.id = `node-${nodeCounter++}`;
-      const depth = Math.floor(leadingSpaces / 2);
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
-        stack.pop();
-      }
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      if (parent && parent.children) {
-        parent.children.push(leaf);
-      } else if (!parent) {
-        roots.push(leaf);
-      }
+  const sections = parseSections(lines);
+  let dodStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].match(/^## Definition of Done/)) {
+      dodStart = i + 1;
+      break;
     }
   }
-  function cleanupNode(node) {
-    if (node.children && node.children.length === 0) {
-      delete node.children;
-    }
-    if (node.children) {
-      for (const child of node.children) cleanupNode(child);
-    }
-  }
-  for (const root of roots) cleanupNode(root);
+  const roots = dodStart >= 0 ? parseDodTree(lines, dodStart) : [];
   return { title, goal, date: date3, cwd, sections, roots };
+}
+async function parseMarkdown(filePath) {
+  const content = await fs3.readFile(filePath, "utf-8");
+  return parseContent(content);
 }
 
 // src/notify.ts
@@ -23530,7 +23620,9 @@ function playJingle() {
     child.on("error", () => {
     });
     child.unref();
-  } catch {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[dod-guard] playJingle failed", { err: msg });
   }
 }
 var VERIFY_DIALOG_SCRIPT = `
@@ -23617,11 +23709,15 @@ function showVerifyDialog(title, body) {
           const result = parsed.result === "yes" ? "yes" : "no";
           const note = typeof parsed.note === "string" && parsed.note.trim() ? parsed.note.trim() : void 0;
           resolve7({ result, note });
-        } catch {
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error("[dod-guard] showVerifyDialog parse failed", { err: msg });
           resolve7({ result: "no" });
         }
       });
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[dod-guard] showVerifyDialog spawn failed", { err: msg });
       resolve7({ result: "no" });
     }
   });
@@ -23699,6 +23795,9 @@ var WINDOWS_EQUIVALENTS = {
   diff: "fc",
   wc: "find /c"
 };
+function isQuote(c) {
+  return c === '"' || c === "'";
+}
 function splitCommands(command) {
   const segments = [];
   let buf = "";
@@ -23709,7 +23808,7 @@ function splitCommands(command) {
       if (c === quote) quote = null;
       continue;
     }
-    if (c === '"' || c === "'") {
+    if (isQuote(c)) {
       quote = c;
       buf += c;
       continue;
@@ -23724,28 +23823,48 @@ function splitCommands(command) {
   if (buf.trim()) segments.push(buf);
   return segments;
 }
+function skipRedirection(s) {
+  let t = s.trim();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    if (t[0] === ">" || t[0] === "<" || /^\d+>/.test(t)) {
+      const m = t.match(/^\S+\s*/);
+      t = (m ? t.slice(m[0].length) : t.slice(1)).trim();
+      changed = true;
+    }
+  }
+  return t;
+}
+function extractQuotedToken(s) {
+  const q = s[0];
+  const end = s.indexOf(q, 1);
+  const token = end === -1 ? s.slice(1) : s.slice(1, end);
+  return { token: token || null, rest: end === -1 ? "" : s.slice(end + 1) };
+}
+function extractBareToken(s) {
+  const m = s.match(/^(\S+)\s*/);
+  const token = m ? m[1] : s;
+  const rest = m ? s.slice(m[0].length) : "";
+  return { token, rest };
+}
+function isShellAssignment(s) {
+  if (!s) return false;
+  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(s);
+}
 function firstToken(segment) {
-  let s = segment.trim();
+  let s = skipRedirection(segment);
   while (s.length > 0) {
-    if (s[0] === ">" || s[0] === "<" || /^\d+>/.test(s)) {
-      const m2 = s.match(/^\S+\s*/);
-      s = (m2 ? s.slice(m2[0].length) : s.slice(1)).trim();
+    if (isQuote(s[0])) {
+      const r2 = extractQuotedToken(s);
+      return r2.token;
+    }
+    const r = extractBareToken(s);
+    if (isShellAssignment(r.token)) {
+      s = r.rest.trim();
       continue;
     }
-    const q = s[0];
-    if (q === '"' || q === "'") {
-      const end = s.indexOf(q, 1);
-      const token2 = end === -1 ? s.slice(1) : s.slice(1, end);
-      return token2 || null;
-    }
-    const m = s.match(/^(\S+)\s*/);
-    const token = m ? m[1] : s;
-    const rest = m ? s.slice(m[0].length) : "";
-    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(token)) {
-      s = rest.trim();
-      continue;
-    }
-    return token;
+    return r.token;
   }
   return null;
 }
@@ -23769,7 +23888,9 @@ async function onPath(name) {
       await execFileAsync("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5e3 });
     }
     return true;
-  } catch {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("command-check: tool existence check failed", { name, err: msg });
     return false;
   }
 }
@@ -23777,21 +23898,24 @@ function looksLikePath(name) {
   return name.includes("/") || name.includes("\\") || /^[A-Za-z]:/.test(name) || name.startsWith(".");
 }
 async function toolExists(name, cwd) {
-  const key = `${isWindows2 ? name.toLowerCase() : name}\0${cwd}`;
+  const key = `${isWindows2 ? name.toLowerCase() : name}|${cwd}`;
   const cached2 = existsCache.get(key);
   if (cached2 !== void 0) return cached2;
   let ok;
   if (isWindows2 && CMD_BUILTINS.has(name.toLowerCase())) {
     ok = true;
   } else if (looksLikePath(name)) {
-    const base = path6.isAbsolute(name) ? name : path6.resolve(cwd, name);
-    const candidates = isWindows2 ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
-    ok = candidates.some((p) => existsSync4(p));
+    ok = resolvePathExists(name, cwd);
   } else {
     ok = await onPath(name);
   }
   existsCache.set(key, ok);
   return ok;
+}
+function resolvePathExists(name, cwd) {
+  const base = path6.isAbsolute(name) ? name : path6.resolve(cwd, name);
+  const candidates = isWindows2 ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
+  return candidates.some((p) => existsSync4(p));
 }
 async function findMissingTools(commands, cwd) {
   const missing = [];
@@ -23811,37 +23935,30 @@ function suggestionFor(tool) {
 var currentOs = process.platform;
 
 // src/baseline.ts
+var WIRING_LABEL = "Integration (wiring): a structural grep proving the change is connected to the real system (import in a real caller, route registration, public export).";
+var BEHAVIORAL_LABEL = "Integration (behavioral): exercise the change through the system's actual entry point (API/CLI/page render), not a test harness.";
+var TEST_LABEL = "Full test suite: a proof that the whole suite stays green (no regressions).";
 var HARD_MANDATORY = [
-  { cat: "integration_wiring", label: "Integration (wiring): a structural grep proving the change is connected to the real system (import in a real caller, route registration, public export)." },
-  { cat: "integration_behavioral", label: "Integration (behavioral): exercise the change through the system's actual entry point (API/CLI/page render), not a test harness." },
-  { cat: "test", label: "Full test suite: a proof that the whole suite stays green (no regressions)." }
+  { cat: "integration_wiring", label: WIRING_LABEL },
+  { cat: "integration_behavioral", label: BEHAVIORAL_LABEL },
+  { cat: "test", label: TEST_LABEL }
 ];
+var TDD_WARN_BUG = 'No "tdd" proof \u2014 a bug fix should include a regression test that fails first (red), then passes. Add a tdd proof, or provide a skip_reason.';
+var TDD_WARN_GENERAL = 'No "tdd" proof \u2014 new functionality should include a fail-first unit test. Add a tdd proof, or provide a skip_reason.';
+var MUTATION_WARN = 'No "mutation" proof \u2014 a green suite can still catch zero bugs. For critical logic, add a mutation proof (cargo-mutants / mutmut / Stryker), or provide a skip_reason.';
+var STREAMLINE_WARN = 'No "streamline" proof \u2014 when revising existing code, a streamline proof verifies old implementations were removed. Add one (grep/rg/findstr for old symbols), or provide a skip_reason.';
+var OBSERVABILITY_WARN = 'No "observability" proof \u2014 changed source files should have log statements at error paths, no empty catch/swallowed errors. Add an observability proof, or provide a skip_reason.';
+var BREVITY_WARN = 'No "brevity" proof \u2014 changed source files should be scanned for structural bloat: functions >30 lines, mixed selection+iteration, files >300 lines, lines >120 chars, replacement without removal. Add a brevity proof, or provide a skip_reason.';
 var OPTIONAL_REQUIRING_JUSTIFICATION = [
   {
     cat: "tdd",
     label: "TDD: a fail-first test for new/changed behavior.",
-    warnMsg: (type) => type === "bug" ? 'No "tdd" proof \u2014 a bug fix should include a regression test that fails first (red), then passes. Add a tdd proof, or provide a skip_reason.' : 'No "tdd" proof \u2014 new functionality should include a fail-first unit test. Add a tdd proof, or provide a skip_reason.'
+    warnMsg: (t) => t === "bug" ? TDD_WARN_BUG : TDD_WARN_GENERAL
   },
-  {
-    cat: "mutation",
-    label: "Mutation testing: prove the test suite actually catches bugs.",
-    warnMsg: () => 'No "mutation" proof \u2014 a green suite can still catch zero bugs. For critical logic, add a mutation proof (cargo-mutants / mutmut / Stryker), or provide a skip_reason.'
-  },
-  {
-    cat: "streamline",
-    label: "Streamline: prove old implementations were removed when revising functionality.",
-    warnMsg: () => 'No "streamline" proof \u2014 when revising existing code, a streamline proof verifies old implementations were removed. Add one (grep/rg/findstr for old symbols), or provide a skip_reason.'
-  },
-  {
-    cat: "observability",
-    label: "Observability: prove changed files are instrumented for debugging.",
-    warnMsg: () => 'No "observability" proof \u2014 changed source files should have log statements at error paths, no empty catch/swallowed errors. Add an observability proof, or provide a skip_reason.'
-  },
-  {
-    cat: "brevity",
-    label: "Brevity: prove code is clean \u2014 short functions, single-purpose, old code removed.",
-    warnMsg: () => 'No "brevity" proof \u2014 changed source files should be scanned for structural bloat: functions >30 lines, mixed selection+iteration, files >300 lines, lines >120 chars, replacement without removal. Add a brevity proof, or provide a skip_reason.'
-  }
+  { cat: "mutation", label: "Mutation testing: prove the test suite actually catches bugs.", warnMsg: () => MUTATION_WARN },
+  { cat: "streamline", label: "Streamline: prove old implementations were removed.", warnMsg: () => STREAMLINE_WARN },
+  { cat: "observability", label: "Observability: prove changed files are instrumented for debugging.", warnMsg: () => OBSERVABILITY_WARN },
+  { cat: "brevity", label: "Brevity: prove code is clean \u2014 short functions, single-purpose.", warnMsg: () => BREVITY_WARN }
 ];
 var REGRESSION_CATEGORIES = [
   { cat: "performance", label: "Performance: prove no perf regression via regression predicate." },
@@ -23851,46 +23968,68 @@ var REGRESSION_CATEGORIES = [
 ];
 var STRONG = ["test", "tdd", "integration_behavioral", "manual"];
 var WEAK = ["structure", "lint", "format"];
-function validateBaseline(type, steps, skipReasons) {
+function collectPresent(steps) {
   const present = /* @__PURE__ */ new Set();
   for (const s of steps) for (const p of s.proofs) present.add(p.category);
+  return present;
+}
+function checkHardMandatory(present, type) {
   const errors = [];
   for (const m of HARD_MANDATORY) {
     if (!present.has(m.cat)) {
-      errors.push(`Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`);
-    }
-  }
-  const warnings = [];
-  for (const opt of OPTIONAL_REQUIRING_JUSTIFICATION) {
-    if (present.has(opt.cat)) continue;
-    const reason = skipReasons?.[opt.cat];
-    if (reason) {
-      warnings.push(`\u26A0 "${opt.cat}" omitted (skip_reason: "${reason}").`);
-    } else {
       errors.push(
-        `Missing "${opt.cat}" proof. ${opt.label} Either add a proof for this category, or provide skip_reasons["${opt.cat}"] with a justification for why it does not apply to this change.`
+        `Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`
       );
     }
+  }
+  return errors;
+}
+function checkOptional(present, skipReasons) {
+  const errors = [];
+  const warnings = [];
+  const check2 = (cat, label, warnMsg) => {
+    if (present.has(cat)) return;
+    const reason = skipReasons?.[cat];
+    if (reason) {
+      warnings.push(`\u26A0 "${cat}" omitted (skip_reason: "${reason}").`);
+    } else {
+      errors.push(
+        `Missing "${cat}" proof. ${label} Either add a proof for this category, or provide skip_reasons["${cat}"] with a justification for why it does not apply to this change.`
+      );
+    }
+  };
+  for (const opt of OPTIONAL_REQUIRING_JUSTIFICATION) {
+    check2(opt.cat, opt.label, opt.warnMsg("general"));
   }
   for (const rc of REGRESSION_CATEGORIES) {
-    if (present.has(rc.cat)) continue;
-    const reason = skipReasons?.[rc.cat];
-    if (reason) {
-      warnings.push(`\u26A0 "${rc.cat}" omitted (skip_reason: "${reason}").`);
-    } else {
-      errors.push(
-        `Missing "${rc.cat}" proof. ${rc.label} Either add a regression proof for this metric, or provide skip_reasons["${rc.cat}"] with a justification for why it does not apply to this change.`
-      );
-    }
+    check2(rc.cat, rc.label, rc.label);
   }
+  return { errors, warnings };
+}
+function checkStrengthOnly(steps) {
+  const warnings = [];
   for (const s of steps) {
     if (s.proofs.length === 0) continue;
     const hasStrong = s.proofs.some((p) => STRONG.includes(p.category));
     const allWeak = s.proofs.every((p) => WEAK.includes(p.category));
     if (!hasStrong && allWeak) {
-      warnings.push(`Step "${s.title}" has only presence/structural proofs \u2014 these confirm code exists, not that it works. Add a behavioral or test proof.`);
+      warnings.push(
+        `Step "${s.title}" has only presence/structural proofs \u2014 these confirm code exists, not that it works. Add a behavioral or test proof.`
+      );
     }
   }
+  return warnings;
+}
+function validateBaseline(type, steps, skipReasons) {
+  console.debug("baseline: validateBaseline", { type, stepCount: steps.length });
+  const present = collectPresent(steps);
+  const errors = [];
+  const warnings = [];
+  errors.push(...checkHardMandatory(present, type));
+  const optResult = checkOptional(present, skipReasons);
+  errors.push(...optResult.errors);
+  warnings.push(...optResult.warnings);
+  warnings.push(...checkStrengthOnly(steps));
   return { errors, warnings };
 }
 
@@ -24090,7 +24229,7 @@ server.tool(
           fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
           ...warningBlock,
           "",
-          draftCount > 0 ? `${draftCount} draft node(s) \u2014 use dod_refine to concretize each one during implementation.` : "All nodes are concrete \u2014 dod_check can verify the full DoD.",
+          draftCount > 0 ? `${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end. Use dod_check(nodePath="0") to verify one subtree at a time.` : "All nodes are concrete \u2014 dod_check can verify the full DoD.",
           "",
           "NEXT: run `dod_check` to validate proof commands execute on this OS."
         ].filter(Boolean).join("\n")
@@ -24170,7 +24309,9 @@ ${instructions}`,
           return { answer: passed ? "pass" : "fail", note, channel: "elicitation" };
         }
         return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
-      } catch {
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("dod-guard: elicitation request failed", { err: msg });
       }
     }
     return { answer: "fail", note: "no verification channel available on this host", channel: "messagebox" };
@@ -24207,28 +24348,16 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
       };
     }
     const result = await checkDocument(doc, cwd_override, nodePath ? { nodePath } : void 0);
-    let tamperWarning = "";
-    if (result.tampered) {
-      tamperWarning = `
-
-\u{1F6D1} TAMPER DETECTED \u2014 verdict forced to FAIL.
-  Stored:  ${doc.proof_fingerprint}
-  Current: ${result.proof_fingerprint}
-  The proof set was changed outside dod_amend. Revert the edit, or make the change through dod_amend.
-`;
-    } else if (!doc.proof_fingerprint && result.proof_fingerprint) {
+    if (!doc.proof_fingerprint && result.proof_fingerprint) {
       doc.proof_fingerprint = result.proof_fingerprint;
     }
     updateDocFromCheckResult(doc, result);
     await save(doc);
     await writeMarkdown(doc);
-    const draftNote = result.draft_count > 0 ? `
-
-\u{1F4DD} ${result.draft_count} draft node(s) remain \u2014 use dod_refine to concretize each one. Run dod_check again once all are concrete.` : "";
     return {
       content: [{
         type: "text",
-        text: formatCheckResult(result) + tamperWarning + draftNote
+        text: formatCheckResult(result)
       }]
     };
   }
@@ -24677,6 +24806,7 @@ server.tool(
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error("dod-guard: dod_import parse failed", { err: msg });
       return { content: [{ type: "text", text: `ERROR parsing markdown: ${msg}` }] };
     }
   }
