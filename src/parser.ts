@@ -160,8 +160,7 @@ interface ParsedDod {
  * Parse a DoD markdown file into structured data.
  * Handles the hierarchical tree format produced by renderMarkdown().
  */
-export async function parseMarkdown(filePath: string): Promise<ParsedDod> {
-  const content = await fs.readFile(filePath, "utf-8");
+function parseContent(content: string): ParsedDod {
   const lines = content.split("\n");
 
   let title = "";
@@ -322,4 +321,15 @@ export async function parseMarkdown(filePath: string): Promise<ParsedDod> {
   for (const root of roots) cleanupNode(root);
 
   return { title, goal, date, cwd, sections, roots };
+}
+
+/** Parse a DoD markdown file from disk. */
+export async function parseMarkdown(filePath: string): Promise<ParsedDod> {
+  const content = await fs.readFile(filePath, "utf-8");
+  return parseContent(content);
+}
+
+/** Parse DoD markdown from an in-memory string (fast path for tests). */
+export function parseMarkdownFromString(content: string): ParsedDod {
+  return parseContent(content);
 }
