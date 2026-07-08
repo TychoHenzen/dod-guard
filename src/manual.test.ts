@@ -102,3 +102,24 @@ test("resolveManual propagates confirmer rejection", async () => {
   // Node should not be left with a stale manual_result after rejection
   assert.equal(node.manual_result, undefined, "node should not have stale manual_result after rejection");
 });
+
+test("perProofFingerprint includes command in fingerprint", () => {
+  const a = mkNode({ command: "check auth" });
+  const b = mkNode({ command: "check db" });
+  assert.notEqual(perProofFingerprint(a), perProofFingerprint(b),
+    "different commands should produce different fingerprints");
+});
+
+test("perProofFingerprint differs across descriptions", () => {
+  const a = mkNode({ description: "Verify login page" });
+  const b = mkNode({ description: "Verify signup page" });
+  assert.notEqual(perProofFingerprint(a), perProofFingerprint(b),
+    "different descriptions should produce different fingerprints");
+});
+
+test("perProofFingerprint stable for identical nodes", () => {
+  const a = mkNode({ description: "Same check" });
+  const b = mkNode({ description: "Same check" });
+  assert.equal(perProofFingerprint(a), perProofFingerprint(b),
+    "identical nodes should produce identical fingerprints");
+});
