@@ -39,9 +39,9 @@ export function flattenConcreteLeaves(
 
 /** Per-node helper: check if a single node is draft or has draft descendants. */
 function nodeDraftOrDescendant(node: TaskNode): boolean {
-  if (node.refinement === "draft") return true;
-  if (node.children && hasDraftNodes(node.children)) return true;
-  return false;
+  // Task groups are structural — only leaves can be drafts.
+  if (node.children && node.children.length > 0) return hasDraftNodes(node.children);
+  return node.refinement === "draft";
 }
 
 /** True when any node in the subtree is a draft leaf (refinement === "draft"). */
@@ -98,10 +98,10 @@ export function isBranchLocked(nodes: TaskNode[]): boolean {
 }
 
 function countNodeDrafts(node: TaskNode): number {
-  let count = 0;
-  if (node.refinement === "draft") count++;
-  if (node.children) count += countDraftNodes(node.children);
-  return count;
+  // Task groups are structural containers — only leaves can be drafts.
+  // A group with refinement="draft" but children populated is a task group, not a draft leaf.
+  if (node.children && node.children.length > 0) return countDraftNodes(node.children);
+  return node.refinement === "draft" ? 1 : 0;
 }
 
 /** Count draft leaves in a subtree. */

@@ -2,6 +2,8 @@ import { describe, it, mock, before, afterEach, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 
+const isWin = process.platform === "win32";
+
 // ⚠ mock.module MUST run BEFORE notify.ts import (ESM caching).
 // Dynamic import() in `before` hooks ensures mock registration comes first.
 
@@ -228,7 +230,7 @@ describe("showVerifyDialog", () => {
       assert.deepEqual(r, { result: "no" }, "error event → no");
     });
 
-    it('resolves to {result:"yes", note:"..."} with yes verdict and note', async () => {
+    it('resolves to {result:"yes", note:"..."} with yes verdict and note', { skip: !isWin }, async () => {
       spawnBehavior = () =>
         fakeProcess({ stdoutChunks: ['{"result":"yes","note":"looks good"}'] });
       const r = await showVerifyDialog("T", "B");
@@ -236,7 +238,7 @@ describe("showVerifyDialog", () => {
         "yes + note carries through");
     });
 
-    it('resolves to {result:"yes"} with yes verdict, empty note', async () => {
+    it('resolves to {result:"yes"} with yes verdict, empty note', { skip: !isWin }, async () => {
       spawnBehavior = () =>
         fakeProcess({ stdoutChunks: ['{"result":"yes","note":""}'] });
       const r = await showVerifyDialog("T", "B");
@@ -253,7 +255,7 @@ describe("showVerifyDialog", () => {
         "missing note field should produce undefined");
     });
 
-    it('resolves to {result:"no", note:"..."} when result absent but note present', async () => {
+    it('resolves to {result:"no", note:"..."} when result absent but note present', { skip: !isWin }, async () => {
       spawnBehavior = () =>
         fakeProcess({ stdoutChunks: ['{"note":"missing result"}'] });
       const r = await showVerifyDialog("T", "B");
@@ -290,7 +292,7 @@ describe("showVerifyDialog", () => {
         "whitespace-only note → undefined");
     });
 
-    it("passes title and body as env vars in spawn options", async () => {
+    it("passes title and body as env vars in spawn options", { skip: !isWin }, async () => {
       spawnBehavior = () =>
         fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
       await showVerifyDialog("Proof #3", "Did this pass?");
@@ -303,7 +305,7 @@ describe("showVerifyDialog", () => {
         "DODG_MSG env var = body param");
     });
 
-    it("passes Windows-specific spawn flags", async () => {
+    it("passes Windows-specific spawn flags", { skip: !isWin }, async () => {
       spawnBehavior = () =>
         fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
       await showVerifyDialog("T", "B");
@@ -315,7 +317,7 @@ describe("showVerifyDialog", () => {
         "stdio=[ignore, pipe, ignore]");
     });
 
-    it("spawn is called exactly once per showVerifyDialog call", async () => {
+    it("spawn is called exactly once per showVerifyDialog call", { skip: !isWin }, async () => {
       spawnBehavior = () =>
         fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
       await showVerifyDialog("T", "B");
@@ -323,12 +325,21 @@ describe("showVerifyDialog", () => {
         "spawn should be called exactly once");
     });
 
-    it("ignores extra json keys, respects only result and note", async () => {
+    it("ignores extra json keys, respects only result and note", { skip: !isWin }, async () => {
       spawnBehavior = () =>
         fakeProcess({ stdoutChunks: ['{"result":"no","extra":"unused","note":"test"}'] });
       const r = await showVerifyDialog("Title", "Body");
       assert.deepEqual(r, { result: "no", note: "test" },
         "extra json keys ignored");
+    });
+
+    it("returns {result:'no'} immediately on non-Windows hosts", { skip: isWin }, async () => {
+      // showVerifyDialog early-returns without spawning on non-Windows
+      const r = await showVerifyDialog("Title", "Body");
+      assert.deepEqual(r, { result: "no" },
+        "non-Windows host should immediately return no without spawning");
+      assert.equal(spawnCalls.length, 0,
+        "spawn should never be called on non-Windows hosts");
     });
   });
 });
