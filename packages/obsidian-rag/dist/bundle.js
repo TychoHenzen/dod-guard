@@ -24759,6 +24759,9 @@ async function cliListFiles(vaultName, directory) {
   if (directory)
     args.push(`folder=${directory}`);
   const { stdout } = await obsidian(vaultName, args);
+  if (stdout.trim().startsWith("Error:") || stdout.includes("Did you mean:")) {
+    throw new Error(`obsidian CLI files failed: ${stdout.trim().split("\n")[0]}`);
+  }
   return stdout.split("\n").map((s) => s.trim()).filter(Boolean);
 }
 async function cliGetBacklinks(vaultName, notePath) {

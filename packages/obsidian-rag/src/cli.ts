@@ -107,7 +107,7 @@ export async function cliReadNote(
 
 // ── File listing ─────────────────────────────────────────────────────────
 
-/** List markdown files in a vault directory. */
+/** List markdown files in a vault directory. Throws on CLI error output. */
 export async function cliListFiles(
   vaultName: string,
   directory?: string,
@@ -115,6 +115,10 @@ export async function cliListFiles(
   const args = ["files", "ext=md"];
   if (directory) args.push(`folder=${directory}`);
   const { stdout } = await obsidian(vaultName, args);
+  // CLI exits 0 even for unknown commands; detect error output
+  if (stdout.trim().startsWith("Error:") || stdout.includes("Did you mean:")) {
+    throw new Error(`obsidian CLI files failed: ${stdout.trim().split("\n")[0]}`);
+  }
   return stdout.split("\n").map(s => s.trim()).filter(Boolean);
 }
 
