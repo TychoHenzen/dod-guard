@@ -25216,16 +25216,30 @@ var Store = class {
     };
   }
   setIndexMeta(vaultName, data) {
+    const dbCols = ["total_notes", "indexed_notes", "total_chunks", "embedded_chunks", "last_indexed"];
+    const keyMap = {
+      total_notes: "totalNotes",
+      indexed_notes: "indexedNotes",
+      total_chunks: "totalChunks",
+      embedded_chunks: "embeddedChunks",
+      last_indexed: "lastIndexed"
+    };
+    const fields = [];
+    const values = [vaultName];
+    for (const col of dbCols) {
+      const key = keyMap[col];
+      if (data[key] !== void 0) {
+        fields.push(`${col} = ?`);
+        values.push(data[key]);
+      }
+    }
+    if (fields.length === 0)
+      return;
     this.db.prepare(`
-      INSERT INTO index_meta (vault_name, total_notes, indexed_notes, total_chunks, embedded_chunks, last_indexed)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(vault_name) DO UPDATE SET
-        total_notes = COALESCE(excluded.total_notes, total_notes),
-        indexed_notes = COALESCE(excluded.indexed_notes, indexed_notes),
-        total_chunks = COALESCE(excluded.total_chunks, total_chunks),
-        embedded_chunks = COALESCE(excluded.embedded_chunks, embedded_chunks),
-        last_indexed = COALESCE(excluded.last_indexed, last_indexed)
-    `).run(vaultName, data.totalNotes || 0, data.indexedNotes || 0, data.totalChunks || 0, data.embeddedChunks || 0, data.lastIndexed || (/* @__PURE__ */ new Date()).toISOString());
+      INSERT INTO index_meta (vault_name${fields.map((f) => `, ${f.split(" = ")[0]}`).join("")})
+      VALUES (${values.map(() => "?").join(", ")})
+      ON CONFLICT(vault_name) DO UPDATE SET ${fields.map((f) => `${f.split(" = ")[0]} = excluded.${f.split(" = ")[0]}`).join(", ")}
+    `).run(...values);
   }
   // ── Cleanup ──────────────────────────────────────────────────────
   close() {
@@ -25345,6 +25359,11 @@ async function indexVault(vaultPath, vaultName, store2) {
     store2.setIndexMeta(vaultName, { totalChunks });
   }
   return indexed;
+}
+async function reindexVault(vaultPath, vaultName, store2) {
+  store2.clearChunks(vaultName);
+  store2.clearNotes(vaultName);
+  return indexVault(vaultPath, vaultName, store2);
 }
 
 // dist/index.js
@@ -25605,7 +25624,7 @@ ${lines.join("\n")}` }] };
     embed: external_exports.boolean().default(false).describe("Also re-embed all chunks (slow, requires transformers.js)")
   }, async ({ embed: doEmbed }) => {
     const vault = await waitForVault();
-    const count = await indexVault(vault.path, vault.name, store);
+    const count = await reindexVault(vault.path, vault.name, store);
     let embedMsg = "";
     if (doEmbed) {
       const emb = await getEmbedder();

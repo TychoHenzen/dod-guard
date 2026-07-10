@@ -302,20 +302,34 @@ export class Store {
   }
 
   setIndexMeta(vaultName: string, data: Partial<IndexStatus>): void {
+    // Only known DB columns — indexing is a transient flag, not a column.
+    const dbCols = ["total_notes", "indexed_notes", "total_chunks", "embedded_chunks", "last_indexed"] as const;
+    const keyMap: Record<string, keyof Partial<IndexStatus>> = {
+      total_notes: "totalNotes",
+      indexed_notes: "indexedNotes",
+      total_chunks: "totalChunks",
+      embedded_chunks: "embeddedChunks",
+      last_indexed: "lastIndexed",
+    };
+
+    const fields: string[] = [];
+    const values: any[] = [vaultName];
+
+    for (const col of dbCols) {
+      const key = keyMap[col];
+      if (data[key] !== undefined) {
+        fields.push(`${col} = ?`);
+        values.push(data[key]);
+      }
+    }
+
+    if (fields.length === 0) return;
+
     this.db.prepare(`
-      INSERT INTO index_meta (vault_name, total_notes, indexed_notes, total_chunks, embedded_chunks, last_indexed)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(vault_name) DO UPDATE SET
-        total_notes = COALESCE(excluded.total_notes, total_notes),
-        indexed_notes = COALESCE(excluded.indexed_notes, indexed_notes),
-        total_chunks = COALESCE(excluded.total_chunks, total_chunks),
-        embedded_chunks = COALESCE(excluded.embedded_chunks, embedded_chunks),
-        last_indexed = COALESCE(excluded.last_indexed, last_indexed)
-    `).run(
-      vaultName, data.totalNotes || 0, data.indexedNotes || 0,
-      data.totalChunks || 0, data.embeddedChunks || 0,
-      data.lastIndexed || new Date().toISOString()
-    );
+      INSERT INTO index_meta (vault_name${fields.map(f => `, ${f.split(" = ")[0]}`).join("")})
+      VALUES (${values.map(() => "?").join(", ")})
+      ON CONFLICT(vault_name) DO UPDATE SET ${fields.map(f => `${f.split(" = ")[0]} = excluded.${f.split(" = ")[0]}`).join(", ")}
+    `).run(...values);
   }
 
   // ── Cleanup ──────────────────────────────────────────────────────

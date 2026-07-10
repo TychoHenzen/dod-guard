@@ -36,7 +36,7 @@ import {
   deleteNote,
 } from "./vault.js";
 import { Store } from "./store.js";
-import { indexVault } from "./indexer.js";
+import { indexVault, reindexVault } from "./indexer.js";
 import { hybridSearch, type Embedder } from "./retriever.js";
 import type { VaultInfo, IndexStatus, SearchResult, NoteContent, NoteMeta, MemoryEntry } from "./types.js";
 
@@ -382,7 +382,7 @@ async function main() {
     async ({ embed: doEmbed }) => {
       const vault = await waitForVault();
       // Reindex uses filesystem for bulk performance (CLI too slow for 1000+ notes)
-      const count = await indexVault(vault.path, vault.name, store);
+      const count = await reindexVault(vault.path, vault.name, store);
 
       let embedMsg = "";
       if (doEmbed) {
