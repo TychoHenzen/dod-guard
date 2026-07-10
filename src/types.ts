@@ -4,7 +4,7 @@
 console.debug("types: module loaded", { pid: process.pid });
 
 export interface Predicate {
-  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation" | "regression" | "assertions" | "streamline" | "observability" | "brevity";
+  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation" | "regression" | "assertions" | "streamline" | "observability" | "brevity" | "line_length" | "function_size" | "file_size" | "cohesion" | "replacement_ratio";
   value?: number | string;
   /**
    * `regression` only: regex applied to stdout; capture group 1 is the metric
@@ -18,26 +18,48 @@ export interface Predicate {
    */
   lower_is_better?: boolean;
   /**
-   * `brevity` only: max characters per line (default 120).
+   * `brevity` / `line_length`: max characters per line (default 120).
+   * For the decomposed `line_length` predicate, `value` is max violations
+   * allowed (default 0) and this field overrides the line-length threshold.
    */
   max_line_length?: number;
   /**
-   * `brevity` only: max lines per function (default 30).
+   * `brevity` / `function_size`: max lines per function (default 30).
+   * For the decomposed `function_size` predicate, `value` is max violations
+   * allowed (default 0) and this field overrides the function-line threshold.
    */
   max_function_lines?: number;
   /**
-   * `brevity` only: max lines per file (default 300).
+   * `brevity` / `file_size`: max lines per file (default 300).
+   * For the decomposed `file_size` predicate, `value` is max violations
+   * allowed (default 0) and this field overrides the file-line threshold.
    */
   max_file_lines?: number;
   /**
-   * `brevity` only: when true (default), flag functions that mix selection
-   * (if/switch) and iteration (for/while).
+   * `brevity` / `cohesion`: max cyclomatic complexity per function (default 5).
+   * CC counts decision points — if/for/while/case/catch/&&/||/??/ternary.
+   * Functions exceeding this are flagged. For the decomposed `cohesion`
+   * predicate, `value` is max total cohesion violations allowed (default 0).
    */
-  require_cohesion?: boolean;
+  max_complexity?: number;
   /**
-   * `brevity` only: minimum deletion-to-insertion ratio for changed files
-   * with net >10 insertions (default 0.2). Low ratio = new code layered on
-   * top without removing old.
+   * `brevity` / `cohesion`: when true (default), flag unnecessary else clauses
+   * where the if-branch already exits (return/throw/break/continue) — prefer
+   * guard clauses instead of else-after-return.
+   */
+  require_guard_clauses?: boolean;
+  /**
+   * `brevity` / `cohesion`: when true (default), flag if/else pairs in
+   * functions that use zero guard clauses — suggests refactoring to add early
+   * exits so the else can be eliminated. Advisory, less severe than
+   * require_guard_clauses.
+   */
+  suggest_guard_clauses?: boolean;
+  /**
+   * `brevity` / `replacement_ratio`: minimum deletion-to-insertion ratio for
+   * changed files with net >10 insertions (default 0.2). Low ratio = new code
+   * layered on top without removing old. For the decomposed
+   * `replacement_ratio` predicate, `value` is max violations allowed (default 0).
    */
   min_replacement_ratio?: number;
 }

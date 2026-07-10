@@ -3,7 +3,7 @@ console.debug("evaluate-proof: module loaded", { pid: process.pid });
 import type { TaskNode, LeafResult, Predicate } from "./types.js";
 import type { AssertionReport } from "./assertions.js";
 import type { ObservabilityReport } from "./observability.js";
-import type { BrevityReport, BrevityOpts } from "./brevity.js";
+import type { BrevityReport, BrevityOpts, BrevityViolation } from "./brevity.js";
 import { perProofFingerprint } from "./manual.js";
 import { extractNumber } from "./regression.js";
 import { analyseAssertions } from "./assertions.js";
@@ -75,7 +75,9 @@ function buildBrev(r: BrevityReport, passed: boolean, max: number): string {
   for (const f of r.perFile) {
     const p = [`  ${f.file}: ${f.lineCount}L, ${f.functionCount} funcs`];
     if (f.longFunctions > 0) p.push(`${f.longFunctions} long`);
-    if (f.mixedCohesionFunctions > 0) p.push(`${f.mixedCohesionFunctions} mixed`);
+    if (f.highComplexityFunctions > 0) p.push(`${f.highComplexityFunctions} CC>5`);
+    if (f.unnecessaryElseCount > 0) p.push(`${f.unnecessaryElseCount} unnec else`);
+    if (f.elseAvoidableCount > 0) p.push(`${f.elseAvoidableCount} avoid else`);
     if (f.insertions !== undefined && f.deletions !== undefined)
       p.push(`+${f.insertions}/-${f.deletions}`);
     l.push(p.join(", "));
@@ -84,7 +86,8 @@ function buildBrev(r: BrevityReport, passed: boolean, max: number): string {
   }
   if (!passed) l.push("", "Remediation:",
     "  • Split functions >30L into single-purpose units",
-    "  • Separate selection from iteration — each function does one thing",
+    "  • Reduce cyclomatic complexity — extract decision-heavy blocks into helpers",
+    "  • Prefer guard clauses — if-block exits → no else needed",
     "  • Delete old code when replacing (low deletion ratio = accretion)",
     "  • Keep lines under 120 chars — break long expressions",
     "  • Split files >300 lines into modules");
@@ -210,7 +213,9 @@ async function hBrev(
     maxLineLength: p.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
     maxFunctionLines: p.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines,
     maxFileLines: p.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines,
-    requireCohesion: p.require_cohesion ?? DEFAULT_BREVITY_OPTS.requireCohesion,
+    maxComplexity: p.max_complexity ?? DEFAULT_BREVITY_OPTS.maxComplexity,
+    requireGuardClauses: p.require_guard_clauses ?? DEFAULT_BREVITY_OPTS.requireGuardClauses,
+    suggestGuardClauses: p.suggest_guard_clauses ?? DEFAULT_BREVITY_OPTS.suggestGuardClauses,
     minReplacementRatio: p.min_replacement_ratio ?? DEFAULT_BREVITY_OPTS.minReplacementRatio,
   };
   let report = analyseBrevity(cmd, cwd, opts);
@@ -224,6 +229,212 @@ async function hBrev(
     error: buildBrev(report, passed, max),
     exit_code: r.exitCode, duration_ms: r.duration });
 }
+// ── Decomposed brevity handlers (one per violation kind) ───────────────
+
+function buildLineLenFail(r: BrevityReport, max: number, maxChars: number): string {
+  const vl = r.violations.filter(v => v.kind === "line_too_long");
+  const l: string[] = [
+    `line_length FAIL: ${vl.length} line(s) > ${maxChars} chars`, "",
+  ];
+  for (const f of r.perFile) {
+    const fv = f.violations.filter(v => v.kind === "line_too_long");
+    if (fv.length === 0) continue;
+    l.push(`  ${f.file}: ${f.lineCount}L, ${fv.length} long line(s)`);
+    for (const v of fv) l.push(`    • L${v.line}: ${v.detail}`);
+  }
+  l.push("", "Remediation: break long lines at ≤120 chars.");
+  return l.join("\n");
+}
+
+function buildFnSizeFail(r: BrevityReport, max: number, maxLines: number): string {
+  const vl = r.violations.filter(v => v.kind === "function_too_long");
+  const l: string[] = [
+    `function_size FAIL: ${vl.length} function(s) > ${maxLines} lines`, "",
+  ];
+  for (const f of r.perFile) {
+    const fv = f.violations.filter(v => v.kind === "function_too_long");
+    if (fv.length === 0) continue;
+    l.push(`  ${f.file}: ${f.functionCount} funcs, ${fv.length} long`);
+    for (const v of fv) l.push(`    • L${v.line}: ${v.detail}`);
+  }
+  l.push("", "Remediation: split functions >30 lines into single-purpose units.");
+  return l.join("\n");
+}
+
+function buildFileSizeFail(r: BrevityReport, max: number, maxLines: number): string {
+  const vl = r.violations.filter(v => v.kind === "file_too_long");
+  const l: string[] = [
+    `file_size FAIL: ${vl.length} file(s) > ${maxLines} lines`, "",
+  ];
+  for (const f of r.perFile) {
+    const fv = f.violations.filter(v => v.kind === "file_too_long");
+    if (fv.length === 0) continue;
+    l.push(`  ${f.file}: ${f.lineCount}L (max ${maxLines})`);
+    for (const v of fv) l.push(`    • ${v.detail}`);
+  }
+  l.push("", "Remediation: split files >300 lines into modules.");
+  return l.join("\n");
+}
+
+function buildCohesionFail(r: BrevityReport, max: number): string {
+  const kinds: BrevityViolation["kind"][] = ["high_complexity", "unnecessary_else", "else_avoidable"];
+  const vl = r.violations.filter(v => kinds.includes(v.kind));
+  const l: string[] = [
+    `cohesion FAIL: ${vl.length} violation(s) (max ${max} allowed)`, "",
+  ];
+  for (const f of r.perFile) {
+    const fv = f.violations.filter(v => kinds.includes(v.kind));
+    if (fv.length === 0) continue;
+    const parts = [`  ${f.file}: ${f.functionCount} funcs`];
+    if (f.highComplexityFunctions > 0) parts.push(`${f.highComplexityFunctions} CC>5`);
+    if (f.unnecessaryElseCount > 0) parts.push(`${f.unnecessaryElseCount} unnec else`);
+    if (f.elseAvoidableCount > 0) parts.push(`${f.elseAvoidableCount} avoid else`);
+    l.push(parts.join(", "));
+    for (const v of fv) l.push(`    • L${v.line}: ${v.kind} — ${v.detail}`);
+  }
+  l.push("", "Remediation:",
+    "  • Reduce cyclomatic complexity — extract decision-heavy blocks into helpers",
+    "  • Prefer guard clauses — if-block exits → no else needed",
+    "  • Refactor if/else to use early returns, eliminate else");
+  return l.join("\n");
+}
+
+function buildReplRatioFail(r: BrevityReport, max: number, minRatio: number): string {
+  const vl = r.violations.filter(v => v.kind === "low_replacement_ratio");
+  const l: string[] = [
+    `replacement_ratio FAIL: ${vl.length} file(s) below min ratio ${(minRatio * 100).toFixed(0)}%`, "",
+  ];
+  for (const v of vl) l.push(`  • ${v.file} L${v.line}: ${v.detail}`);
+  l.push("", "Remediation: delete old code when replacing (low deletion ratio = accretion).");
+  return l.join("\n");
+}
+
+async function hLineLength(
+  n: TaskNode, r: RunResult, b: Record<string, unknown>,
+  cmd: string, cwd: string,
+): Promise<LeafResult> {
+  const max = (n.predicate!.value as number) ?? 0;
+  const opts: BrevityOpts = {
+    ...DEFAULT_BREVITY_OPTS,
+    maxLineLength: n.predicate!.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
+  };
+  let report = analyseBrevity(cmd, cwd, opts);
+  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
+  if (!report)
+    return mk(b, { status: "fail", output: r.combined,
+      error: "line_length: no source files",
+      exit_code: r.exitCode, duration_ms: r.duration });
+  const count = report.violations.filter(v => v.kind === "line_too_long").length;
+  const passed = count <= max;
+  return mk(b, { status: passed ? "pass" : "fail", output: r.combined,
+    error: passed
+      ? `line_length: all lines ≤ ${opts.maxLineLength} chars`
+      : buildLineLenFail(report, max, opts.maxLineLength),
+    exit_code: r.exitCode, duration_ms: r.duration });
+}
+
+async function hFunctionSize(
+  n: TaskNode, r: RunResult, b: Record<string, unknown>,
+  cmd: string, cwd: string,
+): Promise<LeafResult> {
+  const max = (n.predicate!.value as number) ?? 0;
+  const opts: BrevityOpts = {
+    ...DEFAULT_BREVITY_OPTS,
+    maxFunctionLines: n.predicate!.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines,
+  };
+  let report = analyseBrevity(cmd, cwd, opts);
+  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
+  if (!report)
+    return mk(b, { status: "fail", output: r.combined,
+      error: "function_size: no source files",
+      exit_code: r.exitCode, duration_ms: r.duration });
+  const count = report.violations.filter(v => v.kind === "function_too_long").length;
+  const passed = count <= max;
+  return mk(b, { status: passed ? "pass" : "fail", output: r.combined,
+    error: passed
+      ? `function_size: all functions ≤ ${opts.maxFunctionLines} lines`
+      : buildFnSizeFail(report, max, opts.maxFunctionLines),
+    exit_code: r.exitCode, duration_ms: r.duration });
+}
+
+async function hFileSize(
+  n: TaskNode, r: RunResult, b: Record<string, unknown>,
+  cmd: string, cwd: string,
+): Promise<LeafResult> {
+  const max = (n.predicate!.value as number) ?? 0;
+  const opts: BrevityOpts = {
+    ...DEFAULT_BREVITY_OPTS,
+    maxFileLines: n.predicate!.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines,
+  };
+  let report = analyseBrevity(cmd, cwd, opts);
+  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
+  if (!report)
+    return mk(b, { status: "fail", output: r.combined,
+      error: "file_size: no source files",
+      exit_code: r.exitCode, duration_ms: r.duration });
+  const count = report.violations.filter(v => v.kind === "file_too_long").length;
+  const passed = count <= max;
+  return mk(b, { status: passed ? "pass" : "fail", output: r.combined,
+    error: passed
+      ? `file_size: all files ≤ ${opts.maxFileLines} lines`
+      : buildFileSizeFail(report, max, opts.maxFileLines),
+    exit_code: r.exitCode, duration_ms: r.duration });
+}
+
+async function hCohesion(
+  n: TaskNode, r: RunResult, b: Record<string, unknown>,
+  cmd: string, cwd: string,
+): Promise<LeafResult> {
+  const max = (n.predicate!.value as number) ?? 0;
+  const p = n.predicate!;
+  const opts: BrevityOpts = {
+    ...DEFAULT_BREVITY_OPTS,
+    maxComplexity: p.max_complexity ?? DEFAULT_BREVITY_OPTS.maxComplexity,
+    requireGuardClauses: p.require_guard_clauses ?? DEFAULT_BREVITY_OPTS.requireGuardClauses,
+    suggestGuardClauses: p.suggest_guard_clauses ?? DEFAULT_BREVITY_OPTS.suggestGuardClauses,
+  };
+  let report = analyseBrevity(cmd, cwd, opts);
+  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
+  if (!report)
+    return mk(b, { status: "fail", output: r.combined,
+      error: "cohesion: no source files",
+      exit_code: r.exitCode, duration_ms: r.duration });
+  const kinds: BrevityViolation["kind"][] = ["high_complexity", "unnecessary_else", "else_avoidable"];
+  const count = report.violations.filter(v => kinds.includes(v.kind)).length;
+  const passed = count <= max;
+  return mk(b, { status: passed ? "pass" : "fail", output: r.combined,
+    error: passed
+      ? `cohesion: 0 violations (CC≤${opts.maxComplexity}, guards checked)`
+      : buildCohesionFail(report, max),
+    exit_code: r.exitCode, duration_ms: r.duration });
+}
+
+async function hReplacementRatio(
+  n: TaskNode, r: RunResult, b: Record<string, unknown>,
+  _cmd: string, cwd: string,
+): Promise<LeafResult> {
+  const max = (n.predicate!.value as number) ?? 0;
+  const minRatio = n.predicate!.min_replacement_ratio ?? DEFAULT_BREVITY_OPTS.minReplacementRatio;
+  const opts: BrevityOpts = {
+    ...DEFAULT_BREVITY_OPTS,
+    minReplacementRatio: minRatio,
+  };
+  // replacement_ratio needs diff output — try command output first, then file scan as fallback
+  let report = analyseBrevityFromOutput(r.combined, cwd, opts);
+  if (!report) report = analyseBrevity(_cmd, cwd, opts);
+  if (!report)
+    return mk(b, { status: "fail", output: r.combined,
+      error: "replacement_ratio: no diff data in command output",
+      exit_code: r.exitCode, duration_ms: r.duration });
+  const count = report.violations.filter(v => v.kind === "low_replacement_ratio").length;
+  const passed = count <= max;
+  return mk(b, { status: passed ? "pass" : "fail", output: r.combined,
+    error: passed
+      ? `replacement_ratio: all files above ${(minRatio * 100).toFixed(0)}% deletion ratio`
+      : buildReplRatioFail(report, max, minRatio),
+    exit_code: r.exitCode, duration_ms: r.duration });
+}
+
 async function hTdd(
   n: TaskNode, r: RunResult, b: Record<string, unknown>,
   cmd: string, cwd: string,
@@ -272,6 +483,11 @@ export async function executeProof(
     case "assertions": return hAssert(node, run, base, cmd, cwd);
     case "observability": return hObs(node, run, base, cmd, cwd);
     case "brevity": return hBrev(node, run, base, cmd, cwd);
+    case "line_length": return hLineLength(node, run, base, cmd, cwd);
+    case "function_size": return hFunctionSize(node, run, base, cmd, cwd);
+    case "file_size": return hFileSize(node, run, base, cmd, cwd);
+    case "cohesion": return hCohesion(node, run, base, cmd, cwd);
+    case "replacement_ratio": return hReplacementRatio(node, run, base, cmd, cwd);
     case "tdd": return hTdd(node, run, base, cmd, cwd);
     default: break;
   }

@@ -80,6 +80,32 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
       ? (node.last_status === "pass" ? "🟢 GREEN" : "🔴 RED")
       : "⬜ AWAITING RED";
     lines.push(`${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` → ${node.description}`);
+  } else if (node.predicate?.type === "brevity") {
+    const max = node.predicate.value ?? 0;
+    lines.push(`${indent}- ${mark} Proof (brevity ≤${max} violations): \`${node.command}\` → ${node.description}`);
+  } else if (node.predicate?.type === "line_length") {
+    const maxChars = node.predicate.max_line_length ?? 120;
+    const maxV = node.predicate.value ?? 0;
+    lines.push(`${indent}- ${mark} Proof (line_length ≤${maxChars} chars, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
+  } else if (node.predicate?.type === "function_size") {
+    const maxLines = node.predicate.max_function_lines ?? 30;
+    const maxV = node.predicate.value ?? 0;
+    lines.push(`${indent}- ${mark} Proof (function_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
+  } else if (node.predicate?.type === "file_size") {
+    const maxLines = node.predicate.max_file_lines ?? 300;
+    const maxV = node.predicate.value ?? 0;
+    lines.push(`${indent}- ${mark} Proof (file_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
+  } else if (node.predicate?.type === "cohesion") {
+    const maxCC = node.predicate.max_complexity ?? 5;
+    const guards = node.predicate.require_guard_clauses ?? true;
+    const suggest = node.predicate.suggest_guard_clauses ?? true;
+    const flags = [guards ? "guard" : "", suggest ? "suggest" : ""].filter(Boolean).join("+");
+    const maxV = node.predicate.value ?? 0;
+    lines.push(`${indent}- ${mark} Proof (cohesion CC≤${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
+  } else if (node.predicate?.type === "replacement_ratio") {
+    const minRatio = node.predicate.min_replacement_ratio ?? 0.2;
+    const maxV = node.predicate.value ?? 0;
+    lines.push(`${indent}- ${mark} Proof (replacement_ratio ≥${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
   } else {
     lines.push(`${indent}- ${mark} Proof: \`${node.command}\` → ${node.description}`);
   }
@@ -103,7 +129,7 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("    `dod_verify(dod_id, proof_id)` explicitly when verification is actually relevant.");
   l.push("3c. **Manual verification is a HARD GATE.** DoD cannot PASS without it.");
   l.push("    Proofs can pass against wrong code. Visual verification catches what metrics miss.");
-  l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof with a command.");
+  l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof (mode=concretize) or subdivide into child tasks (mode=subdivide).");
   l.push("4b. **Refine incrementally per task group, not all at once.** Scoped dod_check is faster");
   l.push("    than full runs — use it. Refining 7 drafts at session end = rubber-stamping.");
   l.push("4c. Use `dod_add_node` to add new nodes discovered during implementation.");

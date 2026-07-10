@@ -20,15 +20,17 @@ const server = new McpServer({
 // ── Shared schemas ──────────────────────────────────────────────────
 
 const PredicateSchema = z.object({
-  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline", "observability", "brevity"]),
+  type: z.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline", "observability", "brevity", "line_length", "function_size", "file_size", "cohesion", "replacement_ratio"]),
   value: z.union([z.number(), z.string()]).optional(),
   extract: z.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
   lower_is_better: z.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage)."),
-  max_line_length: z.number().optional().describe("brevity only: max characters per line (default 120)."),
-  max_function_lines: z.number().optional().describe("brevity only: max lines per function (default 30)."),
-  max_file_lines: z.number().optional().describe("brevity only: max lines per file (default 300)."),
-  require_cohesion: z.boolean().optional().describe("brevity only: flag functions mixing selection + iteration (default true)."),
-  min_replacement_ratio: z.number().optional().describe("brevity only: minimum deletion/insertion ratio (default 0.2)."),
+  max_line_length: z.number().optional().describe("brevity / line_length: max characters per line (default 120)."),
+  max_function_lines: z.number().optional().describe("brevity / function_size: max lines per function (default 30)."),
+  max_file_lines: z.number().optional().describe("brevity / file_size: max lines per file (default 300)."),
+  max_complexity: z.number().optional().describe("brevity / cohesion: max cyclomatic complexity per function (default 5)."),
+  require_guard_clauses: z.boolean().optional().describe("brevity / cohesion: flag unnecessary else after exit statement (default true)."),
+  suggest_guard_clauses: z.boolean().optional().describe("brevity / cohesion: flag if/else pairs in functions lacking guard clauses — advisory suggestion (default true)."),
+  min_replacement_ratio: z.number().optional().describe("brevity / replacement_ratio: minimum deletion/insertion ratio (default 0.2)."),
 });
 
 const ProofCategorySchema = z.enum([
@@ -45,7 +47,7 @@ const TaskNodeInputSchema: z.ZodType<{
   intent?: string;
   children?: { title: string; refinement?: "draft" | "concrete"; intent?: string; children?: any[]; command?: string; predicate?: any; description?: string; category?: string; advisory?: boolean }[];
   command?: string;
-  predicate?: { type: string; value?: number | string; extract?: string; lower_is_better?: boolean; max_line_length?: number; max_function_lines?: number; max_file_lines?: number; require_cohesion?: boolean; min_replacement_ratio?: number };
+  predicate?: { type: string; value?: number | string; extract?: string; lower_is_better?: boolean; max_line_length?: number; max_function_lines?: number; max_file_lines?: number; max_complexity?: number; require_guard_clauses?: boolean; suggest_guard_clauses?: boolean; min_replacement_ratio?: number };
   description?: string;
   category?: string;
   advisory?: boolean;
@@ -83,22 +85,27 @@ function buildTaskNodes(
   inputs: { title: string; refinement?: "draft" | "concrete"; intent?: string; children?: any[]; command?: string; predicate?: any; description?: string; category?: string; advisory?: boolean }[],
 ): TaskNode[] {
   return inputs.map((input) => {
+    const isGroup = !!(input.children && input.children.length > 0);
+    // Task groups are structural containers — they're done as soon as they have children.
+    // "draft"/"concrete" only applies to leaves (no children).
+    const effectiveRefinement = isGroup ? "concrete" : (input.refinement ?? "draft");
+
     const node: TaskNode = {
       id: nextNodeId(),
       title: input.title,
-      refinement: input.refinement ?? "draft",
-      last_status: input.refinement === "draft" ? "draft" : "pending",
+      refinement: effectiveRefinement,
+      last_status: effectiveRefinement === "draft" ? "draft" : "pending",
     };
 
-    if (input.children && input.children.length > 0) {
-      node.children = buildTaskNodes(input.children);
+    if (isGroup) {
+      node.children = buildTaskNodes(input.children!);
     }
 
-    if (input.refinement === "draft") {
+    if (!isGroup && input.refinement === "draft") {
       node.intent = input.intent;
     }
 
-    if (input.refinement === "concrete") {
+    if (!isGroup && input.refinement === "concrete") {
       node.command = input.command;
       node.predicate = input.predicate as Predicate | undefined;
       node.description = input.description;
@@ -396,17 +403,24 @@ server.tool(
 
 server.tool(
   "dod_refine",
-  "Turn a draft TaskNode into a concrete proof by supplying the command, predicate, and description. Only works on draft leaves (no children, refinement=draft).",
+  "Refine a draft TaskNode. Two modes: 'concretize' — supply a proof command/predicate/description (draft leaf → concrete proof). 'subdivide' — split into child subtasks (draft leaf → task group with draft children). Only works on draft leaves (no children, refinement=draft).",
   {
     dod_id: z.string().describe("DoD ID"),
     node_path: z.string().describe("Dot-separated path to the draft leaf, e.g. '0.children.1'"),
-    command: z.string().describe("The shell command to run for verification"),
-    predicate: PredicateSchema.describe("What to evaluate about the command's output"),
-    description: z.string().describe("Human-readable description of what this proof checks"),
-    category: ProofCategorySchema.optional().describe("Baseline category"),
+    mode: z.enum(["concretize", "subdivide"]).default("concretize").describe("'concretize' (default): supply proof command/predicate. 'subdivide': split into child draft nodes."),
+    // concretize mode params
+    command: z.string().optional().describe("(concretize) The shell command to run for verification"),
+    predicate: PredicateSchema.optional().describe("(concretize) What to evaluate about the command's output"),
+    description: z.string().optional().describe("(concretize) Human-readable description of what this proof checks"),
+    category: ProofCategorySchema.optional().describe("(concretize) Baseline category"),
     advisory: z.boolean().optional(),
+    // subdivide mode params
+    children: z.array(z.object({
+      title: z.string(),
+      intent: z.string(),
+    })).optional().describe("(subdivide) Child draft nodes — each becomes a draft leaf under the new task group"),
   },
-  async ({ dod_id, node_path: nodePath, command, predicate, description, category, advisory }) => {
+  async ({ dod_id, node_path: nodePath, mode, command, predicate, description, category, advisory, children }) => {
     const doc = await store.load(dod_id);
     if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
 
@@ -415,35 +429,77 @@ server.tool(
     if (node.refinement !== "draft") return { content: [{ type: "text" as const, text: `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.` }] };
     if (node.children && node.children.length > 0) return { content: [{ type: "text" as const, text: `ERROR: node "${node.title}" is a task group with children — not a leaf. Refine its children instead.` }] };
 
-    // Validate command against OS (skip out-of-band proofs: manual, review)
-    const pred = predicate as Predicate;
-    if (isExecutablePredicate(pred.type) && command.trim() !== "") {
-      const missing = await findMissingTools([command], doc.cwd);
-      if (missing.length > 0) {
-        return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
-      }
-    }
-
     const oldIntent = node.intent;
 
-    node.refinement = "concrete";
-    node.command = command;
-    node.predicate = pred;
-    node.description = description;
-    if (category) node.category = category as ProofCategory;
-    if (advisory !== undefined) node.advisory = advisory;
-    else if (pred.type === "regression") node.advisory = true;
-    node.intent = undefined;
-    node.last_status = "pending";
+    if (mode === "concretize") {
+      if (!command || !predicate) {
+        return { content: [{ type: "text" as const, text: "ERROR: concretize mode requires command and predicate." }] };
+      }
 
-    doc.amendments.push({
-      timestamp: new Date().toISOString(),
-      node_path: nodePath,
-      action: "refined",
-      old_value: { refinement: "draft", intent: oldIntent },
-      new_value: { refinement: "concrete", command, predicate: { ...pred }, description },
-      reason: `Refined draft → concrete: ${description}`,
-    });
+      const pred = predicate as Predicate;
+      if (isExecutablePredicate(pred.type) && command.trim() !== "") {
+        const missing = await findMissingTools([command], doc.cwd);
+        if (missing.length > 0) {
+          return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
+        }
+      }
+
+      node.refinement = "concrete";
+      node.command = command;
+      node.predicate = pred;
+      node.description = description ?? "";
+      if (category) node.category = category as ProofCategory;
+      if (advisory !== undefined) node.advisory = advisory;
+      else if (pred.type === "regression") node.advisory = true;
+      node.intent = undefined;
+      node.last_status = "pending";
+
+      doc.amendments.push({
+        timestamp: new Date().toISOString(),
+        node_path: nodePath,
+        action: "refined",
+        old_value: { refinement: "draft", intent: oldIntent },
+        new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
+        reason: `Refined draft → concrete: ${description ?? ""}`,
+      });
+
+    } else {
+      // subdivide mode
+      if (!children || children.length === 0) {
+        return { content: [{ type: "text" as const, text: "ERROR: subdivide mode requires at least one child in children array." }] };
+      }
+
+      const childNodes: TaskNode[] = children.map(c => {
+        const childId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${Math.random().toString(36).slice(2, 4)}`;
+        return {
+          id: childId,
+          title: c.title,
+          refinement: "draft" as const,
+          intent: c.intent,
+          last_status: "draft" as const,
+        };
+      });
+
+      // Convert draft leaf → task group with children
+      node.children = childNodes;
+      node.refinement = "concrete"; // Task groups are always concrete
+      node.intent = undefined;
+      // Clear leaf-only fields that shouldn't exist on a task group
+      delete (node as Partial<TaskNode>).command;
+      delete (node as Partial<TaskNode>).predicate;
+      delete (node as Partial<TaskNode>).description;
+      delete (node as Partial<TaskNode>).category;
+
+      doc.amendments.push({
+        timestamp: new Date().toISOString(),
+        node_path: nodePath,
+        action: "refined",
+        old_value: { refinement: "draft", intent: oldIntent },
+        new_value: { refinement: "concrete", children: childNodes },
+        reason: `Subdivided into ${children.length} child draft nodes`,
+      });
+
+    }
 
     doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
 
@@ -452,20 +508,23 @@ server.tool(
     await store.save(doc);
     await writeMarkdown(doc);
 
-    return {
-      content: [{
-        type: "text" as const,
-        text: [
+    const msg = mode === "concretize"
+      ? [
           `Node refined: "${node.title}" is now concrete.`,
           `Command: \`${command}\``,
-          `Predicate: ${pred.type}:${pred.value ?? "(no value)"}`,
+          `Predicate: ${(predicate as Predicate).type}:${(predicate as Predicate).value ?? "(no value)"}`,
           `Description: ${description}`,
           draftCount === 0
             ? "\n🎉 All nodes are now concrete — the DoD is fully verifiable. Run dod_check."
             : `\n${draftCount} draft node(s) remaining.`,
-        ].join("\n"),
-      }],
-    };
+        ].join("\n")
+      : [
+          `Node subdivided: "${node.title}" is now a task group with ${children!.length} child draft(s).`,
+          `Children: ${children!.map(c => `"${c.title}"`).join(", ")}`,
+          `\n${draftCount} draft node(s) total. Refine each draft leaf before running dod_check.`,
+        ].join("\n");
+
+    return { content: [{ type: "text" as const, text: msg }] };
   },
 );
 
