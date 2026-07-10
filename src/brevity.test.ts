@@ -86,58 +86,62 @@ describe("analyseBrevity", () => {
       `expected at least 1 file_too_long violation, got ${fileLong.length}`);
   });
 
-  it("detects mixed cohesion (selection + iteration)", () => {
-    writeFile("src/mixed.ts", [
-      'export function processItems(items: string[]): void {',
-      '  if (items.length === 0) {',
-      '    console.log("empty");',
-      '    return;',
+  it("detects high cyclomatic complexity (>5 decision points)", () => {
+    writeFile("src/complex.ts", [
+      'export function classify(x: number, y: number, z: number): string {',
+      '  if (x > 0) {',
+      '    if (y > 0) {',
+      '      if (z > 0 && x > y) return "A";',
+      '      else if (z < 0) return "B";',
+      '      return "C";',
+      '    }',
+      '    for (let i = 0; i < x; i++) {',
+      '      if (i > 10) break;',
+      '    }',
       '  }',
-      '  for (const item of items) {',
-      '    console.log(item);',
+      '  switch (z) {',
+      '    case 1: return "D";',
+      '    case 2: return "E";',
       '  }',
+      '  return "F";',
       '}',
     ].join("\n"));
-    const report = analyseBrevity("node src/mixed.ts", tmpDir);
+    const report = analyseBrevity("node src/complex.ts", tmpDir);
     assert.ok(report, "report should not be null");
-    const mixed = report!.violations.filter((v) => v.kind === "mixed_cohesion");
-    assert.ok(mixed.length >= 1,
-      `expected at least 1 mixed_cohesion violation, got ${mixed.length}`);
+    const cc = report!.violations.filter((v) => v.kind === "high_complexity");
+    assert.ok(cc.length >= 1,
+      `expected at least 1 high_complexity violation, got ${cc.length}`);
   });
 
-  it("passes for function with only selection", () => {
-    writeFile("src/select.ts", [
-      'export function check(n: number): string {',
-      '  if (n > 0) return "positive";',
-      '  else if (n < 0) return "negative";',
-      '  return "zero";',
+  it("passes for function with low CC (≤5)", () => {
+    writeFile("src/simple.ts", [
+      'export function add(a: number, b: number): number {',
+      '  if (a < 0 && b < 0) return -1;',
+      '  return a + b;',
       '}',
     ].join("\n"));
-    const report = analyseBrevity("node src/select.ts", tmpDir);
+    const report = analyseBrevity("node src/simple.ts", tmpDir);
     assert.ok(report, "report should not be null");
-    const mixed = report!.violations.filter((v) => v.kind === "mixed_cohesion");
-    assert.equal(mixed.length, 0,
-      `selection-only function should not be flagged, got ${mixed.length} mixed_cohesion violations`);
+    const cc = report!.violations.filter((v) => v.kind === "high_complexity");
+    assert.equal(cc.length, 0,
+      `simple function should not be flagged for CC, got ${cc.length} violations`);
   });
 
-  it("passes for function with only iteration", () => {
-    writeFile("src/iter.ts", [
-      'export function sumAll(nums: number[]): number {',
-      '  let total = 0;',
-      '  for (const n of nums) {',
-      '    total += n;',
+  it("detects unnecessary else after return", () => {
+    writeFile("src/unnec.ts", [
+      'export function validate(n: number): string {',
+      '  if (n > 0) {',
+      '    return "ok";',
+      '  } else {',
+      '    return "bad";',
       '  }',
-      '  while (total > 1000) {',
-      '    total -= 1000;',
-      '  }',
-      '  return total;',
       '}',
     ].join("\n"));
-    const report = analyseBrevity("node src/iter.ts", tmpDir);
+    const report = analyseBrevity("node src/unnec.ts", tmpDir);
     assert.ok(report, "report should not be null");
-    const mixed = report!.violations.filter((v) => v.kind === "mixed_cohesion");
-    assert.equal(mixed.length, 0,
-      `iteration-only function should not be flagged, got ${mixed.length} mixed_cohesion violations`);
+    const unnec = report!.violations.filter((v) => v.kind === "unnecessary_else");
+    assert.ok(unnec.length >= 1,
+      `expected at least 1 unnecessary_else violation, got ${unnec.length}`);
   });
 
   it("respects custom thresholds", () => {
@@ -159,23 +163,26 @@ describe("analyseBrevity", () => {
       "3-line function passes maxFunctionLines:10 threshold");
   });
 
-  it("can disable cohesion check", () => {
-    writeFile("src/mixed2.ts", [
-      'export function processItems(items: string[]): void {',
-      '  if (items.length === 0) return;',
-      '  for (const item of items) console.log(item);',
+  it("can disable guard clause check", () => {
+    writeFile("src/unnec2.ts", [
+      'export function validate(n: number): string {',
+      '  if (n > 0) {',
+      '    return "ok";',
+      '  } else {',
+      '    return "bad";',
+      '  }',
       '}',
     ].join("\n"));
-    const withCohesion = analyseBrevity("node src/mixed2.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, requireCohesion: true });
-    assert.ok(withCohesion, "cohesion-on report should not be null");
-    assert.ok(withCohesion!.violations.some((v) => v.kind === "mixed_cohesion"),
-      "requireCohesion:true should flag mixed cohesion");
+    const withGuards = analyseBrevity("node src/unnec2.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, requireGuardClauses: true });
+    assert.ok(withGuards, "guards-on report should not be null");
+    assert.ok(withGuards!.violations.some((v) => v.kind === "unnecessary_else"),
+      "requireGuardClauses:true should flag unnecessary else after return");
 
-    const withoutCohesion = analyseBrevity("node src/mixed2.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, requireCohesion: false });
-    assert.ok(withoutCohesion, "cohesion-off report should not be null");
-    const mixed = withoutCohesion!.violations.filter((v) => v.kind === "mixed_cohesion");
-    assert.equal(mixed.length, 0,
-      "requireCohesion:false should not flag mixed cohesion");
+    const withoutGuards = analyseBrevity("node src/unnec2.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, requireGuardClauses: false });
+    assert.ok(withoutGuards, "guards-off report should not be null");
+    const unnec = withoutGuards!.violations.filter((v) => v.kind === "unnecessary_else");
+    assert.equal(unnec.length, 0,
+      "requireGuardClauses:false should not flag unnecessary else");
   });
 });
 
@@ -273,9 +280,9 @@ describe("analyseBrevityFromOutput", () => {
     const output = "src/thing.py\n";
     const report = analyseBrevityFromOutput(output, tmpDir);
     assert.ok(report, "should parse Python file");
-    const mixed = report!.violations.filter((v) => v.kind === "mixed_cohesion");
-    assert.ok(mixed.length >= 1,
-      "Python function with if+for should be flagged as mixed cohesion");
+    const cc = report!.violations.filter((v) => v.kind === "high_complexity");
+    assert.equal(cc.length, 0,
+      "Python function with CC=3 should not be flagged");
   });
 });
 
@@ -316,7 +323,7 @@ describe("brevity edge cases", () => {
     const report = analyseBrevity("node src/comments.ts", tmpDir);
     assert.ok(report, "comment-only file should not return null");
     const fnV = report!.violations.filter(
-      (v) => v.kind === "function_too_long" || v.kind === "mixed_cohesion",
+      (v) => v.kind === "function_too_long" || v.kind === "high_complexity",
     );
     assert.equal(fnV.length, 0,
       "comment-only file should have zero function violations");
