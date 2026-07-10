@@ -11,6 +11,25 @@ import { existsSync } from "node:fs";
 
 const VAULT_MEMORIES = "C:/Obsidian/Claude/Claude-Memories";
 
+// ── Walk memory subdirectories ──────────────────────────────────────
+
+async function findAllMemories(baseDir) {
+  const results = [];
+  if (!existsSync(baseDir)) return results;
+
+  const entries = await readdir(baseDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = join(baseDir, entry.name);
+    if (entry.isDirectory()) {
+      const sub = await findAllMemories(full);
+      results.push(...sub);
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      results.push(full);
+    }
+  }
+  return results;
+}
+
 // ── Project detection ──────────────────────────────────────────────────
 
 function detectProject() {
@@ -49,28 +68,44 @@ function parseFrontmatter(raw) {
   return { data, content: match[2].trim() };
 }
 
-// ── Memory scoring ─────────────────────────────────────────────────────
+// ── Memory filtering ────────────────────────────────────────────────────
+//
+// Memories fall into two buckets:
+// 1. Project-scoped: has `project:` field → inject ONLY if matches current project
+// 2. Generalized: no `project:` field → always inject (user prefs, feedback, references)
+//
+// Score determines sort order within the injected set, not eligibility.
+
+function shouldInject(entry, project) {
+  const hasProject = entry.data.project !== undefined;
+
+  // Project-scoped memory — only for matching project
+  if (hasProject) {
+    return String(entry.data.project) === project;
+  }
+
+  // Generalized memory — always inject
+  return true;
+}
 
 function scoreMemory(entry, project) {
   let score = 0;
 
-  // Exact project match in frontmatter
+  // Exact project match (highest priority)
   if (entry.data.project === project) score += 10;
 
-  // Project name in description
-  if (entry.data.description && String(entry.data.description).toLowerCase().includes(project)) {
-    score += 5;
-  }
-
-  // Project name in content
-  if (entry.content.toLowerCase().includes(project)) score += 3;
-
-  // Project in filename
-  if (entry.file.toLowerCase().includes(project.replace(/-/g, ""))) score += 4;
-
-  // Global memories (user/feedback type) — always base relevance
+  // User/feedback type — always relevant
   const type = entry.data.type;
-  if (type === "user" || type === "feedback") score += 1;
+  if (type === "user") score += 3;
+  if (type === "feedback") score += 2;
+
+  // Project name in description or content (secondary signal)
+  if (entry.data.description && String(entry.data.description).toLowerCase().includes(project)) {
+    score += 1;
+  }
+  if (entry.content.toLowerCase().includes(project) && !entry.data.project) {
+    score += 1;
+  }
 
   return score;
 }
@@ -83,19 +118,18 @@ async function main() {
   const project = detectProject();
   if (!project) return;
 
-  const files = await readdir(VAULT_MEMORIES);
-  const mdFiles = files.filter(f => f.endsWith(".md"));
-  if (mdFiles.length === 0) return;
+  const files = await findAllMemories(VAULT_MEMORIES);
+  if (files.length === 0) return;
 
   const entries = [];
 
-  for (const file of mdFiles) {
-    const raw = await readFile(join(VAULT_MEMORIES, file), "utf-8");
+  for (const filePath of files) {
+    const raw = await readFile(filePath, "utf-8");
     const { data, content } = parseFrontmatter(raw);
+    const file = basename(filePath);
+    if (!shouldInject({ data, content, file }, project)) continue;
     const score = scoreMemory({ data, content, file }, project);
-    if (score > 0) {
-      entries.push({ data, content, file, score });
-    }
+    entries.push({ data, content, file, score });
   }
 
   if (entries.length === 0) return;

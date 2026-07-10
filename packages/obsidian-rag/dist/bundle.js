@@ -24868,69 +24868,68 @@ async function writeNote(vaultPath, notePath, frontmatter, content) {
   const dir = dirname(fullPath);
   if (!existsSync(dir))
     await mkdir(dir, { recursive: true });
-  const fm = Object.keys(frontmatter).length > 0 ? import_gray_matter.default.stringify(content, frontmatter) : content;
-  await writeFile(fullPath, fm, "utf-8");
+  const fmStr = import_gray_matter.default.stringify(content.trim(), frontmatter);
+  await writeFile(fullPath, fmStr, "utf-8");
 }
-function extractLinks(content) {
+function extractWikilinks(content) {
   const links = [];
-  const re = /\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]/g;
-  let m;
-  while ((m = re.exec(content)) !== null) {
-    links.push(m[1].trim());
+  const re = /\[\[([^\]|#]+)(?:[#|][^\]]+)?\]\]/g;
+  let match;
+  while ((match = re.exec(content)) !== null) {
+    links.push(match[1].trim());
   }
   return [...new Set(links)];
 }
-function extractTags(content, frontmatterTags) {
-  const tags = /* @__PURE__ */ new Set();
-  if (Array.isArray(frontmatterTags)) {
-    for (const t of frontmatterTags)
-      tags.add(String(t).replace(/^#/, ""));
-  } else if (typeof frontmatterTags === "string") {
-    tags.add(frontmatterTags.replace(/^#/, ""));
-  }
-  const re = /(?:^|\s)#([a-zA-Z][\w/-]*)/gm;
-  let m;
-  while ((m = re.exec(content)) !== null) {
-    tags.add(m[1]);
-  }
-  return [...tags];
-}
 async function aggregateTags(vaultName, vaultPath) {
-  try {
-    return await cliGetTags(vaultName);
-  } catch {
-    const files = await walkVault(vaultPath);
-    const tagCounts = /* @__PURE__ */ new Map();
-    for (const file of files) {
+  const allFiles = await walkVault(vaultPath);
+  const tagCounts = /* @__PURE__ */ new Map();
+  for (const file of allFiles) {
+    try {
       const meta = await readNoteMeta(vaultPath, file);
-      for (const tag of meta.tags) {
-        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      if (meta.tags) {
+        for (const tag of meta.tags) {
+          tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+        }
       }
+    } catch {
     }
-    return tagCounts;
   }
+  return tagCounts;
 }
+var MEMORY_DIR = "Claude-Memories";
 function memoryDir(vaultPath) {
-  return join(vaultPath, "Claude-Memories");
+  return join(vaultPath, MEMORY_DIR);
+}
+async function walkMemoryDir(baseDir) {
+  const results = [];
+  if (!existsSync(baseDir))
+    return results;
+  const entries = await readdir(baseDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = join(baseDir, entry.name);
+    if (entry.isDirectory()) {
+      const sub = await walkMemoryDir(full);
+      results.push(...sub);
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      results.push(full);
+    }
+  }
+  return results;
 }
 async function readMemories(vaultPath) {
   const dir = memoryDir(vaultPath);
-  if (!existsSync(dir))
-    return [];
-  const files = await readdir(dir);
+  const files = await walkMemoryDir(dir);
   const entries = [];
-  for (const file of files) {
-    if (!file.endsWith(".md"))
-      continue;
-    const fullPath = join(dir, file);
+  for (const fullPath of files) {
     const raw = await readFile(fullPath, "utf-8");
     const { data: fm, content } = (0, import_gray_matter.default)(raw);
+    const relPath = relative(vaultPath, fullPath);
     entries.push({
-      id: basename(file, ".md"),
-      path: join("Claude-Memories", file),
-      title: fm.name || basename(file, ".md"),
+      id: basename(fullPath, ".md"),
+      path: relPath,
+      title: fm.name || basename(fullPath, ".md"),
       description: fm.description || "",
-      type: fm.metadata?.type || "reference",
+      type: fm.type || fm.metadata?.type || "reference",
       content: content.trim(),
       metadata: fm.metadata || {},
       created: fm.created || "",
@@ -24940,15 +24939,14 @@ async function readMemories(vaultPath) {
   return entries;
 }
 async function writeMemory(vaultPath, entry) {
-  const dir = memoryDir(vaultPath);
-  if (!existsSync(dir))
-    await mkdir(dir, { recursive: true });
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const fileName = `${entry.id}.md`;
-  const notePath = join("Claude-Memories", fileName);
+  const typeDir = entry.type || "reference";
+  const notePath = join(MEMORY_DIR, typeDir, fileName);
   const frontmatter = {
     name: entry.title,
     description: entry.description,
+    type: entry.type || "reference",
     metadata: entry.metadata,
     created: entry.created || now,
     modified: now
@@ -24958,21 +24956,18 @@ async function writeMemory(vaultPath, entry) {
 }
 function extractMeta(notePath, frontmatter, content) {
   const fmTags = frontmatter.tags;
-  const title = frontmatter.title || extractFirstH1(content) || basename(notePath, ".md");
+  const tags = Array.isArray(fmTags) ? fmTags.map((t) => String(t).replace(/^#/, "")) : typeof fmTags === "string" ? fmTags.split(/,\s*/).map((t) => t.replace(/^#/, "")) : [];
+  const links = extractWikilinks(content);
   return {
     path: notePath,
-    title,
-    tags: extractTags(content, fmTags),
-    links: extractLinks(content),
+    title: frontmatter.title || basename(notePath, ".md"),
+    tags,
+    links,
     backlinks: [],
-    created: String(frontmatter.created || frontmatter.date || ""),
-    modified: String(frontmatter.modified || frontmatter.updated || ""),
-    frontmatter
+    frontmatter,
+    created: frontmatter.created || "",
+    modified: frontmatter.modified || ""
   };
-}
-function extractFirstH1(content) {
-  const m = content.match(/^#\s+(.+)$/m);
-  return m ? m[1].trim() : null;
 }
 
 // dist/store.js

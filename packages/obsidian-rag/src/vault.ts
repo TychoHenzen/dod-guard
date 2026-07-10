@@ -62,8 +62,8 @@ export async function writeNote(
   const fullPath = join(vaultPath, notePath);
   const dir = dirname(fullPath);
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
-  const fm = Object.keys(frontmatter).length > 0 ? matter.stringify(content, frontmatter) : content;
-  await writeFile(fullPath, fm, "utf-8");
+  const fmStr = matter.stringify(content.trim(), frontmatter);
+  await writeFile(fullPath, fmStr, "utf-8");
 }
 
 export async function deleteNote(vaultPath: string, notePath: string): Promise<void> {
@@ -71,109 +71,97 @@ export async function deleteNote(vaultPath: string, notePath: string): Promise<v
   await unlink(join(vaultPath, notePath));
 }
 
-// ── Links (CLI) ──────────────────────────────────────────────────────────
+// ── Wikilinks ────────────────────────────────────────────────────────────
 
-export async function getBacklinks(
-  vaultName: string,
-  vaultPath: string,
-  targetPath: string,
-): Promise<string[]> {
-  try {
-    return await cliGetBacklinks(vaultName, targetPath);
-  } catch {
-    // CLI fallback: FS scan
-    return fsBacklinks(vaultPath, targetPath);
+export function extractWikilinks(content: string): string[] {
+  const links: string[] = [];
+  const re = /\[\[([^\]|#]+)(?:[#|][^\]]+)?\]\]/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(content)) !== null) {
+    links.push(match[1].trim());
   }
+  return [...new Set(links)];
 }
 
-/** FS fallback for backlinks when CLI unavailable. */
-async function fsBacklinks(vaultPath: string, targetPath: string): Promise<string[]> {
+// ── Backlinks (FS scan) ──────────────────────────────────────────────────
+
+export async function getBacklinks(vaultPath: string, targetPath: string): Promise<string[]> {
   const targetName = basename(targetPath, ".md");
   const allFiles = await walkVault(vaultPath);
   const backlinks: string[] = [];
   for (const file of allFiles) {
     if (file === targetPath) continue;
     const note = await readNote(vaultPath, file);
-    const linkPattern = new RegExp(
-      `\\[\\[${escapeRegex(targetName)}(?:\\|[^\\]]+)?\\]\\]`,
-      "i"
-    );
-    if (linkPattern.test(note.content)) {
+    if (note.content.includes(`[[${targetName}]]`)) {
       backlinks.push(file);
     }
   }
   return backlinks;
 }
 
-export function extractLinks(content: string): string[] {
-  const links: string[] = [];
-  const re = /\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]/g;
-  let m;
-  while ((m = re.exec(content)) !== null) {
-    links.push(m[1].trim());
-  }
-  return [...new Set(links)];
-}
-
-export function extractTags(content: string, frontmatterTags?: unknown): string[] {
-  const tags = new Set<string>();
-  if (Array.isArray(frontmatterTags)) {
-    for (const t of frontmatterTags) tags.add(String(t).replace(/^#/, ""));
-  } else if (typeof frontmatterTags === "string") {
-    tags.add(frontmatterTags.replace(/^#/, ""));
-  }
-  const re = /(?:^|\s)#([a-zA-Z][\w/-]*)/gm;
-  let m;
-  while ((m = re.exec(content)) !== null) {
-    tags.add(m[1]);
-  }
-  return [...tags];
-}
-
-// ── Tag aggregation (CLI + FS fallback) ──────────────────────────────────
+// ── Tags ─────────────────────────────────────────────────────────────────
 
 export async function aggregateTags(
   vaultName: string,
-  vaultPath: string,
+  vaultPath: string
 ): Promise<Map<string, number>> {
-  try {
-    return await cliGetTags(vaultName);
-  } catch {
-    // CLI fallback: FS scan
-    const files = await walkVault(vaultPath);
-    const tagCounts = new Map<string, number>();
-    for (const file of files) {
+  const allFiles = await walkVault(vaultPath);
+  const tagCounts = new Map<string, number>();
+  for (const file of allFiles) {
+    try {
       const meta = await readNoteMeta(vaultPath, file);
-      for (const tag of meta.tags) {
-        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      if (meta.tags) {
+        for (const tag of meta.tags) {
+          tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+        }
       }
+    } catch {
+      // skip broken files
     }
-    return tagCounts;
   }
+  return tagCounts;
 }
 
-// ── Memory operations (FS — Claude-Memories format) ──────────────
+// ── Memory operations (FS — Claude-Memories format, type subfolders) ──
+
+const MEMORY_DIR = "Claude-Memories";
 
 export function memoryDir(vaultPath: string): string {
-  return join(vaultPath, "Claude-Memories");
+  return join(vaultPath, MEMORY_DIR);
+}
+
+/** Walk Claude-Memories/ recursively, reading all .md files. */
+async function walkMemoryDir(baseDir: string): Promise<string[]> {
+  const results: string[] = [];
+  if (!existsSync(baseDir)) return results;
+
+  const entries = await readdir(baseDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = join(baseDir, entry.name);
+    if (entry.isDirectory()) {
+      const sub = await walkMemoryDir(full);
+      results.push(...sub);
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      results.push(full);
+    }
+  }
+  return results;
 }
 
 export async function readMemories(vaultPath: string): Promise<MemoryEntry[]> {
   const dir = memoryDir(vaultPath);
-  if (!existsSync(dir)) return [];
-  const files = await readdir(dir);
+  const files = await walkMemoryDir(dir);
   const entries: MemoryEntry[] = [];
-  for (const file of files) {
-    if (!file.endsWith(".md")) continue;
-    const fullPath = join(dir, file);
+  for (const fullPath of files) {
     const raw = await readFile(fullPath, "utf-8");
     const { data: fm, content } = matter(raw);
+    const relPath = relative(vaultPath, fullPath);
     entries.push({
-      id: basename(file, ".md"),
-      path: join("Claude-Memories", file),
-      title: (fm as any).name || basename(file, ".md"),
+      id: basename(fullPath, ".md"),
+      path: relPath,
+      title: (fm as any).name || basename(fullPath, ".md"),
       description: (fm as any).description || "",
-      type: (fm as any).metadata?.type || "reference",
+      type: (fm as any).type || (fm as any).metadata?.type || "reference",
       content: content.trim(),
       metadata: (fm as any).metadata || {},
       created: (fm as any).created || "",
@@ -187,14 +175,15 @@ export async function writeMemory(
   vaultPath: string,
   entry: Omit<MemoryEntry, "path" | "modified" | "created"> & { created?: string }
 ): Promise<string> {
-  const dir = memoryDir(vaultPath);
-  if (!existsSync(dir)) await mkdir(dir, { recursive: true });
   const now = new Date().toISOString();
   const fileName = `${entry.id}.md`;
-  const notePath = join("Claude-Memories", fileName);
+  // Write to type subfolder: Claude-Memories/<type>/<id>.md
+  const typeDir = entry.type || "reference";
+  const notePath = join(MEMORY_DIR, typeDir, fileName);
   const frontmatter: Record<string, unknown> = {
     name: entry.title,
     description: entry.description,
+    type: entry.type || "reference",
     metadata: entry.metadata,
     created: entry.created || now,
     modified: now,
@@ -211,28 +200,19 @@ function extractMeta(
   content: string
 ): NoteMeta {
   const fmTags = frontmatter.tags;
-  const title =
-    (frontmatter.title as string) ||
-    extractFirstH1(content) ||
-    basename(notePath, ".md");
-
+  const tags = Array.isArray(fmTags)
+    ? fmTags.map((t: unknown) => String(t).replace(/^#/, ""))
+    : typeof fmTags === "string"
+      ? fmTags.split(/,\s*/).map((t: string) => t.replace(/^#/, "")) : [];
+  const links = extractWikilinks(content);
   return {
     path: notePath,
-    title,
-    tags: extractTags(content, fmTags),
-    links: extractLinks(content),
+    title: (frontmatter.title as string) || basename(notePath, ".md"),
+    tags,
+    links,
     backlinks: [],
-    created: String(frontmatter.created || frontmatter.date || ""),
-    modified: String(frontmatter.modified || frontmatter.updated || ""),
-    frontmatter,
+    frontmatter: frontmatter as Record<string, unknown>,
+    created: (frontmatter.created as string) || "",
+    modified: (frontmatter.modified as string) || "",
   };
-}
-
-function extractFirstH1(content: string): string | null {
-  const m = content.match(/^#\s+(.+)$/m);
-  return m ? m[1].trim() : null;
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
