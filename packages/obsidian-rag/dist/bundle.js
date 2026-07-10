@@ -10170,10 +10170,10 @@ var require_stringify = __commonJS({
       data = Object.assign({}, file.data, data);
       const open = opts.delimiters[0];
       const close = opts.delimiters[1];
-      const matter2 = engine.stringify(data, options2).trim();
+      const matter3 = engine.stringify(data, options2).trim();
       let buf = "";
-      if (matter2 !== "{}") {
-        buf = newline(open) + newline(matter2) + newline(close);
+      if (matter3 !== "{}") {
+        buf = newline(open) + newline(matter3) + newline(close);
       }
       if (typeof file.excerpt === "string" && file.excerpt !== "") {
         if (str2.indexOf(file.excerpt.trim()) === -1) {
@@ -10279,19 +10279,19 @@ var require_gray_matter = __commonJS({
     var toFile = require_to_file();
     var parse4 = require_parse();
     var utils = require_utils2();
-    function matter2(input, options2) {
+    function matter3(input, options2) {
       if (input === "") {
         return { data: {}, content: input, excerpt: "", orig: input };
       }
       let file = toFile(input);
-      const cached2 = matter2.cache[file.content];
+      const cached2 = matter3.cache[file.content];
       if (!options2) {
         if (cached2) {
           file = Object.assign({}, cached2);
           file.orig = cached2.orig;
           return file;
         }
-        matter2.cache[file.content] = file;
+        matter3.cache[file.content] = file;
       }
       return parseMatter(file, options2);
     }
@@ -10313,7 +10313,7 @@ var require_gray_matter = __commonJS({
       }
       str2 = str2.slice(openLen);
       const len = str2.length;
-      const language = matter2.language(str2, opts);
+      const language = matter3.language(str2, opts);
       if (language.name) {
         file.language = language.name;
         str2 = str2.slice(language.raw.length);
@@ -10348,24 +10348,24 @@ var require_gray_matter = __commonJS({
       }
       return file;
     }
-    matter2.engines = engines2;
-    matter2.stringify = function(file, data, options2) {
-      if (typeof file === "string") file = matter2(file, options2);
+    matter3.engines = engines2;
+    matter3.stringify = function(file, data, options2) {
+      if (typeof file === "string") file = matter3(file, options2);
       return stringify(file, data, options2);
     };
-    matter2.read = function(filepath, options2) {
+    matter3.read = function(filepath, options2) {
       const str2 = fs.readFileSync(filepath, "utf8");
-      const file = matter2(str2, options2);
+      const file = matter3(str2, options2);
       file.path = filepath;
       return file;
     };
-    matter2.test = function(str2, options2) {
+    matter3.test = function(str2, options2) {
       return utils.startsWith(str2, defaults(options2).delimiters[0]);
     };
-    matter2.language = function(str2, options2) {
+    matter3.language = function(str2, options2) {
       const opts = defaults(options2);
       const open = opts.delimiters[0];
-      if (matter2.test(str2)) {
+      if (matter3.test(str2)) {
         str2 = str2.slice(open.length);
       }
       const language = str2.slice(0, str2.search(/\r?\n/));
@@ -10374,11 +10374,11 @@ var require_gray_matter = __commonJS({
         name: language ? language.trim() : ""
       };
     };
-    matter2.cache = {};
-    matter2.clearCache = function() {
-      matter2.cache = {};
+    matter3.cache = {};
+    matter3.clearCache = function() {
+      matter3.cache = {};
     };
-    module2.exports = matter2;
+    module2.exports = matter3;
   }
 });
 
@@ -24702,60 +24702,124 @@ var StdioServerTransport = class {
 };
 
 // dist/index.js
+var import_gray_matter2 = __toESM(require_gray_matter(), 1);
 import { homedir } from "node:os";
 import { join as join3 } from "node:path";
-import { existsSync as existsSync3 } from "node:fs";
+import { existsSync as existsSync3, readFileSync } from "node:fs";
 
 // dist/cli.js
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 var execFileP = promisify(execFile);
 var OBSIDIAN_CMD = "obsidian";
-async function obsidian(args, timeout = 15e3) {
-  return execFileP(OBSIDIAN_CMD, args, { timeout, windowsHide: true });
-}
-async function listVaults() {
-  try {
-    const { stdout } = await obsidian(["vaults", "--verbose"]);
-    return parseVaultsOutput(stdout);
-  } catch {
-    return [];
-  }
-}
 async function cliAvailable() {
   try {
-    await obsidian(["version"], 5e3);
+    await runObsidian(["version"], 5e3);
     return true;
   } catch {
     return false;
   }
 }
-function parseVaultsOutput(stdout) {
-  const vaults = [];
-  let current = {};
+async function ensureObsidianRunning() {
+  if (await cliAvailable())
+    return;
+  try {
+    execFile(OBSIDIAN_CMD).unref();
+  } catch {
+  }
+  for (let i = 0; i < 60; i++) {
+    await sleep(500);
+    if (await cliAvailable())
+      return;
+  }
+  throw new Error("Obsidian app did not start within 30s. Is it installed?");
+}
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function runObsidian(args, timeout = 15e3) {
+  return execFileP(OBSIDIAN_CMD, args, { timeout, windowsHide: true });
+}
+async function obsidian(vaultName, args, timeout = 15e3) {
+  await ensureObsidianRunning();
+  const fullArgs = vaultName ? [`vault=${vaultName}`, ...args] : args;
+  return runObsidian(fullArgs, timeout);
+}
+async function listVaults() {
+  await ensureObsidianRunning();
+  const { stdout } = await runObsidian(["vaults", "verbose"]);
+  return parseVaultsOutput(stdout);
+}
+async function cliReadNote(vaultName, notePath) {
+  const { stdout } = await obsidian(vaultName, ["read", `path=${notePath}`]);
+  return stdout;
+}
+async function cliListFiles(vaultName, directory) {
+  const args = ["files", "ext=md"];
+  if (directory)
+    args.push(`folder=${directory}`);
+  const { stdout } = await obsidian(vaultName, args);
+  return stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+}
+async function cliGetBacklinks(vaultName, notePath) {
+  const { stdout } = await obsidian(vaultName, [
+    "backlinks",
+    `path=${notePath}`
+  ]);
+  return stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+}
+async function cliGetLinks(vaultName, notePath) {
+  const { stdout } = await obsidian(vaultName, [
+    "links",
+    `path=${notePath}`
+  ]);
+  return stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+}
+async function cliGetTags(vaultName) {
+  const { stdout } = await obsidian(vaultName, ["tags", "counts"]);
+  const counts = /* @__PURE__ */ new Map();
   for (const line of stdout.split("\n")) {
     const trimmed = line.trim();
-    if (!trimmed) {
-      if (current.name && current.path)
-        vaults.push(current);
-      current = {};
+    if (!trimmed)
       continue;
-    }
-    const colon = trimmed.indexOf(":");
-    if (colon > 0) {
-      const key = trimmed.slice(0, colon).trim();
-      const value = trimmed.slice(colon + 1).trim();
-      if (key === "Name")
-        current.name = value;
-      if (key === "Path")
-        current.path = value;
-      if (key === "Files")
-        current.noteCount = parseInt(value) || 0;
+    const parts = trimmed.split("	");
+    if (parts.length >= 2) {
+      const tag = parts[0].replace(/^#/, "").trim();
+      const count = parseInt(parts[1]) || 0;
+      if (tag)
+        counts.set(tag, count);
     }
   }
-  if (current.name && current.path)
-    vaults.push(current);
+  return counts;
+}
+async function cliCreateNote(vaultName, notePath, content, open = false) {
+  const args = ["create", `path=${notePath}`, `content=${escapeArg(content)}`];
+  if (open)
+    args.push("open");
+  await obsidian(vaultName, args);
+}
+async function cliAppendNote(vaultName, notePath, content) {
+  await obsidian(vaultName, [
+    "append",
+    `path=${notePath}`,
+    `content=${escapeArg(content)}`
+  ]);
+}
+function parseVaultsOutput(stdout) {
+  const vaults = [];
+  for (const line of stdout.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed)
+      continue;
+    const parts = trimmed.split("	");
+    if (parts.length >= 2) {
+      vaults.push({ name: parts[0].trim(), path: parts[1].trim() });
+    }
+  }
   return vaults;
+}
+function escapeArg(value) {
+  return value.replace(/\n/g, " ").replace(/\r/g, "");
 }
 
 // dist/vault.js
@@ -24804,22 +24868,6 @@ async function writeNote(vaultPath, notePath, frontmatter, content) {
   const fm = Object.keys(frontmatter).length > 0 ? import_gray_matter.default.stringify(content, frontmatter) : content;
   await writeFile(fullPath, fm, "utf-8");
 }
-async function getBacklinks(vaultPath, targetPath) {
-  const targetName = basename(targetPath, ".md");
-  const allFiles = await walkVault(vaultPath);
-  const backlinks = [];
-  for (const file of allFiles) {
-    if (file === targetPath)
-      continue;
-    const note = await readNote(vaultPath, file);
-    const content = note.content;
-    const linkPattern = new RegExp(`\\[\\[${escapeRegex2(targetName)}(?:\\|[^\\]]+)?\\]\\]`, "i");
-    if (linkPattern.test(content)) {
-      backlinks.push(file);
-    }
-  }
-  return backlinks;
-}
 function extractLinks(content) {
   const links = [];
   const re = /\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]/g;
@@ -24843,6 +24891,21 @@ function extractTags(content, frontmatterTags) {
     tags.add(m[1]);
   }
   return [...tags];
+}
+async function aggregateTags(vaultName, vaultPath) {
+  try {
+    return await cliGetTags(vaultName);
+  } catch {
+    const files = await walkVault(vaultPath);
+    const tagCounts = /* @__PURE__ */ new Map();
+    for (const file of files) {
+      const meta = await readNoteMeta(vaultPath, file);
+      for (const tag of meta.tags) {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      }
+    }
+    return tagCounts;
+  }
 }
 function memoryDir(vaultPath) {
   return join(vaultPath, ".claude-memories");
@@ -24890,17 +24953,6 @@ async function writeMemory(vaultPath, entry) {
   await writeNote(vaultPath, notePath, frontmatter, entry.content);
   return notePath;
 }
-async function aggregateTags(vaultPath) {
-  const files = await walkVault(vaultPath);
-  const tagCounts = /* @__PURE__ */ new Map();
-  for (const file of files) {
-    const meta = await readNoteMeta(vaultPath, file);
-    for (const tag of meta.tags) {
-      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
-    }
-  }
-  return tagCounts;
-}
 function extractMeta(notePath, frontmatter, content) {
   const fmTags = frontmatter.tags;
   const title = frontmatter.title || extractFirstH1(content) || basename(notePath, ".md");
@@ -24918,9 +24970,6 @@ function extractMeta(notePath, frontmatter, content) {
 function extractFirstH1(content) {
   const m = content.match(/^#\s+(.+)$/m);
   return m ? m[1].trim() : null;
-}
-function escapeRegex2(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // dist/store.js
@@ -24955,6 +25004,7 @@ var Store = class {
         path TEXT NOT NULL,
         vault_name TEXT NOT NULL,
         title TEXT NOT NULL,
+        content TEXT NOT NULL DEFAULT '',
         tags TEXT NOT NULL DEFAULT '[]',
         links TEXT NOT NULL DEFAULT '[]',
         frontmatter TEXT NOT NULL DEFAULT '{}',
@@ -25009,6 +25059,10 @@ var Store = class {
         last_indexed TEXT
       );
     `);
+    const cols = this.db.pragma("table_info(notes)");
+    if (!cols.some((c) => c.name === "content")) {
+      this.db.exec("ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''");
+    }
   }
   // ── Vault config ─────────────────────────────────────────────────
   setVault(vault) {
@@ -25244,11 +25298,13 @@ async function indexVault(vaultPath, vaultName, store2) {
   }
   store2.setIndexMeta(vaultName, {
     indexedNotes: indexed,
-    totalChunks,
     totalNotes: files.length,
     lastIndexed: (/* @__PURE__ */ new Date()).toISOString(),
     indexing: false
   });
+  if (totalChunks > 0) {
+    store2.setIndexMeta(vaultName, { totalChunks });
+  }
   return indexed;
 }
 
@@ -25256,12 +25312,35 @@ async function indexVault(vaultPath, vaultName, store2) {
 init_retriever();
 var DB_DIR = join3(homedir(), ".claude", "obsidian-rag");
 var store = new Store({ dbDir: DB_DIR });
+var PKG = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
 var selectedVault = null;
 var embedder = null;
-function vaultGuard() {
-  if (!selectedVault)
-    throw new Error("No vault selected. Use vault_select first.");
-  return selectedVault;
+var _selectPromise = null;
+async function waitForVault() {
+  if (selectedVault)
+    return selectedVault;
+  if (_selectPromise) {
+    try {
+      await _selectPromise;
+    } catch {
+    }
+    if (selectedVault)
+      return selectedVault;
+  }
+  for (let i = 0; i < 50; i++) {
+    if (_selectPromise) {
+      try {
+        await _selectPromise;
+      } catch {
+      }
+      if (selectedVault)
+        return selectedVault;
+    }
+    if (selectedVault)
+      return selectedVault;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new Error("No vault selected. Use vault_select first.");
 }
 async function getEmbedder() {
   if (embedder)
@@ -25290,16 +25369,16 @@ async function getEmbedder() {
 async function main() {
   const server = new McpServer({
     name: "obsidian-rag",
-    version: "0.1.0"
+    version: PKG.version
   });
-  server.tool("vault_list", "List all known Obsidian vaults. Uses Obsidian CLI if available.", {}, async () => {
+  server.tool("vault_list", "List all known Obsidian vaults. Requires Obsidian app running.", {}, async () => {
     const vaults = await listVaults();
     const cliOk = await cliAvailable();
     if (vaults.length === 0) {
       return {
         content: [{
           type: "text",
-          text: cliOk ? "No vaults found. Open Obsidian first or check vault configuration." : "Obsidian CLI not available. Install Obsidian (https://obsidian.md) for vault discovery, or use vault_select_path to specify a vault directory directly."
+          text: cliOk ? "No vaults found. Open Obsidian first or check vault configuration." : "Obsidian app not running and could not be started. Is Obsidian installed?"
         }]
       };
     }
@@ -25315,39 +25394,52 @@ CLI status: ${cliOk ? "\u2705 available" : "\u274C not found"}` }]
   server.tool("vault_select", "Select an Obsidian vault by name or path. This must be called before search/read/memory operations.", {
     name: external_exports.string().describe("Vault name (from vault_list) or absolute path to vault directory")
   }, async ({ name }) => {
-    if (existsSync3(name) && existsSync3(join3(name, ".obsidian"))) {
-      selectedVault = { name: name.split(/[/\\]/).pop(), path: name };
-    } else {
-      const vaults = await listVaults();
-      const match = vaults.find((v) => v.name === name || v.path === name);
-      if (!match) {
-        if (existsSync3(name)) {
-          selectedVault = { name: name.split(/[/\\]/).pop(), path: name };
-        } else {
-          return {
-            content: [{ type: "text", text: `Vault "${name}" not found. Use vault_list to see available vaults.` }],
-            isError: true
-          };
-        }
+    let resolveSelect;
+    let rejectSelect;
+    _selectPromise = new Promise((res, rej) => {
+      resolveSelect = res;
+      rejectSelect = rej;
+    });
+    try {
+      if (existsSync3(name) && existsSync3(join3(name, ".obsidian"))) {
+        selectedVault = { name: name.split(/[/\\]/).pop(), path: name };
       } else {
-        selectedVault = match;
+        const vaults = await listVaults();
+        const match = vaults.find((v) => v.name === name || v.path === name);
+        if (!match) {
+          if (existsSync3(name)) {
+            selectedVault = { name: name.split(/[/\\]/).pop(), path: name };
+          } else {
+            rejectSelect(new Error("No vault selected."));
+            return {
+              content: [{ type: "text", text: `Vault "${name}" not found. Use vault_list to see available vaults.` }],
+              isError: true
+            };
+          }
+        } else {
+          selectedVault = match;
+        }
       }
-    }
-    store.setVault(selectedVault);
-    const idxMsg = await indexVault(selectedVault.path, selectedVault.name, store);
-    const status = store.getIndexStatus(selectedVault.name);
-    return {
-      content: [{ type: "text", text: `\u2705 Selected vault **${selectedVault.name}**
+      store.setVault(selectedVault);
+      resolveSelect();
+      const idxMsg = await indexVault(selectedVault.path, selectedVault.name, store);
+      const status = store.getIndexStatus(selectedVault.name);
+      return {
+        content: [{ type: "text", text: `\u2705 Selected vault **${selectedVault.name}**
 Path: \`${selectedVault.path}\`
 Indexed: ${status.indexedNotes} notes, ${status.totalChunks} chunks` }]
-    };
+      };
+    } catch (err) {
+      rejectSelect(err);
+      throw err;
+    }
   });
   server.tool("search_notes", "Search notes in the selected Obsidian vault using hybrid search (keyword + optional semantic). Returns ranked results with snippets.", {
     query: external_exports.string().describe("Search query"),
     limit: external_exports.number().min(1).max(50).default(20).describe("Max results (1-50)"),
     kind: external_exports.enum(["keyword", "semantic", "hybrid"]).default("hybrid").describe("Search mode")
   }, async ({ query, limit, kind }) => {
-    const vault = vaultGuard();
+    const vault = await waitForVault();
     let results;
     if (kind === "keyword" || !embedder) {
       const { keywordSearch: keywordSearch2 } = await Promise.resolve().then(() => (init_retriever(), retriever_exports));
@@ -25375,16 +25467,16 @@ ${lines.join("\n\n")}` }] };
   server.tool("read_note", "Read the full content of a note from the selected vault.", {
     path: external_exports.string().describe("Note path relative to vault root (e.g. 'folder/Note Name.md')")
   }, async ({ path }) => {
-    const vault = vaultGuard();
+    const vault = await waitForVault();
     try {
-      const note = await readNote(vault.path, path);
+      const raw = await cliReadNote(vault.name, path);
+      const { data: frontmatter, content } = (0, import_gray_matter2.default)(raw);
       const lines = [
-        `# ${note.title}`,
-        `Path: \`${note.path}\``,
-        `Tags: ${note.tags.length ? note.tags.map((t) => `#${t}`).join(" ") : "(none)"}`,
-        `Links: ${note.links.length ? note.links.join(", ") : "(none)"}`,
+        `# ${frontmatter.title || path}`,
+        `Path: \`${path}\``,
+        `Tags: ${Array.isArray(frontmatter.tags) ? frontmatter.tags.map((t) => `#${String(t).replace(/^#/, "")}`).join(" ") : "(none)"}`,
         ``,
-        note.content
+        content.trim()
       ];
       return { content: [{ type: "text", text: lines.join("\n") }] };
     } catch {
@@ -25394,27 +25486,38 @@ ${lines.join("\n\n")}` }] };
   server.tool("list_notes", "List notes in the vault, optionally filtered by directory.", {
     directory: external_exports.string().optional().describe("Subdirectory path within vault (optional)")
   }, async ({ directory }) => {
-    const vault = vaultGuard();
-    const notes = store.listNotes(vault.name, directory);
-    if (notes.length === 0) {
-      return { content: [{ type: "text", text: "No notes found. The vault may not be indexed yet \u2014 run reindex." }] };
-    }
-    const lines = notes.map((n) => `- **${n.title}** \u2014 \`${n.path}\` ${n.tags.map((t) => `#${t}`).join(" ")}`);
-    return { content: [{ type: "text", text: `# Notes (${notes.length})
+    const vault = await waitForVault();
+    try {
+      const files = await cliListFiles(vault.name, directory);
+      if (files.length === 0) {
+        return { content: [{ type: "text", text: `No .md files found${directory ? ` in "${directory}"` : ""}.` }] };
+      }
+      const lines = files.map((f) => `- \`${f}\``);
+      return { content: [{ type: "text", text: `# Notes (${files.length})
 
 ${lines.join("\n")}` }] };
+    } catch {
+      const notes = store.listNotes(vault.name, directory);
+      if (notes.length === 0) {
+        return { content: [{ type: "text", text: "No notes found. The vault may not be indexed yet \u2014 run reindex." }] };
+      }
+      const lines = notes.map((n) => `- **${n.title}** \u2014 \`${n.path}\` ${n.tags.map((t) => `#${t}`).join(" ")}`);
+      return { content: [{ type: "text", text: `# Notes (${notes.length})
+
+${lines.join("\n")}` }] };
+    }
   });
   server.tool("get_links", "Get forward links and backlinks for a note.", {
     path: external_exports.string().describe("Note path relative to vault root")
   }, async ({ path }) => {
-    const vault = vaultGuard();
+    const vault = await waitForVault();
     try {
-      const note = await readNote(vault.path, path);
-      const backlinks = await getBacklinks(vault.path, path);
-      const fw = note.links.length ? note.links.map((l) => `- [[${l}]]`) : ["(no forward links)"];
+      const backlinks = await cliGetBacklinks(vault.name, path);
+      const links = await cliGetLinks(vault.name, path);
+      const fw = links.length ? links.map((l) => `- [[${l}]]`) : ["(no forward links)"];
       const bw = backlinks.length ? backlinks.map((l) => `- [[${l.replace(".md", "")}]]`) : ["(no backlinks)"];
       return {
-        content: [{ type: "text", text: `# Links: ${note.title}
+        content: [{ type: "text", text: `# Links: ${path}
 
 ## Forward Links
 ${fw.join("\n")}
@@ -25427,21 +25530,25 @@ ${bw.join("\n")}` }]
     }
   });
   server.tool("get_tags", "Get all tags used in the vault with note counts.", {}, async () => {
-    const vault = vaultGuard();
-    const tags = store.getTags(vault.name);
-    if (tags.size === 0) {
-      const fsTags = await aggregateTags(vault.path);
-      for (const [tag, count] of fsTags)
-        tags.set(tag, count);
-    }
-    const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
-    const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
-    return { content: [{ type: "text", text: `# Tags (${sorted.length})
+    const vault = await waitForVault();
+    try {
+      const tags = await cliGetTags(vault.name);
+      const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
+      const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
+      return { content: [{ type: "text", text: `# Tags (${sorted.length})
 
 ${lines.join("\n")}` }] };
+    } catch {
+      const tags = await aggregateTags(vault.name, vault.path);
+      const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
+      const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
+      return { content: [{ type: "text", text: `# Tags (${sorted.length})
+
+${lines.join("\n")}` }] };
+    }
   });
   server.tool("index_status", "Check indexing status for the selected vault.", {}, async () => {
-    const vault = vaultGuard();
+    const vault = await waitForVault();
     const status = store.getIndexStatus(vault.name);
     return {
       content: [{ type: "text", text: `# Index Status: ${vault.name}
@@ -25455,7 +25562,7 @@ ${lines.join("\n")}` }] };
   server.tool("reindex", "Force a full reindex of the vault. Re-reads all notes, chunks, and optionally re-embeds.", {
     embed: external_exports.boolean().default(false).describe("Also re-embed all chunks (slow, requires transformers.js)")
   }, async ({ embed: doEmbed }) => {
-    const vault = vaultGuard();
+    const vault = await waitForVault();
     const count = await indexVault(vault.path, vault.name, store);
     let embedMsg = "";
     if (doEmbed) {
@@ -25484,7 +25591,7 @@ ${lines.join("\n")}` }] };
     type: external_exports.enum(["user", "feedback", "project", "reference"]).default("reference").describe("Memory type"),
     metadata: external_exports.record(external_exports.unknown()).optional().describe("Additional metadata key-value pairs")
   }, async ({ id, title, description, content, type, metadata }) => {
-    const vault = vaultGuard();
+    const vault = await waitForVault();
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const entry = {
       id,
@@ -25503,7 +25610,7 @@ ${lines.join("\n")}` }] };
     query: external_exports.string().describe("What to recall \u2014 natural language query"),
     limit: external_exports.number().min(1).max(20).default(10).describe("Max memories to return")
   }, async ({ query, limit }) => {
-    const vault = vaultGuard();
+    const vault = await waitForVault();
     const memories = await readMemories(vault.path);
     if (memories.length === 0) {
       return { content: [{ type: "text", text: "No memories saved yet. Use memory_save to store memories." }] };
@@ -25541,7 +25648,7 @@ ${lines.join("\n")}` }] };
 ${lines.join("\n\n")}` }] };
   });
   server.tool("memory_list", "List all saved memories with their types and descriptions.", {}, async () => {
-    const vault = vaultGuard();
+    const vault = await waitForVault();
     const memories = await readMemories(vault.path);
     if (memories.length === 0) {
       return { content: [{ type: "text", text: "No memories saved yet." }] };
@@ -25573,25 +25680,59 @@ ${lines.join("\n\n")}` }] };
     tags: external_exports.array(external_exports.string()).optional().describe("Tags to set in frontmatter"),
     append: external_exports.boolean().default(false).describe("If true, append to existing note instead of overwriting")
   }, async ({ path, title, content, tags, append }) => {
-    const vault = vaultGuard();
-    let finalContent = content;
-    if (append) {
-      try {
-        const existing = await readNote(vault.path, path);
-        finalContent = existing.content + "\n\n" + content;
-      } catch {
+    const vault = await waitForVault();
+    try {
+      if (append) {
+        await cliAppendNote(vault.name, path, content);
+      } else {
+        await cliCreateNote(vault.name, path, content);
       }
+      if (title) {
+        const { execFile: execFile2 } = await import("node:child_process");
+        const { promisify: promisify2 } = await import("node:util");
+        await promisify2(execFile2)("obsidian", [
+          `vault=${vault.name}`,
+          "property:set",
+          "name=title",
+          `value=${title}`,
+          `path=${path}`
+        ], { timeout: 1e4, windowsHide: true });
+      }
+      if (tags && tags.length > 0) {
+        const { execFile: execFile2 } = await import("node:child_process");
+        const { promisify: promisify2 } = await import("node:util");
+        await promisify2(execFile2)("obsidian", [
+          `vault=${vault.name}`,
+          "property:set",
+          "name=tags",
+          `value=${tags.join(",")}`,
+          "type=list",
+          `path=${path}`
+        ], { timeout: 1e4, windowsHide: true });
+      }
+      return {
+        content: [{ type: "text", text: `\u2705 ${append ? "Updated" : "Created"} note: \`${path}\`` }]
+      };
+    } catch {
+      let finalContent = content;
+      if (append) {
+        try {
+          const existing = await readNote(vault.path, path);
+          finalContent = existing.content + "\n\n" + content;
+        } catch {
+        }
+      }
+      const fm = {};
+      if (title)
+        fm.title = title;
+      if (tags)
+        fm.tags = tags;
+      fm.modified = (/* @__PURE__ */ new Date()).toISOString();
+      await writeNote(vault.path, path, fm, finalContent);
+      return {
+        content: [{ type: "text", text: `\u2705 ${append ? "Updated" : "Created"} note: \`${path}\`` }]
+      };
     }
-    const fm = {};
-    if (title)
-      fm.title = title;
-    if (tags)
-      fm.tags = tags;
-    fm.modified = (/* @__PURE__ */ new Date()).toISOString();
-    await writeNote(vault.path, path, fm, finalContent);
-    return {
-      content: [{ type: "text", text: `\u2705 ${append ? "Updated" : "Created"} note: \`${path}\`` }]
-    };
   });
   server.resource("vaults", "obsidian://vaults", { description: "List of known Obsidian vaults" }, async () => {
     const vaults = await listVaults();
@@ -25601,20 +25742,22 @@ ${lines.join("\n\n")}` }] };
     };
   });
   server.resource("tags", "obsidian://tags", { description: "All tags in selected vault with counts" }, async () => {
-    if (!selectedVault)
+    const vault = await waitForVault().catch(() => null);
+    if (!vault)
       return { contents: [{ text: "No vault selected.", uri: "obsidian://tags", mimeType: "text/plain" }] };
-    const tags = store.getTags(selectedVault.name);
+    const tags = store.getTags(vault.name);
     const lines = [...tags.entries()].sort((a, b) => b[1] - a[1]).map(([tag, count]) => `- #${tag} (${count})`);
     return {
       contents: [{ text: lines.join("\n"), uri: "obsidian://tags", mimeType: "text/markdown" }]
     };
   });
   server.resource("note", { uriTemplate: "obsidian://notes/{path}" }, { description: "Read a note by path" }, async (uri) => {
-    if (!selectedVault)
+    const vault = await waitForVault().catch(() => null);
+    if (!vault)
       return { contents: [{ text: "No vault selected.", uri: uri.href, mimeType: "text/plain" }] };
     const notePath = decodeURIComponent(uri.pathname.split("/notes/")[1] || "");
     try {
-      const note = await readNote(selectedVault.path, notePath);
+      const note = await readNote(vault.path, notePath);
       return {
         contents: [{ text: note.raw, uri: uri.href, mimeType: "text/markdown" }]
       };

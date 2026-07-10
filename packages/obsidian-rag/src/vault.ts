@@ -1,12 +1,15 @@
-// Vault file operations — read/write markdown notes, parse frontmatter and wikilinks
+// Vault file operations.
+// Interactive tool calls use Obsidian CLI as source of truth.
+// Indexer (bulk) uses direct filesystem for performance — CLI would be too slow for 1000+ notes.
 
 import { readFile, writeFile, readdir, stat, mkdir } from "node:fs/promises";
 import { join, relative, basename, dirname, extname } from "node:path";
 import { existsSync } from "node:fs";
 import matter from "gray-matter";
 import type { NoteMeta, NoteContent, MemoryEntry } from "./types.js";
+import { cliGetBacklinks, cliGetTags } from "./cli.js";
 
-// ── File discovery ────────────────────────────────────────────────────
+// ── File discovery (FS — bulk indexing perf) ─────────────────────────────
 
 export async function walkVault(vaultPath: string): Promise<string[]> {
   const files: string[] = [];
@@ -31,7 +34,7 @@ export async function walkVault(vaultPath: string): Promise<string[]> {
   return files;
 }
 
-// ── Reading ───────────────────────────────────────────────────────────
+// ── Reading (FS — bulk indexing perf) ────────────────────────────────────
 
 export async function readNote(vaultPath: string, notePath: string): Promise<NoteContent> {
   const fullPath = join(vaultPath, notePath);
@@ -48,7 +51,7 @@ export async function readNoteMeta(vaultPath: string, notePath: string): Promise
   return extractMeta(notePath, frontmatter, content);
 }
 
-// ── Writing ───────────────────────────────────────────────────────────
+// ── Writing (FS — CLI create/append can't express full frontmatter) ──────
 
 export async function writeNote(
   vaultPath: string,
@@ -68,26 +71,34 @@ export async function deleteNote(vaultPath: string, notePath: string): Promise<v
   await unlink(join(vaultPath, notePath));
 }
 
-// ── Links ─────────────────────────────────────────────────────────────
+// ── Links (CLI) ──────────────────────────────────────────────────────────
 
 export async function getBacklinks(
+  vaultName: string,
   vaultPath: string,
-  targetPath: string
+  targetPath: string,
 ): Promise<string[]> {
+  try {
+    return await cliGetBacklinks(vaultName, targetPath);
+  } catch {
+    // CLI fallback: FS scan
+    return fsBacklinks(vaultPath, targetPath);
+  }
+}
+
+/** FS fallback for backlinks when CLI unavailable. */
+async function fsBacklinks(vaultPath: string, targetPath: string): Promise<string[]> {
   const targetName = basename(targetPath, ".md");
   const allFiles = await walkVault(vaultPath);
   const backlinks: string[] = [];
-
   for (const file of allFiles) {
     if (file === targetPath) continue;
     const note = await readNote(vaultPath, file);
-    const content = note.content;
-    // Check both [[target]] and [[target|alias]]
     const linkPattern = new RegExp(
       `\\[\\[${escapeRegex(targetName)}(?:\\|[^\\]]+)?\\]\\]`,
       "i"
     );
-    if (linkPattern.test(content)) {
+    if (linkPattern.test(note.content)) {
       backlinks.push(file);
     }
   }
@@ -106,13 +117,11 @@ export function extractLinks(content: string): string[] {
 
 export function extractTags(content: string, frontmatterTags?: unknown): string[] {
   const tags = new Set<string>();
-  // Frontmatter tags
   if (Array.isArray(frontmatterTags)) {
     for (const t of frontmatterTags) tags.add(String(t).replace(/^#/, ""));
   } else if (typeof frontmatterTags === "string") {
     tags.add(frontmatterTags.replace(/^#/, ""));
   }
-  // Inline #tags
   const re = /(?:^|\s)#([a-zA-Z][\w/-]*)/gm;
   let m;
   while ((m = re.exec(content)) !== null) {
@@ -121,7 +130,29 @@ export function extractTags(content: string, frontmatterTags?: unknown): string[
   return [...tags];
 }
 
-// ── Memory operations ─────────────────────────────────────────────────
+// ── Tag aggregation (CLI + FS fallback) ──────────────────────────────────
+
+export async function aggregateTags(
+  vaultName: string,
+  vaultPath: string,
+): Promise<Map<string, number>> {
+  try {
+    return await cliGetTags(vaultName);
+  } catch {
+    // CLI fallback: FS scan
+    const files = await walkVault(vaultPath);
+    const tagCounts = new Map<string, number>();
+    for (const file of files) {
+      const meta = await readNoteMeta(vaultPath, file);
+      for (const tag of meta.tags) {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      }
+    }
+    return tagCounts;
+  }
+}
+
+// ── Memory operations (FS — custom .claude-memories format) ──────────────
 
 export function memoryDir(vaultPath: string): string {
   return join(vaultPath, ".claude-memories");
@@ -172,21 +203,7 @@ export async function writeMemory(
   return notePath;
 }
 
-// ── Tag aggregation ───────────────────────────────────────────────────
-
-export async function aggregateTags(vaultPath: string): Promise<Map<string, number>> {
-  const files = await walkVault(vaultPath);
-  const tagCounts = new Map<string, number>();
-  for (const file of files) {
-    const meta = await readNoteMeta(vaultPath, file);
-    for (const tag of meta.tags) {
-      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
-    }
-  }
-  return tagCounts;
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────
 
 function extractMeta(
   notePath: string,

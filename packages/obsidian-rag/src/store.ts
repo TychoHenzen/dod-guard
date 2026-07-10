@@ -38,6 +38,7 @@ export class Store {
         path TEXT NOT NULL,
         vault_name TEXT NOT NULL,
         title TEXT NOT NULL,
+        content TEXT NOT NULL DEFAULT '',
         tags TEXT NOT NULL DEFAULT '[]',
         links TEXT NOT NULL DEFAULT '[]',
         frontmatter TEXT NOT NULL DEFAULT '{}',
@@ -92,6 +93,12 @@ export class Store {
         last_indexed TEXT
       );
     `);
+
+    // Migration: add content column if missing (pre-0.1.2 DBs)
+    const cols = this.db.pragma("table_info(notes)") as Array<{ name: string }>;
+    if (!cols.some(c => c.name === "content")) {
+      this.db.exec("ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''");
+    }
   }
 
   // ── Vault config ─────────────────────────────────────────────────

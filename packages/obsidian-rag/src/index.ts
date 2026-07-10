@@ -1,17 +1,30 @@
 // obsidian-rag MCP server — RAG/memory on an Obsidian vault
 //
 // Provides semantic search, note CRUD, memory recall, backlink traversal.
-// Uses Obsidian CLI for vault discovery, direct filesystem for content,
-// SQLite FTS5 for keyword search, and optional local embeddings for semantic search.
+// Interactive tools use Obsidian CLI as source of truth (v1.12+).
+// Indexer uses filesystem for bulk performance (CLI too slow for 1000+ notes).
 
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import matter from "gray-matter";
 
-import { listVaults, getVaultInfo, cliAvailable } from "./cli.js";
+import {
+  listVaults,
+  getVaultInfo,
+  cliAvailable,
+  cliReadNote,
+  cliListFiles,
+  cliSearch,
+  cliGetBacklinks,
+  cliGetLinks,
+  cliGetTags,
+  cliCreateNote,
+  cliAppendNote,
+} from "./cli.js";
 import {
   readNote,
   writeNote,
@@ -20,6 +33,7 @@ import {
   aggregateTags,
   readMemories,
   writeMemory,
+  deleteNote,
 } from "./vault.js";
 import { Store } from "./store.js";
 import { indexVault } from "./indexer.js";
@@ -34,14 +48,45 @@ type TransformersPipeline = any;
 const DB_DIR = join(homedir(), ".claude", "obsidian-rag");
 const store = new Store({ dbDir: DB_DIR });
 
+const PKG = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
+
 let selectedVault: VaultInfo | null = null;
 let embedder: Embedder | null = null;
+
+// Selection mutex — prevents race between vault_select and other tools.
+// Other tools await this before accessing selectedVault.
+let _selectPromise: Promise<void> | null = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
 function vaultGuard(): VaultInfo {
   if (!selectedVault) throw new Error("No vault selected. Use vault_select first.");
   return selectedVault;
+}
+
+/** Await selection if in progress, then guard. Polls briefly in case vault_select hasn't started yet. */
+async function waitForVault(): Promise<VaultInfo> {
+  // Fast path: vault already selected
+  if (selectedVault) return selectedVault;
+
+  // Await selection if already in progress
+  if (_selectPromise) {
+    try { await _selectPromise; } catch { /* guard will throw */ }
+    if (selectedVault) return selectedVault;
+  }
+
+  // vault_select handler may not have started yet (concurrent dispatch).
+  // Poll for up to 5s.
+  for (let i = 0; i < 50; i++) {
+    if (_selectPromise) {
+      try { await _selectPromise; } catch {}
+      if (selectedVault) return selectedVault;
+    }
+    if (selectedVault) return selectedVault;
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  throw new Error("No vault selected. Use vault_select first.");
 }
 
 // ── Embedder lazy-load ────────────────────────────────────────────────
@@ -78,7 +123,7 @@ async function getEmbedder(): Promise<Embedder | null> {
 async function main() {
   const server = new McpServer({
     name: "obsidian-rag",
-    version: "0.1.0",
+    version: PKG.version,
   });
 
   // ══════════════════════════════════════════════════════════════════
@@ -88,7 +133,7 @@ async function main() {
   // ── vault_list ──
   server.tool(
     "vault_list",
-    "List all known Obsidian vaults. Uses Obsidian CLI if available.",
+    "List all known Obsidian vaults. Requires Obsidian app running.",
     {},
     async () => {
       const vaults = await listVaults();
@@ -97,7 +142,7 @@ async function main() {
         return {
           content: [{ type: "text", text: cliOk
             ? "No vaults found. Open Obsidian first or check vault configuration."
-            : "Obsidian CLI not available. Install Obsidian (https://obsidian.md) for vault discovery, or use vault_select_path to specify a vault directory directly."
+            : "Obsidian app not running and could not be started. Is Obsidian installed?"
           }],
         };
       }
@@ -116,37 +161,54 @@ async function main() {
       name: z.string().describe("Vault name (from vault_list) or absolute path to vault directory"),
     },
     async ({ name }) => {
-      // Check if it's a direct path
-      if (existsSync(name) && existsSync(join(name, ".obsidian"))) {
-        selectedVault = { name: name.split(/[/\\]/).pop()!, path: name };
-      } else {
-        // Look up by name
-        const vaults = await listVaults();
-        const match = vaults.find(v => v.name === name || v.path === name);
-        if (!match) {
-          // Fallback: try as direct path even without .obsidian marker
-          if (existsSync(name)) {
-            selectedVault = { name: name.split(/[/\\]/).pop()!, path: name };
-          } else {
-            return {
-              content: [{ type: "text", text: `Vault "${name}" not found. Use vault_list to see available vaults.` }],
-              isError: true,
-            };
-          }
+      // Create a selection promise that other tools can await
+      let resolveSelect: () => void;
+      let rejectSelect: (e: Error) => void;
+      _selectPromise = new Promise<void>((res, rej) => {
+        resolveSelect = res;
+        rejectSelect = rej;
+      });
+
+      try {
+        // Check if it's a direct path
+        if (existsSync(name) && existsSync(join(name, ".obsidian"))) {
+          selectedVault = { name: name.split(/[/\\]/).pop()!, path: name };
         } else {
-          selectedVault = match;
+          // Look up by name via CLI
+          const vaults = await listVaults();
+          const match = vaults.find(v => v.name === name || v.path === name);
+          if (!match) {
+            // Fallback: try as direct path even without .obsidian marker
+            if (existsSync(name)) {
+              selectedVault = { name: name.split(/[/\\]/).pop()!, path: name };
+            } else {
+              rejectSelect!(new Error("No vault selected."));
+              return {
+                content: [{ type: "text", text: `Vault "${name}" not found. Use vault_list to see available vaults.` }],
+                isError: true,
+              };
+            }
+          } else {
+            selectedVault = match;
+          }
         }
+
+        store.setVault(selectedVault);
+
+        // Resolve selection lock so other tools can proceed immediately
+        resolveSelect!();
+
+        // Index (may take a while, but vault is already selected)
+        const idxMsg = await indexVault(selectedVault.path, selectedVault.name, store);
+        const status = store.getIndexStatus(selectedVault.name);
+
+        return {
+          content: [{ type: "text", text: `✅ Selected vault **${selectedVault.name}**\nPath: \`${selectedVault.path}\`\nIndexed: ${status.indexedNotes} notes, ${status.totalChunks} chunks` }],
+        };
+      } catch (err) {
+        rejectSelect!(err as Error);
+        throw err;
       }
-
-      store.setVault(selectedVault);
-
-      // Start indexing in background
-      const idxMsg = await indexVault(selectedVault.path, selectedVault.name, store);
-      const status = store.getIndexStatus(selectedVault.name);
-
-      return {
-        content: [{ type: "text", text: `✅ Selected vault **${selectedVault.name}**\nPath: \`${selectedVault.path}\`\nIndexed: ${status.indexedNotes} notes, ${status.totalChunks} chunks` }],
-      };
     }
   );
 
@@ -160,7 +222,7 @@ async function main() {
       kind: z.enum(["keyword", "semantic", "hybrid"]).default("hybrid").describe("Search mode"),
     },
     async ({ query, limit, kind }) => {
-      const vault = vaultGuard();
+      const vault = await waitForVault();
       let results: SearchResult[];
 
       if (kind === "keyword" || !embedder) {
@@ -197,16 +259,17 @@ async function main() {
       path: z.string().describe("Note path relative to vault root (e.g. 'folder/Note Name.md')"),
     },
     async ({ path }) => {
-      const vault = vaultGuard();
+      const vault = await waitForVault();
       try {
-        const note = await readNote(vault.path, path);
+        // Use CLI as source of truth
+        const raw = await cliReadNote(vault.name, path);
+        const { data: frontmatter, content } = matter(raw);
         const lines = [
-          `# ${note.title}`,
-          `Path: \`${note.path}\``,
-          `Tags: ${note.tags.length ? note.tags.map(t => `#${t}`).join(" ") : "(none)"}`,
-          `Links: ${note.links.length ? note.links.join(", ") : "(none)"}`,
+          `# ${frontmatter.title || path}`,
+          `Path: \`${path}\``,
+          `Tags: ${Array.isArray(frontmatter.tags) ? frontmatter.tags.map((t: string) => `#${String(t).replace(/^#/, "")}`).join(" ") : "(none)"}`,
           ``,
-          note.content,
+          content.trim(),
         ];
         return { content: [{ type: "text", text: lines.join("\n") }] };
       } catch {
@@ -223,13 +286,23 @@ async function main() {
       directory: z.string().optional().describe("Subdirectory path within vault (optional)"),
     },
     async ({ directory }) => {
-      const vault = vaultGuard();
-      const notes = store.listNotes(vault.name, directory);
-      if (notes.length === 0) {
-        return { content: [{ type: "text", text: "No notes found. The vault may not be indexed yet — run reindex." }] };
+      const vault = await waitForVault();
+      try {
+        const files = await cliListFiles(vault.name, directory);
+        if (files.length === 0) {
+          return { content: [{ type: "text", text: `No .md files found${directory ? ` in "${directory}"` : ""}.` }] };
+        }
+        const lines = files.map(f => `- \`${f}\``);
+        return { content: [{ type: "text", text: `# Notes (${files.length})\n\n${lines.join("\n")}` }] };
+      } catch {
+        // Fallback to SQLite index
+        const notes = store.listNotes(vault.name, directory);
+        if (notes.length === 0) {
+          return { content: [{ type: "text", text: "No notes found. The vault may not be indexed yet — run reindex." }] };
+        }
+        const lines = notes.map(n => `- **${n.title}** — \`${n.path}\` ${n.tags.map(t => `#${t}`).join(" ")}`);
+        return { content: [{ type: "text", text: `# Notes (${notes.length})\n\n${lines.join("\n")}` }] };
       }
-      const lines = notes.map(n => `- **${n.title}** — \`${n.path}\` ${n.tags.map(t => `#${t}`).join(" ")}`);
-      return { content: [{ type: "text", text: `# Notes (${notes.length})\n\n${lines.join("\n")}` }] };
     }
   );
 
@@ -241,18 +314,18 @@ async function main() {
       path: z.string().describe("Note path relative to vault root"),
     },
     async ({ path }) => {
-      const vault = vaultGuard();
+      const vault = await waitForVault();
       try {
-        const note = await readNote(vault.path, path);
-        const backlinks = await getBacklinks(vault.path, path);
-        const fw = note.links.length
-          ? note.links.map(l => `- [[${l}]]`)
+        const backlinks = await cliGetBacklinks(vault.name, path);
+        const links = await cliGetLinks(vault.name, path);
+        const fw = links.length
+          ? links.map(l => `- [[${l}]]`)
           : ["(no forward links)"];
         const bw = backlinks.length
           ? backlinks.map(l => `- [[${l.replace(".md", "")}]]`)
           : ["(no backlinks)"];
         return {
-          content: [{ type: "text", text: `# Links: ${note.title}\n\n## Forward Links\n${fw.join("\n")}\n\n## Backlinks\n${bw.join("\n")}` }],
+          content: [{ type: "text", text: `# Links: ${path}\n\n## Forward Links\n${fw.join("\n")}\n\n## Backlinks\n${bw.join("\n")}` }],
         };
       } catch {
         return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
@@ -266,16 +339,19 @@ async function main() {
     "Get all tags used in the vault with note counts.",
     {},
     async () => {
-      const vault = vaultGuard();
-      const tags = store.getTags(vault.name);
-      if (tags.size === 0) {
-        // Fall back to filesystem scan if not indexed
-        const fsTags = await aggregateTags(vault.path);
-        for (const [tag, count] of fsTags) tags.set(tag, count);
+      const vault = await waitForVault();
+      try {
+        const tags = await cliGetTags(vault.name);
+        const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
+        const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
+        return { content: [{ type: "text", text: `# Tags (${sorted.length})\n\n${lines.join("\n")}` }] };
+      } catch {
+        // Fallback to filesystem
+        const tags = await aggregateTags(vault.name, vault.path);
+        const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
+        const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
+        return { content: [{ type: "text", text: `# Tags (${sorted.length})\n\n${lines.join("\n")}` }] };
       }
-      const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
-      const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
-      return { content: [{ type: "text", text: `# Tags (${sorted.length})\n\n${lines.join("\n")}` }] };
     }
   );
 
@@ -285,7 +361,7 @@ async function main() {
     "Check indexing status for the selected vault.",
     {},
     async () => {
-      const vault = vaultGuard();
+      const vault = await waitForVault();
       const status = store.getIndexStatus(vault.name);
       return {
         content: [{ type: "text", text: `# Index Status: ${vault.name}\n\n- Notes: ${status.indexedNotes}/${status.totalNotes}\n- Chunks: ${status.totalChunks}\n- Embedded: ${status.embeddedChunks}/${status.totalChunks}\n- Last indexed: ${status.lastIndexed || "never"}` }],
@@ -301,7 +377,8 @@ async function main() {
       embed: z.boolean().default(false).describe("Also re-embed all chunks (slow, requires transformers.js)"),
     },
     async ({ embed: doEmbed }) => {
-      const vault = vaultGuard();
+      const vault = await waitForVault();
+      // Reindex uses filesystem for bulk performance (CLI too slow for 1000+ notes)
       const count = await indexVault(vault.path, vault.name, store);
 
       let embedMsg = "";
@@ -339,7 +416,7 @@ async function main() {
       metadata: z.record(z.unknown()).optional().describe("Additional metadata key-value pairs"),
     },
     async ({ id, title, description, content, type, metadata }) => {
-      const vault = vaultGuard();
+      const vault = await waitForVault();
       const now = new Date().toISOString();
       const entry: Omit<MemoryEntry, "path" | "created" | "modified"> = {
         id,
@@ -365,7 +442,7 @@ async function main() {
       limit: z.number().min(1).max(20).default(10).describe("Max memories to return"),
     },
     async ({ query, limit }) => {
-      const vault = vaultGuard();
+      const vault = await waitForVault();
       const memories = await readMemories(vault.path);
       if (memories.length === 0) {
         return { content: [{ type: "text", text: "No memories saved yet. Use memory_save to store memories." }] };
@@ -416,7 +493,7 @@ async function main() {
     "List all saved memories with their types and descriptions.",
     {},
     async () => {
-      const vault = vaultGuard();
+      const vault = await waitForVault();
       const memories = await readMemories(vault.path);
       if (memories.length === 0) {
         return { content: [{ type: "text", text: "No memories saved yet." }] };
@@ -451,24 +528,62 @@ async function main() {
       append: z.boolean().default(false).describe("If true, append to existing note instead of overwriting"),
     },
     async ({ path, title, content, tags, append }) => {
-      const vault = vaultGuard();
-      let finalContent = content;
-      if (append) {
-        try {
-          const existing = await readNote(vault.path, path);
-          finalContent = existing.content + "\n\n" + content;
-        } catch {
-          // Note doesn't exist — create new
+      const vault = await waitForVault();
+      try {
+        if (append) {
+          await cliAppendNote(vault.name, path, content);
+        } else {
+          // For full create with frontmatter, use FS (CLI create doesn't support frontmatter)
+          // CLI create is simpler but loses metadata control
+          await cliCreateNote(vault.name, path, content);
         }
+        // Set frontmatter properties via CLI
+        if (title) {
+          const { execFile } = await import("node:child_process");
+          const { promisify } = await import("node:util");
+          await promisify(execFile)("obsidian", [
+            `vault=${vault.name}`,
+            "property:set",
+            "name=title",
+            `value=${title}`,
+            `path=${path}`,
+          ], { timeout: 10000, windowsHide: true });
+        }
+        if (tags && tags.length > 0) {
+          const { execFile } = await import("node:child_process");
+          const { promisify } = await import("node:util");
+          await promisify(execFile)("obsidian", [
+            `vault=${vault.name}`,
+            "property:set",
+            "name=tags",
+            `value=${tags.join(",")}`,
+            "type=list",
+            `path=${path}`,
+          ], { timeout: 10000, windowsHide: true });
+        }
+        return {
+          content: [{ type: "text", text: `✅ ${append ? "Updated" : "Created"} note: \`${path}\`` }],
+        };
+      } catch {
+        // Fallback to FS for full frontmatter control
+        let finalContent = content;
+        if (append) {
+          try {
+            const existing = await readNote(vault.path, path);
+            finalContent = existing.content + "\n\n" + content;
+          } catch {
+            // Note doesn't exist — create new
+          }
+        }
+        const fm: Record<string, unknown> = {};
+        if (title) fm.title = title;
+        if (tags) fm.tags = tags;
+        fm.modified = new Date().toISOString();
+        await writeNote(vault.path, path, fm, finalContent);
+        return {
+          content: [{ type: "text", text: `✅ ${append ? "Updated" : "Created"} note: \`${path}\`` }],
+        };
       }
-      const fm: Record<string, unknown> = {};
-      if (title) fm.title = title;
-      if (tags) fm.tags = tags;
-      fm.modified = new Date().toISOString();
-      await writeNote(vault.path, path, fm, finalContent);
-      return {
-        content: [{ type: "text", text: `✅ ${append ? "Updated" : "Created"} note: \`${path}\`` }],
-      };
     }
   );
 
@@ -494,8 +609,9 @@ async function main() {
     "obsidian://tags",
     { description: "All tags in selected vault with counts" },
     async () => {
-      if (!selectedVault) return { contents: [{ text: "No vault selected.", uri: "obsidian://tags", mimeType: "text/plain" }] };
-      const tags = store.getTags(selectedVault.name);
+      const vault = await waitForVault().catch(() => null);
+      if (!vault) return { contents: [{ text: "No vault selected.", uri: "obsidian://tags", mimeType: "text/plain" }] };
+      const tags = store.getTags(vault.name);
       const lines = [...tags.entries()]
         .sort((a, b) => b[1] - a[1])
         .map(([tag, count]) => `- #${tag} (${count})`);
@@ -510,10 +626,11 @@ async function main() {
     { uriTemplate: "obsidian://notes/{path}" } as unknown as ResourceTemplate,
     { description: "Read a note by path" },
     async (uri: URL) => {
-      if (!selectedVault) return { contents: [{ text: "No vault selected.", uri: uri.href, mimeType: "text/plain" }] };
+      const vault = await waitForVault().catch(() => null);
+      if (!vault) return { contents: [{ text: "No vault selected.", uri: uri.href, mimeType: "text/plain" }] };
       const notePath = decodeURIComponent(uri.pathname.split("/notes/")[1] || "");
       try {
-        const note = await readNote(selectedVault.path, notePath);
+        const note = await readNote(vault.path, notePath);
         return {
           contents: [{ text: note.raw, uri: uri.href, mimeType: "text/markdown" }],
         };

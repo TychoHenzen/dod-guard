@@ -147,11 +147,14 @@ export async function indexVault(vaultPath: string, vaultName: string, store: St
 
   store.setIndexMeta(vaultName, {
     indexedNotes: indexed,
-    totalChunks,
     totalNotes: files.length,
     lastIndexed: new Date().toISOString(),
     indexing: false,
   });
+  // Only overwrite totalChunks if we created new ones
+  if (totalChunks > 0) {
+    store.setIndexMeta(vaultName, { totalChunks });
+  }
 
   return indexed;
 }
