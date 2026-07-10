@@ -1,0 +1,57 @@
+# Publish monorepo packages to npm via Trusted Publisher (OIDC).
+# Trusted Publishers must be configured at npmjs.com:
+#   - TychoHenzen/dod-guard
+#   - TychoHenzen/obsidian-rag
+#
+# Tag format: v2.2.1 = dod-guard release, obsidian-rag-v0.1.0 = obsidian-rag release
+
+name: npm publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - 'obsidian-rag-v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+
+  publish-dod-guard:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/tags/obsidian-rag-')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm publish -w packages/dod-guard
+
+  publish-obsidian-rag:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/obsidian-rag-')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm publish -w packages/obsidian-rag
