@@ -24840,7 +24840,7 @@ async function walkVault(vaultPath) {
       const full = join(dir, e.name);
       if (e.isDirectory()) {
         const base = e.name;
-        if (!base.startsWith(".") || base === ".claude-memories") {
+        if (!base.startsWith(".")) {
           dirs.push(full);
         }
       } else if (e.isFile() && e.name.endsWith(".md")) {
@@ -24911,7 +24911,7 @@ async function aggregateTags(vaultName, vaultPath) {
   }
 }
 function memoryDir(vaultPath) {
-  return join(vaultPath, ".claude-memories");
+  return join(vaultPath, "Claude-Memories");
 }
 async function readMemories(vaultPath) {
   const dir = memoryDir(vaultPath);
@@ -24927,7 +24927,7 @@ async function readMemories(vaultPath) {
     const { data: fm, content } = (0, import_gray_matter.default)(raw);
     entries.push({
       id: basename(file, ".md"),
-      path: join(".claude-memories", file),
+      path: join("Claude-Memories", file),
       title: fm.name || basename(file, ".md"),
       description: fm.description || "",
       type: fm.metadata?.type || "reference",
@@ -24945,7 +24945,7 @@ async function writeMemory(vaultPath, entry) {
     await mkdir(dir, { recursive: true });
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const fileName = `${entry.id}.md`;
-  const notePath = join(".claude-memories", fileName);
+  const notePath = join("Claude-Memories", fileName);
   const frontmatter = {
     name: entry.title,
     description: entry.description,
@@ -25647,7 +25647,7 @@ ${lines.join("\n")}` }] };
       content: [{ type: "text", text: `\u2705 Reindexed ${count} notes, ${status.totalChunks} chunks${embedMsg}.` }]
     };
   });
-  server.tool("memory_save", "Save a memory entry to the vault's .claude-memories directory. Memories are markdown notes with frontmatter compatible with Claude Code's memory system.", {
+  server.tool("memory_save", "Save a memory entry to the vault's Claude-Memories directory. Memories are markdown notes with frontmatter compatible with Claude Code's memory system.", {
     id: external_exports.string().describe("Memory ID (kebab-case slug, used as filename)"),
     title: external_exports.string().describe("Short display name"),
     description: external_exports.string().describe("One-line summary"),

@@ -409,7 +409,7 @@ async function main() {
   // ── memory_save ──
   server.tool(
     "memory_save",
-    "Save a memory entry to the vault's .claude-memories directory. Memories are markdown notes with frontmatter compatible with Claude Code's memory system.",
+    "Save a memory entry to the vault's Claude-Memories directory. Memories are markdown notes with frontmatter compatible with Claude Code's memory system.",
     {
       id: z.string().describe("Memory ID (kebab-case slug, used as filename)"),
       title: z.string().describe("Short display name"),

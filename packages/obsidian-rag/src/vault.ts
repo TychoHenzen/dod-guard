@@ -23,7 +23,7 @@ export async function walkVault(vaultPath: string): Promise<string[]> {
       if (e.isDirectory()) {
         const base = e.name;
         // Skip hidden dirs and Obsidian system dirs
-        if (!base.startsWith(".") || base === ".claude-memories") {
+        if (!base.startsWith(".")) {
           dirs.push(full);
         }
       } else if (e.isFile() && e.name.endsWith(".md")) {
@@ -152,10 +152,10 @@ export async function aggregateTags(
   }
 }
 
-// ── Memory operations (FS — custom .claude-memories format) ──────────────
+// ── Memory operations (FS — Claude-Memories format) ──────────────
 
 export function memoryDir(vaultPath: string): string {
-  return join(vaultPath, ".claude-memories");
+  return join(vaultPath, "Claude-Memories");
 }
 
 export async function readMemories(vaultPath: string): Promise<MemoryEntry[]> {
@@ -170,7 +170,7 @@ export async function readMemories(vaultPath: string): Promise<MemoryEntry[]> {
     const { data: fm, content } = matter(raw);
     entries.push({
       id: basename(file, ".md"),
-      path: join(".claude-memories", file),
+      path: join("Claude-Memories", file),
       title: (fm as any).name || basename(file, ".md"),
       description: (fm as any).description || "",
       type: (fm as any).metadata?.type || "reference",
@@ -191,7 +191,7 @@ export async function writeMemory(
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
   const now = new Date().toISOString();
   const fileName = `${entry.id}.md`;
-  const notePath = join(".claude-memories", fileName);
+  const notePath = join("Claude-Memories", fileName);
   const frontmatter: Record<string, unknown> = {
     name: entry.title,
     description: entry.description,

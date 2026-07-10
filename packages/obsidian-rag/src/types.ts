@@ -43,7 +43,7 @@ export interface SearchResult {
 
 export interface MemoryEntry {
   id: string;          // filename without .md
-  path: string;        // relative to vault/.claude-memories/
+  path: string;        // relative to vault/Claude-Memories/
   title: string;
   description: string;
   type: string;        // user | feedback | project | reference
