@@ -1,5 +1,5 @@
 # Publish dod-guard to npm via Trusted Publisher (OIDC).
-# Trusted Publisher configured at npmjs.com: tychohenzen/dod-guard
+# Trusted Publisher configured at npmjs.com: TychoHenzen/dod-guard
 
 name: Node.js Package
 
@@ -26,8 +26,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
+          registry-url: https://registry.npmjs.org
       - run: npm ci
-      - run: npm publish --registry https://registry.npmjs.org/
+      - run: npm publish
