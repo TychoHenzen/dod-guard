@@ -1,53 +1,14 @@
 {
-  "name": "dod-guard",
-  "version": "2.2.0",
-  "description": "Anti-cheat Definition of Done verification with locked proofs. Claude Code plugin with MCP server and /interview skill.",
-  "type": "module",
-  "main": "dist/bundle.js",
-  "bin": {
-    "dod-guard": "dist/bundle.js"
-  },
-  "files": [
-    "dist/bundle.js",
-    "skills/",
-    "standards/",
-    ".claude-plugin/",
-    ".mcp.json"
+  "name": "mcp-servers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo for MCP server plugins (dod-guard, obsidian-rag)",
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "build": "tsc",
-    "test": "tsc && node --experimental-test-module-mocks --test \"dist/*.test.js\"",
-    "bundle": "node esbuild.config.mjs",
-    "prepublishOnly": "npm run build && npm run bundle",
-    "start": "node dist/bundle.js",
-    "dev": "tsc --watch"
-  },
-  "keywords": [
-    "claude-code",
-    "claude-code-plugin",
-    "mcp",
-    "definition-of-done",
-    "verification",
-    "anti-cheat"
-  ],
-  "author": "tychohenzen",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/TychoHenzen/dod-guard.git"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "zod": "^3.24.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "c8": "^11.0.0",
-    "esbuild": "^0.28.0",
-    "nyc": "^18.0.0",
-    "typescript": "^5.7.0"
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "bundle": "npm run bundle --workspaces"
   }
 }

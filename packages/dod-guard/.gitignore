@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+
+# TypeScript compiler output (bundle.js is the distributed artifact)
+dist/*.js
+dist/*.d.ts
+dist/*.js.map
+!dist/bundle.js
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+
+# Code review graph cache
+.code-review-graph/
+
+# Local DoD plan documents (not distributed)
+docs/plans/
+
+# Test verification artifacts (generated)
+*.audit.json
+.claude/test-verification/
+coverage/

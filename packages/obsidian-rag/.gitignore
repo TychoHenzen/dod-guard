@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+
+# TypeScript compiler output (bundle.js is the distributed artifact)
+dist/*.js
+dist/*.d.ts
+dist/*.js.map
+!dist/bundle.js
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+
+# Obsidian-RAG database (generated per-machine)
+*.db
+*.db-wal
+*.db-shm

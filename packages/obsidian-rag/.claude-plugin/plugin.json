@@ -1,0 +1,8 @@
+{
+  "name": "obsidian-rag",
+  "description": "RAG/memory MCP server on an Obsidian vault. Semantic search, note CRUD, memory recall, backlink traversal — all local, all offline.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  }
+}

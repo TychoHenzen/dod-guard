@@ -1,0 +1,23 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dod-guard-monorepo",
+  "description": "MCP server plugins: dod-guard (anti-cheat DoD verification) and obsidian-rag (RAG/memory on Obsidian vaults)",
+  "owner": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  },
+  "plugins": [
+    {
+      "name": "dod-guard",
+      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Ships /interview, /quality-upgrade, /test-verification, and /test-fixer skills.",
+      "source": "./packages/dod-guard",
+      "category": "productivity"
+    },
+    {
+      "name": "obsidian-rag",
+      "description": "RAG/memory MCP server on an Obsidian vault. Semantic search, note CRUD, memory recall, backlink traversal — all local, all offline.",
+      "source": "./packages/obsidian-rag",
+      "category": "knowledge-management"
+    }
+  ]
+}

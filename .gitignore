@@ -1,35 +1,31 @@
 # Dependencies
 node_modules/
 
+# TypeScript (per-package .gitignore handles dist/ with bundle.js exceptions)
+*.tsbuildinfo
+
+# Tests & coverage
+.nyc_output/
+coverage/
+
 # IDE
 .idea/
 .vscode/
-
-# TypeScript compiler output (bundle.js is the distributed artifact)
-dist/*.js
-dist/*.d.ts
-dist/*.js.map
-!dist/bundle.js
-
-# Logs
-*.log
-npm-debug.log*
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 
+# Logs
+*.log
+npm-debug.log*
+
 # Env
 .env
 .env.local
 
-# Code review graph cache
-.code-review-graph/
-
-# Local DoD plan documents (not distributed)
-docs/plans/
-
-# Test verification artifacts (generated)
-*.audit.json
-.claude/test-verification/
-coverage/
+# Cache
+.cache/

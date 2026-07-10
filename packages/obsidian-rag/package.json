@@ -1,0 +1,56 @@
+{
+  "name": "obsidian-rag",
+  "version": "0.1.0",
+  "description": "RAG/memory MCP server on top of an Obsidian vault. Semantic search, note CRUD, memory recall — all local, all offline.",
+  "type": "module",
+  "main": "dist/bundle.js",
+  "bin": {
+    "obsidian-rag": "dist/bundle.js"
+  },
+  "files": [
+    "dist/bundle.js",
+    "skills/",
+    ".claude-plugin/",
+    ".mcp.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "tsc && node --experimental-test-module-mocks --test \"dist/*.test.js\"",
+    "bundle": "node esbuild.config.mjs",
+    "prepublishOnly": "npm run build && npm run bundle",
+    "start": "node dist/bundle.js",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-code-plugin",
+    "mcp",
+    "obsidian",
+    "rag",
+    "memory",
+    "semantic-search",
+    "knowledge-base"
+  ],
+  "author": "tychohenzen",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TychoHenzen/dod-guard.git",
+    "directory": "packages/obsidian-rag"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "better-sqlite3": "^11.0.0",
+    "gray-matter": "^4.0.3",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.7.0"
+  }
+}
