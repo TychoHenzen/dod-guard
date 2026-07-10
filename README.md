@@ -56,11 +56,42 @@ npm install -g dod-guard
 
 ## Skills
 
+The plugin ships four skills for a complete quality workflow:
+
 ### `/interview`
 
 Structured requirements gathering skill. Researches the codebase, asks targeted questions one at a time, builds a confirmed requirements summary, then creates a locked DoD via `dod_create`.
 
 The output is a self-contained spec with testable proofs that can be passed to `/goal` for autonomous implementation.
+
+### `/test-verification`
+
+Verify and score test file quality across 8 dimensions (assertion quality, determinism, isolation, clarity, coverage depth, speed, diagnostics, assertion triviality). Also runs source code quality analysis (observability, brevity). Generates a scored manifest at `.claude/test-verification/manifest.json` and an HTML dashboard.
+
+Triggers: "verify my tests", "check test quality", "audit the test suite", "find weak tests", "coverage gaps".
+
+### `/test-fixer`
+
+Fix test quality issues identified by test-verification. Reads the manifest, applies targeted fixes for weak assertions, flake risks, missing edge cases, poor diagnostics, and source code quality issues (empty catches, missing logs, long functions, high CC, unnecessary else). Re-verifies and updates the manifest.
+
+Triggers: "fix my tests", "improve test quality", "fix weak tests", "fix assertion quality", "fix observability issues", "fix brevity violations".
+
+### `/quality-upgrade`
+
+Multi-phase orchestrator that iteratively brings test quality and source code health to a target score (~8/10). Manages 5 phases (baseline, fix cycles, coverage gaps, final verify, commit) using test-verification and test-fixer in a loop. Durable state in manifest.cycle survives session restarts.
+
+Triggers: "upgrade quality", "improve quality to 8", "quality loop", "full quality pass", "bring tests to 8/10".
+
+### Skill dependencies
+
+```
+quality-upgrade → test-verification + test-fixer
+test-fixer → test-verification
+```
+
+All four skills are self-contained in the plugin — no manual installation needed.
+
+> **Note for existing users:** If you previously installed `test-verification`, `test-fixer`, or `quality-upgrade` manually in `~/.claude/skills/`, remove those copies. The plugin versions are the canonical source and having both installed causes name conflicts.
 
 ## How it works
 

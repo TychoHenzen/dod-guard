@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Verification Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --green: #3fb950;
+    --yellow: #d2991d;
+    --red: #f85149;
+    --accent: #58a6ff;
+    --green-bg: rgba(63,185,80,0.12);
+    --yellow-bg: rgba(210,153,29,0.12);
+    --red-bg: rgba(248,81,73,0.12);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  body { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  h2 { font-size: 1.1rem; color: var(--text-dim); font-weight: 400; margin: 0 0 24px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .tab-btn { background: none; border: none; color: var(--text-dim); padding: 10px 20px; font-size: 0.9rem; cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; font-family: inherit; }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Summary cards */
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .card .label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .card .value { font-size: 1.8rem; font-weight: 600; }
+  .card .sub { font-size: 0.8rem; color: var(--text-dim); margin-top: 2px; }
+
+  /* Bar chart */
+  .bar-chart { display: flex; gap: 4px; align-items: flex-end; height: 60px; margin-bottom: 4px; }
+  .bar-chart .bar { flex: 1; border-radius: 2px 2px 0 0; min-width: 8px; }
+  .bar-chart .bar.green { background: var(--green); }
+  .bar-chart .bar.yellow { background: var(--yellow); }
+  .bar-chart .bar.red { background: var(--red); }
+
+  /* Coverage gauge */
+  .gauge-wrap { display: flex; align-items: center; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; }
+  .gauge { position: relative; width: 140px; height: 140px; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge circle { fill: none; stroke-width: 10; }
+  .gauge .bg { stroke: var(--border); }
+  .gauge .fg { stroke: var(--green); stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+  .gauge .pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; }
+  .gauge-legend { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; }
+  .gauge-legend .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+  .gauge-legend .dot.green { background: var(--green); }
+  .gauge-legend .dot.yellow { background: var(--yellow); }
+  .gauge-legend .dot.red { background: var(--red); }
+
+  /* Controls */
+  .controls { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .controls input, .controls select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-family: inherit; }
+  .controls input { width: 240px; }
+  .controls input::placeholder { color: var(--text-dim); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-dim); font-weight: 500; white-space: nowrap; cursor: pointer; user-select: none; }
+  th:hover { color: var(--text); }
+  th .sort-arrow { margin-left: 4px; font-size: 0.7rem; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover { background: rgba(255,255,255,0.02); }
+  tr.expandable { cursor: pointer; }
+  tr.expandable:hover { background: rgba(255,255,255,0.04); }
+  tr.detail-row { display: none; }
+  tr.detail-row.open { display: table-row; }
+  tr.detail-row td { padding: 0 12px 12px; border-bottom: 1px solid var(--border); }
+
+  .score-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.8rem; min-width: 36px; text-align: center; }
+  .score-badge.high { background: var(--green-bg); color: var(--green); }
+  .score-badge.mid { background: var(--yellow-bg); color: var(--yellow); }
+  .score-badge.low { background: var(--red-bg); color: var(--red); }
+
+  .risk-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+  .risk-badge.high { background: var(--red-bg); color: var(--red); }
+  .risk-badge.medium { background: var(--yellow-bg); color: var(--yellow); }
+  .risk-badge.low { background: rgba(88,166,255,0.08); color: var(--accent); }
+
+  .file-path { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.8rem; max-width: 400px; word-break: break-all; }
+
+  .finding { padding: 4px 8px; margin: 2px 0; border-radius: 4px; font-size: 0.8rem; border-left: 3px solid; }
+  .finding.high { background: var(--red-bg); border-color: var(--red); }
+  .finding.medium { background: var(--yellow-bg); border-color: var(--yellow); }
+  .finding.low { background: rgba(88,166,255,0.08); border-color: var(--accent); }
+  .finding .sev { font-weight: 600; text-transform: uppercase; font-size: 0.7rem; margin-right: 6px; }
+  .finding.high .sev { color: var(--red); }
+  .finding.medium .sev { color: var(--yellow); }
+  .finding.low .sev { color: var(--accent); }
+
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .detail-score { text-align: center; padding: 8px; border-radius: 6px; background: var(--bg); }
+  .detail-score .dim { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+  .detail-score .val { font-size: 1.1rem; font-weight: 600; }
+  .detail-score.excellent .val { color: var(--green); }
+  .detail-score.good .val { color: var(--yellow); }
+  .detail-score.poor .val { color: var(--red); }
+
+  .empty { text-align: center; padding: 48px; color: var(--text-dim); }
+  .timestamp { font-size: 0.75rem; color: var(--text-dim); margin-top: 16px; }
+  .summary-text { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 6px; font-style: italic; }
+
+  .reason-tag { font-size: 0.75rem; color: var(--text-dim); background: var(--bg); padding: 2px 6px; border-radius: 3px; }
+  .match-label { font-size: 0.7rem; padding: 1px 6px; border-radius: 3px; font-weight: 600; }
+  .match-label.covered { background: var(--green-bg); color: var(--green); }
+  .match-label.possible { background: var(--yellow-bg); color: var(--yellow); }
+  .match-label.none { background: var(--red-bg); color: var(--red); }
+</style>
+</head>
+<body>
+
+<h1>Test Verification Dashboard</h1>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('quality')">Test Quality</button>
+  <button class="tab-btn" onclick="switchTab('coverage')">Coverage Gaps</button>
+  <button class="tab-btn" onclick="switchTab('source')">Source Quality</button>
+</div>
+<div class="timestamp" id="timestamp" style="margin-top:-16px;margin-bottom:16px;"></div>
+
+<!-- Quality Tab -->
+<div class="tab-content active" id="tab-quality">
+<h2 id="subtitle"></h2>
+
+<div class="summary">
+  <div class="card"><div class="label">Total Test Files</div><div class="value" id="stat-total">-</div></div>
+  <div class="card"><div class="label">Avg Score</div><div class="value" id="stat-avg">-</div><div class="sub" id="stat-grade"></div></div>
+  <div class="card"><div class="label">High (≥8)</div><div class="value" style="color:var(--green)" id="stat-high">-</div></div>
+  <div class="card"><div class="label">Mid (5-7)</div><div class="value" style="color:var(--yellow)" id="stat-mid">-</div></div>
+  <div class="card"><div class="label">Low (&lt;5)</div><div class="value" style="color:var(--red)" id="stat-low">-</div></div>
+  <div class="card">
+    <div class="label">Score Distribution</div>
+    <div class="bar-chart" id="distribution"></div>
+  </div>
+</div>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Filter by file path..." oninput="renderQualityTable()">
+  <select id="scoreFilter" onchange="renderQualityTable()">
+    <option value="all">All scores</option>
+    <option value="high">High (≥8)</option>
+    <option value="mid">Mid (5-7)</option>
+    <option value="low">Low (&lt;5)</option>
+  </select>
+  <select id="sortBy" onchange="renderQualityTable()">
+    <option value="overall">Sort: Overall Score</option>
+    <option value="path">Sort: File Path</option>
+    <option value="assertion_quality">Sort: Assertion Quality</option>
+    <option value="determinism">Sort: Determinism</option>
+    <option value="isolation">Sort: Isolation</option>
+    <option value="clarity">Sort: Clarity</option>
+    <option value="coverage_depth">Sort: Coverage Depth</option>
+    <option value="speed">Sort: Speed</option>
+    <option value="diagnostics">Sort: Diagnostics</option>
+    <option value="assertion_triviality">Sort: Triviality</option>
+  </select>
+  <button onclick="expandAll()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.85rem;font-family:inherit;">Expand All</button>
+  <button onclick="collapseAll()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.85rem;font-family:inherit;">Collapse All</button>
+</div>
+
+<table>
+<thead>
+  <tr>
+    <th onclick="changeSort('path')">File <span class="sort-arrow" id="arrow-path"></span></th>
+    <th onclick="changeSort('overall')">Overall <span class="sort-arrow" id="arrow-overall"></span></th>
+    <th onclick="changeSort('assertion_quality')">Assertions <span class="sort-arrow" id="arrow-assertion_quality"></span></th>
+    <th onclick="changeSort('determinism')">Determinism <span class="sort-arrow" id="arrow-determinism"></span></th>
+    <th onclick="changeSort('isolation')">Isolation <span class="sort-arrow" id="arrow-isolation"></span></th>
+    <th onclick="changeSort('clarity')">Clarity <span class="sort-arrow" id="arrow-clarity"></span></th>
+    <th onclick="changeSort('coverage_depth')">Depth <span class="sort-arrow" id="arrow-coverage_depth"></span></th>
+    <th onclick="changeSort('speed')">Speed <span class="sort-arrow" id="arrow-speed"></span></th>
+    <th onclick="changeSort('diagnostics')">Diag <span class="sort-arrow" id="arrow-diagnostics"></span></th>
+    <th>Findings</th>
+  </tr>
+</thead>
+<tbody id="qualityTableBody"></tbody>
+</table>
+
+<div class="empty" id="qualityEmptyState" style="display:none">No test files match the current filter.</div>
+</div>
+
+<!-- Coverage Tab -->
+<div class="tab-content" id="tab-coverage">
+<h2>Source File Coverage</h2>
+
+<div class="summary" id="coverageSummary"></div>
+
+<div class="gauge-wrap" id="gaugeArea"></div>
+
+<div class="controls">
+  <input type="text" id="covSearch" placeholder="Filter by file path..." oninput="renderCoverageTable()">
+  <select id="riskFilter" onchange="renderCoverageTable()">
+    <option value="all">All risk levels</option>
+    <option value="high">High risk</option>
+    <option value="medium">Medium risk</option>
+    <option value="low">Low risk</option>
+  </select>
+</div>
+
+<table>
+<thead>
+  <tr>
+    <th>Source File</th>
+    <th>Lines</th>
+    <th>Status</th>
+    <th>Line%</th>
+    <th>Branch%</th>
+    <th>Risk</th>
+    <th>Reason</th>
+  </tr>
+</thead>
+<tbody id="coverageTableBody"></tbody>
+</table>
+
+<div class="empty" id="coverageEmptyState" style="display:none">No untested source files match the current filter.</div>
+</div>
+
+<!-- Source Quality Tab -->
+<div class="tab-content" id="tab-source">
+<h2>Source Code Quality</h2>
+
+<div class="summary" id="sourceSummary"></div>
+
+<div class="controls">
+  <input type="text" id="sqSearch" placeholder="Filter by file path..." oninput="renderSourceTable()">
+  <select id="sqDimFilter" onchange="renderSourceTable()">
+    <option value="all">All files</option>
+    <option value="obs_issues">Observability issues (score &lt;8)</option>
+    <option value="brev_issues">Brevity issues (score &lt;8)</option>
+    <option value="any_issues">Any issues</option>
+  </select>
+</div>
+
+<table>
+<thead>
+  <tr>
+    <th>Source File</th>
+    <th>Lines</th>
+    <th>Funcs</th>
+    <th>Observability</th>
+    <th>Brevity</th>
+    <th>Issues</th>
+  </tr>
+</thead>
+<tbody id="sourceTableBody"></tbody>
+</table>
+
+<div class="empty" id="sourceEmptyState" style="display:none">No source files analyzed. Run test-verification first.</div>
+</div>
+
+<script>
+const MANIFEST = __MANIFEST_DATA__;
+const DIMS = ['assertion_quality','determinism','isolation','clarity','coverage_depth','speed','diagnostics','assertion_triviality'];
+const DIM_LABELS = {assertion_quality:'Assertion Quality',determinism:'Determinism',isolation:'Isolation',clarity:'Clarity',coverage_depth:'Coverage Depth',speed:'Speed',diagnostics:'Diagnostics',assertion_triviality:'Triviality'};
+
+let sortField = 'overall';
+let sortAsc = true;
+let currentTab = 'quality';
+
+function scoreClass(v) { return v >= 8 ? 'high' : v >= 5 ? 'mid' : 'low'; }
+function dimClass(v) { return v >= 8 ? 'excellent' : v >= 5 ? 'good' : 'poor'; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ---- Tab switching ----
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  if (tab === 'quality') { document.querySelector('.tab-btn:nth-child(1)').classList.add('active'); document.getElementById('tab-quality').classList.add('active'); }
+  else if (tab === 'coverage') { document.querySelector('.tab-btn:nth-child(2)').classList.add('active'); document.getElementById('tab-coverage').classList.add('active'); }
+  else { document.querySelector('.tab-btn:nth-child(3)').classList.add('active'); document.getElementById('tab-source').classList.add('active'); }
+}
+
+// ---- Quality Tab ----
+function initQuality() {
+  const files = Object.entries(MANIFEST.files || {});
+  const n = files.length;
+  document.getElementById('stat-total').textContent = n;
+  if (n === 0) { document.getElementById('qualityEmptyState').style.display = 'block'; return; }
+
+  let sum = 0, hi = 0, mid = 0, lo = 0;
+  files.forEach(([,f]) => {
+    sum += f.overall || 0;
+    const s = f.overall || 0;
+    if (s >= 8) hi++; else if (s >= 5) mid++; else lo++;
+  });
+  const avg = (sum / n).toFixed(1);
+  document.getElementById('stat-avg').textContent = avg;
+  document.getElementById('stat-grade').textContent = avg >= 8 ? 'Excellent' : avg >= 6 ? 'Good' : avg >= 4 ? 'Needs Work' : 'Poor';
+  document.getElementById('stat-high').textContent = hi;
+  document.getElementById('stat-mid').textContent = mid;
+  document.getElementById('stat-low').textContent = lo;
+
+  const dist = document.getElementById('distribution'), maxH = 60;
+  dist.innerHTML = '';
+  files.forEach(([,f]) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar ' + scoreClass(f.overall || 0);
+    bar.style.height = Math.max(4, ((f.overall || 0) / 10) * maxH) + 'px';
+    bar.title = (f.overall || 0).toFixed(1);
+    dist.appendChild(bar);
+  });
+
+  const lastRun = MANIFEST.last_partial_run || MANIFEST.last_full_run;
+  document.getElementById('subtitle').textContent = lastRun
+    ? 'Last verified: ' + new Date(lastRun).toLocaleString()
+    : 'No verification run yet';
+
+  updateSortArrow();
+  renderQualityTable();
+}
+
+function getQualityFiles() {
+  let files = Object.entries(MANIFEST.files || {}).map(([path, data]) => ({path, ...data}));
+  const search = document.getElementById('search').value.toLowerCase();
+  if (search) files = files.filter(f => f.path.toLowerCase().includes(search));
+  const filter = document.getElementById('scoreFilter').value;
+  if (filter === 'high') files = files.filter(f => (f.overall||0) >= 8);
+  else if (filter === 'mid') files = files.filter(f => (f.overall||0) >= 5 && (f.overall||0) < 8);
+  else if (filter === 'low') files = files.filter(f => (f.overall||0) < 5);
+  files.sort((a,b) => {
+    let va = sortField === 'path' ? a.path : (a.scores?.[sortField] ?? a[sortField] ?? 0);
+    let vb = sortField === 'path' ? b.path : (b.scores?.[sortField] ?? b[sortField] ?? 0);
+    if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return sortAsc ? va - vb : vb - va;
+  });
+  return files;
+}
+
+function renderQualityTable() {
+  const files = getQualityFiles();
+  const tbody = document.getElementById('qualityTableBody');
+  const empty = document.getElementById('qualityEmptyState');
+  if (files.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = files.map((f,i) => {
+    const s = f.scores || {};
+    const findings = f.findings || [];
+    const sc = scoreClass(f.overall||0);
+    return '<tr class="expandable" onclick="toggleRow('+i+')">'
+      + '<td class="file-path">'+esc(f.path)+'</td>'
+      + '<td><span class="score-badge '+sc+'">'+(f.overall||0).toFixed(1)+'</span></td>'
+      + DIMS.map(d => '<td><span class="score-badge '+scoreClass(s[d]||0)+'">'+(s[d]??'-')+'</span></td>').join('')
+      + '<td>'+(findings.length ? '<span style="color:'+(findings.some(x=>x.severity==='high')?'var(--red)':'var(--yellow)')+'">'+findings.length+' finding'+(findings.length>1?'s':'')+'</span>' : '<span style="color:var(--text-dim)">0</span>')+'</td>'
+      + '</tr>'
+      + '<tr class="detail-row" id="detail-'+i+'">'
+      + '<td colspan="'+(9+DIMS.length)+'">'
+      + (f.summary ? '<div class="summary-text">'+esc(f.summary)+'</div>' : '')
+      + '<div class="detail-grid">'+DIMS.map(d => '<div class="detail-score '+dimClass(s[d]||0)+'"><div class="dim">'+DIM_LABELS[d]+'</div><div class="val">'+(s[d]??'-')+'</div></div>').join('')+'</div>'
+      + (f.metrics ? '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:8px;">Metrics: '+(f.metrics.test_function_count||'?')+' fn, '+(f.metrics.total_assertions||'?')+' assertions ('+(f.metrics.specific_assertions||'?')+' specific, '+(f.metrics.truthiness_assertions||'?')+' truthiness, '+(f.metrics.trivial_assertions||'?')+' trivial), '+(f.metrics.error_path_functions||'?')+' error tests, '+(f.metrics.assertions_with_message||'?')+' messaged</div>' : '')
+      + (findings.length ? '<div style="font-weight:600;margin-bottom:4px;font-size:0.8rem;">Findings</div>' : '')
+      + findings.map(fn => {
+          const loc = fn.location ? ' <span style="color:var(--text-dim)">('+esc(fn.location)+')</span>' : '';
+          return '<div class="finding '+fn.severity+'"><span class="sev">'+fn.severity+'</span> <strong>'+esc(fn.category)+'</strong>'+loc+': '+esc(fn.detail)+(fn.suggestion ? ' <span style="color:var(--green)">→ '+esc(fn.suggestion)+'</span>' : '')+'</div>';
+        }).join('')
+      + '<div style="margin-top:8px;font-size:0.75rem;color:var(--text-dim)">Hash: '+(f.hash||'').substring(0,16)+'... · Last verified: '+(f.last_verified ? new Date(f.last_verified).toLocaleString() : 'never')+'</div>'
+      + '</td></tr>';
+  }).join('');
+}
+
+function toggleRow(i) { document.getElementById('detail-'+i).classList.toggle('open'); }
+function expandAll() { document.querySelectorAll('#tab-quality .detail-row').forEach(r => r.classList.add('open')); }
+function collapseAll() { document.querySelectorAll('#tab-quality .detail-row').forEach(r => r.classList.remove('open')); }
+
+function changeSort(field) {
+  if (sortField === field) sortAsc = !sortAsc;
+  else { sortField = field; sortAsc = field === 'overall' ? true : false; }
+  updateSortArrow();
+  renderQualityTable();
+}
+
+function updateSortArrow() {
+  DIMS.concat(['path','overall']).forEach(d => {
+    const el = document.getElementById('arrow-'+d);
+    if (el) el.textContent = d === sortField ? (sortAsc ? '▲' : '▼') : '';
+  });
+}
+
+// ---- Coverage Tab ----
+function initCoverage() {
+  const cov = MANIFEST.coverage;
+  if (!cov) {
+    document.getElementById('coverageSummary').innerHTML = '<div class="card"><div class="label">No Coverage Data</div><div class="value" style="font-size:1rem;">-</div><div class="sub">Run test-verification first</div></div>';
+    return;
+  }
+
+  const total = cov.total_source_files || 0;
+  const tested = cov.tested || 0;
+  const possible = cov.possibly_tested || 0;
+  const untested = cov.untested || 0;
+  const weakCovered = (cov.weakly_covered || []).length;
+  const pct = total > 0 ? ((tested / total) * 100).toFixed(1) : 0;
+  const linePct = cov.line_coverage_available ? (cov.overall_line_pct || 0).toFixed(1) : 'N/A';
+  const branchPct = cov.line_coverage_available ? (cov.overall_branch_pct || 0).toFixed(1) : 'N/A';
+
+  document.getElementById('coverageSummary').innerHTML =
+    '<div class="card"><div class="label">Total Source Files</div><div class="value">'+total+'</div></div>'
+    + '<div class="card"><div class="label">Tested</div><div class="value" style="color:var(--green)">'+tested+'</div><div class="sub">'+pct+'% file coverage</div></div>'
+    + '<div class="card"><div class="label">Line Coverage</div><div class="value" style="color:'+(linePct>=80?'var(--green)':linePct>=50?'var(--yellow)':'var(--red)')+'">'+linePct+'%</div></div>'
+    + '<div class="card"><div class="label">Branch Coverage</div><div class="value" style="color:'+(branchPct>=80?'var(--green)':branchPct>=50?'var(--yellow)':'var(--red)')+'">'+branchPct+'%</div></div>'
+    + '<div class="card"><div class="label">Untested</div><div class="value" style="color:var(--red)">'+untested+'</div><div class="sub">No test found</div></div>'
+    + '<div class="card"><div class="label">Weakly Covered</div><div class="value" style="color:'+(weakCovered>0?'var(--yellow)':'var(--green)')+'">'+weakCovered+'</div><div class="sub">Has tests, low coverage</div></div>';
+
+  // Gauge
+  const gaugeArea = document.getElementById('gaugeArea');
+  const circ = 2 * Math.PI * 58;
+  const gaugePct = linePct !== 'N/A' ? parseFloat(linePct) : parseFloat(pct);
+  const offset = circ * (1 - (gaugePct / 100));
+  // Gauge color
+  let gaugeColor = gaugePct >= 80 ? 'var(--green)' : gaugePct >= 50 ? 'var(--yellow)' : 'var(--red)';
+  gaugeArea.innerHTML =
+    '<div class="gauge"><svg viewBox="0 0 140 140"><circle class="bg" cx="70" cy="70" r="58"/><circle class="fg" cx="70" cy="70" r="58" stroke="'+gaugeColor+'" stroke-dasharray="'+circ+'" stroke-dashoffset="'+offset+'"/></svg><div class="pct" style="color:'+gaugeColor+'">'+(linePct!=='N/A'?linePct:pct)+'%</div></div>'
+    + '<div class="gauge-legend">'
+    + '<div><span class="dot green"></span> Tested: '+tested+' ('+pct+'% files)</div>'
+    + (linePct !== 'N/A' ? '<div><span class="dot" style="background:var(--accent)"></span> Line: '+linePct+'%</div>' : '')
+    + (branchPct !== 'N/A' ? '<div><span class="dot" style="background:var(--accent)"></span> Branch: '+branchPct+'%</div>' : '')
+    + '<div><span class="dot yellow"></span> Weakly covered: '+weakCovered+'</div>'
+    + '<div><span class="dot red"></span> Untested: '+untested+'</div>'
+    + '</div>';
+
+  renderCoverageTable();
+}
+
+function getCoverageFiles() {
+  const cov = MANIFEST.coverage;
+  if (!cov) return [];
+  let files = [];
+
+  // Collect all untested + possibly_tested + weakly_covered
+  (cov.untested_files || []).forEach(f => files.push({...f, match: 'none'}));
+  (cov.entry_points_untested || []).forEach(f => files.push({...f, match: 'none', is_entry: true}));
+  (cov.weakly_covered || []).forEach(f => files.push({...f, match: 'weak', is_weak: true}));
+
+  // Also collect possibly_tested if stored separately
+  if (cov.possibly_tested_files) {
+    cov.possibly_tested_files.forEach(f => files.push({...f, match: 'possible'}));
+  }
+
+  const search = document.getElementById('covSearch').value.toLowerCase();
+  if (search) files = files.filter(f => f.path.toLowerCase().includes(search));
+
+  const risk = document.getElementById('riskFilter').value;
+  if (risk !== 'all') files = files.filter(f => f.risk === risk);
+
+  // Sort: high > medium > low, then by lines desc
+  const riskOrder = {high:0, medium:1, low:2};
+  files.sort((a,b) => (riskOrder[a.risk||'low'] - riskOrder[b.risk||'low']) || ((b.lines||0) - (a.lines||0)));
+  return files;
+}
+
+function renderCoverageTable() {
+  const files = getCoverageFiles();
+  const tbody = document.getElementById('coverageTableBody');
+  const empty = document.getElementById('coverageEmptyState');
+  if (files.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = files.map(f => {
+    const matchLabel = f.match === 'possible'
+      ? '<span class="match-label possible">POSSIBLE</span>'
+      : f.match === 'weak'
+      ? '<span class="match-label possible">WEAK</span>'
+      : '<span class="match-label none">NONE</span>';
+    const entryTag = f.is_entry ? ' <span class="reason-tag">entry point</span>' : '';
+    const lineCov = f.line_coverage_pct != null ? f.line_coverage_pct.toFixed(1)+'%' : '-';
+    const branchCov = f.branch_coverage_pct != null ? f.branch_coverage_pct.toFixed(1)+'%' : '-';
+    const lineColor = f.line_coverage_pct != null ? (f.line_coverage_pct >= 80 ? 'var(--green)' : f.line_coverage_pct >= 50 ? 'var(--yellow)' : 'var(--red)') : 'var(--text-dim)';
+    const branchColor = f.branch_coverage_pct != null ? (f.branch_coverage_pct >= 80 ? 'var(--green)' : f.branch_coverage_pct >= 50 ? 'var(--yellow)' : 'var(--red)') : 'var(--text-dim)';
+    return '<tr>'
+      + '<td class="file-path">'+esc(f.path)+entryTag+'</td>'
+      + '<td>'+(f.lines||'?')+'</td>'
+      + '<td>'+matchLabel+'</td>'
+      + '<td style="color:'+lineColor+'">'+lineCov+'</td>'
+      + '<td style="color:'+branchColor+'">'+branchCov+'</td>'
+      + '<td><span class="risk-badge '+esc(f.risk||'low')+'">'+(f.risk||'low')+'</span></td>'
+      + '<td style="color:var(--text-dim);font-size:0.8rem;">'+esc(f.reason||f.issue||'')+'</td>'
+      + '</tr>';
+  }).join('');
+}
+
+// ---- Source Quality Tab ----
+function initSource() {
+  const sq = MANIFEST.source_quality;
+  if (!sq || Object.keys(sq).length === 0) {
+    document.getElementById('sourceSummary').innerHTML = '<div class="card"><div class="label">No Source Data</div><div class="value" style="font-size:1rem;">-</div><div class="sub">Run test-verification first</div></div>';
+    return;
+  }
+  const files = Object.entries(sq);
+  let totalObs = 0, totalBrev = 0, obsIssues = 0, brevIssues = 0;
+  files.forEach(([,f]) => {
+    const o = f.observability?.score || 0;
+    const b = f.brevity?.score || 0;
+    if (o > 0) { totalObs += o; if (o < 8) obsIssues++; }
+    if (b > 0) { totalBrev += b; if (b < 8) brevIssues++; }
+  });
+  const n = files.length;
+  const avgObs = totalObs > 0 ? (totalObs / n).toFixed(1) : '-';
+  const avgBrev = totalBrev > 0 ? (totalBrev / n).toFixed(1) : '-';
+
+  document.getElementById('sourceSummary').innerHTML =
+    '<div class="card"><div class="label">Source Files</div><div class="value">'+n+'</div></div>'
+    + '<div class="card"><div class="label">Avg Observability</div><div class="value" style="color:'+(avgObs>=8?'var(--green)':avgObs>=5?'var(--yellow)':'var(--red)')+'">'+avgObs+'</div></div>'
+    + '<div class="card"><div class="label">Avg Brevity</div><div class="value" style="color:'+(avgBrev>=8?'var(--green)':avgBrev>=5?'var(--yellow)':'var(--red)')+'">'+avgBrev+'</div></div>'
+    + '<div class="card"><div class="label">Obs Issues</div><div class="value" style="color:'+(obsIssues>0?'var(--red)':'var(--green)')+'">'+obsIssues+'</div><div class="sub">files scoring &lt;8</div></div>'
+    + '<div class="card"><div class="label">Brevity Issues</div><div class="value" style="color:'+(brevIssues>0?'var(--red)':'var(--green)')+'">'+brevIssues+'</div><div class="sub">files scoring &lt;8</div></div>';
+
+  renderSourceTable();
+}
+
+function getSourceFiles() {
+  const sq = MANIFEST.source_quality;
+  if (!sq) return [];
+  let files = Object.entries(sq).map(([path, data]) => ({path, ...data}));
+  const search = document.getElementById('sqSearch').value.toLowerCase();
+  if (search) files = files.filter(f => f.path.toLowerCase().includes(search));
+  const filter = document.getElementById('sqDimFilter').value;
+  if (filter === 'obs_issues') files = files.filter(f => (f.observability?.score||10) < 8);
+  else if (filter === 'brev_issues') files = files.filter(f => (f.brevity?.score||10) < 8);
+  else if (filter === 'any_issues') files = files.filter(f => (f.observability?.score||10) < 8 || (f.brevity?.score||10) < 8);
+  files.sort((a,b) => {
+    const aMin = Math.min(a.observability?.score||10, a.brevity?.score||10);
+    const bMin = Math.min(b.observability?.score||10, b.brevity?.score||10);
+    return aMin - bMin || a.path.localeCompare(b.path);
+  });
+  return files;
+}
+
+function formatObsIssues(f) {
+  const o = f.observability || {};
+  const issues = [];
+  if (o.log_statements === 0 && (f.lines||0) > 20) issues.push('no logs');
+  (o.anti_patterns || []).forEach(ap => issues.push(ap.kind === 'empty_catch' ? 'empty catch' : ap.kind === 'swallowed_error' ? 'swallowed error' : 'bare log'));
+  const unlogged = (o.error_handlers||0) - (o.error_handlers_logged||0);
+  if (unlogged > 0) issues.push(unlogged+' unlogged handler'+(unlogged>1?'s':''));
+  return issues;
+}
+
+function formatBrevIssues(f) {
+  const b = f.brevity || {};
+  const issues = [];
+  if (b.long_lines > 0) issues.push(b.long_lines+' long line'+(b.long_lines>1?'s':''));
+  if (b.long_functions > 0) issues.push(b.long_functions+' long fn'+(b.long_functions>1?'s':''));
+  if (b.file_too_long) issues.push('file too long');
+  if (b.high_complexity_functions > 0) issues.push(b.high_complexity_functions+' CC>5');
+  if (b.unnecessary_else_count > 0) issues.push(b.unnecessary_else_count+' unnec else');
+  if (b.else_avoidable_count > 0) issues.push(b.else_avoidable_count+' avoid else');
+  if (b.replacement_ratio !== null && b.replacement_ratio !== undefined && b.replacement_ratio < 0.2) issues.push('accretion');
+  return issues;
+}
+
+function renderSourceTable() {
+  const files = getSourceFiles();
+  const tbody = document.getElementById('sourceTableBody');
+  const empty = document.getElementById('sourceEmptyState');
+  if (files.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = files.map((f,i) => {
+    const obsScore = f.observability?.score;
+    const brevScore = f.brevity?.score;
+    const obsCls = obsScore ? scoreClass(obsScore) : '';
+    const brevCls = brevScore ? scoreClass(brevScore) : '';
+    const obsIssues = formatObsIssues(f);
+    const brevIssues = formatBrevIssues(f);
+    const allIssues = [...obsIssues.map(x => '🔍 '+x), ...brevIssues.map(x => '📏 '+x)];
+    const hasIssues = allIssues.length > 0;
+    const funcCount = f.brevity?.long_functions !== undefined ? f.functions : '?';
+    return '<tr class="'+(hasIssues?'expandable':'')+'" '+(hasIssues?'onclick="toggleSource('+i+')"':'')+'>'
+      + '<td class="file-path">'+esc(f.path)+'</td>'
+      + '<td>'+(f.lines||'?')+'</td>'
+      + '<td>'+funcCount+'</td>'
+      + '<td><span class="score-badge '+obsCls+'">'+(obsScore??'-')+'</span></td>'
+      + '<td><span class="score-badge '+brevCls+'">'+(brevScore??'-')+'</span></td>'
+      + '<td>'+(hasIssues ? '<span style="color:var(--yellow)">'+allIssues.length+'</span>' : '<span style="color:var(--green)">✓</span>')+'</td>'
+      + '</tr>'
+      + (hasIssues ? '<tr class="detail-row" id="src-detail-'+i+'"><td colspan="6">'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+        + '<div><strong>Observability</strong><br>'+obsIssues.map(x => '<div class="finding medium">'+esc(x)+'</div>').join('')+'</div>'
+        + '<div><strong>Brevity</strong><br>'+brevIssues.map(x => '<div class="finding medium">'+esc(x)+'</div>').join('')+'</div>'
+        + '</div></td></tr>' : '');
+  }).join('');
+}
+
+function toggleSource(i) { document.getElementById('src-detail-'+i).classList.toggle('open'); }
+
+// ---- Init ----
+function init() {
+  document.getElementById('timestamp').textContent = 'Dashboard generated: __GENERATED_AT__';
+  initQuality();
+  initCoverage();
+  initSource();
+}
+init();
+</script>
+</body>
+</html>

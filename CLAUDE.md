@@ -138,3 +138,22 @@ When adding a new predicate type, check whether it needs a runnable command or i
 ## Lessons
 
 - [LESSON] `mock.module` + ESM dynamic import: `mock.module("node:child_process", ...)` MUST run before the module under test is imported (ESM caching caches the original dependency). Use dynamic `import()` in `before` hooks after `mock.module` registration to get a mock-wired instance. The `--experimental-test-module-mocks` flag is required on Node 22. `mock.method()` does NOT work on named ESM exports — use `mock.module` with `namedExports` instead. Discovered when adding behavioral tests for `notify.test.ts` that needed to intercept `child_process.spawn`.
+
+## Bundled Skills
+
+The plugin ships four skills in `skills/`:
+
+| Skill | File | Purpose |
+|-------|------|---------|
+| `interview` | `skills/interview/SKILL.md` | Structured requirements gathering → DoD creation |
+| `quality-upgrade` | `skills/quality-upgrade/SKILL.md` | Multi-phase orchestrator: baseline → fix cycles → coverage → commit |
+| `test-verification` | `skills/test-verification/SKILL.md` | Score test files across 8 dimensions + source code quality analysis |
+| `test-fixer` | `skills/test-fixer/SKILL.md` | Apply targeted fixes from test-verification findings |
+
+**Skill dependency chain**: `quality-upgrade` orchestrates `test-verification` and `test-fixer`. `test-fixer` requires `test-verification` manifest.
+
+**Skill references**: Skills reference each other via `Skill("name", ...)` using bare names. The plugin namespace (`dod-guard:`) is auto-prefixed by Claude Code at install time.
+
+**Test-verification assets**: `skills/test-verification/assets/dashboard.html` (HTML dashboard template) and `skills/test-verification/references/scoring-rubric.md` (scoring formulas). Referenced via relative paths from the SKILL.md.
+
+**When editing skills**: Skills are the canonical source — changes here ship to all plugin users. Skill behavior changes should be tested by invoking the skill against this repo's own test suite.
