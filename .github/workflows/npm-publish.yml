@@ -32,4 +32,6 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org/
       - run: npm ci
+      - run: npm whoami
+      - run: npm access ls-collaborators dod-guard 2>&1 || true
       - run: npm publish --provenance
