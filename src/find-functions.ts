@@ -170,44 +170,247 @@ export function findFunctions(lines: string[], lang: Language): FunctionRange[] 
   }
 }
 
-// ── Cohesion ──────────────────────────────────────────────────────────────
+// ── Cyclomatic complexity + unnecessary else ─────────────────────────────
 
-const SELECTION_RE: Record<string, RegExp> = {
-  js: /\b(if\s*\(|else\s*if|else\s*\{|switch\s*\(|case\s+[^:]+:|ternary\?)/,
-  py: /\b(if\s+|elif\s+|else\s*:|match\s+\w)/,
-  rs: /\b(if\s+|else\s+if|else\s*\{|match\s+\w)/,
-  cs: /\b(if\s*\(|else\s+if|else\s*\{|switch\s*\(|case\s+[^:]+:)/,
+// Decision-point patterns per language for CC counting.
+// Each occurrence adds 1 to the function's cyclomatic complexity.
+const CC_PATTERNS: Record<string, RegExp[]> = {
+  js: [
+    /\bif\s*\(/g, /\belse\s+if\b/g, /\bfor\s*\(/g, /\bwhile\s*\(/g,
+    /\bdo\s*\{/g, /\bcase\s+[^:]+:/g, /\bcatch\s*[\(\{]/g,
+    /&&/g, /\|\|/g, /\?\?/g, /\?\./g,
+    /\?[^:]+:/g,  // ternary
+  ],
+  py: [
+    /\bif\s+/g, /\belif\s+/g, /\bfor\s+/g, /\bwhile\s+/g,
+    /\bexcept\s*:/g, /\band\b/g, /\bor\b/g,
+  ],
+  rs: [
+    /\bif\s+/g, /\belse\s+if\b/g, /\bfor\s+/g, /\bwhile\s+/g,
+    /\bloop\s*\{/g, /\bmatch\s+/g, /\bcase\s+/g,
+    /&&/g, /\|\|/g, /\?\?/g,
+  ],
+  cs: [
+    /\bif\s*\(/g, /\belse\s+if\b/g, /\bfor\s*\(/g, /\bforeach\s*\(/g,
+    /\bwhile\s*\(/g, /\bdo\s*\{/g, /\bcase\s+[^:]+:/g, /\bcatch\s*[\(\{]/g,
+    /&&/g, /\|\|/g, /\?\?/g, /\?\s*[^:]+:/g,
+  ],
 };
 
-const ITERATION_RE: Record<string, RegExp> = {
-  js: /\b(for\s*\(|while\s*\(|do\s*\{|\.forEach\s*\(|for\s+\([^)]*\s+of\s+|for\s+\([^)]*\s+in\s+)/,
-  py: /\b(for\s+\w+\s+in\s+|while\s+\w)/,
-  rs: /\b(for\s+\w+\s+in\s+|while\s+\w|loop\s*\{)/,
-  cs: /\b(for\s*\(|foreach\s*\(|while\s*\(|do\s*\{)/,
+// Jump-statement patterns that make a following else unnecessary.
+const JUMP_PATTERNS: Record<string, RegExp> = {
+  js: /\b(return|throw|break|continue)\b/,
+  py: /\b(return|raise|break|continue)\b/,
+  rs: /\b(return|break|continue)\b/,
+  cs: /\b(return|throw|break|continue)\b/,
 };
 
-function stripCommentsAndStrings(line: string): string {
+// Else-keyword patterns for detecting unnecessary else.
+const ELSE_PATTERNS: Record<string, RegExp> = {
+  js: /\}\s*else\b/,
+  py: /^\s*else\s*:/,
+  rs: /\}\s*else\b/,
+  cs: /\}\s*else\b/,
+};
+
+// elif for Python
+const ELIF_PATTERN = /^\s*elif\s+/;
+
+function stripStringsAndComments(line: string): string {
+  // Remove single-line comments
   let s = line.replace(/\/\/.*$/, "").replace(/#.*$/, "");
+  // Remove string literals (crude but effective for counting)
   s = s.replace(/`[^`]*`/g, "").replace(/"[^"]*"/g, '""').replace(/'[^']*'/g, "''");
   return s;
 }
 
-function hasPattern(lines: string[], re: RegExp): boolean {
-  for (const line of lines) {
-    if (re.test(stripCommentsAndStrings(line))) return true;
-  }
-  return false;
-}
-
-export function checkCohesion(
+/**
+ * Count cyclomatic complexity for a function body.
+ * CC = 1 (base) + sum of decision points.
+ * Returns the raw count — caller applies threshold.
+ */
+export function checkCyclomaticComplexity(
   bodyLines: string[],
   lang: Language,
-): { hasSelection: boolean; hasIteration: boolean; mixed: boolean } {
-  if (!lang) return { hasSelection: false, hasIteration: false, mixed: false };
-  const selRe = SELECTION_RE[lang];
-  const iterRe = ITERATION_RE[lang];
-  if (!selRe || !iterRe) return { hasSelection: false, hasIteration: false, mixed: false };
-  const hasSelection = hasPattern(bodyLines, selRe);
-  const hasIteration = hasPattern(bodyLines, iterRe);
-  return { hasSelection, hasIteration, mixed: hasSelection && hasIteration };
+): { complexity: number } {
+  if (!lang) return { complexity: 0 };
+  const patterns = CC_PATTERNS[lang];
+  if (!patterns) return { complexity: 0 };
+
+  let complexity = 1; // base
+  for (const line of bodyLines) {
+    const stripped = stripStringsAndComments(line);
+    for (const re of patterns) {
+      // Reset lastIndex for global regexes
+      re.lastIndex = 0;
+      const matches = stripped.match(re);
+      if (matches) complexity += matches.length;
+    }
+  }
+  return { complexity };
+}
+
+/**
+ * Count unnecessary else clauses in a function body.
+ * An else is unnecessary when the preceding if/elif block exits
+ * via return/throw/break/continue — a guard clause pattern.
+ */
+export function checkUnnecessaryElse(
+  bodyLines: string[],
+  lang: Language,
+): { count: number } {
+  if (!lang) return { count: 0 };
+  const elseRe = ELSE_PATTERNS[lang];
+  const jumpRe = JUMP_PATTERNS[lang];
+  if (!elseRe || !jumpRe) return { count: 0 };
+
+  let count = 0;
+
+  for (let i = 0; i < bodyLines.length; i++) {
+    const raw = bodyLines[i];
+    const trimmed = raw.trim();
+
+    // Check for else patterns
+    if (lang !== "py" && elseRe.test(trimmed)) {
+      // The } right before/on the else line closes the if-body.
+      // Scan backward from this line to find the last substantive statement
+      // inside the if-body (skip closing braces of nested blocks and the
+      // nested blocks' own content).
+      let j = i - 1;
+      let skipToDepth: number | null = null;
+      while (j >= 0) {
+        const t = bodyLines[j].trim();
+        if (t === "" || t.startsWith("//") || t.startsWith("/*")) { j--; continue; }
+        // If we hit a closing brace, skip until we find its opener's level
+        if (t.endsWith("}") || t === "}") {
+          if (skipToDepth === null) skipToDepth = getIndent(bodyLines[j]);
+          j--;
+          continue;
+        }
+        // If we're skipping a nested block, skip lines at same or deeper indent
+        if (skipToDepth !== null) {
+          if (getIndent(bodyLines[j]) >= skipToDepth) { j--; continue; }
+          skipToDepth = null;
+        }
+        break;
+      }
+      if (j >= 0) {
+        const candidate = stripStringsAndComments(bodyLines[j].trim());
+        if (jumpRe.test(candidate)) {
+          count++;
+        }
+      }
+    } else if (lang === "py" && (ELSE_PATTERNS.py.test(trimmed) || ELIF_PATTERN.test(trimmed))) {
+      // Python: else:/elif — check the previous indented block's last line
+      const currentIndent = getIndent(raw);
+      let j = i - 1;
+      // Skip blank lines and comments
+      while (j >= 0 && (bodyLines[j].trim() === "" || bodyLines[j].trim().startsWith("#"))) j--;
+      if (j >= 0) {
+        const prevIndent = getIndent(bodyLines[j]);
+        // The if-body is indented more than the else/elif
+        if (prevIndent > currentIndent && jumpRe.test(stripStringsAndComments(bodyLines[j].trim()))) {
+          count++;
+        }
+      }
+    }
+  }
+
+  return { count };
+}
+
+/**
+ * Detect if/else pairs where the if-branch does NOT exit, but the function
+ * has zero guard clauses — suggesting the whole function could adopt the
+ * guard-clause style. Only fires when the function uses NO guard clauses
+ * at all (no if-block anywhere in the function exits early).
+ *
+ * Returns count of avoidable else clauses.
+ */
+export function checkAvoidableElse(
+  bodyLines: string[],
+  lang: Language,
+): { count: number } {
+  if (!lang) return { count: 0 };
+  const elseRe = ELSE_PATTERNS[lang];
+  const jumpRe = JUMP_PATTERNS[lang];
+  if (!elseRe || !jumpRe) return { count: 0 };
+
+  // Phase 1: scan for ANY existing guard clause (if + exit, no else needed)
+  let hasGuardClause = false;
+  for (let i = 0; i < bodyLines.length; i++) {
+    const stripped = stripStringsAndComments(bodyLines[i]);
+    const trimmed = bodyLines[i].trim();
+
+    // Check for if/elif that ends with a jump (but is NOT followed by else)
+    if (lang !== "py") {
+      // Brace languages: look for if-bodies ending with jump followed by } without else
+      if (/\bif\s*\(/.test(trimmed) || /\belse\s+if\b/.test(trimmed)) {
+        // Find the matching closing brace
+        let depth = 0;
+        let started = false;
+        let blockEnd = -1;
+        for (let j = i; j < bodyLines.length; j++) {
+          const s = stripStringsAndComments(bodyLines[j]);
+          for (const ch of s) {
+            if (ch === "{") { depth++; started = true; }
+            else if (ch === "}") {
+              depth--;
+              if (started && depth === 0) { blockEnd = j; break; }
+            }
+          }
+          if (blockEnd >= 0) break;
+        }
+        if (blockEnd > i) {
+          // Check if the line before blockEnd has a jump
+          let prevLine = bodyLines[blockEnd - 1].trim();
+          let j2 = blockEnd - 1;
+          while (j2 > i && (prevLine === "" || prevLine.startsWith("//") || prevLine === "}")) {
+            j2--;
+            prevLine = bodyLines[j2].trim();
+          }
+          if (jumpRe.test(stripStringsAndComments(prevLine))) {
+            // Check this if is NOT followed by else — that's a guard clause
+            const nextLine = blockEnd + 1 < bodyLines.length ? bodyLines[blockEnd + 1].trim() : "";
+            if (!elseRe.test(nextLine)) {
+              hasGuardClause = true;
+              break;
+            }
+          }
+        }
+      }
+    } else {
+      // Python: look for if/elif with jump at end of indented block, no else following
+      if (/\bif\s+/.test(trimmed) || /\belif\s+/.test(trimmed)) {
+        const blockIndent = getIndent(bodyLines[i]);
+        let blockEnd = i;
+        for (let j = i + 1; j < bodyLines.length; j++) {
+          if (bodyLines[j].trim() === "") continue;
+          if (getIndent(bodyLines[j]) <= blockIndent) { blockEnd = j - 1; break; }
+          blockEnd = j;
+        }
+        if (blockEnd > i && jumpRe.test(stripStringsAndComments(bodyLines[blockEnd].trim()))) {
+          // Check no else/elif follows at same indent
+          const nextLine = blockEnd + 1 < bodyLines.length ? bodyLines[blockEnd + 1].trim() : "";
+          if (!ELSE_PATTERNS.py.test(nextLine) && !ELIF_PATTERN.test(nextLine)) {
+            hasGuardClause = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Phase 2: if NO guard clauses exist, count if/else pairs as avoidable
+  if (hasGuardClause) return { count: 0 };
+
+  let count = 0;
+  for (const raw of bodyLines) {
+    const trimmed = raw.trim();
+    if (elseRe.test(trimmed) || (lang === "py" && ELIF_PATTERN.test(trimmed))) {
+      count++;
+    }
+  }
+
+  return { count };
 }

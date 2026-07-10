@@ -2,7 +2,8 @@ import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import * as path from "node:path";
 import {
   findBlockEnd, findJsFunctions, findPyFunctions, findPyBlockEnd,
-  findRsFunctions, findCsFunctions, findFunctions, checkCohesion,
+  findRsFunctions, findCsFunctions, findFunctions,
+  checkCyclomaticComplexity, checkUnnecessaryElse, checkAvoidableElse,
 } from "./find-functions.js";
 import type { FunctionRange } from "./find-functions.js";
 
@@ -13,8 +14,9 @@ import type { FunctionRange } from "./find-functions.js";
  * 1. Max line length (default 120)
  * 2. Max function lines (default 30)
  * 3. Max file lines (default 300)
- * 4. Function cohesion — mixed selection + iteration = flagged
- * 5. Replacement ratio — deletions ≥ 20% of insertions for files with net >10 lines added
+ * 4. Cyclomatic complexity — functions with CC > 5 flagged
+ * 5. Guard clauses — unnecessary else after return/throw/break/continue
+ * 6. Replacement ratio — deletions ≥ 20% of insertions for files with net >10 lines added
  *
  * Language support: JS/TS, Python, Rust, C# — regex-based heuristics (no full parser).
  */
@@ -24,7 +26,7 @@ import type { FunctionRange } from "./find-functions.js";
 export interface BrevityViolation {
   file: string;
   line: number;
-  kind: "line_too_long" | "function_too_long" | "file_too_long" | "mixed_cohesion" | "low_replacement_ratio";
+  kind: "line_too_long" | "function_too_long" | "file_too_long" | "high_complexity" | "unnecessary_else" | "else_avoidable" | "low_replacement_ratio";
   detail: string;
 }
 
@@ -32,7 +34,9 @@ export interface BrevityOpts {
   maxLineLength: number;
   maxFunctionLines: number;
   maxFileLines: number;
-  requireCohesion: boolean;
+  maxComplexity: number;
+  requireGuardClauses: boolean;
+  suggestGuardClauses: boolean;
   minReplacementRatio: number;
 }
 
@@ -40,7 +44,9 @@ export const DEFAULT_BREVITY_OPTS: BrevityOpts = {
   maxLineLength: 120,
   maxFunctionLines: 30,
   maxFileLines: 300,
-  requireCohesion: true,
+  maxComplexity: 5,
+  requireGuardClauses: true,
+  suggestGuardClauses: true,
   minReplacementRatio: 0.2,
 };
 
@@ -59,7 +65,9 @@ export interface BrevityReport {
     lineCount: number;
     functionCount: number;
     longFunctions: number;
-    mixedCohesionFunctions: number;
+    highComplexityFunctions: number;
+    unnecessaryElseCount: number;
+    elseAvoidableCount: number;
     insertions?: number;
     deletions?: number;
   }>;
@@ -190,11 +198,13 @@ function scanFile(
   lineCount: number;
   functionCount: number;
   longFunctions: number;
-  mixedCohesionFunctions: number;
+  highComplexityFunctions: number;
+  unnecessaryElseCount: number;
+  elseAvoidableCount: number;
 } {
   const lang = detectLanguage(filePath);
   if (!lang) {
-    return { violations: [], lineCount: 0, functionCount: 0, longFunctions: 0, mixedCohesionFunctions: 0 };
+    return { violations: [], lineCount: 0, functionCount: 0, longFunctions: 0, highComplexityFunctions: 0, unnecessaryElseCount: 0, elseAvoidableCount: 0 };
   }
 
   const content = readFileSync(filePath, "utf-8");
@@ -231,7 +241,9 @@ function scanFile(
   // 3. Function-level checks
   const functions = findFunctions(lines, lang);
   let longFunctions = 0;
-  let mixedCohesionFunctions = 0;
+  let highComplexityFunctions = 0;
+  let unnecessaryElseCount = 0;
+  let elseAvoidableCount = 0;
 
   for (const fn of functions) {
     const fnLen = fn.endLine - fn.startLine + 1;
@@ -246,15 +258,42 @@ function scanFile(
       });
     }
 
-    if (opts.requireCohesion) {
-      const { mixed } = checkCohesion(fn.bodyLines, lang);
-      if (mixed) {
-        mixedCohesionFunctions++;
+    // Cyclomatic complexity
+    const { complexity } = checkCyclomaticComplexity(fn.bodyLines, lang);
+    if (complexity > opts.maxComplexity) {
+      highComplexityFunctions++;
+      violations.push({
+        file: relPath,
+        line: fn.startLine,
+        kind: "high_complexity",
+        detail: `"${fn.name}" CC=${complexity}, exceeds max ${opts.maxComplexity} — extract decision-heavy blocks into helpers`,
+      });
+    }
+
+    // Unnecessary else (if-branch already exits — else is dead weight)
+    if (opts.requireGuardClauses) {
+      const { count } = checkUnnecessaryElse(fn.bodyLines, lang);
+      if (count > 0) {
+        unnecessaryElseCount += count;
         violations.push({
           file: relPath,
           line: fn.startLine,
-          kind: "mixed_cohesion",
-          detail: `"${fn.name}" mixes selection (if/switch) and iteration (for/while) — split into separate functions`,
+          kind: "unnecessary_else",
+          detail: `"${fn.name}" has ${count} unnecessary else clause${count > 1 ? "s" : ""} after exit statement — use guard clause instead`,
+        });
+      }
+    }
+
+    // Avoidable else (function never uses guard clauses — suggest adopting the pattern)
+    if (opts.suggestGuardClauses) {
+      const { count } = checkAvoidableElse(fn.bodyLines, lang);
+      if (count > 0) {
+        elseAvoidableCount += count;
+        violations.push({
+          file: relPath,
+          line: fn.startLine,
+          kind: "else_avoidable",
+          detail: `"${fn.name}" has ${count} if/else pair${count > 1 ? "s" : ""} and zero guard clauses — refactor if-branch to exit early, eliminate else`,
         });
       }
     }
@@ -265,7 +304,9 @@ function scanFile(
     lineCount,
     functionCount: functions.length,
     longFunctions,
-    mixedCohesionFunctions,
+    highComplexityFunctions,
+    unnecessaryElseCount,
+    elseAvoidableCount,
   };
 }
 
@@ -369,7 +410,9 @@ function buildReport(
       lineCount: result.lineCount,
       functionCount: result.functionCount,
       longFunctions: result.longFunctions,
-      mixedCohesionFunctions: result.mixedCohesionFunctions,
+      highComplexityFunctions: result.highComplexityFunctions,
+      unnecessaryElseCount: result.unnecessaryElseCount,
+      elseAvoidableCount: result.elseAvoidableCount,
       insertions: normalizedStats?.get(relPath)?.insertions,
       deletions: normalizedStats?.get(relPath)?.deletions,
     });
