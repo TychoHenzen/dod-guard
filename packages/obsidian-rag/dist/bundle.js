@@ -24973,25 +24973,65 @@ function extractFirstH1(content) {
 }
 
 // dist/store.js
-import Database from "better-sqlite3";
+import { createRequire } from "node:module";
 import { join as join2 } from "node:path";
 import { existsSync as existsSync2, mkdirSync } from "node:fs";
 var DB_FILENAME = "obsidian-rag.db";
+var req = createRequire(import.meta.url);
+function loadBetterSqlite3() {
+  try {
+    return req("better-sqlite3");
+  } catch (err) {
+    if (err.code === "MODULE_NOT_FOUND" || err.message?.includes("Cannot find")) {
+      const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || process.cwd();
+      console.error(`[obsidian-rag] better-sqlite3 missing, installing in ${pluginRoot}...`);
+      try {
+        const { execSync } = req("child_process");
+        execSync("npm install --omit=dev --no-audit --no-fund", {
+          cwd: pluginRoot,
+          stdio: "pipe",
+          timeout: 6e4
+        });
+        console.error("[obsidian-rag] Dependencies installed, retrying...");
+        return req("better-sqlite3");
+      } catch (installErr) {
+        throw new Error(`better-sqlite3 is required but could not be installed automatically.
+Run manually: cd "${pluginRoot}" && npm install --omit=dev
+Original error: ${err.message}
+Install error: ${installErr.message}`);
+      }
+    }
+    throw err;
+  }
+}
 var Store = class {
   config;
-  db;
+  _db = null;
+  _dbPath;
+  _initRan = false;
   constructor(config2) {
     this.config = config2;
     if (!existsSync2(config2.dbDir))
       mkdirSync(config2.dbDir, { recursive: true });
-    const dbPath = join2(config2.dbDir, DB_FILENAME);
-    this.db = new Database(dbPath);
-    this.db.pragma("journal_mode = WAL");
-    this.init();
+    this._dbPath = join2(config2.dbDir, DB_FILENAME);
+  }
+  /** Lazy DB handle — bootstraps native deps + opens DB on first access. */
+  get db() {
+    if (!this._db) {
+      const Database = loadBetterSqlite3();
+      this._db = new Database(this._dbPath);
+      this._db.pragma("journal_mode = WAL");
+      if (!this._initRan) {
+        this._initSchema();
+        this._initRan = true;
+      }
+    }
+    return this._db;
   }
   // ── Schema ────────────────────────────────────────────────────────
-  init() {
-    this.db.exec(`
+  _initSchema() {
+    const d = this._db;
+    d.exec(`
       CREATE TABLE IF NOT EXISTS vaults (
         name TEXT PRIMARY KEY,
         path TEXT NOT NULL,
@@ -25022,7 +25062,6 @@ var Store = class {
         content_rowid='rowid'
       );
 
-      -- Triggers to keep FTS in sync
       CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
         INSERT INTO notes_fts(rowid, title, content, tags)
         VALUES (new.rowid, new.title, new.content, new.tags);
@@ -25059,30 +25098,30 @@ var Store = class {
         last_indexed TEXT
       );
     `);
-    const cols = this.db.pragma("table_info(notes)");
+    const cols = d.pragma("table_info(notes)");
     if (!cols.some((c) => c.name === "content")) {
-      this.db.exec("ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''");
+      d.exec("ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''");
     }
   }
   // ── Vault config ─────────────────────────────────────────────────
   setVault(vault) {
-    const stmt = this.db.prepare(`
+    const d = this.db;
+    d.prepare(`
       INSERT OR REPLACE INTO vaults (name, path, note_count, folder_count, last_indexed)
       VALUES (?, ?, ?, ?, ?)
-    `);
-    stmt.run(vault.name, vault.path, vault.noteCount || 0, vault.folderCount || 0, (/* @__PURE__ */ new Date()).toISOString());
-    this.db.prepare(`INSERT OR IGNORE INTO index_meta (vault_name) VALUES (?)`).run(vault.name);
+    `).run(vault.name, vault.path, vault.noteCount || 0, vault.folderCount || 0, (/* @__PURE__ */ new Date()).toISOString());
+    d.prepare(`INSERT OR IGNORE INTO index_meta (vault_name) VALUES (?)`).run(vault.name);
   }
   getVault(name) {
     return this.db.prepare("SELECT * FROM vaults WHERE name = ?").get(name);
   }
   // ── Notes ────────────────────────────────────────────────────────
   upsertNote(vaultName, meta, content, contentHash) {
-    const stmt = this.db.prepare(`
+    const d = this.db;
+    d.prepare(`
       INSERT OR REPLACE INTO notes (path, vault_name, title, tags, links, frontmatter, created, modified, content, content_hash)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(meta.path, vaultName, meta.title, JSON.stringify(meta.tags), JSON.stringify(meta.links), JSON.stringify(meta.frontmatter), meta.created, meta.modified, content, contentHash);
+    `).run(meta.path, vaultName, meta.title, JSON.stringify(meta.tags), JSON.stringify(meta.links), JSON.stringify(meta.frontmatter), meta.created, meta.modified, content, contentHash);
   }
   getNote(vaultName, path) {
     const row = this.db.prepare("SELECT * FROM notes WHERE vault_name = ? AND path = ?").get(vaultName, path);
@@ -25114,7 +25153,6 @@ var Store = class {
       title: r.title,
       snippet: r.snippet || "",
       score: 1 / (1 + (r.rank || 0))
-      // normalize BM25 rank
     }));
   }
   listNotes(vaultName, directory) {
@@ -25130,8 +25168,7 @@ var Store = class {
     const rows = this.db.prepare("SELECT tags FROM notes WHERE vault_name = ?").all(vaultName);
     const counts = /* @__PURE__ */ new Map();
     for (const row of rows) {
-      const tags = JSON.parse(row.tags || "[]");
-      for (const tag of tags) {
+      for (const tag of JSON.parse(row.tags || "[]")) {
         counts.set(tag, (counts.get(tag) || 0) + 1);
       }
     }
@@ -25151,8 +25188,9 @@ var Store = class {
     return this.db.prepare("SELECT * FROM chunks WHERE vault_name = ?").all(vaultName);
   }
   setEmbedding(chunkId, embedding) {
-    this.db.prepare("UPDATE chunks SET embedding = ? WHERE id = ?").run(JSON.stringify(embedding), chunkId);
-    this.db.prepare(`
+    const d = this.db;
+    d.prepare("UPDATE chunks SET embedding = ? WHERE id = ?").run(JSON.stringify(embedding), chunkId);
+    d.prepare(`
       UPDATE index_meta SET embedded_chunks = (SELECT COUNT(*) FROM chunks WHERE embedding IS NOT NULL)
       WHERE vault_name = (SELECT vault_name FROM chunks WHERE id = ?)
     `).run(chunkId);
@@ -25191,7 +25229,8 @@ var Store = class {
   }
   // ── Cleanup ──────────────────────────────────────────────────────
   close() {
-    this.db.close();
+    if (this._db)
+      this._db.close();
   }
 };
 
@@ -25312,7 +25351,10 @@ async function indexVault(vaultPath, vaultName, store2) {
 init_retriever();
 var DB_DIR = join3(homedir(), ".claude", "obsidian-rag");
 var store = new Store({ dbDir: DB_DIR });
-var PKG = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
+var pkgPath = new URL("../package.json", import.meta.url);
+if (!existsSync3(pkgPath))
+  pkgPath = new URL("./package.json", import.meta.url);
+var PKG = JSON.parse(readFileSync(pkgPath, "utf-8"));
 var selectedVault = null;
 var embedder = null;
 var _selectPromise = null;

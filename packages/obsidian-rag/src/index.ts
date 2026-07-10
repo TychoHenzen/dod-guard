@@ -48,7 +48,10 @@ type TransformersPipeline = any;
 const DB_DIR = join(homedir(), ".claude", "obsidian-rag");
 const store = new Store({ dbDir: DB_DIR });
 
-const PKG = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
+// package.json is ../ from dist/ in dev, ./ in plugin cache (bundle at root)
+let pkgPath = new URL("../package.json", import.meta.url);
+if (!existsSync(pkgPath)) pkgPath = new URL("./package.json", import.meta.url);
+const PKG = JSON.parse(readFileSync(pkgPath, "utf-8"));
 
 let selectedVault: VaultInfo | null = null;
 let embedder: Embedder | null = null;

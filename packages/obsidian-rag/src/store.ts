@@ -1,31 +1,85 @@
 // SQLite store for FTS5 keyword index, note metadata cache, and embedding vectors
+//
+// Uses createRequire for better-sqlite3 (native C++ addon, excluded from esbuild bundle).
+// Lazy-loads the database on first access with automatic bootstrap if the package is missing
+// (plugin cache copies files from git but does not run npm install).
 
-import Database from "better-sqlite3";
+import { createRequire } from "node:module";
 import { join } from "node:path";
 import { existsSync, mkdirSync } from "node:fs";
 import type { NoteMeta, Chunk, IndexStatus, VaultInfo } from "./types.js";
 
 const DB_FILENAME = "obsidian-rag.db";
+const req = createRequire(import.meta.url);
+
+// ── Native module loader with auto-bootstrap ──────────────────────────
+
+function loadBetterSqlite3(): any {
+  try {
+    return req("better-sqlite3");
+  } catch (err: any) {
+    if (err.code === "MODULE_NOT_FOUND" || err.message?.includes("Cannot find")) {
+      const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || process.cwd();
+      console.error(`[obsidian-rag] better-sqlite3 missing, installing in ${pluginRoot}...`);
+      try {
+        const { execSync } = req("child_process") as typeof import("node:child_process");
+        execSync("npm install --omit=dev --no-audit --no-fund", {
+          cwd: pluginRoot,
+          stdio: "pipe",
+          timeout: 60000,
+        });
+        console.error("[obsidian-rag] Dependencies installed, retrying...");
+        return req("better-sqlite3");
+      } catch (installErr: any) {
+        throw new Error(
+          `better-sqlite3 is required but could not be installed automatically.\n` +
+          `Run manually: cd "${pluginRoot}" && npm install --omit=dev\n` +
+          `Original error: ${err.message}\n` +
+          `Install error: ${installErr.message}`
+        );
+      }
+    }
+    throw err;
+  }
+}
+
+// ── Store ─────────────────────────────────────────────────────────────
 
 export interface StoreConfig {
   dbDir: string; // e.g. ~/.claude/obsidian-rag/
 }
 
 export class Store {
-  private db: Database.Database;
+  private _db: any = null;
+  private _dbPath: string;
+  private _initRan = false;
 
   constructor(private config: StoreConfig) {
     if (!existsSync(config.dbDir)) mkdirSync(config.dbDir, { recursive: true });
-    const dbPath = join(config.dbDir, DB_FILENAME);
-    this.db = new Database(dbPath);
-    this.db.pragma("journal_mode = WAL");
-    this.init();
+    this._dbPath = join(config.dbDir, DB_FILENAME);
+    // DB opened lazily on first access — avoids crashing if better-sqlite3
+    // not yet installed (plugin cache doesn't run npm install on update).
+  }
+
+  /** Lazy DB handle — bootstraps native deps + opens DB on first access. */
+  private get db(): any {
+    if (!this._db) {
+      const Database = loadBetterSqlite3();
+      this._db = new Database(this._dbPath);
+      this._db.pragma("journal_mode = WAL");
+      if (!this._initRan) {
+        this._initSchema();
+        this._initRan = true;
+      }
+    }
+    return this._db;
   }
 
   // ── Schema ────────────────────────────────────────────────────────
 
-  private init(): void {
-    this.db.exec(`
+  private _initSchema(): void {
+    const d = this._db!;
+    d.exec(`
       CREATE TABLE IF NOT EXISTS vaults (
         name TEXT PRIMARY KEY,
         path TEXT NOT NULL,
@@ -56,7 +110,6 @@ export class Store {
         content_rowid='rowid'
       );
 
-      -- Triggers to keep FTS in sync
       CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
         INSERT INTO notes_fts(rowid, title, content, tags)
         VALUES (new.rowid, new.title, new.content, new.tags);
@@ -95,22 +148,21 @@ export class Store {
     `);
 
     // Migration: add content column if missing (pre-0.1.2 DBs)
-    const cols = this.db.pragma("table_info(notes)") as Array<{ name: string }>;
+    const cols = d.pragma("table_info(notes)") as Array<{ name: string }>;
     if (!cols.some(c => c.name === "content")) {
-      this.db.exec("ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''");
+      d.exec("ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''");
     }
   }
 
   // ── Vault config ─────────────────────────────────────────────────
 
   setVault(vault: VaultInfo): void {
-    const stmt = this.db.prepare(`
+    const d = this.db;
+    d.prepare(`
       INSERT OR REPLACE INTO vaults (name, path, note_count, folder_count, last_indexed)
       VALUES (?, ?, ?, ?, ?)
-    `);
-    stmt.run(vault.name, vault.path, vault.noteCount || 0, vault.folderCount || 0, new Date().toISOString());
-    // Ensure index_meta row exists
-    this.db.prepare(`INSERT OR IGNORE INTO index_meta (vault_name) VALUES (?)`).run(vault.name);
+    `).run(vault.name, vault.path, vault.noteCount || 0, vault.folderCount || 0, new Date().toISOString());
+    d.prepare(`INSERT OR IGNORE INTO index_meta (vault_name) VALUES (?)`).run(vault.name);
   }
 
   getVault(name: string): VaultInfo | null {
@@ -120,21 +172,15 @@ export class Store {
   // ── Notes ────────────────────────────────────────────────────────
 
   upsertNote(vaultName: string, meta: NoteMeta, content: string, contentHash: string): void {
-    const stmt = this.db.prepare(`
+    const d = this.db;
+    d.prepare(`
       INSERT OR REPLACE INTO notes (path, vault_name, title, tags, links, frontmatter, created, modified, content, content_hash)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(
-      meta.path,
-      vaultName,
-      meta.title,
-      JSON.stringify(meta.tags),
-      JSON.stringify(meta.links),
-      JSON.stringify(meta.frontmatter),
-      meta.created,
-      meta.modified,
-      content,
-      contentHash
+    `).run(
+      meta.path, vaultName, meta.title,
+      JSON.stringify(meta.tags), JSON.stringify(meta.links),
+      JSON.stringify(meta.frontmatter), meta.created, meta.modified,
+      content, contentHash
     );
   }
 
@@ -144,14 +190,12 @@ export class Store {
     ).get(vaultName, path) as any;
     if (!row) return null;
     return {
-      path: row.path,
-      title: row.title,
+      path: row.path, title: row.title,
       tags: JSON.parse(row.tags || "[]"),
       links: JSON.parse(row.links || "[]"),
       backlinks: [],
       frontmatter: JSON.parse(row.frontmatter || "{}"),
-      created: row.created,
-      modified: row.modified,
+      created: row.created, modified: row.modified,
       content: row.content || "",
     };
   }
@@ -159,7 +203,6 @@ export class Store {
   searchNotesFTS(vaultName: string, query: string, limit = 20): Array<{
     path: string; title: string; snippet: string; score: number;
   }> {
-    // FTS5 search with snippet
     const rows = this.db.prepare(`
       SELECT n.path, n.title, snippet(notes_fts, 1, '<mark>', '</mark>', '...', 32) as snippet, rank
       FROM notes_fts f
@@ -169,10 +212,8 @@ export class Store {
       LIMIT ?
     `).all(query, vaultName, limit) as any[];
     return rows.map(r => ({
-      path: r.path,
-      title: r.title,
-      snippet: r.snippet || "",
-      score: 1 / (1 + (r.rank || 0)), // normalize BM25 rank
+      path: r.path, title: r.title, snippet: r.snippet || "",
+      score: 1 / (1 + (r.rank || 0)),
     }));
   }
 
@@ -196,8 +237,7 @@ export class Store {
     ).all(vaultName) as any[];
     const counts = new Map<string, number>();
     for (const row of rows) {
-      const tags: string[] = JSON.parse(row.tags || "[]");
-      for (const tag of tags) {
+      for (const tag of JSON.parse(row.tags || "[]") as string[]) {
         counts.set(tag, (counts.get(tag) || 0) + 1);
       }
     }
@@ -210,7 +250,8 @@ export class Store {
     this.db.prepare(`
       INSERT OR REPLACE INTO chunks (id, note_path, vault_name, heading, content, embedding)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(chunk.id, chunk.notePath, vaultName, chunk.heading, chunk.content, chunk.embedding ? JSON.stringify(chunk.embedding) : null);
+    `).run(chunk.id, chunk.notePath, vaultName, chunk.heading, chunk.content,
+      chunk.embedding ? JSON.stringify(chunk.embedding) : null);
   }
 
   getUnembeddedChunks(vaultName: string, limit = 100): Chunk[] {
@@ -226,11 +267,9 @@ export class Store {
   }
 
   setEmbedding(chunkId: string, embedding: number[]): void {
-    this.db.prepare(
-      "UPDATE chunks SET embedding = ? WHERE id = ?"
-    ).run(JSON.stringify(embedding), chunkId);
-    // Update embedded count
-    this.db.prepare(`
+    const d = this.db;
+    d.prepare("UPDATE chunks SET embedding = ? WHERE id = ?").run(JSON.stringify(embedding), chunkId);
+    d.prepare(`
       UPDATE index_meta SET embedded_chunks = (SELECT COUNT(*) FROM chunks WHERE embedding IS NOT NULL)
       WHERE vault_name = (SELECT vault_name FROM chunks WHERE id = ?)
     `).run(chunkId);
@@ -273,11 +312,8 @@ export class Store {
         embedded_chunks = COALESCE(excluded.embedded_chunks, embedded_chunks),
         last_indexed = COALESCE(excluded.last_indexed, last_indexed)
     `).run(
-      vaultName,
-      data.totalNotes || 0,
-      data.indexedNotes || 0,
-      data.totalChunks || 0,
-      data.embeddedChunks || 0,
+      vaultName, data.totalNotes || 0, data.indexedNotes || 0,
+      data.totalChunks || 0, data.embeddedChunks || 0,
       data.lastIndexed || new Date().toISOString()
     );
   }
@@ -285,6 +321,6 @@ export class Store {
   // ── Cleanup ──────────────────────────────────────────────────────
 
   close(): void {
-    this.db.close();
+    if (this._db) this._db.close();
   }
 }
