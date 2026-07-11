@@ -96,7 +96,6 @@ export async function cliListFiles(vaultName: string, directory?: string): Promi
     .filter(Boolean);
 }
 
-
 // ── Links ────────────────────────────────────────────────────────────────
 
 /** Get backlinks for a note. */
