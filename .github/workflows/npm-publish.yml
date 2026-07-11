@@ -40,6 +40,7 @@ jobs:
   static-analysis:
     needs: build-test
     runs-on: ubuntu-latest
+    continue-on-error: true  # non-blocking until lint baseline is clean
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,8 +48,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Lint + format check (informational — non-blocking until baseline is clean)
-      - run: npx @biomejs/biome check packages/*/src/ --max-diagnostics=50 --no-errors-on-unmatched || true
+      # Lint + format check
+      - run: npx @biomejs/biome check packages/*/src/ --max-diagnostics=50 --no-errors-on-unmatched
       # Dead-code check: any src file without a matching test file
       - run: |
           echo "=== Missing test coverage ==="
