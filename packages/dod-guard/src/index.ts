@@ -18,6 +18,9 @@ import { playJingle, showVerifyDialog } from "./notify.js";
 import { parseMarkdown } from "./parser.js";
 import { PredicateSchema, ProofCategorySchema, SectionsSchema, TaskNodeInputSchema } from "./schemas.js";
 import * as store from "./store.js";
+import { handleDodAddNode } from "./tools/dod-add-node.js";
+import { handleDodCreate } from "./tools/dod-create.js";
+import { handleDodRefine } from "./tools/dod-refine.js";
 import {
   buildTaskNodes,
   checkCommandsForOs,
@@ -55,90 +58,9 @@ server.tool(
       .optional()
       .describe("Map from optional proof category to justification for omission."),
   },
-  async ({ title, goal, type, cwd, markdown_path, sections, roots: rootInputs, skip_reasons }) => {
-    const resolvedCwd = path.resolve(cwd);
-    resetNodeIdCounter();
-
-    const roots = buildTaskNodes(rootInputs);
-
-    // OS validation: concrete leaves only
-    const osError = await checkCommandsForOs(roots, resolvedCwd);
-    if (osError) return osError;
-
-    // Baseline enforcement: advisory-only at creation (categories filled during refinement)
-    const baseline = validateBaseline(
-      type,
-      extractBaselineSteps(roots),
-      skip_reasons as Record<string, string> | undefined,
-    );
-    // Advisory — warn but don't block. Categories get filled during dod_refine.
-    // Only hard-mandatory categories that are TRULY absent (no draft placeholders either) block.
-
-    const id = store.generateId();
-    const date = new Date().toISOString().split("T")[0];
-
-    // Compute fingerprint from concrete leaves
-    const fingerprint = computeProofFingerprint(roots);
-
-    const doc: DodDocument = {
-      id,
-      title,
-      goal,
-      date,
-      type,
-      cwd: resolvedCwd,
-      markdown_path: path.resolve(markdown_path),
-      created_at: new Date().toISOString(),
-      skip_reasons: skip_reasons as Record<string, string> | undefined,
-      sections,
-      roots,
-      proof_fingerprint: fingerprint || undefined,
-      amendments: [],
-    };
-
-    await store.save(doc);
-    await writeMarkdown(doc);
-
-    const concreteCount = flattenConcreteLeaves(roots).length;
-    const draftCount = countDraftNodes(roots);
-    const rootCount = roots.length;
-
-    const warningBlock =
-      baseline.errors.length > 0 || baseline.warnings.length > 0
-        ? [
-            "",
-            "⚠️ Baseline advisories:",
-            ...baseline.errors.map((e) => `  • ${e} (will be enforced at dod_refine time)`),
-            ...baseline.warnings.map((w) => `  • ${w}`),
-          ]
-        : [];
-
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: [
-            "DoD created.",
-            "",
-            `ID: ${id}`,
-            `Path: ${markdown_path}`,
-            `Roots: ${rootCount}`,
-            `Concrete proofs: ${concreteCount}`,
-            `Draft nodes: ${draftCount}`,
-            fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
-            ...warningBlock,
-            "",
-            draftCount > 0
-              ? `${draftCount} draft node(s) — refine incrementally per task group with dod_refine, not all at once at the end. Use dod_check(nodePath="0") to verify one subtree at a time.`
-              : "All nodes are concrete — dod_check can verify the full DoD.",
-            "",
-            "NEXT: run `dod_check` to validate proof commands execute on this OS.",
-          ]
-            .filter(Boolean)
-            .join("\n"),
-        },
-      ],
-    };
+  async (params) => {
+    const result = await handleDodCreate(params as any);
+    return { content: [{ type: "text" as const, text: result }] };
   },
 );
 
@@ -322,131 +244,9 @@ server.tool(
       .optional()
       .describe("(subdivide) Child draft nodes — each becomes a draft leaf under the new task group"),
   },
-  async ({ dod_id, node_path: nodePath, mode, command, predicate, description, category, advisory, children }) => {
-    const doc = await store.load(dod_id);
-    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
-
-    const node = findNodeByPath(doc.roots, nodePath);
-    if (!node) return { content: [{ type: "text" as const, text: `ERROR: node not found at path "${nodePath}".` }] };
-    if (node.refinement !== "draft")
-      return {
-        content: [
-          { type: "text" as const, text: `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.` },
-        ],
-      };
-    if (node.children && node.children.length > 0)
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `ERROR: node "${node.title}" is a task group with children — not a leaf. Refine its children instead.`,
-          },
-        ],
-      };
-
-    const oldIntent = node.intent;
-
-    if (mode === "concretize") {
-      if (!(command && predicate)) {
-        return { content: [{ type: "text" as const, text: "ERROR: concretize mode requires command and predicate." }] };
-      }
-
-      const pred = predicate as Predicate;
-      if (isExecutablePredicate(pred.type) && command.trim() !== "") {
-        const missing = await findMissingTools([command], doc.cwd);
-        if (missing.length > 0) {
-          return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
-        }
-      }
-
-      node.refinement = "concrete";
-      node.command = command;
-      node.predicate = pred;
-      node.description = description ?? "";
-      if (category) node.category = category as ProofCategory;
-      if (advisory !== undefined) node.advisory = advisory;
-      else if (pred.type === "regression") node.advisory = true;
-      // Coverage metrics default to higher-is-better
-      if (pred.type === "regression" && node.category === "coverage" && pred.lower_is_better === undefined) {
-        (node.predicate as Predicate).lower_is_better = false;
-      }
-      node.intent = undefined;
-      node.last_status = "pending";
-
-      doc.amendments.push({
-        timestamp: new Date().toISOString(),
-        node_path: nodePath,
-        action: "refined",
-        old_value: { refinement: "draft", intent: oldIntent },
-        new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
-        reason: `Refined draft → concrete: ${description ?? ""}`,
-      });
-    } else {
-      // subdivide mode
-      if (!children || children.length === 0) {
-        return {
-          content: [
-            { type: "text" as const, text: "ERROR: subdivide mode requires at least one child in children array." },
-          ],
-        };
-      }
-
-      const childNodes: TaskNode[] = children.map((c) => {
-        const childId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${Math.random().toString(36).slice(2, 4)}`;
-        return {
-          id: childId,
-          title: c.title,
-          refinement: "draft" as const,
-          intent: c.intent,
-          last_status: "draft" as const,
-        };
-      });
-
-      // Convert draft leaf → task group with children
-      node.children = childNodes;
-      node.refinement = "concrete"; // Task groups are always concrete
-      node.intent = undefined;
-      // Clear leaf-only fields that shouldn't exist on a task group
-      delete (node as Partial<TaskNode>).command;
-      delete (node as Partial<TaskNode>).predicate;
-      delete (node as Partial<TaskNode>).description;
-      delete (node as Partial<TaskNode>).category;
-
-      doc.amendments.push({
-        timestamp: new Date().toISOString(),
-        node_path: nodePath,
-        action: "refined",
-        old_value: { refinement: "draft", intent: oldIntent },
-        new_value: { refinement: "concrete", children: childNodes },
-        reason: `Subdivided into ${children.length} child draft nodes`,
-      });
-    }
-
-    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
-
-    const draftCount = countDraftNodes(doc.roots);
-
-    await store.save(doc);
-    await writeMarkdown(doc);
-
-    const msg =
-      mode === "concretize"
-        ? [
-            `Node refined: "${node.title}" is now concrete.`,
-            `Command: \`${command}\``,
-            `Predicate: ${(predicate as Predicate).type}:${(predicate as Predicate).value ?? "(no value)"}`,
-            `Description: ${description}`,
-            draftCount === 0
-              ? "\n🎉 All nodes are now concrete — the DoD is fully verifiable. Run dod_check."
-              : `\n${draftCount} draft node(s) remaining.`,
-          ].join("\n")
-        : [
-            `Node subdivided: "${node.title}" is now a task group with ${children?.length} child draft(s).`,
-            `Children: ${children?.map((c) => `"${c.title}"`).join(", ")}`,
-            `\n${draftCount} draft node(s) total. Refine each draft leaf before running dod_check.`,
-          ].join("\n");
-
-    return { content: [{ type: "text" as const, text: msg }] };
+  async (params) => {
+    const result = await handleDodRefine(params as any);
+    return { content: [{ type: "text" as const, text: result }] };
   },
 );
 
@@ -467,104 +267,13 @@ server.tool(
     category: ProofCategorySchema.optional(),
     advisory: z.boolean().optional(),
   },
-  async ({ dod_id, parent_path, title, refinement, intent, command, predicate, description, category, advisory }) => {
-    const doc = await store.load(dod_id);
-    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
-
-    let parent: TaskNode | null = null;
-    if (parent_path) {
-      parent = findNodeByPath(doc.roots, parent_path);
-      if (!parent)
-        return { content: [{ type: "text" as const, text: `ERROR: parent node not found at path "${parent_path}".` }] };
-      if (!parent.children)
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `ERROR: parent "${parent.title}" is a leaf — cannot add children. Add to a task group.`,
-            },
-          ],
-        };
+  async (params) => {
+    try {
+      const result = await handleDodAddNode(params as any);
+      return { content: [{ type: "text" as const, text: result.message }] };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: err instanceof Error ? err.message : String(err) }] };
     }
-
-    // Validate concrete node
-    if (refinement === "concrete") {
-      if (!(command && predicate && description)) {
-        return {
-          content: [
-            { type: "text" as const, text: "ERROR: concrete nodes require command, predicate, and description." },
-          ],
-        };
-      }
-      const pred = predicate as Predicate;
-      if (isExecutablePredicate(pred.type) && command.trim() !== "") {
-        const missing = await findMissingTools([command], doc.cwd);
-        if (missing.length > 0) {
-          return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
-        }
-      }
-    }
-
-    if (refinement === "draft" && !intent) {
-      return {
-        content: [
-          { type: "text" as const, text: "ERROR: draft nodes require an intent describing what this will prove." },
-        ],
-      };
-    }
-
-    const node: TaskNode = {
-      id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      title,
-      refinement,
-      last_status: refinement === "draft" ? "draft" : "pending",
-    };
-
-    if (refinement === "draft") node.intent = intent;
-    if (refinement === "concrete") {
-      node.command = command;
-      node.predicate = predicate as Predicate;
-      node.description = description;
-      node.category = category as ProofCategory | undefined;
-      if (advisory !== undefined) node.advisory = advisory;
-      else if (predicate?.type === "regression") node.advisory = true;
-      // Coverage metrics default to higher-is-better
-      if (predicate?.type === "regression" && node.category === "coverage" && predicate.lower_is_better === undefined) {
-        (node.predicate as Predicate).lower_is_better = false;
-      }
-    }
-
-    if (parent) {
-      parent.children?.push(node);
-    } else {
-      doc.roots.push(node);
-    }
-
-    const fullPath = parent_path
-      ? `${parent_path}.children.${(parent?.children?.length ?? 0) - 1}`
-      : `${doc.roots.length - 1}`;
-
-    doc.amendments.push({
-      timestamp: new Date().toISOString(),
-      node_path: fullPath,
-      action: "added",
-      new_value: { title, refinement },
-      reason: `Added ${refinement} node: ${title}`,
-    });
-
-    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
-
-    await store.save(doc);
-    await writeMarkdown(doc);
-
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: `Node "${title}" (${refinement}) added at path "${fullPath}".\nRun dod_check to verify${refinement === "draft" ? " after refining with dod_refine" : ""}.`,
-        },
-      ],
-    };
   },
 );
 
