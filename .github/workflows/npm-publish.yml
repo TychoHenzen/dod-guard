@@ -17,6 +17,19 @@ on:
       - 'obsidian-rag-v*'
       - 'evomcp-v*'
       - 'gitevo-v*'
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish (dod-guard, obsidian-rag, evomcp, gitevo, or "all")'
+        required: true
+        type: choice
+        default: 'all'
+        options:
+          - dod-guard
+          - obsidian-rag
+          - evomcp
+          - gitevo
+          - all
 
 jobs:
   build:
