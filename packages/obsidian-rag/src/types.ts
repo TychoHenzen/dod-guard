@@ -42,7 +42,7 @@ export interface SearchResult {
 }
 
 export interface MemoryEntry {
-  id: string; // filename without .md
+  id: string; // path relative to Claude-Memories/{type}/ (may contain slashes for nesting)
   path: string; // relative to vault/Claude-Memories/
   title: string;
   description: string;

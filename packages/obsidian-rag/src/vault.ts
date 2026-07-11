@@ -131,12 +131,16 @@ export async function readMemories(vaultPath: string): Promise<MemoryEntry[]> {
     const raw = await readFile(fullPath, "utf-8");
     const { data: fm, content } = matter(raw);
     const relPath = relative(vaultPath, fullPath);
+    // id is relative to MEMORY_DIR/{type}/ — preserves nested directory structure
+    const memType = (fm as any).type || (fm as any).metadata?.type || "reference";
+    const typeBase = join(dir, memType);
+    const id = relative(typeBase, fullPath).replace(/\.md$/, "").replace(/\\/g, "/");
     entries.push({
-      id: basename(fullPath, ".md"),
+      id,
       path: relPath,
       title: (fm as any).name || basename(fullPath, ".md"),
       description: (fm as any).description || "",
-      type: (fm as any).type || (fm as any).metadata?.type || "reference",
+      type: memType,
       content: content.trim(),
       metadata: (fm as any).metadata || {},
       created: (fm as any).created || "",
