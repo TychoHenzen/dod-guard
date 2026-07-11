@@ -163,9 +163,9 @@ async function main() {
 
 import { fileURLToPath } from "node:url";
 
-const _obsidianRagFilename = fileURLToPath(import.meta.url);
+const _filename = fileURLToPath(import.meta.url);
 
-if (process.argv[1] === _obsidianRagFilename) {
+if (process.argv[1] === _filename) {
   main().catch((err) => {
     console.error("Fatal:", err);
     process.exit(1);

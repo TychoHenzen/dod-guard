@@ -189,7 +189,7 @@ server.tool(
 
 import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
+const _filename = fileURLToPath(import.meta.url);
 
 // ── Start (only when run directly, not when imported by tests) ─────────
 
@@ -198,7 +198,7 @@ async function main(): Promise<void> {
   await server.connect(transport);
 }
 
-if (process.argv[1] === __filename) {
+if (process.argv[1] === _filename) {
   main().catch((err) => {
     process.stderr.write(`gitevo MCP server failed: ${err}\n`);
     process.exit(1);
