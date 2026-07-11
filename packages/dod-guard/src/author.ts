@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import type { DodDocument, CheckResult, TaskNode } from "./types.js";
 import { findNodeByPath, hasDraftNodes, isBranchLocked } from "./checker.js";
+import { DEFAULT_BREVITY_OPTS } from "./brevity.js";
 
 function proofMark(status: string): string {
   switch (status) {
@@ -84,15 +85,15 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
     const max = node.predicate.value ?? 0;
     lines.push(`${indent}- ${mark} Proof (brevity ≤${max} violations): \`${node.command}\` → ${node.description}`);
   } else if (node.predicate?.type === "line_length") {
-    const maxChars = node.predicate.max_line_length ?? 120;
+    const maxChars = node.predicate.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength;
     const maxV = node.predicate.value ?? 0;
     lines.push(`${indent}- ${mark} Proof (line_length ≤${maxChars} chars, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
   } else if (node.predicate?.type === "function_size") {
-    const maxLines = node.predicate.max_function_lines ?? 30;
+    const maxLines = node.predicate.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines;
     const maxV = node.predicate.value ?? 0;
     lines.push(`${indent}- ${mark} Proof (function_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
   } else if (node.predicate?.type === "file_size") {
-    const maxLines = node.predicate.max_file_lines ?? 300;
+    const maxLines = node.predicate.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines;
     const maxV = node.predicate.value ?? 0;
     lines.push(`${indent}- ${mark} Proof (file_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
   } else if (node.predicate?.type === "cohesion") {

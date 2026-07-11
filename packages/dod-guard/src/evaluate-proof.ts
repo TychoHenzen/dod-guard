@@ -85,12 +85,12 @@ function buildBrev(r: BrevityReport, passed: boolean, max: number): string {
       l.push(`    • L${v.line}: ${v.kind} — ${v.detail}`);
   }
   if (!passed) l.push("", "Remediation:",
-    "  • Split functions >30L into single-purpose units",
+    `  • Split functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines}L into single-purpose units`,
     "  • Reduce cyclomatic complexity — extract decision-heavy blocks into helpers",
     "  • Prefer guard clauses — if-block exits → no else needed",
     "  • Delete old code when replacing (low deletion ratio = accretion)",
-    "  • Keep lines under 120 chars — break long expressions",
-    "  • Split files >300 lines into modules");
+    `  • Keep lines under ${DEFAULT_BREVITY_OPTS.maxLineLength} chars — break long expressions`,
+    `  • Split files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines into modules`);
   return l.join("\n");
 }
 async function hManual(n: TaskNode, b: Record<string, unknown>): Promise<LeafResult> {
@@ -244,7 +244,7 @@ function buildLineLenFail(r: BrevityReport, max: number, maxChars: number): stri
     l.push(`  ${f.file}: ${f.lineCount}L, ${fv.length} long line(s)`);
     for (const v of fv) l.push(`    • L${v.line}: ${v.detail}`);
   }
-  l.push("", "Remediation: break long lines at ≤120 chars.");
+  l.push("", `Remediation: break long lines at ≤${DEFAULT_BREVITY_OPTS.maxLineLength} chars.`);
   return l.join("\n");
 }
 
@@ -259,7 +259,7 @@ function buildFnSizeFail(r: BrevityReport, max: number, maxLines: number): strin
     l.push(`  ${f.file}: ${f.functionCount} funcs, ${fv.length} long`);
     for (const v of fv) l.push(`    • L${v.line}: ${v.detail}`);
   }
-  l.push("", "Remediation: split functions >30 lines into single-purpose units.");
+  l.push("", `Remediation: split functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines into single-purpose units.`);
   return l.join("\n");
 }
 
@@ -274,7 +274,7 @@ function buildFileSizeFail(r: BrevityReport, max: number, maxLines: number): str
     l.push(`  ${f.file}: ${f.lineCount}L (max ${maxLines})`);
     for (const v of fv) l.push(`    • ${v.detail}`);
   }
-  l.push("", "Remediation: split files >300 lines into modules.");
+  l.push("", `Remediation: split files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines into modules.`);
   return l.join("\n");
 }
 

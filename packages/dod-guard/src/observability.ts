@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import * as path from "node:path";
+import { CMD_TRUNCATION } from "./constants.js";
 
 /**
  * Observability analysis for source files. Detects logging patterns, error
@@ -610,7 +611,7 @@ function scanFile(filePath: string, cwd: string): {
  * Returns null when no source files can be identified.
  */
 export function analyseObservability(command: string, cwd: string): ObservabilityReport | null {
-  console.debug("observability: analyseObservability", { cmd: command.slice(0, 80) });
+  console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
   // Try to find files from both command tokens and (later) command output
   let files = extractSourceFilesFromCommand(command, cwd);
 

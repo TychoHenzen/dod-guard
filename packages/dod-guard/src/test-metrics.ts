@@ -776,14 +776,17 @@ function extractTestFilesFromCommand(command: string, cwd: string): string[] {
         const pat = path.basename(resolved);
         if (existsSync(dir) && pat.includes("*")) {
           try {
-            const regex = new RegExp("^" + pat.replace(/\*/g, ".*").replace(/\./g, "\\.") + "$");
+            const regex = new RegExp("^" + pat.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$");
             for (const entry of readdirSync(dir)) {
               const full = path.join(dir, entry);
               if (regex.test(entry) && !isInSkipDir(full) && statSync(full).isFile() && isTestFile(full)) {
                 files.push(full);
               }
             }
-          } catch { /* unreadable */ }
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error("test-metrics: unreadable dir", { dir, err: msg });
+          }
         }
       }
     }
@@ -967,7 +970,7 @@ export function scoreFromMetrics(m: TestFileMetrics): {
 
   // 8. Assertion Triviality
   let trivialScore = 10;
-  if (ta === 0) trivialScore = 1;
+  if (m.totalAssertions === 0) trivialScore = 1;
   else if (m.trivialAssertions > 0) {
     trivialScore = Math.max(1, 10 - Math.floor((m.trivialAssertions / ta) * 10));
   }

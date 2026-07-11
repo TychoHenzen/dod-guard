@@ -1,4 +1,5 @@
 import type { ProofCategory } from "./types.js";
+import { DEFAULT_BREVITY_OPTS } from "./brevity.js";
 
 /**
  * Create-time enforcement of the company DoD baseline (standards/dod-baselines.md).
@@ -78,8 +79,8 @@ const OBSERVABILITY_WARN =
 
 const BREVITY_WARN =
   'No "brevity" proof — changed source files should be scanned for structural ' +
-  'bloat: functions >30 lines, mixed selection+iteration, files >300 lines, ' +
-  'lines >120 chars, replacement without removal. Add a brevity proof, or ' +
+  `bloat: functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines, mixed selection+iteration, files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines, ` +
+  `lines >${DEFAULT_BREVITY_OPTS.maxLineLength} chars, replacement without removal. Add a brevity proof, or ` +
   'provide a skip_reason.';
 
 const OPTIONAL_REQUIRING_JUSTIFICATION: ReadonlyArray<{
