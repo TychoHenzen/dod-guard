@@ -215,36 +215,6 @@ function carryForwardNode(node: TaskNode, node_path: string): LeafResult {
 }
 
 /**
- * Flatten all concrete leaves, carrying forward all of them without execution.
- * Used for nodes outside the scoped subtree.
- */
-function _carryForwardAll(nodes: TaskNode[], parentPath?: string): LeafResult[] {
-  const results: LeafResult[] = [];
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-    if (node.children && node.children.length > 0) {
-      results.push(..._carryForwardAll(node.children, currentPath));
-    } else if (node.refinement === "concrete") {
-      results.push(carryForwardNode(node, currentPath));
-    }
-    // Draft leaves: also carried forward
-    if (node.refinement === "draft") {
-      results.push({
-        node_path: currentPath,
-        id: node.id,
-        title: node.title,
-        description: node.intent ?? node.title,
-        status: "draft",
-        command: "",
-        output: "DRAFT — refine with dod_refine before this proof can be verified.",
-      });
-    }
-  }
-  return results;
-}
-
-/**
  * Collect all leaves (concrete + draft) under a specific node path.
  * Returns {inScope, outOfScope} where inScope are the matching subtree.
  */

@@ -71,26 +71,6 @@ export async function listVaults(): Promise<VaultInfo[]> {
   return parseVaultsOutput(stdout);
 }
 
-export async function getVaultInfo(vaultName: string): Promise<Partial<VaultInfo>> {
-  const { stdout } = await obsidian(vaultName, ["vault"]);
-  const m: Partial<VaultInfo> = {};
-  for (const line of stdout.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const parts = trimmed.split("\t");
-    if (parts.length >= 2) {
-      const key = parts[0].trim().toLowerCase();
-      const val = parts[1].trim();
-      if (key === "name") m.name = val;
-      if (key === "path") m.path = val;
-      if (key === "files") m.noteCount = Number.parseInt(val, 10) || 0;
-      if (key === "folders") m.folderCount = Number.parseInt(val, 10) || 0;
-      if (key === "size") m.size = val;
-    }
-  }
-  return m;
-}
-
 // ── Note reading ─────────────────────────────────────────────────────────
 
 /** Read raw markdown content of a note via CLI. */
@@ -116,18 +96,6 @@ export async function cliListFiles(vaultName: string, directory?: string): Promi
     .filter(Boolean);
 }
 
-// ── Search ───────────────────────────────────────────────────────────────
-
-/** Search vault with Obsidian's built-in search. */
-export async function cliSearch(vaultName: string, query: string, limit = 20): Promise<string[]> {
-  const { stdout } = await obsidian(vaultName, [
-    "search",
-    `query=${escapeArg(query)}`,
-    `limit=${limit}`,
-    "format=text",
-  ]);
-  return stdout.split("\n").filter(Boolean);
-}
 
 // ── Links ────────────────────────────────────────────────────────────────
 

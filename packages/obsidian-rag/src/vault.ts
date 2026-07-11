@@ -77,22 +77,6 @@ export function extractWikilinks(content: string): string[] {
   return [...new Set(links)];
 }
 
-// ── Backlinks (FS scan) ──────────────────────────────────────────────────
-
-export async function getBacklinks(vaultPath: string, targetPath: string): Promise<string[]> {
-  const targetName = basename(targetPath, ".md");
-  const allFiles = await walkVault(vaultPath);
-  const backlinks: string[] = [];
-  for (const file of allFiles) {
-    if (file === targetPath) continue;
-    const note = await readNote(vaultPath, file);
-    if (note.content.includes(`[[${targetName}]]`)) {
-      backlinks.push(file);
-    }
-  }
-  return backlinks;
-}
-
 // ── Tags ─────────────────────────────────────────────────────────────────
 
 export async function aggregateTags(vaultPath: string): Promise<Map<string, number>> {

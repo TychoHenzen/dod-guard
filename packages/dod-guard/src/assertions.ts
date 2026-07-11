@@ -61,14 +61,6 @@ const JS_ASSERT = /(expect\s*\(|assert\.)/;
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-function _isTrivial(line: string, patterns: RegExp[]): boolean {
-  return patterns.some((p) => p.test(line));
-}
-
-function _isAssertion(line: string, detector: RegExp): boolean {
-  return detector.test(line);
-}
-
 function classifyLine(
   line: string,
   detector: RegExp,
