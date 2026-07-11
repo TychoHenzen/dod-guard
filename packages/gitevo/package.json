@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "tsc && node --experimental-test-module-mocks --test \"dist/*.test.js\"",
+    "test": "tsc && node --experimental-test-module-mocks --test \"dist/index.test.js\"",
+    "test:integration": "tsc && node --experimental-test-module-mocks --test \"dist/operations.test.js\"",
     "bundle": "node esbuild.config.mjs",
     "prepublishOnly": "npm run build && npm run bundle",
     "start": "node dist/bundle.js",
