@@ -1,6 +1,6 @@
 {
   "name": "obsidian-rag",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "RAG/memory MCP server on top of an Obsidian vault. Semantic search, note CRUD, memory recall — all local, all offline.",
   "type": "module",
   "main": "dist/bundle.js",

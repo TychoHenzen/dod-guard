@@ -14,7 +14,7 @@ import type { DodDocument, Predicate, TaskNode, ProofCategory } from "./types.js
 
 const server = new McpServer({
   name: "dod-guard",
-  version: "2.2.3",
+  version: "2.2.4",
 });
 
 // ── Shared schemas ──────────────────────────────────────────────────
