@@ -51,7 +51,15 @@ const store = new Store({ dbDir: DB_DIR });
 // package.json is ../ from dist/ in dev, ./ in plugin cache (bundle at root)
 let pkgPath = new URL("../package.json", import.meta.url);
 if (!existsSync(pkgPath)) pkgPath = new URL("./package.json", import.meta.url);
-const PKG = JSON.parse(readFileSync(pkgPath, "utf-8"));
+const PKG = (() => {
+  try {
+    return JSON.parse(readFileSync(pkgPath, "utf-8"));
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("obsidian-rag: failed to parse package.json", { path: String(pkgPath), err: msg });
+    return { name: "obsidian-rag", version: "0.0.0" };
+  }
+})();
 
 let selectedVault: VaultInfo | null = null;
 let embedder: Embedder | null = null;
@@ -74,7 +82,7 @@ async function waitForVault(): Promise<VaultInfo> {
 
   // Await selection if already in progress
   if (_selectPromise) {
-    try { await _selectPromise; } catch { /* guard will throw */ }
+    try { await _selectPromise; } catch { /* selection rejected — guard throws below */ }
     if (selectedVault) return selectedVault;
   }
 
@@ -82,7 +90,7 @@ async function waitForVault(): Promise<VaultInfo> {
   // Poll for up to 5s.
   for (let i = 0; i < 50; i++) {
     if (_selectPromise) {
-      try { await _selectPromise; } catch {}
+      try { await _selectPromise; } catch { /* selection failed — poll loop handles retry */ }
       if (selectedVault) return selectedVault;
     }
     if (selectedVault) return selectedVault;

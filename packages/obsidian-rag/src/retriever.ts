@@ -43,10 +43,21 @@ export async function semanticSearch(
 
   // Parse embeddings and compute cosine similarity
   const scored = withEmbeddings.map(chunk => {
-    const embedding = typeof chunk.embedding === "string"
-      ? JSON.parse(chunk.embedding)
-      : chunk.embedding;
-    const similarity = cosineSimilarity(queryEmbedding, embedding as number[]);
+    let embedding: number[] | null = null;
+    if (typeof chunk.embedding === "string") {
+      try {
+        embedding = JSON.parse(chunk.embedding);
+      } catch {
+        // Corrupted embedding — skip this chunk
+        return { chunk, similarity: 0 };
+      }
+    } else {
+      embedding = chunk.embedding as number[] | null;
+    }
+    if (!embedding || !Array.isArray(embedding)) {
+      return { chunk, similarity: 0 };
+    }
+    const similarity = cosineSimilarity(queryEmbedding, embedding);
     return { chunk, similarity };
   });
 
