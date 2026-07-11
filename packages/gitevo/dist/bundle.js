@@ -21565,12 +21565,12 @@ server.tool(
     content: [{ type: "text", text: wrap(evo_finish)() }]
   })
 );
-var __filename = fileURLToPath(import.meta.url);
+var _filename = fileURLToPath(import.meta.url);
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
-if (process.argv[1] === __filename) {
+if (process.argv[1] === _filename) {
   main().catch((err) => {
     process.stderr.write(`gitevo MCP server failed: ${err}
 `);
