@@ -128,8 +128,8 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
   const repairable = candidates
     .filter((c) => c.status === "failed" && c.verdict)
     .sort((a, b) => {
-      const aCode = a.verdict?.exit_code;
-      const bCode = b.verdict?.exit_code;
+      const aCode = a.verdict?.exit_code ?? 1;
+      const bCode = b.verdict?.exit_code ?? 1;
       if (aCode !== bCode) return aCode - bCode;
       return (b.verdict?.output?.length ?? 0) - (a.verdict?.output?.length ?? 0);
     })
@@ -139,7 +139,7 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
     for (let repair = 1; repair <= MAX_REPAIRS; repair++) {
       onProgress?.(`  Repair attempt ${repair}/${MAX_REPAIRS} for ${candidate.plan_id}...`);
 
-      const prompt = repairPrompt(spec.goal, candidate.verdict?.output, repair, spec.context);
+      const prompt = repairPrompt(spec.goal, candidate.verdict?.output ?? "", repair, spec.context);
 
       const result = await spawnClaude(prompt, {
         cwd: spec.cwd,
@@ -204,7 +204,7 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
   // Best partial attempt
   const bestCandidate = candidates
     .filter((c) => c.verdict)
-    .sort((a, b) => a.verdict?.exit_code - b.verdict?.exit_code)[0];
+    .sort((a, b) => (a.verdict?.exit_code ?? 1) - (b.verdict?.exit_code ?? 1))[0];
 
   const escalation: EscalationReport = {
     failure_signature: dominantSig?.[0] ?? "unknown",
