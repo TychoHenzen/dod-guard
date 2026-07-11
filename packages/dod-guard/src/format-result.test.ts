@@ -236,7 +236,7 @@ describe("formatCheckResult - leaf rendering", () => {
           description: "Manual proof",
           status: "skipped",
           command: "manual",
-          output: "not verified — dod_verify(dod_id, \"n4\")",
+          output: 'not verified — dod_verify(dod_id, "n4")',
         },
       ],
     });
@@ -371,8 +371,8 @@ describe("formatCheckResult - leaf rendering", () => {
     // depth = split(".children.").length - 1
     // Top: "0.children.0" → ["0","0"].length-1=1 → indent = "  ".repeat(2) = 4 spaces
     // Nested: "0.children.0.children.1" → ["0","0","1"].length-1=2 → indent = "  ".repeat(3) = 6 spaces
-    assert.match(output, /    ✓.*cmd-top/);
-    assert.match(output, /      ✓.*cmd-nested/);
+    assert.match(output, / {4}✓.*cmd-top/);
+    assert.match(output, / {6}✓.*cmd-nested/);
   });
 
   it("truncates long error output to 5 lines", () => {

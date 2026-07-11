@@ -46,10 +46,7 @@ describe("evolve - error paths", () => {
       cwd: process.cwd(),
       target_files: ["package.json"],
     };
-    await assert.rejects(
-      () => evolve(spec),
-      /did not emit a numeric score/,
-    );
+    await assert.rejects(() => evolve(spec), /did not emit a numeric score/);
   });
 
   it("throws when no target files match", async () => {
@@ -60,9 +57,6 @@ describe("evolve - error paths", () => {
       cwd: process.cwd(),
       target_files: ["nonexistent_*.zzz"],
     };
-    await assert.rejects(
-      () => evolve(spec),
-      /No target files found/,
-    );
+    await assert.rejects(() => evolve(spec), /No target files found/);
   });
 });

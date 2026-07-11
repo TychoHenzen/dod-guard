@@ -43,24 +43,24 @@ describe("Store — vaults", () => {
     store.setVault({ name: "my-vault", path: "/home/user/vault", noteCount: 42, folderCount: 5 });
     const v = store.getVault("my-vault");
     assert.notEqual(v, null);
-    assert.equal(v!.name, "my-vault");
-    assert.equal(v!.path, "/home/user/vault");
-    assert.equal(v!.noteCount, 42);
-    assert.equal(v!.folderCount, 5);
+    assert.equal(v?.name, "my-vault");
+    assert.equal(v?.path, "/home/user/vault");
+    assert.equal(v?.noteCount, 42);
+    assert.equal(v?.folderCount, 5);
   });
 
   it("overwrites vault on re-set (upsert behavior)", () => {
     store.setVault({ name: "my-vault", path: "/home/user/vault", noteCount: 99, folderCount: 8 });
     const v = store.getVault("my-vault");
-    assert.equal(v!.noteCount, 99);
-    assert.equal(v!.folderCount, 8);
+    assert.equal(v?.noteCount, 99);
+    assert.equal(v?.folderCount, 8);
   });
 
   it("handles multiple vaults independently", () => {
     store.setVault({ name: "vault-a", path: "/a" });
     store.setVault({ name: "vault-b", path: "/b" });
-    assert.equal(store.getVault("vault-a")!.path, "/a");
-    assert.equal(store.getVault("vault-b")!.path, "/b");
+    assert.equal(store.getVault("vault-a")?.path, "/a");
+    assert.equal(store.getVault("vault-b")?.path, "/b");
   });
 });
 
@@ -100,40 +100,73 @@ describe("Store — notes", () => {
     store.upsertNote(VAULT, meta, "# Hello\n\nThis is the content.", "abc123hash");
     const n = store.getNote(VAULT, "notes/hello.md");
     assert.notEqual(n, null);
-    assert.equal(n!.title, "Hello World");
-    assert.deepStrictEqual(n!.tags, ["greeting", "test"]);
-    assert.deepStrictEqual(n!.links, ["Other Note"]);
-    assert.equal(n!.created, "2024-01-01T00:00:00Z");
-    assert.equal(n!.modified, "2024-06-15T12:00:00Z");
-    assert.equal(n!.content, "# Hello\n\nThis is the content.");
+    assert.equal(n?.title, "Hello World");
+    assert.deepStrictEqual(n?.tags, ["greeting", "test"]);
+    assert.deepStrictEqual(n?.links, ["Other Note"]);
+    assert.equal(n?.created, "2024-01-01T00:00:00Z");
+    assert.equal(n?.modified, "2024-06-15T12:00:00Z");
+    assert.equal(n?.content, "# Hello\n\nThis is the content.");
   });
 
   it("overwrites existing note on upsert (no duplicates)", () => {
-    store.upsertNote(VAULT, {
-      path: "notes/hello.md", title: "Updated Title", tags: ["updated"],
-      links: [], backlinks: [], frontmatter: {}, created: "", modified: "",
-    }, "updated content", "newhash");
+    store.upsertNote(
+      VAULT,
+      {
+        path: "notes/hello.md",
+        title: "Updated Title",
+        tags: ["updated"],
+        links: [],
+        backlinks: [],
+        frontmatter: {},
+        created: "",
+        modified: "",
+      },
+      "updated content",
+      "newhash",
+    );
     const n = store.getNote(VAULT, "notes/hello.md");
-    assert.equal(n!.title, "Updated Title");
-    assert.equal(n!.content, "updated content");
+    assert.equal(n?.title, "Updated Title");
+    assert.equal(n?.content, "updated content");
   });
 
   it("handles empty tags and links", () => {
-    store.upsertNote(VAULT, {
-      path: "notes/empty.md", title: "Empty Meta", tags: [], links: [],
-      backlinks: [], frontmatter: {}, created: "", modified: "",
-    }, "minimal", "hash");
+    store.upsertNote(
+      VAULT,
+      {
+        path: "notes/empty.md",
+        title: "Empty Meta",
+        tags: [],
+        links: [],
+        backlinks: [],
+        frontmatter: {},
+        created: "",
+        modified: "",
+      },
+      "minimal",
+      "hash",
+    );
     const n = store.getNote(VAULT, "notes/empty.md");
-    assert.deepStrictEqual(n!.tags, []);
-    assert.deepStrictEqual(n!.links, []);
+    assert.deepStrictEqual(n?.tags, []);
+    assert.deepStrictEqual(n?.links, []);
   });
 
   it("isolates notes by vault name (different vaults don't leak)", () => {
     store.setVault({ name: "other-vault", path: "/tmp/other" });
-    store.upsertNote("other-vault", {
-      path: "notes/secret.md", title: "Secret", tags: ["secret"],
-      links: [], backlinks: [], frontmatter: {}, created: "", modified: "",
-    }, "secret content", "hash-secret");
+    store.upsertNote(
+      "other-vault",
+      {
+        path: "notes/secret.md",
+        title: "Secret",
+        tags: ["secret"],
+        links: [],
+        backlinks: [],
+        frontmatter: {},
+        created: "",
+        modified: "",
+      },
+      "secret content",
+      "hash-secret",
+    );
     assert.notEqual(store.getNote("other-vault", "notes/secret.md"), null);
     assert.equal(store.getNote(VAULT, "notes/secret.md"), null);
   });
@@ -151,16 +184,38 @@ describe("Store — FTS5 search", () => {
     store = new Store({ dbDir: DB_DIR });
     store.setVault({ name: VAULT, path: "/tmp/search" });
 
-    const blank = { links: [] as string[], backlinks: [] as string[], frontmatter: {} as Record<string,unknown>, created: "", modified: "" };
+    const blank = {
+      links: [] as string[],
+      backlinks: [] as string[],
+      frontmatter: {} as Record<string, unknown>,
+      created: "",
+      modified: "",
+    };
 
-    store.upsertNote(VAULT, { path: "cooking/pasta.md", title: "Pasta Recipe", tags: ["cooking", "italian"], ...blank },
-      "How to make authentic carbonara with guanciale and pecorino romano.", "h1");
-    store.upsertNote(VAULT, { path: "cooking/pizza.md", title: "Pizza Dough", tags: ["cooking", "baking"], ...blank },
-      "Neapolitan pizza dough with 00 flour and long fermentation.", "h2");
-    store.upsertNote(VAULT, { path: "travel/rome.md", title: "Rome Guide", tags: ["travel", "italy"], ...blank },
-      "Best places to visit in Rome including the Colosseum and Forum.", "h3");
-    store.upsertNote(VAULT, { path: "notes/random.md", title: "Random Thoughts", tags: ["misc"], ...blank },
-      "Just some completely unrelated text about the weather.", "h4");
+    store.upsertNote(
+      VAULT,
+      { path: "cooking/pasta.md", title: "Pasta Recipe", tags: ["cooking", "italian"], ...blank },
+      "How to make authentic carbonara with guanciale and pecorino romano.",
+      "h1",
+    );
+    store.upsertNote(
+      VAULT,
+      { path: "cooking/pizza.md", title: "Pizza Dough", tags: ["cooking", "baking"], ...blank },
+      "Neapolitan pizza dough with 00 flour and long fermentation.",
+      "h2",
+    );
+    store.upsertNote(
+      VAULT,
+      { path: "travel/rome.md", title: "Rome Guide", tags: ["travel", "italy"], ...blank },
+      "Best places to visit in Rome including the Colosseum and Forum.",
+      "h3",
+    );
+    store.upsertNote(
+      VAULT,
+      { path: "notes/random.md", title: "Random Thoughts", tags: ["misc"], ...blank },
+      "Just some completely unrelated text about the weather.",
+      "h4",
+    );
   });
 
   after(() => {
@@ -221,9 +276,20 @@ describe("Store — listing notes", () => {
     mkdirSync(DB_DIR, { recursive: true });
     store = new Store({ dbDir: DB_DIR });
     store.setVault({ name: VAULT, path: "/tmp/list" });
-    const blank = { links: [] as string[], backlinks: [] as string[], frontmatter: {} as Record<string,unknown>, created: "", modified: "" };
+    const blank = {
+      links: [] as string[],
+      backlinks: [] as string[],
+      frontmatter: {} as Record<string, unknown>,
+      created: "",
+      modified: "",
+    };
     store.upsertNote(VAULT, { path: "folder-a/note1.md", title: "Note 1", tags: ["a"], ...blank }, "content 1", "h1");
-    store.upsertNote(VAULT, { path: "folder-a/note2.md", title: "Note 2", tags: ["a", "b"], ...blank }, "content 2", "h2");
+    store.upsertNote(
+      VAULT,
+      { path: "folder-a/note2.md", title: "Note 2", tags: ["a", "b"], ...blank },
+      "content 2",
+      "h2",
+    );
     store.upsertNote(VAULT, { path: "folder-b/note3.md", title: "Note 3", tags: ["b"], ...blank }, "content 3", "h3");
   });
 
@@ -253,7 +319,7 @@ describe("Store — listing notes", () => {
     const notes = store.listNotes(VAULT, "folder-a/");
     const note2 = notes.find((n) => n.path === "folder-a/note2.md");
     assert.notEqual(note2, undefined);
-    assert.deepStrictEqual(note2!.tags, ["a", "b"]);
+    assert.deepStrictEqual(note2?.tags, ["a", "b"]);
   });
 });
 
@@ -268,7 +334,13 @@ describe("Store — tags", () => {
     mkdirSync(DB_DIR, { recursive: true });
     store = new Store({ dbDir: DB_DIR });
     store.setVault({ name: VAULT, path: "/tmp/tags" });
-    const blank = { links: [] as string[], backlinks: [] as string[], frontmatter: {} as Record<string,unknown>, created: "", modified: "" };
+    const blank = {
+      links: [] as string[],
+      backlinks: [] as string[],
+      frontmatter: {} as Record<string, unknown>,
+      created: "",
+      modified: "",
+    };
     store.upsertNote(VAULT, { path: "a.md", title: "A", tags: ["tag1", "tag2"], ...blank }, "a", "h1");
     store.upsertNote(VAULT, { path: "b.md", title: "B", tags: ["tag2", "tag3"], ...blank }, "b", "h2");
     store.upsertNote(VAULT, { path: "c.md", title: "C", tags: ["tag1", "tag1"], ...blank }, "c", "h3");
@@ -310,7 +382,13 @@ describe("Store — chunks", () => {
     mkdirSync(DB_DIR, { recursive: true });
     store = new Store({ dbDir: DB_DIR });
     store.setVault({ name: VAULT, path: "/tmp/chunks" });
-    const blank = { links: [] as string[], backlinks: [] as string[], frontmatter: {} as Record<string,unknown>, created: "", modified: "" };
+    const blank = {
+      links: [] as string[],
+      backlinks: [] as string[],
+      frontmatter: {} as Record<string, unknown>,
+      created: "",
+      modified: "",
+    };
     store.upsertNote(VAULT, { path: "notes/long.md", title: "Long Note", tags: [], ...blank }, "long content", "h1");
   });
 
@@ -320,7 +398,10 @@ describe("Store — chunks", () => {
   });
 
   it("stores and retrieves a chunk", () => {
-    store.upsertChunk({ id: "notes/long.md#0", notePath: "notes/long.md", heading: "Introduction", content: "First chunk." }, VAULT);
+    store.upsertChunk(
+      { id: "notes/long.md#0", notePath: "notes/long.md", heading: "Introduction", content: "First chunk." },
+      VAULT,
+    );
     const chunks = store.getChunks(VAULT);
     assert.equal(chunks.length, 1);
     assert.equal(chunks[0].id, "notes/long.md#0");
@@ -329,8 +410,14 @@ describe("Store — chunks", () => {
   });
 
   it("updates chunk on upsert (no duplicates)", () => {
-    store.upsertChunk({ id: "notes/long.md#0", notePath: "notes/long.md", heading: "Introduction", content: "First chunk." }, VAULT);
-    store.upsertChunk({ id: "notes/long.md#0", notePath: "notes/long.md", heading: "Revised", content: "Updated." }, VAULT);
+    store.upsertChunk(
+      { id: "notes/long.md#0", notePath: "notes/long.md", heading: "Introduction", content: "First chunk." },
+      VAULT,
+    );
+    store.upsertChunk(
+      { id: "notes/long.md#0", notePath: "notes/long.md", heading: "Revised", content: "Updated." },
+      VAULT,
+    );
     assert.equal(store.getChunks(VAULT).length, 1);
     assert.equal(store.getChunks(VAULT)[0].heading, "Revised");
   });
@@ -352,7 +439,10 @@ describe("Store — chunks", () => {
   });
 
   it("stores and retrieves chunk embeddings", () => {
-    store.upsertChunk({ id: "notes/long.md#0", notePath: "notes/long.md", heading: "Embedded", content: "Has embedding." }, VAULT);
+    store.upsertChunk(
+      { id: "notes/long.md#0", notePath: "notes/long.md", heading: "Embedded", content: "Has embedding." },
+      VAULT,
+    );
     store.setEmbedding("notes/long.md#0", [0.1, 0.2, 0.3, 0.4]);
     const chunks = store.getChunks(VAULT);
     assert.ok(chunks[0].embedding !== undefined && chunks[0].embedding !== null);
@@ -360,7 +450,16 @@ describe("Store — chunks", () => {
 
   it("can find unembedded chunks", () => {
     store.upsertChunk({ id: "notes/long.md#0", notePath: "notes/long.md", heading: "No emb", content: "None." }, VAULT);
-    store.upsertChunk({ id: "notes/long.md#1", notePath: "notes/long.md", heading: "With emb", content: "Has one.", embedding: [0.5, 0.6] }, VAULT);
+    store.upsertChunk(
+      {
+        id: "notes/long.md#1",
+        notePath: "notes/long.md",
+        heading: "With emb",
+        content: "Has one.",
+        embedding: [0.5, 0.6],
+      },
+      VAULT,
+    );
     const unembedded = store.getUnembeddedChunks(VAULT);
     assert.equal(unembedded.length, 1);
     assert.equal(unembedded[0].id, "notes/long.md#0");
@@ -396,7 +495,13 @@ describe("Store — index metadata", () => {
   });
 
   it("updates and reflects index metadata", () => {
-    store.setIndexMeta(VAULT, { totalNotes: 100, indexedNotes: 95, totalChunks: 450, embeddedChunks: 200, lastIndexed: "2024-06-15T12:00:00Z" });
+    store.setIndexMeta(VAULT, {
+      totalNotes: 100,
+      indexedNotes: 95,
+      totalChunks: 450,
+      embeddedChunks: 200,
+      lastIndexed: "2024-06-15T12:00:00Z",
+    });
     const status = store.getIndexStatus(VAULT);
     assert.equal(status.totalNotes, 100);
     assert.equal(status.indexedNotes, 95);
@@ -425,7 +530,13 @@ describe("Store — note cleanup", () => {
     mkdirSync(DB_DIR, { recursive: true });
     store = new Store({ dbDir: DB_DIR });
     store.setVault({ name: VAULT, path: "/tmp/clean" });
-    const blank = { links: [] as string[], backlinks: [] as string[], frontmatter: {} as Record<string,unknown>, created: "", modified: "" };
+    const blank = {
+      links: [] as string[],
+      backlinks: [] as string[],
+      frontmatter: {} as Record<string, unknown>,
+      created: "",
+      modified: "",
+    };
     store.upsertNote(VAULT, { path: "a.md", title: "A", tags: [], ...blank }, "a", "h1");
     store.upsertNote(VAULT, { path: "b.md", title: "B", tags: [], ...blank }, "b", "h2");
   });

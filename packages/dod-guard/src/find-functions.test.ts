@@ -18,24 +18,12 @@ import type { FunctionRange } from "./find-functions.js";
 
 describe("findBlockEnd", () => {
   it("finds matching closing brace for simple block", () => {
-    const lines = [
-      "function foo() {",
-      "  const x = 1;",
-      "  return x;",
-      "}",
-    ];
+    const lines = ["function foo() {", "  const x = 1;", "  return x;", "}"];
     assert.equal(findBlockEnd(lines, 0, "{", "}"), 3);
   });
 
   it("handles nested braces correctly", () => {
-    const lines = [
-      "function foo() {",
-      "  if (x) {",
-      "    return 1;",
-      "  }",
-      "  return 0;",
-      "}",
-    ];
+    const lines = ["function foo() {", "  if (x) {", "    return 1;", "  }", "  return 0;", "}"];
     assert.equal(findBlockEnd(lines, 0, "{", "}"), 5);
   });
 
@@ -43,7 +31,7 @@ describe("findBlockEnd", () => {
     const lines = [
       "function foo() {",
       "  const s = '{ not a brace }';",
-      "  const t = \"{ also not }\";",
+      '  const t = "{ also not }";',
       "  return s + t;",
       "}",
     ];
@@ -51,48 +39,27 @@ describe("findBlockEnd", () => {
   });
 
   it("ignores braces inside template literals", () => {
-    const lines = [
-      "function foo() {",
-      '  const s = `{ also not a real brace }`;',
-      "  return s;",
-      "}",
-    ];
+    const lines = ["function foo() {", "  const s = `{ also not a real brace }`;", "  return s;", "}"];
     assert.equal(findBlockEnd(lines, 0, "{", "}"), 3);
   });
 
   it("ignores braces after single-line comment", () => {
-    const lines = [
-      "function foo() {",
-      "  // this is a comment with { braces }",
-      "  return 1;",
-      "}",
-    ];
+    const lines = ["function foo() {", "  // this is a comment with { braces }", "  return 1;", "}"];
     assert.equal(findBlockEnd(lines, 0, "{", "}"), 3);
   });
 
   it("handles open brace on same line as close brace", () => {
-    const lines = [
-      "function foo() { return {}; }",
-    ];
+    const lines = ["function foo() { return {}; }"];
     assert.equal(findBlockEnd(lines, 0, "{", "}"), 0);
   });
 
   it("returns last line when no closing brace found", () => {
-    const lines = [
-      "function foo() {",
-      "  const x = 1;",
-      "  // missing closing brace",
-    ];
+    const lines = ["function foo() {", "  const x = 1;", "  // missing closing brace"];
     assert.equal(findBlockEnd(lines, 0, "{", "}"), 2);
   });
 
   it("handles escaped quote in string", () => {
-    const lines = [
-      "function foo() {",
-      "  const s = 'it\\'s a string with { brace }';",
-      "  return s;",
-      "}",
-    ];
+    const lines = ["function foo() {", "  const s = 'it\\'s a string with { brace }';", "  return s;", "}"];
     assert.equal(findBlockEnd(lines, 0, "{", "}"), 3);
   });
 });
@@ -101,11 +68,7 @@ describe("findBlockEnd", () => {
 
 describe("findJsFunctions", () => {
   it("detects named function declarations", () => {
-    const lines = [
-      "function hello() {",
-      "  return 'world';",
-      "}",
-    ];
+    const lines = ["function hello() {", "  return 'world';", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "hello");
@@ -114,143 +77,83 @@ describe("findJsFunctions", () => {
   });
 
   it("detects async function declarations", () => {
-    const lines = [
-      "async function fetchData() {",
-      "  return await db.query();",
-      "}",
-    ];
+    const lines = ["async function fetchData() {", "  return await db.query();", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "fetchData");
   });
 
   it("detects exported functions", () => {
-    const lines = [
-      "export function doThing() {",
-      "  return 42;",
-      "}",
-    ];
+    const lines = ["export function doThing() {", "  return 42;", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "doThing");
   });
 
   it("detects export default function", () => {
-    const lines = [
-      "export default function main() {",
-      "  return 'default';",
-      "}",
-    ];
+    const lines = ["export default function main() {", "  return 'default';", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "main");
   });
 
   it("detects method-style functions (name(){})", () => {
-    const lines = [
-      "class Foo {",
-      "  bar() {",
-      "    return 1;",
-      "  }",
-      "}",
-    ];
+    const lines = ["class Foo {", "  bar() {", "    return 1;", "  }", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "bar");
   });
 
   it("detects static methods", () => {
-    const lines = [
-      "class Foo {",
-      "  static create() {",
-      "    return new Foo();",
-      "  }",
-      "}",
-    ];
+    const lines = ["class Foo {", "  static create() {", "    return new Foo();", "  }", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "create");
   });
 
   it("detects getter methods", () => {
-    const lines = [
-      "class Foo {",
-      "  get value() {",
-      "    return this._value;",
-      "  }",
-      "}",
-    ];
+    const lines = ["class Foo {", "  get value() {", "    return this._value;", "  }", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "value");
   });
 
   it("detects setter methods", () => {
-    const lines = [
-      "class Foo {",
-      "  set value(v) {",
-      "    this._value = v;",
-      "  }",
-      "}",
-    ];
+    const lines = ["class Foo {", "  set value(v) {", "    this._value = v;", "  }", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "value");
   });
 
   it("detects arrow function assigned to const", () => {
-    const lines = [
-      "const add = (a, b) => {",
-      "  return a + b;",
-      "};",
-    ];
+    const lines = ["const add = (a, b) => {", "  return a + b;", "};"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "add");
   });
 
   it("detects exported arrow function", () => {
-    const lines = [
-      "export const multiply = (a, b) => {",
-      "  return a * b;",
-      "};",
-    ];
+    const lines = ["export const multiply = (a, b) => {", "  return a * b;", "};"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "multiply");
   });
 
   it("detects function expression assigned to variable", () => {
-    const lines = [
-      "const greet = function(name) {",
-      "  return 'hello ' + name;",
-      "};",
-    ];
+    const lines = ["const greet = function(name) {", "  return 'hello ' + name;", "};"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "greet");
   });
 
   it("skips control keywords (if, for, while, etc.) in method position", () => {
-    const lines = [
-      "if (x) {",
-      "  return x;",
-      "}",
-    ];
+    const lines = ["if (x) {", "  return x;", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 0);
   });
 
   it("detects multiple functions in a file", () => {
-    const lines = [
-      "function first() {",
-      "  return 1;",
-      "}",
-      "",
-      "function second() {",
-      "  return 2;",
-      "}",
-    ];
+    const lines = ["function first() {", "  return 1;", "}", "", "function second() {", "  return 2;", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 2);
     assert.equal(result[0].name, "first");
@@ -258,14 +161,7 @@ describe("findJsFunctions", () => {
   });
 
   it("handles nested functions (only detects top-level)", () => {
-    const lines = [
-      "function outer() {",
-      "  function inner() {",
-      "    return 1;",
-      "  }",
-      "  return inner();",
-      "}",
-    ];
+    const lines = ["function outer() {", "  function inner() {", "    return 1;", "  }", "  return inner();", "}"];
     const result = findJsFunctions(lines);
     // outer is found, inner is skipped because i jumps to end of outer
     assert.equal(result.length, 1);
@@ -273,25 +169,14 @@ describe("findJsFunctions", () => {
   });
 
   it("handles async arrow function", () => {
-    const lines = [
-      "const fetch = async (url) => {",
-      "  const r = await get(url);",
-      "  return r.json();",
-      "};",
-    ];
+    const lines = ["const fetch = async (url) => {", "  const r = await get(url);", "  return r.json();", "};"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "fetch");
   });
 
   it("handles async method", () => {
-    const lines = [
-      "class Service {",
-      "  async fetch(url) {",
-      "    return await get(url);",
-      "  }",
-      "}",
-    ];
+    const lines = ["class Service {", "  async fetch(url) {", "    return await get(url);", "  }", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "fetch");
@@ -313,27 +198,14 @@ describe("findJsFunctions", () => {
   });
 
   it("returns bodyLines correctly", () => {
-    const lines = [
-      "function calc() {",
-      "  const x = 1;",
-      "  const y = 2;",
-      "  return x + y;",
-      "}",
-    ];
+    const lines = ["function calc() {", "  const x = 1;", "  const y = 2;", "  return x + y;", "}"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 1);
-    assert.deepEqual(result[0].bodyLines, [
-      "  const x = 1;",
-      "  const y = 2;",
-      "  return x + y;",
-    ]);
+    assert.deepEqual(result[0].bodyLines, ["  const x = 1;", "  const y = 2;", "  return x + y;"]);
   });
 
   it("detects let and var arrow functions too", () => {
-    const lines = [
-      "let fn1 = () => { return 1; };",
-      "var fn2 = () => { return 2; };",
-    ];
+    const lines = ["let fn1 = () => { return 1; };", "var fn2 = () => { return 2; };"];
     const result = findJsFunctions(lines);
     assert.equal(result.length, 2);
     assert.equal(result[0].name, "fn1");
@@ -345,10 +217,7 @@ describe("findJsFunctions", () => {
 
 describe("findPyFunctions", () => {
   it("detects simple def function", () => {
-    const lines = [
-      "def hello():",
-      "    return 'world'",
-    ];
+    const lines = ["def hello():", "    return 'world'"];
     const result = findPyFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "hello");
@@ -356,10 +225,7 @@ describe("findPyFunctions", () => {
   });
 
   it("does not currently detect async def (known gap — regex only matches 'def')", () => {
-    const lines = [
-      "async def fetch():",
-      "    return await db.query()",
-    ];
+    const lines = ["async def fetch():", "    return await db.query()"];
     // The current regex /^\s*def\s+(\w+)\s*\(/ does not match async def.
     // This test documents the gap.
     const result = findPyFunctions(lines);
@@ -367,13 +233,7 @@ describe("findPyFunctions", () => {
   });
 
   it("detects multiple functions", () => {
-    const lines = [
-      "def first():",
-      "    return 1",
-      "",
-      "def second():",
-      "    return 2",
-    ];
+    const lines = ["def first():", "    return 1", "", "def second():", "    return 2"];
     const result = findPyFunctions(lines);
     assert.equal(result.length, 2);
   });
@@ -393,12 +253,7 @@ describe("findPyFunctions", () => {
   });
 
   it("handles nested functions", () => {
-    const lines = [
-      "def outer():",
-      "    def inner():",
-      "        return 5",
-      "    return inner()",
-    ];
+    const lines = ["def outer():", "    def inner():", "        return 5", "    return inner()"];
     const result = findPyFunctions(lines);
     // findPyBlockEnd for outer goes to end of file, so inner is skipped by `i = end`
     assert.equal(result.length, 1);
@@ -410,46 +265,22 @@ describe("findPyFunctions", () => {
 
 describe("findPyBlockEnd", () => {
   it("finds end of simple indented block", () => {
-    const lines = [
-      "def foo():",
-      "    line1",
-      "    line2",
-      "",
-      "top_level",
-    ];
+    const lines = ["def foo():", "    line1", "    line2", "", "top_level"];
     assert.equal(findPyBlockEnd(lines, 0), 3);
   });
 
   it("handles block with no following content (end of file)", () => {
-    const lines = [
-      "def foo():",
-      "    line1",
-      "    line2",
-    ];
+    const lines = ["def foo():", "    line1", "    line2"];
     assert.equal(findPyBlockEnd(lines, 0), 2);
   });
 
   it("handles empty lines in body", () => {
-    const lines = [
-      "def foo():",
-      "    line1",
-      "",
-      "    line2",
-      "",
-      "next_def():",
-    ];
+    const lines = ["def foo():", "    line1", "", "    line2", "", "next_def():"];
     assert.equal(findPyBlockEnd(lines, 0), 4);
   });
 
   it("handles deeper indentation (nested blocks)", () => {
-    const lines = [
-      "def foo():",
-      "    if x:",
-      "        do_thing()",
-      "    return True",
-      "",
-      "top_level",
-    ];
+    const lines = ["def foo():", "    if x:", "        do_thing()", "    return True", "", "top_level"];
     const result = findPyBlockEnd(lines, 0);
     // The top_level line at index 5 has indent <= base (0 <= 0) at line 6
     // Wait, base indent of "def foo():" is 0. Lines at same indent after the block
@@ -462,78 +293,49 @@ describe("findPyBlockEnd", () => {
 
 describe("findRsFunctions", () => {
   it("detects simple fn", () => {
-    const lines = [
-      "fn hello() {",
-      "    42",
-      "}",
-    ];
+    const lines = ["fn hello() {", "    42", "}"];
     const result = findRsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "hello");
   });
 
   it("detects pub fn", () => {
-    const lines = [
-      "pub fn public_fn() {",
-      "    println!(\"hi\");",
-      "}",
-    ];
+    const lines = ["pub fn public_fn() {", '    println!("hi");', "}"];
     const result = findRsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "public_fn");
   });
 
   it("detects pub(crate) fn", () => {
-    const lines = [
-      "pub(crate) fn internal() {",
-      "    1",
-      "}",
-    ];
+    const lines = ["pub(crate) fn internal() {", "    1", "}"];
     const result = findRsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "internal");
   });
 
   it("detects async fn", () => {
-    const lines = [
-      "async fn fetch() {",
-      "    reqwest::get(\"/\").await",
-      "}",
-    ];
+    const lines = ["async fn fetch() {", '    reqwest::get("/").await', "}"];
     const result = findRsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "fetch");
   });
 
   it("detects unsafe fn", () => {
-    const lines = [
-      "unsafe fn raw_ptr() {",
-      "    *ptr",
-      "}",
-    ];
+    const lines = ["unsafe fn raw_ptr() {", "    *ptr", "}"];
     const result = findRsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "raw_ptr");
   });
 
   it("detects pub async unsafe fn", () => {
-    const lines = [
-      "pub async unsafe fn complex() {",
-      "    42",
-      "}",
-    ];
+    const lines = ["pub async unsafe fn complex() {", "    42", "}"];
     const result = findRsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "complex");
   });
 
   it("does not match fn inside string or comment context", () => {
-    const lines = [
-      "// fn not_a_fn() {",
-      "fn real_fn() {",
-      "    1",
-      "}",
-    ];
+    const lines = ["// fn not_a_fn() {", "fn real_fn() {", "    1", "}"];
     const result = findRsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "real_fn");
@@ -544,33 +346,21 @@ describe("findRsFunctions", () => {
 
 describe("findCsFunctions", () => {
   it("detects public method", () => {
-    const lines = [
-      "public int GetValue() {",
-      "    return _value;",
-      "}",
-    ];
+    const lines = ["public int GetValue() {", "    return _value;", "}"];
     const result = findCsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "GetValue");
   });
 
   it("detects private async method", () => {
-    const lines = [
-      "private async Task<string> FetchAsync() {",
-      "    return await client.GetStringAsync(\"/\");",
-      "}",
-    ];
+    const lines = ["private async Task<string> FetchAsync() {", '    return await client.GetStringAsync("/");', "}"];
     const result = findCsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "FetchAsync");
   });
 
   it("detects static method with multiple modifiers", () => {
-    const lines = [
-      "public static async Task Run() {",
-      "    await Task.Delay(1);",
-      "}",
-    ];
+    const lines = ["public static async Task Run() {", "    await Task.Delay(1);", "}"];
     const result = findCsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "Run");
@@ -579,21 +369,13 @@ describe("findCsFunctions", () => {
   it("detects generic method (non-generic return type, generic on method name is not supported)", () => {
     // The regex (\w+) only matches word chars for method name — Get<T> stops at <.
     // This test documents the gap: generic type params on method name are not detected.
-    const lines = [
-      "public T GetById<T>(int id) where T : class {",
-      "    return default;",
-      "}",
-    ];
+    const lines = ["public T GetById<T>(int id) where T : class {", "    return default;", "}"];
     const result = findCsFunctions(lines);
     assert.equal(result.length, 0);
   });
 
   it("detects method with generic return type (no generic on method name)", () => {
-    const lines = [
-      "public Task<string> FetchAsync() {",
-      "    return Task.FromResult(\"ok\");",
-      "}",
-    ];
+    const lines = ["public Task<string> FetchAsync() {", '    return Task.FromResult("ok");', "}"];
     const result = findCsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "FetchAsync");
@@ -601,22 +383,13 @@ describe("findCsFunctions", () => {
 
   it("skips control keywords used as method names (if, for, etc.)", () => {
     // "if" is in CONTROL_KEYWORDS, so `int if()...` should not be detected
-    const lines = [
-      "public int if() {",
-      "    return 0;",
-      "}",
-    ];
+    const lines = ["public int if() {", "    return 0;", "}"];
     const result = findCsFunctions(lines);
     assert.equal(result.length, 0);
   });
 
   it("skips lines starting with attribute brackets", () => {
-    const lines = [
-      "[HttpGet]",
-      "public IActionResult Index() {",
-      "    return View();",
-      "}",
-    ];
+    const lines = ["[HttpGet]", "public IActionResult Index() {", "    return View();", "}"];
     const result = findCsFunctions(lines);
     // Line 0 starts with '[' → skipped. Line 1 matches.
     assert.equal(result.length, 1);
@@ -624,24 +397,14 @@ describe("findCsFunctions", () => {
   });
 
   it("skips comment lines and blank lines", () => {
-    const lines = [
-      "// This is a C# method comment",
-      "",
-      "public void DoWork() {",
-      "    work();",
-      "}",
-    ];
+    const lines = ["// This is a C# method comment", "", "public void DoWork() {", "    work();", "}"];
     const result = findCsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "DoWork");
   });
 
   it("handles void return type", () => {
-    const lines = [
-      "void DoThing() {",
-      "    // no return",
-      "}",
-    ];
+    const lines = ["void DoThing() {", "    // no return", "}"];
     const result = findCsFunctions(lines);
     assert.equal(result.length, 1);
     assert.equal(result[0].name, "DoThing");
@@ -710,10 +473,7 @@ describe("checkCyclomaticComplexity", () => {
   });
 
   it("counts if statements in JS", () => {
-    const body = [
-      "if (a) { doA(); }",
-      "if (b) { doB(); }",
-    ];
+    const body = ["if (a) { doA(); }", "if (b) { doB(); }"];
     const result = checkCyclomaticComplexity(body, "js");
     assert.equal(result.complexity, 3); // 1 base + 2 ifs
   });
@@ -744,12 +504,7 @@ describe("checkCyclomaticComplexity", () => {
   });
 
   it("counts logical operators in JS", () => {
-    const body = [
-      "if (a && b) { return 1; }",
-      "const x = c || d || e;",
-      "const y = f ?? g;",
-      "const z = h ? 1 : 2;",
-    ];
+    const body = ["if (a && b) { return 1; }", "const x = c || d || e;", "const y = f ?? g;", "const z = h ? 1 : 2;"];
     const result = checkCyclomaticComplexity(body, "js");
     // 1 base + if + && + || (2 occurrences) + ?? + ?. + ?: (counts as one per ternary)
     assert.ok(result.complexity > 1, "complexity should be > 1 for logical operators");
@@ -806,25 +561,13 @@ describe("checkUnnecessaryElse", () => {
   });
 
   it("detects unnecessary else after return in JS", () => {
-    const body = [
-      "if (x) {",
-      "  return 1;",
-      "} else {",
-      "  return 2;",
-      "}",
-    ];
+    const body = ["if (x) {", "  return 1;", "} else {", "  return 2;", "}"];
     const result = checkUnnecessaryElse(body, "js");
     assert.equal(result.count, 1);
   });
 
   it("detects unnecessary else after throw", () => {
-    const body = [
-      "if (!x) {",
-      "  throw new Error('missing');",
-      "} else {",
-      "  return x;",
-      "}",
-    ];
+    const body = ["if (!x) {", "  throw new Error('missing');", "} else {", "  return x;", "}"];
     const result = checkUnnecessaryElse(body, "js");
     assert.equal(result.count, 1);
   });
@@ -845,13 +588,7 @@ describe("checkUnnecessaryElse", () => {
   });
 
   it("does not flag else when if-block does not exit", () => {
-    const body = [
-      "if (x) {",
-      "  console.log(x);",
-      "} else {",
-      "  console.log('no x');",
-      "}",
-    ];
+    const body = ["if (x) {", "  console.log(x);", "} else {", "  console.log('no x');", "}"];
     const result = checkUnnecessaryElse(body, "js");
     assert.equal(result.count, 0);
   });
@@ -871,23 +608,13 @@ describe("checkUnnecessaryElse", () => {
   });
 
   it("detects unnecessary else in Python after return/raise", () => {
-    const body = [
-      "if condition:",
-      "    return value",
-      "else:",
-      "    return other",
-    ];
+    const body = ["if condition:", "    return value", "else:", "    return other"];
     const result = checkUnnecessaryElse(body, "py");
     assert.equal(result.count, 1);
   });
 
   it("detects unnecessary elif in Python", () => {
-    const body = [
-      "if x == 1:",
-      "    return 'one'",
-      "elif x == 2:",
-      "    return 'two'",
-    ];
+    const body = ["if x == 1:", "    return 'one'", "elif x == 2:", "    return 'two'"];
     const result = checkUnnecessaryElse(body, "py");
     assert.equal(result.count, 1);
   });
@@ -922,54 +649,28 @@ describe("checkAvoidableElse", () => {
   });
 
   it("counts if/else pairs when no guard clauses exist", () => {
-    const body = [
-      "if (x > 0) {",
-      "  console.log('positive');",
-      "} else {",
-      "  console.log('non-positive');",
-      "}",
-    ];
+    const body = ["if (x > 0) {", "  console.log('positive');", "} else {", "  console.log('non-positive');", "}"];
     const result = checkAvoidableElse(body, "js");
     // No guard clauses → count = 1
     assert.equal(result.count, 1);
   });
 
   it("counts multiple else patterns when no guard clauses", () => {
-    const body = [
-      "if (a) {",
-      "  doA();",
-      "} else if (b) {",
-      "  doB();",
-      "} else {",
-      "  doDefault();",
-      "}",
-    ];
+    const body = ["if (a) {", "  doA();", "} else if (b) {", "  doB();", "} else {", "  doDefault();", "}"];
     const result = checkAvoidableElse(body, "js");
     // No guard clauses → count = 2 (one "else if" and one "else")
     assert.equal(result.count, 2);
   });
 
   it("detects guard clauses in Python", () => {
-    const body = [
-      "if not x:",
-      "    return None",
-      "if x > 0:",
-      "    process(x)",
-      "else:",
-      "    skip(x)",
-    ];
+    const body = ["if not x:", "    return None", "if x > 0:", "    process(x)", "else:", "    skip(x)"];
     const result = checkAvoidableElse(body, "py");
     // First if has return without else → guard clause → count = 0
     assert.equal(result.count, 0);
   });
 
   it("counts else/elif in Python when no guard clauses", () => {
-    const body = [
-      "if x > 0:",
-      "    process(x)",
-      "else:",
-      "    skip(x)",
-    ];
+    const body = ["if x > 0:", "    process(x)", "else:", "    skip(x)"];
     const result = checkAvoidableElse(body, "py");
     assert.equal(result.count, 1);
   });
@@ -979,13 +680,7 @@ describe("checkAvoidableElse", () => {
     // at bodyLines[blockEnd+1] (line 3: "  return x;") for the else pattern — not
     // the same line where } and else actually live. This is a known gap.
     // Result: the if-block IS detected as a guard clause → count = 0.
-    const body = [
-      "if (!x) {",
-      "  return null;",
-      "} else {",
-      "  return x;",
-      "}",
-    ];
+    const body = ["if (!x) {", "  return null;", "} else {", "  return x;", "}"];
     const result = checkAvoidableElse(body, "js");
     assert.equal(result.count, 0);
   });

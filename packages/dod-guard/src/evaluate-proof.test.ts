@@ -33,19 +33,12 @@ const CWD = "/fake/project";
 
 describe("parseSurvivors", () => {
   it("parses Stryker output with survived column", () => {
-    const out = [
-      "File | # killed | # survived",
-      "src/foo.ts | 10 | 3",
-      "All files | 50 | 7",
-    ].join("\n");
+    const out = ["File | # killed | # survived", "src/foo.ts | 10 | 3", "All files | 50 | 7"].join("\n");
     assert.equal(parseSurvivors(out), 7);
   });
 
   it("parses Stryker with different survived header casing", () => {
-    const out = [
-      "File | # Killed | # Survived | # Timeout",
-      "All files | 42 | 1 | 0",
-    ].join("\n");
+    const out = ["File | # Killed | # Survived | # Timeout", "All files | 42 | 1 | 0"].join("\n");
     assert.equal(parseSurvivors(out), 1);
   });
 
@@ -343,22 +336,14 @@ describe("executeProof - streamline", () => {
 
   it("interprets exit 1 as 'no matches found' → pass", async () => {
     const node = concreteNode({ predicate: { type: "streamline", value: 0 } });
-    const result = await executeProof(
-      node,
-      CWD,
-      fakeExec(1, "grep: no matches"),
-    );
+    const result = await executeProof(node, CWD, fakeExec(1, "grep: no matches"));
     assert.equal(result.status, "pass");
     assert.match(result.error ?? "", /no matches/);
   });
 
   it("fails safe on exit >1 (grep error)", async () => {
     const node = concreteNode({ predicate: { type: "streamline", value: 0 } });
-    const result = await executeProof(
-      node,
-      CWD,
-      fakeExec(2, "grep: invalid regex"),
-    );
+    const result = await executeProof(node, CWD, fakeExec(2, "grep: invalid regex"));
     assert.equal(result.status, "fail");
     assert.match(result.error ?? "", /exit 2/);
   });
@@ -400,7 +385,9 @@ describe("executeProof - manual & review", () => {
     });
     // Pre-seed correct fingerprint so cache hit works
     const { perProofFingerprint } = await import("./manual.js");
-    node.manual_result!.proof_fingerprint = perProofFingerprint(node);
+    const mr1 = node.manual_result;
+    if (!mr1) throw new Error("manual_result not set");
+    mr1.proof_fingerprint = perProofFingerprint(node);
     const result = await executeProof(node, CWD, fakeExec(0, ""));
     assert.equal(result.status, "pass");
     assert.match(result.output ?? "", /✓.*PASS/);
@@ -417,7 +404,9 @@ describe("executeProof - manual & review", () => {
       },
     });
     const { perProofFingerprint } = await import("./manual.js");
-    node.manual_result!.proof_fingerprint = perProofFingerprint(node);
+    const mr2 = node.manual_result;
+    if (!mr2) throw new Error("manual_result not set");
+    mr2.proof_fingerprint = perProofFingerprint(node);
     const result = await executeProof(node, CWD, fakeExec(0, ""));
     assert.equal(result.status, "fail");
     assert.match(result.output ?? "", /✗.*FAIL/);
