@@ -19,8 +19,16 @@ before(() => {
 });
 
 after(() => {
-  try { rmSync(testDbDir, { recursive: true, force: true }); } catch { /* ok */ }
-  try { rmSync(join(process.cwd(), "obsidian-rag-test.db"), { force: true }); } catch { /* ok */ }
+  try {
+    rmSync(testDbDir, { recursive: true, force: true });
+  } catch {
+    /* ok */
+  }
+  try {
+    rmSync(join(process.cwd(), "obsidian-rag-test.db"), { force: true });
+  } catch {
+    /* ok */
+  }
 });
 
 // ── Store integration (validates tools module can use store) ────────────
@@ -80,13 +88,27 @@ describe("vaultGuard function pattern", () => {
 describe("waitForVault polling pattern", () => {
   it("returns immediately when vault already selected", async () => {
     const selectedVault = { name: "Test", path: "/test" };
-    let _selectPromise: Promise<void> | null = null;
+    const _selectPromise: Promise<void> | null = null;
 
     async function waitForVault() {
       if (selectedVault) return selectedVault;
-      if (_selectPromise) { try { await _selectPromise; } catch { /* */ } if (selectedVault) return selectedVault; }
+      if (_selectPromise) {
+        try {
+          await _selectPromise;
+        } catch {
+          /* */
+        }
+        if (selectedVault) return selectedVault;
+      }
       for (let i = 0; i < 5; i++) {
-        if (_selectPromise) { try { await _selectPromise; } catch { /* */ } if (selectedVault) return selectedVault; }
+        if (_selectPromise) {
+          try {
+            await _selectPromise;
+          } catch {
+            /* */
+          }
+          if (selectedVault) return selectedVault;
+        }
         if (selectedVault) return selectedVault;
         await new Promise((r) => setTimeout(r, 10));
       }
@@ -99,13 +121,27 @@ describe("waitForVault polling pattern", () => {
 
   it("throws after polling timeout when no vault selected", async () => {
     const selectedVault = null;
-    let _selectPromise: Promise<void> | null = null;
+    const _selectPromise: Promise<void> | null = null;
 
     async function waitForVault() {
       if (selectedVault) return selectedVault;
-      if (_selectPromise) { try { await _selectPromise; } catch { /* */ } if (selectedVault) return selectedVault; }
+      if (_selectPromise) {
+        try {
+          await _selectPromise;
+        } catch {
+          /* */
+        }
+        if (selectedVault) return selectedVault;
+      }
       for (let i = 0; i < 3; i++) {
-        if (_selectPromise) { try { await _selectPromise; } catch { /* */ } if (selectedVault) return selectedVault; }
+        if (_selectPromise) {
+          try {
+            await _selectPromise;
+          } catch {
+            /* */
+          }
+          if (selectedVault) return selectedVault;
+        }
         if (selectedVault) return selectedVault;
         await new Promise((r) => setTimeout(r, 5));
       }
@@ -121,9 +157,23 @@ describe("waitForVault polling pattern", () => {
 
     async function waitForVault() {
       if (selectedVault) return selectedVault;
-      if (_selectPromise) { try { await _selectPromise; } catch { /* */ } if (selectedVault) return selectedVault; }
+      if (_selectPromise) {
+        try {
+          await _selectPromise;
+        } catch {
+          /* */
+        }
+        if (selectedVault) return selectedVault;
+      }
       for (let i = 0; i < 10; i++) {
-        if (_selectPromise) { try { await _selectPromise; } catch { /* */ } if (selectedVault) return selectedVault; }
+        if (_selectPromise) {
+          try {
+            await _selectPromise;
+          } catch {
+            /* */
+          }
+          if (selectedVault) return selectedVault;
+        }
         if (selectedVault) return selectedVault;
         await new Promise((r) => setTimeout(r, 5));
       }
@@ -148,9 +198,23 @@ describe("waitForVault polling pattern", () => {
 
     async function waitForVault() {
       if (selectedVault) return selectedVault;
-      if (_selectPromise) { try { await _selectPromise; } catch { /* */ } if (selectedVault) return selectedVault; }
+      if (_selectPromise) {
+        try {
+          await _selectPromise;
+        } catch {
+          /* */
+        }
+        if (selectedVault) return selectedVault;
+      }
       for (let i = 0; i < 10; i++) {
-        if (_selectPromise) { try { await _selectPromise; } catch { /* */ } if (selectedVault) return selectedVault; }
+        if (_selectPromise) {
+          try {
+            await _selectPromise;
+          } catch {
+            /* */
+          }
+          if (selectedVault) return selectedVault;
+        }
         if (selectedVault) return selectedVault;
         await new Promise((r) => setTimeout(r, 5));
       }

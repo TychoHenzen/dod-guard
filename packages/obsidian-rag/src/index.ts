@@ -52,13 +52,21 @@ function vaultGuard(): VaultInfo {
 async function waitForVault(): Promise<VaultInfo> {
   if (selectedVault) return selectedVault;
   if (_selectPromise) {
-    try { await _selectPromise; } catch { /* selection rejected */ }
+    try {
+      await _selectPromise;
+    } catch {
+      /* selection rejected */
+    }
     if (selectedVault) return selectedVault;
   }
   // Poll for up to 5s in case vault_select hasn't started yet (concurrent dispatch)
   for (let i = 0; i < 50; i++) {
     if (_selectPromise) {
-      try { await _selectPromise; } catch { /* retry */ }
+      try {
+        await _selectPromise;
+      } catch {
+        /* retry */
+      }
       if (selectedVault) return selectedVault;
     }
     if (selectedVault) return selectedVault;
@@ -106,7 +114,12 @@ async function main() {
     waitForVault,
     getEmbedder,
     store,
-    setSelectPromise: (p) => { _selectPromise = p; },
+    setSelectPromise: (p) => {
+      _selectPromise = p;
+    },
+    setSelectedVault: (v) => {
+      selectedVault = v;
+    },
   });
 
   // ── Resources ──────────────────────────────────────────────────────

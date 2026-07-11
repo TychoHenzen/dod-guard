@@ -21905,7 +21905,7 @@ server.tool(
 function formatHello(raw) {
   const sanitized = (raw ?? "").trim().replace(/[^\w\s'-]/g, "");
   const name = sanitized.length > 0 ? sanitized : "World";
-  const displayName = name.length > 100 ? name.slice(0, 100) + "..." : name;
+  const displayName = name.length > 100 ? `${name.slice(0, 100)}...` : name;
   return `Hello, ${displayName}!`;
 }
 function formatSolveResult(result) {

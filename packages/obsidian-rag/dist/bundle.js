@@ -25470,7 +25470,7 @@ var import_gray_matter2 = __toESM(require_gray_matter(), 1);
 import { join as join3, basename as basename2 } from "node:path";
 import { existsSync as existsSync3 } from "node:fs";
 function registerTools(server, opts) {
-  const { getVault, waitForVault: waitForVault2, getEmbedder: getEmbedder2, store: store2, setSelectPromise } = opts;
+  const { getVault, waitForVault: waitForVault2, getEmbedder: getEmbedder2, store: store2, setSelectPromise, setSelectedVault } = opts;
   server.tool("vault_list", "List all known Obsidian vaults. Requires Obsidian app running.", {}, async () => {
     const { listVaults: listVaults2, cliAvailable: cliAvailable2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
     const vaults = await listVaults2();
@@ -25508,10 +25508,12 @@ CLI status: ${cliOk ? "\u2705 available" : "\u274C not found"}`
     async ({ name }) => {
       let resolveSelect;
       let rejectSelect;
-      setSelectPromise(new Promise((res, rej) => {
-        resolveSelect = res;
-        rejectSelect = rej;
-      }));
+      setSelectPromise(
+        new Promise((res, rej) => {
+          resolveSelect = res;
+          rejectSelect = rej;
+        })
+      );
       try {
         const { listVaults: listVaults2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
         const { indexVault: indexVault2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
@@ -25536,6 +25538,7 @@ CLI status: ${cliOk ? "\u2705 available" : "\u274C not found"}`
           }
         }
         store2.setVault(vault);
+        setSelectedVault(vault);
         resolveSelect?.();
         const idxMsg = await indexVault2(vault.path, vault.name, store2);
         const status = store2.getIndexStatus(vault.name);
@@ -25574,7 +25577,10 @@ Indexed: ${status.indexedNotes} notes, ${status.totalChunks} chunks`
         if (!emb) {
           return {
             content: [
-              { type: "text", text: "Semantic search unavailable \u2014 install @xenova/transformers for local embeddings." }
+              {
+                type: "text",
+                text: "Semantic search unavailable \u2014 install @xenova/transformers for local embeddings."
+              }
             ],
             isError: true
           };
@@ -25640,7 +25646,9 @@ ${lines.join("\n")}` }] };
       } catch {
         const notes = store2.listNotes(vault.name, directory);
         if (notes.length === 0) {
-          return { content: [{ type: "text", text: "No notes found. The vault may not be indexed yet \u2014 run reindex." }] };
+          return {
+            content: [{ type: "text", text: "No notes found. The vault may not be indexed yet \u2014 run reindex." }]
+          };
         }
         const lines = notes.map((n) => `- **${n.title}** \u2014 \`${n.path}\` ${n.tags.map((t) => `#${t}`).join(" ")}`);
         return { content: [{ type: "text", text: `# Notes (${notes.length})
@@ -25662,13 +25670,18 @@ ${lines.join("\n")}` }] };
         const fw = links.length ? links.map((l) => `- [[${l}]]`) : ["(no forward links)"];
         const bw = backlinks.length ? backlinks.map((l) => `- [[${l.replace(".md", "")}]]`) : ["(no backlinks)"];
         return {
-          content: [{ type: "text", text: `# Links: ${path}
+          content: [
+            {
+              type: "text",
+              text: `# Links: ${path}
 
 ## Forward Links
 ${fw.join("\n")}
 
 ## Backlinks
-${bw.join("\n")}` }]
+${bw.join("\n")}`
+            }
+          ]
         };
       } catch {
         return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
@@ -25735,7 +25748,9 @@ ${lines.join("\n")}` }] };
         }
       }
       const status = store2.getIndexStatus(vault.name);
-      return { content: [{ type: "text", text: `\u2705 Reindexed ${count} notes, ${status.totalChunks} chunks${embedMsg}.` }] };
+      return {
+        content: [{ type: "text", text: `\u2705 Reindexed ${count} notes, ${status.totalChunks} chunks${embedMsg}.` }]
+      };
     }
   );
   server.tool(
@@ -25752,7 +25767,14 @@ ${lines.join("\n")}` }] };
     async ({ id, title, description, content, type, metadata }) => {
       const vault = await waitForVault2();
       const { writeMemory: writeMemory2 } = await Promise.resolve().then(() => (init_vault(), vault_exports));
-      const entry = { id, title, description, type, content, metadata: metadata || {} };
+      const entry = {
+        id,
+        title,
+        description,
+        type,
+        content,
+        metadata: metadata || {}
+      };
       const notePath = await writeMemory2(vault.path, entry);
       return { content: [{ type: "text", text: `\u2705 Memory saved: **${title}** \u2192 \`${notePath}\`` }] };
     }
@@ -25854,7 +25876,14 @@ ${lines.join("\n\n")}` }] };
           if (tags && tags.length > 0) {
             await promisify2(execFile2)(
               "obsidian",
-              [`vault=${vault.name}`, "property:set", "name=tags", `value=${tags.join(",")}`, "type=list", `path=${path}`],
+              [
+                `vault=${vault.name}`,
+                "property:set",
+                "name=tags",
+                `value=${tags.join(",")}`,
+                "type=list",
+                `path=${path}`
+              ],
               { timeout: 1e4, windowsHide: true }
             );
           }
@@ -25960,6 +25989,9 @@ async function main() {
     store,
     setSelectPromise: (p) => {
       _selectPromise = p;
+    },
+    setSelectedVault: (v) => {
+      selectedVault = v;
     }
   });
   server.resource("vaults", "obsidian://vaults", { description: "List of known Obsidian vaults" }, async () => {

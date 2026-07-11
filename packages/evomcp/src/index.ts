@@ -166,10 +166,7 @@ server.tool(
   "hello",
   "Say hello world with a defensive greeting. Returns a greeting message for the given name.",
   {
-    name: z
-      .string()
-      .optional()
-      .describe("Name to greet. Defaults to 'World' if omitted."),
+    name: z.string().optional().describe("Name to greet. Defaults to 'World' if omitted."),
   },
   async ({ name }) => {
     return {
@@ -191,7 +188,7 @@ function formatHello(raw?: string): string {
   const name = sanitized.length > 0 ? sanitized : "World";
 
   // Defensive: max length guard against abuse
-  const displayName = name.length > 100 ? name.slice(0, 100) + "..." : name;
+  const displayName = name.length > 100 ? `${name.slice(0, 100)}...` : name;
 
   return `Hello, ${displayName}!`;
 }

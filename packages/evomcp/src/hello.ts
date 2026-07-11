@@ -97,7 +97,7 @@ export function parseArgs(argv: string[]): GreetingOptions {
  */
 export function main(argv: string[] = process.argv): void {
   const options = parseArgs(argv);
-  process.stdout.write(createGreeting(options) + "\n");
+  process.stdout.write(`${createGreeting(options)}\n`);
 }
 
 // Allow direct execution: `node dist/hello.js`

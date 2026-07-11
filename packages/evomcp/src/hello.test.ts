@@ -24,10 +24,7 @@ describe("createGreeting", () => {
   });
 
   it("uses default name when name is empty string", () => {
-    assert.strictEqual(
-      createGreeting({ name: "" }),
-      `Hello, ${DEFAULT_NAME}!`,
-    );
+    assert.strictEqual(createGreeting({ name: "" }), `Hello, ${DEFAULT_NAME}!`);
   });
 
   it("uses LoudFormatter when provided", () => {

@@ -21219,7 +21219,7 @@ async function migrateDoc(doc) {
     for (const n of nodes) {
       if (n.children) walk(n.children);
       else if (n.refinement === "concrete" && n.command) {
-        leafLines.push(n.command + "|" + (n.predicate?.type ?? "") + "|" + (n.predicate?.value ?? "") + "|" + (n.advisory ?? false));
+        leafLines.push(`${n.command}|${n.predicate?.type ?? ""}|${n.predicate?.value ?? ""}|${n.advisory ?? false}`);
       }
     }
   }
@@ -24723,7 +24723,7 @@ function suggestionFor(tool) {
     awk: "(use PowerShell or batch for /f)",
     sh: "cmd /c",
     bash: "cmd /c",
-    "python3": "python",
+    python3: "python",
     make: "(Windows: install GNU Make or use npm scripts)",
     cargo: "(install Rust via rustup.rs)"
   };
@@ -25573,7 +25573,12 @@ server.tool(
       }
       if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) {
         return {
-          content: [{ type: "text", text: `"${doc.title}" is already in the current format \u2014 no migration needed.` }]
+          content: [
+            {
+              type: "text",
+              text: `"${doc.title}" is already in the current format \u2014 no migration needed.`
+            }
+          ]
         };
       }
       const legacySteps = doc.steps;
@@ -25611,7 +25616,9 @@ server.tool(
       return { content: [{ type: "text", text: "No changes made." }] };
     }
     const allDocs = await listAllRaw();
-    const legacyDocs = allDocs.filter((d) => d.steps && (!d.roots || !Array.isArray(d.roots) || d.roots.length === 0));
+    const legacyDocs = allDocs.filter(
+      (d) => d.steps && (!d.roots || !Array.isArray(d.roots) || d.roots.length === 0)
+    );
     if (legacyDocs.length === 0) {
       return {
         content: [{ type: "text", text: "No legacy documents found \u2014 all docs are in the current format." }]

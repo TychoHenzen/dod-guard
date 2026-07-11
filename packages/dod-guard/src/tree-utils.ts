@@ -119,7 +119,7 @@ function suggestionFor(tool: string): string {
     awk: "(use PowerShell or batch for /f)",
     sh: "cmd /c",
     bash: "cmd /c",
-    "python3": "python",
+    python3: "python",
     make: "(Windows: install GNU Make or use npm scripts)",
     cargo: "(install Rust via rustup.rs)",
   };

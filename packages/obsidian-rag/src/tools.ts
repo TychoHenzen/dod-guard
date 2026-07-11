@@ -24,10 +24,12 @@ interface RegisterOptions {
   store: Store;
   /** Set by vault_select — marks selection complete so other tools unblock. */
   setSelectPromise: (p: Promise<void>) => void;
+  /** Updates the module-level selectedVault so guards pass after selection. */
+  setSelectedVault: (v: VaultInfo) => void;
 }
 
 export function registerTools(server: McpServer, opts: RegisterOptions) {
-  const { getVault, waitForVault, getEmbedder, store, setSelectPromise } = opts;
+  const { getVault, waitForVault, getEmbedder, store, setSelectPromise, setSelectedVault } = opts;
 
   // ── vault_list ────────────────────────────────────────────────────
   server.tool("vault_list", "List all known Obsidian vaults. Requires Obsidian app running.", {}, async () => {
@@ -67,10 +69,12 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
     async ({ name }) => {
       let resolveSelect!: () => void;
       let rejectSelect!: (e: Error) => void;
-      setSelectPromise(new Promise<void>((res, rej) => {
-        resolveSelect = res;
-        rejectSelect = rej;
-      }));
+      setSelectPromise(
+        new Promise<void>((res, rej) => {
+          resolveSelect = res;
+          rejectSelect = rej;
+        }),
+      );
 
       try {
         const { listVaults } = await import("./cli.js");
@@ -98,6 +102,7 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         }
 
         store.setVault(vault);
+        setSelectedVault(vault);
         resolveSelect?.();
 
         const idxMsg = await indexVault(vault.path, vault.name, store);
@@ -138,7 +143,10 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         if (!emb) {
           return {
             content: [
-              { type: "text", text: "Semantic search unavailable — install @xenova/transformers for local embeddings." },
+              {
+                type: "text",
+                text: "Semantic search unavailable — install @xenova/transformers for local embeddings.",
+              },
             ],
             isError: true,
           };
@@ -205,7 +213,9 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
       } catch {
         const notes = store.listNotes(vault.name, directory);
         if (notes.length === 0) {
-          return { content: [{ type: "text", text: "No notes found. The vault may not be indexed yet — run reindex." }] };
+          return {
+            content: [{ type: "text", text: "No notes found. The vault may not be indexed yet — run reindex." }],
+          };
         }
         const lines = notes.map((n) => `- **${n.title}** — \`${n.path}\` ${n.tags.map((t) => `#${t}`).join(" ")}`);
         return { content: [{ type: "text", text: `# Notes (${notes.length})\n\n${lines.join("\n")}` }] };
@@ -227,7 +237,12 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         const fw = links.length ? links.map((l) => `- [[${l}]]`) : ["(no forward links)"];
         const bw = backlinks.length ? backlinks.map((l) => `- [[${l.replace(".md", "")}]]`) : ["(no backlinks)"];
         return {
-          content: [{ type: "text", text: `# Links: ${path}\n\n## Forward Links\n${fw.join("\n")}\n\n## Backlinks\n${bw.join("\n")}` }],
+          content: [
+            {
+              type: "text",
+              text: `# Links: ${path}\n\n## Forward Links\n${fw.join("\n")}\n\n## Backlinks\n${bw.join("\n")}`,
+            },
+          ],
         };
       } catch {
         return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
@@ -292,7 +307,9 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         }
       }
       const status = store.getIndexStatus(vault.name);
-      return { content: [{ type: "text", text: `✅ Reindexed ${count} notes, ${status.totalChunks} chunks${embedMsg}.` }] };
+      return {
+        content: [{ type: "text", text: `✅ Reindexed ${count} notes, ${status.totalChunks} chunks${embedMsg}.` }],
+      };
     },
   );
 
@@ -311,7 +328,14 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
     async ({ id, title, description, content, type, metadata }) => {
       const vault = await waitForVault();
       const { writeMemory } = await import("./vault.js");
-      const entry: Omit<MemoryEntry, "path" | "created" | "modified"> = { id, title, description, type, content, metadata: metadata || {} };
+      const entry: Omit<MemoryEntry, "path" | "created" | "modified"> = {
+        id,
+        title,
+        description,
+        type,
+        content,
+        metadata: metadata || {},
+      };
       const notePath = await writeMemory(vault.path, entry);
       return { content: [{ type: "text", text: `✅ Memory saved: **${title}** → \`${notePath}\`` }] };
     },
@@ -344,7 +368,10 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         }
         return { memory: m, score, snippet: m.content.length > 200 ? `${m.content.slice(0, 200)}...` : m.content };
       });
-      const ranked = scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score).slice(0, limit);
+      const ranked = scored
+        .filter((s) => s.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit);
       if (ranked.length === 0) {
         return { content: [{ type: "text", text: `No matching memories for "${query}".` }] };
       }
@@ -404,13 +431,22 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
           const { promisify } = await import("node:util");
           if (title) {
             await promisify(execFile)(
-              "obsidian", [`vault=${vault.name}`, "property:set", "name=title", `value=${title}`, `path=${path}`],
+              "obsidian",
+              [`vault=${vault.name}`, "property:set", "name=title", `value=${title}`, `path=${path}`],
               { timeout: 10000, windowsHide: true },
             );
           }
           if (tags && tags.length > 0) {
             await promisify(execFile)(
-              "obsidian", [`vault=${vault.name}`, "property:set", "name=tags", `value=${tags.join(",")}`, "type=list", `path=${path}`],
+              "obsidian",
+              [
+                `vault=${vault.name}`,
+                "property:set",
+                "name=tags",
+                `value=${tags.join(",")}`,
+                "type=list",
+                `path=${path}`,
+              ],
               { timeout: 10000, windowsHide: true },
             );
           }
@@ -423,7 +459,9 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
           try {
             const existing = await readNote(vault.path, path);
             finalContent = `${existing.content}\n\n${content}`;
-          } catch { /* Note doesn't exist — create new */ }
+          } catch {
+            /* Note doesn't exist — create new */
+          }
         }
         const fm: Record<string, unknown> = {};
         if (title) fm.title = title;

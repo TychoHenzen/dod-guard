@@ -153,7 +153,7 @@ export async function migrateDoc(doc: DodDocument & { steps?: LegacyStep[]; lock
     for (const n of nodes) {
       if (n.children) walk(n.children);
       else if (n.refinement === "concrete" && n.command) {
-        leafLines.push(n.command + "|" + (n.predicate?.type ?? "") + "|" + (n.predicate?.value ?? "") + "|" + (n.advisory ?? false));
+        leafLines.push(`${n.command}|${n.predicate?.type ?? ""}|${n.predicate?.value ?? ""}|${n.advisory ?? false}`);
       }
     }
   }

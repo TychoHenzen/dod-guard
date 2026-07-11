@@ -19,7 +19,14 @@ import { validateBaseline } from "./baseline.js";
 import { resolveManual, type Confirmer, type ManualAnswer } from "./manual.js";
 import type { DodDocument, Predicate, TaskNode, ProofCategory } from "./types.js";
 import { PredicateSchema, ProofCategorySchema, TaskNodeInputSchema, SectionsSchema } from "./schemas.js";
-import { resetNodeIdCounter, buildTaskNodes, formatMissingTools, checkCommandsForOs, extractBaselineSteps, findNodeInTree } from "./tree-utils.js";
+import {
+  resetNodeIdCounter,
+  buildTaskNodes,
+  formatMissingTools,
+  checkCommandsForOs,
+  extractBaselineSteps,
+  findNodeInTree,
+} from "./tree-utils.js";
 
 const server = new McpServer({
   name: "dod-guard",
@@ -1004,7 +1011,12 @@ server.tool(
       }
       if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) {
         return {
-          content: [{ type: "text" as const, text: `"${(doc as any).title}" is already in the current format — no migration needed.` }],
+          content: [
+            {
+              type: "text" as const,
+              text: `"${(doc as any).title}" is already in the current format — no migration needed.`,
+            },
+          ],
         };
       }
       const legacySteps = (doc as any).steps;
@@ -1046,7 +1058,10 @@ server.tool(
 
     // Bulk migration: all legacy docs
     const allDocs = await store.listAllRaw();
-    const legacyDocs = allDocs.filter((d: any) => (d as any).steps && (!(d as any).roots || !Array.isArray((d as any).roots) || (d as any).roots.length === 0));
+    const legacyDocs = allDocs.filter(
+      (d: any) =>
+        (d as any).steps && (!(d as any).roots || !Array.isArray((d as any).roots) || (d as any).roots.length === 0),
+    );
 
     if (legacyDocs.length === 0) {
       return {
