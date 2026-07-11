@@ -317,7 +317,11 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
     "memory_save",
     "Save a memory entry to the vault's Claude-Memories directory. Memories are markdown notes with frontmatter compatible with Claude Code's memory system.",
     {
-      id: z.string().describe("Memory ID (kebab-case slug, used as filename; may contain slashes for nested paths e.g. 'project/memory-name')"),
+      id: z
+        .string()
+        .describe(
+          "Memory ID (kebab-case slug, used as filename; may contain slashes for nested paths e.g. 'project/memory-name')",
+        ),
       title: z.string().describe("Short display name"),
       description: z.string().describe("One-line summary"),
       content: z.string().describe("Memory body content (markdown)"),

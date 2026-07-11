@@ -3,7 +3,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { formatCheckResult, updateDocFromCheckResult, writeMarkdown } from "./author.js";
-import { validateBaseline } from "./baseline.js";
 import {
   checkDocument,
   computeProofFingerprint,
@@ -21,15 +20,8 @@ import * as store from "./store.js";
 import { handleDodAddNode } from "./tools/dod-add-node.js";
 import { handleDodCreate } from "./tools/dod-create.js";
 import { handleDodRefine } from "./tools/dod-refine.js";
-import {
-  buildTaskNodes,
-  checkCommandsForOs,
-  extractBaselineSteps,
-  findNodeInTree,
-  formatMissingTools,
-  resetNodeIdCounter,
-} from "./tree-utils.js";
-import type { DodDocument, Predicate, ProofCategory, TaskNode } from "./types.js";
+import { checkCommandsForOs, findNodeInTree, formatMissingTools } from "./tree-utils.js";
+import type { DodDocument, Predicate, TaskNode } from "./types.js";
 
 const server = new McpServer({
   name: "dod-guard",

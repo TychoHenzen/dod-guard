@@ -1,0 +1,752 @@
+{
+  "project_root": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "files": {
+    "packages\\dod-guard\\src\\assertions.test.ts": {
+      "hash": "0fae92af4de0566bde4623e4418546b051fab0397efcfce76211fc3d0c8ef62d",
+      "last_verified": "2026-07-11T22:56:13.982Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 7,
+        "clarity": 8,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 7,
+        "assertion_triviality": 10,
+        "overall": 8.4
+      },
+      "overall": 8.4,
+      "metrics": {
+        "test_function_count": 29,
+        "total_assertions": 81,
+        "trivial_assertions": 3,
+        "specific_assertions": 78,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 16,
+        "assertions_without_message": 64
+      },
+      "findings": [
+        {
+          "severity": "low",
+          "category": "assertion_triviality",
+          "detail": "3 trivial assertions detected",
+          "suggestion": "Replace constant-on-constant with meaningful assertions"
+        }
+      ]
+    },
+    "packages\\dod-guard\\src\\author.test.ts": {
+      "hash": "4863e69fdc65708cfa9ef7f0e4daa544ed2fe6b42db9440c225309cc3b6cc8b2",
+      "last_verified": "2026-07-11T22:56:13.982Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 7,
+        "clarity": 8,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 26,
+        "total_assertions": 66,
+        "trivial_assertions": 0,
+        "specific_assertions": 66,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 13,
+        "assertions_without_message": 52
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\baseline.test.ts": {
+      "hash": "f4121e58bbad73c25947db8522c0b8c6b522401f63f9bb0ace185e059fbd9429",
+      "last_verified": "2026-07-11T22:56:13.983Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 10,
+        "isolation": 7,
+        "clarity": 8,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.3
+      },
+      "overall": 8.3,
+      "metrics": {
+        "test_function_count": 56,
+        "total_assertions": 48,
+        "trivial_assertions": 0,
+        "specific_assertions": 48,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 9,
+        "assertions_without_message": 38
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\brevity.test.ts": {
+      "hash": "5fe2adca1008a9be26d9cb4be6acf64b985877089f6666d4fa1f85f022390e63",
+      "last_verified": "2026-07-11T22:56:13.983Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 22,
+        "total_assertions": 44,
+        "trivial_assertions": 0,
+        "specific_assertions": 44,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 8,
+        "assertions_without_message": 35
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\checker.test.ts": {
+      "hash": "fc6c8fcd8f35f2bf94daec75d78b7c91ddc9ae065a185a2bcbd20a7bc749bbbf",
+      "last_verified": "2026-07-11T22:56:13.985Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 94,
+        "total_assertions": 140,
+        "trivial_assertions": 0,
+        "specific_assertions": 140,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 28,
+        "assertions_without_message": 112
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\command-check.test.ts": {
+      "hash": "7e2d8384da991b3f5994bece352a2cad85e376e8efd7d9731f5c710c7979687c",
+      "last_verified": "2026-07-11T22:56:13.985Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 7,
+        "clarity": 8,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 26,
+        "total_assertions": 41,
+        "trivial_assertions": 0,
+        "specific_assertions": 41,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 8,
+        "assertions_without_message": 32
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\evaluate-proof.test.ts": {
+      "hash": "657a9456783ad038a340daf7330a46750e9e39eaf66681d0cc328985ece86825",
+      "last_verified": "2026-07-11T22:56:13.986Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 62,
+        "total_assertions": 95,
+        "trivial_assertions": 0,
+        "specific_assertions": 95,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 19,
+        "assertions_without_message": 76
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\find-functions.test.ts": {
+      "hash": "ed5d6fad2fc78d544ede0ba3923d6fada430e82adaf4e05f763dacceddccf613",
+      "last_verified": "2026-07-11T22:56:13.987Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 85,
+        "total_assertions": 125,
+        "trivial_assertions": 0,
+        "specific_assertions": 125,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 25,
+        "assertions_without_message": 100
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\format-result.test.ts": {
+      "hash": "391946c6dcd3f730c24772226ac6ffc93f796af5cb73ea24f3ff9fab261f3f7f",
+      "last_verified": "2026-07-11T22:56:13.987Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 30,
+        "total_assertions": 52,
+        "trivial_assertions": 0,
+        "specific_assertions": 52,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 10,
+        "assertions_without_message": 41
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\manual.test.ts": {
+      "hash": "ceeb51f24582c6b0a6bd1e66f56f453aacb33cc5c99ffadef599dea2217ea35c",
+      "last_verified": "2026-07-11T22:56:13.988Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 7,
+        "clarity": 8,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 14,
+        "total_assertions": 24,
+        "trivial_assertions": 0,
+        "specific_assertions": 24,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 4,
+        "assertions_without_message": 19
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\notify.test.ts": {
+      "hash": "96cc7d1682e400902163a7a3c4ee13490db0a987a508866c871dbfe4e4de3cee",
+      "last_verified": "2026-07-11T22:56:13.988Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 33,
+        "total_assertions": 51,
+        "trivial_assertions": 0,
+        "specific_assertions": 51,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 10,
+        "assertions_without_message": 40
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\observability.test.ts": {
+      "hash": "c57f18119373d22b3e0cad21426c6244e688cf83a889f32e2b28b0d8450a1748",
+      "last_verified": "2026-07-11T22:56:13.988Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 7,
+        "clarity": 8,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 39,
+        "total_assertions": 95,
+        "trivial_assertions": 0,
+        "specific_assertions": 95,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 19,
+        "assertions_without_message": 76
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\parser.test.ts": {
+      "hash": "40ebf176f6f980be0b9d50165422b6b709fc521a98b88a2d7c900cfbc231c706",
+      "last_verified": "2026-07-11T22:56:13.989Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 7,
+        "clarity": 8,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 31,
+        "total_assertions": 85,
+        "trivial_assertions": 0,
+        "specific_assertions": 85,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 17,
+        "assertions_without_message": 68
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\regression.test.ts": {
+      "hash": "a32198b569ce1cc097bb83c039af756af0a2c9bd0f3fc359b64b4a72496ccac7",
+      "last_verified": "2026-07-11T22:56:13.989Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 7,
+        "clarity": 8,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 4,
+        "total_assertions": 10,
+        "trivial_assertions": 0,
+        "specific_assertions": 10,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 2,
+        "assertions_without_message": 8
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\store.test.ts": {
+      "hash": "ff75198582a16e21986f869212d0b9de09af57724d514011194563a0c2efd7d3",
+      "last_verified": "2026-07-11T22:56:13.989Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 7,
+        "clarity": 8,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 19,
+        "total_assertions": 34,
+        "trivial_assertions": 0,
+        "specific_assertions": 34,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 6,
+        "assertions_without_message": 27
+      },
+      "findings": []
+    },
+    "packages\\dod-guard\\src\\test-metrics.test.ts": {
+      "hash": "a3132cabedb03c1c0a851e1b141418f96efa997e07dc275572204a150add6871",
+      "last_verified": "2026-07-11T22:56:13.990Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 7,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 45,
+        "total_assertions": 73,
+        "trivial_assertions": 1,
+        "specific_assertions": 72,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 14,
+        "assertions_without_message": 58
+      },
+      "findings": []
+    },
+    "packages\\evomcp\\src\\agent.test.ts": {
+      "hash": "0e7680da243d35ced112eca4ce006ca7cd9e693fc22e190ca76bbe603677cb15",
+      "last_verified": "2026-07-11T22:56:13.991Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 28,
+        "total_assertions": 37,
+        "trivial_assertions": 0,
+        "specific_assertions": 37,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 7,
+        "assertions_without_message": 29
+      },
+      "findings": []
+    },
+    "packages\\evomcp\\src\\dedup.test.ts": {
+      "hash": "e5338a0313487f72a6b860df03cb06b64aae12d2a2efe1efd972ffaa0d376cff",
+      "last_verified": "2026-07-11T22:56:13.991Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 13,
+        "total_assertions": 15,
+        "trivial_assertions": 0,
+        "specific_assertions": 15,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 3,
+        "assertions_without_message": 12
+      },
+      "findings": []
+    },
+    "packages\\evomcp\\src\\evolve.test.ts": {
+      "hash": "f9f633b9d6d6a5ecd1d9cbf767ea50e23807373cb3096a0e5ac34d7498feeb63",
+      "last_verified": "2026-07-11T22:56:13.991Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 9,
+        "total_assertions": 14,
+        "trivial_assertions": 0,
+        "specific_assertions": 14,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 2,
+        "assertions_without_message": 11
+      },
+      "findings": []
+    },
+    "packages\\evomcp\\src\\solve.test.ts": {
+      "hash": "41d93743d32afef17a724517854394e56ee24c20a39fbdf4b46e4b3fd1320c4f",
+      "last_verified": "2026-07-11T22:56:13.991Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 21,
+        "total_assertions": 29,
+        "trivial_assertions": 0,
+        "specific_assertions": 29,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 5,
+        "assertions_without_message": 23
+      },
+      "findings": []
+    },
+    "packages\\gitevo\\src\\index.test.ts": {
+      "hash": "4e96cd0009adb70e28048a3facd176b293cd4dd86c2f650316be202e584af5a7",
+      "last_verified": "2026-07-11T22:56:13.992Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 8,
+        "total_assertions": 11,
+        "trivial_assertions": 0,
+        "specific_assertions": 11,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 2,
+        "assertions_without_message": 8
+      },
+      "findings": []
+    },
+    "packages\\gitevo\\src\\operations.test.ts": {
+      "hash": "018a84e242a633705ad5fe6c3c1f1cc5d9bad28ba1b359e6d7c94f7a10dbea4e",
+      "last_verified": "2026-07-11T22:56:13.992Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 32,
+        "total_assertions": 65,
+        "trivial_assertions": 0,
+        "specific_assertions": 65,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 13,
+        "assertions_without_message": 52
+      },
+      "findings": []
+    },
+    "packages\\obsidian-rag\\src\\cli.test.ts": {
+      "hash": "88cb8b5e6f3b456ab5dac2a4c655d7e39feae2bbdbc476f1d1fb6bb838d5ec10",
+      "last_verified": "2026-07-11T22:56:13.992Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 2,
+        "total_assertions": 2,
+        "trivial_assertions": 0,
+        "specific_assertions": 2,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 0,
+        "assertions_without_message": 1
+      },
+      "findings": []
+    },
+    "packages\\obsidian-rag\\src\\index.test.ts": {
+      "hash": "133c997ba61b0c69a452a421976a2a8cbc6a9c1636ba9ef91a1adbf19c83fc56",
+      "last_verified": "2026-07-11T22:56:13.993Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 10,
+        "total_assertions": 12,
+        "trivial_assertions": 0,
+        "specific_assertions": 12,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 2,
+        "assertions_without_message": 9
+      },
+      "findings": []
+    },
+    "packages\\obsidian-rag\\src\\indexer.test.ts": {
+      "hash": "de17f07ee15eb9887a72f81277664cffc7ff07c7d5d996fe049b49735842c20b",
+      "last_verified": "2026-07-11T22:56:13.993Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 6,
+        "total_assertions": 9,
+        "trivial_assertions": 0,
+        "specific_assertions": 9,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 1,
+        "assertions_without_message": 7
+      },
+      "findings": []
+    },
+    "packages\\obsidian-rag\\src\\retriever.test.ts": {
+      "hash": "21fe179465722e8fc11fbca6751e3b1fe77a755583d829a3604423f748c1355f",
+      "last_verified": "2026-07-11T22:56:13.993Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 4,
+        "total_assertions": 4,
+        "trivial_assertions": 0,
+        "specific_assertions": 4,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 0,
+        "assertions_without_message": 3
+      },
+      "findings": []
+    },
+    "packages\\obsidian-rag\\src\\store.test.ts": {
+      "hash": "4b236e76ad0e5b713431d79f5990441e95a35a72f81553f801df0d0ab132ae37",
+      "last_verified": "2026-07-11T22:56:13.993Z",
+      "scores": {
+        "assertion_quality": 10,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.6
+      },
+      "overall": 8.6,
+      "metrics": {
+        "test_function_count": 35,
+        "total_assertions": 75,
+        "trivial_assertions": 0,
+        "specific_assertions": 75,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 15,
+        "assertions_without_message": 60
+      },
+      "findings": []
+    },
+    "packages\\obsidian-rag\\src\\vault.test.ts": {
+      "hash": "18af75cca08941e076c726d7e841a80bf06c3f805f556ec0c8978c640d210f98",
+      "last_verified": "2026-07-11T22:56:13.994Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 10,
+        "isolation": 8,
+        "clarity": 9,
+        "coverage_depth": 5,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10,
+        "overall": 8.5
+      },
+      "overall": 8.5,
+      "metrics": {
+        "test_function_count": 10,
+        "total_assertions": 11,
+        "trivial_assertions": 0,
+        "specific_assertions": 11,
+        "zero_assertion_functions": 0,
+        "assertions_with_message": 2,
+        "assertions_without_message": 8
+      },
+      "findings": []
+    }
+  },
+  "coverage": {},
+  "source_quality": {},
+  "cycle": {
+    "phase": "verify",
+    "cycle_number": 1,
+    "last_file_processed": null,
+    "files_verified_this_cycle": [],
+    "files_fixed_this_cycle": [],
+    "started_at": "2026-07-11T22:56:13.979Z",
+    "last_updated": "2026-07-11T22:56:13.980Z"
+  },
+  "last_full_run": "2026-07-11T22:56:13.980Z"
+}
