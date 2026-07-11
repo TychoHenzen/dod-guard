@@ -1,0 +1,8 @@
+{
+  "name": "gitevo",
+  "description": "Evolutionary git branching for LLM agents. Checkpoint → spawn → learn → abandon → adopt → finish. Tracks failed approaches as lessons in .evo/lessons.jsonl. Integrates with obsidian-rag for persistent memory.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  }
+}

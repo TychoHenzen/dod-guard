@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# TypeScript compiler output (bundle.js is the distributed artifact)
+dist/*.js
+dist/*.d.ts
+dist/*.js.map
+!dist/bundle.js
+
+# OS
+.DS_Store
+Thumbs.db

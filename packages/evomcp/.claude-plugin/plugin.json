@@ -1,0 +1,8 @@
+{
+  "name": "evomcp",
+  "description": "Evolutionary solver MCP — cheap-model fanout with best-of-N + repair chains for feature work, and scalar-fitness evolution for optimization. Co-located with dod-guard: uses dod-guard checks as fitness/verification commands.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  }
+}

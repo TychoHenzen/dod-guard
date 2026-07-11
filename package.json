@@ -2,13 +2,15 @@
   "name": "mcp-servers",
   "version": "1.0.0",
   "private": true,
-  "description": "Monorepo for MCP server plugins (dod-guard, obsidian-rag)",
+  "description": "Monorepo for MCP server plugins (dod-guard, gitevo, evomcp, obsidian-rag)",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
-    "bundle": "npm run bundle --workspaces"
+    "bundle": "npm run bundle --workspaces",
+    "build:evomcp": "npm run build -w packages/evomcp && npm run bundle -w packages/evomcp",
+    "build:gitevo": "npm run build -w packages/gitevo && npm run bundle -w packages/gitevo"
   }
 }
