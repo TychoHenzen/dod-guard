@@ -21152,7 +21152,6 @@ async function findByPath(markdownPath) {
         file,
         err: err instanceof Error ? err.message : String(err)
       });
-      continue;
     }
   }
   return null;
@@ -21171,7 +21170,6 @@ async function listAll() {
         file,
         err: err instanceof Error ? err.message : String(err)
       });
-      continue;
     }
   }
   return docs;
@@ -21243,7 +21241,7 @@ var PY_TRIVIAL = [
   // assert 1, assert 3.14, assert "hello"
   /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
   // assert CONST OP CONST (both sides literal)
-  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*    (==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s*    (True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
+  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s* {4}(==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s* {4}(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
   // self.assertX(CONST, CONST)
   /^\s*self\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\s*\(\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(?:,\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*)?\)\s*(#.*)?$/
 ];
@@ -21314,7 +21312,7 @@ function extractTestFilesFromCommand(command, cwd) {
         try {
           const { readdirSync: readdirSync2 } = __require("node:fs");
           const entries = readdirSync2(dir);
-          const regex = new RegExp("^" + pat.replace(/\*/g, ".*").replace(/\./g, "\\.") + "$");
+          const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
           for (const entry of entries) {
             if (regex.test(entry)) {
               const full = path2.join(dir, entry);
@@ -21739,7 +21737,7 @@ function extractSourceFilesFromCommand(command, cwd) {
           try {
             const { readdirSync: readdirSync2 } = __require("node:fs");
             const entries = readdirSync2(dir);
-            const regex = new RegExp("^" + pat.replace(/\*/g, ".*").replace(/\./g, "\\.") + "$");
+            const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
             for (const entry of entries) {
               const full = path3.join(dir, entry);
               if (isInSkipDir(full)) continue;
@@ -21783,7 +21781,7 @@ function scanFile2(filePath, cwd) {
 }
 function analyseObservability(command, cwd) {
   console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
-  let files = extractSourceFilesFromCommand(command, cwd);
+  const files = extractSourceFilesFromCommand(command, cwd);
   if (files.length === 0) {
     if (/\bgit\s+diff\b/.test(command) || /\bgit diff/.test(command)) {
     }
@@ -21984,7 +21982,6 @@ function findJsFunctions(lines) {
         bodyLines: lines.slice(i + 1, end)
       });
       i = end;
-      continue;
     }
   }
   return out;
@@ -22019,7 +22016,9 @@ function findPyBlockEnd2(lines, startIdx) {
 function findRsFunctions(lines) {
   const out = [];
   for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^\s*(?:pub(?:\s*\(\s*(?:crate|super|self)\s*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+(\w+)/);
+    const m = lines[i].match(
+      /^\s*(?:pub(?:\s*\(\s*(?:crate|super|self)\s*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+(\w+)/
+    );
     if (!m) continue;
     const end = findBlockEnd2(lines, i, "{", "}");
     out.push({
@@ -22029,7 +22028,6 @@ function findRsFunctions(lines) {
       bodyLines: lines.slice(i + 1, end)
     });
     i = end;
-    continue;
   }
   return out;
 }
@@ -22077,7 +22075,7 @@ var CC_PATTERNS = {
     /\bwhile\s*\(/g,
     /\bdo\s*\{/g,
     /\bcase\s+[^:]+:/g,
-    /\bcatch\s*[\(\{]/g,
+    /\bcatch\s*[({]/g,
     /&&/g,
     /\|\|/g,
     /\?\?/g,
@@ -22085,15 +22083,7 @@ var CC_PATTERNS = {
     /\?[^:]+:/g
     // ternary
   ],
-  py: [
-    /\bif\s+/g,
-    /\belif\s+/g,
-    /\bfor\s+/g,
-    /\bwhile\s+/g,
-    /\bexcept\s*:/g,
-    /\band\b/g,
-    /\bor\b/g
-  ],
+  py: [/\bif\s+/g, /\belif\s+/g, /\bfor\s+/g, /\bwhile\s+/g, /\bexcept\s*:/g, /\band\b/g, /\bor\b/g],
   rs: [
     /\bif\s+/g,
     /\belse\s+if\b/g,
@@ -22114,7 +22104,7 @@ var CC_PATTERNS = {
     /\bwhile\s*\(/g,
     /\bdo\s*\{/g,
     /\bcase\s+[^:]+:/g,
-    /\bcatch\s*[\(\{]/g,
+    /\bcatch\s*[({]/g,
     /&&/g,
     /\|\|/g,
     /\?\?/g,
@@ -22316,7 +22306,7 @@ function parseDiffOutput(output, cwd) {
       stats.set(name, { insertions: Number(ns[1]), deletions: Number(ns[2]) });
       continue;
     }
-    const st = line.match(/^(.+?)\s+\|\s+(\d+)\s+([+\-]*)$/);
+    const st = line.match(/^(.+?)\s+\|\s+(\d+)\s+([+-]*)$/);
     if (st) {
       const name = st[1].trim();
       files.push(name);
@@ -22356,16 +22346,7 @@ var SOURCE_EXTS2 = /* @__PURE__ */ new Set([
   ".swift",
   ".kt"
 ]);
-var SKIP_DIRS2 = /* @__PURE__ */ new Set([
-  "dist",
-  "build",
-  "out",
-  ".next",
-  "node_modules",
-  "__pycache__",
-  "target",
-  ".git"
-]);
+var SKIP_DIRS2 = /* @__PURE__ */ new Set(["dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git"]);
 function isSourceFile2(fp) {
   return SOURCE_EXTS2.has(path4.extname(fp).toLowerCase());
 }
@@ -22405,7 +22386,15 @@ function extractSourceFilesFromCommand2(command, cwd) {
 function scanFile3(filePath, cwd, opts) {
   const lang = detectLanguage2(filePath);
   if (!lang) {
-    return { violations: [], lineCount: 0, functionCount: 0, longFunctions: 0, highComplexityFunctions: 0, unnecessaryElseCount: 0, elseAvoidableCount: 0 };
+    return {
+      violations: [],
+      lineCount: 0,
+      functionCount: 0,
+      longFunctions: 0,
+      highComplexityFunctions: 0,
+      unnecessaryElseCount: 0,
+      elseAvoidableCount: 0
+    };
   }
   const content = readFileSync3(filePath, "utf-8");
   const lines = content.split(/\r?\n/);
@@ -22493,15 +22482,13 @@ function scanFile3(filePath, cwd, opts) {
   };
 }
 function analyseBrevity(command, cwd, opts = DEFAULT_BREVITY_OPTS) {
-  let files = extractSourceFilesFromCommand2(command, cwd);
+  const files = extractSourceFilesFromCommand2(command, cwd);
   if (files.length === 0) return null;
   return buildReport(files, cwd, opts, void 0);
 }
 function analyseBrevityFromOutput(commandOutput, cwd, opts = DEFAULT_BREVITY_OPTS) {
   const { files: diffFiles, stats } = parseDiffOutput(commandOutput, cwd);
-  const resolved = diffFiles.map((f) => path4.resolve(cwd, f)).filter(
-    (f) => existsSync3(f) && isSourceFile2(f) && !isInSkipDir2(f)
-  );
+  const resolved = diffFiles.map((f) => path4.resolve(cwd, f)).filter((f) => existsSync3(f) && isSourceFile2(f) && !isInSkipDir2(f));
   if (resolved.length === 0) {
     const extracted = [];
     for (const line of commandOutput.split(/\r?\n/)) {
@@ -22528,7 +22515,7 @@ function buildReport(files, cwd, opts, diffStats) {
   const perFile = [];
   for (const file of files) {
     const result = scanFile3(file, cwd, opts);
-    let ext = [...result.violations];
+    const ext = [...result.violations];
     if (normalizedStats) {
       const relPath2 = normalizeRelPath(path4.relative(cwd, file));
       const stat = normalizedStats.get(relPath2);
@@ -22575,9 +22562,7 @@ function parseStryker(o) {
   if (hi === -1) return null;
   const col = lines[hi].split("|").map((c) => c.trim().toLowerCase()).findIndex((c) => /survived/.test(c));
   if (col === -1) return null;
-  const dl = lines.find(
-    (l) => l.includes("|") && l.trim().toLowerCase().startsWith("all files")
-  );
+  const dl = lines.find((l) => l.includes("|") && l.trim().toLowerCase().startsWith("all files"));
   if (!dl) return null;
   const v = Number(dl.split("|").map((c) => c.trim())[col]);
   return Number.isFinite(v) ? v : null;
@@ -22606,7 +22591,7 @@ function buildManualOut(mr, label) {
 }
 function buildAssertFail(r, min) {
   const pf = r.perFile.map((f) => `  ${f.file}: ${f.total} tot, ${f.trivial} triv, ${f.total - f.trivial} nt`).join("\n");
-  const hdr = r.nonTrivial === 0 ? "ASSERTION QUALITY FAIL: all " + r.total + " assertions trivial" : "ASSERTION QUALITY FAIL: only " + r.nonTrivial + " nt, need " + min;
+  const hdr = r.nonTrivial === 0 ? `ASSERTION QUALITY FAIL: all ${r.total} assertions trivial` : `ASSERTION QUALITY FAIL: only ${r.nonTrivial} nt, need ${min}`;
   return [hdr, "", "Per-file:", pf].join("\n");
 }
 function buildObsFail(r, min) {
@@ -22615,7 +22600,9 @@ function buildObsFail(r, min) {
   const u = r.totalErrorHandlers - r.errorHandlersLogged;
   if (u > 0) l.push(`observability: ${u}/${r.totalErrorHandlers} handlers lack logs`);
   if (r.antiPatterns.length > 0)
-    l.push("observability: " + r.antiPatterns.length + " anti-pattern(s)" + r.antiPatterns.map((a) => `  ${a.file}:${a.line}: ${a.kind} \u2014 ${a.snippet}`).join(""));
+    l.push(
+      "observability: " + r.antiPatterns.length + " anti-pattern(s)" + r.antiPatterns.map((a) => `  ${a.file}:${a.line}: ${a.kind} \u2014 ${a.snippet}`).join("")
+    );
   return l.join("\n");
 }
 function buildBrev(r, passed, max) {
@@ -22629,26 +22616,25 @@ function buildBrev(r, passed, max) {
     if (f.highComplexityFunctions > 0) p.push(`${f.highComplexityFunctions} CC>5`);
     if (f.unnecessaryElseCount > 0) p.push(`${f.unnecessaryElseCount} unnec else`);
     if (f.elseAvoidableCount > 0) p.push(`${f.elseAvoidableCount} avoid else`);
-    if (f.insertions !== void 0 && f.deletions !== void 0)
-      p.push(`+${f.insertions}/-${f.deletions}`);
+    if (f.insertions !== void 0 && f.deletions !== void 0) p.push(`+${f.insertions}/-${f.deletions}`);
     l.push(p.join(", "));
-    for (const v of f.violations)
-      l.push(`    \u2022 L${v.line}: ${v.kind} \u2014 ${v.detail}`);
+    for (const v of f.violations) l.push(`    \u2022 L${v.line}: ${v.kind} \u2014 ${v.detail}`);
   }
-  if (!passed) l.push(
-    "",
-    "Remediation:",
-    `  \u2022 Split functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines}L into single-purpose units`,
-    "  \u2022 Reduce cyclomatic complexity \u2014 extract decision-heavy blocks into helpers",
-    "  \u2022 Prefer guard clauses \u2014 if-block exits \u2192 no else needed",
-    "  \u2022 Delete old code when replacing (low deletion ratio = accretion)",
-    `  \u2022 Keep lines under ${DEFAULT_BREVITY_OPTS.maxLineLength} chars \u2014 break long expressions`,
-    `  \u2022 Split files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines into modules`
-  );
+  if (!passed)
+    l.push(
+      "",
+      "Remediation:",
+      `  \u2022 Split functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines}L into single-purpose units`,
+      "  \u2022 Reduce cyclomatic complexity \u2014 extract decision-heavy blocks into helpers",
+      "  \u2022 Prefer guard clauses \u2014 if-block exits \u2192 no else needed",
+      "  \u2022 Delete old code when replacing (low deletion ratio = accretion)",
+      `  \u2022 Keep lines under ${DEFAULT_BREVITY_OPTS.maxLineLength} chars \u2014 break long expressions`,
+      `  \u2022 Split files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines into modules`
+    );
   return l.join("\n");
 }
 async function hManual(n, b) {
-  const label = n.predicate.type === "review" ? "Code review" : "Manual verification";
+  const label = n.predicate?.type === "review" ? "Code review" : "Manual verification";
   const mr = n.manual_result;
   if (mr && mr.proof_fingerprint === perProofFingerprint(n))
     return mk(b, {
@@ -22656,23 +22642,14 @@ async function hManual(n, b) {
       output: buildManualOut(mr, label),
       error: mr.answer === "fail" ? `${label} confirmed failing.` : void 0
     });
-  return mk(b, {
-    status: "skipped",
-    output: `${label} not verified \u2014 dod_verify(dod_id, "${n.id}")`
-  });
+  return mk(b, { status: "skipped", output: `${label} not verified \u2014 dod_verify(dod_id, "${n.id}")` });
 }
 function hExecFail(r, b) {
   if (!r.killed && !r.notFound) return null;
-  return mk(b, {
-    status: "fail",
-    output: r.combined,
-    error: r.error,
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
+  return mk(b, { status: "fail", output: r.combined, error: r.error, exit_code: r.exitCode, duration_ms: r.duration });
 }
 async function hMutate(n, r, b) {
-  const max = n.predicate.value ?? 0;
+  const max = n.predicate?.value ?? 0;
   const sv = parseSurvivors(r.combined);
   if (sv === null)
     return mk(b, {
@@ -22692,7 +22669,7 @@ async function hMutate(n, r, b) {
   });
 }
 async function hRegress(n, r, b) {
-  const m = extractNumber(r.combined, n.predicate.extract);
+  const m = extractNumber(r.combined, n.predicate?.extract);
   if (m === null)
     return mk(b, {
       status: "fail",
@@ -22712,8 +22689,8 @@ async function hRegress(n, r, b) {
       duration_ms: r.duration
     });
   }
-  const lib = n.predicate.lower_is_better ?? n.category !== "coverage";
-  const tol = n.predicate.value ?? 0;
+  const lib = n.predicate?.lower_is_better ?? n.category !== "coverage";
+  const tol = n.predicate?.value ?? 0;
   const bl = n.baseline_value;
   const th = lib ? bl * (1 + tol) : bl * (1 - tol);
   const passed = lib ? m <= th : m >= th;
@@ -22727,7 +22704,7 @@ async function hRegress(n, r, b) {
   });
 }
 async function hStream(n, r, b) {
-  const max = n.predicate.value ?? 0;
+  const max = n.predicate?.value ?? 0;
   if (r.exitCode > 1)
     return mk(b, {
       status: "fail",
@@ -22755,7 +22732,7 @@ async function hStream(n, r, b) {
   });
 }
 async function hAssert(n, r, b, cmd, cwd) {
-  const min = n.predicate.value ?? 1;
+  const min = n.predicate?.value ?? 1;
   const report = analyseAssertions(cmd, cwd);
   if (!report)
     return mk(b, {
@@ -22773,17 +22750,17 @@ async function hAssert(n, r, b, cmd, cwd) {
       exit_code: r.exitCode,
       duration_ms: r.duration
     });
-  const s = report.nonTrivial + " non-trivial (" + report.total + " tot, " + report.trivial + " triv)";
+  const s = `${report.nonTrivial} non-trivial (${report.total} tot, ${report.trivial} triv)`;
   return mk(b, {
     status: "pass",
     output: r.combined,
-    error: "assertions: " + s,
+    error: `assertions: ${s}`,
     exit_code: r.exitCode,
     duration_ms: r.duration
   });
 }
 async function hObs(n, r, b, cmd, cwd) {
-  const min = n.predicate.value ?? 1;
+  const min = n.predicate?.value ?? 1;
   let report = analyseObservability(cmd, cwd);
   if (!report) report = analyseObservabilityFromOutput(r.combined, cwd);
   if (!report)
@@ -22795,11 +22772,11 @@ async function hObs(n, r, b, cmd, cwd) {
       duration_ms: r.duration
     });
   if (report.totalLogStatements >= min && report.totalErrorHandlers - report.errorHandlersLogged === 0 && report.antiPatterns.length === 0) {
-    const s = report.totalLogStatements + " logs, " + report.totalErrorHandlers + " handlers, clean";
+    const s = `${report.totalLogStatements} logs, ${report.totalErrorHandlers} handlers, clean`;
     return mk(b, {
       status: "pass",
       output: r.combined,
-      error: "observability: " + s,
+      error: `observability: ${s}`,
       exit_code: r.exitCode,
       duration_ms: r.duration
     });
@@ -22813,7 +22790,15 @@ async function hObs(n, r, b, cmd, cwd) {
   });
 }
 async function hBrev(n, r, b, cmd, cwd) {
-  const max = n.predicate.value ?? 0;
+  const max = n.predicate?.value ?? 0;
+  if (!n.predicate)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: "brevity: no predicate",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
   const p = n.predicate;
   const opts = {
     maxLineLength: p.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
@@ -22843,12 +22828,9 @@ async function hBrev(n, r, b, cmd, cwd) {
     duration_ms: r.duration
   });
 }
-function buildLineLenFail(r, max, maxChars) {
+function buildLineLenFail(r, _max, maxChars) {
   const vl = r.violations.filter((v) => v.kind === "line_too_long");
-  const l = [
-    `line_length FAIL: ${vl.length} line(s) > ${maxChars} chars`,
-    ""
-  ];
+  const l = [`line_length FAIL: ${vl.length} line(s) > ${maxChars} chars`, ""];
   for (const f of r.perFile) {
     const fv = f.violations.filter((v) => v.kind === "line_too_long");
     if (fv.length === 0) continue;
@@ -22858,12 +22840,9 @@ function buildLineLenFail(r, max, maxChars) {
   l.push("", `Remediation: break long lines at \u2264${DEFAULT_BREVITY_OPTS.maxLineLength} chars.`);
   return l.join("\n");
 }
-function buildFnSizeFail(r, max, maxLines) {
+function buildFnSizeFail(r, _max, maxLines) {
   const vl = r.violations.filter((v) => v.kind === "function_too_long");
-  const l = [
-    `function_size FAIL: ${vl.length} function(s) > ${maxLines} lines`,
-    ""
-  ];
+  const l = [`function_size FAIL: ${vl.length} function(s) > ${maxLines} lines`, ""];
   for (const f of r.perFile) {
     const fv = f.violations.filter((v) => v.kind === "function_too_long");
     if (fv.length === 0) continue;
@@ -22873,12 +22852,9 @@ function buildFnSizeFail(r, max, maxLines) {
   l.push("", `Remediation: split functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines into single-purpose units.`);
   return l.join("\n");
 }
-function buildFileSizeFail(r, max, maxLines) {
+function buildFileSizeFail(r, _max, maxLines) {
   const vl = r.violations.filter((v) => v.kind === "file_too_long");
-  const l = [
-    `file_size FAIL: ${vl.length} file(s) > ${maxLines} lines`,
-    ""
-  ];
+  const l = [`file_size FAIL: ${vl.length} file(s) > ${maxLines} lines`, ""];
   for (const f of r.perFile) {
     const fv = f.violations.filter((v) => v.kind === "file_too_long");
     if (fv.length === 0) continue;
@@ -22891,10 +22867,7 @@ function buildFileSizeFail(r, max, maxLines) {
 function buildCohesionFail(r, max) {
   const kinds = ["high_complexity", "unnecessary_else", "else_avoidable"];
   const vl = r.violations.filter((v) => kinds.includes(v.kind));
-  const l = [
-    `cohesion FAIL: ${vl.length} violation(s) (max ${max} allowed)`,
-    ""
-  ];
+  const l = [`cohesion FAIL: ${vl.length} violation(s) (max ${max} allowed)`, ""];
   for (const f of r.perFile) {
     const fv = f.violations.filter((v) => kinds.includes(v.kind));
     if (fv.length === 0) continue;
@@ -22914,7 +22887,7 @@ function buildCohesionFail(r, max) {
   );
   return l.join("\n");
 }
-function buildReplRatioFail(r, max, minRatio) {
+function buildReplRatioFail(r, _max, minRatio) {
   const vl = r.violations.filter((v) => v.kind === "low_replacement_ratio");
   const l = [
     `replacement_ratio FAIL: ${vl.length} file(s) below min ratio ${(minRatio * 100).toFixed(0)}%`,
@@ -22972,7 +22945,15 @@ var BREVITY_COHESION = {
   buildFail: (r, max) => buildCohesionFail(r, max)
 };
 async function hBrevity(n, r, b, cmd, cwd, config2) {
-  const max = n.predicate.value ?? 0;
+  const max = n.predicate?.value ?? 0;
+  if (!n.predicate)
+    return mk(b, {
+      status: "fail",
+      output: r.combined,
+      error: "brevity: no predicate",
+      exit_code: r.exitCode,
+      duration_ms: r.duration
+    });
   const opts = { ...DEFAULT_BREVITY_OPTS, ...config2.optsOverride(n.predicate) };
   let report = analyseBrevity(cmd, cwd, opts);
   if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
@@ -22995,8 +22976,8 @@ async function hBrevity(n, r, b, cmd, cwd, config2) {
   });
 }
 async function hReplacementRatio(n, r, b, _cmd, cwd) {
-  const max = n.predicate.value ?? 0;
-  const minRatio = n.predicate.min_replacement_ratio ?? DEFAULT_BREVITY_OPTS.minReplacementRatio;
+  const max = n.predicate?.value ?? 0;
+  const minRatio = n.predicate?.min_replacement_ratio ?? DEFAULT_BREVITY_OPTS.minReplacementRatio;
   const opts = {
     ...DEFAULT_BREVITY_OPTS,
     minReplacementRatio: minRatio
@@ -23022,7 +23003,7 @@ async function hReplacementRatio(n, r, b, _cmd, cwd) {
   });
 }
 async function hTdd(n, r, b, cmd, cwd) {
-  const exp = n.predicate.value ?? 0;
+  const exp = n.predicate?.value ?? 0;
   const g = r.exitCode === exp;
   if (g && !n.seen_failing)
     return mk(b, {
@@ -23056,7 +23037,7 @@ async function hTdd(n, r, b, cmd, cwd) {
     return mk(b, {
       status: "pass",
       output: r.combined,
-      error: "TDD verified" + (ar ? " (" + ar.nonTrivial + " nt)" : ""),
+      error: `TDD verified${ar ? ` (${ar.nonTrivial} nt)` : ""}`,
       exit_code: r.exitCode,
       duration_ms: r.duration
     });
@@ -23070,20 +23051,26 @@ async function hTdd(n, r, b, cmd, cwd) {
   });
 }
 async function executeProof(node, cwd, execFn) {
+  if (!node.command)
+    return {
+      node_path: "",
+      id: node.id,
+      title: node.title,
+      description: node.description ?? "",
+      command: "",
+      status: "fail",
+      output: "",
+      error: "no command",
+      exit_code: -1,
+      duration_ms: 0
+    };
   const cmd = node.command;
-  const base = {
-    node_path: "",
-    id: node.id,
-    title: node.title,
-    description: node.description,
-    command: cmd
-  };
-  if (node.predicate.type === "manual" || node.predicate.type === "review")
-    return hManual(node, base);
+  const base = { node_path: "", id: node.id, title: node.title, description: node.description ?? "", command: cmd };
+  if (node.predicate?.type === "manual" || node.predicate?.type === "review") return hManual(node, base);
   const run = await execFn(cmd, cwd);
   const ef = await hExecFail(run, base);
   if (ef) return ef;
-  switch (node.predicate.type) {
+  switch (node.predicate?.type) {
     case "mutation":
       return hMutate(node, run, base);
     case "regression":
@@ -23111,11 +23098,11 @@ async function executeProof(node, cwd, execFn) {
     default:
       break;
   }
-  const passed = evaluatePredicate(node.predicate, run.exitCode, run.combined);
+  const passed = evaluatePredicate(node.predicate ?? { type: "exit_code", value: 0 }, run.exitCode, run.combined);
   return mk(base, {
     status: passed ? "pass" : "fail",
     output: run.combined,
-    error: passed ? void 0 : `pred ${node.predicate.type} fail (exit=${run.exitCode})`,
+    error: passed ? void 0 : `pred ${node.predicate?.type} fail (exit=${run.exitCode})`,
     exit_code: run.exitCode,
     duration_ms: run.duration
   });
@@ -23206,8 +23193,8 @@ function computeProofFingerprint(roots) {
   const leaves = flattenConcreteLeaves(roots);
   if (leaves.length === 0) return "";
   const data = leaves.map(({ node }) => {
-    let line = `${node.command}|${node.predicate.type}|${node.predicate.value ?? ""}`;
-    if (node.predicate.lower_is_better !== void 0) line += `|lib:${node.predicate.lower_is_better}`;
+    let line = `${node.command}|${node.predicate?.type}|${node.predicate?.value ?? ""}`;
+    if (node.predicate?.lower_is_better !== void 0) line += `|lib:${node.predicate?.lower_is_better}`;
     if (node.advisory !== void 0) line += `|adv:${node.advisory}`;
     return line;
   }).join("\n");
@@ -23235,11 +23222,23 @@ async function runCommand(command, cwd) {
     const stderr = execErr.stderr ?? "";
     const combined = (stdout + stderr).slice(0, 4e3);
     if (execErr.killed) {
-      return { exitCode, combined: `TIMEOUT after ${TIMEOUT_MS}ms`, duration: duration3, error: "Process killed due to timeout", killed: true };
+      return {
+        exitCode,
+        combined: `TIMEOUT after ${TIMEOUT_MS}ms`,
+        duration: duration3,
+        error: "Process killed due to timeout",
+        killed: true
+      };
     }
     const notFound = exitCode === 127 || exitCode === 9009 || /not recognized|command not found|no such file/i.test(stderr + (execErr.message ?? ""));
     if (notFound) {
-      return { exitCode, combined, duration: duration3, error: `Command not found or not executable (exit ${exitCode})`, notFound: true };
+      return {
+        exitCode,
+        combined,
+        duration: duration3,
+        error: `Command not found or not executable (exit ${exitCode})`,
+        notFound: true
+      };
     }
     return { exitCode, combined, duration: duration3, error: stderr.slice(0, 2e3) || void 0 };
   }
@@ -23364,7 +23363,9 @@ async function checkDocument(doc, cwdOverride, opts) {
   const baseSummary = targetPath ? `SCOPED (node "${targetPath}"): run a full dod_check (no nodePath) to verify completion` : `${passCount}/${concreteTotal} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
   const guidance = [];
   if (blockedByManuals) {
-    guidance.push(`\u26D4 ${manualUnverified} manual/review proof(s) await dod_verify \u2014 DoD CANNOT pass without human verification.`);
+    guidance.push(
+      `\u26D4 ${manualUnverified} manual/review proof(s) await dod_verify \u2014 DoD CANNOT pass without human verification.`
+    );
   } else if (!targetPath && manualUnverified > 0) {
     guidance.push(`${manualUnverified} manual/review proof(s) await dod_verify.`);
   }
@@ -23373,10 +23374,14 @@ async function checkDocument(doc, cwdOverride, opts) {
     guidance.push(`\u26A0\uFE0F Excessive amendment cycles: ${names} \u2014 are proofs being tuned rather than code being fixed?`);
   }
   if (suggestScoped) {
-    guidance.push(`\u{1F4A1} ${concreteCount} concrete proofs \u2014 use dod_check(nodePath="0") to verify one subtree at a time (faster iteration).`);
+    guidance.push(
+      `\u{1F4A1} ${concreteCount} concrete proofs \u2014 use dod_check(nodePath="0") to verify one subtree at a time (faster iteration).`
+    );
   }
   if (!targetPath && draftCount > 0 && !suggestScoped) {
-    guidance.push(`${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end.`);
+    guidance.push(
+      `${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end.`
+    );
   }
   const summary = tampered ? `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}` : guidance.length > 0 ? [baseSummary, "", ...guidance].join("\n") : baseSummary;
   return {
@@ -23449,17 +23454,25 @@ function formatCheckResult(result) {
   }
   if (result.blocked_by_manuals) {
     l.push("\u26D4 **BLOCKED: Manual verification required.** All automated proofs pass, but this DoD is NOT complete.");
-    l.push(`   ${result.manual_unverified} manual/review proof(s) await dod_verify. Call dod_verify for each, then re-run dod_check.`);
-    l.push("   Do NOT report done until manuals are verified \u2014 the fix may look correct to proofs but be visually wrong.");
+    l.push(
+      `   ${result.manual_unverified} manual/review proof(s) await dod_verify. Call dod_verify for each, then re-run dod_check.`
+    );
+    l.push(
+      "   Do NOT report done until manuals are verified \u2014 the fix may look correct to proofs but be visually wrong."
+    );
     l.push("");
   }
   if (result.scoped) {
-    l.push(`\u23F3 **Scoped run \u2014 node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`);
+    l.push(
+      `\u23F3 **Scoped run \u2014 node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`
+    );
     l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
     l.push("");
   }
   if (result.draft_count > 0) {
-    l.push(`\u{1F4DD} **${result.draft_count} draft node(s)** \u2014 use dod_refine to concretize before a final pass is possible.`);
+    l.push(
+      `\u{1F4DD} **${result.draft_count} draft node(s)** \u2014 use dod_refine to concretize before a final pass is possible.`
+    );
     l.push("");
   }
   if (result.amendment_warnings.length > 0) {
@@ -23474,7 +23487,7 @@ function formatCheckResult(result) {
   for (const leaf of result.leaves) {
     const rootIdx = leaf.node_path.split(".")[0];
     if (!byRoot.has(rootIdx)) byRoot.set(rootIdx, []);
-    byRoot.get(rootIdx).push(leaf);
+    byRoot.get(rootIdx)?.push(leaf);
   }
   for (const [rootIdx, leaves] of byRoot) {
     const passCount = leaves.filter((p) => p.status === "pass").length;
@@ -23553,15 +23566,18 @@ function renderNode(node, depth, lines) {
   }
 }
 function renderGroup(node, depth, indent, lines) {
-  const hasDrafts = hasDraftNodes(node.children);
-  const allPass = isBranchLocked(node.children) && node.children.every((c) => c.refinement === "concrete" && (c.last_status === "pass" || c.last_status === "skipped")) && allLeavesPass(node.children);
+  const children = node.children;
+  if (!children) return;
+  const hasDrafts = hasDraftNodes(children);
+  const allPass = isBranchLocked(children) && children.every((c) => c.refinement === "concrete" && (c.last_status === "pass" || c.last_status === "skipped")) && // Also check deep
+  allLeavesPass(children);
   let mark;
   if (hasDrafts) mark = "[~]";
-  else if (allPass && node.children.length > 0) mark = "[x]";
+  else if (allPass && children.length > 0) mark = "[x]";
   else mark = "[ ]";
   lines.push(`${indent}**${node.title}** ${mark}`);
   lines.push("");
-  for (const child of node.children) {
+  for (const child of children) {
     renderNode(child, depth + 1, lines);
   }
 }
@@ -23597,31 +23613,43 @@ function renderLeaf(node, indent, lines) {
   } else if (node.predicate?.type === "line_length") {
     const maxChars = node.predicate.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength;
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (line_length \u2264${maxChars} chars, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (line_length \u2264${maxChars} chars, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
+    );
   } else if (node.predicate?.type === "function_size") {
     const maxLines = node.predicate.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines;
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (function_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (function_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
+    );
   } else if (node.predicate?.type === "file_size") {
     const maxLines = node.predicate.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines;
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (file_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (file_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
+    );
   } else if (node.predicate?.type === "cohesion") {
     const maxCC = node.predicate.max_complexity ?? 5;
     const guards = node.predicate.require_guard_clauses ?? true;
     const suggest = node.predicate.suggest_guard_clauses ?? true;
     const flags = [guards ? "guard" : "", suggest ? "suggest" : ""].filter(Boolean).join("+");
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (cohesion CC\u2264${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (cohesion CC\u2264${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
+    );
   } else if (node.predicate?.type === "replacement_ratio") {
     const minRatio = node.predicate.min_replacement_ratio ?? 0.2;
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (replacement_ratio \u2265${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (replacement_ratio \u2265${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
+    );
   } else if (node.predicate?.type === "regression") {
     const lib = node.predicate.lower_is_better ?? true;
     const tol = node.predicate.value ?? 0;
     const dir = lib ? "\u2264baseline" : "\u2265baseline";
-    lines.push(`${indent}- ${mark} Proof (regression ${dir}, tolerance ${tol}): \`${node.command}\` \u2192 ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (regression ${dir}, tolerance ${tol}): \`${node.command}\` \u2192 ${node.description}`
+    );
   } else {
     lines.push(`${indent}- ${mark} Proof: \`${node.command}\` \u2192 ${node.description}`);
   }
@@ -23635,13 +23663,17 @@ function renderMarkdown(doc) {
   l.push("**For Claude (/goal):** Work through each incomplete task below.");
   l.push("1. Mark a task `[>]` when you begin working on it.");
   l.push("2. Call `dod_check` to verify proofs \u2014 do NOT mark proofs manually.");
-  l.push("   While iterating on one subtree, pass `nodePath` to verify just that part fast (others are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
+  l.push(
+    "   While iterating on one subtree, pass `nodePath` to verify just that part fast (others are carried, not re-run). A scoped run returns INCOMPLETE, never PASS."
+  );
   l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
   l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts \u2014 call");
   l.push("    `dod_verify(dod_id, proof_id)` explicitly when verification is actually relevant.");
   l.push("3c. **Manual verification is a HARD GATE.** DoD cannot PASS without it.");
   l.push("    Proofs can pass against wrong code. Visual verification catches what metrics miss.");
-  l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof (mode=concretize) or subdivide into child tasks (mode=subdivide).");
+  l.push(
+    "4. Use `dod_refine` to turn a draft leaf into a concrete proof (mode=concretize) or subdivide into child tasks (mode=subdivide)."
+  );
   l.push("4b. **Refine incrementally per task group, not all at once.** Scoped dod_check is faster");
   l.push("    than full runs \u2014 use it. Refining 7 drafts at session end = rubber-stamping.");
   l.push("4c. Use `dod_add_node` to add new nodes discovered during implementation.");
@@ -23649,7 +23681,9 @@ function renderMarkdown(doc) {
   l.push("5b. **Amending a proof 3+ times is a red flag** \u2014 you're probably tuning proofs to pass");
   l.push("    rather than fixing the bug. Re-examine the approach.");
   l.push("5c. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
-  l.push("6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass, manuals verified) \u2014 then stop and report done.");
+  l.push(
+    "6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass, manuals verified) \u2014 then stop and report done."
+  );
   l.push("6b. **If the approach isn't working, stop and re-interview.** Don't silently pivot to");
   l.push("    a different implementation while keeping the old DoD. The DoD must match what you're doing.");
   l.push("");
@@ -23707,8 +23741,10 @@ function renderMarkdown(doc) {
       l.push("");
       renderLeaf(root, "", l);
     } else {
-      const hasDrafts = hasDraftNodes(root.children);
-      const allPass = isBranchLocked(root.children) && root.children.length > 0 && allLeavesPass(root.children);
+      const children = root.children;
+      if (!children) continue;
+      const hasDrafts = hasDraftNodes(children);
+      const allPass = isBranchLocked(children) && children.length > 0 && allLeavesPass(children);
       let mark;
       if (hasDrafts) mark = "[~]";
       else if (allPass) mark = "[x]";
@@ -23716,7 +23752,7 @@ function renderMarkdown(doc) {
       l.push("");
       l.push(`### ${root.title} ${mark}`);
       l.push("");
-      for (const child of root.children) {
+      for (const child of children) {
         renderNode(child, 1, l);
       }
     }
@@ -23747,7 +23783,8 @@ function updateDocFromCheckResult(doc, result) {
   for (const leafResult of result.leaves) {
     const node = findNodeByPath(doc.roots, leafResult.node_path);
     if (!node) continue;
-    if (result.scoped && leafResult.node_path !== result.ran_node_path && !leafResult.node_path.startsWith(result.ran_node_path ?? "")) continue;
+    if (result.scoped && leafResult.node_path !== result.ran_node_path && !leafResult.node_path.startsWith(result.ran_node_path ?? ""))
+      continue;
     if (leafResult.status !== "draft") {
       node.last_status = leafResult.status;
       node.last_output = leafResult.output;
@@ -23891,11 +23928,11 @@ function parseLeafLine(line) {
   return null;
 }
 var SECTION_MAP = {
-  "requirements": "requirements",
+  requirements: "requirements",
   "research notes": "research_notes",
   "open questions": "open_questions",
   "open risks": "open_risks",
-  "decisions": "decisions",
+  decisions: "decisions",
   "current state": "current_state"
 };
 function parseSections(lines) {
@@ -24380,10 +24417,22 @@ var OPTIONAL_REQUIRING_JUSTIFICATION = [
     label: "TDD: a fail-first test for new/changed behavior.",
     warnMsg: (t) => t === "bug" ? TDD_WARN_BUG : TDD_WARN_GENERAL
   },
-  { cat: "mutation", label: "Mutation testing: prove the test suite actually catches bugs.", warnMsg: () => MUTATION_WARN },
+  {
+    cat: "mutation",
+    label: "Mutation testing: prove the test suite actually catches bugs.",
+    warnMsg: () => MUTATION_WARN
+  },
   { cat: "streamline", label: "Streamline: prove old implementations were removed.", warnMsg: () => STREAMLINE_WARN },
-  { cat: "observability", label: "Observability: prove changed files are instrumented for debugging.", warnMsg: () => OBSERVABILITY_WARN },
-  { cat: "brevity", label: "Brevity: prove code is clean \u2014 short functions, single-purpose.", warnMsg: () => BREVITY_WARN }
+  {
+    cat: "observability",
+    label: "Observability: prove changed files are instrumented for debugging.",
+    warnMsg: () => OBSERVABILITY_WARN
+  },
+  {
+    cat: "brevity",
+    label: "Brevity: prove code is clean \u2014 short functions, single-purpose.",
+    warnMsg: () => BREVITY_WARN
+  }
 ];
 var REGRESSION_CATEGORIES = [
   { cat: "performance", label: "Performance: prove no perf regression via regression predicate." },
@@ -24402,9 +24451,7 @@ function checkHardMandatory(present, type) {
   const errors = [];
   for (const m of HARD_MANDATORY) {
     if (!present.has(m.cat)) {
-      errors.push(
-        `Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`
-      );
+      errors.push(`Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`);
     }
   }
   return errors;
@@ -24412,7 +24459,7 @@ function checkHardMandatory(present, type) {
 function checkOptional(present, skipReasons) {
   const errors = [];
   const warnings = [];
-  const check2 = (cat, label, warnMsg) => {
+  const check2 = (cat, label, _warnMsg) => {
     if (present.has(cat)) return;
     const reason = skipReasons?.[cat];
     if (reason) {
@@ -24459,21 +24506,49 @@ function validateBaseline(type, steps, skipReasons) {
 }
 
 // src/index.ts
+import { fileURLToPath } from "node:url";
 var server = new McpServer({
   name: "dod-guard",
-  version: "2.2.4"
+  version: "2.2.5"
 });
 var PredicateSchema = external_exports.object({
-  type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline", "observability", "brevity", "line_length", "function_size", "file_size", "cohesion", "replacement_ratio"]),
+  type: external_exports.enum([
+    "exit_code",
+    "exit_code_not",
+    "output_contains",
+    "output_matches",
+    "output_not_contains",
+    "output_not_matches",
+    "tdd",
+    "manual",
+    "review",
+    "mutation",
+    "regression",
+    "assertions",
+    "streamline",
+    "observability",
+    "brevity",
+    "line_length",
+    "function_size",
+    "file_size",
+    "cohesion",
+    "replacement_ratio"
+  ]),
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
-  extract: external_exports.string().optional().describe("regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."),
-  lower_is_better: external_exports.boolean().optional().describe("regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage)."),
+  extract: external_exports.string().optional().describe(
+    "regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."
+  ),
+  lower_is_better: external_exports.boolean().optional().describe(
+    "regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage)."
+  ),
   max_line_length: external_exports.number().optional().describe("brevity / line_length: max characters per line (default 120)."),
   max_function_lines: external_exports.number().optional().describe("brevity / function_size: max lines per function (default 30)."),
   max_file_lines: external_exports.number().optional().describe("brevity / file_size: max lines per file (default 300)."),
   max_complexity: external_exports.number().optional().describe("brevity / cohesion: max cyclomatic complexity per function (default 5)."),
   require_guard_clauses: external_exports.boolean().optional().describe("brevity / cohesion: flag unnecessary else after exit statement (default true)."),
-  suggest_guard_clauses: external_exports.boolean().optional().describe("brevity / cohesion: flag if/else pairs in functions lacking guard clauses \u2014 advisory suggestion (default true)."),
+  suggest_guard_clauses: external_exports.boolean().optional().describe(
+    "brevity / cohesion: flag if/else pairs in functions lacking guard clauses \u2014 advisory suggestion (default true)."
+  ),
   min_replacement_ratio: external_exports.number().optional().describe("brevity / replacement_ratio: minimum deletion/insertion ratio (default 0.2).")
 });
 var ProofCategorySchema = external_exports.enum([
@@ -24533,7 +24608,7 @@ function buildTaskNodes(inputs) {
       refinement: effectiveRefinement,
       last_status: effectiveRefinement === "draft" ? "draft" : "pending"
     };
-    if (isGroup) {
+    if (isGroup && input.children) {
       node.children = buildTaskNodes(input.children);
     }
     if (!isGroup && input.refinement === "draft") {
@@ -24564,7 +24639,9 @@ function formatMissingTools(missing) {
     lines.push(`    in: ${m.command}`);
   }
   lines.push("");
-  lines.push("Rewrite these commands for the current OS, then retry. (For human-only checks, use a `manual` proof instead.)");
+  lines.push(
+    "Rewrite these commands for the current OS, then retry. (For human-only checks, use a `manual` proof instead.)"
+  );
   return lines.join("\n");
 }
 async function checkCommandsForOs(roots, cwd) {
@@ -24604,7 +24681,9 @@ server.tool(
     cwd: external_exports.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: external_exports.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
-    roots: external_exports.array(TaskNodeInputSchema).describe("Root-level task nodes forming the decomposition tree. Task groups have children. Draft leaves have intent. Concrete leaves have command+predicate+description+category."),
+    roots: external_exports.array(TaskNodeInputSchema).describe(
+      "Root-level task nodes forming the decomposition tree. Task groups have children. Draft leaves have intent. Concrete leaves have command+predicate+description+category."
+    ),
     skip_reasons: external_exports.record(external_exports.string()).optional().describe("Map from optional proof category to justification for omission.")
   },
   async ({ title, goal, type, cwd, markdown_path, sections, roots: rootInputs, skip_reasons }) => {
@@ -24648,24 +24727,26 @@ server.tool(
       ...baseline.warnings.map((w) => `  \u2022 ${w}`)
     ] : [];
     return {
-      content: [{
-        type: "text",
-        text: [
-          "DoD created.",
-          "",
-          `ID: ${id}`,
-          `Path: ${markdown_path}`,
-          `Roots: ${rootCount}`,
-          `Concrete proofs: ${concreteCount}`,
-          `Draft nodes: ${draftCount}`,
-          fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
-          ...warningBlock,
-          "",
-          draftCount > 0 ? `${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end. Use dod_check(nodePath="0") to verify one subtree at a time.` : "All nodes are concrete \u2014 dod_check can verify the full DoD.",
-          "",
-          "NEXT: run `dod_check` to validate proof commands execute on this OS."
-        ].filter(Boolean).join("\n")
-      }]
+      content: [
+        {
+          type: "text",
+          text: [
+            "DoD created.",
+            "",
+            `ID: ${id}`,
+            `Path: ${markdown_path}`,
+            `Roots: ${rootCount}`,
+            `Concrete proofs: ${concreteCount}`,
+            `Draft nodes: ${draftCount}`,
+            fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
+            ...warningBlock,
+            "",
+            draftCount > 0 ? `${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end. Use dod_check(nodePath="0") to verify one subtree at a time.` : "All nodes are concrete \u2014 dod_check can verify the full DoD.",
+            "",
+            "NEXT: run `dod_check` to validate proof commands execute on this OS."
+          ].filter(Boolean).join("\n")
+        }
+      ]
     };
   }
 );
@@ -24674,7 +24755,7 @@ var isWindowsHost = process.platform === "win32";
 function manualInstructions(node) {
   const isReview = node.predicate?.type === "review";
   const lines = [node.description ?? node.title];
-  if (node.command && node.command.trim() && node.command.trim() !== "manual" && !isReview) {
+  if (node.command?.trim() && node.command.trim() !== "manual" && !isReview) {
     lines.push("", `Steps / command: ${node.command}`);
   }
   if (isReview) {
@@ -24756,7 +24837,9 @@ server.tool(
     dod_id: external_exports.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: external_exports.string().optional().describe("Markdown file path \u2014 resolves to DoD by path if no ID given"),
     cwd_override: external_exports.string().optional().describe("Override working directory for this check run"),
-    nodePath: external_exports.string().optional().describe("Dot-separated path to a subtree (e.g. '0.children.1') to verify in isolation. Omit to run the full check.")
+    nodePath: external_exports.string().optional().describe(
+      "Dot-separated path to a subtree (e.g. '0.children.1') to verify in isolation. Omit to run the full check."
+    )
   },
   async ({ dod_id, path: mdPath, cwd_override, nodePath }) => {
     let doc = null;
@@ -24764,19 +24847,23 @@ server.tool(
     else if (mdPath) doc = await findByPath(mdPath);
     if (!doc) {
       return {
-        content: [{
-          type: "text",
-          text: `ERROR: DoD not found. ${dod_id ? `ID "${dod_id}" not in store.` : `No DoD registered for path "${mdPath}".`}
+        content: [
+          {
+            type: "text",
+            text: `ERROR: DoD not found. ${dod_id ? `ID "${dod_id}" not in store.` : `No DoD registered for path "${mdPath}".`}
 Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
-        }]
+          }
+        ]
       };
     }
     if (nodePath && !findNodeByPath(doc.roots, nodePath)) {
       return {
-        content: [{
-          type: "text",
-          text: `ERROR: nodePath "${nodePath}" not found in this DoD. Use dod_check without nodePath to see the tree structure.`
-        }]
+        content: [
+          {
+            type: "text",
+            text: `ERROR: nodePath "${nodePath}" not found in this DoD. Use dod_check without nodePath to see the tree structure.`
+          }
+        ]
       };
     }
     const result = await checkDocument(doc, cwd_override, nodePath ? { nodePath } : void 0);
@@ -24787,10 +24874,12 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
     await save(doc);
     await writeMarkdown(doc);
     return {
-      content: [{
-        type: "text",
-        text: formatCheckResult(result)
-      }]
+      content: [
+        {
+          type: "text",
+          text: formatCheckResult(result)
+        }
+      ]
     };
   }
 );
@@ -24808,18 +24897,33 @@ server.tool(
     category: ProofCategorySchema.optional().describe("(concretize) Baseline category"),
     advisory: external_exports.boolean().optional(),
     // subdivide mode params
-    children: external_exports.array(external_exports.object({
-      title: external_exports.string(),
-      intent: external_exports.string()
-    })).optional().describe("(subdivide) Child draft nodes \u2014 each becomes a draft leaf under the new task group")
+    children: external_exports.array(
+      external_exports.object({
+        title: external_exports.string(),
+        intent: external_exports.string()
+      })
+    ).optional().describe("(subdivide) Child draft nodes \u2014 each becomes a draft leaf under the new task group")
   },
   async ({ dod_id, node_path: nodePath, mode, command, predicate, description, category, advisory, children }) => {
     const doc = await load(dod_id);
     if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
     const node = findNodeByPath(doc.roots, nodePath);
     if (!node) return { content: [{ type: "text", text: `ERROR: node not found at path "${nodePath}".` }] };
-    if (node.refinement !== "draft") return { content: [{ type: "text", text: `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.` }] };
-    if (node.children && node.children.length > 0) return { content: [{ type: "text", text: `ERROR: node "${node.title}" is a task group with children \u2014 not a leaf. Refine its children instead.` }] };
+    if (node.refinement !== "draft")
+      return {
+        content: [
+          { type: "text", text: `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.` }
+        ]
+      };
+    if (node.children && node.children.length > 0)
+      return {
+        content: [
+          {
+            type: "text",
+            text: `ERROR: node "${node.title}" is a task group with children \u2014 not a leaf. Refine its children instead.`
+          }
+        ]
+      };
     const oldIntent = node.intent;
     if (mode === "concretize") {
       if (!command || !predicate) {
@@ -24854,7 +24958,11 @@ server.tool(
       });
     } else {
       if (!children || children.length === 0) {
-        return { content: [{ type: "text", text: "ERROR: subdivide mode requires at least one child in children array." }] };
+        return {
+          content: [
+            { type: "text", text: "ERROR: subdivide mode requires at least one child in children array." }
+          ]
+        };
       }
       const childNodes = children.map((c) => {
         const childId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${Math.random().toString(36).slice(2, 4)}`;
@@ -24894,8 +25002,8 @@ server.tool(
       draftCount === 0 ? "\n\u{1F389} All nodes are now concrete \u2014 the DoD is fully verifiable. Run dod_check." : `
 ${draftCount} draft node(s) remaining.`
     ].join("\n") : [
-      `Node subdivided: "${node.title}" is now a task group with ${children.length} child draft(s).`,
-      `Children: ${children.map((c) => `"${c.title}"`).join(", ")}`,
+      `Node subdivided: "${node.title}" is now a task group with ${children?.length} child draft(s).`,
+      `Children: ${children?.map((c) => `"${c.title}"`).join(", ")}`,
       `
 ${draftCount} draft node(s) total. Refine each draft leaf before running dod_check.`
     ].join("\n");
@@ -24923,12 +25031,25 @@ server.tool(
     let parent = null;
     if (parent_path) {
       parent = findNodeByPath(doc.roots, parent_path);
-      if (!parent) return { content: [{ type: "text", text: `ERROR: parent node not found at path "${parent_path}".` }] };
-      if (!parent.children) return { content: [{ type: "text", text: `ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children. Add to a task group.` }] };
+      if (!parent)
+        return { content: [{ type: "text", text: `ERROR: parent node not found at path "${parent_path}".` }] };
+      if (!parent.children)
+        return {
+          content: [
+            {
+              type: "text",
+              text: `ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children. Add to a task group.`
+            }
+          ]
+        };
     }
     if (refinement === "concrete") {
       if (!command || !predicate || !description) {
-        return { content: [{ type: "text", text: "ERROR: concrete nodes require command, predicate, and description." }] };
+        return {
+          content: [
+            { type: "text", text: "ERROR: concrete nodes require command, predicate, and description." }
+          ]
+        };
       }
       const pred = predicate;
       if (isExecutablePredicate(pred.type) && command.trim() !== "") {
@@ -24939,7 +25060,11 @@ server.tool(
       }
     }
     if (refinement === "draft" && !intent) {
-      return { content: [{ type: "text", text: "ERROR: draft nodes require an intent describing what this will prove." }] };
+      return {
+        content: [
+          { type: "text", text: "ERROR: draft nodes require an intent describing what this will prove." }
+        ]
+      };
     }
     const node = {
       id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -24960,11 +25085,11 @@ server.tool(
       }
     }
     if (parent) {
-      parent.children.push(node);
+      parent.children?.push(node);
     } else {
       doc.roots.push(node);
     }
-    const fullPath = parent_path ? `${parent_path}.children.${parent.children.length - 1}` : `${doc.roots.length - 1}`;
+    const fullPath = parent_path ? `${parent_path}.children.${(parent?.children?.length ?? 0) - 1}` : `${doc.roots.length - 1}`;
     doc.amendments.push({
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
       node_path: fullPath,
@@ -24976,11 +25101,13 @@ server.tool(
     await save(doc);
     await writeMarkdown(doc);
     return {
-      content: [{
-        type: "text",
-        text: `Node "${title}" (${refinement}) added at path "${fullPath}".
+      content: [
+        {
+          type: "text",
+          text: `Node "${title}" (${refinement}) added at path "${fullPath}".
 Run dod_check to verify${refinement === "draft" ? " after refining with dod_refine" : ""}.`
-      }]
+        }
+      ]
     };
   }
 );
@@ -24996,12 +25123,18 @@ server.tool(
     if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
     const parts = nodePath.split(".");
     const lastPart = parts[parts.length - 1];
-    if (lastPart === "children") return { content: [{ type: "text", text: "ERROR: path must target a node, not 'children'." }] };
+    if (lastPart === "children")
+      return { content: [{ type: "text", text: "ERROR: path must target a node, not 'children'." }] };
     const childIdx = parseInt(lastPart, 10);
-    if (isNaN(childIdx)) return { content: [{ type: "text", text: `ERROR: invalid path "${nodePath}".` }] };
+    if (Number.isNaN(childIdx))
+      return { content: [{ type: "text", text: `ERROR: invalid path "${nodePath}".` }] };
     if (parts.length === 1) {
       if (childIdx < 0 || childIdx >= doc.roots.length) {
-        return { content: [{ type: "text", text: `ERROR: root index ${childIdx} out of range (0-${doc.roots.length - 1}).` }] };
+        return {
+          content: [
+            { type: "text", text: `ERROR: root index ${childIdx} out of range (0-${doc.roots.length - 1}).` }
+          ]
+        };
       }
       const removed2 = doc.roots.splice(childIdx, 1)[0];
       doc.amendments.push({
@@ -25014,15 +25147,29 @@ server.tool(
       doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
       await save(doc);
       await writeMarkdown(doc);
-      return { content: [{ type: "text", text: `Removed root node "${removed2.title}" (${removed2.refinement}) and all descendants.` }] };
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Removed root node "${removed2.title}" (${removed2.refinement}) and all descendants.`
+          }
+        ]
+      };
     }
     const parentPath = parts.slice(0, -1).join(".");
     const parent = findNodeByPath(doc.roots, parentPath);
-    if (!parent || !parent.children) {
+    if (!parent?.children) {
       return { content: [{ type: "text", text: `ERROR: parent not found at "${parentPath}".` }] };
     }
     if (childIdx < 0 || childIdx >= parent.children.length) {
-      return { content: [{ type: "text", text: `ERROR: child index ${childIdx} out of range (0-${parent.children.length - 1}).` }] };
+      return {
+        content: [
+          {
+            type: "text",
+            text: `ERROR: child index ${childIdx} out of range (0-${parent.children.length - 1}).`
+          }
+        ]
+      };
     }
     const removed = parent.children.splice(childIdx, 1)[0];
     doc.amendments.push({
@@ -25035,7 +25182,11 @@ server.tool(
     doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
     await save(doc);
     await writeMarkdown(doc);
-    return { content: [{ type: "text", text: `Removed node "${removed.title}" (${removed.refinement}) and all descendants.` }] };
+    return {
+      content: [
+        { type: "text", text: `Removed node "${removed.title}" (${removed.refinement}) and all descendants.` }
+      ]
+    };
   }
 );
 function findNodeInTree(roots, proofId) {
@@ -25074,10 +25225,21 @@ server.tool(
     const node = findNodeInTree(doc.roots, proof_id);
     if (!node) return { content: [{ type: "text", text: `ERROR: proof "${proof_id}" not found.` }] };
     if (node.predicate?.type !== "manual" && node.predicate?.type !== "review") {
-      return { content: [{ type: "text", text: `ERROR: proof "${proof_id}" is "${node.predicate?.type ?? "unknown"}" \u2014 only manual/review proofs are verified out-of-band.` }] };
+      return {
+        content: [
+          {
+            type: "text",
+            text: `ERROR: proof "${proof_id}" is "${node.predicate?.type ?? "unknown"}" \u2014 only manual/review proofs are verified out-of-band.`
+          }
+        ]
+      };
     }
     if (node.refinement !== "concrete") {
-      return { content: [{ type: "text", text: `ERROR: proof "${proof_id}" is a draft \u2014 refine with dod_refine first.` }] };
+      return {
+        content: [
+          { type: "text", text: `ERROR: proof "${proof_id}" is a draft \u2014 refine with dod_refine first.` }
+        ]
+      };
     }
     const label = node.predicate.type === "review" ? "Code review" : "Manual verification";
     const resolution = await resolveManual(node, buildConfirmer(), label);
@@ -25087,16 +25249,18 @@ server.tool(
     await save(doc);
     await writeMarkdown(doc);
     return {
-      content: [{
-        type: "text",
-        text: [
-          `## Manual verification: ${resolution.status.toUpperCase()}`,
-          "",
-          resolution.output,
-          "",
-          "Run dod_check to fold this into the overall verdict."
-        ].join("\n")
-      }]
+      content: [
+        {
+          type: "text",
+          text: [
+            `## Manual verification: ${resolution.status.toUpperCase()}`,
+            "",
+            resolution.output,
+            "",
+            "Run dod_check to fold this into the overall verdict."
+          ].join("\n")
+        }
+      ]
     };
   }
 );
@@ -25113,24 +25277,30 @@ server.tool(
     else if (mdPath) doc = await findByPath(mdPath);
     if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
     if (!doc.last_check) {
-      return { content: [{ type: "text", text: `DoD "${doc.title}" has never been checked. Run dod_check first.` }] };
+      return {
+        content: [{ type: "text", text: `DoD "${doc.title}" has never been checked. Run dod_check first.` }]
+      };
     }
     const concreteLeaves = flattenConcreteLeaves(doc.roots);
     const draftCount = countDraftNodes(doc.roots);
-    const passed = concreteLeaves.filter((l) => l.node.last_status === "pass" || l.node.last_status === "skipped").length;
+    const passed = concreteLeaves.filter(
+      (l) => l.node.last_status === "pass" || l.node.last_status === "skipped"
+    ).length;
     return {
-      content: [{
-        type: "text",
-        text: [
-          `DoD: ${doc.title}`,
-          `ID: ${doc.id}`,
-          `Last check: ${doc.last_check.timestamp}`,
-          `Overall: ${doc.last_check.overall.toUpperCase()}`,
-          `Concrete proofs: ${passed}/${concreteLeaves.length} pass${draftCount > 0 ? `, ${draftCount} draft node(s)` : ""}`,
-          "",
-          `Summary: ${doc.last_check.summary}`
-        ].join("\n")
-      }]
+      content: [
+        {
+          type: "text",
+          text: [
+            `DoD: ${doc.title}`,
+            `ID: ${doc.id}`,
+            `Last check: ${doc.last_check.timestamp}`,
+            `Overall: ${doc.last_check.overall.toUpperCase()}`,
+            `Concrete proofs: ${passed}/${concreteLeaves.length} pass${draftCount > 0 ? `, ${draftCount} draft node(s)` : ""}`,
+            "",
+            `Summary: ${doc.last_check.summary}`
+          ].join("\n")
+        }
+      ]
     };
   }
 );
@@ -25151,10 +25321,19 @@ server.tool(
     const node = findNodeByPath(doc.roots, nodePath);
     if (!node) return { content: [{ type: "text", text: `ERROR: node not found at path "${nodePath}".` }] };
     if (node.refinement !== "concrete") {
-      return { content: [{ type: "text", text: `ERROR: node is a draft. Use dod_refine to concretize it first.` }] };
+      return {
+        content: [{ type: "text", text: `ERROR: node is a draft. Use dod_refine to concretize it first.` }]
+      };
     }
     if (new_predicate && !isExecutablePredicate(new_predicate.type) && node.predicate && isExecutablePredicate(node.predicate.type)) {
-      return { content: [{ type: "text", text: "ERROR: Cannot convert a machine-checkable proof to manual or review \u2014 this would bypass verification." }] };
+      return {
+        content: [
+          {
+            type: "text",
+            text: "ERROR: Cannot convert a machine-checkable proof to manual or review \u2014 this would bypass verification."
+          }
+        ]
+      };
     }
     const effectivePredicate = new_predicate ?? node.predicate;
     const effectiveCommand = new_command ?? node.command ?? "";
@@ -25178,55 +25357,58 @@ server.tool(
       node_path: nodePath,
       action: "modified",
       old_value: oldSnapshot,
-      new_value: { command: node.command, predicate: node.predicate ? { ...node.predicate } : void 0, description: node.description },
+      new_value: {
+        command: node.command,
+        predicate: node.predicate ? { ...node.predicate } : void 0,
+        description: node.description
+      },
       reason
     });
     doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
     await save(doc);
     await writeMarkdown(doc);
     return {
-      content: [{
-        type: "text",
-        text: [
-          "Proof amended and logged.",
-          "",
-          `Node: ${node.title}`,
-          `Old command: \`${oldSnapshot.command}\``,
-          `New command: \`${node.command}\``,
-          `Reason: ${reason}`,
-          "",
-          "Status reset to pending. Run dod_check to re-verify."
-        ].join("\n")
-      }]
+      content: [
+        {
+          type: "text",
+          text: [
+            "Proof amended and logged.",
+            "",
+            `Node: ${node.title}`,
+            `Old command: \`${oldSnapshot.command}\``,
+            `New command: \`${node.command}\``,
+            `Reason: ${reason}`,
+            "",
+            "Status reset to pending. Run dod_check to re-verify."
+          ].join("\n")
+        }
+      ]
     };
   }
 );
-server.tool(
-  "dod_list",
-  "List all tracked DoD documents with their last check status.",
-  {},
-  async () => {
-    const docs = await listAll();
-    if (docs.length === 0) {
-      return { content: [{ type: "text", text: "No DoD documents tracked. Use dod_create or dod_import to add one." }] };
-    }
-    const lines = docs.map((d) => {
-      const status = d.last_check?.overall?.toUpperCase() ?? "UNCHECKED";
-      const rootCount = d.roots.length;
-      const concreteCount = flattenConcreteLeaves(d.roots).length;
-      const draftCount = countDraftNodes(d.roots);
-      const draftTag = draftCount > 0 ? ` (${draftCount} draft)` : "";
-      return [
-        `\u2022 ${d.title}`,
-        `  ID: ${d.id}`,
-        `  Path: ${d.markdown_path}`,
-        `  Status: ${status} | ${rootCount} roots, ${concreteCount} concrete proofs${draftTag}`,
-        `  Last check: ${d.last_check?.timestamp ?? "never"}`
-      ].join("\n");
-    });
-    return { content: [{ type: "text", text: lines.join("\n\n") }] };
+server.tool("dod_list", "List all tracked DoD documents with their last check status.", {}, async () => {
+  const docs = await listAll();
+  if (docs.length === 0) {
+    return {
+      content: [{ type: "text", text: "No DoD documents tracked. Use dod_create or dod_import to add one." }]
+    };
   }
-);
+  const lines = docs.map((d) => {
+    const status = d.last_check?.overall?.toUpperCase() ?? "UNCHECKED";
+    const rootCount = d.roots.length;
+    const concreteCount = flattenConcreteLeaves(d.roots).length;
+    const draftCount = countDraftNodes(d.roots);
+    const draftTag = draftCount > 0 ? ` (${draftCount} draft)` : "";
+    return [
+      `\u2022 ${d.title}`,
+      `  ID: ${d.id}`,
+      `  Path: ${d.markdown_path}`,
+      `  Status: ${status} | ${rootCount} roots, ${concreteCount} concrete proofs${draftTag}`,
+      `  Last check: ${d.last_check?.timestamp ?? "never"}`
+    ].join("\n");
+  });
+  return { content: [{ type: "text", text: lines.join("\n\n") }] };
+});
 server.tool(
   "dod_import",
   "Import an existing DoD markdown file into canonical MCP storage. Parses hierarchical tree structure, infers predicates, and stores them.",
@@ -25238,10 +25420,12 @@ server.tool(
     const existing = await findByPath(mdPath);
     if (existing) {
       return {
-        content: [{
-          type: "text",
-          text: `Already tracked as "${existing.title}" (ID: ${existing.id}). Use dod_check to verify.`
-        }]
+        content: [
+          {
+            type: "text",
+            text: `Already tracked as "${existing.title}" (ID: ${existing.id}). Use dod_check to verify.`
+          }
+        ]
       };
     }
     try {
@@ -25268,21 +25452,23 @@ server.tool(
       const concreteCount = flattenConcreteLeaves(parsed.roots).length;
       const draftCount = countDraftNodes(parsed.roots);
       return {
-        content: [{
-          type: "text",
-          text: [
-            "DoD imported.",
-            "",
-            `ID: ${id}`,
-            `Title: ${doc.title}`,
-            `Roots: ${doc.roots.length}`,
-            `Concrete proofs: ${concreteCount}`,
-            `Draft nodes: ${draftCount}`,
-            `Cwd: ${resolvedCwd}`,
-            "",
-            "Use dod_check to run verification."
-          ].join("\n")
-        }]
+        content: [
+          {
+            type: "text",
+            text: [
+              "DoD imported.",
+              "",
+              `ID: ${id}`,
+              `Title: ${doc.title}`,
+              `Roots: ${doc.roots.length}`,
+              `Concrete proofs: ${concreteCount}`,
+              `Draft nodes: ${draftCount}`,
+              `Cwd: ${resolvedCwd}`,
+              "",
+              "Use dod_check to run verification."
+            ].join("\n")
+          }
+        ]
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -25291,12 +25477,15 @@ server.tool(
     }
   }
 );
+var _dodGuardFilename = fileURLToPath(import.meta.url);
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
-main().catch((err) => {
-  process.stderr.write(`dod-guard MCP server failed: ${err}
+if (process.argv[1] === _dodGuardFilename) {
+  main().catch((err) => {
+    process.stderr.write(`dod-guard MCP server failed: ${err}
 `);
-  process.exit(1);
-});
+    process.exit(1);
+  });
+}
