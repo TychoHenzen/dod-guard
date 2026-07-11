@@ -311,103 +311,75 @@ function buildReplRatioFail(r: BrevityReport, max: number, minRatio: number): st
   return l.join("\n");
 }
 
-async function hLineLength(
-  n: TaskNode, r: RunResult, b: Record<string, unknown>,
-  cmd: string, cwd: string,
-): Promise<LeafResult> {
-  const max = (n.predicate!.value as number) ?? 0;
-  const opts: BrevityOpts = {
-    ...DEFAULT_BREVITY_OPTS,
-    maxLineLength: n.predicate!.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
-  };
-  let report = analyseBrevity(cmd, cwd, opts);
-  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
-  if (!report)
-    return mk(b, { status: "fail", output: r.combined,
-      error: "line_length: no source files",
-      exit_code: r.exitCode, duration_ms: r.duration });
-  const count = report.violations.filter(v => v.kind === "line_too_long").length;
-  const passed = count <= max;
-  return mk(b, { status: passed ? "pass" : "fail", output: r.combined,
-    error: passed
-      ? `line_length: all lines ≤ ${opts.maxLineLength} chars`
-      : buildLineLenFail(report, max, opts.maxLineLength),
-    exit_code: r.exitCode, duration_ms: r.duration });
+// ── Shared brevity handler — parameterizes the 4 identical decompose-brevity handlers ──
+
+type BrevityErrLabel = "line_length" | "function_size" | "file_size" | "cohesion";
+
+interface BrevityHandlerConfig {
+  label: BrevityErrLabel;
+  optsOverride: (p: Predicate) => Partial<BrevityOpts>;
+  violationFilter: (v: BrevityViolation) => boolean;
+  passMsg: string;
+  buildFail: (report: BrevityReport, max: number, opts: BrevityOpts) => string;
 }
 
-async function hFunctionSize(
-  n: TaskNode, r: RunResult, b: Record<string, unknown>,
-  cmd: string, cwd: string,
-): Promise<LeafResult> {
-  const max = (n.predicate!.value as number) ?? 0;
-  const opts: BrevityOpts = {
-    ...DEFAULT_BREVITY_OPTS,
-    maxFunctionLines: n.predicate!.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines,
-  };
-  let report = analyseBrevity(cmd, cwd, opts);
-  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
-  if (!report)
-    return mk(b, { status: "fail", output: r.combined,
-      error: "function_size: no source files",
-      exit_code: r.exitCode, duration_ms: r.duration });
-  const count = report.violations.filter(v => v.kind === "function_too_long").length;
-  const passed = count <= max;
-  return mk(b, { status: passed ? "pass" : "fail", output: r.combined,
-    error: passed
-      ? `function_size: all functions ≤ ${opts.maxFunctionLines} lines`
-      : buildFnSizeFail(report, max, opts.maxFunctionLines),
-    exit_code: r.exitCode, duration_ms: r.duration });
-}
+const BREVITY_LINE_LENGTH: BrevityHandlerConfig = {
+  label: "line_length",
+  optsOverride: (p) => ({ maxLineLength: p.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength }),
+  violationFilter: (v) => v.kind === "line_too_long",
+  passMsg: (() => { const o = DEFAULT_BREVITY_OPTS; return `line_length: all lines ≤ ${o.maxLineLength} chars`; })(),
+  buildFail: (r, max, opts) => buildLineLenFail(r, max, opts.maxLineLength),
+};
 
-async function hFileSize(
-  n: TaskNode, r: RunResult, b: Record<string, unknown>,
-  cmd: string, cwd: string,
-): Promise<LeafResult> {
-  const max = (n.predicate!.value as number) ?? 0;
-  const opts: BrevityOpts = {
-    ...DEFAULT_BREVITY_OPTS,
-    maxFileLines: n.predicate!.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines,
-  };
-  let report = analyseBrevity(cmd, cwd, opts);
-  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
-  if (!report)
-    return mk(b, { status: "fail", output: r.combined,
-      error: "file_size: no source files",
-      exit_code: r.exitCode, duration_ms: r.duration });
-  const count = report.violations.filter(v => v.kind === "file_too_long").length;
-  const passed = count <= max;
-  return mk(b, { status: passed ? "pass" : "fail", output: r.combined,
-    error: passed
-      ? `file_size: all files ≤ ${opts.maxFileLines} lines`
-      : buildFileSizeFail(report, max, opts.maxFileLines),
-    exit_code: r.exitCode, duration_ms: r.duration });
-}
+const BREVITY_FUNCTION_SIZE: BrevityHandlerConfig = {
+  label: "function_size",
+  optsOverride: (p) => ({ maxFunctionLines: p.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines }),
+  violationFilter: (v) => v.kind === "function_too_long",
+  passMsg: (() => { const o = DEFAULT_BREVITY_OPTS; return `function_size: all functions ≤ ${o.maxFunctionLines} lines`; })(),
+  buildFail: (r, max, opts) => buildFnSizeFail(r, max, opts.maxFunctionLines),
+};
 
-async function hCohesion(
-  n: TaskNode, r: RunResult, b: Record<string, unknown>,
-  cmd: string, cwd: string,
-): Promise<LeafResult> {
-  const max = (n.predicate!.value as number) ?? 0;
-  const p = n.predicate!;
-  const opts: BrevityOpts = {
-    ...DEFAULT_BREVITY_OPTS,
+const BREVITY_FILE_SIZE: BrevityHandlerConfig = {
+  label: "file_size",
+  optsOverride: (p) => ({ maxFileLines: p.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines }),
+  violationFilter: (v) => v.kind === "file_too_long",
+  passMsg: (() => { const o = DEFAULT_BREVITY_OPTS; return `file_size: all files ≤ ${o.maxFileLines} lines`; })(),
+  buildFail: (r, max, opts) => buildFileSizeFail(r, max, opts.maxFileLines),
+};
+
+const BREVITY_COHESION: BrevityHandlerConfig = {
+  label: "cohesion",
+  optsOverride: (p) => ({
     maxComplexity: p.max_complexity ?? DEFAULT_BREVITY_OPTS.maxComplexity,
     requireGuardClauses: p.require_guard_clauses ?? DEFAULT_BREVITY_OPTS.requireGuardClauses,
     suggestGuardClauses: p.suggest_guard_clauses ?? DEFAULT_BREVITY_OPTS.suggestGuardClauses,
-  };
+  }),
+  violationFilter: (v) => {
+    const kinds: BrevityViolation["kind"][] = ["high_complexity", "unnecessary_else", "else_avoidable"];
+    return kinds.includes(v.kind);
+  },
+  passMsg: (() => { const o = DEFAULT_BREVITY_OPTS; return `cohesion: 0 violations (CC≤${o.maxComplexity}, guards checked)`; })(),
+  buildFail: (r, max) => buildCohesionFail(r, max),
+};
+
+async function hBrevity(
+  n: TaskNode, r: RunResult, b: Record<string, unknown>,
+  cmd: string, cwd: string, config: BrevityHandlerConfig,
+): Promise<LeafResult> {
+  const max = (n.predicate!.value as number) ?? 0;
+  const opts: BrevityOpts = { ...DEFAULT_BREVITY_OPTS, ...config.optsOverride(n.predicate!) };
+
   let report = analyseBrevity(cmd, cwd, opts);
   if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
   if (!report)
     return mk(b, { status: "fail", output: r.combined,
-      error: "cohesion: no source files",
+      error: `${config.label}: no source files`,
       exit_code: r.exitCode, duration_ms: r.duration });
-  const kinds: BrevityViolation["kind"][] = ["high_complexity", "unnecessary_else", "else_avoidable"];
-  const count = report.violations.filter(v => kinds.includes(v.kind)).length;
+
+  const count = report.violations.filter(config.violationFilter).length;
   const passed = count <= max;
   return mk(b, { status: passed ? "pass" : "fail", output: r.combined,
-    error: passed
-      ? `cohesion: 0 violations (CC≤${opts.maxComplexity}, guards checked)`
-      : buildCohesionFail(report, max),
+    error: passed ? config.passMsg : config.buildFail(report, max, opts),
     exit_code: r.exitCode, duration_ms: r.duration });
 }
 
@@ -485,10 +457,10 @@ export async function executeProof(
     case "assertions": return hAssert(node, run, base, cmd, cwd);
     case "observability": return hObs(node, run, base, cmd, cwd);
     case "brevity": return hBrev(node, run, base, cmd, cwd);
-    case "line_length": return hLineLength(node, run, base, cmd, cwd);
-    case "function_size": return hFunctionSize(node, run, base, cmd, cwd);
-    case "file_size": return hFileSize(node, run, base, cmd, cwd);
-    case "cohesion": return hCohesion(node, run, base, cmd, cwd);
+    case "line_length": return hBrevity(node, run, base, cmd, cwd, BREVITY_LINE_LENGTH);
+    case "function_size": return hBrevity(node, run, base, cmd, cwd, BREVITY_FUNCTION_SIZE);
+    case "file_size": return hBrevity(node, run, base, cmd, cwd, BREVITY_FILE_SIZE);
+    case "cohesion": return hBrevity(node, run, base, cmd, cwd, BREVITY_COHESION);
     case "replacement_ratio": return hReplacementRatio(node, run, base, cmd, cwd);
     case "tdd": return hTdd(node, run, base, cmd, cwd);
     default: break;

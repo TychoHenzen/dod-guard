@@ -302,33 +302,23 @@ export class Store {
   }
 
   setIndexMeta(vaultName: string, data: Partial<IndexStatus>): void {
-    // Only known DB columns — indexing is a transient flag, not a column.
-    const dbCols = ["total_notes", "indexed_notes", "total_chunks", "embedded_chunks", "last_indexed"] as const;
-    const keyMap: Record<string, keyof Partial<IndexStatus>> = {
-      total_notes: "totalNotes",
-      indexed_notes: "indexedNotes",
-      total_chunks: "totalChunks",
-      embedded_chunks: "embeddedChunks",
-      last_indexed: "lastIndexed",
-    };
+    const pairs: [string, unknown][] = [];
+    if (data.totalNotes !== undefined) pairs.push(["total_notes", data.totalNotes]);
+    if (data.indexedNotes !== undefined) pairs.push(["indexed_notes", data.indexedNotes]);
+    if (data.totalChunks !== undefined) pairs.push(["total_chunks", data.totalChunks]);
+    if (data.embeddedChunks !== undefined) pairs.push(["embedded_chunks", data.embeddedChunks]);
+    if (data.lastIndexed !== undefined) pairs.push(["last_indexed", data.lastIndexed]);
 
-    const fields: string[] = [];
-    const values: any[] = [vaultName];
+    if (pairs.length === 0) return;
 
-    for (const col of dbCols) {
-      const key = keyMap[col];
-      if (data[key] !== undefined) {
-        fields.push(`${col} = ?`);
-        values.push(data[key]);
-      }
-    }
-
-    if (fields.length === 0) return;
+    const colNames = pairs.map(([col]) => col);
+    const values: unknown[] = [vaultName, ...pairs.map(([, v]) => v)];
+    const placeholders = values.map(() => "?").join(", ");
 
     this.db.prepare(`
-      INSERT INTO index_meta (vault_name${fields.map(f => `, ${f.split(" = ")[0]}`).join("")})
-      VALUES (${values.map(() => "?").join(", ")})
-      ON CONFLICT(vault_name) DO UPDATE SET ${fields.map(f => `${f.split(" = ")[0]} = excluded.${f.split(" = ")[0]}`).join(", ")}
+      INSERT INTO index_meta (vault_name, ${colNames.join(", ")})
+      VALUES (${placeholders})
+      ON CONFLICT(vault_name) DO UPDATE SET ${colNames.map(c => `${c} = excluded.${c}`).join(", ")}
     `).run(...values);
   }
 
