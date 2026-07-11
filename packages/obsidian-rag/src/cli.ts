@@ -83,8 +83,8 @@ export async function getVaultInfo(vaultName: string): Promise<Partial<VaultInfo
       const val = parts[1].trim();
       if (key === "name") m.name = val;
       if (key === "path") m.path = val;
-      if (key === "files") m.noteCount = parseInt(val, 10) || 0;
-      if (key === "folders") m.folderCount = parseInt(val, 10) || 0;
+      if (key === "files") m.noteCount = Number.parseInt(val, 10) || 0;
+      if (key === "folders") m.folderCount = Number.parseInt(val, 10) || 0;
       if (key === "size") m.size = val;
     }
   }
@@ -162,7 +162,7 @@ export async function cliGetTags(vaultName: string): Promise<Map<string, number>
     const parts = trimmed.split("\t");
     if (parts.length >= 2) {
       const tag = parts[0].replace(/^#/, "").trim();
-      const count = parseInt(parts[1], 10) || 0;
+      const count = Number.parseInt(parts[1], 10) || 0;
       if (tag) counts.set(tag, count);
     }
   }

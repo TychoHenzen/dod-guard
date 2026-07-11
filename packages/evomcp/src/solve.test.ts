@@ -1,8 +1,9 @@
 // Unit tests for solve.ts and agent.ts helpers.
 // Tests internal pure functions only — does NOT spawn claude -p subprocesses.
-import { describe, it } from "node:test";
+
 import assert from "node:assert";
-import { hashFailure, toVerdict, strategyPrompts, repairPrompt } from "./agent.js";
+import { describe, it } from "node:test";
+import { hashFailure, repairPrompt, strategyPrompts, toVerdict } from "./agent.js";
 
 describe("hashFailure", () => {
   it("returns a string hash", () => {

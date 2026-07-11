@@ -13,18 +13,18 @@
  *  6. All lineages exhausted → escalate to parent Claude with failure report
  */
 
+import { execSync } from "node:child_process";
 import {
+  ensureProxy,
+  hashFailure,
+  repairPrompt,
+  runCommand,
   spawnClaude,
   spawnClaudeN,
-  runCommand,
-  hashFailure,
   strategyPrompts,
-  repairPrompt,
-  ensureProxy,
   toVerdict,
 } from "./agent.js";
-import type { TaskSpec, SolveResult, RunStats, EscalationReport, Candidate, Verdict } from "./types.js";
-import { execSync } from "node:child_process";
+import type { Candidate, EscalationReport, RunStats, SolveResult, TaskSpec } from "./types.js";
 
 const MAX_REPAIRS = 3;
 const DEFAULT_N = 5;

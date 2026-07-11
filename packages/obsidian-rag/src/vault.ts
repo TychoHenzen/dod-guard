@@ -2,12 +2,11 @@
 // Interactive tool calls use Obsidian CLI as source of truth.
 // Indexer (bulk) uses direct filesystem for performance — CLI would be too slow for 1000+ notes.
 
-import { readFile, writeFile, readdir, stat, mkdir } from "node:fs/promises";
-import { join, relative, basename, dirname, extname } from "node:path";
 import { existsSync } from "node:fs";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { basename, dirname, join, relative } from "node:path";
 import matter from "gray-matter";
-import type { NoteMeta, NoteContent, MemoryEntry } from "./types.js";
-import { cliGetBacklinks, cliGetTags } from "./cli.js";
+import type { MemoryEntry, NoteContent, NoteMeta } from "./types.js";
 
 // ── File discovery (FS — bulk indexing perf) ─────────────────────────────
 

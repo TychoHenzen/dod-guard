@@ -2,14 +2,13 @@
 // Each tool handler is self-contained; extracted from index.ts to keep
 // main() focused on server lifecycle, state, and resource definitions.
 
-import { z } from "zod";
-import { join, basename } from "node:path";
 import { existsSync } from "node:fs";
+import { basename, join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import matter from "gray-matter";
-
-import type { VaultInfo, MemoryEntry } from "./types.js";
+import { z } from "zod";
 import type { Store } from "./store.js";
+import type { MemoryEntry, VaultInfo } from "./types.js";
 
 // ── Helpers (injected from index.ts) ────────────────────────────────────
 
@@ -29,7 +28,7 @@ interface RegisterOptions {
 }
 
 export function registerTools(server: McpServer, opts: RegisterOptions) {
-  const { getVault, waitForVault, getEmbedder, store, setSelectPromise, setSelectedVault } = opts;
+  const { getVault: _getVault, waitForVault, getEmbedder, store, setSelectPromise, setSelectedVault } = opts;
 
   // ── vault_list ────────────────────────────────────────────────────
   server.tool("vault_list", "List all known Obsidian vaults. Requires Obsidian app running.", {}, async () => {
@@ -105,7 +104,7 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         setSelectedVault(vault);
         resolveSelect?.();
 
-        const idxMsg = await indexVault(vault.path, vault.name, store);
+        const _idxMsg = await indexVault(vault.path, vault.name, store);
         const status = store.getIndexStatus(vault.name);
         return {
           content: [

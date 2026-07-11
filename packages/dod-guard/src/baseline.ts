@@ -1,5 +1,5 @@
-import type { ProofCategory } from "./types.js";
 import { DEFAULT_BREVITY_OPTS } from "./brevity.js";
+import type { ProofCategory } from "./types.js";
 
 /**
  * Create-time enforcement of the company DoD baseline (standards/dod-baselines.md).

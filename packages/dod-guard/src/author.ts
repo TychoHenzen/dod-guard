@@ -1,8 +1,8 @@
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import type { DodDocument, CheckResult, TaskNode } from "./types.js";
-import { findNodeByPath, hasDraftNodes, isBranchLocked } from "./checker.js";
 import { DEFAULT_BREVITY_OPTS } from "./brevity.js";
+import { findNodeByPath, hasDraftNodes, isBranchLocked } from "./checker.js";
+import type { CheckResult, DodDocument, TaskNode } from "./types.js";
 
 function proofMark(status: string): string {
   switch (status) {

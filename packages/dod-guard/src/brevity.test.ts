@@ -1,9 +1,9 @@
-import { describe, it, before, after } from "node:test";
 import * as assert from "node:assert/strict";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
 import { execSync } from "node:child_process";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { after, before, describe, it } from "node:test";
 import { analyseBrevity, analyseBrevityFromOutput, DEFAULT_BREVITY_OPTS } from "./brevity.js";
 
 // ── Temp dir helpers ───────────────────────────────────────────────────

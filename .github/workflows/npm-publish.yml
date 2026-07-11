@@ -50,16 +50,36 @@ jobs:
   static-analysis:
     needs: build-test
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx @biomejs/biome check packages/*/src/ --max-diagnostics=50 --no-errors-on-unmatched
-      - run: |
+
+      # Autofix: apply Biome fixes, commit + push if any changes.
+      - name: Biome autofix
+        run: npx @biomejs/biome check --write --unsafe packages/*/src/ --no-errors-on-unmatched
+      - name: Commit & push autofixes
+        run: |
+          if ! git diff --exit-code --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "chore: apply stricter Biome autofixes [skip ci]"
+            git push origin master
+          fi
+
+      # Strict check: must be clean after autofix.
+      - name: Biome strict check
+        run: npx @biomejs/biome check packages/*/src/ --max-diagnostics=200 --no-errors-on-unmatched
+
+      # Coverage gaps
+      - name: Missing test coverage
+        run: |
           echo "=== Missing test coverage ==="
           for pkg in dod-guard evomcp gitevo obsidian-rag; do
             srcs=$(find packages/$pkg/src -name '*.ts' ! -name '*.test.ts' ! -name 'types.ts' ! -name 'constants.ts' | sort)
@@ -73,15 +93,18 @@ jobs:
             done
           done
           echo "=== Done ==="
-      - run: |
+
+      # Brevity checks
+      - name: Brevity — files > 300 lines
+        run: |
           echo "=== Brevity: files > 300 lines ==="
           find packages/*/src -name '*.ts' ! -name '*.test.ts' -exec wc -l {} + | awk '$1 > 300 {print "  ⚠", $2, "(" $1 " lines)"}'
           echo "=== Done ==="
 
-  # ── Publish: fires when matching tag points at HEAD ──────────────────
+  # ── Publish: fires when matching tag points at HEAD AND static-analysis passes ──
 
   publish-dod-guard:
-    needs: build-test
+    needs: [build-test, static-analysis]
     if: contains(needs.build-test.outputs.tags, 'dod-guard-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'dod-guard' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     permissions:
@@ -98,7 +121,7 @@ jobs:
       - run: npm publish -w packages/dod-guard
 
   publish-evomcp:
-    needs: build-test
+    needs: [build-test, static-analysis]
     if: contains(needs.build-test.outputs.tags, 'evomcp-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'evomcp' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     permissions:
@@ -115,7 +138,7 @@ jobs:
       - run: npm publish -w packages/evomcp
 
   publish-gitevo:
-    needs: build-test
+    needs: [build-test, static-analysis]
     if: contains(needs.build-test.outputs.tags, 'gitevo-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'gitevo' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     permissions:
@@ -132,7 +155,7 @@ jobs:
       - run: npm publish -w packages/gitevo
 
   publish-obsidian-rag:
-    needs: build-test
+    needs: [build-test, static-analysis]
     if: contains(needs.build-test.outputs.tags, 'obsidian-rag-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'obsidian-rag' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     permissions:

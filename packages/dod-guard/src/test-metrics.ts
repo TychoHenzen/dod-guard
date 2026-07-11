@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import * as path from "node:path";
 
 /**
@@ -112,7 +112,7 @@ const JS_TEST_FN = [
   /\b(?:test|it)\s*\(\s*["'`]([^"'`]+)["'`]/,
   /(?:(?:test|it)\s*\(\s*["'`][^"'`]*["'`]\s*,?\s*(?:async\s*)?\s*(?:function\s*)?\([^)]*\)\s*\{?)/,
 ];
-const JS_TEST_BODY: RegExp[] = JS_TEST_FN;
+const _JS_TEST_BODY: RegExp[] = JS_TEST_FN;
 const JS_SKIP = /\b(?:test|it)\.skip\b/;
 
 const PY_TEST_FN = /^\s*def\s+(test\w+)\s*\(/;
@@ -127,7 +127,7 @@ const CS_FN_NAME = /^\s*(?:public|private|protected|internal|static|async|virtua
 const CS_SKIP = /\[Ignore\]/;
 
 const GO_TEST_FN = /^func\s+(Test\w+)\s*\(/;
-const GO_SKIP = /t\.Skip\(\)/;
+const _GO_SKIP = /t\.Skip\(\)/;
 
 function detectTestFunctions(lines: string[], lang: Language): TestFn[] {
   if (!lang) return [];
@@ -327,7 +327,7 @@ function countAssertions(
   const truthinessRes = TRUTHINESS_PATTERNS[lang] || [];
   const trivialRes = TRIVIAL_PATTERNS[lang] || [];
   const messageRe = MESSAGE_PATTERNS[lang];
-  const trivialResFull = [...trivialRes, ...truthinessRes]; // truthiness assertions are non-trivial but also not "just constants"
+  const _trivialResFull = [...trivialRes, ...truthinessRes]; // truthiness assertions are non-trivial but also not "just constants"
 
   let total = 0,
     trivial = 0,
@@ -654,7 +654,7 @@ function detectClarity(
   const magicRe = /assert\w*\s*\(\s*\w+\s*,\s*(\d+)\s*\)/g;
   for (const line of lines) {
     for (const m of line.matchAll(magicRe)) {
-      const val = parseInt(m[1], 10);
+      const val = Number.parseInt(m[1], 10);
       if (val > 1 && val !== 42 && val !== 100 && val !== 200 && val !== 404 && val !== 500) {
         magicCount++;
       }
@@ -662,7 +662,7 @@ function detectClarity(
     // Also detect in expect().toBe(number)
     const expectNum = line.matchAll(/\.toBe\s*\(\s*(\d+)\s*\)/g);
     for (const em of expectNum) {
-      const val = parseInt(em[1], 10);
+      const val = Number.parseInt(em[1], 10);
       if (val > 1 && val !== 42 && val !== 200 && val !== 404 && val !== 500 && val !== 100) {
         magicCount++;
       }
@@ -847,7 +847,7 @@ function isTestFile(filePath: string): boolean {
   return TEST_FILE_PATTERNS.some((p) => p.test(base));
 }
 
-function isSourceFile(fp: string): boolean {
+function _isSourceFile(fp: string): boolean {
   return SOURCE_EXTS.has(path.extname(fp).toLowerCase());
 }
 
@@ -1079,7 +1079,7 @@ export function scoreFromMetrics(m: TestFileMetrics): {
   const assertion_triviality = trivialScore;
 
   // Overall (weighted)
-  const overall = parseFloat(
+  const overall = Number.parseFloat(
     (
       (assertion_quality * 2 +
         determinism * 2 +

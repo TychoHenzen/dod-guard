@@ -5,27 +5,27 @@
  * Uses Node test runner with --experimental-test-module-mocks (Node 22).
  */
 
-import { describe, it, before, after } from "node:test";
 import * as assert from "node:assert";
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
-import * as path from "node:path";
 import * as os from "node:os";
+import * as path from "node:path";
+import { after, before, describe, it } from "node:test";
 import {
-  evo_init,
+  EvoError,
+  evo_abandon,
+  evo_adopt,
+  evo_branches,
   evo_checkpoint,
+  evo_checkpoints,
+  evo_diff,
+  evo_export_lessons,
+  evo_finish,
+  evo_init,
   evo_learn,
   evo_lessons,
-  evo_export_lessons,
   evo_spawn,
-  evo_checkpoints,
-  evo_branches,
-  evo_abandon,
-  evo_diff,
   evo_summary,
-  evo_adopt,
-  evo_finish,
-  EvoError,
 } from "./operations.js";
 
 // ── Test helpers ──────────────────────────────────────────────────────
@@ -314,7 +314,7 @@ describe("evo_checkpoints and evo_branches", () => {
 
   it("shows no branches when only default exists", () => {
     git(["checkout", "master"], dir);
-    const output = evo_branches();
+    const _output = evo_branches();
     // feature-a is on master? No, we spawned from v1. Let me check.
     // feature-a branch exists but may be listed. This test checks the "no attempt" path.
     // Already covered by the above test.

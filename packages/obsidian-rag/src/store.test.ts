@@ -8,11 +8,11 @@
  * Each suite gets its own temp directory for complete isolation.
  */
 
-import { describe, it, before, after } from "node:test";
 import * as assert from "node:assert/strict";
-import { rmSync, mkdirSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { after, before, describe, it } from "node:test";
 import { Store } from "./store.js";
 
 function freshDir(prefix: string): string {

@@ -4,18 +4,18 @@
 // Interactive tools use Obsidian CLI as source of truth (v1.12+).
 // Indexer uses filesystem for bulk performance (CLI too slow for 1000+ notes).
 
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { McpServer, type ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { join } from "node:path";
-import { homedir } from "node:os";
-import { existsSync, readFileSync } from "node:fs";
 
 import { listVaults } from "./cli.js";
-import { readNote } from "./vault.js";
+import type { Embedder } from "./retriever.js";
 import { Store } from "./store.js";
 import { registerTools } from "./tools.js";
 import type { VaultInfo } from "./types.js";
-import type { Embedder } from "./retriever.js";
+import { readNote } from "./vault.js";
 
 // ── State ────────────────────────────────────────────────────────────────
 
@@ -162,6 +162,7 @@ async function main() {
 }
 
 import { fileURLToPath } from "node:url";
+
 const _obsidianRagFilename = fileURLToPath(import.meta.url);
 
 if (process.argv[1] === _obsidianRagFilename) {

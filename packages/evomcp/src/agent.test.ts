@@ -1,6 +1,6 @@
-import { describe, it } from "node:test";
 import * as assert from "node:assert/strict";
-import { hashFailure, extractScore, toVerdict, strategyPrompts, repairPrompt, mutationPrompt } from "./agent.js";
+import { describe, it } from "node:test";
+import { extractScore, hashFailure, mutationPrompt, repairPrompt, strategyPrompts, toVerdict } from "./agent.js";
 
 describe("hashFailure", () => {
   it("returns a hex string", () => {

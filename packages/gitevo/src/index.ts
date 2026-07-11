@@ -12,20 +12,20 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import {
-  evo_init,
+  EvoError,
+  evo_abandon,
+  evo_adopt,
+  evo_branches,
   evo_checkpoint,
+  evo_checkpoints,
+  evo_diff,
+  evo_export_lessons,
+  evo_finish,
+  evo_init,
   evo_learn,
   evo_lessons,
-  evo_export_lessons,
   evo_spawn,
-  evo_checkpoints,
-  evo_branches,
-  evo_abandon,
-  evo_diff,
   evo_summary,
-  evo_adopt,
-  evo_finish,
-  EvoError,
 } from "./operations.js";
 
 const server = new McpServer({
@@ -188,7 +188,7 @@ server.tool(
 );
 
 import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
+
 const __filename = fileURLToPath(import.meta.url);
 
 // ── Start (only when run directly, not when imported by tests) ─────────

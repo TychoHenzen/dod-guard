@@ -1,9 +1,9 @@
-import { test, before, after, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync, chmodSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { generateId, save, load, findByPath, listAll, remove } from "./store.js";
+import { join } from "node:path";
+import { afterEach, beforeEach, test } from "node:test";
+import { findByPath, generateId, listAll, load, remove, save } from "./store.js";
 import type { DodDocument } from "./types.js";
 
 // ── Per-test isolation ────────────────────────────────────────────────────

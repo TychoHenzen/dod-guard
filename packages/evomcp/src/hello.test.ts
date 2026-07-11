@@ -1,14 +1,14 @@
 // Unit tests for hello.ts — pure functions, formatters, CLI parsing.
 
-import { describe, it } from "node:test";
 import assert from "node:assert";
+import { describe, it } from "node:test";
 import {
   createGreeting,
-  normalizeName,
-  parseArgs,
   DEFAULT_NAME,
   DefaultFormatter,
   LoudFormatter,
+  normalizeName,
+  parseArgs,
   ReversedFormatter,
 } from "./hello.js";
 

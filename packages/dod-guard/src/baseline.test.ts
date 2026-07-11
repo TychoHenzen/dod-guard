@@ -1,6 +1,6 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validateBaseline, type BaselineStepInput } from "./baseline.js";
+import { test } from "node:test";
+import { type BaselineStepInput, validateBaseline } from "./baseline.js";
 import type { ProofCategory } from "./types.js";
 
 function step(title: string, ...cats: ProofCategory[]): BaselineStepInput {

@@ -346,7 +346,7 @@ export function checkUnnecessaryElse(bodyLines: string[], lang: Language): { cou
   if (!lang) return { count: 0 };
   const elseRe = ELSE_PATTERNS[lang];
   const jumpRe = JUMP_PATTERNS[lang];
-  if (!elseRe || !jumpRe) return { count: 0 };
+  if (!(elseRe && jumpRe)) return { count: 0 };
 
   let count = 0;
 
@@ -421,12 +421,12 @@ export function checkAvoidableElse(bodyLines: string[], lang: Language): { count
   if (!lang) return { count: 0 };
   const elseRe = ELSE_PATTERNS[lang];
   const jumpRe = JUMP_PATTERNS[lang];
-  if (!elseRe || !jumpRe) return { count: 0 };
+  if (!(elseRe && jumpRe)) return { count: 0 };
 
   // Phase 1: scan for ANY existing guard clause (if + exit, no else needed)
   let hasGuardClause = false;
   for (let i = 0; i < bodyLines.length; i++) {
-    const stripped = stripStringsAndComments(bodyLines[i]);
+    const _stripped = stripStringsAndComments(bodyLines[i]);
     const trimmed = bodyLines[i].trim();
 
     // Check for if/elif that ends with a jump (but is NOT followed by else)
@@ -487,7 +487,7 @@ export function checkAvoidableElse(bodyLines: string[], lang: Language): { count
         if (blockEnd > i && jumpRe.test(stripStringsAndComments(bodyLines[blockEnd].trim()))) {
           // Check no else/elif follows at same indent
           const nextLine = blockEnd + 1 < bodyLines.length ? bodyLines[blockEnd + 1].trim() : "";
-          if (!ELSE_PATTERNS.py.test(nextLine) && !ELIF_PATTERN.test(nextLine)) {
+          if (!(ELSE_PATTERNS.py.test(nextLine) || ELIF_PATTERN.test(nextLine))) {
             hasGuardClause = true;
             break;
           }

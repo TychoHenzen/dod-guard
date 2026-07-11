@@ -2,11 +2,11 @@
 // and the tools module tool registration.
 // Does NOT require a real Obsidian vault or running Obsidian app.
 
-import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
-import { join } from "node:path";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
+import { join } from "node:path";
+import { after, before, describe, it } from "node:test";
 import { Store } from "./store.js";
 
 // ── Helpers: create a minimal fake vault for testing ────────────────────

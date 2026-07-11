@@ -12,16 +12,81 @@
  * without building our own agent loop.
  */
 
-import { spawn, execSync } from "node:child_process";
-import * as path from "node:path";
+import { execSync, spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
+import * as path from "node:path";
 import type { Verdict } from "./types.js";
 
 // ── Proxy config ──────────────────────────────────────────────────────
 
 const PROXY_URL = "http://127.0.0.1:3200";
 const DEEPSEEK_ANTHROPIC_ENDPOINT = "https://api.deepseek.com/anthropic";
+const BACKENDS_JSON_PATH = path.join(os.homedir(), ".claude", "backends.json");
+
+// ── API key resolution ────────────────────────────────────────────────
+
+let _cachedBackendKey: string | null | undefined;
+
+/**
+ * Extract the API key from ~/.claude/backends.json for the default backend.
+ * Mirrors the approach CustomClaude.ps1 uses: reads backends.json, finds the
+ * default backend, returns its `apiKey` field.
+ *
+ * Result is cached after first read (backends.json rarely changes at runtime).
+ */
+export function getBackendApiKey(): string | null {
+  if (_cachedBackendKey !== undefined) return _cachedBackendKey;
+
+  try {
+    if (!fs.existsSync(BACKENDS_JSON_PATH)) {
+      _cachedBackendKey = null;
+      return null;
+    }
+    const raw = fs.readFileSync(BACKENDS_JSON_PATH, "utf-8");
+    const cfg = JSON.parse(raw) as {
+      default?: string;
+      backends?: Record<string, { apiKey?: string; proxy?: unknown }>;
+    };
+    const defaultName = cfg.default;
+    if (!(defaultName && cfg.backends)) {
+      _cachedBackendKey = null;
+      return null;
+    }
+    const backend = cfg.backends[defaultName];
+    if (!backend?.apiKey) {
+      _cachedBackendKey = null;
+      return null;
+    }
+    _cachedBackendKey = backend.apiKey;
+    return backend.apiKey;
+  } catch {
+    _cachedBackendKey = null;
+    return null;
+  }
+}
+
+/**
+ * Resolve the DeepSeek API key in priority order:
+ *   1. Explicit option passed by caller
+ *   2. DEEPSEEK_API_KEY environment variable
+ *   3. ~/.claude/backends.json default backend apiKey
+ *
+ * Returns empty string if no key is found anywhere.
+ */
+export function resolveApiKey(optKey?: string): string {
+  return optKey || process.env.DEEPSEEK_API_KEY || getBackendApiKey() || "";
+}
+
+/**
+ * Where the API key was found. Used by the status tool for diagnostics.
+ */
+export function apiKeySource(optKey?: string): "option" | "env" | "backends_json" | "none" {
+  if (optKey) return "option";
+  if (process.env.DEEPSEEK_API_KEY) return "env";
+  if (getBackendApiKey()) return "backends_json";
+  return "none";
+}
 
 export interface AgentEnv {
   /** API key for DeepSeek. Falls back to DEEPSEEK_API_KEY env var. */
@@ -90,9 +155,11 @@ export async function ensureProxy(proxyUrl?: string): Promise<boolean> {
     return false;
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = resolveApiKey();
   if (!apiKey) {
-    console.error("evomcp: DEEPSEEK_API_KEY not set. Cannot start proxy.");
+    console.error(
+      "evomcp: No DeepSeek API key found (env DEEPSEEK_API_KEY or ~/.claude/backends.json). Cannot start proxy.",
+    );
     return false;
   }
 
@@ -132,7 +199,7 @@ export async function ensureProxy(proxyUrl?: string): Promise<boolean> {
 export async function spawnClaude(prompt: string, opts: SpawnOptions & AgentEnv): Promise<AgentResult> {
   const t0 = Date.now();
   const useProxy = opts.useProxy !== false;
-  const apiKey = opts.apiKey || process.env.DEEPSEEK_API_KEY || "";
+  const apiKey = resolveApiKey(opts.apiKey);
   const model = opts.model || "deepseek-v4-pro[1m]";
   const proxyUrl = opts.proxyUrl ?? PROXY_URL;
   const timeoutMs = opts.timeoutMs ?? 300_000; // 5 min default
@@ -297,7 +364,7 @@ export function runCommand(
 export function extractScore(output: string): number | null {
   const numbers = output.match(/-?\d+\.?\d*/g);
   if (!numbers || numbers.length === 0) return null;
-  return parseFloat(numbers[numbers.length - 1]);
+  return Number.parseFloat(numbers[numbers.length - 1]);
 }
 
 /**

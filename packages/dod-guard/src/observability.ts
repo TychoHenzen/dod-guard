@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { CMD_TRUNCATION } from "./constants.js";
 
@@ -453,11 +453,11 @@ function detectSwallowedErrors(lines: string[], lang: Language, filePath: string
     const blockLines = lines.slice(i + 1, endLine);
     const codeLines = blockLines.map((l) => l.trim()).filter((l) => l.length > 0);
     const hasLog = blockLines.some((l) => isLogStatement(l, lang));
-    const hasReturn = codeLines.some((l) => /\breturn\b/.test(l));
+    const _hasReturn = codeLines.some((l) => /\breturn\b/.test(l));
     const hasThrow = codeLines.some((l) => /\bthrow\b/.test(l));
 
     // Swallowed: error caught, return/continue/empty but no log or rethrow
-    if (!hasLog && !hasThrow && codeLines.length > 0) {
+    if (!(hasLog || hasThrow) && codeLines.length > 0) {
       hits.push({
         file: filePath,
         line: i + 1,
@@ -561,7 +561,7 @@ function extractSourceFilesFromCommand(command: string, cwd: string): string[] {
           try {
             const { readdirSync } = require("node:fs");
             const entries = readdirSync(dir);
-            const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
+            const _regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
             for (const entry of entries) {
               const full = path.join(dir, entry);
               if (isInSkipDir(full)) continue;

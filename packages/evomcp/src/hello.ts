@@ -102,6 +102,7 @@ export function main(argv: string[] = process.argv): void {
 
 // Allow direct execution: `node dist/hello.js`
 import { fileURLToPath } from "node:url";
+
 const __filename = fileURLToPath(import.meta.url);
 
 if (process.argv[1] === __filename) {

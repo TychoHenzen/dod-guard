@@ -1,14 +1,15 @@
 console.debug("evaluate-proof: module loaded", { pid: process.pid });
 
-import type { TaskNode, LeafResult, Predicate } from "./types.js";
 import type { AssertionReport } from "./assertions.js";
-import type { ObservabilityReport } from "./observability.js";
-import type { BrevityReport, BrevityOpts, BrevityViolation } from "./brevity.js";
-import { perProofFingerprint } from "./manual.js";
-import { extractNumber } from "./regression.js";
 import { analyseAssertions } from "./assertions.js";
-import { analyseObservability, analyseObservabilityFromOutput } from "./observability.js";
+import type { BrevityOpts, BrevityReport, BrevityViolation } from "./brevity.js";
 import { analyseBrevity, analyseBrevityFromOutput, DEFAULT_BREVITY_OPTS } from "./brevity.js";
+import { perProofFingerprint } from "./manual.js";
+import type { ObservabilityReport } from "./observability.js";
+import { analyseObservability, analyseObservabilityFromOutput } from "./observability.js";
+import { extractNumber } from "./regression.js";
+import type { LeafResult, Predicate, TaskNode } from "./types.js";
+
 function parseStryker(o: string): number | null {
   const lines = o.split(/\r?\n/);
   const hi = lines.findIndex((l) => l.includes("|") && /#\s*survived/i.test(l));
@@ -118,7 +119,7 @@ async function hManual(n: TaskNode, b: Record<string, unknown>): Promise<LeafRes
   return mk(b, { status: "skipped", output: `${label} not verified — dod_verify(dod_id, "${n.id}")` });
 }
 function hExecFail(r: RunResult, b: Record<string, unknown>): LeafResult | null {
-  if (!r.killed && !r.notFound) return null;
+  if (!(r.killed || r.notFound)) return null;
   return mk(b, { status: "fail", output: r.combined, error: r.error, exit_code: r.exitCode, duration_ms: r.duration });
 }
 async function hMutate(n: TaskNode, r: RunResult, b: Record<string, unknown>): Promise<LeafResult> {
@@ -558,7 +559,7 @@ async function hTdd(
       exit_code: r.exitCode,
       duration_ms: r.duration,
     });
-  if (!g && !n.seen_failing) {
+  if (!(g || n.seen_failing)) {
     n.seen_failing = true;
     n.seen_failing_at = new Date().toISOString();
     return mk(b, {

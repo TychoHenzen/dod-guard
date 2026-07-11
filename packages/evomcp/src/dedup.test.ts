@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
 import * as assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { deduplicatePlans, diversityScore } from "./dedup.js";
 import type { Plan } from "./types.js";
 

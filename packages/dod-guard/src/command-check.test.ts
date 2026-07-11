@@ -1,5 +1,5 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 import { extractCommandNames, findMissingTools, suggestionFor } from "./command-check.js";
 
 test("extracts a simple command", () => {

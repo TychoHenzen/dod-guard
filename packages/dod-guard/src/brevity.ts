@@ -1,18 +1,11 @@
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import * as path from "node:path";
 import {
-  findBlockEnd,
-  findJsFunctions,
-  findPyFunctions,
-  findPyBlockEnd,
-  findRsFunctions,
-  findCsFunctions,
-  findFunctions,
+  checkAvoidableElse,
   checkCyclomaticComplexity,
   checkUnnecessaryElse,
-  checkAvoidableElse,
+  findFunctions,
 } from "./find-functions.js";
-import type { FunctionRange } from "./find-functions.js";
 
 /**
  * Brevity / code-elegance static analysis.
@@ -139,7 +132,7 @@ function parseDiffOutput(output: string, cwd: string): { files: string[]; stats:
     if (/\.\w{1,6}$/.test(trimmed) && (trimmed.includes("/") || trimmed.includes("\\"))) {
       // Resolve relative paths against cwd
       const abs = path.resolve(cwd, trimmed);
-      if (!files.includes(abs) && !files.includes(trimmed)) {
+      if (!(files.includes(abs) || files.includes(trimmed))) {
         files.push(trimmed);
       }
     }

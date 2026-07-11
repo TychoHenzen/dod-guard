@@ -1,7 +1,7 @@
-import { describe, it } from "node:test";
 import * as assert from "node:assert/strict";
-import { parseSurvivors, executeProof } from "./evaluate-proof.js";
+import { describe, it } from "node:test";
 import type { ExecFn, RunResult } from "./evaluate-proof.js";
+import { executeProof, parseSurvivors } from "./evaluate-proof.js";
 import type { TaskNode } from "./types.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────

@@ -1,9 +1,9 @@
 import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import { createHash } from "node:crypto";
-import type { DodDocument, CheckResult, LeafResult, TaskNode } from "./types.js";
-import { executeProof, parseSurvivors, type ExecFn } from "./evaluate-proof.js";
+import { promisify } from "node:util";
 import { CMD_TRUNCATION } from "./constants.js";
+import { executeProof } from "./evaluate-proof.js";
+import type { CheckResult, DodDocument, LeafResult, TaskNode } from "./types.js";
 
 const execAsync = promisify(exec);
 
@@ -16,7 +16,8 @@ function flattenLeaf(node: TaskNode, index: number, parentPath?: string): { node
   const currentPath = parentPath ? `${parentPath}.children.${index}` : `${index}`;
   if (node.children && node.children.length > 0) {
     return flattenConcreteLeaves(node.children, currentPath);
-  } else if (node.refinement === "concrete") {
+  }
+  if (node.refinement === "concrete") {
     return [{ node, node_path: currentPath }];
   }
   return [];
@@ -217,13 +218,13 @@ function carryForwardNode(node: TaskNode, node_path: string): LeafResult {
  * Flatten all concrete leaves, carrying forward all of them without execution.
  * Used for nodes outside the scoped subtree.
  */
-function carryForwardAll(nodes: TaskNode[], parentPath?: string): LeafResult[] {
+function _carryForwardAll(nodes: TaskNode[], parentPath?: string): LeafResult[] {
   const results: LeafResult[] = [];
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
     if (node.children && node.children.length > 0) {
-      results.push(...carryForwardAll(node.children, currentPath));
+      results.push(..._carryForwardAll(node.children, currentPath));
     } else if (node.refinement === "concrete") {
       results.push(carryForwardNode(node, currentPath));
     }

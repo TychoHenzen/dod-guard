@@ -16,10 +16,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { solve } from "./solve.js";
+import { apiKeySource, checkProxyHealth } from "./agent.js";
 import { evolve } from "./evolve.js";
-import { checkProxyHealth } from "./agent.js";
-import { createGreeting } from "./hello.js";
+import { solve } from "./solve.js";
 
 const server = new McpServer({
   name: "evomcp",
@@ -139,7 +138,15 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
 
 server.tool("status", "Check if the deepclaude proxy is running and ready.", {}, async () => {
   const proxyAlive = await checkProxyHealth();
-  const apiKeySet = !!process.env.DEEPSEEK_API_KEY;
+  const keySource = apiKeySource();
+  const keyAvailable = keySource !== "none";
+
+  const keyLabel: Record<string, string> = {
+    option: "SET (option)",
+    env: "SET (DEEPSEEK_API_KEY env)",
+    backends_json: "SET (backends.json)",
+    none: "NOT SET",
+  };
 
   return {
     content: [
@@ -147,13 +154,13 @@ server.tool("status", "Check if the deepclaude proxy is running and ready.", {},
         type: "text" as const,
         text: [
           `Proxy (127.0.0.1:3200): ${proxyAlive ? "RUNNING" : "NOT FOUND"}`,
-          `DEEPSEEK_API_KEY: ${apiKeySet ? "SET" : "NOT SET"}`,
+          `API key: ${keyLabel[keySource]}`,
           "",
           proxyAlive
             ? "Ready for solve/evolve calls."
-            : apiKeySet
+            : keyAvailable
               ? "Will attempt direct mode (DeepSeek /anthropic endpoint)."
-              : "Set DEEPSEEK_API_KEY env var or start deepclaude proxy.",
+              : "Set DEEPSEEK_API_KEY env var, configure backends.json, or start deepclaude proxy.",
         ].join("\n"),
       },
     ],
@@ -281,6 +288,7 @@ function formatEvolveResult(result: Awaited<ReturnType<typeof evolve>>): string 
 }
 
 import { fileURLToPath } from "node:url";
+
 const __filename = fileURLToPath(import.meta.url);
 
 // ── Start (only when run directly, not when imported by tests) ──────────

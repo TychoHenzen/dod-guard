@@ -1,7 +1,7 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import { renderMarkdown, updateDocFromCheckResult, formatCheckResult } from "./author.js";
-import type { DodDocument, CheckResult, TaskNode } from "./types.js";
+import { test } from "node:test";
+import { formatCheckResult, renderMarkdown, updateDocFromCheckResult } from "./author.js";
+import type { CheckResult, DodDocument, TaskNode } from "./types.js";
 
 function concNode(id: string, title: string, command: string, desc: string): TaskNode {
   return {

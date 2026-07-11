@@ -1,8 +1,8 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { test } from "node:test";
 import { parseMarkdown, parseMarkdownFromString } from "./parser.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────

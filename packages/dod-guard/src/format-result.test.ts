@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
 import * as assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { formatCheckResult } from "./format-result.js";
 import type { CheckResult } from "./types.js";
 

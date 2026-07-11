@@ -1,18 +1,17 @@
-import { describe, it } from "node:test";
 import * as assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import {
-  findBlockEnd,
-  findJsFunctions,
-  findPyFunctions,
-  findPyBlockEnd,
-  findRsFunctions,
-  findCsFunctions,
-  findFunctions,
+  checkAvoidableElse,
   checkCyclomaticComplexity,
   checkUnnecessaryElse,
-  checkAvoidableElse,
+  findBlockEnd,
+  findCsFunctions,
+  findFunctions,
+  findJsFunctions,
+  findPyBlockEnd,
+  findPyFunctions,
+  findRsFunctions,
 } from "./find-functions.js";
-import type { FunctionRange } from "./find-functions.js";
 
 // ── findBlockEnd ────────────────────────────────────────────────────────
 

@@ -1,8 +1,8 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { test } from "node:test";
 import { analyseAssertions } from "./assertions.js";
 import { checkDocument } from "./checker.js";
 import type { DodDocument, TaskNode } from "./types.js";

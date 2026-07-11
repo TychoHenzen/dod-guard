@@ -1,7 +1,7 @@
 // Retrieval: keyword search (FTS5) + semantic search (cosine similarity on embeddings)
 
-import type { Chunk, SearchResult } from "./types.js";
 import type { Store } from "./store.js";
+import type { SearchResult } from "./types.js";
 
 export interface Embedder {
   embed(text: string): Promise<number[]>;
@@ -49,7 +49,7 @@ export async function semanticSearch(
     } else {
       embedding = chunk.embedding as number[] | null;
     }
-    if (!embedding || !Array.isArray(embedding)) {
+    if (!(embedding && Array.isArray(embedding))) {
       return { chunk, similarity: 0 };
     }
     const similarity = cosineSimilarity(queryEmbedding, embedding);

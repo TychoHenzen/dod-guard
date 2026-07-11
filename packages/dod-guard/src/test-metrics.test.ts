@@ -1,10 +1,10 @@
-import { describe, it, before, after } from "node:test";
 import * as assert from "node:assert/strict";
-import { writeFileSync, mkdirSync, rmSync } from "node:fs";
-import * as path from "node:path";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import * as os from "node:os";
-import { analyseTestMetrics, scoreFromMetrics } from "./test-metrics.js";
+import * as path from "node:path";
+import { after, before, describe, it } from "node:test";
 import type { TestFileMetrics } from "./test-metrics.js";
+import { analyseTestMetrics, scoreFromMetrics } from "./test-metrics.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────
 

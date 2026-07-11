@@ -13,12 +13,12 @@
  * "improve test coverage", "reduce memory usage".
  */
 
-import * as path from "node:path";
+import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
-import { execSync } from "node:child_process";
-import { spawnClaude, runCommand, extractScore, ensureProxy, mutationPrompt } from "./agent.js";
-import type { EvolveSpec, EvolveResult, RunStats, Candidate } from "./types.js";
+import * as path from "node:path";
+import { ensureProxy, extractScore, mutationPrompt, runCommand, spawnClaude } from "./agent.js";
+import type { EvolveResult, EvolveSpec, RunStats } from "./types.js";
 
 const DEFAULT_GENERATIONS = 5;
 const DEFAULT_POPULATION = 6;
@@ -62,7 +62,7 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
   if (targetContents.length === 0) {
     throw new Error(`No target files found matching: ${spec.target_files.join(", ")}`);
   }
-  const initialCode = targetContents.map((t) => `=== ${t.path} ===\n${t.content}`).join("\n\n");
+  const _initialCode = targetContents.map((t) => `=== ${t.path} ===\n${t.content}`).join("\n\n");
 
   // ── Phase 2: Evolutionary loop ──────────────────────────────────────
 
@@ -272,7 +272,7 @@ function restoreState(cwd: string): void {
     } catch (e: unknown) {
       // No stash to pop — expected when saveState had nothing to stash.
       const msg = e instanceof Error ? e.message : String(e);
-      if (!msg.includes("No stash") && !msg.includes("not a git repository")) {
+      if (!(msg.includes("No stash") || msg.includes("not a git repository"))) {
         console.error("evolve: stash pop failed", { cwd, err: msg });
       }
     }

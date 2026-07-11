@@ -1,8 +1,8 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import { writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
-import * as path from "node:path";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import * as os from "node:os";
+import * as path from "node:path";
+import { test } from "node:test";
 import { analyseObservability, analyseObservabilityFromOutput } from "./observability.js";
 
 // ── Test fixtures ────────────────────────────────────────────────────────

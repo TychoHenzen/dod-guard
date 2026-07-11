@@ -1,7 +1,7 @@
-import { promises as fs } from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
 import * as crypto from "node:crypto";
+import { promises as fs } from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import type { DodDocument, TaskNode } from "./types.js";
 
 function getStoreDir(): string {
@@ -136,7 +136,7 @@ export async function migrateDoc(doc: DodDocument & { steps?: LegacyStep[]; lock
   if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) return false;
 
   const legacySteps = (doc as any).steps;
-  if (!legacySteps || !Array.isArray(legacySteps) || legacySteps.length === 0) {
+  if (!(legacySteps && Array.isArray(legacySteps)) || legacySteps.length === 0) {
     return false; // Nothing to migrate
   }
 

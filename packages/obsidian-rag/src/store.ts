@@ -4,10 +4,10 @@
 // Lazy-loads the database on first access with automatic bootstrap if the package is missing
 // (plugin cache copies files from git but does not run npm install).
 
+import { existsSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
-import { existsSync, mkdirSync } from "node:fs";
-import type { NoteMeta, Chunk, IndexStatus, VaultInfo } from "./types.js";
+import type { Chunk, IndexStatus, NoteMeta, VaultInfo } from "./types.js";
 
 const DB_FILENAME = "obsidian-rag.db";
 const req = createRequire(import.meta.url);

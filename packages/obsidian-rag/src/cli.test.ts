@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
 import * as assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { cliAvailable, ensureObsidianRunning } from "./cli.js";
 
 describe("cliAvailable", () => {

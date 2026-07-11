@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 
 /**
@@ -61,11 +61,11 @@ const JS_ASSERT = /(expect\s*\(|assert\.)/;
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-function isTrivial(line: string, patterns: RegExp[]): boolean {
+function _isTrivial(line: string, patterns: RegExp[]): boolean {
   return patterns.some((p) => p.test(line));
 }
 
-function isAssertion(line: string, detector: RegExp): boolean {
+function _isAssertion(line: string, detector: RegExp): boolean {
   return detector.test(line);
 }
 

@@ -1,8 +1,8 @@
 // Markdown chunking and embedding pipeline
 
 import { createHash } from "node:crypto";
-import type { Chunk, NoteMeta } from "./types.js";
 import type { Store } from "./store.js";
+import type { Chunk } from "./types.js";
 import { readNote, walkVault } from "./vault.js";
 
 const MAX_CHUNK_CHARS = 800;

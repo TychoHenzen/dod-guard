@@ -1,5 +1,5 @@
 import { promises as fs } from "node:fs";
-import type { DodSections, TaskNode, Predicate } from "./types.js";
+import type { DodSections, Predicate, TaskNode } from "./types.js";
 
 // ── Predicate inference ───────────────────────────────────────────────────
 
@@ -12,7 +12,7 @@ function extractQuoted(text: string): string | null {
 /** Extract an exit code number from a description string. */
 function extractExitCode(text: string, pattern: RegExp): number | null {
   const m = text.match(pattern);
-  return m ? parseInt(m[1], 10) : null;
+  return m ? Number.parseInt(m[1], 10) : null;
 }
 
 const INFERENCE_RULES: Array<{ test: (s: string) => boolean; infer: (s: string, t: string) => Predicate }> = [
@@ -76,7 +76,7 @@ function inferPredicate(description: string): Predicate {
 
   // exit_code with explicit number
   const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
-  if (exitMatch) return { type: "exit_code", value: parseInt(exitMatch[1], 10) };
+  if (exitMatch) return { type: "exit_code", value: Number.parseInt(exitMatch[1], 10) };
 
   // manual/review
   if (lower.startsWith("manual")) return { type: "manual" };
@@ -86,7 +86,7 @@ function inferPredicate(description: string): Predicate {
   for (const [keywords, type] of CATEGORY_PATTERNS) {
     if (keywords.some((k) => lower.includes(k))) {
       const countMatch = type === "assertions" ? lower.match(/at least (\d+)/) : null;
-      const value = countMatch ? parseInt(countMatch[1], 10) : 0;
+      const value = countMatch ? Number.parseInt(countMatch[1], 10) : 0;
       return { type, value };
     }
   }

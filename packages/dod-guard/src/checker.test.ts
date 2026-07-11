@@ -1,15 +1,15 @@
-import { describe, it, before, after } from "node:test";
 import * as assert from "node:assert/strict";
+import { after, before, describe, it } from "node:test";
 import {
   checkDocument,
-  parseSurvivors,
   computeProofFingerprint,
+  countDraftNodes,
+  extractExecutableCommands,
+  findNodeByPath,
   flattenConcreteLeaves,
   hasDraftNodes,
-  findNodeByPath,
-  countDraftNodes,
   isExecutablePredicate,
-  extractExecutableCommands,
+  parseSurvivors,
 } from "./checker.js";
 import { perProofFingerprint } from "./manual.js";
 import type { DodDocument, TaskNode } from "./types.js";
@@ -37,7 +37,7 @@ function fakeExec(
   });
 }
 
-const DEADBEEF_ID = "deadbeef-dead-beef-dead-beefdeadbeef";
+const _DEADBEEF_ID = "deadbeef-dead-beef-dead-beefdeadbeef";
 
 /** Create per-describe-block scoped helpers for generating unique IDs. */
 function scope() {
@@ -826,9 +826,9 @@ describe("checkDocument derived signals", () => {
 
 // ── checkDocument: brevity-family predicates (temp-dir backed) ─────────
 
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
-import * as path from "node:path";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import * as os from "node:os";
+import * as path from "node:path";
 
 describe("checkDocument brevity-family predicates", () => {
   const { nid } = scope();

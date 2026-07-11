@@ -1,5 +1,5 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 import { extractNumber } from "./regression.js";
 
 test("extractNumber uses capture group 1 when an extract regex is given", () => {

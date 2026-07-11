@@ -1,6 +1,5 @@
-import type { TaskNode, Predicate, ProofCategory } from "./types.js";
-import { flattenConcreteLeaves } from "./checker.js";
-import { findMissingTools, currentOs, type MissingTool } from "./command-check.js";
+import { currentOs, findMissingTools, type MissingTool } from "./command-check.js";
+import type { Predicate, ProofCategory, TaskNode } from "./types.js";
 
 // ── Node ID generation ────────────────────────────────────────────────
 

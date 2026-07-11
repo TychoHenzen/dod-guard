@@ -1,32 +1,32 @@
+import * as path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import * as path from "node:path";
-import * as store from "./store.js";
+import { formatCheckResult, updateDocFromCheckResult, writeMarkdown } from "./author.js";
+import { validateBaseline } from "./baseline.js";
 import {
   checkDocument,
   computeProofFingerprint,
-  flattenConcreteLeaves,
-  findNodeByPath,
   countDraftNodes,
+  findNodeByPath,
+  flattenConcreteLeaves,
   isExecutablePredicate,
 } from "./checker.js";
-import { writeMarkdown, updateDocFromCheckResult, formatCheckResult } from "./author.js";
-import { parseMarkdown } from "./parser.js";
-import { playJingle, showVerifyDialog } from "./notify.js";
 import { findMissingTools } from "./command-check.js";
-import { validateBaseline } from "./baseline.js";
-import { resolveManual, type Confirmer, type ManualAnswer } from "./manual.js";
-import type { DodDocument, Predicate, TaskNode, ProofCategory } from "./types.js";
-import { PredicateSchema, ProofCategorySchema, TaskNodeInputSchema, SectionsSchema } from "./schemas.js";
+import { type Confirmer, type ManualAnswer, resolveManual } from "./manual.js";
+import { playJingle, showVerifyDialog } from "./notify.js";
+import { parseMarkdown } from "./parser.js";
+import { PredicateSchema, ProofCategorySchema, SectionsSchema, TaskNodeInputSchema } from "./schemas.js";
+import * as store from "./store.js";
 import {
-  resetNodeIdCounter,
   buildTaskNodes,
-  formatMissingTools,
   checkCommandsForOs,
   extractBaselineSteps,
   findNodeInTree,
+  formatMissingTools,
+  resetNodeIdCounter,
 } from "./tree-utils.js";
+import type { DodDocument, Predicate, ProofCategory, TaskNode } from "./types.js";
 
 const server = new McpServer({
   name: "dod-guard",
@@ -347,7 +347,7 @@ server.tool(
     const oldIntent = node.intent;
 
     if (mode === "concretize") {
-      if (!command || !predicate) {
+      if (!(command && predicate)) {
         return { content: [{ type: "text" as const, text: "ERROR: concretize mode requires command and predicate." }] };
       }
 
@@ -489,7 +489,7 @@ server.tool(
 
     // Validate concrete node
     if (refinement === "concrete") {
-      if (!command || !predicate || !description) {
+      if (!(command && predicate && description)) {
         return {
           content: [
             { type: "text" as const, text: "ERROR: concrete nodes require command, predicate, and description." },
@@ -587,7 +587,7 @@ server.tool(
     if (lastPart === "children")
       return { content: [{ type: "text" as const, text: "ERROR: path must target a node, not 'children'." }] };
 
-    const childIdx = parseInt(lastPart, 10);
+    const childIdx = Number.parseInt(lastPart, 10);
     if (Number.isNaN(childIdx))
       return { content: [{ type: "text" as const, text: `ERROR: invalid path "${nodePath}".` }] };
 
@@ -890,7 +890,7 @@ server.tool("dod_list", "List all tracked DoD documents with their last check st
     const status = d.last_check?.overall?.toUpperCase() ?? "UNCHECKED";
 
     // Handle legacy format (steps array instead of roots)
-    if (!d.roots || !Array.isArray(d.roots)) {
+    if (!(d.roots && Array.isArray(d.roots))) {
       const legacyCount = (d as any).steps?.length ?? 0;
       return [
         `• ${d.title}`,
@@ -1020,7 +1020,7 @@ server.tool(
         };
       }
       const legacySteps = (doc as any).steps;
-      if (!legacySteps || !Array.isArray(legacySteps)) {
+      if (!(legacySteps && Array.isArray(legacySteps))) {
         return {
           content: [{ type: "text" as const, text: `"${(doc as any).title}" has no steps or roots — cannot migrate.` }],
         };
@@ -1060,7 +1060,7 @@ server.tool(
     const allDocs = await store.listAllRaw();
     const legacyDocs = allDocs.filter(
       (d: any) =>
-        (d as any).steps && (!(d as any).roots || !Array.isArray((d as any).roots) || (d as any).roots.length === 0),
+        (d as any).steps && (!((d as any).roots && Array.isArray((d as any).roots)) || (d as any).roots.length === 0),
     );
 
     if (legacyDocs.length === 0) {
@@ -1116,6 +1116,7 @@ server.tool(
 );
 
 import { fileURLToPath } from "node:url";
+
 const _dodGuardFilename = fileURLToPath(import.meta.url);
 
 // ── Start (only when run directly, not when imported by tests) ─────────
