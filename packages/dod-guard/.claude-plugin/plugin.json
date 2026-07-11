@@ -1,6 +1,6 @@
 {
   "name": "dod-guard",
-  "description": "Anti-cheat Definition of Done verification with locked proofs, quality upgrade suite (test verification, fixer, orchestrator), and structured interview skill for requirements gathering.",
+  "description": "Anti-cheat Definition of Done verification with locked proofs. Ships 5 skills: /interview (requirements), /quality-upgrade (test+source quality loop), /test-verification, /test-fixer, and /ratchet (unified workflow combining all five repo tools).",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
