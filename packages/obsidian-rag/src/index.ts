@@ -33,7 +33,6 @@ import {
   aggregateTags,
   readMemories,
   writeMemory,
-  deleteNote,
 } from "./vault.js";
 import { Store } from "./store.js";
 import { indexVault, reindexVault } from "./indexer.js";

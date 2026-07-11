@@ -66,11 +66,6 @@ export async function writeNote(
   await writeFile(fullPath, fmStr, "utf-8");
 }
 
-export async function deleteNote(vaultPath: string, notePath: string): Promise<void> {
-  const { unlink } = await import("node:fs/promises");
-  await unlink(join(vaultPath, notePath));
-}
-
 // ── Wikilinks ────────────────────────────────────────────────────────────
 
 export function extractWikilinks(content: string): string[] {
