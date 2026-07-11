@@ -93,10 +93,10 @@ function isLogStatement(line: string, lang: Language): boolean {
 
 function findErrorHandlers(lines: string[], lang: Language): ErrorHandlerResult[] {
   switch (lang) {
-    case "js": return findJsErrorHandlers(lines);
+    case "js":
+    case "cs": return findBraceErrorHandlers(lines, lang);
     case "py": return findPyErrorHandlers(lines);
     case "rs": return findRsErrorHandlers(lines);
-    case "cs": return findCsErrorHandlers(lines);
     default: return [];
   }
 }
@@ -109,15 +109,15 @@ interface ErrorHandlerResult {
   snippet: string;
 }
 
-function findJsErrorHandlers(lines: string[]): ErrorHandlerResult[] {
+/** JS/TS/C# error handler detection — all use `catch (... ) {` brace blocks. */
+function findBraceErrorHandlers(lines: string[], lang: Language): ErrorHandlerResult[] {
   const results: ErrorHandlerResult[] = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    // Match `catch` — optionally with binding: catch, catch(e), catch (e)
     if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
       const endLine = findBlockEnd(lines, i, "{", "}");
       const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, "js"));
+      const hasLog = blockLines.some((l) => isLogStatement(l, lang));
       results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
     }
   }
@@ -147,20 +147,6 @@ function findRsErrorHandlers(lines: string[]): ErrorHandlerResult[] {
       const endLine = findBlockEnd(lines, i, "{", "}");
       const blockLines = lines.slice(i, endLine + 1);
       const hasLog = blockLines.some((l) => isLogStatement(l, "rs"));
-      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
-    }
-  }
-  return results;
-}
-
-function findCsErrorHandlers(lines: string[]): ErrorHandlerResult[] {
-  const results: ErrorHandlerResult[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
-      const endLine = findBlockEnd(lines, i, "{", "}");
-      const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, "cs"));
       results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
     }
   }
