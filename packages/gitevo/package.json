@@ -9,7 +9,6 @@
   },
   "files": [
     "dist/bundle.js",
-    ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
     ".mcp.json"
   ],
