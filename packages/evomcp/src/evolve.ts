@@ -70,7 +70,7 @@ export async function evolve(
   // ── Phase 2: Evolutionary loop ──────────────────────────────────────
 
   let bestScore = baselineScore;
-  let bestPatch = "";
+  let bestPatch: string | null = null;
   const fitnessHistory: { generation: number; best_score: number; mean_score: number }[] = [];
   const elites: { code: string; score: number }[] = [];
 
@@ -117,8 +117,7 @@ export async function evolve(
       if (r.timedOut || r.exitCode !== 0) continue;
 
       // Save current state so we can revert
-      const backupDir = path.join(os.tmpdir(), `evomcp-backup-${Date.now()}`);
-      saveState(spec.cwd, backupDir);
+      saveState(spec.cwd);
 
       try {
         // Apply claude's changes (claude -p already wrote to files via tools)
@@ -147,12 +146,12 @@ export async function evolve(
         onProgress?.(`  [${i + 1}] error: ${String(err).slice(0, 80)}`);
       } finally {
         // Revert to best state for next generation
-        restoreState(spec.cwd, backupDir);
+        restoreState(spec.cwd);
       }
     }
 
     // Apply best patch so next generation builds on current best, not baseline.
-    if (bestPatch && !bestPatch.startsWith("(no")) {
+    if (bestPatch) {
       applyPatch(bestPatch, spec.cwd);
     }
 
@@ -254,7 +253,7 @@ function matchSimple(name: string, pattern: string): boolean {
   return regex.test(name);
 }
 
-function saveState(cwd: string, backupDir: string): void {
+function saveState(cwd: string): void {
   try {
     execSync(`git stash push --include-untracked -m "evomcp-backup"`, { cwd, timeout: 10_000 });
   } catch (e: unknown) {
@@ -266,7 +265,7 @@ function saveState(cwd: string, backupDir: string): void {
   }
 }
 
-function restoreState(cwd: string, backupDir: string): void {
+function restoreState(cwd: string): void {
   try {
     execSync(`git checkout .`, { cwd, timeout: 10_000 });
     execSync(`git clean -fd`, { cwd, timeout: 10_000 });
@@ -286,17 +285,17 @@ function restoreState(cwd: string, backupDir: string): void {
   }
 }
 
-function captureState(cwd: string, targetFiles: string[]): string {
+function captureState(cwd: string, targetFiles: string[]): string | null {
   try {
     const diff = execSync(`git diff -- ${targetFiles.join(" ")}`, { cwd, encoding: "utf-8", timeout: 10_000 });
-    return diff || "(no diff from baseline)";
+    return diff || null;
   } catch {
-    return "(failed to capture diff)";
+    return null;
   }
 }
 
-function applyPatch(patch: string, cwd: string): void {
-  if (!patch || patch.includes("(no improvement") || patch.includes("(no diff")) return;
+function applyPatch(patch: string | null, cwd: string): void {
+  if (!patch) return;
 
   const patchFile = path.join(os.tmpdir(), `evomcp-best-${Date.now()}.patch`);
   try {

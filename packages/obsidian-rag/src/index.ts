@@ -40,9 +40,6 @@ import { indexVault, reindexVault } from "./indexer.js";
 import { hybridSearch, type Embedder } from "./retriever.js";
 import type { VaultInfo, IndexStatus, SearchResult, NoteContent, NoteMeta, MemoryEntry } from "./types.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TransformersPipeline = any;
-
 // ── State ─────────────────────────────────────────────────────────────
 
 const DB_DIR = join(homedir(), ".claude", "obsidian-rag");
@@ -358,7 +355,7 @@ async function main() {
         return { content: [{ type: "text", text: `# Tags (${sorted.length})\n\n${lines.join("\n")}` }] };
       } catch {
         // Fallback to filesystem
-        const tags = await aggregateTags(vault.name, vault.path);
+        const tags = await aggregateTags(vault.path);
         const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
         const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
         return { content: [{ type: "text", text: `# Tags (${sorted.length})\n\n${lines.join("\n")}` }] };
@@ -549,28 +546,28 @@ async function main() {
           await cliCreateNote(vault.name, path, content);
         }
         // Set frontmatter properties via CLI
-        if (title) {
+        if (title || (tags && tags.length > 0)) {
           const { execFile } = await import("node:child_process");
           const { promisify } = await import("node:util");
-          await promisify(execFile)("obsidian", [
-            `vault=${vault.name}`,
-            "property:set",
-            "name=title",
-            `value=${title}`,
-            `path=${path}`,
-          ], { timeout: 10000, windowsHide: true });
-        }
-        if (tags && tags.length > 0) {
-          const { execFile } = await import("node:child_process");
-          const { promisify } = await import("node:util");
-          await promisify(execFile)("obsidian", [
-            `vault=${vault.name}`,
-            "property:set",
-            "name=tags",
-            `value=${tags.join(",")}`,
-            "type=list",
-            `path=${path}`,
-          ], { timeout: 10000, windowsHide: true });
+          if (title) {
+            await promisify(execFile)("obsidian", [
+              `vault=${vault.name}`,
+              "property:set",
+              "name=title",
+              `value=${title}`,
+              `path=${path}`,
+            ], { timeout: 10000, windowsHide: true });
+          }
+          if (tags && tags.length > 0) {
+            await promisify(execFile)("obsidian", [
+              `vault=${vault.name}`,
+              "property:set",
+              "name=tags",
+              `value=${tags.join(",")}`,
+              "type=list",
+              `path=${path}`,
+            ], { timeout: 10000, windowsHide: true });
+          }
         }
         return {
           content: [{ type: "text", text: `✅ ${append ? "Updated" : "Created"} note: \`${path}\`` }],

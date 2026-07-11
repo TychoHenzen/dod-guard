@@ -458,7 +458,7 @@ export function evo_summary(): string {
  * Merge winning branch into root branch, tag as evo-adopted.
  */
 export function evo_adopt(branch: string): string {
-  const { cwd } = getRepo();
+  const { cwd, rootBranch } = getRepo();
   requireInit(cwd);
 
   if (isDirty(cwd)) {
@@ -471,12 +471,6 @@ export function evo_adopt(branch: string): string {
   }
 
   const originalBranch = currentBranch(cwd);
-
-  // Find root branch
-  let rootBranch = "main";
-  for (const name of ["main", "master", "trunk"]) {
-    if (branches.includes(name)) { rootBranch = name; break; }
-  }
 
   // Checkout root branch
   if (originalBranch !== rootBranch) {
@@ -499,16 +493,10 @@ export function evo_adopt(branch: string): string {
  * Deletes all evo-* tags, removes all side branches, removes .evo/ directory.
  */
 export function evo_finish(): string {
-  const { cwd } = getRepo();
+  const { cwd, rootBranch } = getRepo();
   requireInit(cwd);
 
-  // Find root branch
   const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  let rootBranch = "main";
-  for (const name of ["main", "master", "trunk"]) {
-    if (branches.includes(name)) { rootBranch = name; break; }
-  }
-
   const current = currentBranch(cwd);
 
   // If not on root, merge current into root

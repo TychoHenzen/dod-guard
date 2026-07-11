@@ -15,11 +15,22 @@
 
 import { spawnClaude, spawnClaudeN, runCommand, hashFailure, strategyPrompts, repairPrompt, ensureProxy, toVerdict } from "./agent.js";
 import type { TaskSpec, SolveResult, RunStats, EscalationReport, Candidate, Verdict } from "./types.js";
+import { execSync } from "node:child_process";
 
 const MAX_REPAIRS = 3;
 const DEFAULT_N = 5;
 const DEFAULT_TIMEOUT_MS = 300_000; // 5 min per claude -p instance
 const REPAIR_TIMEOUT_MS = 180_000;  // 3 min for repairs
+
+/** Capture git diff for the working tree — what claude -p actually changed. */
+function captureDiff(cwd: string): string | null {
+  try {
+    const diff = execSync("git diff", { cwd, encoding: "utf-8", timeout: 10_000 });
+    return diff || null;
+  } catch {
+    return null;
+  }
+}
 
 export async function solve(
   spec: TaskSpec,
@@ -93,7 +104,7 @@ export async function solve(
       stats.duration_ms = Date.now() - startTime;
       return {
         outcome: "pass",
-        patch: candidate.patch,
+        patch: captureDiff(spec.cwd) ?? `claude -p output (${r.exitCode}):\n${r.output.slice(0, 500)}`,
         verification_report: verdict.output,
         stats,
       };
@@ -157,7 +168,7 @@ export async function solve(
         stats.duration_ms = Date.now() - startTime;
         return {
           outcome: "pass",
-          patch: candidate.patch,
+          patch: captureDiff(spec.cwd) ?? `repair #${repair} output (${result.exitCode}):\n${result.output.slice(0, 500)}`,
           verification_report: repairVerdict.output,
           stats,
         };

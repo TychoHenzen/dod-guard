@@ -103,9 +103,9 @@ async function hManual(n: TaskNode, b: Record<string, unknown>): Promise<LeafRes
   return mk(b, { status: "skipped",
     output: `${label} not verified — dod_verify(dod_id, "${n.id}")` });
 }
-async function hExecFail(
+function hExecFail(
   r: RunResult, b: Record<string, unknown>,
-): Promise<LeafResult | null> {
+): LeafResult | null {
   if (!r.killed && !r.notFound) return null;
   return mk(b, { status: "fail", output: r.combined, error: r.error,
     exit_code: r.exitCode, duration_ms: r.duration });

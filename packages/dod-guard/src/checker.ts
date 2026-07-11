@@ -90,9 +90,6 @@ export function extractExecutableCommands(nodes: TaskNode[]): string[] {
     .map(({ node }) => node.command!);
 }
 
-/** @deprecated Use extractExecutableCommands instead. */
-export const extractCommands = extractExecutableCommands;
-
 /** True when every leaf in the subtree is concrete (no drafts remaining). */
 export function isBranchLocked(nodes: TaskNode[]): boolean {
   return !hasDraftNodes(nodes);
@@ -236,8 +233,7 @@ function partitionLeaves(
   if (!targetPath) {
     // No scoping: everything is in-scope
     const allLeaves: { node: TaskNode; node_path: string }[] = [];
-    const allDrafts: { node: TaskNode; node_path: string }[] = [];
-    collectAllLeaves(roots, "", allLeaves, allDrafts);
+    collectAllLeaves(roots, "", allLeaves, []);
     return { inScope: allLeaves.filter(l => l.node.refinement === "concrete"), outOfScope: [] };
   }
 

@@ -16,6 +16,7 @@ import { spawn, execSync } from "node:child_process";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import * as os from "node:os";
+import type { Verdict } from "./types.js";
 
 // ── Proxy config ──────────────────────────────────────────────────────
 
@@ -139,10 +140,6 @@ export async function spawnClaude(
   const proxyUrl = opts.proxyUrl ?? PROXY_URL;
   const timeoutMs = opts.timeoutMs ?? 300_000; // 5 min default
 
-  if (!apiKey && useProxy) {
-    // Proxy handles auth — still need a token for Claude to send
-  }
-
   const env: Record<string, string> = {
     ...process.env as Record<string, string>,
     CLAUDE_CODE_SKIP_AUTO_UPDATE: "1",
@@ -259,7 +256,6 @@ export async function spawnClaudeN(
     };
   });
 }
-
 // ── Helpers ───────────────────────────────────────────────────────────
 
 /**
@@ -316,7 +312,7 @@ export function extractScore(output: string): number | null {
  */
 export function toVerdict(
   r: { output: string; exitCode: number; durationMs: number },
-): { passed: boolean; exit_code: number; output: string; duration_ms: number } {
+): Verdict {
   return {
     passed: r.exitCode === 0,
     exit_code: r.exitCode,

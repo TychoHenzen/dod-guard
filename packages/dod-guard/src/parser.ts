@@ -79,7 +79,7 @@ function inferPredicate(description: string): Predicate {
   if (exitMatch) return { type: "exit_code", value: parseInt(exitMatch[1], 10) };
 
   // manual/review
-  if (lower.startsWith("manual") || lower === "manual") return { type: "manual" };
+  if (lower.startsWith("manual")) return { type: "manual" };
   if (lower.startsWith("review") || lower.includes("review —") || lower.includes("review:")) return { type: "review" };
 
   // keyword categories

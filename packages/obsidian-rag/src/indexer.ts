@@ -140,7 +140,7 @@ export async function indexVault(vaultPath: string, vaultName: string, store: St
       totalChunks += chunks.length;
       indexed++;
     } catch (err) {
-      // Skip files that error (permissions, encoding, etc.)
+      console.error("obsidian-rag: index error", { file: String(file), err: err instanceof Error ? err.message : String(err) });
       continue;
     }
   }

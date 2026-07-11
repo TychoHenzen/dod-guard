@@ -102,7 +102,6 @@ export async function getBacklinks(vaultPath: string, targetPath: string): Promi
 // ── Tags ─────────────────────────────────────────────────────────────────
 
 export async function aggregateTags(
-  vaultName: string,
   vaultPath: string
 ): Promise<Map<string, number>> {
   const allFiles = await walkVault(vaultPath);
