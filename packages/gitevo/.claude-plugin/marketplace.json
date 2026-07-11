@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "gitevo",
+  "description": "Evolutionary git branching for LLM agents — checkpoint, spawn, learn, abandon, adopt, finish. Tracks failed approaches as lessons, integrates with obsidian-rag.",
+  "owner": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  },
+  "plugins": [
+    {
+      "name": "gitevo",
+      "description": "Checkpoint progress, spawn parallel exploration branches, record failure lessons, merge winners, clean artifacts. evo_export_lessons bridges to obsidian-rag for persistent memory across sessions.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

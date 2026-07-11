@@ -21098,7 +21098,7 @@ var StdioServerTransport = class {
 };
 
 // src/operations.ts
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 var EvoError = class extends Error {
@@ -21108,18 +21108,20 @@ var EvoError = class extends Error {
   }
 };
 function git(args, cwd) {
-  try {
-    return execSync(`git ${args.join(" ")}`, {
-      cwd,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 3e4
-    }).trim();
-  } catch (err) {
-    const stderr = err?.stderr ? String(err.stderr).trim() : "";
-    const stdout = err?.stdout ? String(err.stdout).trim() : "";
-    throw new EvoError(`${stderr || stdout || err.message}`);
+  const result = spawnSync("git", args, {
+    cwd,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 3e4
+  });
+  if (result.error) {
+    throw new EvoError(result.error.message);
   }
+  if (result.status !== 0) {
+    const errMsg = (result.stderr || "").trim() || (result.stdout || "").trim();
+    throw new EvoError(errMsg);
+  }
+  return (result.stdout || "").trim();
 }
 function gitOrNull(args, cwd) {
   try {

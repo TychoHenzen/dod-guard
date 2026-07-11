@@ -1,9 +1,12 @@
 # Publish monorepo packages to npm via Trusted Publisher (OIDC).
 # Trusted Publishers must be configured at npmjs.com:
-#   - TychoHenzen/dod-guard
-#   - TychoHenzen/obsidian-rag
+#   - TychoHenzen/dod-guard  → dod-guard
+#   - TychoHenzen/dod-guard  → obsidian-rag
+#   - TychoHenzen/dod-guard  → evomcp
+#   - TychoHenzen/dod-guard  → gitevo
 #
-# Tag format: dod-guard-v2.2.1 | obsidian-rag-v0.1.0
+# Tag format: <package>-v<version>
+#   dod-guard-v2.2.1 | obsidian-rag-v0.1.0 | evomcp-v0.1.1 | gitevo-v0.1.1
 
 name: npm publish
 
@@ -12,6 +15,8 @@ on:
     tags:
       - 'dod-guard-v*'
       - 'obsidian-rag-v*'
+      - 'evomcp-v*'
+      - 'gitevo-v*'
 
 jobs:
   build:
@@ -55,3 +60,35 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm publish -w packages/obsidian-rag
+
+  publish-evomcp:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/evomcp-v')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm publish -w packages/evomcp
+
+  publish-gitevo:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/gitevo-v')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm publish -w packages/gitevo
