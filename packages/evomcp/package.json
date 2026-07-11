@@ -1,6 +1,6 @@
 {
   "name": "evomcp",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Evolutionary MCP server — cheap-model fanout (best-of-N + repair chains) and scalar-fitness evolution, gated by dod-guard verification. Keeps token-burning out of the agent's main context.",
   "type": "module",
   "main": "dist/bundle.js",

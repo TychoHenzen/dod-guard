@@ -21124,7 +21124,7 @@ async function ensureProxy(proxyUrl) {
     console.error("evomcp: deepclaude proxy not found at ~/deepclaude. Please install it first.");
     return false;
   }
-  const apiKey = process.env["DEEPSEEK_API_KEY"];
+  const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
     console.error("evomcp: DEEPSEEK_API_KEY not set. Cannot start proxy.");
     return false;
@@ -21151,7 +21151,7 @@ async function ensureProxy(proxyUrl) {
 async function spawnClaude(prompt, opts) {
   const t0 = Date.now();
   const useProxy = opts.useProxy !== false;
-  const apiKey = opts.apiKey || process.env["DEEPSEEK_API_KEY"] || "";
+  const apiKey = opts.apiKey || process.env.DEEPSEEK_API_KEY || "";
   const model = opts.model || "deepseek-v4-pro[1m]";
   const proxyUrl = opts.proxyUrl ?? PROXY_URL;
   const timeoutMs = opts.timeoutMs ?? 3e5;
@@ -21204,7 +21204,8 @@ async function spawnClaude(prompt, opts) {
         }, 2e3);
         cleanup();
         resolve2({
-          output: stdout + "\n" + stderr,
+          output: `${stdout}
+${stderr}`,
           exitCode: -1,
           durationMs: Date.now() - t0,
           timedOut: true
@@ -21223,7 +21224,8 @@ async function spawnClaude(prompt, opts) {
         clearTimeout(timer);
         cleanup();
         resolve2({
-          output: stdout + (stderr ? "\n" + stderr : ""),
+          output: stdout + (stderr ? `
+${stderr}` : ""),
           exitCode: code ?? -1,
           durationMs: Date.now() - t0,
           timedOut: false
@@ -21246,9 +21248,7 @@ async function spawnClaude(prompt, opts) {
   });
 }
 async function spawnClaudeN(prompts, opts) {
-  const results = await Promise.allSettled(
-    prompts.map((prompt) => spawnClaude(prompt, opts))
-  );
+  const results = await Promise.allSettled(prompts.map((prompt) => spawnClaude(prompt, opts)));
   return results.map((r) => {
     if (r.status === "fulfilled") return r.value;
     return {
@@ -21278,7 +21278,8 @@ function runCommand(cmd, cwd, timeoutMs = 12e4) {
     const stdout = err?.stdout ? String(err.stdout) : "";
     const stderr = err?.stderr ? String(err.stderr) : "";
     return {
-      output: (stdout + "\n" + stderr).slice(0, 1e4),
+      output: `${stdout}
+${stderr}`.slice(0, 1e4),
       exitCode: err?.status ?? err?.code ?? 1,
       durationMs: Date.now() - t0
     };
@@ -21298,7 +21299,7 @@ function toVerdict(r) {
   };
 }
 function hashFailure(output) {
-  let cleaned = output.replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?/g, "<TIME>").replace(/:\d+:\d+/g, ":<LINE>:<COL>").replace(/0x[0-9a-fA-F]+/g, "<HEX>").replace(/\/[^\s]+\/[^\s:]+:\d+/g, "<PATH>:<LINE>").replace(/\d+\.\d+ms/g, "<DURATION>ms").slice(0, 500);
+  const cleaned = output.replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?/g, "<TIME>").replace(/:\d+:\d+/g, ":<LINE>:<COL>").replace(/0x[0-9a-fA-F]+/g, "<HEX>").replace(/\/[^\s]+\/[^\s:]+:\d+/g, "<PATH>:<LINE>").replace(/\d+\.\d+ms/g, "<DURATION>ms").slice(0, 500);
   let hash = 0;
   for (let i = 0; i < cleaned.length; i++) {
     const char = cleaned.charCodeAt(i);
@@ -21458,20 +21459,15 @@ ${r.output.slice(0, 500)}`,
     onProgress?.(`  [${i + 1}] failed (exit ${verdict.exit_code}): ${verdict.output.slice(0, 120)}`);
   }
   const repairable = candidates.filter((c) => c.status === "failed" && c.verdict).sort((a, b) => {
-    const aCode = a.verdict.exit_code;
-    const bCode = b.verdict.exit_code;
+    const aCode = a.verdict?.exit_code ?? 1;
+    const bCode = b.verdict?.exit_code ?? 1;
     if (aCode !== bCode) return aCode - bCode;
-    return (b.verdict.output?.length ?? 0) - (a.verdict.output?.length ?? 0);
+    return (b.verdict?.output?.length ?? 0) - (a.verdict?.output?.length ?? 0);
   }).slice(0, Math.max(2, Math.ceil(numParallel / 2)));
   for (const candidate of repairable) {
     for (let repair = 1; repair <= MAX_REPAIRS; repair++) {
       onProgress?.(`  Repair attempt ${repair}/${MAX_REPAIRS} for ${candidate.plan_id}...`);
-      const prompt = repairPrompt(
-        spec.goal,
-        candidate.verdict.output,
-        repair,
-        spec.context
-      );
+      const prompt = repairPrompt(spec.goal, candidate.verdict?.output ?? "", repair, spec.context);
       const result = await spawnClaude(prompt, {
         cwd: spec.cwd,
         model: spec.model,
@@ -21519,7 +21515,7 @@ ${result.output.slice(0, 500)}`,
     }
   }
   const dominantSig = [...sigCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-  const bestCandidate = candidates.filter((c) => c.verdict).sort((a, b) => a.verdict.exit_code - b.verdict.exit_code)[0];
+  const bestCandidate = candidates.filter((c) => c.verdict).sort((a, b) => (a.verdict?.exit_code ?? 1) - (b.verdict?.exit_code ?? 1))[0];
   const escalation = {
     failure_signature: dominantSig?.[0] ?? "unknown",
     best_partial_patch: bestCandidate?.patch,
@@ -21723,9 +21719,7 @@ function readTargetFiles(cwd, patterns) {
   return files;
 }
 function matchSimple(name, pattern) {
-  const regex = new RegExp(
-    "^" + pattern.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$"
-  );
+  const regex = new RegExp(`^${pattern.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`);
   return regex.test(name);
 }
 function saveState(cwd) {
@@ -21779,13 +21773,16 @@ function applyPatch(patch, cwd) {
 }
 
 // src/index.ts
+import { fileURLToPath } from "node:url";
 var server = new McpServer({
   name: "evomcp",
   version: "0.1.3"
 });
 var TaskSpecSchema = external_exports.object({
   goal: external_exports.string().describe("Natural-language description of what to build/fix/optimize"),
-  verify_cmd: external_exports.string().describe("Shell command that returns exit 0 on success, non-zero on failure. e.g. 'npm test -- --testNamePattern=auth'"),
+  verify_cmd: external_exports.string().describe(
+    "Shell command that returns exit 0 on success, non-zero on failure. e.g. 'npm test -- --testNamePattern=auth'"
+  ),
   cwd: external_exports.string().describe("Working directory for running verify_cmd (absolute path)"),
   budget_tokens: external_exports.number().optional().describe("Maximum DeepSeek API tokens to spend (default ~100k)"),
   strategy: external_exports.enum(["auto", "best-of-n", "evolve"]).optional().default("auto").describe("Strategy hint. 'auto' inspects verify_cmd for scalar output \u2192 evolve, else best-of-n"),
@@ -21832,10 +21829,12 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
 `);
     });
     return {
-      content: [{
-        type: "text",
-        text: formatSolveResult(result)
-      }]
+      content: [
+        {
+          type: "text",
+          text: formatSolveResult(result)
+        }
+      ]
     };
   }
 );
@@ -21860,22 +21859,21 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
 `);
     });
     return {
-      content: [{
-        type: "text",
-        text: formatEvolveResult(result)
-      }]
+      content: [
+        {
+          type: "text",
+          text: formatEvolveResult(result)
+        }
+      ]
     };
   }
 );
-server.tool(
-  "status",
-  "Check if the deepclaude proxy is running and ready.",
-  {},
-  async () => {
-    const proxyAlive = await checkProxyHealth();
-    const apiKeySet = !!process.env["DEEPSEEK_API_KEY"];
-    return {
-      content: [{
+server.tool("status", "Check if the deepclaude proxy is running and ready.", {}, async () => {
+  const proxyAlive = await checkProxyHealth();
+  const apiKeySet = !!process.env.DEEPSEEK_API_KEY;
+  return {
+    content: [
+      {
         type: "text",
         text: [
           `Proxy (127.0.0.1:3200): ${proxyAlive ? "RUNNING" : "NOT FOUND"}`,
@@ -21883,10 +21881,33 @@ server.tool(
           "",
           proxyAlive ? "Ready for solve/evolve calls." : apiKeySet ? "Will attempt direct mode (DeepSeek /anthropic endpoint)." : "Set DEEPSEEK_API_KEY env var or start deepclaude proxy."
         ].join("\n")
-      }]
+      }
+    ]
+  };
+});
+server.tool(
+  "hello",
+  "Say hello world with a defensive greeting. Returns a greeting message for the given name.",
+  {
+    name: external_exports.string().optional().describe("Name to greet. Defaults to 'World' if omitted.")
+  },
+  async ({ name }) => {
+    return {
+      content: [
+        {
+          type: "text",
+          text: formatHello(name)
+        }
+      ]
     };
   }
 );
+function formatHello(raw) {
+  const sanitized = (raw ?? "").trim().replace(/[^\w\s'-]/g, "");
+  const name = sanitized.length > 0 ? sanitized : "World";
+  const displayName = name.length > 100 ? name.slice(0, 100) + "..." : name;
+  return `Hello, ${displayName}!`;
+}
 function formatSolveResult(result) {
   if (result.outcome === "pass") {
     return [
@@ -21970,12 +21991,15 @@ function formatEvolveResult(result) {
     `- Model: ${result.stats.model}`
   ].join("\n");
 }
+var __filename = fileURLToPath(import.meta.url);
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
-main().catch((err) => {
-  process.stderr.write(`evomcp MCP server failed: ${err}
+if (process.argv[1] === __filename) {
+  main().catch((err) => {
+    process.stderr.write(`evomcp MCP server failed: ${err}
 `);
-  process.exit(1);
-});
+    process.exit(1);
+  });
+}

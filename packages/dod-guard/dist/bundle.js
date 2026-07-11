@@ -21136,6 +21136,15 @@ async function load(id) {
     return null;
   }
 }
+async function loadRaw(id) {
+  try {
+    const data = await fs.readFile(docPath(id), "utf-8");
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("store: failed to loadRaw document", { id, err: err instanceof Error ? err.message : String(err) });
+    return null;
+  }
+}
 async function findByPath(markdownPath) {
   await ensureStoreDir();
   const files = await fs.readdir(getStoreDir());
@@ -21174,14 +21183,81 @@ async function listAll() {
   }
   return docs;
 }
+function legacyStepToTaskNode(step) {
+  const children = step.proofs.map((p) => ({
+    id: p.id,
+    title: p.title ?? p.description ?? step.title,
+    refinement: "concrete",
+    command: p.command,
+    predicate: p.predicate,
+    description: p.description ?? "",
+    category: p.category,
+    advisory: p.advisory,
+    last_status: p.last_status ?? "pending",
+    last_output: p.last_output,
+    last_checked: p.last_checked
+  }));
+  return {
+    id: step.id,
+    title: step.title,
+    refinement: "concrete",
+    last_status: children.length > 0 ? "pending" : "draft",
+    children
+  };
+}
+async function migrateDoc(doc) {
+  if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) return false;
+  const legacySteps = doc.steps;
+  if (!legacySteps || !Array.isArray(legacySteps) || legacySteps.length === 0) {
+    return false;
+  }
+  doc.roots = legacySteps.map(legacyStepToTaskNode);
+  delete doc.steps;
+  delete doc.locked;
+  const leafLines = [];
+  function walk(nodes) {
+    for (const n of nodes) {
+      if (n.children) walk(n.children);
+      else if (n.refinement === "concrete" && n.command) {
+        leafLines.push(n.command + "|" + (n.predicate?.type ?? "") + "|" + (n.predicate?.value ?? "") + "|" + (n.advisory ?? false));
+      }
+    }
+  }
+  walk(doc.roots);
+  if (leafLines.length > 0) {
+    const hash = crypto.createHash("sha256");
+    for (const line of leafLines.sort()) hash.update(line);
+    doc.proof_fingerprint = hash.digest("hex");
+  }
+  await save(doc);
+  return true;
+}
+async function listAllRaw() {
+  await ensureStoreDir();
+  const files = await fs.readdir(getStoreDir());
+  const docs = [];
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const data = await fs.readFile(path.join(getStoreDir(), file), "utf-8");
+      docs.push(JSON.parse(data));
+    } catch (err) {
+      console.error("store: failed to read file during listAllRaw", {
+        file,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+  return docs;
+}
 
 // src/checker.ts
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { createHash as createHash2 } from "node:crypto";
+import { createHash as createHash3 } from "node:crypto";
 
 // src/manual.ts
-import { createHash } from "node:crypto";
+import { createHash as createHash2 } from "node:crypto";
 console.debug("manual: module loaded", { pid: process.pid });
 function perProofFingerprint(node) {
   const data = [
@@ -21190,7 +21266,7 @@ function perProofFingerprint(node) {
     node.predicate?.value ?? "",
     node.description ?? ""
   ].join("|");
-  return createHash("sha256").update(data).digest("hex").slice(0, 12);
+  return createHash2("sha256").update(data).digest("hex").slice(0, 12);
 }
 async function resolveManual(node, confirm, label = "Manual verification") {
   const fingerprint = perProofFingerprint(node);
@@ -23198,7 +23274,7 @@ function computeProofFingerprint(roots) {
     if (node.advisory !== void 0) line += `|adv:${node.advisory}`;
     return line;
   }).join("\n");
-  return createHash2("sha256").update(data).digest("hex").slice(0, 12);
+  return createHash3("sha256").update(data).digest("hex").slice(0, 12);
 }
 async function runCommand(command, cwd) {
   const start = Date.now();
@@ -24238,25 +24314,6 @@ var CMD_BUILTINS = /* @__PURE__ */ new Set([
   "vol"
 ]);
 var OPERATOR_CHARS = /* @__PURE__ */ new Set(["|", "&", ";", "(", ")", "`", "\n", "\r"]);
-var WINDOWS_EQUIVALENTS = {
-  grep: "findstr",
-  cat: "type",
-  ls: "dir",
-  rm: "del  (or rmdir /s for dirs)",
-  cp: "copy",
-  mv: "move",
-  touch: "type nul > file",
-  which: "where",
-  sed: "PowerShell -replace",
-  awk: "PowerShell",
-  head: "PowerShell Select-Object -First N",
-  tail: "PowerShell Select-Object -Last N",
-  test: "if exist / if defined",
-  pwd: "cd",
-  export: "set",
-  diff: "fc",
-  wc: "find /c"
-};
 function isQuote(c) {
   return c === '"' || c === "'";
 }
@@ -24391,9 +24448,6 @@ async function findMissingTools(commands, cwd) {
   }
   return missing;
 }
-function suggestionFor(tool) {
-  return WINDOWS_EQUIVALENTS[tool.toLowerCase()];
-}
 var currentOs = process.platform;
 
 // src/baseline.ts
@@ -24505,12 +24559,7 @@ function validateBaseline(type, steps, skipReasons) {
   return { errors, warnings };
 }
 
-// src/index.ts
-import { fileURLToPath } from "node:url";
-var server = new McpServer({
-  name: "dod-guard",
-  version: "2.2.5"
-});
+// src/schemas.ts
 var PredicateSchema = external_exports.object({
   type: external_exports.enum([
     "exit_code",
@@ -24591,6 +24640,8 @@ var SectionsSchema = external_exports.object({
   open_questions: external_exports.string().optional(),
   open_risks: external_exports.string().optional()
 });
+
+// src/tree-utils.ts
 var nodeIdCounter = 0;
 function resetNodeIdCounter() {
   nodeIdCounter = 0;
@@ -24627,6 +24678,26 @@ function buildTaskNodes(inputs) {
     return node;
   });
 }
+function findNodeInTree(roots, proofId) {
+  for (const root of roots) {
+    if (root.id === proofId) return root;
+    if (root.children) {
+      const found = findInChildren(root.children, proofId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+function findInChildren(nodes, proofId) {
+  for (const node of nodes) {
+    if (node.id === proofId) return node;
+    if (node.children) {
+      const found = findInChildren(node.children, proofId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 function formatMissingTools(missing) {
   const lines = [
     `ERROR: ${missing.length} proof command(s) invoke tool(s) not available on this OS (${currentOs}).`,
@@ -24643,6 +24714,20 @@ function formatMissingTools(missing) {
     "Rewrite these commands for the current OS, then retry. (For human-only checks, use a `manual` proof instead.)"
   );
   return lines.join("\n");
+}
+function suggestionFor(tool) {
+  const map = {
+    grep: "findstr",
+    cat: "type",
+    sed: "(use PowerShell -replace or batch findstr with redirects)",
+    awk: "(use PowerShell or batch for /f)",
+    sh: "cmd /c",
+    bash: "cmd /c",
+    "python3": "python",
+    make: "(Windows: install GNU Make or use npm scripts)",
+    cargo: "(install Rust via rustup.rs)"
+  };
+  return map[tool.toLowerCase()] ?? "";
 }
 async function checkCommandsForOs(roots, cwd) {
   const commands = extractExecutableCommands(roots);
@@ -24671,6 +24756,13 @@ function collectBaselineProofs(node) {
   }
   return results;
 }
+
+// src/index.ts
+import { fileURLToPath } from "node:url";
+var server = new McpServer({
+  name: "dod-guard",
+  version: "2.2.5"
+});
 server.tool(
   "dod_create",
   "Create a new DoD document with recursive TaskNode tree. Nodes can be draft (intent-only) or concrete (with proof commands). Proof commands run on the HOST OS \u2014 write them for that OS (e.g. on Windows use findstr/type/dir, not grep/cat/ls). Stores proof commands canonically in MCP storage \u2014 editing the rendered markdown cannot weaken verification.",
@@ -25189,26 +25281,6 @@ server.tool(
     };
   }
 );
-function findNodeInTree(roots, proofId) {
-  for (const root of roots) {
-    if (root.id === proofId) return root;
-    if (root.children) {
-      const found = findInChildren(root.children, proofId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-function findInChildren(nodes, proofId) {
-  for (const node of nodes) {
-    if (node.id === proofId) return node;
-    if (node.children) {
-      const found = findInChildren(node.children, proofId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
 server.tool(
   "dod_verify",
   "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now.",
@@ -25395,6 +25467,15 @@ server.tool("dod_list", "List all tracked DoD documents with their last check st
   }
   const lines = docs.map((d) => {
     const status = d.last_check?.overall?.toUpperCase() ?? "UNCHECKED";
+    if (!d.roots || !Array.isArray(d.roots)) {
+      const legacyCount = d.steps?.length ?? 0;
+      return [
+        `\u2022 ${d.title}`,
+        `  ID: ${d.id}`,
+        `  Path: ${d.markdown_path}`,
+        `  Status: LEGACY \u2014 ${legacyCount} step(s) in old format. Run dod_store_migrate to upgrade.`
+      ].join("\n");
+    }
     const rootCount = d.roots.length;
     const concreteCount = flattenConcreteLeaves(d.roots).length;
     const draftCount = countDraftNodes(d.roots);
@@ -25475,6 +25556,108 @@ server.tool(
       console.error("dod-guard: dod_import parse failed", { err: msg });
       return { content: [{ type: "text", text: `ERROR parsing markdown: ${msg}` }] };
     }
+  }
+);
+server.tool(
+  "dod_store_migrate",
+  "Migrate legacy DoD documents from the old 'steps' format to the current 'roots' TaskNode tree format. Idempotent \u2014 already-migrated docs are skipped. Run this once to upgrade all legacy docs.",
+  {
+    dod_id: external_exports.string().optional().describe("Migrate a single DoD by ID. Omit to migrate ALL legacy docs."),
+    dry_run: external_exports.boolean().optional().default(false).describe("Preview what would change without writing to disk.")
+  },
+  async ({ dod_id, dry_run }) => {
+    if (dod_id) {
+      const doc = await loadRaw(dod_id);
+      if (!doc) {
+        return { content: [{ type: "text", text: `ERROR: DoD "${dod_id}" not found.` }] };
+      }
+      if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) {
+        return {
+          content: [{ type: "text", text: `"${doc.title}" is already in the current format \u2014 no migration needed.` }]
+        };
+      }
+      const legacySteps = doc.steps;
+      if (!legacySteps || !Array.isArray(legacySteps)) {
+        return {
+          content: [{ type: "text", text: `"${doc.title}" has no steps or roots \u2014 cannot migrate.` }]
+        };
+      }
+      if (dry_run) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: [
+                `DRY RUN \u2014 would migrate: "${doc.title}"`,
+                `  ${legacySteps.length} step(s) \u2192 task groups`,
+                `  ${legacySteps.reduce((sum, s) => sum + (s.proofs?.length ?? 0), 0)} proof(s) \u2192 concrete leaves`
+              ].join("\n")
+            }
+          ]
+        };
+      }
+      const migrated2 = await migrateDoc(doc);
+      if (migrated2) {
+        await save(doc);
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Migrated: "${doc.title}" \u2192 ${(doc.roots ?? []).length} root task group(s). Run dod_check to verify.`
+            }
+          ]
+        };
+      }
+      return { content: [{ type: "text", text: "No changes made." }] };
+    }
+    const allDocs = await listAllRaw();
+    const legacyDocs = allDocs.filter((d) => d.steps && (!d.roots || !Array.isArray(d.roots) || d.roots.length === 0));
+    if (legacyDocs.length === 0) {
+      return {
+        content: [{ type: "text", text: "No legacy documents found \u2014 all docs are in the current format." }]
+      };
+    }
+    if (dry_run) {
+      let totalSteps = 0;
+      let totalProofs = 0;
+      for (const d of legacyDocs) {
+        totalSteps += d.steps?.length ?? 0;
+        totalProofs += d.steps?.reduce((sum, s) => sum + (s.proofs?.length ?? 0), 0) ?? 0;
+      }
+      return {
+        content: [
+          {
+            type: "text",
+            text: [
+              `DRY RUN \u2014 would migrate ${legacyDocs.length} document(s):`,
+              `  ${totalSteps} step(s) \u2192 task groups`,
+              `  ${totalProofs} proof(s) \u2192 concrete leaves`,
+              "",
+              "Run without dry_run to apply."
+            ].join("\n")
+          }
+        ]
+      };
+    }
+    let migrated = 0;
+    let skipped = 0;
+    for (const d of legacyDocs) {
+      const changed = await migrateDoc(d);
+      if (changed) migrated++;
+      else skipped++;
+    }
+    return {
+      content: [
+        {
+          type: "text",
+          text: [
+            `Migration complete: ${migrated} migrated, ${skipped} skipped.`,
+            "",
+            "Run dod_list to see updated documents."
+          ].join("\n")
+        }
+      ]
+    };
   }
 );
 var _dodGuardFilename = fileURLToPath(import.meta.url);

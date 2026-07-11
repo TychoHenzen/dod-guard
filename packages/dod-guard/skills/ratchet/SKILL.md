@@ -1,6 +1,11 @@
 ---
 name: ratchet
-description: Unified ratcheting workflow that combines dod-guard (verification gates), gitevo (evolutionary branching), evomcp (cascade solver), obsidian-rag (learning persistence), and code-review-graph (impact analysis) to reliably solve complex multi-sub-problems. Use when facing non-trivial problems with unknown unknowns, multiple interdependent sub-problems, or when a single-shot approach would waste tokens on wrong approaches. Trigger: "solve with ratchet", "ratchet this", "complex problem", "multi-step solution", "ratcheting workflow".
+description: >
+  Unified ratcheting workflow that combines dod-guard (verification gates), gitevo (evolutionary branching),
+  evomcp (cascade solver), obsidian-rag (learning persistence), and code-review-graph (impact analysis)
+  to reliably solve complex multi-sub-problems. Use when facing non-trivial problems with unknown unknowns,
+  multiple interdependent sub-problems, or when a single-shot approach would waste tokens on wrong approaches.
+  Trigger: "solve with ratchet", "ratchet this", "complex problem", "multi-step solution", "ratcheting workflow".
 ---
 
 # Ratchet — Unified Ratcheting Workflow

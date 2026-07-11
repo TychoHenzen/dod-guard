@@ -8,284 +8,23 @@ import {
   computeProofFingerprint,
   flattenConcreteLeaves,
   findNodeByPath,
-  hasDraftNodes,
   countDraftNodes,
-  extractExecutableCommands,
   isExecutablePredicate,
 } from "./checker.js";
 import { writeMarkdown, updateDocFromCheckResult, formatCheckResult } from "./author.js";
 import { parseMarkdown } from "./parser.js";
 import { playJingle, showVerifyDialog } from "./notify.js";
-import { findMissingTools, suggestionFor, currentOs, type MissingTool } from "./command-check.js";
+import { findMissingTools } from "./command-check.js";
 import { validateBaseline } from "./baseline.js";
 import { resolveManual, type Confirmer, type ManualAnswer } from "./manual.js";
 import type { DodDocument, Predicate, TaskNode, ProofCategory } from "./types.js";
+import { PredicateSchema, ProofCategorySchema, TaskNodeInputSchema, SectionsSchema } from "./schemas.js";
+import { resetNodeIdCounter, buildTaskNodes, formatMissingTools, checkCommandsForOs, extractBaselineSteps, findNodeInTree } from "./tree-utils.js";
 
 const server = new McpServer({
   name: "dod-guard",
   version: "2.2.5",
 });
-
-// ── Shared schemas ──────────────────────────────────────────────────
-
-const PredicateSchema = z.object({
-  type: z.enum([
-    "exit_code",
-    "exit_code_not",
-    "output_contains",
-    "output_matches",
-    "output_not_contains",
-    "output_not_matches",
-    "tdd",
-    "manual",
-    "review",
-    "mutation",
-    "regression",
-    "assertions",
-    "streamline",
-    "observability",
-    "brevity",
-    "line_length",
-    "function_size",
-    "file_size",
-    "cohesion",
-    "replacement_ratio",
-  ]),
-  value: z.union([z.number(), z.string()]).optional(),
-  extract: z
-    .string()
-    .optional()
-    .describe(
-      "regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout.",
-    ),
-  lower_is_better: z
-    .boolean()
-    .optional()
-    .describe(
-      "regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage).",
-    ),
-  max_line_length: z.number().optional().describe("brevity / line_length: max characters per line (default 120)."),
-  max_function_lines: z.number().optional().describe("brevity / function_size: max lines per function (default 30)."),
-  max_file_lines: z.number().optional().describe("brevity / file_size: max lines per file (default 300)."),
-  max_complexity: z
-    .number()
-    .optional()
-    .describe("brevity / cohesion: max cyclomatic complexity per function (default 5)."),
-  require_guard_clauses: z
-    .boolean()
-    .optional()
-    .describe("brevity / cohesion: flag unnecessary else after exit statement (default true)."),
-  suggest_guard_clauses: z
-    .boolean()
-    .optional()
-    .describe(
-      "brevity / cohesion: flag if/else pairs in functions lacking guard clauses — advisory suggestion (default true).",
-    ),
-  min_replacement_ratio: z
-    .number()
-    .optional()
-    .describe("brevity / replacement_ratio: minimum deletion/insertion ratio (default 0.2)."),
-});
-
-const ProofCategorySchema = z.enum([
-  "lint",
-  "format",
-  "tdd",
-  "structure",
-  "test",
-  "mutation",
-  "integration_wiring",
-  "integration_behavioral",
-  "performance",
-  "complexity",
-  "coverage",
-  "duplication",
-  "streamline",
-  "observability",
-  "brevity",
-  "manual",
-  "other",
-]);
-
-// Recursive TaskNode input schema
-const TaskNodeInputSchema: z.ZodType<{
-  title: string;
-  refinement?: "draft" | "concrete";
-  intent?: string;
-  children?: {
-    title: string;
-    refinement?: "draft" | "concrete";
-    intent?: string;
-    children?: any[];
-    command?: string;
-    predicate?: any;
-    description?: string;
-    category?: string;
-    advisory?: boolean;
-  }[];
-  command?: string;
-  predicate?: {
-    type: string;
-    value?: number | string;
-    extract?: string;
-    lower_is_better?: boolean;
-    max_line_length?: number;
-    max_function_lines?: number;
-    max_file_lines?: number;
-    max_complexity?: number;
-    require_guard_clauses?: boolean;
-    suggest_guard_clauses?: boolean;
-    min_replacement_ratio?: number;
-  };
-  description?: string;
-  category?: string;
-  advisory?: boolean;
-}> = z.lazy(() =>
-  z.object({
-    title: z.string(),
-    refinement: z.enum(["draft", "concrete"]).optional().default("draft"),
-    intent: z.string().optional().describe("Required for draft nodes: what behavior this will prove"),
-    children: z.array(TaskNodeInputSchema).optional().describe("Subtask decomposition — present on task groups"),
-    command: z.string().optional(),
-    predicate: PredicateSchema.optional(),
-    description: z.string().optional(),
-    category: ProofCategorySchema.optional(),
-    advisory: z.boolean().optional(),
-  }),
-);
-
-const SectionsSchema = z.object({
-  decisions: z.string().optional(),
-  current_state: z.string().optional(),
-  requirements: z.string(),
-  research_notes: z.string().optional(),
-  open_questions: z.string().optional(),
-  open_risks: z.string().optional(),
-});
-
-// ── Node ID generation ──────────────────────────────────────────────
-
-let nodeIdCounter = 0;
-function resetNodeIdCounter(): void {
-  nodeIdCounter = 0;
-}
-function nextNodeId(): string {
-  return `node-${++nodeIdCounter}`;
-}
-
-/** Convert TaskNodeInput trees into TaskNode objects with assigned IDs. */
-function buildTaskNodes(
-  inputs: {
-    title: string;
-    refinement?: "draft" | "concrete";
-    intent?: string;
-    children?: any[];
-    command?: string;
-    predicate?: any;
-    description?: string;
-    category?: string;
-    advisory?: boolean;
-  }[],
-): TaskNode[] {
-  return inputs.map((input) => {
-    const isGroup = !!(input.children && input.children.length > 0);
-    // Task groups are structural containers — they're done as soon as they have children.
-    // "draft"/"concrete" only applies to leaves (no children).
-    const effectiveRefinement = isGroup ? "concrete" : (input.refinement ?? "draft");
-
-    const node: TaskNode = {
-      id: nextNodeId(),
-      title: input.title,
-      refinement: effectiveRefinement,
-      last_status: effectiveRefinement === "draft" ? "draft" : "pending",
-    };
-
-    if (isGroup && input.children) {
-      node.children = buildTaskNodes(input.children);
-    }
-
-    if (!isGroup && input.refinement === "draft") {
-      node.intent = input.intent;
-    }
-
-    if (!isGroup && input.refinement === "concrete") {
-      node.command = input.command;
-      node.predicate = input.predicate as Predicate | undefined;
-      node.description = input.description;
-      node.category = input.category as ProofCategory | undefined;
-      node.advisory = input.advisory ?? (input.predicate?.type === "regression" ? true : undefined);
-      // Coverage metrics default to higher-is-better
-      if (
-        input.predicate?.type === "regression" &&
-        node.category === "coverage" &&
-        input.predicate.lower_is_better === undefined
-      ) {
-        (node.predicate as Predicate).lower_is_better = false;
-      }
-    }
-
-    return node;
-  });
-}
-
-// ── OS command validation ───────────────────────────────────────────
-
-function formatMissingTools(missing: MissingTool[]): string {
-  const lines = [
-    `ERROR: ${missing.length} proof command(s) invoke tool(s) not available on this OS (${currentOs}).`,
-    "Proof commands run on THIS machine — author them for the target OS, not as portable/bash by default.",
-    "",
-  ];
-  for (const m of missing) {
-    const hint = suggestionFor(m.tool);
-    lines.push(`  • \`${m.tool}\` not found${hint ? ` — on ${currentOs} use: ${hint}` : ""}`);
-    lines.push(`    in: ${m.command}`);
-  }
-  lines.push("");
-  lines.push(
-    "Rewrite these commands for the current OS, then retry. (For human-only checks, use a `manual` proof instead.)",
-  );
-  return lines.join("\n");
-}
-
-async function checkCommandsForOs(
-  roots: TaskNode[],
-  cwd: string,
-): Promise<{ content: { type: "text"; text: string }[] } | null> {
-  const commands = extractExecutableCommands(roots);
-  const missing = await findMissingTools(commands, cwd);
-  if (missing.length === 0) return null;
-  return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
-}
-
-// ── Baseline extraction from tree ───────────────────────────────────
-
-function extractBaselineSteps(
-  roots: TaskNode[],
-): { title: string; proofs: { category: ProofCategory; predicate: { type: string }; advisory?: boolean }[] }[] {
-  return roots.map((root) => ({
-    title: root.title,
-    proofs: collectBaselineProofs(root),
-  }));
-}
-
-function collectBaselineProofs(
-  node: TaskNode,
-): { category: ProofCategory; predicate: { type: string }; advisory?: boolean }[] {
-  const results: { category: ProofCategory; predicate: { type: string }; advisory?: boolean }[] = [];
-  if (node.children) {
-    for (const child of node.children) {
-      results.push(...collectBaselineProofs(child));
-    }
-  } else if (node.refinement === "concrete" && node.category) {
-    results.push({
-      category: node.category,
-      predicate: { type: node.predicate?.type ?? "" },
-      advisory: node.advisory,
-    });
-  }
-  return results;
-}
 
 // ── dod_create ──────────────────────────────────────────────────────
 
@@ -920,28 +659,6 @@ server.tool(
 
 // ── dod_verify ──────────────────────────────────────────────────────
 
-function findNodeInTree(roots: TaskNode[], proofId: string): TaskNode | null {
-  for (const root of roots) {
-    if (root.id === proofId) return root;
-    if (root.children) {
-      const found = findInChildren(root.children, proofId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-function findInChildren(nodes: TaskNode[], proofId: string): TaskNode | null {
-  for (const node of nodes) {
-    if (node.id === proofId) return node;
-    if (node.children) {
-      const found = findInChildren(node.children, proofId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
 server.tool(
   "dod_verify",
   "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now.",
@@ -1164,6 +881,18 @@ server.tool("dod_list", "List all tracked DoD documents with their last check st
 
   const lines = docs.map((d) => {
     const status = d.last_check?.overall?.toUpperCase() ?? "UNCHECKED";
+
+    // Handle legacy format (steps array instead of roots)
+    if (!d.roots || !Array.isArray(d.roots)) {
+      const legacyCount = (d as any).steps?.length ?? 0;
+      return [
+        `• ${d.title}`,
+        `  ID: ${d.id}`,
+        `  Path: ${d.markdown_path}`,
+        `  Status: LEGACY — ${legacyCount} step(s) in old format. Run dod_store_migrate to upgrade.`,
+      ].join("\n");
+    }
+
     const rootCount = d.roots.length;
     const concreteCount = flattenConcreteLeaves(d.roots).length;
     const draftCount = countDraftNodes(d.roots);
@@ -1255,6 +984,119 @@ server.tool(
       console.error("dod-guard: dod_import parse failed", { err: msg });
       return { content: [{ type: "text" as const, text: `ERROR parsing markdown: ${msg}` }] };
     }
+  },
+);
+
+// ── dod_store_migrate ───────────────────────────────────────────────
+
+server.tool(
+  "dod_store_migrate",
+  "Migrate legacy DoD documents from the old 'steps' format to the current 'roots' TaskNode tree format. Idempotent — already-migrated docs are skipped. Run this once to upgrade all legacy docs.",
+  {
+    dod_id: z.string().optional().describe("Migrate a single DoD by ID. Omit to migrate ALL legacy docs."),
+    dry_run: z.boolean().optional().default(false).describe("Preview what would change without writing to disk."),
+  },
+  async ({ dod_id, dry_run }) => {
+    if (dod_id) {
+      const doc = await store.loadRaw(dod_id);
+      if (!doc) {
+        return { content: [{ type: "text" as const, text: `ERROR: DoD "${dod_id}" not found.` }] };
+      }
+      if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) {
+        return {
+          content: [{ type: "text" as const, text: `"${(doc as any).title}" is already in the current format — no migration needed.` }],
+        };
+      }
+      const legacySteps = (doc as any).steps;
+      if (!legacySteps || !Array.isArray(legacySteps)) {
+        return {
+          content: [{ type: "text" as const, text: `"${(doc as any).title}" has no steps or roots — cannot migrate.` }],
+        };
+      }
+
+      if (dry_run) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: [
+                `DRY RUN — would migrate: "${(doc as any).title}"`,
+                `  ${legacySteps.length} step(s) → task groups`,
+                `  ${legacySteps.reduce((sum: number, s: any) => sum + (s.proofs?.length ?? 0), 0)} proof(s) → concrete leaves`,
+              ].join("\n"),
+            },
+          ],
+        };
+      }
+
+      const migrated = await store.migrateDoc(doc as any);
+      if (migrated) {
+        await store.save(doc as any);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Migrated: "${(doc as any).title}" → ${(doc.roots ?? []).length} root task group(s). Run dod_check to verify.`,
+            },
+          ],
+        };
+      }
+      return { content: [{ type: "text" as const, text: "No changes made." }] };
+    }
+
+    // Bulk migration: all legacy docs
+    const allDocs = await store.listAllRaw();
+    const legacyDocs = allDocs.filter((d: any) => (d as any).steps && (!(d as any).roots || !Array.isArray((d as any).roots) || (d as any).roots.length === 0));
+
+    if (legacyDocs.length === 0) {
+      return {
+        content: [{ type: "text" as const, text: "No legacy documents found — all docs are in the current format." }],
+      };
+    }
+
+    if (dry_run) {
+      let totalSteps = 0;
+      let totalProofs = 0;
+      for (const d of legacyDocs) {
+        totalSteps += (d as any).steps?.length ?? 0;
+        totalProofs += (d as any).steps?.reduce((sum: number, s: any) => sum + (s.proofs?.length ?? 0), 0) ?? 0;
+      }
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: [
+              `DRY RUN — would migrate ${legacyDocs.length} document(s):`,
+              `  ${totalSteps} step(s) → task groups`,
+              `  ${totalProofs} proof(s) → concrete leaves`,
+              "",
+              "Run without dry_run to apply.",
+            ].join("\n"),
+          },
+        ],
+      };
+    }
+
+    let migrated = 0;
+    let skipped = 0;
+    for (const d of legacyDocs) {
+      const changed = await store.migrateDoc(d as any);
+      if (changed) migrated++;
+      else skipped++;
+    }
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: [
+            `Migration complete: ${migrated} migrated, ${skipped} skipped.`,
+            "",
+            "Run dod_list to see updated documents.",
+          ].join("\n"),
+        },
+      ],
+    };
   },
 );
 

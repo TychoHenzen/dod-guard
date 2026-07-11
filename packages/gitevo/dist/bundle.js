@@ -21231,7 +21231,8 @@ function evo_learn(content) {
     branch
   };
   const paths = evoPaths(cwd);
-  fs.appendFileSync(paths.lessonsFile, JSON.stringify(lesson) + "\n", "utf-8");
+  fs.appendFileSync(paths.lessonsFile, `${JSON.stringify(lesson)}
+`, "utf-8");
   return `Lesson recorded on branch '${branch}'.`;
 }
 function evo_lessons() {
@@ -21243,9 +21244,7 @@ function evo_lessons() {
   const content = fs.readFileSync(paths.lessonsFile, "utf-8").trim();
   if (!content) return "No lessons recorded.";
   const lessons = content.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l)).reverse();
-  return lessons.map(
-    (l, i) => `[${i + 1}] ${l.timestamp} (${l.branch}): ${l.content}`
-  ).join("\n");
+  return lessons.map((l, i) => `[${i + 1}] ${l.timestamp} (${l.branch}): ${l.content}`).join("\n");
 }
 function evo_export_lessons() {
   const { cwd } = getRepo();
@@ -21305,7 +21304,8 @@ function evo_checkpoints() {
     const desc = getTagMessage(t, cwd);
     return `  ${t}: ${desc}`;
   });
-  return "Checkpoints:\n" + lines.join("\n");
+  return `Checkpoints:
+${lines.join("\n")}`;
 }
 function evo_branches() {
   const { cwd, rootBranch } = getRepo();
@@ -21314,7 +21314,8 @@ function evo_branches() {
   const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
   const attempts = branches.filter((b) => b && !defaultNames.has(b) && b !== rootBranch);
   if (attempts.length === 0) return "No attempt branches.";
-  return "Branches:\n  " + attempts.sort().join("\n  ");
+  return `Branches:
+  ${attempts.sort().join("\n  ")}`;
 }
 function evo_abandon(checkpoint, reason) {
   const { cwd } = getRepo();
@@ -21364,9 +21365,7 @@ function evo_summary() {
   requireInit(cwd);
   const active = currentBranch(cwd);
   const allTags = tagsWithPrefix("evo-", cwd);
-  const checkpoints = allTags.filter(
-    (t) => !t.startsWith("evo-dead-") && t !== "evo-adopted"
-  );
+  const checkpoints = allTags.filter((t) => !t.startsWith("evo-dead-") && t !== "evo-adopted");
   const paths = evoPaths(cwd);
   let lessonCount = 0;
   if (fs.existsSync(paths.lessonsFile)) {
@@ -21438,6 +21437,7 @@ function evo_finish() {
 }
 
 // src/index.ts
+import { fileURLToPath } from "node:url";
 var server = new McpServer({
   name: "gitevo",
   version: "0.1.3"
@@ -21474,14 +21474,9 @@ server.tool(
     content: [{ type: "text", text: wrap(evo_checkpoint)(name, description) }]
   })
 );
-server.tool(
-  "evo_checkpoints",
-  "List all evo-* tags with descriptions, roughly newest first.",
-  {},
-  async () => ({
-    content: [{ type: "text", text: wrap(evo_checkpoints)() }]
-  })
-);
+server.tool("evo_checkpoints", "List all evo-* tags with descriptions, roughly newest first.", {}, async () => ({
+  content: [{ type: "text", text: wrap(evo_checkpoints)() }]
+}));
 server.tool(
   "evo_spawn",
   "Create a new branch from a checkpoint tag and check it out. Refuses if tree dirty, checkpoint not found, or branch already exists.",
@@ -21493,14 +21488,9 @@ server.tool(
     content: [{ type: "text", text: wrap(evo_spawn)(checkpoint_name, new_branch) }]
   })
 );
-server.tool(
-  "evo_branches",
-  "List all attempt branches (non-root, non-default like main/master).",
-  {},
-  async () => ({
-    content: [{ type: "text", text: wrap(evo_branches)() }]
-  })
-);
+server.tool("evo_branches", "List all attempt branches (non-root, non-default like main/master).", {}, async () => ({
+  content: [{ type: "text", text: wrap(evo_branches)() }]
+}));
 server.tool(
   "evo_learn",
   "Append a lesson to .evo/lessons.jsonl with timestamp and current branch. Use for failed approaches, discoveries, gotchas, and abandoned strategies.",
@@ -21575,12 +21565,18 @@ server.tool(
     content: [{ type: "text", text: wrap(evo_finish)() }]
   })
 );
+var __filename = fileURLToPath(import.meta.url);
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
-main().catch((err) => {
-  process.stderr.write(`gitevo MCP server failed: ${err}
+if (process.argv[1] === __filename) {
+  main().catch((err) => {
+    process.stderr.write(`gitevo MCP server failed: ${err}
 `);
-  process.exit(1);
-});
+    process.exit(1);
+  });
+}
+export {
+  wrap
+};

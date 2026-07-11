@@ -19,6 +19,7 @@ import { z } from "zod";
 import { solve } from "./solve.js";
 import { evolve } from "./evolve.js";
 import { checkProxyHealth } from "./agent.js";
+import { createGreeting } from "./hello.js";
 
 const server = new McpServer({
   name: "evomcp",
@@ -159,7 +160,41 @@ server.tool("status", "Check if the deepclaude proxy is running and ready.", {},
   };
 });
 
+// ── hello tool ───────────────────────────────────────────────────────
+
+server.tool(
+  "hello",
+  "Say hello world with a defensive greeting. Returns a greeting message for the given name.",
+  {
+    name: z
+      .string()
+      .optional()
+      .describe("Name to greet. Defaults to 'World' if omitted."),
+  },
+  async ({ name }) => {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: formatHello(name),
+        },
+      ],
+    };
+  },
+);
+
 // ── Formatting ─────────────────────────────────────────────────────────
+
+function formatHello(raw?: string): string {
+  // Defensive: sanitize and validate input
+  const sanitized = (raw ?? "").trim().replace(/[^\w\s'-]/g, "");
+  const name = sanitized.length > 0 ? sanitized : "World";
+
+  // Defensive: max length guard against abuse
+  const displayName = name.length > 100 ? name.slice(0, 100) + "..." : name;
+
+  return `Hello, ${displayName}!`;
+}
 
 function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
   if (result.outcome === "pass") {
