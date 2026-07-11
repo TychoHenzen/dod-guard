@@ -5,17 +5,11 @@ import { chunkMarkdown, hashContent } from "./indexer.js";
 describe("chunkMarkdown", () => {
   it("splits markdown by headings when content is long enough", () => {
     // Build a note with enough content to force multiple chunks (>800 chars)
-    const pad = "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ".repeat(5);
-    const md = [
-      "# Title",
-      pad,
-      "",
-      "## Section 1",
-      pad,
-      "",
-      "## Section 2",
-      pad,
-    ].join("\n");
+    const pad =
+      "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ".repeat(
+        5,
+      );
+    const md = ["# Title", pad, "", "## Section 1", pad, "", "## Section 2", pad].join("\n");
 
     const chunks = chunkMarkdown("test.md", md);
     assert.ok(chunks.length >= 2, `expected >=2 chunks, got ${chunks.length}`);
@@ -34,17 +28,10 @@ describe("chunkMarkdown", () => {
   });
 
   it("preserves code blocks intact", () => {
-    const md = [
-      "# Code",
-      "```ts",
-      "const x = 1;",
-      "// this is not a heading",
-      "```",
-      "After code.",
-    ].join("\n");
+    const md = ["# Code", "```ts", "const x = 1;", "// this is not a heading", "```", "After code."].join("\n");
 
     const chunks = chunkMarkdown("code.md", md);
-    const fullText = chunks.map(c => c.content).join(" ");
+    const fullText = chunks.map((c) => c.content).join(" ");
     assert.ok(fullText.includes("const x = 1"), "code should be preserved");
     assert.ok(fullText.includes("After code"), "text after code should be present");
   });

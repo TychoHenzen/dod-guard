@@ -47,7 +47,11 @@ function git(args: string[], cwd?: string): string {
 }
 
 function gitOrNull(args: string[], cwd?: string): string | null {
-  try { return git(args, cwd); } catch { return null; }
+  try {
+    return git(args, cwd);
+  } catch {
+    return null;
+  }
 }
 
 function getRepo(): { cwd: string; rootBranch: string } {
@@ -62,7 +66,10 @@ function getRepo(): { cwd: string; rootBranch: string } {
   let rootBranch = "main";
   const heads = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
   for (const name of ["main", "master", "trunk"]) {
-    if (heads.includes(name)) { rootBranch = name; break; }
+    if (heads.includes(name)) {
+      rootBranch = name;
+      break;
+    }
   }
   return { cwd, rootBranch };
 }
@@ -74,7 +81,7 @@ function currentBranch(cwd: string): string {
 function isDirty(cwd: string): boolean {
   const status = git(["status", "--porcelain"], cwd);
   // Only count tracked file modifications, not untracked files
-  const lines = status.split("\n").filter(l => l.trim() && !l.startsWith("??"));
+  const lines = status.split("\n").filter((l) => l.trim() && !l.startsWith("??"));
   return lines.length > 0;
 }
 
@@ -152,7 +159,11 @@ export function evo_init(): string {
   }
 
   // Force re-tag evo-root
-  try { git(["tag", "-d", "evo-root"], cwd); } catch { /* tag didn't exist */ }
+  try {
+    git(["tag", "-d", "evo-root"], cwd);
+  } catch {
+    /* tag didn't exist */
+  }
   git(["tag", "-a", "evo-root", "-m", "GitEvo root checkpoint"], cwd);
 
   return "GitEvo initialized. Root checkpoint tagged as evo-root.";
@@ -171,7 +182,11 @@ export function evo_checkpoint(name: string, description: string): string {
   }
 
   const tagName = `evo-${name}`;
-  try { git(["tag", "-d", tagName], cwd); } catch { /* doesn't exist */ }
+  try {
+    git(["tag", "-d", tagName], cwd);
+  } catch {
+    /* doesn't exist */
+  }
   git(["tag", "-a", tagName, "-m", description], cwd);
 
   return `Checkpoint '${name}' created.`;
@@ -192,7 +207,7 @@ export function evo_learn(content: string): string {
   };
 
   const paths = evoPaths(cwd);
-  fs.appendFileSync(paths.lessonsFile, JSON.stringify(lesson) + "\n", "utf-8");
+  fs.appendFileSync(paths.lessonsFile, `${JSON.stringify(lesson)}\n`, "utf-8");
 
   return `Lesson recorded on branch '${branch}'.`;
 }
@@ -218,12 +233,7 @@ export function evo_lessons(): string {
     .map((l) => JSON.parse(l))
     .reverse(); // newest first
 
-  return lessons
-    .map(
-      (l, i) =>
-        `[${i + 1}] ${l.timestamp} (${l.branch}): ${l.content}`,
-    )
-    .join("\n");
+  return lessons.map((l, i) => `[${i + 1}] ${l.timestamp} (${l.branch}): ${l.content}`).join("\n");
 }
 
 /**
@@ -323,7 +333,7 @@ export function evo_checkpoints(): string {
     return `  ${t}: ${desc}`;
   });
 
-  return "Checkpoints:\n" + lines.join("\n");
+  return `Checkpoints:\n${lines.join("\n")}`;
 }
 
 /**
@@ -339,7 +349,7 @@ export function evo_branches(): string {
 
   if (attempts.length === 0) return "No attempt branches.";
 
-  return "Branches:\n  " + attempts.sort().join("\n  ");
+  return `Branches:\n  ${attempts.sort().join("\n  ")}`;
 }
 
 /**
@@ -349,10 +359,7 @@ export function evo_branches(): string {
  * to that checkpoint tag. Otherwise reverts to parent commit (git reset --hard HEAD~1).
  * Optionally records reason as a lesson. Refuses if dirty tree.
  */
-export function evo_abandon(
-  checkpoint?: string,
-  reason?: string,
-): string {
+export function evo_abandon(checkpoint?: string, reason?: string): string {
   const { cwd } = getRepo();
   requireInit(cwd);
 
@@ -364,7 +371,9 @@ export function evo_abandon(
 
   // Tag as dead
   const deadTag = `evo-dead-${branchName}`;
-  try { git(["tag", "-d", deadTag], cwd); } catch {}
+  try {
+    git(["tag", "-d", deadTag], cwd);
+  } catch {}
   git(["tag", "-a", deadTag, "-m", `Abandoned branch '${branchName}'`], cwd);
 
   // Determine revert target
@@ -423,9 +432,7 @@ export function evo_summary(): string {
 
   // Count checkpoints (evo-* tags, excluding evo-dead-* and evo-adopted)
   const allTags = tagsWithPrefix("evo-", cwd);
-  const checkpoints = allTags.filter(
-    (t) => !t.startsWith("evo-dead-") && t !== "evo-adopted",
-  );
+  const checkpoints = allTags.filter((t) => !t.startsWith("evo-dead-") && t !== "evo-adopted");
 
   // Count lessons
   const paths = evoPaths(cwd);
@@ -438,9 +445,7 @@ export function evo_summary(): string {
   }
 
   // Dead branches
-  const deadBranches = allTags
-    .filter((t) => t.startsWith("evo-dead-"))
-    .map((t) => t.slice("evo-dead-".length));
+  const deadBranches = allTags.filter((t) => t.startsWith("evo-dead-")).map((t) => t.slice("evo-dead-".length));
 
   // Adopted
   const adopted = hasTag("evo-adopted", cwd);
@@ -481,7 +486,9 @@ export function evo_adopt(branch: string): string {
   git(["merge", branch, "--no-edit"], cwd);
 
   // Tag as adopted
-  try { git(["tag", "-d", "evo-adopted"], cwd); } catch {}
+  try {
+    git(["tag", "-d", "evo-adopted"], cwd);
+  } catch {}
   git(["tag", "-a", "evo-adopted", "-m", `Adopted branch '${branch}' into ${rootBranch}`], cwd);
 
   return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
@@ -507,14 +514,18 @@ export function evo_finish(): string {
   // Delete all evo-* tags
   const allEvoTags = tagsWithPrefix("evo-", cwd);
   for (const tag of allEvoTags) {
-    try { git(["tag", "-d", tag], cwd); } catch {}
+    try {
+      git(["tag", "-d", tag], cwd);
+    } catch {}
   }
 
   // Delete all side branches except root and defaults
   const defaultNames = new Set(["master", "main", "trunk"]);
   for (const branch of branches) {
     if (branch === rootBranch || defaultNames.has(branch)) continue;
-    try { git(["branch", "-D", branch], cwd); } catch {}
+    try {
+      git(["branch", "-D", branch], cwd);
+    } catch {}
   }
 
   // Remove .evo/ directory

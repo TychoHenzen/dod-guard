@@ -17,7 +17,11 @@ test("suggests the Windows-native equivalent for a Unix-only tool", () => {
 });
 
 test("extracts both sides of a pipe", () => {
-  assert.deepEqual(extractCommandNames("npm test | grep -i fail"), ["npm", "grep"], "should extract both npm and grep from pipe");
+  assert.deepEqual(
+    extractCommandNames("npm test | grep -i fail"),
+    ["npm", "grep"],
+    "should extract both npm and grep from pipe",
+  );
 });
 
 test("extracts across && and || and ; chains", () => {
@@ -27,17 +31,27 @@ test("extracts across && and || and ; chains", () => {
 });
 
 test("chained pipes return each stage", () => {
-  assert.deepEqual(extractCommandNames("cat x | sort | head -n5"), ["cat", "sort", "head"], "chained pipes should return all three stages");
+  assert.deepEqual(
+    extractCommandNames("cat x | sort | head -n5"),
+    ["cat", "sort", "head"],
+    "chained pipes should return all three stages",
+  );
 });
 
 test("skips leading env-assignments (posix style)", () => {
-  assert.deepEqual(extractCommandNames("FOO=1 BAR=2 node app.js"), ["node"], "env assignments should be skipped, keeping only node");
+  assert.deepEqual(
+    extractCommandNames("FOO=1 BAR=2 node app.js"),
+    ["node"],
+    "env assignments should be skipped, keeping only node",
+  );
 });
 
 test("handles a quoted executable path with spaces", () => {
-  assert.deepEqual(extractCommandNames('"C:\\Program Files\\app\\tool.exe" --check'), [
-    "C:\\Program Files\\app\\tool.exe",
-  ], "quoted path with spaces should be preserved as one token");
+  assert.deepEqual(
+    extractCommandNames('"C:\\Program Files\\app\\tool.exe" --check'),
+    ["C:\\Program Files\\app\\tool.exe"],
+    "quoted path with spaces should be preserved as one token",
+  );
 });
 
 test("does NOT split on operators inside quotes", () => {
@@ -104,10 +118,7 @@ test("findMissingTools returns empty for empty input", async () => {
 });
 
 test("findMissingTools with mixed existing and missing tools", async () => {
-  const missing = await findMissingTools(
-    ["node --version", "definitely_not_a_real_tool_xyz123 --run"],
-    process.cwd(),
-  );
+  const missing = await findMissingTools(["node --version", "definitely_not_a_real_tool_xyz123 --run"], process.cwd());
   assert.equal(missing.length, 1, "should find exactly one missing tool");
   assert.equal(missing[0].tool, "definitely_not_a_real_tool_xyz123", "should flag only the fake tool");
 });
@@ -127,14 +138,12 @@ test("suggestionFor covers common Unix-to-Windows mappings", () => {
 
 test("extractCommandNames handles Windows absolute paths", () => {
   const names = extractCommandNames("C:\\tools\\mytool.exe --flag");
-  assert.deepEqual(names, ["C:\\tools\\mytool.exe"],
-    "should extract Windows absolute path as command name");
+  assert.deepEqual(names, ["C:\\tools\\mytool.exe"], "should extract Windows absolute path as command name");
 });
 
 test("extractCommandNames handles UNC paths", () => {
   const names = extractCommandNames("\\\\server\\share\\tool.exe");
-  assert.deepEqual(names, ["\\\\server\\share\\tool.exe"],
-    "should handle UNC paths");
+  assert.deepEqual(names, ["\\\\server\\share\\tool.exe"], "should handle UNC paths");
 });
 
 test("extractCommandNames handles single-quoted command with double-quote inside", () => {
@@ -150,14 +159,11 @@ test("extractCommandNames handles number-only tokens", () => {
 
 test("extractCommandNames with single-char command in pipe chain", () => {
   const names = extractCommandNames("ls | wc -l");
-  assert.deepEqual(names, ["ls", "wc"],
-    "pipe chain with short commands should extract both");
+  assert.deepEqual(names, ["ls", "wc"], "pipe chain with short commands should extract both");
 });
 
 test("suggestionFor is case-insensitive and handles unknown tools", () => {
   assert.equal(suggestionFor("GREP"), "findstr", "uppercase GREP maps to findstr");
   assert.equal(suggestionFor("Ls"), "dir", "mixed-case Ls maps to dir");
-  assert.equal(suggestionFor("nonexistant_tool_xyz"), undefined,
-    "unknown tool returns undefined");
+  assert.equal(suggestionFor("nonexistant_tool_xyz"), undefined, "unknown tool returns undefined");
 });
-

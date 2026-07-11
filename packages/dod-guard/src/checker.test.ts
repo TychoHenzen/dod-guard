@@ -1,6 +1,16 @@
 import { describe, it, before, after } from "node:test";
 import * as assert from "node:assert/strict";
-import { checkDocument, parseSurvivors, computeProofFingerprint, flattenConcreteLeaves, hasDraftNodes, findNodeByPath, countDraftNodes, isExecutablePredicate, extractExecutableCommands } from "./checker.js";
+import {
+  checkDocument,
+  parseSurvivors,
+  computeProofFingerprint,
+  flattenConcreteLeaves,
+  hasDraftNodes,
+  findNodeByPath,
+  countDraftNodes,
+  isExecutablePredicate,
+  extractExecutableCommands,
+} from "./checker.js";
 import { perProofFingerprint } from "./manual.js";
 import type { DodDocument, TaskNode } from "./types.js";
 
@@ -12,8 +22,13 @@ type Pred = TaskNode["predicate"];
 function fakeExec(
   output: string,
   exitCode = 0,
-): (cmd: string, cwd: string) => Promise<{
-  exitCode: number; combined: string; duration: number;
+): (
+  cmd: string,
+  cwd: string,
+) => Promise<{
+  exitCode: number;
+  combined: string;
+  duration: number;
 }> {
   return async (_cmd, _cwd) => ({
     exitCode,
@@ -27,7 +42,9 @@ const DEADBEEF_ID = "deadbeef-dead-beef-dead-beefdeadbeef";
 /** Create per-describe-block scoped helpers for generating unique IDs. */
 function scope() {
   let nodeId = 0;
-  function nid(): string { return `n${++nodeId}`; }
+  function nid(): string {
+    return `n${++nodeId}`;
+  }
   return { nid };
 }
 
@@ -35,11 +52,22 @@ function draftLeaf(id: string, title: string, intent: string): TaskNode {
   return { id, title, refinement: "draft", intent, last_status: "draft" };
 }
 
-function concLeaf(id: string, title: string, command: string, desc: string, predicate?: Pred, extra?: Partial<TaskNode>): TaskNode {
+function concLeaf(
+  id: string,
+  title: string,
+  command: string,
+  desc: string,
+  predicate?: Pred,
+  extra?: Partial<TaskNode>,
+): TaskNode {
   const base: TaskNode = {
-    id, title, refinement: "concrete",
-    command, predicate: predicate ?? { type: "exit_code", value: 0 },
-    description: desc, last_status: "pending",
+    id,
+    title,
+    refinement: "concrete",
+    command,
+    predicate: predicate ?? { type: "exit_code", value: 0 },
+    description: desc,
+    last_status: "pending",
   };
   return Object.assign(base, extra);
 }
@@ -54,8 +82,12 @@ function groupNode(id: string, title: string, children: TaskNode[]): TaskNode {
 
 function makeDoc(roots: TaskNode[], overrides?: Partial<DodDocument>): DodDocument {
   return {
-    id: "test-doc", title: "Test", goal: "Test",
-    date: "2026-01-01", cwd: process.cwd(), markdown_path: "/tmp/X",
+    id: "test-doc",
+    title: "Test",
+    goal: "Test",
+    date: "2026-01-01",
+    cwd: process.cwd(),
+    markdown_path: "/tmp/X",
     created_at: "2026-01-01",
     sections: { requirements: "r" },
     roots,
@@ -80,37 +112,29 @@ describe("flattenConcreteLeaves", () => {
   });
 
   it("skips draft leaves", () => {
-    const leaves = flattenConcreteLeaves([
-      concLeaf(nid(), "a", "exit 0", "test"),
-      draftLeaf(nid(), "b", "draft only"),
-    ]);
+    const leaves = flattenConcreteLeaves([concLeaf(nid(), "a", "exit 0", "test"), draftLeaf(nid(), "b", "draft only")]);
     assert.equal(leaves.length, 1, "draft leaves should be skipped");
   });
 
   it("recurses into task groups", () => {
-    const leaves = flattenConcreteLeaves([
-      groupNode(nid(), "group", [
-        concLeaf(nid(), "child", "exit 0", "test"),
-      ]),
-    ]);
+    const leaves = flattenConcreteLeaves([groupNode(nid(), "group", [concLeaf(nid(), "child", "exit 0", "test")])]);
     assert.equal(leaves.length, 1, "should recurse into group children");
     assert.ok(leaves[0].node_path.includes("children.0"), "path should include children segment");
   });
 
   it("returns empty for all-draft tree", () => {
-    const leaves = flattenConcreteLeaves([
-      draftLeaf(nid(), "a", "intent a"),
-      draftLeaf(nid(), "b", "intent b"),
-    ]);
+    const leaves = flattenConcreteLeaves([draftLeaf(nid(), "a", "intent a"), draftLeaf(nid(), "b", "intent b")]);
     assert.equal(leaves.length, 0, "all-draft tree should produce no concrete leaves");
   });
 
   it("recurses into task group even when refinement=draft", () => {
     // Task groups are structural — refinement only applies to leaves.
     const group: TaskNode = {
-      id: nid(), title: "g", refinement: "draft", children: [
-        concLeaf(nid(), "child", "exit 0", "test"),
-      ], last_status: "draft",
+      id: nid(),
+      title: "g",
+      refinement: "draft",
+      children: [concLeaf(nid(), "child", "exit 0", "test")],
+      last_status: "draft",
     };
     const leaves = flattenConcreteLeaves([group]);
     assert.equal(leaves.length, 1, "should recurse into group regardless of its refinement");
@@ -126,31 +150,41 @@ describe("hasDraftNodes", () => {
   });
 
   it("detects nested drafts", () => {
-    assert.equal(hasDraftNodes([
-      groupNode(nid(), "g", [draftLeaf(nid(), "a", "intent")]),
-    ]), true, "should detect drafts nested inside groups");
+    assert.equal(
+      hasDraftNodes([groupNode(nid(), "g", [draftLeaf(nid(), "a", "intent")])]),
+      true,
+      "should detect drafts nested inside groups",
+    );
   });
 
   it("returns false for all-concrete", () => {
-    assert.equal(hasDraftNodes([concLeaf(nid(), "a", "exit 0", "x")]), false, "all-concrete tree should have no drafts");
+    assert.equal(
+      hasDraftNodes([concLeaf(nid(), "a", "exit 0", "x")]),
+      false,
+      "all-concrete tree should have no drafts",
+    );
   });
 
   it("does not count task group itself as draft even if refinement=draft", () => {
     // Task groups are structural — refinement only applies to leaves.
     // A group with refinement="draft" and concrete children has no draft leaves.
     const group: TaskNode = {
-      id: nid(), title: "g", refinement: "draft", children: [
-        concLeaf(nid(), "a", "exit 0", "desc"),
-      ], last_status: "draft",
+      id: nid(),
+      title: "g",
+      refinement: "draft",
+      children: [concLeaf(nid(), "a", "exit 0", "desc")],
+      last_status: "draft",
     };
     assert.equal(hasDraftNodes([group]), false, "task group with concrete children should have no drafts");
   });
 
   it("detects draft leaves inside group even when group refinement=draft", () => {
     const group: TaskNode = {
-      id: nid(), title: "g", refinement: "draft", children: [
-        draftLeaf(nid(), "a", "intent"),
-      ], last_status: "draft",
+      id: nid(),
+      title: "g",
+      refinement: "draft",
+      children: [draftLeaf(nid(), "a", "intent")],
+      last_status: "draft",
     };
     assert.equal(hasDraftNodes([group]), true, "should detect draft children inside task group");
   });
@@ -187,45 +221,52 @@ describe("countDraftNodes", () => {
   });
 
   it("counts mixed tree", () => {
-    assert.equal(countDraftNodes([
-      concLeaf(nid(), "a", "exit 0", "x"),
-      draftLeaf(nid(), "b", "intent"),
-    ]), 1, "one draft in mixed tree should count as 1");
+    assert.equal(
+      countDraftNodes([concLeaf(nid(), "a", "exit 0", "x"), draftLeaf(nid(), "b", "intent")]),
+      1,
+      "one draft in mixed tree should count as 1",
+    );
   });
 
   it("counts nested drafts in group", () => {
-    assert.equal(countDraftNodes([
-      groupNode(nid(), "g", [
-        concLeaf(nid(), "a", "exit 0", "x"),
-        draftLeaf(nid(), "b", "intent"),
-      ]),
-    ]), 1, "nested draft in group should be counted");
+    assert.equal(
+      countDraftNodes([groupNode(nid(), "g", [concLeaf(nid(), "a", "exit 0", "x"), draftLeaf(nid(), "b", "intent")])]),
+      1,
+      "nested draft in group should be counted",
+    );
   });
 
   it("counts multiple drafts", () => {
-    assert.equal(countDraftNodes([
-      draftLeaf(nid(), "a", "intent a"),
-      draftLeaf(nid(), "b", "intent b"),
-    ]), 2, "multiple draft leaves should all be counted");
+    assert.equal(
+      countDraftNodes([draftLeaf(nid(), "a", "intent a"), draftLeaf(nid(), "b", "intent b")]),
+      2,
+      "multiple draft leaves should all be counted",
+    );
   });
 
   it("does not count task group itself as draft even if refinement=draft", () => {
     // Task groups are structural — only leaves count toward draft total.
     const group: TaskNode = {
-      id: nid(), title: "g", refinement: "draft", children: [
-        concLeaf(nid(), "a", "exit 0", "desc"),
-      ], last_status: "draft",
+      id: nid(),
+      title: "g",
+      refinement: "draft",
+      children: [concLeaf(nid(), "a", "exit 0", "desc")],
+      last_status: "draft",
     };
     assert.equal(countDraftNodes([group]), 0, "task group with concrete children should count as zero drafts");
   });
 
   it("counts draft children inside task group", () => {
     const group: TaskNode = {
-      id: nid(), title: "g", refinement: "draft", children: [
+      id: nid(),
+      title: "g",
+      refinement: "draft",
+      children: [
         concLeaf(nid(), "a", "exit 0", "desc"),
         draftLeaf(nid(), "b", "intent b"),
         draftLeaf(nid(), "c", "intent c"),
-      ], last_status: "draft",
+      ],
+      last_status: "draft",
     };
     assert.equal(countDraftNodes([group]), 2, "should count only draft children, not the group itself");
   });
@@ -237,7 +278,11 @@ describe("computeProofFingerprint", () => {
   const { nid } = scope();
 
   it("empty for all-draft tree", () => {
-    assert.equal(computeProofFingerprint([draftLeaf(nid(), "a", "i")]), "", "all-draft tree should produce empty fingerprint");
+    assert.equal(
+      computeProofFingerprint([draftLeaf(nid(), "a", "i")]),
+      "",
+      "all-draft tree should produce empty fingerprint",
+    );
   });
 
   it("hashes concrete leaves", () => {
@@ -265,10 +310,7 @@ describe("checkDocument drafts", () => {
   const { nid } = scope();
 
   it("incomplete when drafts present", async () => {
-    const doc = makeDoc([
-      concLeaf(nid(), "a", "exit 0", "ok"),
-      draftLeaf(nid(), "b", "pending"),
-    ]);
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok"), draftLeaf(nid(), "b", "pending")]);
     const res = await checkDocument(doc);
     assert.equal(res.overall, "incomplete", "draft present should yield incomplete");
     assert.equal(res.draft_count, 1, "draft count should be 1");
@@ -277,9 +319,9 @@ describe("checkDocument drafts", () => {
   it("reports draft leaves as status draft", async () => {
     const doc = makeDoc([draftLeaf(nid(), "a", "intent")]);
     const res = await checkDocument(doc);
-    const d = res.leaves.find(l => l.status === "draft");
+    const d = res.leaves.find((l) => l.status === "draft");
     assert.ok(d, "there should be a draft leaf result");
-    assert.ok(d!.output?.includes("DRAFT"), "draft output should mention DRAFT");
+    assert.ok(d?.output?.includes("DRAFT"), "draft output should mention DRAFT");
   });
 
   it("pass when all concrete and no drafts", async () => {
@@ -292,10 +334,11 @@ describe("checkDocument drafts", () => {
     // Regression: buildTaskNodes used to set refinement=draft on groups.
     // The structural check (has children) must take precedence over refinement.
     const group: TaskNode = {
-      id: nid(), title: "g", refinement: "draft", children: [
-        concLeaf(nid(), "a", "exit 0", "ok"),
-        concLeaf(nid(), "b", "exit 0", "ok too"),
-      ], last_status: "draft",
+      id: nid(),
+      title: "g",
+      refinement: "draft",
+      children: [concLeaf(nid(), "a", "exit 0", "ok"), concLeaf(nid(), "b", "exit 0", "ok too")],
+      last_status: "draft",
     };
     const doc = makeDoc([group]);
     const res = await checkDocument(doc);
@@ -342,8 +385,17 @@ describe("checkDocument manual", () => {
 
   it("pass when verified with matching fingerprint", async () => {
     const n = manualLeaf(nid(), "m", "check");
-    n.manual_result = { answer: "pass", confirmed_at: new Date().toISOString(), channel: "elicitation", proof_fingerprint: perProofFingerprint(n) };
-    assert.equal((await checkDocument(makeDoc([n]))).leaves[0].status, "pass", "verified manual proof with matching fingerprint should pass");
+    n.manual_result = {
+      answer: "pass",
+      confirmed_at: new Date().toISOString(),
+      channel: "elicitation",
+      proof_fingerprint: perProofFingerprint(n),
+    };
+    assert.equal(
+      (await checkDocument(makeDoc([n]))).leaves[0].status,
+      "pass",
+      "verified manual proof with matching fingerprint should pass",
+    );
   });
 });
 
@@ -354,8 +406,12 @@ describe("parseSurvivors", () => {
     assert.equal(parseSurvivors("152 missed"), 152, "cargo-mutants '152 missed' should parse to 152");
     assert.equal(parseSurvivors("0 missed"), 0, "cargo-mutants '0 missed' should parse to 0");
   });
-  it("mutmut", () => { assert.equal(parseSurvivors("Survived 🙁 (5)"), 5, "mutmut format should parse to 5"); });
-  it("unrecognized", () => { assert.equal(parseSurvivors("garbage"), null, "unrecognized output should return null"); });
+  it("mutmut", () => {
+    assert.equal(parseSurvivors("Survived 🙁 (5)"), 5, "mutmut format should parse to 5");
+  });
+  it("unrecognized", () => {
+    assert.equal(parseSurvivors("garbage"), null, "unrecognized output should return null");
+  });
 });
 
 // ── checkDocument: TDD ────────────────────────────────────────────────
@@ -378,7 +434,8 @@ describe("checkDocument TDD", () => {
 
   it("passes after red→green", async () => {
     const n = concLeaf(nid(), "t", "exit 0", "tdd", { type: "tdd", value: 0 });
-    n.seen_failing = true; n.seen_failing_at = new Date().toISOString();
+    n.seen_failing = true;
+    n.seen_failing_at = new Date().toISOString();
     assert.equal((await checkDocument(makeDoc([n]))).leaves[0].status, "pass", "TDD should pass after red→green cycle");
   });
 });
@@ -422,54 +479,95 @@ describe("checkDocument predicate types", () => {
 
   it("exit_code_not with matching value fails", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "should fail", { type: "exit_code_not", value: 0 })]);
-    assert.equal((await checkDocument(doc)).leaves[0].status, "fail", "exit_code_not should fail when exit code matches the forbidden value");
+    assert.equal(
+      (await checkDocument(doc)).leaves[0].status,
+      "fail",
+      "exit_code_not should fail when exit code matches the forbidden value",
+    );
   });
 
   it("exit_code_not with non-matching value passes", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "should pass", { type: "exit_code_not", value: 1 })]);
-    assert.equal((await checkDocument(doc)).leaves[0].status, "pass", "exit_code_not should pass when exit code differs from the forbidden value");
+    assert.equal(
+      (await checkDocument(doc)).leaves[0].status,
+      "pass",
+      "exit_code_not should pass when exit code differs from the forbidden value",
+    );
   });
 
   it("output_matches passes on regex match", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "echo hello123", "t", { type: "output_matches", value: "hello\\d+" })]);
-    assert.equal((await checkDocument(doc)).leaves[0].status, "pass", "output_matches should pass when output matches the regex");
+    assert.equal(
+      (await checkDocument(doc)).leaves[0].status,
+      "pass",
+      "output_matches should pass when output matches the regex",
+    );
   });
 
   it("output_matches fails on regex mismatch", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "echo abc", "t", { type: "output_matches", value: "\\d+" })]);
-    assert.equal((await checkDocument(doc)).leaves[0].status, "fail", "output_matches should fail when output does not match the regex");
+    assert.equal(
+      (await checkDocument(doc)).leaves[0].status,
+      "fail",
+      "output_matches should fail when output does not match the regex",
+    );
   });
 
   it("output_not_contains passes when substring absent", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "echo hi", "t", { type: "output_not_contains", value: "bye" })]);
-    assert.equal((await checkDocument(doc)).leaves[0].status, "pass", "output_not_contains should pass when output lacks the substring");
+    assert.equal(
+      (await checkDocument(doc)).leaves[0].status,
+      "pass",
+      "output_not_contains should pass when output lacks the substring",
+    );
   });
 
   it("output_not_contains fails when substring present", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "echo bye", "t", { type: "output_not_contains", value: "bye" })]);
-    assert.equal((await checkDocument(doc)).leaves[0].status, "fail", "output_not_contains should fail when output contains the substring");
+    assert.equal(
+      (await checkDocument(doc)).leaves[0].status,
+      "fail",
+      "output_not_contains should fail when output contains the substring",
+    );
   });
 
   it("output_not_matches passes on no regex match", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "echo abc", "t", { type: "output_not_matches", value: "\\d+" })]);
-    assert.equal((await checkDocument(doc)).leaves[0].status, "pass", "output_not_matches should pass when output does not match the regex");
+    assert.equal(
+      (await checkDocument(doc)).leaves[0].status,
+      "pass",
+      "output_not_matches should pass when output does not match the regex",
+    );
   });
 
   it("output_not_matches fails on regex match", async () => {
-    const doc = makeDoc([concLeaf(nid(), "x", "echo hello123", "t", { type: "output_not_matches", value: "hello\\d+" })]);
-    assert.equal((await checkDocument(doc)).leaves[0].status, "fail", "output_not_matches should fail when output matches the regex");
+    const doc = makeDoc([
+      concLeaf(nid(), "x", "echo hello123", "t", { type: "output_not_matches", value: "hello\\d+" }),
+    ]);
+    assert.equal(
+      (await checkDocument(doc)).leaves[0].status,
+      "fail",
+      "output_not_matches should fail when output matches the regex",
+    );
   });
 
   it("review is skipped when unverified", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "review", "review proof", { type: "review" })]);
-    assert.equal((await checkDocument(doc)).leaves[0].status, "skipped", "review proof should be skipped when unverified");
+    assert.equal(
+      (await checkDocument(doc)).leaves[0].status,
+      "skipped",
+      "review proof should be skipped when unverified",
+    );
   });
 
   it("mutation fails when output is not parseable", async () => {
     const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "mutation", { type: "mutation", value: 0 })]);
     const res = await checkDocument(doc);
     assert.equal(res.leaves[0].status, "fail", "mutation should fail when output cannot be parsed");
-    assert.ok(res.leaves[0].error?.includes("could not parse mutation results"), "error should explain that mutation output was unparseable");
+    assert.ok(
+      res.leaves[0].error?.includes("could not parse mutation results"),
+      "error should explain that mutation output was unparseable",
+    );
   });
 
   it("regression fails when no metric number found", async () => {
@@ -496,7 +594,10 @@ describe("checkDocument predicate types", () => {
     const doc = makeDoc([concLeaf(nid(), "x", "exit 0", "observability", { type: "observability", value: 1 })]);
     const res = await checkDocument(doc);
     assert.equal(res.leaves[0].status, "fail", "observability should fail when no source files are identified");
-    assert.ok(res.leaves[0].error?.includes("observability: no source files"), "error should mention missing source files");
+    assert.ok(
+      res.leaves[0].error?.includes("observability: no source files"),
+      "error should mention missing source files",
+    );
   });
 
   it("brevity fails when no source files identified", async () => {
@@ -546,8 +647,7 @@ describe("checkDocument predicate types", () => {
   it("regression captures baseline metric and passes on same value", async () => {
     const doc = makeDoc([concLeaf(nid(), "r", "echo 42", "regression 42", { type: "regression", value: 0 })]);
     const res = await checkDocument(doc, undefined, { execFn: fakeExec("42") });
-    assert.equal(res.leaves[0].status, "pass",
-      "regression should pass on first run (baseline captured)");
+    assert.equal(res.leaves[0].status, "pass", "regression should pass on first run (baseline captured)");
   });
 
   it("mutation passes when survivors ≤ allowed value", async () => {
@@ -555,16 +655,14 @@ describe("checkDocument predicate types", () => {
     // cargo-mutants format: "N missed"
     const out = "0 missed mutants. All good.";
     const res = await checkDocument(doc, undefined, { execFn: fakeExec(out) });
-    assert.equal(res.leaves[0].status, "pass",
-      "mutation should pass with 0 survivors when max=0");
+    assert.equal(res.leaves[0].status, "pass", "mutation should pass with 0 survivors when max=0");
   });
 
   it("mutation fails when survivors > allowed value", async () => {
     const doc = makeDoc([concLeaf(nid(), "m2", "cargo mutants", "mutation", { type: "mutation", value: 0 })]);
     const out = "2 missed mutants.";
     const res = await checkDocument(doc, undefined, { execFn: fakeExec(out) });
-    assert.equal(res.leaves[0].status, "fail",
-      "2 survivors > 0 allowed → fail");
+    assert.equal(res.leaves[0].status, "fail", "2 survivors > 0 allowed → fail");
   });
 });
 
@@ -574,10 +672,7 @@ describe("checkDocument tamper detection", () => {
   const { nid } = scope();
 
   it("detects fingerprint mismatch -> forced fail", async () => {
-    const doc = makeDoc(
-      [concLeaf(nid(), "a", "exit 0", "ok")],
-      { proof_fingerprint: "tampered" },
-    );
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")], { proof_fingerprint: "tampered" });
     const res = await checkDocument(doc);
     assert.equal(res.overall, "fail", "tampered document should have overall 'fail'");
     assert.equal(res.tampered, true, "tampered flag should be true");
@@ -661,10 +756,7 @@ describe("extractExecutableCommands", () => {
   });
 
   it("skips draft nodes", () => {
-    const cmds = extractExecutableCommands([
-      draftLeaf(nid(), "d", "intent"),
-      concLeaf(nid(), "a", "exit 0", "auto"),
-    ]);
+    const cmds = extractExecutableCommands([draftLeaf(nid(), "d", "intent"), concLeaf(nid(), "a", "exit 0", "auto")]);
     assert.deepEqual(cmds, ["exit 0"], "should exclude draft node commands");
   });
 });
@@ -675,12 +767,13 @@ describe("checkDocument derived signals", () => {
   const { nid } = scope();
 
   it("blocked_by_manuals: true when all automated pass but manuals unverified", async () => {
-    const doc = makeDoc([
-      concLeaf(nid(), "auto", "exit 0", "passing test"),
-      manualLeaf(nid(), "m", "needs human"),
-    ]);
+    const doc = makeDoc([concLeaf(nid(), "auto", "exit 0", "passing test"), manualLeaf(nid(), "m", "needs human")]);
     const res = await checkDocument(doc);
-    assert.equal(res.blocked_by_manuals, true, "should report blocked_by_manuals when automated pass + manual unverified");
+    assert.equal(
+      res.blocked_by_manuals,
+      true,
+      "should report blocked_by_manuals when automated pass + manual unverified",
+    );
     assert.equal(res.manual_unverified, 1, "should have 1 unverified manual leaf");
     assert.equal(res.draft_count, 0, "should have no draft nodes");
   });
@@ -724,7 +817,10 @@ describe("checkDocument derived signals", () => {
     const res = await checkDocument(doc);
     assert.equal(res.overall, "pass", "single leaf should pass");
     // No scoped flag — not a scoped run
-    assert.ok(!("ran_node_path" in res) || res.ran_node_path === undefined, "should not suggest scoped check for <= 5 leaves");
+    assert.ok(
+      !("ran_node_path" in res) || res.ran_node_path === undefined,
+      "should not suggest scoped check for <= 5 leaves",
+    );
   });
 });
 
@@ -750,7 +846,11 @@ describe("checkDocument brevity-family predicates", () => {
   });
 
   after(() => {
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ok */ }
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      /* ok */
+    }
   });
 
   it("line_length passes when all lines within limit", async () => {
@@ -758,8 +858,11 @@ describe("checkDocument brevity-family predicates", () => {
     const cmd = `node ${path.join(tmpDir, "src", "clean.ts")}`;
     const doc = makeDoc([concLeaf(nid(), "ll", cmd, "check line length", { type: "line_length" })]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "pass",
-      `clean file should pass line_length, got: ${res.leaves[0].error?.slice(0, 120)}`);
+    assert.equal(
+      res.leaves[0].status,
+      "pass",
+      `clean file should pass line_length, got: ${res.leaves[0].error?.slice(0, 120)}`,
+    );
   });
 
   it("line_length fails when lines exceed limit", async () => {
@@ -768,10 +871,15 @@ describe("checkDocument brevity-family predicates", () => {
     const cmd = `node ${path.join(tmpDir, "src", "long.ts")}`;
     const doc = makeDoc([concLeaf(nid(), "ll", cmd, "check line length", { type: "line_length" })]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "fail",
-      `150-char line should fail line_length (max 120), got: ${res.leaves[0].status}`);
-    assert.ok(res.leaves[0].error?.includes("line_length FAIL"),
-      `error should mention line_length FAIL, got: ${res.leaves[0].error?.slice(0, 120)}`);
+    assert.equal(
+      res.leaves[0].status,
+      "fail",
+      `150-char line should fail line_length (max 120), got: ${res.leaves[0].status}`,
+    );
+    assert.ok(
+      res.leaves[0].error?.includes("line_length FAIL"),
+      `error should mention line_length FAIL, got: ${res.leaves[0].error?.slice(0, 120)}`,
+    );
   });
 
   it("function_size passes when all functions within limit", async () => {
@@ -779,8 +887,11 @@ describe("checkDocument brevity-family predicates", () => {
     const cmd = `node ${path.join(tmpDir, "src", "short.ts")}`;
     const doc = makeDoc([concLeaf(nid(), "fs", cmd, "check function size", { type: "function_size" })]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "pass",
-      `short function should pass function_size, got: ${res.leaves[0].error?.slice(0, 120)}`);
+    assert.equal(
+      res.leaves[0].status,
+      "pass",
+      `short function should pass function_size, got: ${res.leaves[0].error?.slice(0, 120)}`,
+    );
   });
 
   it("function_size fails when function exceeds limit", async () => {
@@ -791,8 +902,11 @@ describe("checkDocument brevity-family predicates", () => {
     const cmd = `node ${path.join(tmpDir, "src", "big.ts")}`;
     const doc = makeDoc([concLeaf(nid(), "fs", cmd, "check function size", { type: "function_size" })]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "fail",
-      `35+ line function should fail function_size (max 30), got: ${res.leaves[0].status}`);
+    assert.equal(
+      res.leaves[0].status,
+      "fail",
+      `35+ line function should fail function_size (max 30), got: ${res.leaves[0].status}`,
+    );
     assert.ok(res.leaves[0].error?.includes("function_size FAIL"));
   });
 
@@ -801,8 +915,11 @@ describe("checkDocument brevity-family predicates", () => {
     const cmd = `node ${path.join(tmpDir, "src", "small.ts")}`;
     const doc = makeDoc([concLeaf(nid(), "fsz", cmd, "check file size", { type: "file_size" })]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "pass",
-      `small file should pass file_size, got: ${res.leaves[0].error?.slice(0, 120)}`);
+    assert.equal(
+      res.leaves[0].status,
+      "pass",
+      `small file should pass file_size, got: ${res.leaves[0].error?.slice(0, 120)}`,
+    );
   });
 
   it("file_size fails when file exceeds limit", async () => {
@@ -812,8 +929,11 @@ describe("checkDocument brevity-family predicates", () => {
     const cmd = `node ${path.join(tmpDir, "src", "huge.ts")}`;
     const doc = makeDoc([concLeaf(nid(), "fsz", cmd, "check file size", { type: "file_size" })]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "fail",
-      `350-line file should fail file_size (max 300), got: ${res.leaves[0].status}`);
+    assert.equal(
+      res.leaves[0].status,
+      "fail",
+      `350-line file should fail file_size (max 300), got: ${res.leaves[0].status}`,
+    );
     assert.ok(res.leaves[0].error?.includes("file_size FAIL"));
   });
 
@@ -822,71 +942,89 @@ describe("checkDocument brevity-family predicates", () => {
     const cmd = `node ${path.join(tmpDir, "src", "clean.ts")}`;
     const doc = makeDoc([concLeaf(nid(), "co", cmd, "check cohesion", { type: "cohesion" })]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "pass",
-      `low-CC clean function should pass cohesion, got: ${res.leaves[0].error?.slice(0, 120)}`);
+    assert.equal(
+      res.leaves[0].status,
+      "pass",
+      `low-CC clean function should pass cohesion, got: ${res.leaves[0].error?.slice(0, 120)}`,
+    );
   });
 
   it("cohesion fails when CC exceeds max", async () => {
-    writeSource("src/complex.ts", [
-      "export function classify(x: number, y: number, z: number): string {",
-      "  if (x > 0) {",
-      "    if (y > 0) {",
-      "      if (z > 0 && x > y) return 'A';",
-      "      else if (z < 0) return 'B';",
-      "      return 'C';",
-      "    }",
-      "    for (let i = 0; i < x; i++) {",
-      "      if (i > 10) break;",
-      "    }",
-      "  }",
-      "  switch (z) {",
-      "    case 1: return 'D';",
-      "    case 2: return 'E';",
-      "  }",
-      "  return 'F';",
-      "}",
-    ].join("\n"));
+    writeSource(
+      "src/complex.ts",
+      [
+        "export function classify(x: number, y: number, z: number): string {",
+        "  if (x > 0) {",
+        "    if (y > 0) {",
+        "      if (z > 0 && x > y) return 'A';",
+        "      else if (z < 0) return 'B';",
+        "      return 'C';",
+        "    }",
+        "    for (let i = 0; i < x; i++) {",
+        "      if (i > 10) break;",
+        "    }",
+        "  }",
+        "  switch (z) {",
+        "    case 1: return 'D';",
+        "    case 2: return 'E';",
+        "  }",
+        "  return 'F';",
+        "}",
+      ].join("\n"),
+    );
     const cmd = `node ${path.join(tmpDir, "src", "complex.ts")}`;
     const doc = makeDoc([concLeaf(nid(), "co", cmd, "check cohesion", { type: "cohesion" })]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "fail",
-      `high-CC function should fail cohesion, got: ${res.leaves[0].status}`);
+    assert.equal(res.leaves[0].status, "fail", `high-CC function should fail cohesion, got: ${res.leaves[0].status}`);
     assert.ok(res.leaves[0].error?.includes("cohesion FAIL"));
   });
 
   it("cohesion fails on unnecessary else after return", async () => {
-    writeSource("src/unnec.ts", [
-      "export function validate(n: number): string {",
-      "  if (n > 0) {",
-      "    return 'ok';",
-      "  } else {",
-      "    return 'bad';",
-      "  }",
-      "}",
-    ].join("\n"));
+    writeSource(
+      "src/unnec.ts",
+      [
+        "export function validate(n: number): string {",
+        "  if (n > 0) {",
+        "    return 'ok';",
+        "  } else {",
+        "    return 'bad';",
+        "  }",
+        "}",
+      ].join("\n"),
+    );
     const cmd = `node ${path.join(tmpDir, "src", "unnec.ts")}`;
     const doc = makeDoc([concLeaf(nid(), "co", cmd, "check cohesion", { type: "cohesion" })]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "fail",
-      `unnecessary else should fail cohesion, got: ${res.leaves[0].status}`);
+    assert.equal(res.leaves[0].status, "fail", `unnecessary else should fail cohesion, got: ${res.leaves[0].status}`);
   });
 
   it("cohesion can disable guard clause check", async () => {
-    writeSource("src/unnec2.ts", [
-      "export function validate(n: number): string {",
-      "  if (n > 0) {",
-      "    return 'ok';",
-      "  } else {",
-      "    return 'bad';",
-      "  }",
-      "}",
-    ].join("\n"));
+    writeSource(
+      "src/unnec2.ts",
+      [
+        "export function validate(n: number): string {",
+        "  if (n > 0) {",
+        "    return 'ok';",
+        "  } else {",
+        "    return 'bad';",
+        "  }",
+        "}",
+      ].join("\n"),
+    );
     const cmd = `node ${path.join(tmpDir, "src", "unnec2.ts")}`;
-    const doc = makeDoc([concLeaf(nid(), "co", cmd, "check cohesion",
-      { type: "cohesion", require_guard_clauses: false, suggest_guard_clauses: false })]);
+    const doc = makeDoc([
+      concLeaf(nid(), "co", cmd, "check cohesion", {
+        type: "cohesion",
+        require_guard_clauses: false,
+        suggest_guard_clauses: false,
+      }),
+    ]);
     const res = await checkDocument(doc, tmpDir);
-    assert.equal(res.leaves[0].status, "pass",
-      `cohesion with guard checks off should pass, got: ${res.leaves[0].error?.slice(0, 120)}`);
+    assert.equal(
+      res.leaves[0].status,
+      "pass",
+      `cohesion with guard checks off should pass, got: ${res.leaves[0].error?.slice(0, 120)}`,
+    );
   });
 
   it("replacement_ratio passes when ratio is healthy", async () => {
@@ -894,26 +1032,30 @@ describe("checkDocument brevity-family predicates", () => {
     // 10 insertions, 5 deletions → ratio 0.5 > min 0.2
     // Use fakeExec to supply numstat output with real tabs (echo on cmd.exe doesn't interpret \t)
     const tab = "\t";
-    const doc = makeDoc([concLeaf(nid(), "rr", "unused", "check ratio",
-      { type: "replacement_ratio", min_replacement_ratio: 0.2 })]);
+    const doc = makeDoc([
+      concLeaf(nid(), "rr", "unused", "check ratio", { type: "replacement_ratio", min_replacement_ratio: 0.2 }),
+    ]);
     const res = await checkDocument(doc, tmpDir, {
       execFn: fakeExec(`10${tab}5${tab}src/healthy.ts`),
     });
-    assert.equal(res.leaves[0].status, "pass",
-      `healthy ratio should pass, got: ${res.leaves[0].error?.slice(0, 120)}`);
+    assert.equal(res.leaves[0].status, "pass", `healthy ratio should pass, got: ${res.leaves[0].error?.slice(0, 120)}`);
   });
 
   it("replacement_ratio fails when deletion ratio too low", async () => {
     writeSource("src/accrete.ts", "export const x = 1;\nexport const y = 2;\n");
     // 15 insertions, 0 deletions → ratio 0 < min 0.2
     const tab = "\t";
-    const doc = makeDoc([concLeaf(nid(), "rr", "unused", "check ratio",
-      { type: "replacement_ratio", min_replacement_ratio: 0.2 })]);
+    const doc = makeDoc([
+      concLeaf(nid(), "rr", "unused", "check ratio", { type: "replacement_ratio", min_replacement_ratio: 0.2 }),
+    ]);
     const res = await checkDocument(doc, tmpDir, {
       execFn: fakeExec(`15${tab}0${tab}src/accrete.ts`),
     });
-    assert.equal(res.leaves[0].status, "fail",
-      `0% deletion ratio should fail, got: ${res.leaves[0].error?.slice(0, 120)}`);
+    assert.equal(
+      res.leaves[0].status,
+      "fail",
+      `0% deletion ratio should fail, got: ${res.leaves[0].error?.slice(0, 120)}`,
+    );
     assert.ok(res.leaves[0].error?.includes("replacement_ratio FAIL"));
   });
 });

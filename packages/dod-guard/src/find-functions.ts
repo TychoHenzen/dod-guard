@@ -14,10 +14,36 @@ type Language = "js" | "py" | "rs" | "cs" | null;
 // ── Block matching ────────────────────────────────────────────────────────
 
 const CONTROL_KEYWORDS = new Set([
-  "if", "else", "for", "while", "do", "switch", "catch", "try", "finally",
-  "return", "throw", "new", "typeof", "instanceof", "class", "import", "export",
-  "default", "from", "as", "yield", "await", "break", "continue", "with",
-  "debugger", "void", "delete", "in", "of",
+  "if",
+  "else",
+  "for",
+  "while",
+  "do",
+  "switch",
+  "catch",
+  "try",
+  "finally",
+  "return",
+  "throw",
+  "new",
+  "typeof",
+  "instanceof",
+  "class",
+  "import",
+  "export",
+  "default",
+  "from",
+  "as",
+  "yield",
+  "await",
+  "break",
+  "continue",
+  "with",
+  "debugger",
+  "void",
+  "delete",
+  "in",
+  "of",
 ]);
 
 function getIndent(line: string): number {
@@ -38,11 +64,20 @@ export function findBlockEnd(lines: string[], startIdx: number, open: string, cl
     for (let j = startCol; j < line.length; j++) {
       const ch = line[j];
       const prev = j > 0 ? line[j - 1] : "";
-      if (inString) { if (ch === inString && prev !== "\\") inString = null; continue; }
-      if (ch === '"' || ch === "'" || ch === "`") { inString = ch; continue; }
+      if (inString) {
+        if (ch === inString && prev !== "\\") inString = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === "`") {
+        inString = ch;
+        continue;
+      }
       if (ch === "/" && j + 1 < line.length && line[j + 1] === "/") break;
       if (ch === open) depth++;
-      else if (ch === close) { depth--; if (depth === 0 && getIndent(line) <= baseIndent) return i; }
+      else if (ch === close) {
+        depth--;
+        if (depth === 0 && getIndent(line) <= baseIndent) return i;
+      }
     }
   }
   return lines.length - 1;
@@ -60,33 +95,48 @@ export function findJsFunctions(lines: string[]): FunctionRange[] {
     if (m) {
       const end = findBlockEnd(lines, i, "{", "}");
       out.push({
-        startLine: i + 1, endLine: end + 1,
-        name: m[1], bodyLines: lines.slice(i + 1, end),
-      }); i = end; continue;
+        startLine: i + 1,
+        endLine: end + 1,
+        name: m[1],
+        bodyLines: lines.slice(i + 1, end),
+      });
+      i = end;
+      continue;
     }
     m = line.match(/^\s*(?:static\s+)?(?:async\s+)?(?:get\s+|set\s+)?(\w+)\s*\([^)]*\)\s*\{/);
     if (m && !CONTROL_KEYWORDS.has(m[1])) {
       const end = findBlockEnd(lines, i, "{", "}");
       out.push({
-        startLine: i + 1, endLine: end + 1,
-        name: m[1], bodyLines: lines.slice(i + 1, end),
-      }); i = end; continue;
+        startLine: i + 1,
+        endLine: end + 1,
+        name: m[1],
+        bodyLines: lines.slice(i + 1, end),
+      });
+      i = end;
+      continue;
     }
     m = line.match(/^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>\s*\{/);
     if (m) {
       const end = findBlockEnd(lines, i, "{", "}");
       out.push({
-        startLine: i + 1, endLine: end + 1,
-        name: m[1], bodyLines: lines.slice(i + 1, end),
-      }); i = end; continue;
+        startLine: i + 1,
+        endLine: end + 1,
+        name: m[1],
+        bodyLines: lines.slice(i + 1, end),
+      });
+      i = end;
+      continue;
     }
     m = line.match(/^\s*(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?function\s*\(/);
     if (m) {
       const end = findBlockEnd(lines, i, "{", "}");
       out.push({
-        startLine: i + 1, endLine: end + 1,
-        name: m[1], bodyLines: lines.slice(i + 1, end),
-      }); i = end; continue;
+        startLine: i + 1,
+        endLine: end + 1,
+        name: m[1],
+        bodyLines: lines.slice(i + 1, end),
+      });
+      i = end;
     }
   }
   return out;
@@ -113,7 +163,10 @@ export function findPyBlockEnd(lines: string[], startIdx: number): number {
   let i = startIdx + 1;
   while (i < lines.length) {
     const trimmed = lines[i].trim();
-    if (trimmed === "") { i++; continue; }
+    if (trimmed === "") {
+      i++;
+      continue;
+    }
     if (getIndent(lines[i]) <= baseIndent) return i - 1;
     i++;
   }
@@ -125,13 +178,18 @@ export function findPyBlockEnd(lines: string[], startIdx: number): number {
 export function findRsFunctions(lines: string[]): FunctionRange[] {
   const out: FunctionRange[] = [];
   for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^\s*(?:pub(?:\s*\(\s*(?:crate|super|self)\s*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+(\w+)/);
+    const m = lines[i].match(
+      /^\s*(?:pub(?:\s*\(\s*(?:crate|super|self)\s*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+(\w+)/,
+    );
     if (!m) continue;
     const end = findBlockEnd(lines, i, "{", "}");
-      out.push({
-        startLine: i + 1, endLine: end + 1,
-        name: m[1], bodyLines: lines.slice(i + 1, end),
-      }); i = end; continue;
+    out.push({
+      startLine: i + 1,
+      endLine: end + 1,
+      name: m[1],
+      bodyLines: lines.slice(i + 1, end),
+    });
+    i = end;
   }
   return out;
 }
@@ -150,10 +208,13 @@ export function findCsFunctions(lines: string[]): FunctionRange[] {
     const nameToken = m[2];
     if (CONTROL_KEYWORDS.has(nameToken)) continue;
     const end = findBlockEnd(lines, i, "{", "}");
-      out.push({
-        startLine: i + 1, endLine: end + 1,
-        name: nameToken, bodyLines: lines.slice(i + 1, end),
-      }); i = end;
+    out.push({
+      startLine: i + 1,
+      endLine: end + 1,
+      name: nameToken,
+      bodyLines: lines.slice(i + 1, end),
+    });
+    i = end;
   }
   return out;
 }
@@ -162,11 +223,16 @@ export function findCsFunctions(lines: string[]): FunctionRange[] {
 
 export function findFunctions(lines: string[], lang: Language): FunctionRange[] {
   switch (lang) {
-    case "js": return findJsFunctions(lines);
-    case "py": return findPyFunctions(lines);
-    case "rs": return findRsFunctions(lines);
-    case "cs": return findCsFunctions(lines);
-    default: return [];
+    case "js":
+      return findJsFunctions(lines);
+    case "py":
+      return findPyFunctions(lines);
+    case "rs":
+      return findRsFunctions(lines);
+    case "cs":
+      return findCsFunctions(lines);
+    default:
+      return [];
   }
 }
 
@@ -176,24 +242,45 @@ export function findFunctions(lines: string[], lang: Language): FunctionRange[] 
 // Each occurrence adds 1 to the function's cyclomatic complexity.
 const CC_PATTERNS: Record<string, RegExp[]> = {
   js: [
-    /\bif\s*\(/g, /\belse\s+if\b/g, /\bfor\s*\(/g, /\bwhile\s*\(/g,
-    /\bdo\s*\{/g, /\bcase\s+[^:]+:/g, /\bcatch\s*[\(\{]/g,
-    /&&/g, /\|\|/g, /\?\?/g, /\?\./g,
-    /\?[^:]+:/g,  // ternary
+    /\bif\s*\(/g,
+    /\belse\s+if\b/g,
+    /\bfor\s*\(/g,
+    /\bwhile\s*\(/g,
+    /\bdo\s*\{/g,
+    /\bcase\s+[^:]+:/g,
+    /\bcatch\s*[({]/g,
+    /&&/g,
+    /\|\|/g,
+    /\?\?/g,
+    /\?\./g,
+    /\?[^:]+:/g, // ternary
   ],
-  py: [
-    /\bif\s+/g, /\belif\s+/g, /\bfor\s+/g, /\bwhile\s+/g,
-    /\bexcept\s*:/g, /\band\b/g, /\bor\b/g,
-  ],
+  py: [/\bif\s+/g, /\belif\s+/g, /\bfor\s+/g, /\bwhile\s+/g, /\bexcept\s*:/g, /\band\b/g, /\bor\b/g],
   rs: [
-    /\bif\s+/g, /\belse\s+if\b/g, /\bfor\s+/g, /\bwhile\s+/g,
-    /\bloop\s*\{/g, /\bmatch\s+/g, /\bcase\s+/g,
-    /&&/g, /\|\|/g, /\?\?/g,
+    /\bif\s+/g,
+    /\belse\s+if\b/g,
+    /\bfor\s+/g,
+    /\bwhile\s+/g,
+    /\bloop\s*\{/g,
+    /\bmatch\s+/g,
+    /\bcase\s+/g,
+    /&&/g,
+    /\|\|/g,
+    /\?\?/g,
   ],
   cs: [
-    /\bif\s*\(/g, /\belse\s+if\b/g, /\bfor\s*\(/g, /\bforeach\s*\(/g,
-    /\bwhile\s*\(/g, /\bdo\s*\{/g, /\bcase\s+[^:]+:/g, /\bcatch\s*[\(\{]/g,
-    /&&/g, /\|\|/g, /\?\?/g, /\?\s*[^:]+:/g,
+    /\bif\s*\(/g,
+    /\belse\s+if\b/g,
+    /\bfor\s*\(/g,
+    /\bforeach\s*\(/g,
+    /\bwhile\s*\(/g,
+    /\bdo\s*\{/g,
+    /\bcase\s+[^:]+:/g,
+    /\bcatch\s*[({]/g,
+    /&&/g,
+    /\|\|/g,
+    /\?\?/g,
+    /\?\s*[^:]+:/g,
   ],
 };
 
@@ -220,7 +307,10 @@ function stripStringsAndComments(line: string): string {
   // Remove single-line comments
   let s = line.replace(/\/\/.*$/, "").replace(/#.*$/, "");
   // Remove string literals (crude but effective for counting)
-  s = s.replace(/`[^`]*`/g, "").replace(/"[^"]*"/g, '""').replace(/'[^']*'/g, "''");
+  s = s
+    .replace(/`[^`]*`/g, "")
+    .replace(/"[^"]*"/g, '""')
+    .replace(/'[^']*'/g, "''");
   return s;
 }
 
@@ -229,10 +319,7 @@ function stripStringsAndComments(line: string): string {
  * CC = 1 (base) + sum of decision points.
  * Returns the raw count — caller applies threshold.
  */
-export function checkCyclomaticComplexity(
-  bodyLines: string[],
-  lang: Language,
-): { complexity: number } {
+export function checkCyclomaticComplexity(bodyLines: string[], lang: Language): { complexity: number } {
   if (!lang) return { complexity: 0 };
   const patterns = CC_PATTERNS[lang];
   if (!patterns) return { complexity: 0 };
@@ -255,10 +342,7 @@ export function checkCyclomaticComplexity(
  * An else is unnecessary when the preceding if/elif block exits
  * via return/throw/break/continue — a guard clause pattern.
  */
-export function checkUnnecessaryElse(
-  bodyLines: string[],
-  lang: Language,
-): { count: number } {
+export function checkUnnecessaryElse(bodyLines: string[], lang: Language): { count: number } {
   if (!lang) return { count: 0 };
   const elseRe = ELSE_PATTERNS[lang];
   const jumpRe = JUMP_PATTERNS[lang];
@@ -280,7 +364,10 @@ export function checkUnnecessaryElse(
       let skipToDepth: number | null = null;
       while (j >= 0) {
         const t = bodyLines[j].trim();
-        if (t === "" || t.startsWith("//") || t.startsWith("/*")) { j--; continue; }
+        if (t === "" || t.startsWith("//") || t.startsWith("/*")) {
+          j--;
+          continue;
+        }
         // If we hit a closing brace, skip until we find its opener's level
         if (t.endsWith("}") || t === "}") {
           if (skipToDepth === null) skipToDepth = getIndent(bodyLines[j]);
@@ -289,7 +376,10 @@ export function checkUnnecessaryElse(
         }
         // If we're skipping a nested block, skip lines at same or deeper indent
         if (skipToDepth !== null) {
-          if (getIndent(bodyLines[j]) >= skipToDepth) { j--; continue; }
+          if (getIndent(bodyLines[j]) >= skipToDepth) {
+            j--;
+            continue;
+          }
           skipToDepth = null;
         }
         break;
@@ -327,10 +417,7 @@ export function checkUnnecessaryElse(
  *
  * Returns count of avoidable else clauses.
  */
-export function checkAvoidableElse(
-  bodyLines: string[],
-  lang: Language,
-): { count: number } {
+export function checkAvoidableElse(bodyLines: string[], lang: Language): { count: number } {
   if (!lang) return { count: 0 };
   const elseRe = ELSE_PATTERNS[lang];
   const jumpRe = JUMP_PATTERNS[lang];
@@ -353,10 +440,15 @@ export function checkAvoidableElse(
         for (let j = i; j < bodyLines.length; j++) {
           const s = stripStringsAndComments(bodyLines[j]);
           for (const ch of s) {
-            if (ch === "{") { depth++; started = true; }
-            else if (ch === "}") {
+            if (ch === "{") {
+              depth++;
+              started = true;
+            } else if (ch === "}") {
               depth--;
-              if (started && depth === 0) { blockEnd = j; break; }
+              if (started && depth === 0) {
+                blockEnd = j;
+                break;
+              }
             }
           }
           if (blockEnd >= 0) break;
@@ -386,7 +478,10 @@ export function checkAvoidableElse(
         let blockEnd = i;
         for (let j = i + 1; j < bodyLines.length; j++) {
           if (bodyLines[j].trim() === "") continue;
-          if (getIndent(bodyLines[j]) <= blockIndent) { blockEnd = j - 1; break; }
+          if (getIndent(bodyLines[j]) <= blockIndent) {
+            blockEnd = j - 1;
+            break;
+          }
           blockEnd = j;
         }
         if (blockEnd > i && jumpRe.test(stripStringsAndComments(bodyLines[blockEnd].trim()))) {

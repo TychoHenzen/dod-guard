@@ -39,7 +39,7 @@ const PY_TRIVIAL = [
   // assert 1, assert 3.14, assert "hello"
   /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
   // assert CONST OP CONST (both sides literal)
-  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*    (==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s*    (True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
+  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s* {4}(==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s* {4}(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
   // self.assertX(CONST, CONST)
   /^\s*self\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\s*\(\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(?:,\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*)?\)\s*(#.*)?$/,
 ];
@@ -69,7 +69,11 @@ function isAssertion(line: string, detector: RegExp): boolean {
   return detector.test(line);
 }
 
-function classifyLine(line: string, detector: RegExp, trivialPatterns: RegExp[]): { count: number; trivialCount: number } {
+function classifyLine(
+  line: string,
+  detector: RegExp,
+  trivialPatterns: RegExp[],
+): { count: number; trivialCount: number } {
   // Count all assertion occurrences on the line (JS/TS often has multiple assertions per line)
   const globalDetector = new RegExp(detector.source, "g");
   const matches = line.match(globalDetector);
@@ -152,7 +156,7 @@ function extractTestFilesFromCommand(command: string, cwd: string): string[] {
         try {
           const { readdirSync } = require("node:fs");
           const entries = readdirSync(dir);
-          const regex = new RegExp("^" + pat.replace(/\*/g, ".*").replace(/\./g, "\\.") + "$");
+          const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
           for (const entry of entries) {
             if (regex.test(entry)) {
               const full = path.join(dir, entry);

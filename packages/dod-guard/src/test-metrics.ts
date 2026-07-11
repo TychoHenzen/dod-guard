@@ -31,9 +31,9 @@ export interface TestFileMetrics {
   // Assertion metrics
   totalAssertions: number;
   trivialAssertions: number;
-  truthinessAssertions: number;   // assert(x), toBeDefined(), IsNotNull() etc
-  specificAssertions: number;       // total - trivial - truthiness (or regex-classified)
-  zeroAssertionFunctions: number;   // test funcs with no assertion line
+  truthinessAssertions: number; // assert(x), toBeDefined(), IsNotNull() etc
+  specificAssertions: number; // total - trivial - truthiness (or regex-classified)
+  zeroAssertionFunctions: number; // test funcs with no assertion line
   assertionsWithMessage: number;
   assertionsWithoutMessage: number;
 
@@ -47,29 +47,29 @@ export interface TestFileMetrics {
   hasSharedMutableState: boolean;
 
   // Isolation metrics
-  hasSetupTeardown: boolean;        // beforeEach/afterEach or equivalent present
+  hasSetupTeardown: boolean; // beforeEach/afterEach or equivalent present
   moduleMutableCount: number;
   hasTestOnly: boolean;
-  createsOwnFixtures: boolean | null;   // null = needs LLM
+  createsOwnFixtures: boolean | null; // null = needs LLM
 
   // Clarity metrics
   genericNames: string[];
   hasAaaMarkers: boolean;
   magicNumberCount: number;
-  multiBehaviorCount: number | null;    // null = needs LLM
+  multiBehaviorCount: number | null; // null = needs LLM
 
   // Speed metrics
   sleepWaitCount: number;
-  realIoCount: number;                  // fs/network/DB calls
+  realIoCount: number; // fs/network/DB calls
 
   // Coverage depth (partial — LLM fills the rest)
-  errorPathFunctions: number;           // tests expecting throws/errors
-  happyPathFunctions: number | null;    // null = needs LLM
-  edgeCaseFunctions: number | null;     // null = needs LLM
+  errorPathFunctions: number; // tests expecting throws/errors
+  happyPathFunctions: number | null; // null = needs LLM
+  edgeCaseFunctions: number | null; // null = needs LLM
 
   // Diagnostics
   frameworkShowsDiff: boolean;
-  hasCustomMatchers: boolean | null;     // null = needs LLM
+  hasCustomMatchers: boolean | null; // null = needs LLM
 
   // LLM hints
   llm_classifications_needed: string[];
@@ -155,7 +155,10 @@ function detectTestFunctions(lines: string[], lang: Language): TestFn[] {
       for (let i = 0; i < fns.length; i++) {
         const fnLine = fns[i].line - 1;
         for (let j = fnLine - 1; j >= 0 && j >= fnLine - 3; j--) {
-          if (PY_SKIP.test(lines[j])) { fns[i].isSkipped = true; break; }
+          if (PY_SKIP.test(lines[j])) {
+            fns[i].isSkipped = true;
+            break;
+          }
         }
       }
       break;
@@ -168,7 +171,10 @@ function detectTestFunctions(lines: string[], lang: Language): TestFn[] {
           let m: RegExpMatchArray | null = null;
           for (let j = i; j < Math.min(lines.length, i + 3); j++) {
             m = lines[j].match(RS_FN_NAME);
-            if (m) { fnLine = j; break; }
+            if (m) {
+              fnLine = j;
+              break;
+            }
           }
           const isSkipped = RS_SKIP.test(lines[i]);
           if (m) {
@@ -244,7 +250,7 @@ const TRUTHINESS_PATTERNS: Record<string, RegExp[]> = {
     /self\.assertIsNone\s*\(/,
   ],
   rs: [
-    /assert!\s*\(\s*\w+\s*\)/,      // bare assert!(x) — no method call on x
+    /assert!\s*\(\s*\w+\s*\)/, // bare assert!(x) — no method call on x
     /assert!\s*\(\s*!\s*\w+\s*\)/, // assert!(!x)
   ],
   cs: [
@@ -305,9 +311,16 @@ const MESSAGE_PATTERNS: Record<string, RegExp> = {
   go: /assert\.\w+\s*\(\s*t\s*,[^,]*,[^,]*,\s*"[^"]*"/,
 };
 
-function countAssertions(lines: string[], lang: Language): {
-  total: number; trivial: number; truthiness: number; specific: number;
-  messaged: number; unmessaged: number;
+function countAssertions(
+  lines: string[],
+  lang: Language,
+): {
+  total: number;
+  trivial: number;
+  truthiness: number;
+  specific: number;
+  messaged: number;
+  unmessaged: number;
 } {
   if (!lang) return { total: 0, trivial: 0, truthiness: 0, specific: 0, messaged: 0, unmessaged: 0 };
   const detector = ASSERT_DETECTORS[lang];
@@ -316,7 +329,10 @@ function countAssertions(lines: string[], lang: Language): {
   const messageRe = MESSAGE_PATTERNS[lang];
   const trivialResFull = [...trivialRes, ...truthinessRes]; // truthiness assertions are non-trivial but also not "just constants"
 
-  let total = 0, trivial = 0, truthiness = 0, messaged = 0;
+  let total = 0,
+    trivial = 0,
+    truthiness = 0,
+    messaged = 0;
 
   for (const line of lines) {
     const stripped = stripComments(line, lang);
@@ -329,14 +345,19 @@ function countAssertions(lines: string[], lang: Language): {
 
     // Check trivial (constant-on-constant, highest priority — includes some truthiness overlap)
     const isTrivial = trivialRes.some((p) => p.test(stripped));
-    if (isTrivial) { trivial += lineCount; continue; }
+    if (isTrivial) {
+      trivial += lineCount;
+      continue;
+    }
 
     // Check truthiness (existence/boolean check without value comparison)
     const isTruthiness = truthinessRes.some((p) => p.test(stripped));
-    if (isTruthiness) { truthiness += lineCount; }
+    if (isTruthiness) {
+      truthiness += lineCount;
+    }
 
     // Check message
-    if (messageRe && messageRe.test(stripped)) messaged += lineCount;
+    if (messageRe?.test(stripped)) messaged += lineCount;
   }
 
   const specific = total - trivial - truthiness;
@@ -358,7 +379,10 @@ function detectZeroAssertionFunctions(fns: TestFn[], lines: string[], lang: Lang
     const fnEnd = fi < fns.length - 1 ? fns[fi + 1].line - 1 : lines.length;
     let hasAssertion = false;
     for (let i = fnStart; i < Math.min(fnEnd, lines.length); i++) {
-      if (detector.test(stripComments(lines[i], lang))) { hasAssertion = true; break; }
+      if (detector.test(stripComments(lines[i], lang))) {
+        hasAssertion = true;
+        break;
+      }
     }
     if (!hasAssertion) zero++;
   }
@@ -384,7 +408,11 @@ const RANDOM_PATTERNS: Record<string, RegExp[]> = {
 };
 
 const SLEEP_PATTERNS: Record<string, RegExp[]> = {
-  js: [/\bsetTimeout\s*\(/, /\bsetInterval\s*\(/, /\bnew\s+Promise\s*\(\s*(?:function\s*)?\s*resolve\s*=>\s*setTimeout/],
+  js: [
+    /\bsetTimeout\s*\(/,
+    /\bsetInterval\s*\(/,
+    /\bnew\s+Promise\s*\(\s*(?:function\s*)?\s*resolve\s*=>\s*setTimeout/,
+  ],
   py: [/\btime\.sleep\s*\(/, /\basyncio\.sleep\s*\(/],
   rs: [/\bstd::thread::sleep\s*\(/, /\btokio::time::sleep\s*\(/],
   cs: [/\bThread\.Sleep\s*\(/, /\bTask\.Delay\s*\(/],
@@ -445,7 +473,10 @@ function countPattern(lines: string[], patterns: RegExp[]): number {
   return count;
 }
 
-function detectDeterminism(lines: string[], lang: Language): {
+function detectDeterminism(
+  lines: string[],
+  lang: Language,
+): {
   hasRealTime: boolean;
   hasUnseededRandom: boolean;
   hasSleep: boolean;
@@ -454,7 +485,16 @@ function detectDeterminism(lines: string[], lang: Language): {
   hasRealDatabase: boolean;
   hasSharedMutableState: boolean;
 } {
-  if (!lang) return { hasRealTime: false, hasUnseededRandom: false, hasSleep: false, hasRealFilesystem: false, hasRealNetwork: false, hasRealDatabase: false, hasSharedMutableState: false };
+  if (!lang)
+    return {
+      hasRealTime: false,
+      hasUnseededRandom: false,
+      hasSleep: false,
+      hasRealFilesystem: false,
+      hasRealNetwork: false,
+      hasRealDatabase: false,
+      hasSharedMutableState: false,
+    };
 
   const mockLibRe = MOCK_LIB_PATTERNS[lang];
   const hasMockLib = mockLibRe ? mockLibRe.test(lines.join("\n")) : false;
@@ -494,7 +534,8 @@ function detectModuleMutableVars(lines: string[], lang: Language): number {
 
     // Module-level mutable declarations
     if (lang === "js") {
-      if (/^\s*(?:let|var)\s+\w+/.test(line) && !/^\s*(?:let|var)\s+\w+\s*=\s*(?:require|import)\s*\(/.test(line)) count++;
+      if (/^\s*(?:let|var)\s+\w+/.test(line) && !/^\s*(?:let|var)\s+\w+\s*=\s*(?:require|import)\s*\(/.test(line))
+        count++;
     } else if (lang === "py") {
       if (/^\w+\s*=\s*[^=]/.test(trimmed) && getIndent(line) === 0) count++;
     } else if (lang === "rs") {
@@ -512,7 +553,11 @@ function detectModuleMutableVars(lines: string[], lang: Language): number {
 
 // ── Isolation detection ──────────────────────────────────────────────────
 
-function detectIsolation(lines: string[], lang: Language, fns: TestFn[]): {
+function detectIsolation(
+  lines: string[],
+  lang: Language,
+  _fns: TestFn[],
+): {
   hasSetupTeardown: boolean;
   moduleMutableCount: number;
   hasTestOnly: boolean;
@@ -526,7 +571,8 @@ function detectIsolation(lines: string[], lang: Language, fns: TestFn[]): {
       hasSetupTeardown = /\b(?:beforeEach|afterEach|beforeAll|afterAll)\s*\(/.test(lines.join("\n"));
       break;
     case "py":
-      hasSetupTeardown = /def\s+(?:setUp|tearDown|setup_method|teardown_method)\s*\(/.test(lines.join("\n")) ||
+      hasSetupTeardown =
+        /def\s+(?:setUp|tearDown|setup_method|teardown_method)\s*\(/.test(lines.join("\n")) ||
         /@pytest\.fixture/.test(lines.join("\n"));
       break;
     case "rs":
@@ -544,11 +590,21 @@ function detectIsolation(lines: string[], lang: Language, fns: TestFn[]): {
   // test.only / skip detection
   let hasTestOnly = false;
   switch (lang) {
-    case "js": hasTestOnly = /\b(?:test|it)\.only\b/.test(lines.join("\n")); break;
-    case "py": hasTestOnly = /@pytest\.mark\.skip/.test(lines.join("\n")); break;
-    case "rs": hasTestOnly = /#\[ignore\]/.test(lines.join("\n")); break;
-    case "cs": hasTestOnly = /\[Ignore\]/.test(lines.join("\n")); break;
-    case "go": hasTestOnly = /\bt\.Skip\s*\(/.test(lines.join("\n")); break;
+    case "js":
+      hasTestOnly = /\b(?:test|it)\.only\b/.test(lines.join("\n"));
+      break;
+    case "py":
+      hasTestOnly = /@pytest\.mark\.skip/.test(lines.join("\n"));
+      break;
+    case "rs":
+      hasTestOnly = /#\[ignore\]/.test(lines.join("\n"));
+      break;
+    case "cs":
+      hasTestOnly = /\[Ignore\]/.test(lines.join("\n"));
+      break;
+    case "go":
+      hasTestOnly = /\bt\.Skip\s*\(/.test(lines.join("\n"));
+      break;
   }
 
   return {
@@ -567,31 +623,37 @@ const GENERIC_NAME_PATTERNS: RegExp[] = [
   /\[TestMethod\]\s*\n\s*public\s+\w+\s+(?:Test\w{0,3}|TestMethod)\s*\(/,
 ];
 
-function detectClarity(lines: string[], lang: Language, fns: TestFn[]): {
+function detectClarity(
+  lines: string[],
+  _lang: Language,
+  fns: TestFn[],
+): {
   genericNames: string[];
   hasAaaMarkers: boolean;
   magicNumberCount: number;
 } {
-  const genericNames = fns.filter(f => {
-    return GENERIC_NAME_PATTERNS.some(p => {
-      // Search for the function name in the lines
-      for (const line of lines) {
-        if (line.includes(f.name) && p.test(line)) return true;
-      }
-      return false;
-    });
-  }).map(f => f.name);
+  const genericNames = fns
+    .filter((f) => {
+      return GENERIC_NAME_PATTERNS.some((p) => {
+        // Search for the function name in the lines
+        for (const line of lines) {
+          if (line.includes(f.name) && p.test(line)) return true;
+        }
+        return false;
+      });
+    })
+    .map((f) => f.name);
 
   const combined = lines.join("\n");
 
-  const hasAaaMarkers = /\/\/\s*(?:Arrange|Act|Assert)\b|#\s*(?:Arrange|Act|Assert)\b|--\s*(?:Arrange|Act|Assert)\b/.test(combined);
+  const hasAaaMarkers =
+    /\/\/\s*(?:Arrange|Act|Assert)\b|#\s*(?:Arrange|Act|Assert)\b|--\s*(?:Arrange|Act|Assert)\b/.test(combined);
 
   // Magic numbers in assertions (bare literals > 1 that aren't 0, 1, -1, true, false, null)
   let magicCount = 0;
   const magicRe = /assert\w*\s*\(\s*\w+\s*,\s*(\d+)\s*\)/g;
   for (const line of lines) {
-    let m: RegExpExecArray | null;
-    while ((m = magicRe.exec(line)) !== null) {
+    for (const m of line.matchAll(magicRe)) {
       const val = parseInt(m[1], 10);
       if (val > 1 && val !== 42 && val !== 100 && val !== 200 && val !== 404 && val !== 500) {
         magicCount++;
@@ -613,7 +675,10 @@ function detectClarity(lines: string[], lang: Language, fns: TestFn[]): {
 
 // ── Speed detection ──────────────────────────────────────────────────────
 
-function detectSpeed(lines: string[], lang: Language): {
+function detectSpeed(
+  lines: string[],
+  lang: Language,
+): {
   sleepWaitCount: number;
   realIoCount: number;
 } {
@@ -640,25 +705,38 @@ function detectSpeed(lines: string[], lang: Language): {
 
 const ERROR_PATH_PATTERNS: Record<string, RegExp[]> = {
   js: [
-    /\.rejects\b/, /\bthrows\b/, /\btoThrow\b/, /expect\s*\(\s*\(\)\s*=>/, /\.toThrowError/,
-    /assert\.throws/, /assert\.rejects/,
+    /\.rejects\b/,
+    /\bthrows\b/,
+    /\btoThrow\b/,
+    /expect\s*\(\s*\(\)\s*=>/,
+    /\.toThrowError/,
+    /assert\.throws/,
+    /assert\.rejects/,
     // Test names indicating error testing
     /\b(?:test|it)\s*\(\s*["'`][^"'`]*(?:error|fail|invalid|throw|except|reject|bad|wrong|not.?found|unauthorized)[^"'`]*["'`]/i,
   ],
   py: [
-    /\bpytest\.raises\s*\(/, /\bself\.assertRaises\s*\(/, /with\s+pytest\.raises/,
+    /\bpytest\.raises\s*\(/,
+    /\bself\.assertRaises\s*\(/,
+    /with\s+pytest\.raises/,
     /def\s+test[^:]*\b(?:error|fail|invalid|raise|except|bad|wrong)\b/i,
   ],
   rs: [
-    /#\[should_panic\]/, /\.unwrap_err\s*\(/, /assert!\s*\(\w+\.is_err\s*\(/,
+    /#\[should_panic\]/,
+    /\.unwrap_err\s*\(/,
+    /assert!\s*\(\w+\.is_err\s*\(/,
     /fn\s+test[^_]*\b(?:error|fail|invalid|panic|bad|wrong)\b/i,
   ],
   cs: [
-    /\[ExpectedException\]/, /Assert\.Throws/, /Assert\.ThrowsAsync/,
+    /\[ExpectedException\]/,
+    /Assert\.Throws/,
+    /Assert\.ThrowsAsync/,
     /\b(?:error|fail|invalid|throw|except|bad|wrong)\b.*test/i,
   ],
   go: [
-    /\bassert\.Error\s*\(/, /\brequire\.Error\s*\(/, /if\s+err\s*!=\s*nil/,
+    /\bassert\.Error\s*\(/,
+    /\brequire\.Error\s*\(/,
+    /if\s+err\s*!=\s*nil/,
     /func\s+Test[^_]*\b(?:Error|Fail|Invalid|Bad|Wrong)\b/,
   ],
 };
@@ -671,8 +749,11 @@ const EDGE_CASE_PATTERNS: Record<string, RegExp[]> = {
   go: [/\bnil\b/, /\[\]\w+\{\}/, /^\s*\/\/\s*(?:edge|boundary|empty|null|zero)/],
 };
 
-function detectCoverageDepth(lines: string[], lang: Language, fns: TestFn[]):
-  { errorPathFunctions: number; hasErrorIndicators: boolean; hasEdgeIndicators: boolean } {
+function detectCoverageDepth(
+  lines: string[],
+  lang: Language,
+  fns: TestFn[],
+): { errorPathFunctions: number; hasErrorIndicators: boolean; hasEdgeIndicators: boolean } {
   if (!lang || fns.length === 0) return { errorPathFunctions: 0, hasErrorIndicators: false, hasEdgeIndicators: false };
 
   const errorRes = ERROR_PATH_PATTERNS[lang] || [];
@@ -686,13 +767,17 @@ function detectCoverageDepth(lines: string[], lang: Language, fns: TestFn[]):
     const fnEnd = fi < fns.length - 1 ? fns[fi + 1].line - 1 : lines.length;
     let fnHasError = false;
     for (let i = fnStart; i < Math.min(fnEnd, lines.length); i++) {
-      if (errorRes.some(p => p.test(lines[i]))) { fnHasError = true; hasError = true; break; }
+      if (errorRes.some((p) => p.test(lines[i]))) {
+        fnHasError = true;
+        hasError = true;
+        break;
+      }
     }
     if (fnHasError) errorCount++;
   }
 
   const combined = lines.join("\n");
-  hasEdge = edgeRes.some(p => p.test(combined));
+  hasEdge = edgeRes.some((p) => p.test(combined));
 
   return { errorPathFunctions: errorCount, hasErrorIndicators: hasError, hasEdgeIndicators: hasEdge };
 }
@@ -726,8 +811,22 @@ function detectFrameworkDiff(lines: string[], lang: Language): boolean {
 // ── File discovery ───────────────────────────────────────────────────────
 
 const SOURCE_EXTS = new Set([
-  ".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx",
-  ".py", ".rs", ".cs", ".go", ".java", ".rb", ".swift", ".kt",
+  ".js",
+  ".ts",
+  ".mjs",
+  ".cjs",
+  ".mts",
+  ".cts",
+  ".jsx",
+  ".tsx",
+  ".py",
+  ".rs",
+  ".cs",
+  ".go",
+  ".java",
+  ".rb",
+  ".swift",
+  ".kt",
 ]);
 
 const TEST_FILE_PATTERNS = [
@@ -745,7 +844,7 @@ const SKIP_DIRS = new Set(["dist", "build", "out", ".next", "node_modules", "__p
 
 function isTestFile(filePath: string): boolean {
   const base = path.basename(filePath);
-  return TEST_FILE_PATTERNS.some(p => p.test(base));
+  return TEST_FILE_PATTERNS.some((p) => p.test(base));
 }
 
 function isSourceFile(fp: string): boolean {
@@ -753,7 +852,7 @@ function isSourceFile(fp: string): boolean {
 }
 
 function isInSkipDir(fp: string): boolean {
-  return fp.split(path.sep).some(p => SKIP_DIRS.has(p));
+  return fp.split(path.sep).some((p) => SKIP_DIRS.has(p));
 }
 
 function extractTestFilesFromCommand(command: string, cwd: string): string[] {
@@ -762,7 +861,10 @@ function extractTestFilesFromCommand(command: string, cwd: string): string[] {
 
   for (const token of tokens) {
     if (token.startsWith("-")) continue;
-    if (/^(python|python3?|pytest|node|npm|npx|pnpm|yarn|jest|vitest|mocha|ts-node|tsx|cargo|dotnet|go|git)$/.test(token)) continue;
+    if (
+      /^(python|python3?|pytest|node|npm|npx|pnpm|yarn|jest|vitest|mocha|ts-node|tsx|cargo|dotnet|go|git)$/.test(token)
+    )
+      continue;
     if (/^(test|run|exec|build)$/.test(token)) continue;
 
     if (token.includes(".") || token.includes("/") || token.includes("\\")) {
@@ -776,7 +878,7 @@ function extractTestFilesFromCommand(command: string, cwd: string): string[] {
         const pat = path.basename(resolved);
         if (existsSync(dir) && pat.includes("*")) {
           try {
-            const regex = new RegExp("^" + pat.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$");
+            const regex = new RegExp(`^${pat.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`);
             for (const entry of readdirSync(dir)) {
               const full = path.join(dir, entry);
               if (regex.test(entry) && !isInSkipDir(full) && statSync(full).isFile() && isTestFile(full)) {
@@ -885,7 +987,7 @@ export function analyseTestMetrics(command: string, cwd: string): TestMetricsRep
   }
 
   return {
-    files: files.map(f => path.relative(cwd, f).replace(/\\/g, "/")),
+    files: files.map((f) => path.relative(cwd, f).replace(/\\/g, "/")),
     perFile,
   };
 }
@@ -915,10 +1017,10 @@ export function scoreFromMetrics(m: TestFileMetrics): {
   const assertion_quality = Math.round(Math.max(1, Math.min(10, 1 + density + specificity + coverage)));
 
   // 2. Determinism
-  const detViolationCount = [
-    m.hasRealTime, m.hasUnseededRandom, m.hasSleep,
-    m.hasRealFilesystem, m.hasRealNetwork, m.hasRealDatabase,
-  ].filter(Boolean).length + (m.hasSharedMutableState ? 0.5 : 0);
+  const detViolationCount =
+    [m.hasRealTime, m.hasUnseededRandom, m.hasSleep, m.hasRealFilesystem, m.hasRealNetwork, m.hasRealDatabase].filter(
+      Boolean,
+    ).length + (m.hasSharedMutableState ? 0.5 : 0);
   const determinism = Math.round(Math.max(2, 10 - detViolationCount * 1.3));
 
   // 3. Isolation
@@ -937,7 +1039,7 @@ export function scoreFromMetrics(m: TestFileMetrics): {
   clarityScore += Math.min(3, nameQuality * 3);
   if (m.hasAaaMarkers) clarityScore += 2;
   // Magic numbers: 0-1 is fine, 3+ is a problem
-  clarityScore -= Math.min(2.5, Math.max(0, (m.magicNumberCount - 1)) * 0.5);
+  clarityScore -= Math.min(2.5, Math.max(0, m.magicNumberCount - 1) * 0.5);
   if (m.multiBehaviorCount !== null) clarityScore -= Math.min(2, m.multiBehaviorCount);
   const clarity = Math.round(Math.max(1, Math.min(10, clarityScore)));
 
@@ -977,16 +1079,19 @@ export function scoreFromMetrics(m: TestFileMetrics): {
   const assertion_triviality = trivialScore;
 
   // Overall (weighted)
-  const overall = parseFloat(((
-    assertion_quality * 2 +
-    determinism * 2 +
-    isolation * 1 +
-    clarity * 1 +
-    coverage_depth * 2 +
-    speed * 1 +
-    diagnostics * 1 +
-    assertion_triviality * 1
-  ) / 11).toFixed(1));
+  const overall = parseFloat(
+    (
+      (assertion_quality * 2 +
+        determinism * 2 +
+        isolation * 1 +
+        clarity * 1 +
+        coverage_depth * 2 +
+        speed * 1 +
+        diagnostics * 1 +
+        assertion_triviality * 1) /
+      11
+    ).toFixed(1),
+  );
 
   return {
     assertion_quality: Math.round(assertion_quality),

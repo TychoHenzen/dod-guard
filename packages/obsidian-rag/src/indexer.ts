@@ -2,7 +2,7 @@
 
 import { createHash } from "node:crypto";
 import type { Chunk, NoteMeta } from "./types.js";
-import { Store } from "./store.js";
+import type { Store } from "./store.js";
 import { readNote, walkVault } from "./vault.js";
 
 const MAX_CHUNK_CHARS = 800;
@@ -33,7 +33,7 @@ export function chunkMarkdown(notePath: string, content: string): Chunk[] {
       chunkIndex++;
       // Overlap: keep last bit of previous chunk
       const overlap = currentChunk.slice(-CHUNK_OVERLAP_CHARS);
-      currentChunk = overlap + "\n\n" + text;
+      currentChunk = `${overlap}\n\n${text}`;
     } else {
       currentChunk += (currentChunk ? "\n\n" : "") + text;
     }
@@ -79,7 +79,7 @@ function splitByHeadings(content: string): Section[] {
     // Toggle code blocks
     if (line.trim().startsWith("```")) {
       inCodeBlock = !inCodeBlock;
-      currentText += line + "\n";
+      currentText += `${line}\n`;
       continue;
     }
 
@@ -91,7 +91,7 @@ function splitByHeadings(content: string): Section[] {
       currentHeading = line.replace(/^#+\s*/, "").trim();
       currentText = "";
     } else {
-      currentText += line + "\n";
+      currentText += `${line}\n`;
     }
   }
 
@@ -140,8 +140,10 @@ export async function indexVault(vaultPath: string, vaultName: string, store: St
       totalChunks += chunks.length;
       indexed++;
     } catch (err) {
-      console.error("obsidian-rag: index error", { file: String(file), err: err instanceof Error ? err.message : String(err) });
-      continue;
+      console.error("obsidian-rag: index error", {
+        file: String(file),
+        err: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 

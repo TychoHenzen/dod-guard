@@ -56,7 +56,9 @@ function setupRepo(): { dir: string; origCwd: string } {
 
 function teardownRepo(dir: string, origCwd: string): void {
   process.chdir(origCwd);
-  try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
+  try {
+    fs.rmSync(dir, { recursive: true, force: true });
+  } catch {}
 }
 
 // ── Init ──────────────────────────────────────────────────────────────
@@ -88,7 +90,7 @@ describe("evo_init", () => {
   it("re-run clears lessons and re-tags root", () => {
     evo_init();
     const lessonsFile = path.join(dir, ".evo", "lessons.jsonl");
-    fs.writeFileSync(lessonsFile, JSON.stringify({ lesson: "test" }) + "\n");
+    fs.writeFileSync(lessonsFile, `${JSON.stringify({ lesson: "test" })}\n`);
     evo_init();
     const content = fs.readFileSync(lessonsFile, "utf-8");
     assert.strictEqual(content, "", "lessons.jsonl should be cleared on re-run");
@@ -493,12 +495,12 @@ describe("integration: full evolution flow", () => {
       evo_checkpoint("experiment-done", "experiment complete");
 
       // verify checkpoints list
-      let cps = evo_checkpoints();
+      const cps = evo_checkpoints();
       assert.ok(cps.includes("initial"));
       assert.ok(cps.includes("experiment-done"));
 
       // verify branches
-      let brs = evo_branches();
+      const brs = evo_branches();
       assert.ok(brs.includes("experiment-1"));
 
       // verify lessons

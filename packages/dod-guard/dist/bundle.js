@@ -21356,6 +21356,11 @@ function analyseAssertions(command, cwd) {
 // src/observability.ts
 import { readFileSync as readFileSync2, existsSync as existsSync2 } from "node:fs";
 import * as path3 from "node:path";
+
+// src/constants.ts
+var CMD_TRUNCATION = 80;
+
+// src/observability.ts
 function detectLanguage(file) {
   const ext = path3.extname(file).toLowerCase();
   if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
@@ -21397,25 +21402,24 @@ function isLogStatement(line, lang) {
 function findErrorHandlers(lines, lang) {
   switch (lang) {
     case "js":
-      return findJsErrorHandlers(lines);
+    case "cs":
+      return findBraceErrorHandlers(lines, lang);
     case "py":
       return findPyErrorHandlers(lines);
     case "rs":
       return findRsErrorHandlers(lines);
-    case "cs":
-      return findCsErrorHandlers(lines);
     default:
       return [];
   }
 }
-function findJsErrorHandlers(lines) {
+function findBraceErrorHandlers(lines, lang) {
   const results = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
       const endLine = findBlockEnd(lines, i, "{", "}");
       const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, "js"));
+      const hasLog = blockLines.some((l) => isLogStatement(l, lang));
       results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
     }
   }
@@ -21442,19 +21446,6 @@ function findRsErrorHandlers(lines) {
       const endLine = findBlockEnd(lines, i, "{", "}");
       const blockLines = lines.slice(i, endLine + 1);
       const hasLog = blockLines.some((l) => isLogStatement(l, "rs"));
-      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
-    }
-  }
-  return results;
-}
-function findCsErrorHandlers(lines) {
-  const results = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
-      const endLine = findBlockEnd(lines, i, "{", "}");
-      const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, "cs"));
       results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
     }
   }
@@ -21791,7 +21782,7 @@ function scanFile2(filePath, cwd) {
   return { logCount, errorHandlers, antiPatterns };
 }
 function analyseObservability(command, cwd) {
-  console.debug("observability: analyseObservability", { cmd: command.slice(0, 80) });
+  console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
   let files = extractSourceFilesFromCommand(command, cwd);
   if (files.length === 0) {
     if (/\bgit\s+diff\b/.test(command) || /\bgit diff/.test(command)) {
@@ -22647,12 +22638,12 @@ function buildBrev(r, passed, max) {
   if (!passed) l.push(
     "",
     "Remediation:",
-    "  \u2022 Split functions >30L into single-purpose units",
+    `  \u2022 Split functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines}L into single-purpose units`,
     "  \u2022 Reduce cyclomatic complexity \u2014 extract decision-heavy blocks into helpers",
     "  \u2022 Prefer guard clauses \u2014 if-block exits \u2192 no else needed",
     "  \u2022 Delete old code when replacing (low deletion ratio = accretion)",
-    "  \u2022 Keep lines under 120 chars \u2014 break long expressions",
-    "  \u2022 Split files >300 lines into modules"
+    `  \u2022 Keep lines under ${DEFAULT_BREVITY_OPTS.maxLineLength} chars \u2014 break long expressions`,
+    `  \u2022 Split files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines into modules`
   );
   return l.join("\n");
 }
@@ -22670,7 +22661,7 @@ async function hManual(n, b) {
     output: `${label} not verified \u2014 dod_verify(dod_id, "${n.id}")`
   });
 }
-async function hExecFail(r, b) {
+function hExecFail(r, b) {
   if (!r.killed && !r.notFound) return null;
   return mk(b, {
     status: "fail",
@@ -22864,7 +22855,7 @@ function buildLineLenFail(r, max, maxChars) {
     l.push(`  ${f.file}: ${f.lineCount}L, ${fv.length} long line(s)`);
     for (const v of fv) l.push(`    \u2022 L${v.line}: ${v.detail}`);
   }
-  l.push("", "Remediation: break long lines at \u2264120 chars.");
+  l.push("", `Remediation: break long lines at \u2264${DEFAULT_BREVITY_OPTS.maxLineLength} chars.`);
   return l.join("\n");
 }
 function buildFnSizeFail(r, max, maxLines) {
@@ -22879,7 +22870,7 @@ function buildFnSizeFail(r, max, maxLines) {
     l.push(`  ${f.file}: ${f.functionCount} funcs, ${fv.length} long`);
     for (const v of fv) l.push(`    \u2022 L${v.line}: ${v.detail}`);
   }
-  l.push("", "Remediation: split functions >30 lines into single-purpose units.");
+  l.push("", `Remediation: split functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines into single-purpose units.`);
   return l.join("\n");
 }
 function buildFileSizeFail(r, max, maxLines) {
@@ -22894,7 +22885,7 @@ function buildFileSizeFail(r, max, maxLines) {
     l.push(`  ${f.file}: ${f.lineCount}L (max ${maxLines})`);
     for (const v of fv) l.push(`    \u2022 ${v.detail}`);
   }
-  l.push("", "Remediation: split files >300 lines into modules.");
+  l.push("", `Remediation: split files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines into modules.`);
   return l.join("\n");
 }
 function buildCohesionFail(r, max) {
@@ -22933,110 +22924,72 @@ function buildReplRatioFail(r, max, minRatio) {
   l.push("", "Remediation: delete old code when replacing (low deletion ratio = accretion).");
   return l.join("\n");
 }
-async function hLineLength(n, r, b, cmd, cwd) {
-  const max = n.predicate.value ?? 0;
-  const opts = {
-    ...DEFAULT_BREVITY_OPTS,
-    maxLineLength: n.predicate.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength
-  };
-  let report = analyseBrevity(cmd, cwd, opts);
-  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
-  if (!report)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "line_length: no source files",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  const count = report.violations.filter((v) => v.kind === "line_too_long").length;
-  const passed = count <= max;
-  return mk(b, {
-    status: passed ? "pass" : "fail",
-    output: r.combined,
-    error: passed ? `line_length: all lines \u2264 ${opts.maxLineLength} chars` : buildLineLenFail(report, max, opts.maxLineLength),
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hFunctionSize(n, r, b, cmd, cwd) {
-  const max = n.predicate.value ?? 0;
-  const opts = {
-    ...DEFAULT_BREVITY_OPTS,
-    maxFunctionLines: n.predicate.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines
-  };
-  let report = analyseBrevity(cmd, cwd, opts);
-  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
-  if (!report)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "function_size: no source files",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  const count = report.violations.filter((v) => v.kind === "function_too_long").length;
-  const passed = count <= max;
-  return mk(b, {
-    status: passed ? "pass" : "fail",
-    output: r.combined,
-    error: passed ? `function_size: all functions \u2264 ${opts.maxFunctionLines} lines` : buildFnSizeFail(report, max, opts.maxFunctionLines),
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hFileSize(n, r, b, cmd, cwd) {
-  const max = n.predicate.value ?? 0;
-  const opts = {
-    ...DEFAULT_BREVITY_OPTS,
-    maxFileLines: n.predicate.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines
-  };
-  let report = analyseBrevity(cmd, cwd, opts);
-  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
-  if (!report)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "file_size: no source files",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  const count = report.violations.filter((v) => v.kind === "file_too_long").length;
-  const passed = count <= max;
-  return mk(b, {
-    status: passed ? "pass" : "fail",
-    output: r.combined,
-    error: passed ? `file_size: all files \u2264 ${opts.maxFileLines} lines` : buildFileSizeFail(report, max, opts.maxFileLines),
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hCohesion(n, r, b, cmd, cwd) {
-  const max = n.predicate.value ?? 0;
-  const p = n.predicate;
-  const opts = {
-    ...DEFAULT_BREVITY_OPTS,
+var BREVITY_LINE_LENGTH = {
+  label: "line_length",
+  optsOverride: (p) => ({ maxLineLength: p.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength }),
+  violationFilter: (v) => v.kind === "line_too_long",
+  passMsg: (() => {
+    const o = DEFAULT_BREVITY_OPTS;
+    return `line_length: all lines \u2264 ${o.maxLineLength} chars`;
+  })(),
+  buildFail: (r, max, opts) => buildLineLenFail(r, max, opts.maxLineLength)
+};
+var BREVITY_FUNCTION_SIZE = {
+  label: "function_size",
+  optsOverride: (p) => ({ maxFunctionLines: p.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines }),
+  violationFilter: (v) => v.kind === "function_too_long",
+  passMsg: (() => {
+    const o = DEFAULT_BREVITY_OPTS;
+    return `function_size: all functions \u2264 ${o.maxFunctionLines} lines`;
+  })(),
+  buildFail: (r, max, opts) => buildFnSizeFail(r, max, opts.maxFunctionLines)
+};
+var BREVITY_FILE_SIZE = {
+  label: "file_size",
+  optsOverride: (p) => ({ maxFileLines: p.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines }),
+  violationFilter: (v) => v.kind === "file_too_long",
+  passMsg: (() => {
+    const o = DEFAULT_BREVITY_OPTS;
+    return `file_size: all files \u2264 ${o.maxFileLines} lines`;
+  })(),
+  buildFail: (r, max, opts) => buildFileSizeFail(r, max, opts.maxFileLines)
+};
+var BREVITY_COHESION = {
+  label: "cohesion",
+  optsOverride: (p) => ({
     maxComplexity: p.max_complexity ?? DEFAULT_BREVITY_OPTS.maxComplexity,
     requireGuardClauses: p.require_guard_clauses ?? DEFAULT_BREVITY_OPTS.requireGuardClauses,
     suggestGuardClauses: p.suggest_guard_clauses ?? DEFAULT_BREVITY_OPTS.suggestGuardClauses
-  };
+  }),
+  violationFilter: (v) => {
+    const kinds = ["high_complexity", "unnecessary_else", "else_avoidable"];
+    return kinds.includes(v.kind);
+  },
+  passMsg: (() => {
+    const o = DEFAULT_BREVITY_OPTS;
+    return `cohesion: 0 violations (CC\u2264${o.maxComplexity}, guards checked)`;
+  })(),
+  buildFail: (r, max) => buildCohesionFail(r, max)
+};
+async function hBrevity(n, r, b, cmd, cwd, config2) {
+  const max = n.predicate.value ?? 0;
+  const opts = { ...DEFAULT_BREVITY_OPTS, ...config2.optsOverride(n.predicate) };
   let report = analyseBrevity(cmd, cwd, opts);
   if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
   if (!report)
     return mk(b, {
       status: "fail",
       output: r.combined,
-      error: "cohesion: no source files",
+      error: `${config2.label}: no source files`,
       exit_code: r.exitCode,
       duration_ms: r.duration
     });
-  const kinds = ["high_complexity", "unnecessary_else", "else_avoidable"];
-  const count = report.violations.filter((v) => kinds.includes(v.kind)).length;
+  const count = report.violations.filter(config2.violationFilter).length;
   const passed = count <= max;
   return mk(b, {
     status: passed ? "pass" : "fail",
     output: r.combined,
-    error: passed ? `cohesion: 0 violations (CC\u2264${opts.maxComplexity}, guards checked)` : buildCohesionFail(report, max),
+    error: passed ? config2.passMsg : config2.buildFail(report, max, opts),
     exit_code: r.exitCode,
     duration_ms: r.duration
   });
@@ -23144,13 +23097,13 @@ async function executeProof(node, cwd, execFn) {
     case "brevity":
       return hBrev(node, run, base, cmd, cwd);
     case "line_length":
-      return hLineLength(node, run, base, cmd, cwd);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_LINE_LENGTH);
     case "function_size":
-      return hFunctionSize(node, run, base, cmd, cwd);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_FUNCTION_SIZE);
     case "file_size":
-      return hFileSize(node, run, base, cmd, cwd);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_FILE_SIZE);
     case "cohesion":
-      return hCohesion(node, run, base, cmd, cwd);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_COHESION);
     case "replacement_ratio":
       return hReplacementRatio(node, run, base, cmd, cwd);
     case "tdd":
@@ -23275,7 +23228,7 @@ async function runCommand(command, cwd) {
   } catch (err) {
     const duration3 = Date.now() - start;
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("checker: exec failed", { cmd: command.slice(0, 80), err: msg });
+    console.error("checker: exec failed", { cmd: command.slice(0, CMD_TRUNCATION), err: msg });
     const execErr = err;
     const exitCode = execErr.code ?? 1;
     const stdout = execErr.stdout ?? "";
@@ -23305,8 +23258,7 @@ function carryForwardNode(node, node_path) {
 function partitionLeaves(roots, targetPath) {
   if (!targetPath) {
     const allLeaves2 = [];
-    const allDrafts = [];
-    collectAllLeaves(roots, "", allLeaves2, allDrafts);
+    collectAllLeaves(roots, "", allLeaves2, []);
     return { inScope: allLeaves2.filter((l) => l.node.refinement === "concrete"), outOfScope: [] };
   }
   const target = findNodeByPath(roots, targetPath);
@@ -23643,15 +23595,15 @@ function renderLeaf(node, indent, lines) {
     const max = node.predicate.value ?? 0;
     lines.push(`${indent}- ${mark} Proof (brevity \u2264${max} violations): \`${node.command}\` \u2192 ${node.description}`);
   } else if (node.predicate?.type === "line_length") {
-    const maxChars = node.predicate.max_line_length ?? 120;
+    const maxChars = node.predicate.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength;
     const maxV = node.predicate.value ?? 0;
     lines.push(`${indent}- ${mark} Proof (line_length \u2264${maxChars} chars, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`);
   } else if (node.predicate?.type === "function_size") {
-    const maxLines = node.predicate.max_function_lines ?? 30;
+    const maxLines = node.predicate.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines;
     const maxV = node.predicate.value ?? 0;
     lines.push(`${indent}- ${mark} Proof (function_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`);
   } else if (node.predicate?.type === "file_size") {
-    const maxLines = node.predicate.max_file_lines ?? 300;
+    const maxLines = node.predicate.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines;
     const maxV = node.predicate.value ?? 0;
     lines.push(`${indent}- ${mark} Proof (file_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`);
   } else if (node.predicate?.type === "cohesion") {
@@ -23877,7 +23829,7 @@ function inferPredicate(description) {
   }
   const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
   if (exitMatch) return { type: "exit_code", value: parseInt(exitMatch[1], 10) };
-  if (lower.startsWith("manual") || lower === "manual") return { type: "manual" };
+  if (lower.startsWith("manual")) return { type: "manual" };
   if (lower.startsWith("review") || lower.includes("review \u2014") || lower.includes("review:")) return { type: "review" };
   for (const [keywords, type] of CATEGORY_PATTERNS) {
     if (keywords.some((k) => lower.includes(k))) {
@@ -24421,7 +24373,7 @@ var TDD_WARN_GENERAL = 'No "tdd" proof \u2014 new functionality should include a
 var MUTATION_WARN = 'No "mutation" proof \u2014 a green suite can still catch zero bugs. For critical logic, add a mutation proof (cargo-mutants / mutmut / Stryker), or provide a skip_reason.';
 var STREAMLINE_WARN = 'No "streamline" proof \u2014 when revising existing code, a streamline proof verifies old implementations were removed. Add one (grep/rg/findstr for old symbols), or provide a skip_reason.';
 var OBSERVABILITY_WARN = 'No "observability" proof \u2014 changed source files should have log statements at error paths, no empty catch/swallowed errors. Add an observability proof, or provide a skip_reason.';
-var BREVITY_WARN = 'No "brevity" proof \u2014 changed source files should be scanned for structural bloat: functions >30 lines, mixed selection+iteration, files >300 lines, lines >120 chars, replacement without removal. Add a brevity proof, or provide a skip_reason.';
+var BREVITY_WARN = `No "brevity" proof \u2014 changed source files should be scanned for structural bloat: functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines, mixed selection+iteration, files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines, lines >${DEFAULT_BREVITY_OPTS.maxLineLength} chars, replacement without removal. Add a brevity proof, or provide a skip_reason.`;
 var OPTIONAL_REQUIRING_JUSTIFICATION = [
   {
     cat: "tdd",
@@ -24509,7 +24461,7 @@ function validateBaseline(type, steps, skipReasons) {
 // src/index.ts
 var server = new McpServer({
   name: "dod-guard",
-  version: "2.0.0"
+  version: "2.2.4"
 });
 var PredicateSchema = external_exports.object({
   type: external_exports.enum(["exit_code", "exit_code_not", "output_contains", "output_matches", "output_not_contains", "output_not_matches", "tdd", "manual", "review", "mutation", "regression", "assertions", "streamline", "observability", "brevity", "line_length", "function_size", "file_size", "cohesion", "replacement_ratio"]),

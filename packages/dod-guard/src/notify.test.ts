@@ -126,41 +126,31 @@ describe("showVerifyDialog", () => {
 
   describe("structural contract", () => {
     it("is a callable function", () => {
-      assert.equal(typeof showVerifyDialog, "function",
-        "showVerifyDialog should be a function");
+      assert.equal(typeof showVerifyDialog, "function", "showVerifyDialog should be a function");
     });
 
     it("has arity 2 accepting (title, body)", () => {
-      assert.equal(showVerifyDialog.length, 2,
-        "showVerifyDialog should accept 2 parameters");
+      assert.equal(showVerifyDialog.length, 2, "showVerifyDialog should accept 2 parameters");
     });
 
     it("has the expected function name", () => {
-      assert.equal(showVerifyDialog.name, "showVerifyDialog",
-        "function name should match export");
+      assert.equal(showVerifyDialog.name, "showVerifyDialog", "function name should match export");
     });
 
     it("toString reveals the function source (not a stub)", () => {
       const src = showVerifyDialog.toString();
-      assert.ok(src.includes("showVerifyDialog"),
-        "toString should contain function name 'showVerifyDialog'");
-      assert.ok(src.length > 200,
-        `function source should be substantial, got ${src.length} chars`);
-      assert.ok(src.includes("DODG_MSG"),
-        "source should reference DODG_MSG env var");
-      assert.ok(src.includes("isWindows"),
-        "source should reference isWindows platform check");
-      assert.ok(src.includes("spawn"),
-        "source should reference child_process spawn");
+      assert.ok(src.includes("showVerifyDialog"), "toString should contain function name 'showVerifyDialog'");
+      assert.ok(src.length > 200, `function source should be substantial, got ${src.length} chars`);
+      assert.ok(src.includes("DODG_MSG"), "source should reference DODG_MSG env var");
+      assert.ok(src.includes("isWindows"), "source should reference isWindows platform check");
+      assert.ok(src.includes("spawn"), "source should reference child_process spawn");
     });
 
     it("returns a Promise instance", () => {
       spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
       const result = showVerifyDialog("Test", "Body");
-      assert.ok(result instanceof Promise,
-        "showVerifyDialog should return a Promise");
-      assert.equal(typeof result.then, "function",
-        "returned Promise should have .then method");
+      assert.ok(result instanceof Promise, "showVerifyDialog should return a Promise");
+      assert.equal(typeof result.then, "function", "returned Promise should have .then method");
       reset();
     });
   });
@@ -202,8 +192,7 @@ describe("showVerifyDialog", () => {
   describe("Promise intrinsics", () => {
     it("returned value is a native Promise", () => {
       const p = showVerifyDialog("T", "B");
-      assert.equal(p.constructor, Promise,
-        "returned value must be a native Promise, got: " + p.constructor.name);
+      assert.equal(p.constructor, Promise, `returned value must be a native Promise, got: ${p.constructor.name}`);
     });
 
     it("two separate calls return independent Promise instances", () => {
@@ -216,10 +205,14 @@ describe("showVerifyDialog", () => {
   // ── resolution paths (controlled spawn output) ───────────────────────
 
   describe("resolution paths", () => {
-    beforeEach(() => { reset(); });
+    beforeEach(() => {
+      reset();
+    });
 
     it("resolves to {result:'no'} when spawn throws synchronously", async () => {
-      spawnBehavior = () => { throw new Error("ENOENT"); };
+      spawnBehavior = () => {
+        throw new Error("ENOENT");
+      };
       const r = await showVerifyDialog("T", "B");
       assert.deepEqual(r, { result: "no" }, "sync spawn failure → no");
     });
@@ -231,41 +224,33 @@ describe("showVerifyDialog", () => {
     });
 
     it('resolves to {result:"yes", note:"..."} with yes verdict and note', { skip: !isWin }, async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: ['{"result":"yes","note":"looks good"}'] });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"result":"yes","note":"looks good"}'] });
       const r = await showVerifyDialog("T", "B");
-      assert.deepEqual(r, { result: "yes", note: "looks good" },
-        "yes + note carries through");
+      assert.deepEqual(r, { result: "yes", note: "looks good" }, "yes + note carries through");
     });
 
     it('resolves to {result:"yes"} with yes verdict, empty note', { skip: !isWin }, async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: ['{"result":"yes","note":""}'] });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"result":"yes","note":""}'] });
       const r = await showVerifyDialog("T", "B");
       assert.equal(r.result, "yes", "verdict should be yes");
-      assert.strictEqual(r.note, undefined,
-        "empty note string should produce undefined note property");
+      assert.strictEqual(r.note, undefined, "empty note string should produce undefined note property");
     });
 
     it('resolves to {result:"no"} with no verdict', async () => {
       spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"result":"no"}'] });
       const r = await showVerifyDialog("T", "B");
       assert.equal(r.result, "no", "verdict should be no");
-      assert.strictEqual(r.note, undefined,
-        "missing note field should produce undefined");
+      assert.strictEqual(r.note, undefined, "missing note field should produce undefined");
     });
 
     it('resolves to {result:"no", note:"..."} when result absent but note present', { skip: !isWin }, async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: ['{"note":"missing result"}'] });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"note":"missing result"}'] });
       const r = await showVerifyDialog("T", "B");
-      assert.deepEqual(r, { result: "no", note: "missing result" },
-        "missing result defaults to no, note preserved");
+      assert.deepEqual(r, { result: "no", note: "missing result" }, "missing result defaults to no, note preserved");
     });
 
     it("resolves to {result:'no'} when output is not valid JSON", async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: ["garbage output"] });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: ["garbage output"] });
       const r = await showVerifyDialog("T", "B");
       assert.deepEqual(r, { result: "no" }, "invalid json → no");
     });
@@ -277,69 +262,53 @@ describe("showVerifyDialog", () => {
     });
 
     it("resolves to {result:'no'} when child exits non-zero", async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: [], closeCode: 1 });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: [], closeCode: 1 });
       const r = await showVerifyDialog("T", "B");
       assert.deepEqual(r, { result: "no" }, "non-zero exit → no");
     });
 
     it("strips whitespace-only notes", async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: ['{"result":"no","note":"   "}'] });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"result":"no","note":"   "}'] });
       const r = await showVerifyDialog("T", "B");
       assert.equal(r.result, "no", "result should be no");
-      assert.strictEqual(r.note, undefined,
-        "whitespace-only note → undefined");
+      assert.strictEqual(r.note, undefined, "whitespace-only note → undefined");
     });
 
     it("passes title and body as env vars in spawn options", { skip: !isWin }, async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
       await showVerifyDialog("Proof #3", "Did this pass?");
-      assert.equal(spawnCalls.length, 1,
-        "spawn should be called exactly once");
+      assert.equal(spawnCalls.length, 1, "spawn should be called exactly once");
       const call = spawnCalls[0];
-      assert.equal(call.opts.env.DODG_TITLE, "Proof #3",
-        "DODG_TITLE env var = title param");
-      assert.equal(call.opts.env.DODG_MSG, "Did this pass?",
-        "DODG_MSG env var = body param");
+      assert.equal(call.opts.env.DODG_TITLE, "Proof #3", "DODG_TITLE env var = title param");
+      assert.equal(call.opts.env.DODG_MSG, "Did this pass?", "DODG_MSG env var = body param");
     });
 
     it("passes Windows-specific spawn flags", { skip: !isWin }, async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
       await showVerifyDialog("T", "B");
-      assert.equal(spawnCalls.length, 1,
-        "spawn should be called exactly once");
+      assert.equal(spawnCalls.length, 1, "spawn should be called exactly once");
       const call = spawnCalls[0];
       assert.equal(call.opts.windowsHide, true, "windowsHide=true");
-      assert.deepEqual(call.opts.stdio, ["ignore", "pipe", "ignore"],
-        "stdio=[ignore, pipe, ignore]");
+      assert.deepEqual(call.opts.stdio, ["ignore", "pipe", "ignore"], "stdio=[ignore, pipe, ignore]");
     });
 
     it("spawn is called exactly once per showVerifyDialog call", { skip: !isWin }, async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"result":"yes"}'] });
       await showVerifyDialog("T", "B");
-      assert.equal(spawnCalls.length, 1,
-        "spawn should be called exactly once");
+      assert.equal(spawnCalls.length, 1, "spawn should be called exactly once");
     });
 
     it("ignores extra json keys, respects only result and note", { skip: !isWin }, async () => {
-      spawnBehavior = () =>
-        fakeProcess({ stdoutChunks: ['{"result":"no","extra":"unused","note":"test"}'] });
+      spawnBehavior = () => fakeProcess({ stdoutChunks: ['{"result":"no","extra":"unused","note":"test"}'] });
       const r = await showVerifyDialog("Title", "Body");
-      assert.deepEqual(r, { result: "no", note: "test" },
-        "extra json keys ignored");
+      assert.deepEqual(r, { result: "no", note: "test" }, "extra json keys ignored");
     });
 
     it("returns {result:'no'} immediately on non-Windows hosts", { skip: isWin }, async () => {
       // showVerifyDialog early-returns without spawning on non-Windows
       const r = await showVerifyDialog("Title", "Body");
-      assert.deepEqual(r, { result: "no" },
-        "non-Windows host should immediately return no without spawning");
-      assert.equal(spawnCalls.length, 0,
-        "spawn should never be called on non-Windows hosts");
+      assert.deepEqual(r, { result: "no" }, "non-Windows host should immediately return no without spawning");
+      assert.equal(spawnCalls.length, 0, "spawn should never be called on non-Windows hosts");
     });
   });
 });

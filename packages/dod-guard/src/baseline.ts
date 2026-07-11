@@ -48,40 +48,40 @@ const BEHAVIORAL_LABEL =
 const TEST_LABEL = "Full test suite: a proof that the whole suite stays green (no regressions).";
 
 const HARD_MANDATORY: ReadonlyArray<{ cat: ProofCategory; label: string }> = [
-  { cat: "integration_wiring",    label: WIRING_LABEL },
+  { cat: "integration_wiring", label: WIRING_LABEL },
   { cat: "integration_behavioral", label: BEHAVIORAL_LABEL },
-  { cat: "test",                   label: TEST_LABEL },
+  { cat: "test", label: TEST_LABEL },
 ];
 
 // ── Optional-requiring-justification ──────────────────────────────────────
 
 const TDD_WARN_BUG =
   'No "tdd" proof — a bug fix should include a regression test that fails ' +
-  'first (red), then passes. Add a tdd proof, or provide a skip_reason.';
+  "first (red), then passes. Add a tdd proof, or provide a skip_reason.";
 
 const TDD_WARN_GENERAL =
   'No "tdd" proof — new functionality should include a fail-first unit test. ' +
-  'Add a tdd proof, or provide a skip_reason.';
+  "Add a tdd proof, or provide a skip_reason.";
 
 const MUTATION_WARN =
   'No "mutation" proof — a green suite can still catch zero bugs. For critical ' +
-  'logic, add a mutation proof (cargo-mutants / mutmut / Stryker), or provide a skip_reason.';
+  "logic, add a mutation proof (cargo-mutants / mutmut / Stryker), or provide a skip_reason.";
 
 const STREAMLINE_WARN =
   'No "streamline" proof — when revising existing code, a streamline proof ' +
-  'verifies old implementations were removed. Add one (grep/rg/findstr for old ' +
-  'symbols), or provide a skip_reason.';
+  "verifies old implementations were removed. Add one (grep/rg/findstr for old " +
+  "symbols), or provide a skip_reason.";
 
 const OBSERVABILITY_WARN =
   'No "observability" proof — changed source files should have log statements ' +
-  'at error paths, no empty catch/swallowed errors. Add an observability proof, ' +
-  'or provide a skip_reason.';
+  "at error paths, no empty catch/swallowed errors. Add an observability proof, " +
+  "or provide a skip_reason.";
 
 const BREVITY_WARN =
   'No "brevity" proof — changed source files should be scanned for structural ' +
   `bloat: functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines, mixed selection+iteration, files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines, ` +
   `lines >${DEFAULT_BREVITY_OPTS.maxLineLength} chars, replacement without removal. Add a brevity proof, or ` +
-  'provide a skip_reason.';
+  "provide a skip_reason.";
 
 const OPTIONAL_REQUIRING_JUSTIFICATION: ReadonlyArray<{
   cat: ProofCategory;
@@ -93,25 +93,37 @@ const OPTIONAL_REQUIRING_JUSTIFICATION: ReadonlyArray<{
     label: "TDD: a fail-first test for new/changed behavior.",
     warnMsg: (t: string) => (t === "bug" ? TDD_WARN_BUG : TDD_WARN_GENERAL),
   },
-  { cat: "mutation",   label: "Mutation testing: prove the test suite actually catches bugs.",        warnMsg: () => MUTATION_WARN },
-  { cat: "streamline",    label: "Streamline: prove old implementations were removed.",                warnMsg: () => STREAMLINE_WARN },
-  { cat: "observability", label: "Observability: prove changed files are instrumented for debugging.", warnMsg: () => OBSERVABILITY_WARN },
-  { cat: "brevity",       label: "Brevity: prove code is clean — short functions, single-purpose.",   warnMsg: () => BREVITY_WARN },
+  {
+    cat: "mutation",
+    label: "Mutation testing: prove the test suite actually catches bugs.",
+    warnMsg: () => MUTATION_WARN,
+  },
+  { cat: "streamline", label: "Streamline: prove old implementations were removed.", warnMsg: () => STREAMLINE_WARN },
+  {
+    cat: "observability",
+    label: "Observability: prove changed files are instrumented for debugging.",
+    warnMsg: () => OBSERVABILITY_WARN,
+  },
+  {
+    cat: "brevity",
+    label: "Brevity: prove code is clean — short functions, single-purpose.",
+    warnMsg: () => BREVITY_WARN,
+  },
 ];
 
 // ── Regression categories ─────────────────────────────────────────────────
 
 const REGRESSION_CATEGORIES: ReadonlyArray<{ cat: ProofCategory; label: string }> = [
-  { cat: "performance",  label: "Performance: prove no perf regression via regression predicate." },
-  { cat: "complexity",   label: "Complexity: prove cyclomatic complexity does not regress." },
-  { cat: "coverage",     label: "Coverage: prove test coverage does not drop." },
-  { cat: "duplication",  label: "Duplication: prove code duplication does not increase." },
+  { cat: "performance", label: "Performance: prove no perf regression via regression predicate." },
+  { cat: "complexity", label: "Complexity: prove cyclomatic complexity does not regress." },
+  { cat: "coverage", label: "Coverage: prove test coverage does not drop." },
+  { cat: "duplication", label: "Duplication: prove code duplication does not increase." },
 ];
 
 // ── Strength classification ───────────────────────────────────────────────
 
 const STRONG: ReadonlyArray<ProofCategory> = ["test", "tdd", "integration_behavioral", "manual"];
-const WEAK:  ReadonlyArray<ProofCategory> = ["structure", "lint", "format"];
+const WEAK: ReadonlyArray<ProofCategory> = ["structure", "lint", "format"];
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -121,16 +133,11 @@ function collectPresent(steps: BaselineStepInput[]): Set<ProofCategory> {
   return present;
 }
 
-function checkHardMandatory(
-  present: Set<ProofCategory>,
-  type: "bug" | "general",
-): string[] {
+function checkHardMandatory(present: Set<ProofCategory>, type: "bug" | "general"): string[] {
   const errors: string[] = [];
   for (const m of HARD_MANDATORY) {
     if (!present.has(m.cat)) {
-      errors.push(
-        `Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`,
-      );
+      errors.push(`Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`);
     }
   }
   return errors;
@@ -143,11 +150,7 @@ function checkOptional(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const check = (
-    cat: ProofCategory,
-    label: string,
-    warnMsg: string,
-  ) => {
+  const check = (cat: ProofCategory, label: string, _warnMsg: string) => {
     if (present.has(cat)) return;
     const reason = skipReasons?.[cat];
     if (reason) {
@@ -155,8 +158,8 @@ function checkOptional(
     } else {
       errors.push(
         `Missing "${cat}" proof. ${label} Either add a proof for this category, ` +
-        `or provide skip_reasons["${cat}"] with a justification for why it does ` +
-        `not apply to this change.`,
+          `or provide skip_reasons["${cat}"] with a justification for why it does ` +
+          `not apply to this change.`,
       );
     }
   };
@@ -171,9 +174,7 @@ function checkOptional(
   return { errors, warnings };
 }
 
-function checkStrengthOnly(
-  steps: BaselineStepInput[],
-): string[] {
+function checkStrengthOnly(steps: BaselineStepInput[]): string[] {
   const warnings: string[] = [];
   for (const s of steps) {
     if (s.proofs.length === 0) continue;
@@ -182,7 +183,7 @@ function checkStrengthOnly(
     if (!hasStrong && allWeak) {
       warnings.push(
         `Step "${s.title}" has only presence/structural proofs — these confirm ` +
-        `code exists, not that it works. Add a behavioral or test proof.`,
+          `code exists, not that it works. Add a behavioral or test proof.`,
       );
     }
   }

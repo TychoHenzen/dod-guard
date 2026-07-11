@@ -103,8 +103,11 @@ function parseLeafLine(line: string): TaskNode | null {
   const draftMatch = trimmed.match(/^-\s*\[[ ~]\s*\]\s*\*\*Draft\*\*:\s*(.+)$/i);
   if (draftMatch) {
     return {
-      id: "", title: draftMatch[1].trim(), refinement: "draft",
-      intent: draftMatch[1].trim(), last_status: "draft",
+      id: "",
+      title: draftMatch[1].trim(),
+      refinement: "draft",
+      intent: draftMatch[1].trim(),
+      last_status: "draft",
     };
   }
 
@@ -112,8 +115,11 @@ function parseLeafLine(line: string): TaskNode | null {
   const tddMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof\s*\(TDD\s+[^)]+\):\s*`([^`]+)`\s*→\s*(.+)$/);
   if (tddMatch) {
     return {
-      id: "", title: tddMatch[3].trim(), refinement: "concrete",
-      command: tddMatch[2].trim(), predicate: { type: "tdd", value: 0 },
+      id: "",
+      title: tddMatch[3].trim(),
+      refinement: "concrete",
+      command: tddMatch[2].trim(),
+      predicate: { type: "tdd", value: 0 },
       description: tddMatch[3].trim(),
       last_status: tddMatch[1] === "x" ? "pass" : tddMatch[1] === "~" ? "skipped" : "pending",
     };
@@ -123,8 +129,11 @@ function parseLeafLine(line: string): TaskNode | null {
   const cmdMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*`([^`]+)`\s*→\s*(.+)$/);
   if (cmdMatch) {
     return {
-      id: "", title: cmdMatch[3].trim(), refinement: "concrete",
-      command: cmdMatch[2].trim(), predicate: inferPredicate(cmdMatch[3]),
+      id: "",
+      title: cmdMatch[3].trim(),
+      refinement: "concrete",
+      command: cmdMatch[2].trim(),
+      predicate: inferPredicate(cmdMatch[3]),
       description: cmdMatch[3].trim(),
       last_status: cmdMatch[1] === "x" ? "pass" : cmdMatch[1] === "~" ? "skipped" : "pending",
     };
@@ -134,8 +143,11 @@ function parseLeafLine(line: string): TaskNode | null {
   const manualMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
   if (manualMatch) {
     return {
-      id: "", title: manualMatch[2].trim(), refinement: "concrete",
-      command: "manual", predicate: { type: "manual" },
+      id: "",
+      title: manualMatch[2].trim(),
+      refinement: "concrete",
+      command: "manual",
+      predicate: { type: "manual" },
       description: manualMatch[2].trim(),
       last_status: manualMatch[1] === "x" ? "pass" : manualMatch[1] === "~" ? "skipped" : "pending",
     };
@@ -147,14 +159,21 @@ function parseLeafLine(line: string): TaskNode | null {
 // ── Section parsing ───────────────────────────────────────────────────────
 
 interface ParsedDod {
-  title: string; goal: string; date: string; cwd: string;
-  sections: DodSections; roots: TaskNode[];
+  title: string;
+  goal: string;
+  date: string;
+  cwd: string;
+  sections: DodSections;
+  roots: TaskNode[];
 }
 
 const SECTION_MAP: Record<string, keyof DodSections> = {
-  "requirements": "requirements", "research notes": "research_notes",
-  "open questions": "open_questions", "open risks": "open_risks",
-  "decisions": "decisions", "current state": "current_state",
+  requirements: "requirements",
+  "research notes": "research_notes",
+  "open questions": "open_questions",
+  "open risks": "open_risks",
+  decisions: "decisions",
+  "current state": "current_state",
 };
 
 function parseSections(lines: string[]): DodSections {
@@ -175,11 +194,17 @@ function parseSections(lines: string[]): DodSections {
       flush();
       const heading = h2Match[1].trim().toLowerCase();
       for (const [key, val] of Object.entries(SECTION_MAP)) {
-        if (heading.startsWith(key)) { currentSection = val; break; }
+        if (heading.startsWith(key)) {
+          currentSection = val;
+          break;
+        }
       }
       continue;
     }
-    if (line.match(/^---$/) && currentSection) { flush(); continue; }
+    if (line.match(/^---$/) && currentSection) {
+      flush();
+      continue;
+    }
     if (currentSection) buf.push(line);
   }
   flush();
@@ -204,8 +229,11 @@ function parseDodTree(lines: string[], startIdx: number): TaskNode[] {
     const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
     if (rootMatch) {
       const node: TaskNode = {
-        id: `node-${nodeCounter++}`, title: rootMatch[1].trim(),
-        refinement: "draft", children: [], last_status: "draft",
+        id: `node-${nodeCounter++}`,
+        title: rootMatch[1].trim(),
+        refinement: "draft",
+        children: [],
+        last_status: "draft",
       };
       roots.push(node);
       stack.length = 0;
@@ -220,8 +248,11 @@ function parseDodTree(lines: string[], startIdx: number): TaskNode[] {
       while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
       const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
       const node: TaskNode = {
-        id: `node-${nodeCounter++}`, title: groupMatch[1].trim(),
-        refinement: "draft", children: [], last_status: "draft",
+        id: `node-${nodeCounter++}`,
+        title: groupMatch[1].trim(),
+        refinement: "draft",
+        children: [],
+        last_status: "draft",
       };
       if (parent?.children) parent.children.push(node);
       stack.push({ node, depth });
@@ -256,11 +287,17 @@ function parseContent(content: string): ParsedDod {
   console.debug("parser: parseContent", { length: content.length });
   const lines = content.split("\n");
 
-  let title = "", goal = "", date = "", cwd = ".";
+  let title = "",
+    goal = "",
+    date = "",
+    cwd = ".";
 
   for (const line of lines) {
     if (!title && line.startsWith("# ")) {
-      title = line.replace(/^#\s+/, "").replace(/\s*—.*$/, "").trim();
+      title = line
+        .replace(/^#\s+/, "")
+        .replace(/\s*—.*$/, "")
+        .trim();
     }
     const goalMatch = line.match(/^\*\*Goal:\*\*\s*(.+)/);
     if (goalMatch) goal = goalMatch[1].trim();
@@ -277,7 +314,10 @@ function parseContent(content: string): ParsedDod {
   // Find ## Definition of Done start
   let dodStart = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].match(/^## Definition of Done/)) { dodStart = i + 1; break; }
+    if (lines[i].match(/^## Definition of Done/)) {
+      dodStart = i + 1;
+      break;
+    }
   }
 
   const roots = dodStart >= 0 ? parseDodTree(lines, dodStart) : [];

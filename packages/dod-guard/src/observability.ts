@@ -94,10 +94,14 @@ function isLogStatement(line: string, lang: Language): boolean {
 function findErrorHandlers(lines: string[], lang: Language): ErrorHandlerResult[] {
   switch (lang) {
     case "js":
-    case "cs": return findBraceErrorHandlers(lines, lang);
-    case "py": return findPyErrorHandlers(lines);
-    case "rs": return findRsErrorHandlers(lines);
-    default: return [];
+    case "cs":
+      return findBraceErrorHandlers(lines, lang);
+    case "py":
+      return findPyErrorHandlers(lines);
+    case "rs":
+      return findRsErrorHandlers(lines);
+    default:
+      return [];
   }
 }
 
@@ -166,7 +170,10 @@ function findBlockEnd(lines: string[], startIdx: number, open: string, close: st
   const openLine = lines[startIdx];
   let braceIdx = -1;
   for (let j = 0; j < openLine.length; j++) {
-    if (openLine[j] === open) { braceIdx = j; break; }
+    if (openLine[j] === open) {
+      braceIdx = j;
+      break;
+    }
   }
   if (braceIdx === -1) return lines.length - 1;
 
@@ -232,7 +239,10 @@ function findPyBlockEnd(lines: string[], startIdx: number): number {
   // Advance past the except line itself if it has a continuation
   while (i < lines.length) {
     const trimmed = lines[i].trim();
-    if (trimmed === "") { i++; continue; }
+    if (trimmed === "") {
+      i++;
+      continue;
+    }
     const lineIndent = lines[i].match(/^(\s*)/)?.[1].length ?? 0;
     if (lineIndent <= baseIndent) return i - 1;
     i++;
@@ -242,16 +252,16 @@ function findPyBlockEnd(lines: string[], startIdx: number): number {
 
 // ── Anti-pattern detection ───────────────────────────────────────────────
 
-function detectAntiPatterns(
-  lines: string[],
-  lang: Language,
-  filePath: string,
-): AntiPatternHit[] {
+function detectAntiPatterns(lines: string[], lang: Language, filePath: string): AntiPatternHit[] {
   switch (lang) {
-    case "js": return detectJsAntiPatterns(lines, filePath);
-    case "py": return detectPyAntiPatterns(lines, filePath);
-    case "rs": return detectRsAntiPatterns(lines, filePath);
-    default: return [];
+    case "js":
+      return detectJsAntiPatterns(lines, filePath);
+    case "py":
+      return detectPyAntiPatterns(lines, filePath);
+    case "rs":
+      return detectRsAntiPatterns(lines, filePath);
+    default:
+      return [];
   }
 }
 
@@ -274,7 +284,10 @@ function detectJsAntiPatterns(lines: string[], file: string): AntiPatternHit[] {
     // Multi-line catch block: check if body is truly empty
     if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
       const endLine = findBlockEnd(lines, i, "{", "}");
-      const body = lines.slice(i + 1, endLine).map((l) => l.trim()).filter((l) => l.length > 0);
+      const body = lines
+        .slice(i + 1, endLine)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
       if (body.length === 0) {
         hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
       }
@@ -299,7 +312,10 @@ function detectPyAntiPatterns(lines: string[], file: string): AntiPatternHit[] {
     // Multi-line except with only pass next
     if (/^\s*except\b/.test(line)) {
       const endLine = findPyBlockEnd(lines, i);
-      const body = lines.slice(i + 1, endLine + 1).map((l) => l.trim()).filter((l) => l.length > 0);
+      const body = lines
+        .slice(i + 1, endLine + 1)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
       const allPass = body.length > 0 && body.every((l) => l === "pass" || /^\s*pass\s*(#.*)?$/.test(l));
       if (allPass) {
         hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
@@ -339,10 +355,14 @@ function detectRsAntiPatterns(lines: string[], file: string): AntiPatternHit[] {
  */
 function isBareStaticLog(line: string, lang: Language): boolean {
   switch (lang) {
-    case "js": return isBareStaticJs(line);
-    case "py": return isBareStaticPy(line);
-    case "rs": return isBareStaticRs(line);
-    default: return false;
+    case "js":
+      return isBareStaticJs(line);
+    case "py":
+      return isBareStaticPy(line);
+    case "rs":
+      return isBareStaticRs(line);
+    default:
+      return false;
   }
 }
 
@@ -374,7 +394,7 @@ function isBareStaticPy(line: string): boolean {
   const argsList = splitArgs(args);
   if (argsList.length === 0) return false;
   // f-string → not bare
-  if (argsList.some((a) => a.startsWith("f\"") || a.startsWith("f'"))) return false;
+  if (argsList.some((a) => a.startsWith('f"') || a.startsWith("f'"))) return false;
   // Has % operator → not bare
   if (argsList.length >= 2) return false;
   if (/%[sdfr]/.test(args)) return false;
@@ -418,11 +438,7 @@ function splitArgs(s: string): string[] {
 
 // ── Swallowed error detection ────────────────────────────────────────────
 
-function detectSwallowedErrors(
-  lines: string[],
-  lang: Language,
-  filePath: string,
-): AntiPatternHit[] {
+function detectSwallowedErrors(lines: string[], lang: Language, filePath: string): AntiPatternHit[] {
   // Already handled by "unlogged error handler" check. Here we catch the
   // specific pattern: catch(e) { return X } with no log statement.
   // This is distinct from empty_catch — the handler does something (returns)
@@ -456,8 +472,22 @@ function detectSwallowedErrors(
 // ── File discovery from command ──────────────────────────────────────────
 
 const SOURCE_EXTS = new Set([
-  ".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx",
-  ".py", ".rs", ".cs", ".go", ".java", ".rb", ".swift", ".kt",
+  ".js",
+  ".ts",
+  ".mjs",
+  ".cjs",
+  ".mts",
+  ".cts",
+  ".jsx",
+  ".tsx",
+  ".py",
+  ".rs",
+  ".cs",
+  ".go",
+  ".java",
+  ".rb",
+  ".swift",
+  ".kt",
 ]);
 
 /** Directories to skip during file discovery (build output). */
@@ -531,7 +561,7 @@ function extractSourceFilesFromCommand(command: string, cwd: string): string[] {
           try {
             const { readdirSync } = require("node:fs");
             const entries = readdirSync(dir);
-            const regex = new RegExp("^" + pat.replace(/\*/g, ".*").replace(/\./g, "\\.") + "$");
+            const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
             for (const entry of entries) {
               const full = path.join(dir, entry);
               if (isInSkipDir(full)) continue;
@@ -555,7 +585,10 @@ function extractSourceFilesFromCommand(command: string, cwd: string): string[] {
 
 // ── Core scanner ─────────────────────────────────────────────────────────
 
-function scanFile(filePath: string, cwd: string): {
+function scanFile(
+  filePath: string,
+  cwd: string,
+): {
   logCount: number;
   errorHandlers: ErrorHandler[];
   antiPatterns: AntiPatternHit[];
@@ -599,7 +632,7 @@ function scanFile(filePath: string, cwd: string): {
 export function analyseObservability(command: string, cwd: string): ObservabilityReport | null {
   console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
   // Try to find files from both command tokens and (later) command output
-  let files = extractSourceFilesFromCommand(command, cwd);
+  const files = extractSourceFilesFromCommand(command, cwd);
 
   // If no files found from tokens, try broader file detection
   if (files.length === 0) {
@@ -656,10 +689,7 @@ export function analyseObservability(command: string, cwd: string): Observabilit
  * Re-analyze using command output (for commands like `git diff --name-only`
  * where the file list is in stdout, not the command tokens).
  */
-export function analyseObservabilityFromOutput(
-  commandOutput: string,
-  cwd: string,
-): ObservabilityReport | null {
+export function analyseObservabilityFromOutput(commandOutput: string, cwd: string): ObservabilityReport | null {
   const files = extractSourceFilesFromOutput(commandOutput, cwd);
   if (files.length === 0) return null;
 

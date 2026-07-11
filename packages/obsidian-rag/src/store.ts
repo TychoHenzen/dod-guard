@@ -33,9 +33,9 @@ function loadBetterSqlite3(): any {
       } catch (installErr: any) {
         throw new Error(
           `better-sqlite3 is required but could not be installed automatically.\n` +
-          `Run manually: cd "${pluginRoot}" && npm install --omit=dev\n` +
-          `Original error: ${err.message}\n` +
-          `Install error: ${installErr.message}`
+            `Run manually: cd "${pluginRoot}" && npm install --omit=dev\n` +
+            `Original error: ${err.message}\n` +
+            `Install error: ${installErr.message}`,
         );
       }
     }
@@ -54,7 +54,7 @@ export class Store {
   private _dbPath: string;
   private _initRan = false;
 
-  constructor(private config: StoreConfig) {
+  constructor(config: StoreConfig) {
     if (!existsSync(config.dbDir)) mkdirSync(config.dbDir, { recursive: true });
     this._dbPath = join(config.dbDir, DB_FILENAME);
     // DB opened lazily on first access — avoids crashing if better-sqlite3
@@ -78,7 +78,8 @@ export class Store {
   // ── Schema ────────────────────────────────────────────────────────
 
   private _initSchema(): void {
-    const d = this._db!;
+    const d = this._db;
+    if (!d) return;
     d.exec(`
       CREATE TABLE IF NOT EXISTS vaults (
         name TEXT PRIMARY KEY,
@@ -149,7 +150,7 @@ export class Store {
 
     // Migration: add content column if missing (pre-0.1.2 DBs)
     const cols = d.pragma("table_info(notes)") as Array<{ name: string }>;
-    if (!cols.some(c => c.name === "content")) {
+    if (!cols.some((c) => c.name === "content")) {
       d.exec("ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''");
     }
   }
@@ -177,42 +178,59 @@ export class Store {
       INSERT OR REPLACE INTO notes (path, vault_name, title, tags, links, frontmatter, created, modified, content, content_hash)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      meta.path, vaultName, meta.title,
-      JSON.stringify(meta.tags), JSON.stringify(meta.links),
-      JSON.stringify(meta.frontmatter), meta.created, meta.modified,
-      content, contentHash
+      meta.path,
+      vaultName,
+      meta.title,
+      JSON.stringify(meta.tags),
+      JSON.stringify(meta.links),
+      JSON.stringify(meta.frontmatter),
+      meta.created,
+      meta.modified,
+      content,
+      contentHash,
     );
   }
 
   getNote(vaultName: string, path: string): (NoteMeta & { content: string }) | null {
-    const row = this.db.prepare(
-      "SELECT * FROM notes WHERE vault_name = ? AND path = ?"
-    ).get(vaultName, path) as any;
+    const row = this.db.prepare("SELECT * FROM notes WHERE vault_name = ? AND path = ?").get(vaultName, path) as any;
     if (!row) return null;
     return {
-      path: row.path, title: row.title,
+      path: row.path,
+      title: row.title,
       tags: JSON.parse(row.tags || "[]"),
       links: JSON.parse(row.links || "[]"),
       backlinks: [],
       frontmatter: JSON.parse(row.frontmatter || "{}"),
-      created: row.created, modified: row.modified,
+      created: row.created,
+      modified: row.modified,
       content: row.content || "",
     };
   }
 
-  searchNotesFTS(vaultName: string, query: string, limit = 20): Array<{
-    path: string; title: string; snippet: string; score: number;
+  searchNotesFTS(
+    vaultName: string,
+    query: string,
+    limit = 20,
+  ): Array<{
+    path: string;
+    title: string;
+    snippet: string;
+    score: number;
   }> {
-    const rows = this.db.prepare(`
+    const rows = this.db
+      .prepare(`
       SELECT n.path, n.title, snippet(notes_fts, 1, '<mark>', '</mark>', '...', 32) as snippet, rank
       FROM notes_fts f
       JOIN notes n ON f.rowid = n.rowid
       WHERE notes_fts MATCH ? AND n.vault_name = ?
       ORDER BY rank
       LIMIT ?
-    `).all(query, vaultName, limit) as any[];
-    return rows.map(r => ({
-      path: r.path, title: r.title, snippet: r.snippet || "",
+    `)
+      .all(query, vaultName, limit) as any[];
+    return rows.map((r) => ({
+      path: r.path,
+      title: r.title,
+      snippet: r.snippet || "",
       score: 1 / (1 + (r.rank || 0)),
     }));
   }
@@ -220,21 +238,17 @@ export class Store {
   listNotes(vaultName: string, directory?: string): Array<{ path: string; title: string; tags: string[] }> {
     let rows: any[];
     if (directory) {
-      rows = this.db.prepare(
-        "SELECT path, title, tags FROM notes WHERE vault_name = ? AND path LIKE ? ORDER BY path"
-      ).all(vaultName, `${directory}%`);
+      rows = this.db
+        .prepare("SELECT path, title, tags FROM notes WHERE vault_name = ? AND path LIKE ? ORDER BY path")
+        .all(vaultName, `${directory}%`);
     } else {
-      rows = this.db.prepare(
-        "SELECT path, title, tags FROM notes WHERE vault_name = ? ORDER BY path"
-      ).all(vaultName);
+      rows = this.db.prepare("SELECT path, title, tags FROM notes WHERE vault_name = ? ORDER BY path").all(vaultName);
     }
-    return rows.map(r => ({ path: r.path, title: r.title, tags: JSON.parse(r.tags || "[]") }));
+    return rows.map((r) => ({ path: r.path, title: r.title, tags: JSON.parse(r.tags || "[]") }));
   }
 
   getTags(vaultName: string): Map<string, number> {
-    const rows = this.db.prepare(
-      "SELECT tags FROM notes WHERE vault_name = ?"
-    ).all(vaultName) as any[];
+    const rows = this.db.prepare("SELECT tags FROM notes WHERE vault_name = ?").all(vaultName) as any[];
     const counts = new Map<string, number>();
     for (const row of rows) {
       for (const tag of JSON.parse(row.tags || "[]") as string[]) {
@@ -247,23 +261,29 @@ export class Store {
   // ── Chunks ───────────────────────────────────────────────────────
 
   upsertChunk(chunk: Chunk, vaultName: string): void {
-    this.db.prepare(`
+    this.db
+      .prepare(`
       INSERT OR REPLACE INTO chunks (id, note_path, vault_name, heading, content, embedding)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(chunk.id, chunk.notePath, vaultName, chunk.heading, chunk.content,
-      chunk.embedding ? JSON.stringify(chunk.embedding) : null);
+    `)
+      .run(
+        chunk.id,
+        chunk.notePath,
+        vaultName,
+        chunk.heading,
+        chunk.content,
+        chunk.embedding ? JSON.stringify(chunk.embedding) : null,
+      );
   }
 
   getUnembeddedChunks(vaultName: string, limit = 100): Chunk[] {
-    return this.db.prepare(
-      "SELECT * FROM chunks WHERE vault_name = ? AND embedding IS NULL LIMIT ?"
-    ).all(vaultName, limit) as Chunk[];
+    return this.db
+      .prepare("SELECT * FROM chunks WHERE vault_name = ? AND embedding IS NULL LIMIT ?")
+      .all(vaultName, limit) as Chunk[];
   }
 
   getChunks(vaultName: string): Chunk[] {
-    return this.db.prepare(
-      "SELECT * FROM chunks WHERE vault_name = ?"
-    ).all(vaultName) as Chunk[];
+    return this.db.prepare("SELECT * FROM chunks WHERE vault_name = ?").all(vaultName) as Chunk[];
   }
 
   setEmbedding(chunkId: string, embedding: number[]): void {
@@ -287,9 +307,7 @@ export class Store {
 
   getIndexStatus(vaultName: string): IndexStatus {
     const vault = this.getVault(vaultName);
-    const meta = this.db.prepare(
-      "SELECT * FROM index_meta WHERE vault_name = ?"
-    ).get(vaultName) as any;
+    const meta = this.db.prepare("SELECT * FROM index_meta WHERE vault_name = ?").get(vaultName) as any;
     return {
       vault,
       totalNotes: meta?.total_notes || 0,
@@ -315,11 +333,13 @@ export class Store {
     const values: unknown[] = [vaultName, ...pairs.map(([, v]) => v)];
     const placeholders = values.map(() => "?").join(", ");
 
-    this.db.prepare(`
+    this.db
+      .prepare(`
       INSERT INTO index_meta (vault_name, ${colNames.join(", ")})
       VALUES (${placeholders})
-      ON CONFLICT(vault_name) DO UPDATE SET ${colNames.map(c => `${c} = excluded.${c}`).join(", ")}
-    `).run(...values);
+      ON CONFLICT(vault_name) DO UPDATE SET ${colNames.map((c) => `${c} = excluded.${c}`).join(", ")}
+    `)
+      .run(...values);
   }
 
   // ── Cleanup ──────────────────────────────────────────────────────

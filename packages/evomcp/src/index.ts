@@ -29,10 +29,18 @@ const server = new McpServer({
 
 const TaskSpecSchema = z.object({
   goal: z.string().describe("Natural-language description of what to build/fix/optimize"),
-  verify_cmd: z.string().describe("Shell command that returns exit 0 on success, non-zero on failure. e.g. 'npm test -- --testNamePattern=auth'"),
+  verify_cmd: z
+    .string()
+    .describe(
+      "Shell command that returns exit 0 on success, non-zero on failure. e.g. 'npm test -- --testNamePattern=auth'",
+    ),
   cwd: z.string().describe("Working directory for running verify_cmd (absolute path)"),
   budget_tokens: z.number().optional().describe("Maximum DeepSeek API tokens to spend (default ~100k)"),
-  strategy: z.enum(["auto", "best-of-n", "evolve"]).optional().default("auto").describe("Strategy hint. 'auto' inspects verify_cmd for scalar output → evolve, else best-of-n"),
+  strategy: z
+    .enum(["auto", "best-of-n", "evolve"])
+    .optional()
+    .default("auto")
+    .describe("Strategy hint. 'auto' inspects verify_cmd for scalar output → evolve, else best-of-n"),
   context: z.string().optional().describe("Relevant context: file snippets, existing test output, constraints"),
   model: z.string().optional().describe("Model override (default: deepseek-v4-pro[1m])"),
   api_key: z.string().optional().describe("DeepSeek API key. Falls back to DEEPSEEK_API_KEY env var"),
@@ -40,7 +48,9 @@ const TaskSpecSchema = z.object({
 
 const EvolveSpecSchema = z.object({
   goal: z.string().describe("What to optimize (natural language)"),
-  fitness_cmd: z.string().describe("Shell command that emits a numeric fitness score to stdout (lower = better by default)"),
+  fitness_cmd: z
+    .string()
+    .describe("Shell command that emits a numeric fitness score to stdout (lower = better by default)"),
   cwd: z.string().describe("Working directory"),
   target_files: z.array(z.string()).describe("Files the solver is allowed to mutate (glob patterns)"),
   generations: z.number().optional().default(5).describe("Number of generations"),
@@ -81,10 +91,12 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
     });
 
     return {
-      content: [{
-        type: "text" as const,
-        text: formatSolveResult(result),
-      }],
+      content: [
+        {
+          type: "text" as const,
+          text: formatSolveResult(result),
+        },
+      ],
     };
   },
 );
@@ -112,26 +124,25 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
     });
 
     return {
-      content: [{
-        type: "text" as const,
-        text: formatEvolveResult(result),
-      }],
+      content: [
+        {
+          type: "text" as const,
+          text: formatEvolveResult(result),
+        },
+      ],
     };
   },
 );
 
 // ── status tool ─────────────────────────────────────────────────────
 
-server.tool(
-  "status",
-  "Check if the deepclaude proxy is running and ready.",
-  {},
-  async () => {
-    const proxyAlive = await checkProxyHealth();
-    const apiKeySet = !!process.env["DEEPSEEK_API_KEY"];
+server.tool("status", "Check if the deepclaude proxy is running and ready.", {}, async () => {
+  const proxyAlive = await checkProxyHealth();
+  const apiKeySet = !!process.env.DEEPSEEK_API_KEY;
 
-    return {
-      content: [{
+  return {
+    content: [
+      {
         type: "text" as const,
         text: [
           `Proxy (127.0.0.1:3200): ${proxyAlive ? "RUNNING" : "NOT FOUND"}`,
@@ -143,10 +154,10 @@ server.tool(
               ? "Will attempt direct mode (DeepSeek /anthropic endpoint)."
               : "Set DEEPSEEK_API_KEY env var or start deepclaude proxy.",
         ].join("\n"),
-      }],
-    };
-  },
-);
+      },
+    ],
+  };
+});
 
 // ── Formatting ─────────────────────────────────────────────────────────
 
@@ -202,9 +213,7 @@ function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
 
 function formatEvolveResult(result: Awaited<ReturnType<typeof evolve>>): string {
   const improvement = result.baseline_score - result.best_score;
-  const pct = result.baseline_score !== 0
-    ? ((improvement / Math.abs(result.baseline_score)) * 100).toFixed(1)
-    : "N/A";
+  const pct = result.baseline_score !== 0 ? ((improvement / Math.abs(result.baseline_score)) * 100).toFixed(1) : "N/A";
 
   return [
     "## Evolve: COMPLETE",

@@ -24,10 +24,7 @@ const DEFAULT_GENERATIONS = 5;
 const DEFAULT_POPULATION = 6;
 const DEFAULT_TIMEOUT_MS = 180_000; // 3 min per mutation
 
-export async function evolve(
-  spec: EvolveSpec,
-  onProgress?: (msg: string) => void,
-): Promise<EvolveResult> {
+export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => void): Promise<EvolveResult> {
   const startTime = Date.now();
   const stats: RunStats = {
     plans_sampled: 0,
@@ -129,7 +126,7 @@ export async function evolve(
           genScores.push(score);
           onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
 
-          const isBetter = higherIsBetter ? (score > bestScore) : (score < bestScore);
+          const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
           if (isBetter) {
             bestScore = score;
             // Capture the current state as best patch
@@ -138,7 +135,7 @@ export async function evolve(
 
             elites.push({ code: fitnessResult.output.slice(0, 2000), score });
             // Keep only top 5 elites
-            elites.sort((a, b) => higherIsBetter ? b.score - a.score : a.score - b.score);
+            elites.sort((a, b) => (higherIsBetter ? b.score - a.score : a.score - b.score));
             if (elites.length > 5) elites.length = 5;
           }
         }
@@ -196,7 +193,9 @@ export async function evolve(
       `Final: ${finalScore.toFixed(2)}`,
       `Improvement: ${(higherIsBetter ? finalScore - baselineScore : baselineScore - finalScore).toFixed(2)}`,
       "",
-      fitnessHistory.map((h) => `Gen ${h.generation}: best=${h.best_score.toFixed(2)} mean=${h.mean_score.toFixed(2)}`).join("\n"),
+      fitnessHistory
+        .map((h) => `Gen ${h.generation}: best=${h.best_score.toFixed(2)} mean=${h.mean_score.toFixed(2)}`)
+        .join("\n"),
       "",
       finalResult.output.slice(0, 2000),
     ].join("\n"),
@@ -247,9 +246,7 @@ function readTargetFiles(cwd: string, patterns: string[]): TargetFile[] {
 }
 
 function matchSimple(name: string, pattern: string): boolean {
-  const regex = new RegExp(
-    "^" + pattern.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$",
-  );
+  const regex = new RegExp(`^${pattern.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`);
   return regex.test(name);
 }
 
@@ -304,6 +301,8 @@ function applyPatch(patch: string | null, cwd: string): void {
   } catch {
     // Patch may not apply cleanly — the changes might already be in place
   } finally {
-    try { fs.unlinkSync(patchFile); } catch {}
+    try {
+      fs.unlinkSync(patchFile);
+    } catch {}
   }
 }

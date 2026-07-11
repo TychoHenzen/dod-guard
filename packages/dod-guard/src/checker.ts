@@ -27,10 +27,7 @@ function flattenLeaf(node: TaskNode, index: number, parentPath?: string): { node
  * (refinement === "concrete", no children) with its dot-separated path.
  * Draft leaves and task groups are excluded.
  */
-export function flattenConcreteLeaves(
-  nodes: TaskNode[],
-  parentPath?: string,
-): { node: TaskNode; node_path: string }[] {
+export function flattenConcreteLeaves(nodes: TaskNode[], parentPath?: string): { node: TaskNode; node_path: string }[] {
   const results: { node: TaskNode; node_path: string }[] = [];
   for (let i = 0; i < nodes.length; i++) {
     results.push(...flattenLeaf(nodes[i], i, parentPath));
@@ -87,7 +84,7 @@ function isExecutableLeaf(leaf: { node: TaskNode }): boolean {
 export function extractExecutableCommands(nodes: TaskNode[]): string[] {
   return flattenConcreteLeaves(nodes)
     .filter(isExecutableLeaf)
-    .map(({ node }) => node.command!);
+    .map(({ node }) => node.command as string);
 }
 
 /** True when every leaf in the subtree is concrete (no drafts remaining). */
@@ -122,8 +119,8 @@ export function computeProofFingerprint(roots: TaskNode[]): string {
   if (leaves.length === 0) return "";
   const data = leaves
     .map(({ node }) => {
-      let line = `${node.command}|${node.predicate!.type}|${node.predicate!.value ?? ""}`;
-      if (node.predicate!.lower_is_better !== undefined) line += `|lib:${node.predicate!.lower_is_better}`;
+      let line = `${node.command}|${node.predicate?.type}|${node.predicate?.value ?? ""}`;
+      if (node.predicate?.lower_is_better !== undefined) line += `|lib:${node.predicate?.lower_is_better}`;
       if (node.advisory !== undefined) line += `|adv:${node.advisory}`;
       return line;
     })
@@ -133,9 +130,16 @@ export function computeProofFingerprint(roots: TaskNode[]): string {
 
 // ── Command execution ─────────────────────────────────────────────────
 
-async function runCommand(command: string, cwd: string): Promise<{
-  exitCode: number; combined: string; duration: number;
-  error?: string; killed?: boolean; notFound?: boolean;
+async function runCommand(
+  command: string,
+  cwd: string,
+): Promise<{
+  exitCode: number;
+  combined: string;
+  duration: number;
+  error?: string;
+  killed?: boolean;
+  notFound?: boolean;
 }> {
   const start = Date.now();
   try {
@@ -159,20 +163,34 @@ async function runCommand(command: string, cwd: string): Promise<{
     const combined = (stdout + stderr).slice(0, 4000);
 
     if (execErr.killed) {
-      return { exitCode, combined: `TIMEOUT after ${TIMEOUT_MS}ms`, duration, error: "Process killed due to timeout", killed: true };
+      return {
+        exitCode,
+        combined: `TIMEOUT after ${TIMEOUT_MS}ms`,
+        duration,
+        error: "Process killed due to timeout",
+        killed: true,
+      };
     }
 
-    const notFound = exitCode === 127 || exitCode === 9009
-      || /not recognized|command not found|no such file/i.test(stderr + (execErr.message ?? ""));
+    const notFound =
+      exitCode === 127 ||
+      exitCode === 9009 ||
+      /not recognized|command not found|no such file/i.test(stderr + (execErr.message ?? ""));
     if (notFound) {
-      return { exitCode, combined, duration, error: `Command not found or not executable (exit ${exitCode})`, notFound: true };
+      return {
+        exitCode,
+        combined,
+        duration,
+        error: `Command not found or not executable (exit ${exitCode})`,
+        notFound: true,
+      };
     }
 
     return { exitCode, combined, duration, error: stderr.slice(0, 2000) || undefined };
   }
 }
 
-// â”€â”€ 
+// â”€â”€
 
 // ── Carry-forward (scoped runs) ───────────────────────────────────────
 
@@ -186,7 +204,10 @@ function carryForwardNode(node: TaskNode, node_path: string): LeafResult {
     id: node.id,
     title: node.title,
     description: node.description ?? node.intent ?? node.title,
-    status: node.last_status === "pending" || node.last_status === "draft" ? "skipped" : node.last_status as LeafResult["status"],
+    status:
+      node.last_status === "pending" || node.last_status === "draft"
+        ? "skipped"
+        : (node.last_status as LeafResult["status"]),
     command: node.command ?? "",
     output: node.last_output,
   };
@@ -234,7 +255,7 @@ function partitionLeaves(
     // No scoping: everything is in-scope
     const allLeaves: { node: TaskNode; node_path: string }[] = [];
     collectAllLeaves(roots, "", allLeaves, []);
-    return { inScope: allLeaves.filter(l => l.node.refinement === "concrete"), outOfScope: [] };
+    return { inScope: allLeaves.filter((l) => l.node.refinement === "concrete"), outOfScope: [] };
   }
 
   // Find the target node
@@ -251,8 +272,8 @@ function partitionLeaves(
 
   // Collect ALL leaves, then filter out those in scope
   const allLeaves = flattenConcreteLeaves(roots);
-  const inScopePaths = new Set(inScope.map(l => l.node_path));
-  const outOfScope = allLeaves.filter(l => !inScopePaths.has(l.node_path));
+  const inScopePaths = new Set(inScope.map((l) => l.node_path));
+  const outOfScope = allLeaves.filter((l) => !inScopePaths.has(l.node_path));
 
   return { inScope, outOfScope };
 }
@@ -368,7 +389,10 @@ export async function checkDocument(
   carryForwardOutOfScopeLeaves(targetPath, outOfScope, doc.roots, leafResults);
 
   const { anyRealFail, anyUnverified, manualUnverified } = await executeInScopeLeaves(
-    inScope, cwd, opts?.execFn ?? runCommand, leafResults,
+    inScope,
+    cwd,
+    opts?.execFn ?? runCommand,
+    leafResults,
   );
 
   if (!targetPath) {
@@ -406,8 +430,8 @@ export async function checkDocument(
             ? "incomplete"
             : "pass";
 
-  const concreteTotal = leafResults.filter(r => r.status !== "draft").length;
-  const passCount = leafResults.filter(r => r.status === "pass").length;
+  const concreteTotal = leafResults.filter((r) => r.status !== "draft").length;
+  const passCount = leafResults.filter((r) => r.status === "pass").length;
 
   const baseSummary = targetPath
     ? `SCOPED (node "${targetPath}"): run a full dod_check (no nodePath) to verify completion`
@@ -417,22 +441,28 @@ export async function checkDocument(
   const guidance: string[] = [];
 
   if (blockedByManuals) {
-    guidance.push(`⛔ ${manualUnverified} manual/review proof(s) await dod_verify — DoD CANNOT pass without human verification.`);
+    guidance.push(
+      `⛔ ${manualUnverified} manual/review proof(s) await dod_verify — DoD CANNOT pass without human verification.`,
+    );
   } else if (!targetPath && manualUnverified > 0) {
     guidance.push(`${manualUnverified} manual/review proof(s) await dod_verify.`);
   }
 
   if (amendmentWarnings.length > 0) {
-    const names = amendmentWarnings.map(w => `"${w.title}" (${w.count} amendments)`).join(", ");
+    const names = amendmentWarnings.map((w) => `"${w.title}" (${w.count} amendments)`).join(", ");
     guidance.push(`⚠️ Excessive amendment cycles: ${names} — are proofs being tuned rather than code being fixed?`);
   }
 
   if (suggestScoped) {
-    guidance.push(`💡 ${concreteCount} concrete proofs — use dod_check(nodePath="0") to verify one subtree at a time (faster iteration).`);
+    guidance.push(
+      `💡 ${concreteCount} concrete proofs — use dod_check(nodePath="0") to verify one subtree at a time (faster iteration).`,
+    );
   }
 
   if (!targetPath && draftCount > 0 && !suggestScoped) {
-    guidance.push(`${draftCount} draft node(s) — refine incrementally per task group with dod_refine, not all at once at the end.`);
+    guidance.push(
+      `${draftCount} draft node(s) — refine incrementally per task group with dod_refine, not all at once at the end.`,
+    );
   }
 
   const summary = tampered

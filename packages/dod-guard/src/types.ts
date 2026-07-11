@@ -4,7 +4,27 @@
 console.debug("types: module loaded", { pid: process.pid });
 
 export interface Predicate {
-  type: "exit_code" | "exit_code_not" | "output_contains" | "output_matches" | "output_not_contains" | "output_not_matches" | "tdd" | "manual" | "review" | "mutation" | "regression" | "assertions" | "streamline" | "observability" | "brevity" | "line_length" | "function_size" | "file_size" | "cohesion" | "replacement_ratio";
+  type:
+    | "exit_code"
+    | "exit_code_not"
+    | "output_contains"
+    | "output_matches"
+    | "output_not_contains"
+    | "output_not_matches"
+    | "tdd"
+    | "manual"
+    | "review"
+    | "mutation"
+    | "regression"
+    | "assertions"
+    | "streamline"
+    | "observability"
+    | "brevity"
+    | "line_length"
+    | "function_size"
+    | "file_size"
+    | "cohesion"
+    | "replacement_ratio";
   value?: number | string;
   /**
    * `regression` only: regex applied to stdout; capture group 1 is the metric

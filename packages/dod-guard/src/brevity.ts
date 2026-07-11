@@ -1,9 +1,16 @@
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import * as path from "node:path";
 import {
-  findBlockEnd, findJsFunctions, findPyFunctions, findPyBlockEnd,
-  findRsFunctions, findCsFunctions, findFunctions,
-  checkCyclomaticComplexity, checkUnnecessaryElse, checkAvoidableElse,
+  findBlockEnd,
+  findJsFunctions,
+  findPyFunctions,
+  findPyBlockEnd,
+  findRsFunctions,
+  findCsFunctions,
+  findFunctions,
+  checkCyclomaticComplexity,
+  checkUnnecessaryElse,
+  checkAvoidableElse,
 } from "./find-functions.js";
 import type { FunctionRange } from "./find-functions.js";
 
@@ -26,7 +33,14 @@ import type { FunctionRange } from "./find-functions.js";
 export interface BrevityViolation {
   file: string;
   line: number;
-  kind: "line_too_long" | "function_too_long" | "file_too_long" | "high_complexity" | "unnecessary_else" | "else_avoidable" | "low_replacement_ratio";
+  kind:
+    | "line_too_long"
+    | "function_too_long"
+    | "file_too_long"
+    | "high_complexity"
+    | "unnecessary_else"
+    | "else_avoidable"
+    | "low_replacement_ratio";
   detail: string;
 }
 
@@ -88,10 +102,7 @@ function detectLanguage(file: string): Language {
 
 // ── Diff stat parsing ───────────────────────────────────────────────────
 
-function parseDiffOutput(
-  output: string,
-  cwd: string,
-): { files: string[]; stats: Map<string, DiffStat> } {
+function parseDiffOutput(output: string, cwd: string): { files: string[]; stats: Map<string, DiffStat> } {
   const files: string[] = [];
   const stats = new Map<string, DiffStat>();
 
@@ -109,12 +120,13 @@ function parseDiffOutput(
     }
 
     // stat: file | total +++++---
-    const st = line.match(/^(.+?)\s+\|\s+(\d+)\s+([+\-]*)$/);
+    const st = line.match(/^(.+?)\s+\|\s+(\d+)\s+([+-]*)$/);
     if (st) {
       const name = st[1].trim();
       files.push(name);
       const pm = st[3];
-      let ins = 0, del = 0;
+      let ins = 0,
+        del = 0;
       for (const ch of pm) {
         if (ch === "+") ins++;
         else if (ch === "-") del++;
@@ -139,13 +151,25 @@ function parseDiffOutput(
 // ── File discovery from command tokens ───────────────────────────────────
 
 const SOURCE_EXTS = new Set([
-  ".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx",
-  ".py", ".rs", ".cs", ".go", ".java", ".rb", ".swift", ".kt",
+  ".js",
+  ".ts",
+  ".mjs",
+  ".cjs",
+  ".mts",
+  ".cts",
+  ".jsx",
+  ".tsx",
+  ".py",
+  ".rs",
+  ".cs",
+  ".go",
+  ".java",
+  ".rb",
+  ".swift",
+  ".kt",
 ]);
 
-const SKIP_DIRS = new Set([
-  "dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git",
-]);
+const SKIP_DIRS = new Set(["dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git"]);
 
 function isSourceFile(fp: string): boolean {
   return SOURCE_EXTS.has(path.extname(fp).toLowerCase());
@@ -204,7 +228,15 @@ function scanFile(
 } {
   const lang = detectLanguage(filePath);
   if (!lang) {
-    return { violations: [], lineCount: 0, functionCount: 0, longFunctions: 0, highComplexityFunctions: 0, unnecessaryElseCount: 0, elseAvoidableCount: 0 };
+    return {
+      violations: [],
+      lineCount: 0,
+      functionCount: 0,
+      longFunctions: 0,
+      highComplexityFunctions: 0,
+      unnecessaryElseCount: 0,
+      elseAvoidableCount: 0,
+    };
   }
 
   const content = readFileSync(filePath, "utf-8");
@@ -321,7 +353,7 @@ export function analyseBrevity(
   cwd: string,
   opts: BrevityOpts = DEFAULT_BREVITY_OPTS,
 ): BrevityReport | null {
-  let files = extractSourceFilesFromCommand(command, cwd);
+  const files = extractSourceFilesFromCommand(command, cwd);
 
   if (files.length === 0) return null;
 
@@ -339,9 +371,9 @@ export function analyseBrevityFromOutput(
   const { files: diffFiles, stats } = parseDiffOutput(commandOutput, cwd);
 
   // Resolve files — diff output gives relative paths, resolve against cwd
-  const resolved = diffFiles.map((f) => path.resolve(cwd, f)).filter(
-    (f) => existsSync(f) && isSourceFile(f) && !isInSkipDir(f),
-  );
+  const resolved = diffFiles
+    .map((f) => path.resolve(cwd, f))
+    .filter((f) => existsSync(f) && isSourceFile(f) && !isInSkipDir(f));
 
   if (resolved.length === 0) {
     // Fallback: try extracting source-like paths from output
@@ -374,16 +406,14 @@ function buildReport(
   diffStats?: Map<string, DiffStat>,
 ): BrevityReport {
   // Normalize diffStats keys to forward slashes for cross-platform lookup
-  const normalizedStats = diffStats
-    ? new Map([...diffStats].map(([k, v]) => [normalizeRelPath(k), v]))
-    : undefined;
+  const normalizedStats = diffStats ? new Map([...diffStats].map(([k, v]) => [normalizeRelPath(k), v])) : undefined;
 
   const allViolations: BrevityViolation[] = [];
   const perFile: BrevityReport["perFile"] = [];
 
   for (const file of files) {
     const result = scanFile(file, cwd, opts);
-    let ext: BrevityViolation[] = [...result.violations];
+    const ext: BrevityViolation[] = [...result.violations];
 
     // Replacement ratio check
     if (normalizedStats) {

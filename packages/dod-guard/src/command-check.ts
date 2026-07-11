@@ -6,31 +6,85 @@ import * as path from "node:path";
 const execFileAsync = promisify(execFile);
 const isWindows = process.platform === "win32";
 
-export interface MissingTool { command: string; tool: string; }
+export interface MissingTool {
+  command: string;
+  tool: string;
+}
 
 // ── cmd.exe builtins (not discoverable via `where`) ───────────────────────
 const CMD_BUILTINS = new Set([
-  "assoc", "break", "call", "cd", "chdir", "cls", "color", "copy", "date", "del",
-  "dir", "echo", "endlocal", "erase", "exit", "for", "ftype", "goto", "if", "md",
-  "mkdir", "mklink", "move", "path", "pause", "popd", "prompt", "pushd", "rd",
-  "rem", "ren", "rename", "rmdir", "set", "setlocal", "shift", "start", "time",
-  "title", "type", "ver", "verify", "vol",
+  "assoc",
+  "break",
+  "call",
+  "cd",
+  "chdir",
+  "cls",
+  "color",
+  "copy",
+  "date",
+  "del",
+  "dir",
+  "echo",
+  "endlocal",
+  "erase",
+  "exit",
+  "for",
+  "ftype",
+  "goto",
+  "if",
+  "md",
+  "mkdir",
+  "mklink",
+  "move",
+  "path",
+  "pause",
+  "popd",
+  "prompt",
+  "pushd",
+  "rd",
+  "rem",
+  "ren",
+  "rename",
+  "rmdir",
+  "set",
+  "setlocal",
+  "shift",
+  "start",
+  "time",
+  "title",
+  "type",
+  "ver",
+  "verify",
+  "vol",
 ]);
 
 const OPERATOR_CHARS = new Set(["|", "&", ";", "(", ")", "`", "\n", "\r"]);
 
 const WINDOWS_EQUIVALENTS: Record<string, string> = {
-  grep: "findstr", cat: "type", ls: "dir", rm: "del  (or rmdir /s for dirs)",
-  cp: "copy", mv: "move", touch: "type nul > file", which: "where",
-  sed: "PowerShell -replace", awk: "PowerShell",
+  grep: "findstr",
+  cat: "type",
+  ls: "dir",
+  rm: "del  (or rmdir /s for dirs)",
+  cp: "copy",
+  mv: "move",
+  touch: "type nul > file",
+  which: "where",
+  sed: "PowerShell -replace",
+  awk: "PowerShell",
   head: "PowerShell Select-Object -First N",
   tail: "PowerShell Select-Object -Last N",
-  test: "if exist / if defined", pwd: "cd", export: "set", diff: "fc", wc: "find /c",
+  test: "if exist / if defined",
+  pwd: "cd",
+  export: "set",
+  diff: "fc",
+  wc: "find /c",
 };
 
 // ── Token extraction ──────────────────────────────────────────────────────
 
-function isQuote(c: string): c is '"' | "'" { return c === '"' || c === "'"; }
+function isQuote(c: string): c is '"' | "'" {
+  return c === '"' || c === "'";
+}
 
 export function splitCommands(command: string): string[] {
   const segments: string[] = [];
@@ -38,9 +92,21 @@ export function splitCommands(command: string): string[] {
   let quote: '"' | "'" | null = null;
 
   for (const c of command) {
-    if (quote) { buf += c; if (c === quote) quote = null; continue; }
-    if (isQuote(c)) { quote = c; buf += c; continue; }
-    if (OPERATOR_CHARS.has(c)) { if (buf.trim()) segments.push(buf); buf = ""; continue; }
+    if (quote) {
+      buf += c;
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (isQuote(c)) {
+      quote = c;
+      buf += c;
+      continue;
+    }
+    if (OPERATOR_CHARS.has(c)) {
+      if (buf.trim()) segments.push(buf);
+      buf = "";
+      continue;
+    }
     buf += c;
   }
   if (buf.trim()) segments.push(buf);
@@ -88,13 +154,18 @@ function firstToken(segment: string): string | null {
       return r.token;
     }
     const r = extractBareToken(s);
-    if (isShellAssignment(r.token)) { s = r.rest.trim(); continue; }
+    if (isShellAssignment(r.token)) {
+      s = r.rest.trim();
+      continue;
+    }
     return r.token;
   }
   return null;
 }
 
-function hasAlnum(s: string): boolean { return /[A-Za-z0-9]/.test(s); }
+function hasAlnum(s: string): boolean {
+  return /[A-Za-z0-9]/.test(s);
+}
 
 export function extractCommandNames(command: string): string[] {
   const names: string[] = [];
@@ -147,18 +218,13 @@ async function toolExists(name: string, cwd: string): Promise<boolean> {
 
 function resolvePathExists(name: string, cwd: string): boolean {
   const base = path.isAbsolute(name) ? name : path.resolve(cwd, name);
-  const candidates = isWindows
-    ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`]
-    : [base];
+  const candidates = isWindows ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
   return candidates.some((p) => existsSync(p));
 }
 
 // ── Public API ────────────────────────────────────────────────────────────
 
-export async function findMissingTools(
-  commands: string[],
-  cwd: string,
-): Promise<MissingTool[]> {
+export async function findMissingTools(commands: string[], cwd: string): Promise<MissingTool[]> {
   const missing: MissingTool[] = [];
   for (const command of commands) {
     const seen = new Set<string>();

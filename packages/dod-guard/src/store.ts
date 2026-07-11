@@ -48,9 +48,9 @@ export async function findByPath(markdownPath: string): Promise<DodDocument | nu
       if (normalizedStored === normalizedSearch) return doc;
     } catch (err: unknown) {
       console.error("store: failed to read file during findByPath", {
-        file, err: err instanceof Error ? err.message : String(err),
+        file,
+        err: err instanceof Error ? err.message : String(err),
       });
-      continue;
     }
   }
   return null;
@@ -67,9 +67,9 @@ export async function listAll(): Promise<DodDocument[]> {
       docs.push(JSON.parse(data) as DodDocument);
     } catch (err: unknown) {
       console.error("store: failed to read file during listAll", {
-        file, err: err instanceof Error ? err.message : String(err),
+        file,
+        err: err instanceof Error ? err.message : String(err),
       });
-      continue;
     }
   }
   return docs;

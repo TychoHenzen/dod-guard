@@ -13,15 +13,33 @@ const _cleanupFns: (() => void)[] = [];
 
 function setupTestDir() {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "brevity-test-"));
-  try { execSync("git init", { cwd: tmpDir, stdio: "ignore" }); } catch { /* git not available */ }
-  try { execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: "ignore" }); } catch { /* */ }
-  try { execSync('git config user.name "Test"', { cwd: tmpDir, stdio: "ignore" }); } catch { /* */ }
+  try {
+    execSync("git init", { cwd: tmpDir, stdio: "ignore" });
+  } catch {
+    /* git not available */
+  }
+  try {
+    execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: "ignore" });
+  } catch {
+    /* */
+  }
+  try {
+    execSync('git config user.name "Test"', { cwd: tmpDir, stdio: "ignore" });
+  } catch {
+    /* */
+  }
   _cleanupFns.push(() => {
-    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ok */ }
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      /* ok */
+    }
   });
 }
 
-after(() => { for (const fn of _cleanupFns) fn(); });
+after(() => {
+  for (const fn of _cleanupFns) fn();
+});
 
 function writeFile(relPath: string, content: string) {
   const full = path.join(tmpDir, relPath);
@@ -44,35 +62,31 @@ describe("analyseBrevity", () => {
     writeFile("src/long.ts", `export const x = "${longLine}";\n`);
     const report = analyseBrevity("node src/long.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, maxLineLength: 120 });
     assert.ok(report, "report should not be null when source files found");
-    assert.ok(report!.totalViolations > 0,
-      `expected violations > 0, got ${report!.totalViolations}`);
-    const longLines = report!.violations.filter((v) => v.kind === "line_too_long");
-    assert.ok(longLines.length >= 1,
-      `expected at least 1 line_too_long violation, got ${longLines.length}`);
+    assert.ok(report?.totalViolations > 0, `expected violations > 0, got ${report?.totalViolations}`);
+    const longLines = report?.violations.filter((v) => v.kind === "line_too_long");
+    assert.ok(longLines.length >= 1, `expected at least 1 line_too_long violation, got ${longLines.length}`);
   });
 
   it("passes when everything is within limits", () => {
-    writeFile("src/clean.ts", [
-      'export function add(a: number, b: number): number {',
-      '  return a + b;',
-      '}',
-    ].join("\n"));
+    writeFile(
+      "src/clean.ts",
+      ["export function add(a: number, b: number): number {", "  return a + b;", "}"].join("\n"),
+    );
     const report = analyseBrevity("node src/clean.ts", tmpDir);
     assert.ok(report, "report should not be null");
-    assert.equal(report!.totalViolations, 0, "clean file has zero violations");
-    assert.deepEqual(report!.violations, [], "violations array should be empty");
+    assert.equal(report?.totalViolations, 0, "clean file has zero violations");
+    assert.deepEqual(report?.violations, [], "violations array should be empty");
   });
 
   it("detects function too long", () => {
-    const lines = ['export function bigOne(): void {'];
+    const lines = ["export function bigOne(): void {"];
     for (let i = 0; i < 40; i++) lines.push(`  console.log("line ${i}");`);
     lines.push("}");
     writeFile("src/big.ts", lines.join("\n"));
     const report = analyseBrevity("node src/big.ts", tmpDir);
     assert.ok(report, "report should not be null");
-    const longFns = report!.violations.filter((v) => v.kind === "function_too_long");
-    assert.ok(longFns.length >= 1,
-      `expected at least 1 function_too_long violation, got ${longFns.length}`);
+    const longFns = report?.violations.filter((v) => v.kind === "function_too_long");
+    assert.ok(longFns.length >= 1, `expected at least 1 function_too_long violation, got ${longFns.length}`);
   });
 
   it("detects file too long", () => {
@@ -81,108 +95,120 @@ describe("analyseBrevity", () => {
     writeFile("src/huge.ts", lines.join("\n"));
     const report = analyseBrevity("node src/huge.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, maxFileLines: 300 });
     assert.ok(report, "report should not be null");
-    const fileLong = report!.violations.filter((v) => v.kind === "file_too_long");
-    assert.ok(fileLong.length >= 1,
-      `expected at least 1 file_too_long violation, got ${fileLong.length}`);
+    const fileLong = report?.violations.filter((v) => v.kind === "file_too_long");
+    assert.ok(fileLong.length >= 1, `expected at least 1 file_too_long violation, got ${fileLong.length}`);
   });
 
   it("detects high cyclomatic complexity (>5 decision points)", () => {
-    writeFile("src/complex.ts", [
-      'export function classify(x: number, y: number, z: number): string {',
-      '  if (x > 0) {',
-      '    if (y > 0) {',
-      '      if (z > 0 && x > y) return "A";',
-      '      else if (z < 0) return "B";',
-      '      return "C";',
-      '    }',
-      '    for (let i = 0; i < x; i++) {',
-      '      if (i > 10) break;',
-      '    }',
-      '  }',
-      '  switch (z) {',
-      '    case 1: return "D";',
-      '    case 2: return "E";',
-      '  }',
-      '  return "F";',
-      '}',
-    ].join("\n"));
+    writeFile(
+      "src/complex.ts",
+      [
+        "export function classify(x: number, y: number, z: number): string {",
+        "  if (x > 0) {",
+        "    if (y > 0) {",
+        '      if (z > 0 && x > y) return "A";',
+        '      else if (z < 0) return "B";',
+        '      return "C";',
+        "    }",
+        "    for (let i = 0; i < x; i++) {",
+        "      if (i > 10) break;",
+        "    }",
+        "  }",
+        "  switch (z) {",
+        '    case 1: return "D";',
+        '    case 2: return "E";',
+        "  }",
+        '  return "F";',
+        "}",
+      ].join("\n"),
+    );
     const report = analyseBrevity("node src/complex.ts", tmpDir);
     assert.ok(report, "report should not be null");
-    const cc = report!.violations.filter((v) => v.kind === "high_complexity");
-    assert.ok(cc.length >= 1,
-      `expected at least 1 high_complexity violation, got ${cc.length}`);
+    const cc = report?.violations.filter((v) => v.kind === "high_complexity");
+    assert.ok(cc.length >= 1, `expected at least 1 high_complexity violation, got ${cc.length}`);
   });
 
   it("passes for function with low CC (≤5)", () => {
-    writeFile("src/simple.ts", [
-      'export function add(a: number, b: number): number {',
-      '  if (a < 0 && b < 0) return -1;',
-      '  return a + b;',
-      '}',
-    ].join("\n"));
+    writeFile(
+      "src/simple.ts",
+      [
+        "export function add(a: number, b: number): number {",
+        "  if (a < 0 && b < 0) return -1;",
+        "  return a + b;",
+        "}",
+      ].join("\n"),
+    );
     const report = analyseBrevity("node src/simple.ts", tmpDir);
     assert.ok(report, "report should not be null");
-    const cc = report!.violations.filter((v) => v.kind === "high_complexity");
-    assert.equal(cc.length, 0,
-      `simple function should not be flagged for CC, got ${cc.length} violations`);
+    const cc = report?.violations.filter((v) => v.kind === "high_complexity");
+    assert.equal(cc.length, 0, `simple function should not be flagged for CC, got ${cc.length} violations`);
   });
 
   it("detects unnecessary else after return", () => {
-    writeFile("src/unnec.ts", [
-      'export function validate(n: number): string {',
-      '  if (n > 0) {',
-      '    return "ok";',
-      '  } else {',
-      '    return "bad";',
-      '  }',
-      '}',
-    ].join("\n"));
+    writeFile(
+      "src/unnec.ts",
+      [
+        "export function validate(n: number): string {",
+        "  if (n > 0) {",
+        '    return "ok";',
+        "  } else {",
+        '    return "bad";',
+        "  }",
+        "}",
+      ].join("\n"),
+    );
     const report = analyseBrevity("node src/unnec.ts", tmpDir);
     assert.ok(report, "report should not be null");
-    const unnec = report!.violations.filter((v) => v.kind === "unnecessary_else");
-    assert.ok(unnec.length >= 1,
-      `expected at least 1 unnecessary_else violation, got ${unnec.length}`);
+    const unnec = report?.violations.filter((v) => v.kind === "unnecessary_else");
+    assert.ok(unnec.length >= 1, `expected at least 1 unnecessary_else violation, got ${unnec.length}`);
   });
 
   it("respects custom thresholds", () => {
-    writeFile("src/custom.ts", [
-      'export function shortOne(msg: string): void {',
-      '  console.log(msg);',
-      '}',
-    ].join("\n"));
+    writeFile(
+      "src/custom.ts",
+      ["export function shortOne(msg: string): void {", "  console.log(msg);", "}"].join("\n"),
+    );
     const strict = analyseBrevity("node src/custom.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, maxFunctionLines: 2 });
     assert.ok(strict, "strict report should not be null");
-    const strictV = strict!.violations.filter((v) => v.kind === "function_too_long");
-    assert.ok(strictV.length >= 1,
-      "3-line function violates maxFunctionLines:2 threshold");
+    const strictV = strict?.violations.filter((v) => v.kind === "function_too_long");
+    assert.ok(strictV.length >= 1, "3-line function violates maxFunctionLines:2 threshold");
 
     const loose = analyseBrevity("node src/custom.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, maxFunctionLines: 10 });
     assert.ok(loose, "loose report should not be null");
-    const looseV = loose!.violations.filter((v) => v.kind === "function_too_long");
-    assert.equal(looseV.length, 0,
-      "3-line function passes maxFunctionLines:10 threshold");
+    const looseV = loose?.violations.filter((v) => v.kind === "function_too_long");
+    assert.equal(looseV.length, 0, "3-line function passes maxFunctionLines:10 threshold");
   });
 
   it("can disable guard clause check", () => {
-    writeFile("src/unnec2.ts", [
-      'export function validate(n: number): string {',
-      '  if (n > 0) {',
-      '    return "ok";',
-      '  } else {',
-      '    return "bad";',
-      '  }',
-      '}',
-    ].join("\n"));
-    const withGuards = analyseBrevity("node src/unnec2.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, requireGuardClauses: true });
+    writeFile(
+      "src/unnec2.ts",
+      [
+        "export function validate(n: number): string {",
+        "  if (n > 0) {",
+        '    return "ok";',
+        "  } else {",
+        '    return "bad";',
+        "  }",
+        "}",
+      ].join("\n"),
+    );
+    const withGuards = analyseBrevity("node src/unnec2.ts", tmpDir, {
+      ...DEFAULT_BREVITY_OPTS,
+      requireGuardClauses: true,
+    });
     assert.ok(withGuards, "guards-on report should not be null");
-    assert.ok(withGuards!.violations.some((v) => v.kind === "unnecessary_else"),
-      "requireGuardClauses:true should flag unnecessary else after return");
+    assert.ok(
+      withGuards?.violations.some((v) => v.kind === "unnecessary_else"),
+      "requireGuardClauses:true should flag unnecessary else after return",
+    );
 
-    const withoutGuards = analyseBrevity("node src/unnec2.ts", tmpDir, { ...DEFAULT_BREVITY_OPTS, requireGuardClauses: false });
+    const withoutGuards = analyseBrevity("node src/unnec2.ts", tmpDir, {
+      ...DEFAULT_BREVITY_OPTS,
+      requireGuardClauses: false,
+    });
     assert.ok(withoutGuards, "guards-off report should not be null");
-    const unnec = withoutGuards!.violations.filter((v) => v.kind === "unnecessary_else");
-    assert.equal(unnec.length, 0,
-      "requireGuardClauses:false should not flag unnecessary else");
+    const unnec = withoutGuards?.violations.filter((v) => v.kind === "unnecessary_else");
+    assert.equal(unnec.length, 0, "requireGuardClauses:false should not flag unnecessary else");
   });
 });
 
@@ -192,97 +218,94 @@ describe("analyseBrevityFromOutput", () => {
   before(setupTestDir);
 
   it("parses git diff --name-only output", () => {
-    writeFile("src/clean.ts", [
-      'export function add(a: number, b: number): number {',
-      '  return a + b;',
-      '}',
-    ].join("\n"));
+    writeFile(
+      "src/clean.ts",
+      ["export function add(a: number, b: number): number {", "  return a + b;", "}"].join("\n"),
+    );
     const output = "src/clean.ts\n";
     const report = analyseBrevityFromOutput(output, tmpDir);
     assert.ok(report, "should parse file names from output");
-    assert.equal(report!.totalViolations, 0,
-      "clean file should have no violations");
+    assert.equal(report?.totalViolations, 0, "clean file should have no violations");
   });
 
   it("parses git diff --numstat output", () => {
-    writeFile("src/big.ts", [
-      'export function longFunc(): void {',
-      '  console.log("line 1");',
-      '  console.log("line 2");',
-      '}',
-    ].join("\n"));
+    writeFile(
+      "src/big.ts",
+      ["export function longFunc(): void {", '  console.log("line 1");', '  console.log("line 2");', "}"].join("\n"),
+    );
     const output = "15\t0\tsrc/big.ts\n";
     const report = analyseBrevityFromOutput(output, tmpDir, {
       ...DEFAULT_BREVITY_OPTS,
       minReplacementRatio: 0.2,
     });
     assert.ok(report, "should parse numstat output");
-    const ratioV = report!.violations.filter((v) => v.kind === "low_replacement_ratio");
-    assert.equal(ratioV.length, 1,
-      "15 insertions 0 deletions should trigger low replacement ratio");
+    const ratioV = report?.violations.filter((v) => v.kind === "low_replacement_ratio");
+    assert.equal(ratioV.length, 1, "15 insertions 0 deletions should trigger low replacement ratio");
   });
 
   it("detects low replacement ratio", () => {
-    writeFile("src/changed.ts", [
-      'export function original(): string {',
-      '  return "original";',
-      '}',
-      'export function newFn(): string {',
-      '  return "new";',
-      '}',
-      'export function anotherNew(): number {',
-      '  return 42;',
-      '}',
-      'export function yetAnother(): boolean {',
-      '  return true;',
-      '}',
-    ].join("\n"));
+    writeFile(
+      "src/changed.ts",
+      [
+        "export function original(): string {",
+        '  return "original";',
+        "}",
+        "export function newFn(): string {",
+        '  return "new";',
+        "}",
+        "export function anotherNew(): number {",
+        "  return 42;",
+        "}",
+        "export function yetAnother(): boolean {",
+        "  return true;",
+        "}",
+      ].join("\n"),
+    );
     const output = "12\t0\tsrc/changed.ts\n";
     const report = analyseBrevityFromOutput(output, tmpDir, {
       ...DEFAULT_BREVITY_OPTS,
       minReplacementRatio: 0.2,
     });
     assert.ok(report, "should parse numstat");
-    const ratioV = report!.violations.filter((v) => v.kind === "low_replacement_ratio");
-    assert.equal(ratioV.length, 1,
-      "12 insertions 0 deletions → low replacement ratio");
+    const ratioV = report?.violations.filter((v) => v.kind === "low_replacement_ratio");
+    assert.equal(ratioV.length, 1, "12 insertions 0 deletions → low replacement ratio");
   });
 
   it("skips replacement ratio for net ≤10 insertions", () => {
-    writeFile("src/tiny.ts", 'export const x = 1;\n');
+    writeFile("src/tiny.ts", "export const x = 1;\n");
     const output = "3\t0\tsrc/tiny.ts\n";
     const report = analyseBrevityFromOutput(output, tmpDir, {
       ...DEFAULT_BREVITY_OPTS,
       minReplacementRatio: 0.2,
     });
     assert.ok(report, "should return report");
-    const ratioV = report!.violations.filter((v) => v.kind === "low_replacement_ratio");
-    assert.equal(ratioV.length, 0,
-      "≤10 insertions should not trigger low_replacement_ratio");
+    const ratioV = report?.violations.filter((v) => v.kind === "low_replacement_ratio");
+    assert.equal(ratioV.length, 0, "≤10 insertions should not trigger low_replacement_ratio");
   });
 
   it("returns null for output with no source files", () => {
     const report = analyseBrevityFromOutput("just some random output\nno files here\n", tmpDir);
-    assert.equal(report, null,
-      "output with no file paths should return null");
+    assert.equal(report, null, "output with no file paths should return null");
   });
 
   it("handles Python function detection", () => {
-    writeFile("src/thing.py", [
-      "def process_data(items):",
-      "    total = 0",
-      "    if items is None:",
-      "        return 0",
-      "    for item in items:",
-      "        total += item",
-      "    return total",
-    ].join("\n"));
+    writeFile(
+      "src/thing.py",
+      [
+        "def process_data(items):",
+        "    total = 0",
+        "    if items is None:",
+        "        return 0",
+        "    for item in items:",
+        "        total += item",
+        "    return total",
+      ].join("\n"),
+    );
     const output = "src/thing.py\n";
     const report = analyseBrevityFromOutput(output, tmpDir);
     assert.ok(report, "should parse Python file");
-    const cc = report!.violations.filter((v) => v.kind === "high_complexity");
-    assert.equal(cc.length, 0,
-      "Python function with CC=3 should not be flagged");
+    const cc = report?.violations.filter((v) => v.kind === "high_complexity");
+    assert.equal(cc.length, 0, "Python function with CC=3 should not be flagged");
   });
 });
 
@@ -295,15 +318,13 @@ describe("brevity edge cases", () => {
     writeFile("src/empty.ts", "");
     const report = analyseBrevity("node src/empty.ts", tmpDir);
     assert.ok(report, "empty file should not return null");
-    assert.equal(report!.totalViolations, 0,
-      "empty file should have zero violations");
+    assert.equal(report?.totalViolations, 0, "empty file should have zero violations");
   });
 
   it("skips non-source files", () => {
     writeFile("src/config.json", '{"key": "value"}');
     const report = analyseBrevity("node src/config.json", tmpDir);
-    assert.equal(report, null,
-      "non-source extensions should return null");
+    assert.equal(report, null, "non-source extensions should return null");
   });
 
   it("skips files in build output dirs", () => {
@@ -313,28 +334,21 @@ describe("brevity edge cases", () => {
   });
 
   it("handles files with only comments", () => {
-    writeFile("src/comments.ts", [
-      "// This is a comment-only file",
-      "// No actual code here",
-      "/*",
-      " * Multi-line comment",
-      " */",
-    ].join("\n"));
+    writeFile(
+      "src/comments.ts",
+      ["// This is a comment-only file", "// No actual code here", "/*", " * Multi-line comment", " */"].join("\n"),
+    );
     const report = analyseBrevity("node src/comments.ts", tmpDir);
     assert.ok(report, "comment-only file should not return null");
-    const fnV = report!.violations.filter(
-      (v) => v.kind === "function_too_long" || v.kind === "high_complexity",
-    );
-    assert.equal(fnV.length, 0,
-      "comment-only file should have zero function violations");
+    const fnV = report?.violations.filter((v) => v.kind === "function_too_long" || v.kind === "high_complexity");
+    assert.equal(fnV.length, 0, "comment-only file should have zero function violations");
   });
 
   // ── Error-path tests ────────────────────────────────────────────────
 
   it("returns null for nonexistent directory", () => {
     const report = analyseBrevity("node src/nope.ts", path.join(tmpDir, "nonexistent"));
-    assert.equal(report, null,
-      "nonexistent directory should safely return null");
+    assert.equal(report, null, "nonexistent directory should safely return null");
   });
 
   it("handles binary files without crashing", () => {

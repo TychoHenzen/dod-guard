@@ -6,10 +6,14 @@ import { DEFAULT_BREVITY_OPTS } from "./brevity.js";
 
 function proofMark(status: string): string {
   switch (status) {
-    case "pass": return "[x]";
-    case "skipped": return "[~]";
-    case "draft": return "[~]";
-    default: return "[ ]";
+    case "pass":
+      return "[x]";
+    case "skipped":
+      return "[~]";
+    case "draft":
+      return "[~]";
+    default:
+      return "[ ]";
   }
 }
 
@@ -28,21 +32,25 @@ function renderNode(node: TaskNode, depth: number, lines: string[]): void {
 }
 
 function renderGroup(node: TaskNode, depth: number, indent: string, lines: string[]): void {
-  const hasDrafts = hasDraftNodes(node.children!);
-  const allPass = isBranchLocked(node.children!)
-    && node.children!.every(c => c.refinement === "concrete" && (c.last_status === "pass" || c.last_status === "skipped"))
+  const children = node.children;
+  if (!children) return;
+
+  const hasDrafts = hasDraftNodes(children);
+  const allPass =
+    isBranchLocked(children) &&
+    children.every((c) => c.refinement === "concrete" && (c.last_status === "pass" || c.last_status === "skipped")) &&
     // Also check deep
-    && allLeavesPass(node.children!);
+    allLeavesPass(children);
 
   let mark: string;
   if (hasDrafts) mark = "[~]";
-  else if (allPass && node.children!.length > 0) mark = "[x]";
+  else if (allPass && children.length > 0) mark = "[x]";
   else mark = "[ ]";
 
   lines.push(`${indent}**${node.title}** ${mark}`);
   lines.push("");
 
-  for (const child of node.children!) {
+  for (const child of children) {
     renderNode(child, depth + 1, lines);
   }
 }
@@ -77,9 +85,7 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
       : " _(awaiting human verification)_";
     lines.push(`${indent}- ${mark} Proof: Manual — ${node.description}${state}`);
   } else if (node.predicate?.type === "tdd") {
-    const tddState = node.seen_failing
-      ? (node.last_status === "pass" ? "🟢 GREEN" : "🔴 RED")
-      : "⬜ AWAITING RED";
+    const tddState = node.seen_failing ? (node.last_status === "pass" ? "🟢 GREEN" : "🔴 RED") : "⬜ AWAITING RED";
     lines.push(`${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` → ${node.description}`);
   } else if (node.predicate?.type === "brevity") {
     const max = node.predicate.value ?? 0;
@@ -87,31 +93,43 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
   } else if (node.predicate?.type === "line_length") {
     const maxChars = node.predicate.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength;
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (line_length ≤${maxChars} chars, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (line_length ≤${maxChars} chars, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
+    );
   } else if (node.predicate?.type === "function_size") {
     const maxLines = node.predicate.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines;
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (function_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (function_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
+    );
   } else if (node.predicate?.type === "file_size") {
     const maxLines = node.predicate.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines;
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (file_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (file_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
+    );
   } else if (node.predicate?.type === "cohesion") {
     const maxCC = node.predicate.max_complexity ?? 5;
     const guards = node.predicate.require_guard_clauses ?? true;
     const suggest = node.predicate.suggest_guard_clauses ?? true;
     const flags = [guards ? "guard" : "", suggest ? "suggest" : ""].filter(Boolean).join("+");
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (cohesion CC≤${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (cohesion CC≤${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
+    );
   } else if (node.predicate?.type === "replacement_ratio") {
     const minRatio = node.predicate.min_replacement_ratio ?? 0.2;
     const maxV = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (replacement_ratio ≥${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` → ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (replacement_ratio ≥${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
+    );
   } else if (node.predicate?.type === "regression") {
     const lib = node.predicate.lower_is_better ?? true;
     const tol = node.predicate.value ?? 0;
     const dir = lib ? "≤baseline" : "≥baseline";
-    lines.push(`${indent}- ${mark} Proof (regression ${dir}, tolerance ${tol}): \`${node.command}\` → ${node.description}`);
+    lines.push(
+      `${indent}- ${mark} Proof (regression ${dir}, tolerance ${tol}): \`${node.command}\` → ${node.description}`,
+    );
   } else {
     lines.push(`${indent}- ${mark} Proof: \`${node.command}\` → ${node.description}`);
   }
@@ -129,13 +147,17 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("**For Claude (/goal):** Work through each incomplete task below.");
   l.push("1. Mark a task `[>]` when you begin working on it.");
   l.push("2. Call `dod_check` to verify proofs — do NOT mark proofs manually.");
-  l.push("   While iterating on one subtree, pass `nodePath` to verify just that part fast (others are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.");
+  l.push(
+    "   While iterating on one subtree, pass `nodePath` to verify just that part fast (others are carried, not re-run). A scoped run returns INCOMPLETE, never PASS.",
+  );
   l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
   l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts — call");
   l.push("    `dod_verify(dod_id, proof_id)` explicitly when verification is actually relevant.");
   l.push("3c. **Manual verification is a HARD GATE.** DoD cannot PASS without it.");
   l.push("    Proofs can pass against wrong code. Visual verification catches what metrics miss.");
-  l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof (mode=concretize) or subdivide into child tasks (mode=subdivide).");
+  l.push(
+    "4. Use `dod_refine` to turn a draft leaf into a concrete proof (mode=concretize) or subdivide into child tasks (mode=subdivide).",
+  );
   l.push("4b. **Refine incrementally per task group, not all at once.** Scoped dod_check is faster");
   l.push("    than full runs — use it. Refining 7 drafts at session end = rubber-stamping.");
   l.push("4c. Use `dod_add_node` to add new nodes discovered during implementation.");
@@ -143,7 +165,9 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("5b. **Amending a proof 3+ times is a red flag** — you're probably tuning proofs to pass");
   l.push("    rather than fixing the bug. Re-examine the approach.");
   l.push("5c. Proof commands run on the HOST OS — write OS-correct commands (no bash on Windows).");
-  l.push("6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass, manuals verified) — then stop and report done.");
+  l.push(
+    "6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass, manuals verified) — then stop and report done.",
+  );
   l.push("6b. **If the approach isn't working, stop and re-interview.** Don't silently pivot to");
   l.push("    a different implementation while keeping the old DoD. The DoD must match what you're doing.");
   l.push("");
@@ -212,10 +236,11 @@ export function renderMarkdown(doc: DodDocument): string {
       l.push("");
       renderLeaf(root, "", l);
     } else {
-      const hasDrafts = hasDraftNodes(root.children!);
-      const allPass = isBranchLocked(root.children!)
-        && root.children!.length > 0
-        && allLeavesPass(root.children!);
+      const children = root.children;
+      if (!children) continue;
+
+      const hasDrafts = hasDraftNodes(children);
+      const allPass = isBranchLocked(children) && children.length > 0 && allLeavesPass(children);
 
       let mark: string;
       if (hasDrafts) mark = "[~]";
@@ -226,7 +251,7 @@ export function renderMarkdown(doc: DodDocument): string {
       l.push(`### ${root.title} ${mark}`);
       l.push("");
 
-      for (const child of root.children!) {
+      for (const child of children) {
         renderNode(child, 1, l);
       }
     }
@@ -269,8 +294,12 @@ export function updateDocFromCheckResult(doc: DodDocument, result: CheckResult):
     if (!node) continue;
 
     // Don't clobber a pending proof with "skipped" on scoped runs
-    if (result.scoped && leafResult.node_path !== result.ran_node_path
-      && !leafResult.node_path.startsWith(result.ran_node_path ?? "")) continue;
+    if (
+      result.scoped &&
+      leafResult.node_path !== result.ran_node_path &&
+      !leafResult.node_path.startsWith(result.ran_node_path ?? "")
+    )
+      continue;
 
     if (leafResult.status !== "draft") {
       node.last_status = leafResult.status as TaskNode["last_status"];

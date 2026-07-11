@@ -13,19 +13,27 @@ export function formatCheckResult(result: CheckResult): string {
 
   if (result.blocked_by_manuals) {
     l.push("⛔ **BLOCKED: Manual verification required.** All automated proofs pass, but this DoD is NOT complete.");
-    l.push(`   ${result.manual_unverified} manual/review proof(s) await dod_verify. Call dod_verify for each, then re-run dod_check.`);
-    l.push("   Do NOT report done until manuals are verified — the fix may look correct to proofs but be visually wrong.");
+    l.push(
+      `   ${result.manual_unverified} manual/review proof(s) await dod_verify. Call dod_verify for each, then re-run dod_check.`,
+    );
+    l.push(
+      "   Do NOT report done until manuals are verified — the fix may look correct to proofs but be visually wrong.",
+    );
     l.push("");
   }
 
   if (result.scoped) {
-    l.push(`⏳ **Scoped run — node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`);
+    l.push(
+      `⏳ **Scoped run — node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`,
+    );
     l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
     l.push("");
   }
 
   if (result.draft_count > 0) {
-    l.push(`📝 **${result.draft_count} draft node(s)** — use dod_refine to concretize before a final pass is possible.`);
+    l.push(
+      `📝 **${result.draft_count} draft node(s)** — use dod_refine to concretize before a final pass is possible.`,
+    );
     l.push("");
   }
 
@@ -43,14 +51,14 @@ export function formatCheckResult(result: CheckResult): string {
   for (const leaf of result.leaves) {
     const rootIdx = leaf.node_path.split(".")[0];
     if (!byRoot.has(rootIdx)) byRoot.set(rootIdx, []);
-    byRoot.get(rootIdx)!.push(leaf);
+    byRoot.get(rootIdx)?.push(leaf);
   }
 
   for (const [rootIdx, leaves] of byRoot) {
-    const passCount = leaves.filter(p => p.status === "pass").length;
-    const failCount = leaves.filter(p => p.status === "fail").length;
-    const skipCount = leaves.filter(p => p.status === "skipped").length;
-    const draftCount = leaves.filter(p => p.status === "draft").length;
+    const passCount = leaves.filter((p) => p.status === "pass").length;
+    const failCount = leaves.filter((p) => p.status === "fail").length;
+    const skipCount = leaves.filter((p) => p.status === "skipped").length;
+    const draftCount = leaves.filter((p) => p.status === "draft").length;
     const hasFail = failCount > 0;
     const hasDraft = draftCount > 0;
     const icon = hasFail ? "❌" : hasDraft ? "📝" : "✅";
@@ -61,7 +69,9 @@ export function formatCheckResult(result: CheckResult): string {
       failCount > 0 ? `${failCount} fail` : "",
       skipCount > 0 ? `${skipCount} skipped` : "",
       draftCount > 0 ? `${draftCount} draft` : "",
-    ].filter(Boolean).join(", ");
+    ]
+      .filter(Boolean)
+      .join(", ");
 
     l.push(`${icon} **${rootTitle}** — ${status} (${countStr})`);
 

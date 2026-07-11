@@ -13,14 +13,23 @@
  *  6. All lineages exhausted → escalate to parent Claude with failure report
  */
 
-import { spawnClaude, spawnClaudeN, runCommand, hashFailure, strategyPrompts, repairPrompt, ensureProxy, toVerdict } from "./agent.js";
+import {
+  spawnClaude,
+  spawnClaudeN,
+  runCommand,
+  hashFailure,
+  strategyPrompts,
+  repairPrompt,
+  ensureProxy,
+  toVerdict,
+} from "./agent.js";
 import type { TaskSpec, SolveResult, RunStats, EscalationReport, Candidate, Verdict } from "./types.js";
 import { execSync } from "node:child_process";
 
 const MAX_REPAIRS = 3;
 const DEFAULT_N = 5;
 const DEFAULT_TIMEOUT_MS = 300_000; // 5 min per claude -p instance
-const REPAIR_TIMEOUT_MS = 180_000;  // 3 min for repairs
+const REPAIR_TIMEOUT_MS = 180_000; // 3 min for repairs
 
 /** Capture git diff for the working tree — what claude -p actually changed. */
 function captureDiff(cwd: string): string | null {
@@ -32,10 +41,7 @@ function captureDiff(cwd: string): string | null {
   }
 }
 
-export async function solve(
-  spec: TaskSpec,
-  onProgress?: (msg: string) => void,
-): Promise<SolveResult> {
+export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void): Promise<SolveResult> {
   const startTime = Date.now();
   const stats: RunStats = {
     plans_sampled: 0,
@@ -122,10 +128,10 @@ export async function solve(
   const repairable = candidates
     .filter((c) => c.status === "failed" && c.verdict)
     .sort((a, b) => {
-      const aCode = a.verdict!.exit_code;
-      const bCode = b.verdict!.exit_code;
+      const aCode = a.verdict?.exit_code;
+      const bCode = b.verdict?.exit_code;
       if (aCode !== bCode) return aCode - bCode;
-      return (b.verdict!.output?.length ?? 0) - (a.verdict!.output?.length ?? 0);
+      return (b.verdict?.output?.length ?? 0) - (a.verdict?.output?.length ?? 0);
     })
     .slice(0, Math.max(2, Math.ceil(numParallel / 2)));
 
@@ -133,12 +139,7 @@ export async function solve(
     for (let repair = 1; repair <= MAX_REPAIRS; repair++) {
       onProgress?.(`  Repair attempt ${repair}/${MAX_REPAIRS} for ${candidate.plan_id}...`);
 
-      const prompt = repairPrompt(
-        spec.goal,
-        candidate.verdict!.output,
-        repair,
-        spec.context,
-      );
+      const prompt = repairPrompt(spec.goal, candidate.verdict?.output, repair, spec.context);
 
       const result = await spawnClaude(prompt, {
         cwd: spec.cwd,
@@ -168,7 +169,8 @@ export async function solve(
         stats.duration_ms = Date.now() - startTime;
         return {
           outcome: "pass",
-          patch: captureDiff(spec.cwd) ?? `repair #${repair} output (${result.exitCode}):\n${result.output.slice(0, 500)}`,
+          patch:
+            captureDiff(spec.cwd) ?? `repair #${repair} output (${result.exitCode}):\n${result.output.slice(0, 500)}`,
           verification_report: repairVerdict.output,
           stats,
         };
@@ -202,7 +204,7 @@ export async function solve(
   // Best partial attempt
   const bestCandidate = candidates
     .filter((c) => c.verdict)
-    .sort((a, b) => a.verdict!.exit_code - b.verdict!.exit_code)[0];
+    .sort((a, b) => a.verdict?.exit_code - b.verdict?.exit_code)[0];
 
   const escalation: EscalationReport = {
     failure_signature: dominantSig?.[0] ?? "unknown",
@@ -212,9 +214,7 @@ export async function solve(
     summary: [
       `${numParallel} strategies attempted, ${stats.candidates_generated} candidates generated.`,
       `Best exit code: ${bestCandidate?.verdict?.exit_code ?? "N/A"}`,
-      dominantSig
-        ? `${dominantSig[1]} lineages hit same failure pattern.`
-        : "No common failure pattern.",
+      dominantSig ? `${dominantSig[1]} lineages hit same failure pattern.` : "No common failure pattern.",
       "Escalate to Claude: solve the specific failing assertion directly.",
     ].join(" "),
   };

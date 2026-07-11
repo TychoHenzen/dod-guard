@@ -21155,8 +21155,6 @@ async function spawnClaude(prompt, opts) {
   const model = opts.model || "deepseek-v4-pro[1m]";
   const proxyUrl = opts.proxyUrl ?? PROXY_URL;
   const timeoutMs = opts.timeoutMs ?? 3e5;
-  if (!apiKey && useProxy) {
-  }
   const env = {
     ...process.env,
     CLAUDE_CODE_SKIP_AUTO_UPDATE: "1",
@@ -21170,16 +21168,25 @@ async function spawnClaude(prompt, opts) {
     ...opts.env
   };
   const args = ["-p", prompt];
-  if (opts.systemPrompt) {
-    const tmpDir = os.tmpdir();
-    const tmpFile = path.join(tmpDir, `evomcp-system-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.md`);
-    fs.writeFileSync(tmpFile, opts.systemPrompt, "utf-8");
-    args.push("--system-prompt-file", tmpFile);
-  }
   return new Promise((resolve2) => {
     let stdout = "";
     let stderr = "";
     let settled = false;
+    let tmpFile;
+    if (opts.systemPrompt) {
+      const tmpDir = os.tmpdir();
+      tmpFile = path.join(tmpDir, `evomcp-system-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.md`);
+      fs.writeFileSync(tmpFile, opts.systemPrompt, "utf-8");
+      args.push("--system-prompt-file", tmpFile);
+    }
+    const cleanup = () => {
+      if (tmpFile) {
+        try {
+          fs.unlinkSync(tmpFile);
+        } catch {
+        }
+      }
+    };
     const child = spawn("claude", args, {
       cwd: opts.cwd,
       env,
@@ -21195,6 +21202,7 @@ async function spawnClaude(prompt, opts) {
           } catch {
           }
         }, 2e3);
+        cleanup();
         resolve2({
           output: stdout + "\n" + stderr,
           exitCode: -1,
@@ -21213,13 +21221,7 @@ async function spawnClaude(prompt, opts) {
       if (!settled) {
         settled = true;
         clearTimeout(timer);
-        if (opts.systemPrompt) {
-          const tmpFile = args[args.indexOf("--system-prompt-file") + 1];
-          try {
-            fs.unlinkSync(tmpFile);
-          } catch {
-          }
-        }
+        cleanup();
         resolve2({
           output: stdout + (stderr ? "\n" + stderr : ""),
           exitCode: code ?? -1,
@@ -21232,6 +21234,7 @@ async function spawnClaude(prompt, opts) {
       if (!settled) {
         settled = true;
         clearTimeout(timer);
+        cleanup();
         resolve2({
           output: `Failed to spawn claude: ${err.message}`,
           exitCode: -1,
@@ -21377,10 +21380,19 @@ Mutate this code to improve its fitness score. Be creative \u2014 try different 
 }
 
 // src/solve.ts
+import { execSync as execSync2 } from "node:child_process";
 var MAX_REPAIRS = 3;
 var DEFAULT_N = 5;
 var DEFAULT_TIMEOUT_MS = 3e5;
 var REPAIR_TIMEOUT_MS = 18e4;
+function captureDiff(cwd) {
+  try {
+    const diff = execSync2("git diff", { cwd, encoding: "utf-8", timeout: 1e4 });
+    return diff || null;
+  } catch {
+    return null;
+  }
+}
 async function solve(spec, onProgress) {
   const startTime = Date.now();
   const stats = {
@@ -21434,7 +21446,8 @@ ${r.output.slice(0, 500)}`,
       stats.duration_ms = Date.now() - startTime;
       return {
         outcome: "pass",
-        patch: candidate.patch,
+        patch: captureDiff(spec.cwd) ?? `claude -p output (${r.exitCode}):
+${r.output.slice(0, 500)}`,
         verification_report: verdict.output,
         stats
       };
@@ -21483,7 +21496,8 @@ ${result.output.slice(0, 500)}`;
         stats.duration_ms = Date.now() - startTime;
         return {
           outcome: "pass",
-          patch: candidate.patch,
+          patch: captureDiff(spec.cwd) ?? `repair #${repair} output (${result.exitCode}):
+${result.output.slice(0, 500)}`,
           verification_report: repairVerdict.output,
           stats
         };
@@ -21531,7 +21545,7 @@ ${result.output.slice(0, 500)}`;
 import * as path2 from "node:path";
 import * as fs2 from "node:fs";
 import * as os2 from "node:os";
-import { execSync as execSync2 } from "node:child_process";
+import { execSync as execSync3 } from "node:child_process";
 var DEFAULT_GENERATIONS = 5;
 var DEFAULT_POPULATION = 6;
 var DEFAULT_TIMEOUT_MS2 = 18e4;
@@ -21570,7 +21584,7 @@ Output: ${baselineResult.output.slice(0, 500)}`
   const initialCode = targetContents.map((t) => `=== ${t.path} ===
 ${t.content}`).join("\n\n");
   let bestScore = baselineScore;
-  let bestPatch = "";
+  let bestPatch = null;
   const fitnessHistory = [];
   const elites = [];
   for (let gen = 0; gen < generations; gen++) {
@@ -21609,8 +21623,7 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
     for (let i = 0; i < results.length; i++) {
       const r = results[i];
       if (r.timedOut || r.exitCode !== 0) continue;
-      const backupDir = path2.join(os2.tmpdir(), `evomcp-backup-${Date.now()}`);
-      saveState(spec.cwd, backupDir);
+      saveState(spec.cwd);
       try {
         const fitnessResult = runCommand(spec.fitness_cmd, spec.cwd);
         const score = extractScore(fitnessResult.output);
@@ -21630,8 +21643,11 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
       } catch (err) {
         onProgress?.(`  [${i + 1}] error: ${String(err).slice(0, 80)}`);
       } finally {
-        restoreState(spec.cwd, backupDir);
+        restoreState(spec.cwd);
       }
+    }
+    if (bestPatch) {
+      applyPatch(bestPatch, spec.cwd);
     }
     if (genScores.length > 0) {
       const meanScore = genScores.reduce((a, b) => a + b, 0) / genScores.length;
@@ -21699,7 +21715,9 @@ function readTargetFiles(cwd, patterns) {
           }
         }
       }
-    } catch {
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("evolve: readTargetFiles error", { pattern, err: msg });
     }
   }
   return files;
@@ -21710,37 +21728,47 @@ function matchSimple(name, pattern) {
   );
   return regex.test(name);
 }
-function saveState(cwd, backupDir) {
+function saveState(cwd) {
   try {
-    execSync2(`git stash push --include-untracked -m "evomcp-backup"`, { cwd, timeout: 1e4 });
-  } catch {
+    execSync3(`git stash push --include-untracked -m "evomcp-backup"`, { cwd, timeout: 1e4 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!msg.includes("No local changes")) {
+      console.error("evolve: saveState failed", { cwd, err: msg });
+    }
   }
 }
-function restoreState(cwd, backupDir) {
+function restoreState(cwd) {
   try {
-    execSync2(`git checkout .`, { cwd, timeout: 1e4 });
-    execSync2(`git clean -fd`, { cwd, timeout: 1e4 });
+    execSync3(`git checkout .`, { cwd, timeout: 1e4 });
+    execSync3(`git clean -fd`, { cwd, timeout: 1e4 });
     try {
-      execSync2(`git stash pop`, { cwd, timeout: 1e4 });
-    } catch {
+      execSync3(`git stash pop`, { cwd, timeout: 1e4 });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!msg.includes("No stash") && !msg.includes("not a git repository")) {
+        console.error("evolve: stash pop failed", { cwd, err: msg });
+      }
     }
-  } catch {
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("evolve: restoreState failed", { cwd, err: msg });
   }
 }
 function captureState(cwd, targetFiles) {
   try {
-    const diff = execSync2(`git diff -- ${targetFiles.join(" ")}`, { cwd, encoding: "utf-8", timeout: 1e4 });
-    return diff || "(no diff from baseline)";
+    const diff = execSync3(`git diff -- ${targetFiles.join(" ")}`, { cwd, encoding: "utf-8", timeout: 1e4 });
+    return diff || null;
   } catch {
-    return "(failed to capture diff)";
+    return null;
   }
 }
 function applyPatch(patch, cwd) {
-  if (!patch || patch.includes("(no improvement") || patch.includes("(no diff")) return;
+  if (!patch) return;
   const patchFile = path2.join(os2.tmpdir(), `evomcp-best-${Date.now()}.patch`);
   try {
     fs2.writeFileSync(patchFile, patch, "utf-8");
-    execSync2(`git apply "${patchFile}"`, { cwd, timeout: 3e4 });
+    execSync3(`git apply "${patchFile}"`, { cwd, timeout: 3e4 });
   } catch {
   } finally {
     try {
@@ -21753,7 +21781,7 @@ function applyPatch(patch, cwd) {
 // src/index.ts
 var server = new McpServer({
   name: "evomcp",
-  version: "0.1.0"
+  version: "0.1.3"
 });
 var TaskSpecSchema = external_exports.object({
   goal: external_exports.string().describe("Natural-language description of what to build/fix/optimize"),

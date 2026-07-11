@@ -10408,7 +10408,19 @@ async function semanticSearch(store2, vaultName, query, embedder2, limit = 20) {
   if (withEmbeddings.length === 0)
     return [];
   const scored = withEmbeddings.map((chunk) => {
-    const embedding = typeof chunk.embedding === "string" ? JSON.parse(chunk.embedding) : chunk.embedding;
+    let embedding = null;
+    if (typeof chunk.embedding === "string") {
+      try {
+        embedding = JSON.parse(chunk.embedding);
+      } catch {
+        return { chunk, similarity: 0 };
+      }
+    } else {
+      embedding = chunk.embedding;
+    }
+    if (!embedding || !Array.isArray(embedding)) {
+      return { chunk, similarity: 0 };
+    }
     const similarity = cosineSimilarity(queryEmbedding, embedding);
     return { chunk, similarity };
   });
@@ -24880,7 +24892,7 @@ function extractWikilinks(content) {
   }
   return [...new Set(links)];
 }
-async function aggregateTags(vaultName, vaultPath) {
+async function aggregateTags(vaultPath) {
   const allFiles = await walkVault(vaultPath);
   const tagCounts = /* @__PURE__ */ new Map();
   for (const file of allFiles) {
@@ -25214,29 +25226,26 @@ var Store = class {
     };
   }
   setIndexMeta(vaultName, data) {
-    const dbCols = ["total_notes", "indexed_notes", "total_chunks", "embedded_chunks", "last_indexed"];
-    const keyMap = {
-      total_notes: "totalNotes",
-      indexed_notes: "indexedNotes",
-      total_chunks: "totalChunks",
-      embedded_chunks: "embeddedChunks",
-      last_indexed: "lastIndexed"
-    };
-    const fields = [];
-    const values = [vaultName];
-    for (const col of dbCols) {
-      const key = keyMap[col];
-      if (data[key] !== void 0) {
-        fields.push(`${col} = ?`);
-        values.push(data[key]);
-      }
-    }
-    if (fields.length === 0)
+    const pairs = [];
+    if (data.totalNotes !== void 0)
+      pairs.push(["total_notes", data.totalNotes]);
+    if (data.indexedNotes !== void 0)
+      pairs.push(["indexed_notes", data.indexedNotes]);
+    if (data.totalChunks !== void 0)
+      pairs.push(["total_chunks", data.totalChunks]);
+    if (data.embeddedChunks !== void 0)
+      pairs.push(["embedded_chunks", data.embeddedChunks]);
+    if (data.lastIndexed !== void 0)
+      pairs.push(["last_indexed", data.lastIndexed]);
+    if (pairs.length === 0)
       return;
+    const colNames = pairs.map(([col]) => col);
+    const values = [vaultName, ...pairs.map(([, v]) => v)];
+    const placeholders = values.map(() => "?").join(", ");
     this.db.prepare(`
-      INSERT INTO index_meta (vault_name${fields.map((f) => `, ${f.split(" = ")[0]}`).join("")})
-      VALUES (${values.map(() => "?").join(", ")})
-      ON CONFLICT(vault_name) DO UPDATE SET ${fields.map((f) => `${f.split(" = ")[0]} = excluded.${f.split(" = ")[0]}`).join(", ")}
+      INSERT INTO index_meta (vault_name, ${colNames.join(", ")})
+      VALUES (${placeholders})
+      ON CONFLICT(vault_name) DO UPDATE SET ${colNames.map((c) => `${c} = excluded.${c}`).join(", ")}
     `).run(...values);
   }
   // ── Cleanup ──────────────────────────────────────────────────────
@@ -25344,6 +25353,7 @@ async function indexVault(vaultPath, vaultName, store2) {
       totalChunks += chunks.length;
       indexed++;
     } catch (err) {
+      console.error("obsidian-rag: index error", { file: String(file), err: err instanceof Error ? err.message : String(err) });
       continue;
     }
   }
@@ -25371,7 +25381,15 @@ var store = new Store({ dbDir: DB_DIR });
 var pkgPath = new URL("../package.json", import.meta.url);
 if (!existsSync3(pkgPath))
   pkgPath = new URL("./package.json", import.meta.url);
-var PKG = JSON.parse(readFileSync(pkgPath, "utf-8"));
+var PKG = (() => {
+  try {
+    return JSON.parse(readFileSync(pkgPath, "utf-8"));
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("obsidian-rag: failed to parse package.json", { path: String(pkgPath), err: msg });
+    return { name: "obsidian-rag", version: "0.0.0" };
+  }
+})();
 var selectedVault = null;
 var embedder = null;
 var _selectPromise = null;
@@ -25598,7 +25616,7 @@ ${bw.join("\n")}` }]
 
 ${lines.join("\n")}` }] };
     } catch {
-      const tags = await aggregateTags(vault.name, vault.path);
+      const tags = await aggregateTags(vault.path);
       const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
       const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
       return { content: [{ type: "text", text: `# Tags (${sorted.length})
@@ -25746,28 +25764,28 @@ ${lines.join("\n\n")}` }] };
       } else {
         await cliCreateNote(vault.name, path, content);
       }
-      if (title) {
+      if (title || tags && tags.length > 0) {
         const { execFile: execFile2 } = await import("node:child_process");
         const { promisify: promisify2 } = await import("node:util");
-        await promisify2(execFile2)("obsidian", [
-          `vault=${vault.name}`,
-          "property:set",
-          "name=title",
-          `value=${title}`,
-          `path=${path}`
-        ], { timeout: 1e4, windowsHide: true });
-      }
-      if (tags && tags.length > 0) {
-        const { execFile: execFile2 } = await import("node:child_process");
-        const { promisify: promisify2 } = await import("node:util");
-        await promisify2(execFile2)("obsidian", [
-          `vault=${vault.name}`,
-          "property:set",
-          "name=tags",
-          `value=${tags.join(",")}`,
-          "type=list",
-          `path=${path}`
-        ], { timeout: 1e4, windowsHide: true });
+        if (title) {
+          await promisify2(execFile2)("obsidian", [
+            `vault=${vault.name}`,
+            "property:set",
+            "name=title",
+            `value=${title}`,
+            `path=${path}`
+          ], { timeout: 1e4, windowsHide: true });
+        }
+        if (tags && tags.length > 0) {
+          await promisify2(execFile2)("obsidian", [
+            `vault=${vault.name}`,
+            "property:set",
+            "name=tags",
+            `value=${tags.join(",")}`,
+            "type=list",
+            `path=${path}`
+          ], { timeout: 1e4, windowsHide: true });
+        }
       }
       return {
         content: [{ type: "text", text: `\u2705 ${append ? "Updated" : "Created"} note: \`${path}\`` }]

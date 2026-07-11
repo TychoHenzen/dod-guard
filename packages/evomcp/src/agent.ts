@@ -90,7 +90,7 @@ export async function ensureProxy(proxyUrl?: string): Promise<boolean> {
     return false;
   }
 
-  const apiKey = process.env["DEEPSEEK_API_KEY"];
+  const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
     console.error("evomcp: DEEPSEEK_API_KEY not set. Cannot start proxy.");
     return false;
@@ -129,19 +129,16 @@ export async function ensureProxy(proxyUrl?: string): Promise<boolean> {
  *   ANTHROPIC_MODEL = deepseek model name
  *   CLAUDE_CODE_SKIP_AUTO_UPDATE = 1
  */
-export async function spawnClaude(
-  prompt: string,
-  opts: SpawnOptions & AgentEnv,
-): Promise<AgentResult> {
+export async function spawnClaude(prompt: string, opts: SpawnOptions & AgentEnv): Promise<AgentResult> {
   const t0 = Date.now();
   const useProxy = opts.useProxy !== false;
-  const apiKey = opts.apiKey || process.env["DEEPSEEK_API_KEY"] || "";
+  const apiKey = opts.apiKey || process.env.DEEPSEEK_API_KEY || "";
   const model = opts.model || "deepseek-v4-pro[1m]";
   const proxyUrl = opts.proxyUrl ?? PROXY_URL;
   const timeoutMs = opts.timeoutMs ?? 300_000; // 5 min default
 
   const env: Record<string, string> = {
-    ...process.env as Record<string, string>,
+    ...(process.env as Record<string, string>),
     CLAUDE_CODE_SKIP_AUTO_UPDATE: "1",
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
     ANTHROPIC_BASE_URL: useProxy ? proxyUrl : DEEPSEEK_ANTHROPIC_ENDPOINT,
@@ -169,7 +166,11 @@ export async function spawnClaude(
     }
 
     const cleanup = () => {
-      if (tmpFile) { try { fs.unlinkSync(tmpFile); } catch {} }
+      if (tmpFile) {
+        try {
+          fs.unlinkSync(tmpFile);
+        } catch {}
+      }
     };
 
     const child = spawn("claude", args, {
@@ -184,11 +185,13 @@ export async function spawnClaude(
         child.kill("SIGTERM");
         // Give it 2s to cleanup, then force kill
         setTimeout(() => {
-          try { child.kill("SIGKILL"); } catch {}
+          try {
+            child.kill("SIGKILL");
+          } catch {}
         }, 2000);
         cleanup();
         resolve({
-          output: stdout + "\n" + stderr,
+          output: `${stdout}\n${stderr}`,
           exitCode: -1,
           durationMs: Date.now() - t0,
           timedOut: true,
@@ -210,7 +213,7 @@ export async function spawnClaude(
         clearTimeout(timer);
         cleanup();
         resolve({
-          output: stdout + (stderr ? "\n" + stderr : ""),
+          output: stdout + (stderr ? `\n${stderr}` : ""),
           exitCode: code ?? -1,
           durationMs: Date.now() - t0,
           timedOut: false,
@@ -238,13 +241,8 @@ export async function spawnClaude(
  * Spawn N claude -p instances in parallel with different prompts.
  * Returns results in order.
  */
-export async function spawnClaudeN(
-  prompts: string[],
-  opts: SpawnOptions & AgentEnv,
-): Promise<AgentResult[]> {
-  const results = await Promise.allSettled(
-    prompts.map((prompt) => spawnClaude(prompt, opts)),
-  );
+export async function spawnClaudeN(prompts: string[], opts: SpawnOptions & AgentEnv): Promise<AgentResult[]> {
+  const results = await Promise.allSettled(prompts.map((prompt) => spawnClaude(prompt, opts)));
 
   return results.map((r) => {
     if (r.status === "fulfilled") return r.value;
@@ -285,7 +283,7 @@ export function runCommand(
     const stdout = err?.stdout ? String(err.stdout) : "";
     const stderr = err?.stderr ? String(err.stderr) : "";
     return {
-      output: (stdout + "\n" + stderr).slice(0, 10000),
+      output: `${stdout}\n${stderr}`.slice(0, 10000),
       exitCode: err?.status ?? err?.code ?? 1,
       durationMs: Date.now() - t0,
     };
@@ -310,9 +308,7 @@ export function extractScore(output: string): number | null {
  * Convert a runCommand result to a Verdict (type-safe bridge between
  * the camelCase helper and snake_case Verdict interface).
  */
-export function toVerdict(
-  r: { output: string; exitCode: number; durationMs: number },
-): Verdict {
+export function toVerdict(r: { output: string; exitCode: number; durationMs: number }): Verdict {
   return {
     passed: r.exitCode === 0,
     exit_code: r.exitCode,
@@ -322,7 +318,7 @@ export function toVerdict(
 }
 
 export function hashFailure(output: string): string {
-  let cleaned = output
+  const cleaned = output
     .replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?/g, "<TIME>")
     .replace(/:\d+:\d+/g, ":<LINE>:<COL>")
     .replace(/0x[0-9a-fA-F]+/g, "<HEX>")
@@ -333,7 +329,7 @@ export function hashFailure(output: string): string {
   let hash = 0;
   for (let i = 0; i < cleaned.length; i++) {
     const char = cleaned.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
   return Math.abs(hash).toString(16);
@@ -371,12 +367,7 @@ export function strategyPrompts(task: string, n: number, context?: string): stri
 /**
  * Build a repair prompt with failure feedback.
  */
-export function repairPrompt(
-  task: string,
-  failureOutput: string,
-  attemptNum: number,
-  context?: string,
-): string {
+export function repairPrompt(task: string, failureOutput: string, attemptNum: number, context?: string): string {
   const contextBlock = context ? `\n\nContext:\n${context}` : "";
   return `## Task\n${task}\n\n## Previous attempt FAILED\nYour previous implementation failed verification. Here is the output:\n\n\`\`\`\n${failureOutput.slice(0, 3000)}\n\`\`\`\n\n## Instructions\nThis is repair attempt #${attemptNum}. Fix the specific issues shown above. Read the relevant files, understand what went wrong, and make targeted fixes. Do NOT rewrite everything — fix only what's broken.${contextBlock}`;
 }
@@ -391,11 +382,12 @@ export function mutationPrompt(
   elites: { code: string; score: number }[],
   context?: string,
 ): string {
-  const eliteBlock = elites.length > 0
-    ? `\n## Elite mutations (higher score = better)\n${
-        elites.map((e, i) => `### Elite #${i + 1} (score=${e.score.toFixed(2)})\n\`\`\`\n${e.code}\n\`\`\``).join("\n\n")
-      }`
-    : "";
+  const eliteBlock =
+    elites.length > 0
+      ? `\n## Elite mutations (higher score = better)\n${elites
+          .map((e, i) => `### Elite #${i + 1} (score=${e.score.toFixed(2)})\n\`\`\`\n${e.code}\n\`\`\``)
+          .join("\n\n")}`
+      : "";
 
   const contextBlock = context ? `\n\nContext:\n${context}` : "";
 

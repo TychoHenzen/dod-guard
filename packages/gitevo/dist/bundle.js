@@ -21386,7 +21386,7 @@ function evo_summary() {
   ].join("\n");
 }
 function evo_adopt(branch) {
-  const { cwd } = getRepo();
+  const { cwd, rootBranch } = getRepo();
   requireInit(cwd);
   if (isDirty2(cwd)) {
     throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
@@ -21396,13 +21396,6 @@ function evo_adopt(branch) {
     throw new EvoError(`Branch '${branch}' not found.`);
   }
   const originalBranch = currentBranch(cwd);
-  let rootBranch = "main";
-  for (const name of ["main", "master", "trunk"]) {
-    if (branches.includes(name)) {
-      rootBranch = name;
-      break;
-    }
-  }
   if (originalBranch !== rootBranch) {
     git(["checkout", rootBranch], cwd);
   }
@@ -21415,16 +21408,9 @@ function evo_adopt(branch) {
   return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
 }
 function evo_finish() {
-  const { cwd } = getRepo();
+  const { cwd, rootBranch } = getRepo();
   requireInit(cwd);
   const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  let rootBranch = "main";
-  for (const name of ["main", "master", "trunk"]) {
-    if (branches.includes(name)) {
-      rootBranch = name;
-      break;
-    }
-  }
   const current = currentBranch(cwd);
   if (current !== rootBranch) {
     evo_adopt(current);
@@ -21454,7 +21440,7 @@ function evo_finish() {
 // src/index.ts
 var server = new McpServer({
   name: "gitevo",
-  version: "0.1.0"
+  version: "0.1.3"
 });
 function wrap(fn) {
   return (...args) => {

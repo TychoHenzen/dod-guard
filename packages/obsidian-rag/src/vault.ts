@@ -16,7 +16,8 @@ export async function walkVault(vaultPath: string): Promise<string[]> {
   const dirs = [vaultPath];
 
   while (dirs.length > 0) {
-    const dir = dirs.pop()!;
+    const dir = dirs.pop();
+    if (!dir) continue;
     const entries = await readdir(dir, { withFileTypes: true });
     for (const e of entries) {
       const full = join(dir, e.name);
@@ -57,7 +58,7 @@ export async function writeNote(
   vaultPath: string,
   notePath: string,
   frontmatter: Record<string, unknown>,
-  content: string
+  content: string,
 ): Promise<void> {
   const fullPath = join(vaultPath, notePath);
   const dir = dirname(fullPath);
@@ -71,8 +72,7 @@ export async function writeNote(
 export function extractWikilinks(content: string): string[] {
   const links: string[] = [];
   const re = /\[\[([^\]|#]+)(?:[#|][^\]]+)?\]\]/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(content)) !== null) {
+  for (const match of content.matchAll(re)) {
     links.push(match[1].trim());
   }
   return [...new Set(links)];
@@ -96,9 +96,7 @@ export async function getBacklinks(vaultPath: string, targetPath: string): Promi
 
 // ── Tags ─────────────────────────────────────────────────────────────────
 
-export async function aggregateTags(
-  vaultPath: string
-): Promise<Map<string, number>> {
+export async function aggregateTags(vaultPath: string): Promise<Map<string, number>> {
   const allFiles = await walkVault(vaultPath);
   const tagCounts = new Map<string, number>();
   for (const file of allFiles) {
@@ -167,7 +165,7 @@ export async function readMemories(vaultPath: string): Promise<MemoryEntry[]> {
 
 export async function writeMemory(
   vaultPath: string,
-  entry: Omit<MemoryEntry, "path" | "modified" | "created"> & { created?: string }
+  entry: Omit<MemoryEntry, "path" | "modified" | "created"> & { created?: string },
 ): Promise<string> {
   const now = new Date().toISOString();
   const fileName = `${entry.id}.md`;
@@ -188,16 +186,13 @@ export async function writeMemory(
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-function extractMeta(
-  notePath: string,
-  frontmatter: Record<string, unknown>,
-  content: string
-): NoteMeta {
+function extractMeta(notePath: string, frontmatter: Record<string, unknown>, content: string): NoteMeta {
   const fmTags = frontmatter.tags;
   const tags = Array.isArray(fmTags)
     ? fmTags.map((t: unknown) => String(t).replace(/^#/, ""))
     : typeof fmTags === "string"
-      ? fmTags.split(/,\s*/).map((t: string) => t.replace(/^#/, "")) : [];
+      ? fmTags.split(/,\s*/).map((t: string) => t.replace(/^#/, ""))
+      : [];
   const links = extractWikilinks(content);
   return {
     path: notePath,

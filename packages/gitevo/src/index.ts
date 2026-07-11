@@ -72,14 +72,9 @@ server.tool(
   }),
 );
 
-server.tool(
-  "evo_checkpoints",
-  "List all evo-* tags with descriptions, roughly newest first.",
-  {},
-  async () => ({
-    content: [{ type: "text" as const, text: wrap(evo_checkpoints)() }],
-  }),
-);
+server.tool("evo_checkpoints", "List all evo-* tags with descriptions, roughly newest first.", {}, async () => ({
+  content: [{ type: "text" as const, text: wrap(evo_checkpoints)() }],
+}));
 
 // ── Spawn & branches ──────────────────────────────────────────────────
 
@@ -95,14 +90,9 @@ server.tool(
   }),
 );
 
-server.tool(
-  "evo_branches",
-  "List all attempt branches (non-root, non-default like main/master).",
-  {},
-  async () => ({
-    content: [{ type: "text" as const, text: wrap(evo_branches)() }],
-  }),
-);
+server.tool("evo_branches", "List all attempt branches (non-root, non-default like main/master).", {}, async () => ({
+  content: [{ type: "text" as const, text: wrap(evo_branches)() }],
+}));
 
 // ── Lessons ───────────────────────────────────────────────────────────
 
@@ -141,7 +131,10 @@ server.tool(
   "evo_abandon",
   "Abandon current branch: tag as evo-dead-{branch} and revert to checkpoint or parent commit. Optionally record reason as a lesson. Refuses if tree dirty.",
   {
-    checkpoint: z.string().optional().describe("Checkpoint name to revert to (without evo- prefix). If omitted, reverts to parent commit (HEAD~1)."),
+    checkpoint: z
+      .string()
+      .optional()
+      .describe("Checkpoint name to revert to (without evo- prefix). If omitted, reverts to parent commit (HEAD~1)."),
     reason: z.string().optional().describe("Why this branch was abandoned — recorded as a lesson"),
   },
   async ({ checkpoint, reason }) => ({

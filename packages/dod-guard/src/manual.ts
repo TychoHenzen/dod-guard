@@ -48,7 +48,11 @@ export function perProofFingerprint(node: TaskNode): string {
  * The answer is sourced solely from `confirm`; this function never reads a
  * Claude-supplied value, preserving the anti-cheat guarantee.
  */
-export async function resolveManual(node: TaskNode, confirm: Confirmer, label = "Manual verification"): Promise<ManualResolution> {
+export async function resolveManual(
+  node: TaskNode,
+  confirm: Confirmer,
+  label = "Manual verification",
+): Promise<ManualResolution> {
   const fingerprint = perProofFingerprint(node);
   const cached = node.manual_result;
 

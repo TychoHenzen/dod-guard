@@ -40,15 +40,12 @@ export async function ensureObsidianRunning(): Promise<void> {
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ── Raw CLI ──────────────────────────────────────────────────────────────
 
-async function runObsidian(
-  args: string[],
-  timeout = 15000,
-): Promise<{ stdout: string; stderr: string }> {
+async function runObsidian(args: string[], timeout = 15000): Promise<{ stdout: string; stderr: string }> {
   return execFileP(OBSIDIAN_CMD, args, { timeout, windowsHide: true });
 }
 
@@ -86,8 +83,8 @@ export async function getVaultInfo(vaultName: string): Promise<Partial<VaultInfo
       const val = parts[1].trim();
       if (key === "name") m.name = val;
       if (key === "path") m.path = val;
-      if (key === "files") m.noteCount = parseInt(val) || 0;
-      if (key === "folders") m.folderCount = parseInt(val) || 0;
+      if (key === "files") m.noteCount = parseInt(val, 10) || 0;
+      if (key === "folders") m.folderCount = parseInt(val, 10) || 0;
       if (key === "size") m.size = val;
     }
   }
@@ -97,10 +94,7 @@ export async function getVaultInfo(vaultName: string): Promise<Partial<VaultInfo
 // ── Note reading ─────────────────────────────────────────────────────────
 
 /** Read raw markdown content of a note via CLI. */
-export async function cliReadNote(
-  vaultName: string,
-  notePath: string,
-): Promise<string> {
+export async function cliReadNote(vaultName: string, notePath: string): Promise<string> {
   const { stdout } = await obsidian(vaultName, ["read", `path=${notePath}`]);
   return stdout;
 }
@@ -108,10 +102,7 @@ export async function cliReadNote(
 // ── File listing ─────────────────────────────────────────────────────────
 
 /** List markdown files in a vault directory. Throws on CLI error output. */
-export async function cliListFiles(
-  vaultName: string,
-  directory?: string,
-): Promise<string[]> {
+export async function cliListFiles(vaultName: string, directory?: string): Promise<string[]> {
   const args = ["files", "ext=md"];
   if (directory) args.push(`folder=${directory}`);
   const { stdout } = await obsidian(vaultName, args);
@@ -119,17 +110,16 @@ export async function cliListFiles(
   if (stdout.trim().startsWith("Error:") || stdout.includes("Did you mean:")) {
     throw new Error(`obsidian CLI files failed: ${stdout.trim().split("\n")[0]}`);
   }
-  return stdout.split("\n").map(s => s.trim()).filter(Boolean);
+  return stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 // ── Search ───────────────────────────────────────────────────────────────
 
 /** Search vault with Obsidian's built-in search. */
-export async function cliSearch(
-  vaultName: string,
-  query: string,
-  limit = 20,
-): Promise<string[]> {
+export async function cliSearch(vaultName: string, query: string, limit = 20): Promise<string[]> {
   const { stdout } = await obsidian(vaultName, [
     "search",
     `query=${escapeArg(query)}`,
@@ -142,35 +132,27 @@ export async function cliSearch(
 // ── Links ────────────────────────────────────────────────────────────────
 
 /** Get backlinks for a note. */
-export async function cliGetBacklinks(
-  vaultName: string,
-  notePath: string,
-): Promise<string[]> {
-  const { stdout } = await obsidian(vaultName, [
-    "backlinks",
-    `path=${notePath}`,
-  ]);
-  return stdout.split("\n").map(s => s.trim()).filter(Boolean);
+export async function cliGetBacklinks(vaultName: string, notePath: string): Promise<string[]> {
+  const { stdout } = await obsidian(vaultName, ["backlinks", `path=${notePath}`]);
+  return stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /** Get outgoing links from a note. */
-export async function cliGetLinks(
-  vaultName: string,
-  notePath: string,
-): Promise<string[]> {
-  const { stdout } = await obsidian(vaultName, [
-    "links",
-    `path=${notePath}`,
-  ]);
-  return stdout.split("\n").map(s => s.trim()).filter(Boolean);
+export async function cliGetLinks(vaultName: string, notePath: string): Promise<string[]> {
+  const { stdout } = await obsidian(vaultName, ["links", `path=${notePath}`]);
+  return stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 // ── Tags ─────────────────────────────────────────────────────────────────
 
 /** Get all tags with counts for a vault. */
-export async function cliGetTags(
-  vaultName: string,
-): Promise<Map<string, number>> {
+export async function cliGetTags(vaultName: string): Promise<Map<string, number>> {
   const { stdout } = await obsidian(vaultName, ["tags", "counts"]);
   const counts = new Map<string, number>();
   for (const line of stdout.split("\n")) {
@@ -180,7 +162,7 @@ export async function cliGetTags(
     const parts = trimmed.split("\t");
     if (parts.length >= 2) {
       const tag = parts[0].replace(/^#/, "").trim();
-      const count = parseInt(parts[1]) || 0;
+      const count = parseInt(parts[1], 10) || 0;
       if (tag) counts.set(tag, count);
     }
   }
@@ -190,28 +172,15 @@ export async function cliGetTags(
 // ── Note creation ────────────────────────────────────────────────────────
 
 /** Create a new note or overwrite an existing one. */
-export async function cliCreateNote(
-  vaultName: string,
-  notePath: string,
-  content: string,
-  open = false,
-): Promise<void> {
+export async function cliCreateNote(vaultName: string, notePath: string, content: string, open = false): Promise<void> {
   const args = ["create", `path=${notePath}`, `content=${escapeArg(content)}`];
   if (open) args.push("open");
   await obsidian(vaultName, args);
 }
 
 /** Append content to a note. */
-export async function cliAppendNote(
-  vaultName: string,
-  notePath: string,
-  content: string,
-): Promise<void> {
-  await obsidian(vaultName, [
-    "append",
-    `path=${notePath}`,
-    `content=${escapeArg(content)}`,
-  ]);
+export async function cliAppendNote(vaultName: string, notePath: string, content: string): Promise<void> {
+  await obsidian(vaultName, ["append", `path=${notePath}`, `content=${escapeArg(content)}`]);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────

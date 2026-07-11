@@ -1,7 +1,7 @@
 // Retrieval: keyword search (FTS5) + semantic search (cosine similarity on embeddings)
 
 import type { Chunk, SearchResult } from "./types.js";
-import { Store } from "./store.js";
+import type { Store } from "./store.js";
 
 export interface Embedder {
   embed(text: string): Promise<number[]>;
@@ -10,14 +10,9 @@ export interface Embedder {
 
 // ── Keyword search ────────────────────────────────────────────────────
 
-export function keywordSearch(
-  store: Store,
-  vaultName: string,
-  query: string,
-  limit = 20
-): SearchResult[] {
+export function keywordSearch(store: Store, vaultName: string, query: string, limit = 20): SearchResult[] {
   const rows = store.searchNotesFTS(vaultName, query, limit);
-  return rows.map(r => ({
+  return rows.map((r) => ({
     notePath: r.path,
     title: r.title,
     heading: "",
@@ -34,15 +29,15 @@ export async function semanticSearch(
   vaultName: string,
   query: string,
   embedder: Embedder,
-  limit = 20
+  limit = 20,
 ): Promise<SearchResult[]> {
   const queryEmbedding = await embedder.embed(query);
   const chunks = store.getChunks(vaultName);
-  const withEmbeddings = chunks.filter(c => c.embedding && c.embedding.length > 0);
+  const withEmbeddings = chunks.filter((c) => c.embedding && c.embedding.length > 0);
   if (withEmbeddings.length === 0) return [];
 
   // Parse embeddings and compute cosine similarity
-  const scored = withEmbeddings.map(chunk => {
+  const scored = withEmbeddings.map((chunk) => {
     let embedding: number[] | null = null;
     if (typeof chunk.embedding === "string") {
       try {
@@ -95,12 +90,10 @@ export async function hybridSearch(
   vaultName: string,
   query: string,
   embedder: Embedder | null,
-  limit = 20
+  limit = 20,
 ): Promise<SearchResult[]> {
   const keywordResults = keywordSearch(store, vaultName, query, limit * 2);
-  const semanticResults = embedder
-    ? await semanticSearch(store, vaultName, query, embedder, limit * 2)
-    : [];
+  const semanticResults = embedder ? await semanticSearch(store, vaultName, query, embedder, limit * 2) : [];
 
   // Merge scores
   const merged = new Map<string, SearchResult>();
@@ -119,9 +112,7 @@ export async function hybridSearch(
   }
 
   // Sort and return top
-  return [...merged.values()]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+  return [...merged.values()].sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
 // ── Embedding ─────────────────────────────────────────────────────────
@@ -130,12 +121,12 @@ export async function embedChunks(
   store: Store,
   vaultName: string,
   embedder: Embedder,
-  batchSize = 32
+  batchSize = 32,
 ): Promise<number> {
   const unembedded = store.getUnembeddedChunks(vaultName, batchSize);
   if (unembedded.length === 0) return 0;
 
-  const texts = unembedded.map(c => `${c.heading}\n\n${c.content}`);
+  const texts = unembedded.map((c) => `${c.heading}\n\n${c.content}`);
   const embeddings = await embedder.embedBatch(texts);
 
   for (let i = 0; i < unembedded.length; i++) {

@@ -4,7 +4,15 @@ import { renderMarkdown, updateDocFromCheckResult, formatCheckResult } from "./a
 import type { DodDocument, CheckResult, TaskNode } from "./types.js";
 
 function concNode(id: string, title: string, command: string, desc: string): TaskNode {
-  return { id, title, refinement: "concrete", command, predicate: { type: "exit_code", value: 0 }, description: desc, last_status: "pending" };
+  return {
+    id,
+    title,
+    refinement: "concrete",
+    command,
+    predicate: { type: "exit_code", value: 0 },
+    description: desc,
+    last_status: "pending",
+  };
 }
 
 function draftNode(id: string, title: string, intent: string): TaskNode {
@@ -32,9 +40,7 @@ function makeDoc(overrides?: Partial<DodDocument>): DodDocument {
       open_questions: "Should we allow plus-addressing?",
       open_risks: "Regex catastrophic backtracking.",
     },
-    roots: [
-      concNode("n1", "Add validation function", "npm test -- email", "exit 0, tests pass"),
-    ],
+    roots: [concNode("n1", "Add validation function", "npm test -- email", "exit 0, tests pass")],
     amendments: [],
     ...overrides,
   };
@@ -50,7 +56,9 @@ function makeCheckResult(overrides?: Partial<CheckResult>): CheckResult {
     manual_unverified: 0,
     amendment_warnings: [],
     blocked_by_manuals: false,
-    leaves: [{ node_path: "0", id: "n1", title: "t", description: "d", status: "pass", command: "exit 0", output: "ok" }],
+    leaves: [
+      { node_path: "0", id: "n1", title: "t", description: "d", status: "pass", command: "exit 0", output: "ok" },
+    ],
     ...overrides,
   };
 }
@@ -59,7 +67,11 @@ test("renderMarkdown wraps Claude agent guidance in <claude_instructions>", () =
   const md = renderMarkdown(makeDoc());
   assert.match(md, /<claude_instructions>/, "should have opening claude_instructions tag");
   assert.match(md, /<\/claude_instructions>/, "should have closing claude_instructions tag");
-  assert.match(md, /<claude_instructions>[\s\S]*dod_check[\s\S]*<\/claude_instructions>/, "should mention dod_check inside claude_instructions");
+  assert.match(
+    md,
+    /<claude_instructions>[\s\S]*dod_check[\s\S]*<\/claude_instructions>/,
+    "should mention dod_check inside claude_instructions",
+  );
 });
 
 test("renderMarkdown wraps spec sections in semantic XML tags", () => {
@@ -69,12 +81,20 @@ test("renderMarkdown wraps spec sections in semantic XML tags", () => {
     assert.match(md, new RegExp(`<${tag}>`), `should have opening <${tag}> tag`);
     assert.match(md, new RegExp(`</${tag}>`), `should have closing </${tag}> tag`);
   }
-  assert.match(md, /<requirements>[\s\S]*Reject malformed[\s\S]*<\/requirements>/, "requirements should contain the spec text");
+  assert.match(
+    md,
+    /<requirements>[\s\S]*Reject malformed[\s\S]*<\/requirements>/,
+    "requirements should contain the spec text",
+  );
 });
 
 test("renderMarkdown wraps tree in <definition_of_done>", () => {
   const md = renderMarkdown(makeDoc());
-  assert.match(md, /<definition_of_done>[\s\S]*npm test -- email[\s\S]*<\/definition_of_done>/, "definition_of_done should contain proof command");
+  assert.match(
+    md,
+    /<definition_of_done>[\s\S]*npm test -- email[\s\S]*<\/definition_of_done>/,
+    "definition_of_done should contain proof command",
+  );
 });
 
 test("renderMarkdown omits XML tags for absent optional sections", () => {
@@ -101,7 +121,17 @@ test("updateDocFromCheckResult: scoped run persists target but leaves last_check
     manual_unverified: 0,
     amendment_warnings: [],
     blocked_by_manuals: false,
-    leaves: [{ node_path: "0", id: "n1", title: "Add validation", description: "tests pass", status: "pass", command: "npm test -- email", output: "ok" }],
+    leaves: [
+      {
+        node_path: "0",
+        id: "n1",
+        title: "Add validation",
+        description: "tests pass",
+        status: "pass",
+        command: "npm test -- email",
+        output: "ok",
+      },
+    ],
   };
 
   updateDocFromCheckResult(doc, scoped);
@@ -124,7 +154,17 @@ test("updateDocFromCheckResult: full run persists overall", () => {
     manual_unverified: 1,
     amendment_warnings: [],
     blocked_by_manuals: true,
-    leaves: [{ node_path: "0", id: "n1", title: "Add validation", description: "tests pass", status: "skipped", command: "manual", output: "awaiting dod_verify" }],
+    leaves: [
+      {
+        node_path: "0",
+        id: "n1",
+        title: "Add validation",
+        description: "tests pass",
+        status: "skipped",
+        command: "manual",
+        output: "awaiting dod_verify",
+      },
+    ],
   };
 
   updateDocFromCheckResult(doc, full);
@@ -151,11 +191,7 @@ test("updateDocFromCheckResult: handles doc with no prior last_check", () => {
 
 test("renderMarkdown handles nested TaskNode hierarchies", () => {
   const doc = makeDoc({
-    roots: [
-      groupNode("g1", "Group", [
-        concNode("c1", "Child", "exit 0", "child proof"),
-      ]),
-    ],
+    roots: [groupNode("g1", "Group", [concNode("c1", "Child", "exit 0", "child proof")])],
   });
   const md = renderMarkdown(doc);
   assert.match(md, /Group/, "should render group title");
@@ -184,7 +220,7 @@ test("renderMarkdown handles zero roots", () => {
 test("renderMarkdown handles XML-special characters in section content", () => {
   const doc = makeDoc({
     sections: {
-      requirements: "Must handle <script> tags & \"quotes\" in input.",
+      requirements: 'Must handle <script> tags & "quotes" in input.',
     },
   });
   const md = renderMarkdown(doc);
@@ -237,9 +273,7 @@ test("renderMarkdown handles multi-branch trees", () => {
         concNode("c1", "API", "exit 0", "api test"),
         concNode("c2", "DB", "exit 0", "db test"),
       ]),
-      groupNode("g2", "Frontend", [
-        concNode("c3", "UI", "exit 0", "ui test"),
-      ]),
+      groupNode("g2", "Frontend", [concNode("c3", "UI", "exit 0", "ui test")]),
     ],
   });
   const md = renderMarkdown(doc);
@@ -297,9 +331,7 @@ test("formatCheckResult: draft nodes render with draft icon", () => {
   const res = makeCheckResult({
     overall: "incomplete",
     draft_count: 2,
-    leaves: [
-      { node_path: "0", id: "n1", title: "t1", description: "d1", status: "draft", command: "", output: "" },
-    ],
+    leaves: [{ node_path: "0", id: "n1", title: "t1", description: "d1", status: "draft", command: "", output: "" }],
   });
   const out = formatCheckResult(res);
   assert.match(out, /2 draft node/, "should mention draft count");
@@ -310,11 +342,17 @@ test("formatCheckResult: draft nodes render with draft icon", () => {
 
 test("renderMarkdown renders manual proof marker", () => {
   const doc = makeDoc({
-    roots: [{
-      id: "m1", title: "Manual Check", refinement: "concrete",
-      command: "", predicate: { type: "manual" },
-      description: "human must verify", last_status: "pending",
-    } as TaskNode],
+    roots: [
+      {
+        id: "m1",
+        title: "Manual Check",
+        refinement: "concrete",
+        command: "",
+        predicate: { type: "manual" },
+        description: "human must verify",
+        last_status: "pending",
+      } as TaskNode,
+    ],
   });
   const md = renderMarkdown(doc);
   assert.match(md, /human must verify/, "should render manual proof description");
@@ -323,11 +361,17 @@ test("renderMarkdown renders manual proof marker", () => {
 
 test("renderMarkdown renders TDD proof marker", () => {
   const doc = makeDoc({
-    roots: [{
-      id: "t1", title: "TDD Check", refinement: "concrete",
-      command: "pytest", predicate: { type: "tdd" },
-      description: "tests must fail then pass", last_status: "pending",
-    } as TaskNode],
+    roots: [
+      {
+        id: "t1",
+        title: "TDD Check",
+        refinement: "concrete",
+        command: "pytest",
+        predicate: { type: "tdd" },
+        description: "tests must fail then pass",
+        last_status: "pending",
+      } as TaskNode,
+    ],
   });
   const md = renderMarkdown(doc);
   assert.match(md, /tests must fail then pass/, "should render TDD description");
@@ -345,14 +389,16 @@ test("renderMarkdown renders last_check header when present", () => {
 
 test("renderMarkdown renders amendment log when amendments exist", () => {
   const doc = makeDoc();
-  doc.amendments = [{
-    timestamp: "2026-06-26T12:00:00Z",
-    node_path: "0",
-    action: "modified",
-    reason: "Updated for new API",
-    old_value: { command: "exit 0" },
-    new_value: { command: "exit 1" },
-  }];
+  doc.amendments = [
+    {
+      timestamp: "2026-06-26T12:00:00Z",
+      node_path: "0",
+      action: "modified",
+      reason: "Updated for new API",
+      old_value: { command: "exit 0" },
+      new_value: { command: "exit 1" },
+    },
+  ];
   const md = renderMarkdown(doc);
   assert.match(md, /Amendment log/, "should have amendment log section");
   assert.match(md, /Updated for new API/, "should show amendment reason");
@@ -372,7 +418,17 @@ test("updateDocFromCheckResult: handles undefined ran_node_path in scoped run", 
     manual_unverified: 0,
     amendment_warnings: [],
     blocked_by_manuals: false,
-    leaves: [{ node_path: "0", id: "n1", title: "Add validation", description: "tests pass", status: "pass", command: "npm test -- email", output: "ok" }],
+    leaves: [
+      {
+        node_path: "0",
+        id: "n1",
+        title: "Add validation",
+        description: "tests pass",
+        status: "pass",
+        command: "npm test -- email",
+        output: "ok",
+      },
+    ],
   };
   updateDocFromCheckResult(doc, scoped);
   assert.equal(doc.roots[0].last_status, "pass", "should update root even without ran_node_path");
@@ -390,7 +446,15 @@ test("updateDocFromCheckResult: handles non-matching leaf paths gracefully", () 
     amendment_warnings: [],
     blocked_by_manuals: false,
     leaves: [
-      { node_path: "999", id: "n99", title: "unknown", description: "ghost leaf", status: "pass", command: "exit 0", output: "" },
+      {
+        node_path: "999",
+        id: "n99",
+        title: "unknown",
+        description: "ghost leaf",
+        status: "pass",
+        command: "exit 0",
+        output: "",
+      },
     ],
   };
   updateDocFromCheckResult(doc, res);

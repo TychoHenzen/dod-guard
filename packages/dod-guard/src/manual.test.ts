@@ -29,8 +29,11 @@ test("perProofFingerprint changes when command changes", () => {
 });
 
 test("perProofFingerprint stable for identical proof", () => {
-  assert.equal(perProofFingerprint(mkNode()), perProofFingerprint(mkNode()),
-    "identical proofs should have same fingerprint");
+  assert.equal(
+    perProofFingerprint(mkNode()),
+    perProofFingerprint(mkNode()),
+    "identical proofs should have same fingerprint",
+  );
 });
 
 test("perProofFingerprint changes when predicate type changes", () => {
@@ -48,7 +51,10 @@ test("perProofFingerprint changes when predicate value changes", () => {
 test("resolveManual asks the human when no cached result", async () => {
   const node = mkNode();
   let asked = 0;
-  const res = await resolveManual(node, async () => { asked++; return { answer: "pass", channel: "messagebox" }; });
+  const res = await resolveManual(node, async () => {
+    asked++;
+    return { answer: "pass", channel: "messagebox" };
+  });
   assert.equal(asked, 1, "should ask exactly once");
   assert.equal(res.status, "pass", "should return pass status");
   assert.equal(res.cached, false, "should not be cached");
@@ -60,7 +66,10 @@ test("resolveManual reuses cached PASS without asking again", async () => {
   const node = mkNode();
   await resolveManual(node, async () => ({ answer: "pass", channel: "elicitation" }));
   let asked = 0;
-  const res = await resolveManual(node, async () => { asked++; return { answer: "fail", channel: "messagebox" }; });
+  const res = await resolveManual(node, async () => {
+    asked++;
+    return { answer: "fail", channel: "messagebox" };
+  });
   assert.equal(asked, 0, "should not ask again for cached pass");
   assert.equal(res.status, "pass", "should reuse cached pass status");
   assert.equal(res.cached, true, "should be marked as cached");
@@ -71,7 +80,10 @@ test("resolveManual re-asks when proof changed after cached PASS", async () => {
   await resolveManual(node, async () => ({ answer: "pass", channel: "elicitation" }));
   node.description = "New stricter check";
   let asked = 0;
-  const res = await resolveManual(node, async () => { asked++; return { answer: "pass", channel: "messagebox" }; });
+  const res = await resolveManual(node, async () => {
+    asked++;
+    return { answer: "pass", channel: "messagebox" };
+  });
   assert.equal(asked, 1, "should ask again when proof changed");
   assert.equal(res.cached, false, "should not be cached after proof change");
 });
@@ -80,7 +92,10 @@ test("resolveManual does NOT cache FAIL — re-asks next run", async () => {
   const node = mkNode();
   await resolveManual(node, async () => ({ answer: "fail", channel: "messagebox" }));
   let asked = 0;
-  const res = await resolveManual(node, async () => { asked++; return { answer: "pass", channel: "messagebox" }; });
+  const res = await resolveManual(node, async () => {
+    asked++;
+    return { answer: "pass", channel: "messagebox" };
+  });
   assert.equal(asked, 1, "should re-ask after uncached fail");
   assert.equal(res.status, "pass", "second run should honor pass");
 });
@@ -95,7 +110,10 @@ test("resolveManual carries note into record and output", async () => {
 test("resolveManual propagates confirmer rejection", async () => {
   const node = mkNode();
   await assert.rejects(
-    () => resolveManual(node, async () => { throw new Error("user declined"); }),
+    () =>
+      resolveManual(node, async () => {
+        throw new Error("user declined");
+      }),
     /user declined/,
     "confirmer rejection should propagate as error",
   );
@@ -106,20 +124,25 @@ test("resolveManual propagates confirmer rejection", async () => {
 test("perProofFingerprint includes command in fingerprint", () => {
   const a = mkNode({ command: "check auth" });
   const b = mkNode({ command: "check db" });
-  assert.notEqual(perProofFingerprint(a), perProofFingerprint(b),
-    "different commands should produce different fingerprints");
+  assert.notEqual(
+    perProofFingerprint(a),
+    perProofFingerprint(b),
+    "different commands should produce different fingerprints",
+  );
 });
 
 test("perProofFingerprint differs across descriptions", () => {
   const a = mkNode({ description: "Verify login page" });
   const b = mkNode({ description: "Verify signup page" });
-  assert.notEqual(perProofFingerprint(a), perProofFingerprint(b),
-    "different descriptions should produce different fingerprints");
+  assert.notEqual(
+    perProofFingerprint(a),
+    perProofFingerprint(b),
+    "different descriptions should produce different fingerprints",
+  );
 });
 
 test("perProofFingerprint stable for identical nodes", () => {
   const a = mkNode({ description: "Same check" });
   const b = mkNode({ description: "Same check" });
-  assert.equal(perProofFingerprint(a), perProofFingerprint(b),
-    "identical nodes should produce identical fingerprints");
+  assert.equal(perProofFingerprint(a), perProofFingerprint(b), "identical nodes should produce identical fingerprints");
 });
