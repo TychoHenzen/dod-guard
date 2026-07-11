@@ -1,50 +1,80 @@
-# Publish monorepo packages to npm via Trusted Publisher (OIDC).
-# Trusted Publishers must be configured at npmjs.com:
-#   - TychoHenzen/dod-guard  → dod-guard
-#   - TychoHenzen/dod-guard  → obsidian-rag
-#   - TychoHenzen/dod-guard  → evomcp
-#   - TychoHenzen/dod-guard  → gitevo
+# CI + Publish — runs on every push.
+# Build, test, lint, typecheck always. Publish only on matching tags or manual dispatch.
 #
-# Tag format: <package>-v<version>
-#   dod-guard-v2.2.1 | obsidian-rag-v0.1.0 | evomcp-v0.1.1 | gitevo-v0.1.1
+# Publish tag format: <package>-v<version>
+#   dod-guard-v2.2.4 | evomcp-v0.1.3 | gitevo-v0.1.3 | obsidian-rag-v0.1.10
 
-name: npm publish
+name: ci
 
 on:
   push:
-    tags:
-      - 'dod-guard-v*'
-      - 'obsidian-rag-v*'
-      - 'evomcp-v*'
-      - 'gitevo-v*'
   workflow_dispatch:
     inputs:
       package:
-        description: 'Package to publish (dod-guard, obsidian-rag, evomcp, gitevo, or "all")'
+        description: 'Package to publish (dod-guard, evomcp, gitevo, obsidian-rag, or "all")'
         required: true
         type: choice
         default: 'all'
         options:
           - dod-guard
-          - obsidian-rag
           - evomcp
           - gitevo
+          - obsidian-rag
           - all
 
 jobs:
-  build:
+  # ── Always runs ──────────────────────────────────────────────────────
+
+  build-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm test
 
+  static-analysis:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Lint + format check (informational — non-blocking until baseline is clean)
+      - run: npx @biomejs/biome check packages/*/src/ --max-diagnostics=50 --no-errors-on-unmatched || true
+      # Dead-code check: any src file without a matching test file
+      - run: |
+          echo "=== Missing test coverage ==="
+          for pkg in dod-guard evomcp gitevo obsidian-rag; do
+            srcs=$(find packages/$pkg/src -name '*.ts' ! -name '*.test.ts' ! -name 'types.ts' ! -name 'constants.ts' | sort)
+            for f in $srcs; do
+              base=$(basename "$f" .ts)
+              dir=$(dirname "$f")
+              test_file="${dir}/${base}.test.ts"
+              if [ ! -f "$test_file" ]; then
+                echo "  ⚠ $f — no matching test file"
+              fi
+            done
+          done
+          echo "=== Done ==="
+      # Brevity check: flag oversized files
+      - run: |
+          echo "=== Brevity: files > 300 lines ==="
+          find packages/*/src -name '*.ts' ! -name '*.test.ts' -exec wc -l {} + | awk '$1 > 300 {print "  ⚠", $2, "(" $1 " lines)"}'
+          echo "=== Done ==="
+
+  # ── Tag-only publish jobs ────────────────────────────────────────────
+
   publish-dod-guard:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/dod-guard-v')
+    needs: build-test
+    if: startsWith(github.ref, 'refs/tags/dod-guard-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'dod-guard' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -56,27 +86,12 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm ci
+      - run: npm run bundle -w packages/dod-guard
       - run: npm publish -w packages/dod-guard
 
-  publish-obsidian-rag:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/obsidian-rag-v')
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - run: npm ci
-      - run: npm publish -w packages/obsidian-rag
-
   publish-evomcp:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/evomcp-v')
+    needs: build-test
+    if: startsWith(github.ref, 'refs/tags/evomcp-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'evomcp' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -88,11 +103,12 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm ci
+      - run: npm run bundle -w packages/evomcp
       - run: npm publish -w packages/evomcp
 
   publish-gitevo:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/gitevo-v')
+    needs: build-test
+    if: startsWith(github.ref, 'refs/tags/gitevo-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'gitevo' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -104,4 +120,22 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm ci
+      - run: npm run bundle -w packages/gitevo
       - run: npm publish -w packages/gitevo
+
+  publish-obsidian-rag:
+    needs: build-test
+    if: startsWith(github.ref, 'refs/tags/obsidian-rag-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'obsidian-rag' || github.event.inputs.package == 'all'))
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run bundle -w packages/obsidian-rag
+      - run: npm publish -w packages/obsidian-rag
