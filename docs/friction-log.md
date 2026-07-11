@@ -18,7 +18,15 @@ Friction points encountered during ratchet workflow use. Feed into ratchet skill
 
 ### Phase B Loop
 
-(to be filled during execution)
+| # | Friction | Root Cause | Suggested Fix |
+|---|----------|------------|---------------|
+| 8 | code-review-graph dead_code ~50% false positive (8 of 14 flagged are actually used) | Graph parser can't distinguish internal module use from export-only use. Flags file-level constants used within same file. | Ratchet doc: always verify graph dead_code with grep before deleting. |
+| 9 | Deleting source files leaves stale dist/*.js — tsc doesn't clean | tsc compiler only writes new files, doesn't remove old outputs from deleted sources | Add `rm -rf dist/ && tsc` to clean build step, or use `--build --clean` |
+| 10 | Biome format errors after code deletion (checker.ts empty whitespace gap) | Manual sed line deletion leaves misaligned whitespace | Run `biome check --write` after every structural edit |
+| 11 | `dod_refine` on already-concrete node silently errors | Node was already refined to concrete. Multiple obsidian-rag removals needed separate nodes. | Use `dod_add_node` for additional proofs on same category |
+| 12 | Test count dropped from 22 deleted hello.test.ts tests — placeholder "Test count not decreased" proof can't catch | Proof uses `node -e "process.exit(0)"` — always passes | Make real proof that parses test counts from npm test output |
+| 13 | `dod_check` always fails "Biome lint clean" and "Biome format check" in full run but passes them in scoped run | Full run re-executes BIOME against dirty tree. Scoped re-uses cached results. | Run `biome check --write` BEFORE full dod_check regression |
+| 14 | `memory_save` throws validation error when updating existing memory with same id | Append mode not clearly distinguished from creation | Obsidian-rag: add `append` parameter, or document idempotency behavior |
 
 ### Dod-Guard Issues Uncovered
 
