@@ -21098,12 +21098,49 @@ var StdioServerTransport = class {
 };
 
 // src/agent.ts
-import { spawn, execSync } from "node:child_process";
-import * as path from "node:path";
+import { execSync, spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
+import * as path from "node:path";
 var PROXY_URL = "http://127.0.0.1:3200";
 var DEEPSEEK_ANTHROPIC_ENDPOINT = "https://api.deepseek.com/anthropic";
+var BACKENDS_JSON_PATH = path.join(os.homedir(), ".claude", "backends.json");
+var _cachedBackendKey;
+function getBackendApiKey() {
+  if (_cachedBackendKey !== void 0) return _cachedBackendKey;
+  try {
+    if (!fs.existsSync(BACKENDS_JSON_PATH)) {
+      _cachedBackendKey = null;
+      return null;
+    }
+    const raw = fs.readFileSync(BACKENDS_JSON_PATH, "utf-8");
+    const cfg = JSON.parse(raw);
+    const defaultName = cfg.default;
+    if (!(defaultName && cfg.backends)) {
+      _cachedBackendKey = null;
+      return null;
+    }
+    const backend = cfg.backends[defaultName];
+    if (!backend?.apiKey) {
+      _cachedBackendKey = null;
+      return null;
+    }
+    _cachedBackendKey = backend.apiKey;
+    return backend.apiKey;
+  } catch {
+    _cachedBackendKey = null;
+    return null;
+  }
+}
+function resolveApiKey(optKey) {
+  return optKey || process.env.DEEPSEEK_API_KEY || getBackendApiKey() || "";
+}
+function apiKeySource(optKey) {
+  if (optKey) return "option";
+  if (process.env.DEEPSEEK_API_KEY) return "env";
+  if (getBackendApiKey()) return "backends_json";
+  return "none";
+}
 async function checkProxyHealth(proxyUrl) {
   const url = `${proxyUrl ?? PROXY_URL}/_proxy/status`;
   try {
@@ -21124,9 +21161,11 @@ async function ensureProxy(proxyUrl) {
     console.error("evomcp: deepclaude proxy not found at ~/deepclaude. Please install it first.");
     return false;
   }
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = resolveApiKey();
   if (!apiKey) {
-    console.error("evomcp: DEEPSEEK_API_KEY not set. Cannot start proxy.");
+    console.error(
+      "evomcp: No DeepSeek API key found (env DEEPSEEK_API_KEY or ~/.claude/backends.json). Cannot start proxy."
+    );
     return false;
   }
   try {
@@ -21151,7 +21190,7 @@ async function ensureProxy(proxyUrl) {
 async function spawnClaude(prompt, opts) {
   const t0 = Date.now();
   const useProxy = opts.useProxy !== false;
-  const apiKey = opts.apiKey || process.env.DEEPSEEK_API_KEY || "";
+  const apiKey = resolveApiKey(opts.apiKey);
   const model = opts.model || "deepseek-v4-pro[1m]";
   const proxyUrl = opts.proxyUrl ?? PROXY_URL;
   const timeoutMs = opts.timeoutMs ?? 3e5;
@@ -21288,7 +21327,7 @@ ${stderr}`.slice(0, 1e4),
 function extractScore(output) {
   const numbers = output.match(/-?\d+\.?\d*/g);
   if (!numbers || numbers.length === 0) return null;
-  return parseFloat(numbers[numbers.length - 1]);
+  return Number.parseFloat(numbers[numbers.length - 1]);
 }
 function toVerdict(r) {
   return {
@@ -21380,15 +21419,250 @@ ${eliteBlock}
 Mutate this code to improve its fitness score. Be creative \u2014 try different algorithms, data structures, caching, early exits. Make targeted changes, not rewrites.${contextBlock}`;
 }
 
-// src/solve.ts
+// src/evolve.ts
 import { execSync as execSync2 } from "node:child_process";
+import * as fs2 from "node:fs";
+import * as os2 from "node:os";
+import * as path2 from "node:path";
+var DEFAULT_GENERATIONS = 5;
+var DEFAULT_POPULATION = 6;
+var DEFAULT_TIMEOUT_MS = 18e4;
+async function evolve(spec, onProgress) {
+  const startTime = Date.now();
+  const stats = {
+    plans_sampled: 0,
+    plans_deduped: 0,
+    candidates_generated: 0,
+    tokens_consumed: 0,
+    duration_ms: 0,
+    model: spec.model ?? "deepseek-v4-pro[1m]"
+  };
+  const generations = spec.generations ?? DEFAULT_GENERATIONS;
+  const populationSize = spec.population_size ?? DEFAULT_POPULATION;
+  const higherIsBetter = spec.higher_is_better ?? false;
+  const proxyReady = await ensureProxy();
+  if (!proxyReady) {
+    onProgress?.("WARNING: deepclaude proxy not running. Attempting direct mode...");
+  }
+  onProgress?.("Measuring baseline fitness...");
+  const baselineResult = runCommand(spec.fitness_cmd, spec.cwd);
+  const baselineScore = extractScore(baselineResult.output);
+  if (baselineScore === null) {
+    throw new Error(
+      `Fitness command did not emit a numeric score to stdout.
+Command: ${spec.fitness_cmd}
+Output: ${baselineResult.output.slice(0, 500)}`
+    );
+  }
+  onProgress?.(`Baseline fitness: ${baselineScore.toFixed(2)}`);
+  const targetContents = readTargetFiles(spec.cwd, spec.target_files);
+  if (targetContents.length === 0) {
+    throw new Error(`No target files found matching: ${spec.target_files.join(", ")}`);
+  }
+  const _initialCode = targetContents.map((t) => `=== ${t.path} ===
+${t.content}`).join("\n\n");
+  let bestScore = baselineScore;
+  let bestPatch = null;
+  const fitnessHistory = [];
+  const elites = [];
+  for (let gen = 0; gen < generations; gen++) {
+    onProgress?.(`
+Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
+    const prompts = [];
+    for (let i = 0; i < populationSize; i++) {
+      const targetFile = targetContents[i % targetContents.length];
+      const prompt = mutationPrompt(
+        spec.goal,
+        targetFile.content,
+        bestScore,
+        elites.slice(0, 3),
+        // Top 3 elites as examples
+        spec.context
+      );
+      prompts.push(prompt);
+    }
+    onProgress?.(`  Spawning ${populationSize} mutations...`);
+    const results = await Promise.all(
+      prompts.map(
+        (p, i) => spawnClaude(p, {
+          cwd: spec.cwd,
+          model: spec.model,
+          apiKey: spec.api_key,
+          useProxy: proxyReady,
+          timeoutMs: DEFAULT_TIMEOUT_MS
+        }).catch((err) => {
+          onProgress?.(`  Mutation ${i} failed: ${String(err)}`);
+          return { output: "", exitCode: -1, durationMs: 0, timedOut: false };
+        })
+      )
+    );
+    stats.candidates_generated += results.length;
+    const genScores = [];
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      if (r.timedOut || r.exitCode !== 0) continue;
+      saveState(spec.cwd);
+      try {
+        const fitnessResult = runCommand(spec.fitness_cmd, spec.cwd);
+        const score = extractScore(fitnessResult.output);
+        if (score !== null) {
+          genScores.push(score);
+          onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
+          const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
+          if (isBetter) {
+            bestScore = score;
+            bestPatch = captureState(spec.cwd, spec.target_files);
+            onProgress?.(`    \u2192 NEW BEST: ${score.toFixed(2)}`);
+            elites.push({ code: fitnessResult.output.slice(0, 2e3), score });
+            elites.sort((a, b) => higherIsBetter ? b.score - a.score : a.score - b.score);
+            if (elites.length > 5) elites.length = 5;
+          }
+        }
+      } catch (err) {
+        onProgress?.(`  [${i + 1}] error: ${String(err).slice(0, 80)}`);
+      } finally {
+        restoreState(spec.cwd);
+      }
+    }
+    if (bestPatch) {
+      applyPatch(bestPatch, spec.cwd);
+    }
+    if (genScores.length > 0) {
+      const meanScore = genScores.reduce((a, b) => a + b, 0) / genScores.length;
+      fitnessHistory.push({
+        generation: gen + 1,
+        best_score: bestScore,
+        mean_score: meanScore
+      });
+      onProgress?.(`  Gen ${gen + 1}: best=${bestScore.toFixed(2)}, mean=${meanScore.toFixed(2)}`);
+    } else {
+      fitnessHistory.push({
+        generation: gen + 1,
+        best_score: bestScore,
+        mean_score: bestScore
+      });
+      onProgress?.(`  Gen ${gen + 1}: no valid scores \u2014 keeping best=${bestScore.toFixed(2)}`);
+    }
+  }
+  onProgress?.("\nApplying best patch for final verification...");
+  if (bestPatch) {
+    applyPatch(bestPatch, spec.cwd);
+  }
+  const finalResult = runCommand(spec.fitness_cmd, spec.cwd);
+  const finalScore = extractScore(finalResult.output) ?? bestScore;
+  stats.duration_ms = Date.now() - startTime;
+  return {
+    best_patch: bestPatch || "(no improvement over baseline)",
+    best_score: finalScore,
+    baseline_score: baselineScore,
+    fitness_history: fitnessHistory,
+    verification_report: [
+      `Baseline: ${baselineScore.toFixed(2)}`,
+      `Final: ${finalScore.toFixed(2)}`,
+      `Improvement: ${(higherIsBetter ? finalScore - baselineScore : baselineScore - finalScore).toFixed(2)}`,
+      "",
+      fitnessHistory.map((h) => `Gen ${h.generation}: best=${h.best_score.toFixed(2)} mean=${h.mean_score.toFixed(2)}`).join("\n"),
+      "",
+      finalResult.output.slice(0, 2e3)
+    ].join("\n"),
+    stats
+  };
+}
+function readTargetFiles(cwd, patterns) {
+  const files = [];
+  for (const pattern of patterns) {
+    const fullPath = path2.resolve(cwd, pattern);
+    if (fs2.existsSync(fullPath) && fs2.statSync(fullPath).isFile()) {
+      files.push({ path: pattern, content: fs2.readFileSync(fullPath, "utf-8") });
+      continue;
+    }
+    try {
+      const dir = path2.dirname(fullPath);
+      const basename2 = path2.basename(fullPath);
+      if (fs2.existsSync(dir)) {
+        const entries = fs2.readdirSync(dir);
+        for (const entry of entries) {
+          if (matchSimple(entry, basename2)) {
+            const filePath = path2.join(dir, entry);
+            if (fs2.statSync(filePath).isFile()) {
+              files.push({
+                path: path2.relative(cwd, filePath),
+                content: fs2.readFileSync(filePath, "utf-8")
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("evolve: readTargetFiles error", { pattern, err: msg });
+    }
+  }
+  return files;
+}
+function matchSimple(name, pattern) {
+  const regex = new RegExp(`^${pattern.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`);
+  return regex.test(name);
+}
+function saveState(cwd) {
+  try {
+    execSync2(`git stash push --include-untracked -m "evomcp-backup"`, { cwd, timeout: 1e4 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!msg.includes("No local changes")) {
+      console.error("evolve: saveState failed", { cwd, err: msg });
+    }
+  }
+}
+function restoreState(cwd) {
+  try {
+    execSync2(`git checkout .`, { cwd, timeout: 1e4 });
+    execSync2(`git clean -fd`, { cwd, timeout: 1e4 });
+    try {
+      execSync2(`git stash pop`, { cwd, timeout: 1e4 });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!(msg.includes("No stash") || msg.includes("not a git repository"))) {
+        console.error("evolve: stash pop failed", { cwd, err: msg });
+      }
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("evolve: restoreState failed", { cwd, err: msg });
+  }
+}
+function captureState(cwd, targetFiles) {
+  try {
+    const diff = execSync2(`git diff -- ${targetFiles.join(" ")}`, { cwd, encoding: "utf-8", timeout: 1e4 });
+    return diff || null;
+  } catch {
+    return null;
+  }
+}
+function applyPatch(patch, cwd) {
+  if (!patch) return;
+  const patchFile = path2.join(os2.tmpdir(), `evomcp-best-${Date.now()}.patch`);
+  try {
+    fs2.writeFileSync(patchFile, patch, "utf-8");
+    execSync2(`git apply "${patchFile}"`, { cwd, timeout: 3e4 });
+  } catch {
+  } finally {
+    try {
+      fs2.unlinkSync(patchFile);
+    } catch {
+    }
+  }
+}
+
+// src/solve.ts
+import { execSync as execSync3 } from "node:child_process";
 var MAX_REPAIRS = 3;
 var DEFAULT_N = 5;
-var DEFAULT_TIMEOUT_MS = 3e5;
+var DEFAULT_TIMEOUT_MS2 = 3e5;
 var REPAIR_TIMEOUT_MS = 18e4;
 function captureDiff(cwd) {
   try {
-    const diff = execSync2("git diff", { cwd, encoding: "utf-8", timeout: 1e4 });
+    const diff = execSync3("git diff", { cwd, encoding: "utf-8", timeout: 1e4 });
     return diff || null;
   } catch {
     return null;
@@ -21418,7 +21692,7 @@ async function solve(spec, onProgress) {
     model: spec.model,
     apiKey: spec.api_key,
     useProxy: proxyReady,
-    timeoutMs: DEFAULT_TIMEOUT_MS
+    timeoutMs: DEFAULT_TIMEOUT_MS2
   });
   onProgress?.(`All ${numParallel} instances completed. Verifying...`);
   const candidates = [];
@@ -21537,241 +21811,6 @@ ${result.output.slice(0, 500)}`,
   };
 }
 
-// src/evolve.ts
-import * as path2 from "node:path";
-import * as fs2 from "node:fs";
-import * as os2 from "node:os";
-import { execSync as execSync3 } from "node:child_process";
-var DEFAULT_GENERATIONS = 5;
-var DEFAULT_POPULATION = 6;
-var DEFAULT_TIMEOUT_MS2 = 18e4;
-async function evolve(spec, onProgress) {
-  const startTime = Date.now();
-  const stats = {
-    plans_sampled: 0,
-    plans_deduped: 0,
-    candidates_generated: 0,
-    tokens_consumed: 0,
-    duration_ms: 0,
-    model: spec.model ?? "deepseek-v4-pro[1m]"
-  };
-  const generations = spec.generations ?? DEFAULT_GENERATIONS;
-  const populationSize = spec.population_size ?? DEFAULT_POPULATION;
-  const higherIsBetter = spec.higher_is_better ?? false;
-  const proxyReady = await ensureProxy();
-  if (!proxyReady) {
-    onProgress?.("WARNING: deepclaude proxy not running. Attempting direct mode...");
-  }
-  onProgress?.("Measuring baseline fitness...");
-  const baselineResult = runCommand(spec.fitness_cmd, spec.cwd);
-  const baselineScore = extractScore(baselineResult.output);
-  if (baselineScore === null) {
-    throw new Error(
-      `Fitness command did not emit a numeric score to stdout.
-Command: ${spec.fitness_cmd}
-Output: ${baselineResult.output.slice(0, 500)}`
-    );
-  }
-  onProgress?.(`Baseline fitness: ${baselineScore.toFixed(2)}`);
-  const targetContents = readTargetFiles(spec.cwd, spec.target_files);
-  if (targetContents.length === 0) {
-    throw new Error(`No target files found matching: ${spec.target_files.join(", ")}`);
-  }
-  const initialCode = targetContents.map((t) => `=== ${t.path} ===
-${t.content}`).join("\n\n");
-  let bestScore = baselineScore;
-  let bestPatch = null;
-  const fitnessHistory = [];
-  const elites = [];
-  for (let gen = 0; gen < generations; gen++) {
-    onProgress?.(`
-Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
-    const prompts = [];
-    for (let i = 0; i < populationSize; i++) {
-      const targetFile = targetContents[i % targetContents.length];
-      const prompt = mutationPrompt(
-        spec.goal,
-        targetFile.content,
-        bestScore,
-        elites.slice(0, 3),
-        // Top 3 elites as examples
-        spec.context
-      );
-      prompts.push(prompt);
-    }
-    onProgress?.(`  Spawning ${populationSize} mutations...`);
-    const results = await Promise.all(
-      prompts.map(
-        (p, i) => spawnClaude(p, {
-          cwd: spec.cwd,
-          model: spec.model,
-          apiKey: spec.api_key,
-          useProxy: proxyReady,
-          timeoutMs: DEFAULT_TIMEOUT_MS2
-        }).catch((err) => {
-          onProgress?.(`  Mutation ${i} failed: ${String(err)}`);
-          return { output: "", exitCode: -1, durationMs: 0, timedOut: false };
-        })
-      )
-    );
-    stats.candidates_generated += results.length;
-    const genScores = [];
-    for (let i = 0; i < results.length; i++) {
-      const r = results[i];
-      if (r.timedOut || r.exitCode !== 0) continue;
-      saveState(spec.cwd);
-      try {
-        const fitnessResult = runCommand(spec.fitness_cmd, spec.cwd);
-        const score = extractScore(fitnessResult.output);
-        if (score !== null) {
-          genScores.push(score);
-          onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
-          const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
-          if (isBetter) {
-            bestScore = score;
-            bestPatch = captureState(spec.cwd, spec.target_files);
-            onProgress?.(`    \u2192 NEW BEST: ${score.toFixed(2)}`);
-            elites.push({ code: fitnessResult.output.slice(0, 2e3), score });
-            elites.sort((a, b) => higherIsBetter ? b.score - a.score : a.score - b.score);
-            if (elites.length > 5) elites.length = 5;
-          }
-        }
-      } catch (err) {
-        onProgress?.(`  [${i + 1}] error: ${String(err).slice(0, 80)}`);
-      } finally {
-        restoreState(spec.cwd);
-      }
-    }
-    if (bestPatch) {
-      applyPatch(bestPatch, spec.cwd);
-    }
-    if (genScores.length > 0) {
-      const meanScore = genScores.reduce((a, b) => a + b, 0) / genScores.length;
-      fitnessHistory.push({
-        generation: gen + 1,
-        best_score: bestScore,
-        mean_score: meanScore
-      });
-      onProgress?.(`  Gen ${gen + 1}: best=${bestScore.toFixed(2)}, mean=${meanScore.toFixed(2)}`);
-    } else {
-      fitnessHistory.push({
-        generation: gen + 1,
-        best_score: bestScore,
-        mean_score: bestScore
-      });
-      onProgress?.(`  Gen ${gen + 1}: no valid scores \u2014 keeping best=${bestScore.toFixed(2)}`);
-    }
-  }
-  onProgress?.("\nApplying best patch for final verification...");
-  if (bestPatch) {
-    applyPatch(bestPatch, spec.cwd);
-  }
-  const finalResult = runCommand(spec.fitness_cmd, spec.cwd);
-  const finalScore = extractScore(finalResult.output) ?? bestScore;
-  stats.duration_ms = Date.now() - startTime;
-  return {
-    best_patch: bestPatch || "(no improvement over baseline)",
-    best_score: finalScore,
-    baseline_score: baselineScore,
-    fitness_history: fitnessHistory,
-    verification_report: [
-      `Baseline: ${baselineScore.toFixed(2)}`,
-      `Final: ${finalScore.toFixed(2)}`,
-      `Improvement: ${(higherIsBetter ? finalScore - baselineScore : baselineScore - finalScore).toFixed(2)}`,
-      "",
-      fitnessHistory.map((h) => `Gen ${h.generation}: best=${h.best_score.toFixed(2)} mean=${h.mean_score.toFixed(2)}`).join("\n"),
-      "",
-      finalResult.output.slice(0, 2e3)
-    ].join("\n"),
-    stats
-  };
-}
-function readTargetFiles(cwd, patterns) {
-  const files = [];
-  for (const pattern of patterns) {
-    const fullPath = path2.resolve(cwd, pattern);
-    if (fs2.existsSync(fullPath) && fs2.statSync(fullPath).isFile()) {
-      files.push({ path: pattern, content: fs2.readFileSync(fullPath, "utf-8") });
-      continue;
-    }
-    try {
-      const dir = path2.dirname(fullPath);
-      const basename2 = path2.basename(fullPath);
-      if (fs2.existsSync(dir)) {
-        const entries = fs2.readdirSync(dir);
-        for (const entry of entries) {
-          if (matchSimple(entry, basename2)) {
-            const filePath = path2.join(dir, entry);
-            if (fs2.statSync(filePath).isFile()) {
-              files.push({
-                path: path2.relative(cwd, filePath),
-                content: fs2.readFileSync(filePath, "utf-8")
-              });
-            }
-          }
-        }
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("evolve: readTargetFiles error", { pattern, err: msg });
-    }
-  }
-  return files;
-}
-function matchSimple(name, pattern) {
-  const regex = new RegExp(`^${pattern.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`);
-  return regex.test(name);
-}
-function saveState(cwd) {
-  try {
-    execSync3(`git stash push --include-untracked -m "evomcp-backup"`, { cwd, timeout: 1e4 });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (!msg.includes("No local changes")) {
-      console.error("evolve: saveState failed", { cwd, err: msg });
-    }
-  }
-}
-function restoreState(cwd) {
-  try {
-    execSync3(`git checkout .`, { cwd, timeout: 1e4 });
-    execSync3(`git clean -fd`, { cwd, timeout: 1e4 });
-    try {
-      execSync3(`git stash pop`, { cwd, timeout: 1e4 });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (!msg.includes("No stash") && !msg.includes("not a git repository")) {
-        console.error("evolve: stash pop failed", { cwd, err: msg });
-      }
-    }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error("evolve: restoreState failed", { cwd, err: msg });
-  }
-}
-function captureState(cwd, targetFiles) {
-  try {
-    const diff = execSync3(`git diff -- ${targetFiles.join(" ")}`, { cwd, encoding: "utf-8", timeout: 1e4 });
-    return diff || null;
-  } catch {
-    return null;
-  }
-}
-function applyPatch(patch, cwd) {
-  if (!patch) return;
-  const patchFile = path2.join(os2.tmpdir(), `evomcp-best-${Date.now()}.patch`);
-  try {
-    fs2.writeFileSync(patchFile, patch, "utf-8");
-    execSync3(`git apply "${patchFile}"`, { cwd, timeout: 3e4 });
-  } catch {
-  } finally {
-    try {
-      fs2.unlinkSync(patchFile);
-    } catch {
-    }
-  }
-}
-
 // src/index.ts
 import { fileURLToPath } from "node:url";
 var server = new McpServer({
@@ -21870,16 +21909,23 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
 );
 server.tool("status", "Check if the deepclaude proxy is running and ready.", {}, async () => {
   const proxyAlive = await checkProxyHealth();
-  const apiKeySet = !!process.env.DEEPSEEK_API_KEY;
+  const keySource = apiKeySource();
+  const keyAvailable = keySource !== "none";
+  const keyLabel = {
+    option: "SET (option)",
+    env: "SET (DEEPSEEK_API_KEY env)",
+    backends_json: "SET (backends.json)",
+    none: "NOT SET"
+  };
   return {
     content: [
       {
         type: "text",
         text: [
           `Proxy (127.0.0.1:3200): ${proxyAlive ? "RUNNING" : "NOT FOUND"}`,
-          `DEEPSEEK_API_KEY: ${apiKeySet ? "SET" : "NOT SET"}`,
+          `API key: ${keyLabel[keySource]}`,
           "",
-          proxyAlive ? "Ready for solve/evolve calls." : apiKeySet ? "Will attempt direct mode (DeepSeek /anthropic endpoint)." : "Set DEEPSEEK_API_KEY env var or start deepclaude proxy."
+          proxyAlive ? "Ready for solve/evolve calls." : keyAvailable ? "Will attempt direct mode (DeepSeek /anthropic endpoint)." : "Set DEEPSEEK_API_KEY env var, configure backends.json, or start deepclaude proxy."
         ].join("\n")
       }
     ]
@@ -21991,12 +22037,12 @@ function formatEvolveResult(result) {
     `- Model: ${result.stats.model}`
   ].join("\n");
 }
-var __filename = fileURLToPath(import.meta.url);
+var _filename = fileURLToPath(import.meta.url);
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
-if (process.argv[1] === __filename) {
+if (process.argv[1] === _filename) {
   main().catch((err) => {
     process.stderr.write(`evomcp MCP server failed: ${err}
 `);

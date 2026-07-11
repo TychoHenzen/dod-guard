@@ -2986,7 +2986,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve7.call(this, root, ref);
+      let _sch = resolve8.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3013,7 +3013,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve7(root, ref) {
+    function resolve8(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3231,8 +3231,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path8) {
-      let input = path8;
+    function removeDotSegments(path9) {
+      let input = path9;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3484,8 +3484,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path8, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path8 && path8 !== "/" ? path8 : void 0;
+        const [path9, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path9 && path9 !== "/" ? path9 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3644,7 +3644,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve7(baseURI, relativeURI, options) {
+    function resolve8(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse3(baseURI, schemelessOptions), parse3(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
@@ -3902,7 +3902,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve7,
+      resolve: resolve8,
       resolveComponent,
       equal,
       serialize,
@@ -6891,6 +6891,9 @@ var require_dist = __commonJS({
   }
 });
 
+// src/index.ts
+import * as path8 from "node:path";
+
 // ../../node_modules/zod/v3/external.js
 var external_exports = {};
 __export(external_exports, {
@@ -7369,8 +7372,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path8, errorMaps, issueData } = params;
-  const fullPath = [...path8, ...issueData.path || []];
+  const { data, path: path9, errorMaps, issueData } = params;
+  const fullPath = [...path9, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7486,11 +7489,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path8, key) {
+  constructor(parent, value, path9, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path8;
+    this._path = path9;
     this._key = key;
   }
   get path() {
@@ -11127,10 +11130,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path8) {
-  if (!path8)
+function getElementAtPath(obj, path9) {
+  if (!path9)
     return obj;
-  return path8.reduce((acc, key) => acc?.[key], obj);
+  return path9.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11450,11 +11453,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path8, issues) {
+function prefixIssues(path9, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path8);
+    iss.path.unshift(path9);
     return iss;
   });
 }
@@ -18982,7 +18985,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
+        await new Promise((resolve8) => setTimeout(resolve8, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -18999,7 +19002,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve7, reject) => {
+    return new Promise((resolve8, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19077,7 +19080,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve7(parseResult.data);
+            resolve8(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19338,12 +19341,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve7, reject) => {
+    return new Promise((resolve8, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve7, interval);
+      const timeoutId = setTimeout(resolve8, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20443,7 +20446,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
+      await new Promise((resolve8) => setTimeout(resolve8, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21092,850 +21095,24 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve7) => {
+    return new Promise((resolve8) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve7();
+        resolve8();
       } else {
-        this._stdout.once("drain", resolve7);
+        this._stdout.once("drain", resolve8);
       }
     });
   }
 };
 
-// src/index.ts
-import * as path7 from "node:path";
-
-// src/store.ts
+// src/author.ts
 import { promises as fs } from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import * as crypto from "node:crypto";
-function getStoreDir() {
-  return process.env.DOD_STORE_DIR || path.join(os.homedir(), ".claude", "dod-store");
-}
-async function ensureStoreDir() {
-  await fs.mkdir(getStoreDir(), { recursive: true });
-}
-function docPath(id) {
-  return path.join(getStoreDir(), `${id}.json`);
-}
-function generateId() {
-  return crypto.randomUUID();
-}
-async function save(doc) {
-  await ensureStoreDir();
-  await fs.writeFile(docPath(doc.id), JSON.stringify(doc, null, 2), "utf-8");
-}
-async function load(id) {
-  try {
-    const data = await fs.readFile(docPath(id), "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("store: failed to load document", { id, err: err instanceof Error ? err.message : String(err) });
-    return null;
-  }
-}
-async function loadRaw(id) {
-  try {
-    const data = await fs.readFile(docPath(id), "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("store: failed to loadRaw document", { id, err: err instanceof Error ? err.message : String(err) });
-    return null;
-  }
-}
-async function findByPath(markdownPath) {
-  await ensureStoreDir();
-  const files = await fs.readdir(getStoreDir());
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const data = await fs.readFile(path.join(getStoreDir(), file), "utf-8");
-      const doc = JSON.parse(data);
-      const normalizedStored = path.resolve(doc.markdown_path).toLowerCase();
-      const normalizedSearch = path.resolve(markdownPath).toLowerCase();
-      if (normalizedStored === normalizedSearch) return doc;
-    } catch (err) {
-      console.error("store: failed to read file during findByPath", {
-        file,
-        err: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }
-  return null;
-}
-async function listAll() {
-  await ensureStoreDir();
-  const files = await fs.readdir(getStoreDir());
-  const docs = [];
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const data = await fs.readFile(path.join(getStoreDir(), file), "utf-8");
-      docs.push(JSON.parse(data));
-    } catch (err) {
-      console.error("store: failed to read file during listAll", {
-        file,
-        err: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }
-  return docs;
-}
-function legacyStepToTaskNode(step) {
-  const children = step.proofs.map((p) => ({
-    id: p.id,
-    title: p.title ?? p.description ?? step.title,
-    refinement: "concrete",
-    command: p.command,
-    predicate: p.predicate,
-    description: p.description ?? "",
-    category: p.category,
-    advisory: p.advisory,
-    last_status: p.last_status ?? "pending",
-    last_output: p.last_output,
-    last_checked: p.last_checked
-  }));
-  return {
-    id: step.id,
-    title: step.title,
-    refinement: "concrete",
-    last_status: children.length > 0 ? "pending" : "draft",
-    children
-  };
-}
-async function migrateDoc(doc) {
-  if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) return false;
-  const legacySteps = doc.steps;
-  if (!legacySteps || !Array.isArray(legacySteps) || legacySteps.length === 0) {
-    return false;
-  }
-  doc.roots = legacySteps.map(legacyStepToTaskNode);
-  delete doc.steps;
-  delete doc.locked;
-  const leafLines = [];
-  function walk(nodes) {
-    for (const n of nodes) {
-      if (n.children) walk(n.children);
-      else if (n.refinement === "concrete" && n.command) {
-        leafLines.push(`${n.command}|${n.predicate?.type ?? ""}|${n.predicate?.value ?? ""}|${n.advisory ?? false}`);
-      }
-    }
-  }
-  walk(doc.roots);
-  if (leafLines.length > 0) {
-    const hash = crypto.createHash("sha256");
-    for (const line of leafLines.sort()) hash.update(line);
-    doc.proof_fingerprint = hash.digest("hex");
-  }
-  await save(doc);
-  return true;
-}
-async function listAllRaw() {
-  await ensureStoreDir();
-  const files = await fs.readdir(getStoreDir());
-  const docs = [];
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const data = await fs.readFile(path.join(getStoreDir(), file), "utf-8");
-      docs.push(JSON.parse(data));
-    } catch (err) {
-      console.error("store: failed to read file during listAllRaw", {
-        file,
-        err: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }
-  return docs;
-}
-
-// src/checker.ts
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
-import { createHash as createHash3 } from "node:crypto";
-
-// src/manual.ts
-import { createHash as createHash2 } from "node:crypto";
-console.debug("manual: module loaded", { pid: process.pid });
-function perProofFingerprint(node) {
-  const data = [
-    node.command ?? "",
-    node.predicate?.type ?? "",
-    node.predicate?.value ?? "",
-    node.description ?? ""
-  ].join("|");
-  return createHash2("sha256").update(data).digest("hex").slice(0, 12);
-}
-async function resolveManual(node, confirm, label = "Manual verification") {
-  const fingerprint = perProofFingerprint(node);
-  const cached2 = node.manual_result;
-  if (cached2 && cached2.answer === "pass" && cached2.proof_fingerprint === fingerprint) {
-    return {
-      status: "pass",
-      cached: true,
-      output: `${label} cached: PASS at ${cached2.confirmed_at} via ${cached2.channel}${cached2.note ? ` \u2014 "${cached2.note}"` : ""}`
-    };
-  }
-  const answer = await confirm(node);
-  node.manual_result = {
-    answer: answer.answer,
-    note: answer.note,
-    confirmed_at: (/* @__PURE__ */ new Date()).toISOString(),
-    channel: answer.channel,
-    proof_fingerprint: fingerprint
-  };
-  return {
-    status: answer.answer,
-    cached: false,
-    output: `${label} ${answer.answer.toUpperCase()} via ${answer.channel}${answer.note ? ` \u2014 "${answer.note}"` : ""}`
-  };
-}
-
-// src/regression.ts
-console.debug("regression: module loaded", { pid: process.pid });
-function extractNumber(stdout, extract) {
-  if (extract) {
-    const match = stdout.match(new RegExp(extract));
-    if (!match || match[1] === void 0) return null;
-    const value2 = Number(match[1]);
-    return Number.isFinite(value2) ? value2 : null;
-  }
-  const numbers = stdout.match(/-?\d+(?:\.\d+)?/g);
-  if (!numbers || numbers.length === 0) return null;
-  const value = Number(numbers[numbers.length - 1]);
-  return Number.isFinite(value) ? value : null;
-}
-
-// src/assertions.ts
-import { readFileSync, existsSync } from "node:fs";
-import * as path2 from "node:path";
-var PY_TRIVIAL = [
-  // assert True / assert False / assert None
-  /^\s*assert\s+(True|False|None)\s*(#.*)?$/,
-  // assert 1, assert 3.14, assert "hello"
-  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
-  // assert CONST OP CONST (both sides literal)
-  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s* {4}(==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s* {4}(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
-  // self.assertX(CONST, CONST)
-  /^\s*self\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\s*\(\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(?:,\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*)?\)\s*(#.*)?$/
-];
-var JS_TRIVIAL = [
-  // expect(CONST).toXxx(CONST) — inline, no ^\s* anchor
-  /expect\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)\s*\.\s*(?:not\s*\.\s*)?(?:toBe|toEqual|toBeTruthy|toBeFalsy|toBeNull|toBeUndefined|toStrictEqual|toMatchObject|toContain|toHaveLength)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
-  // assert.equal(CONST, CONST) / assert.strictEqual(CONST, CONST)
-  /assert\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
-  // assert.ok(true) / assert.fail()
-  /assert\.(?:ok|fail)\s*\(\s*(true|false)\s*\)/
-];
-var PY_ASSERT = /^\s*(assert\b|self\.assert)/;
-var JS_ASSERT = /(expect\s*\(|assert\.)/;
-function classifyLine(line, detector, trivialPatterns) {
-  const globalDetector = new RegExp(detector.source, "g");
-  const matches = line.match(globalDetector);
-  if (!matches) return { count: 0, trivialCount: 0 };
-  const lineHasTrivial = trivialPatterns.some((p) => p.test(line));
-  return { count: matches.length, trivialCount: lineHasTrivial ? matches.length : 0 };
-}
-function languageForFile(file) {
-  const ext = path2.extname(file).toLowerCase();
-  if (ext === ".py") return "py";
-  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
-  return null;
-}
-function scanFile(file) {
-  const lang = languageForFile(file);
-  if (!lang) return { total: 0, trivial: 0 };
-  const detector = lang === "py" ? PY_ASSERT : JS_ASSERT;
-  const trivialPatterns = lang === "py" ? PY_TRIVIAL : JS_TRIVIAL;
-  const content = readFileSync(file, "utf-8");
-  const lines = content.split(/\r?\n/);
-  let total = 0;
-  let trivial = 0;
-  for (const line of lines) {
-    const result = classifyLine(line, detector, trivialPatterns);
-    total += result.count;
-    trivial += result.trivialCount;
-  }
-  return { total, trivial };
-}
-var TEST_FILE_PATTERNS = [
-  /^test_.*\.py$/,
-  /^.*_test\.py$/,
-  /\.test\.(ts|js|tsx|jsx|mts|mjs)$/,
-  /\.spec\.(ts|js|tsx|jsx|mts|mjs)$/
-];
-function isTestFile(filePath) {
-  const base = path2.basename(filePath);
-  return TEST_FILE_PATTERNS.some((p) => p.test(base));
-}
-function extractTestFilesFromCommand(command, cwd) {
-  const tokens = command.split(/\s+/);
-  const files = [];
-  for (const token of tokens) {
-    if (token.startsWith("-") || token.startsWith("--")) continue;
-    if (/^(python|python3?|pytest|node|npm|npx|pnpm|yarn|jest|vitest|mocha|ts-node|tsx)$/.test(token)) continue;
-    if (/^(test|run|exec)$/.test(token)) continue;
-    if (token.includes(".") || token.includes("/") || token.includes("\\")) {
-      const resolved = path2.resolve(cwd, token);
-      if (existsSync(resolved) && isTestFile(resolved)) {
-        files.push(resolved);
-      }
-      const dir = path2.dirname(resolved);
-      const pat = path2.basename(resolved);
-      if (existsSync(dir) && pat.includes("*")) {
-        try {
-          const { readdirSync: readdirSync2 } = __require("node:fs");
-          const entries = readdirSync2(dir);
-          const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
-          for (const entry of entries) {
-            if (regex.test(entry)) {
-              const full = path2.join(dir, entry);
-              if (isTestFile(full)) files.push(full);
-            }
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error("assertions: unreadable dir", { dir, err: msg });
-        }
-      }
-    }
-  }
-  return [...new Set(files)];
-}
-function analyseAssertions(command, cwd) {
-  const files = extractTestFilesFromCommand(command, cwd);
-  if (files.length === 0) {
-    return null;
-  }
-  const perFile = [];
-  let total = 0;
-  let trivial = 0;
-  for (const file of files) {
-    const counts = scanFile(file);
-    perFile.push({ file: path2.relative(cwd, file), ...counts });
-    total += counts.total;
-    trivial += counts.trivial;
-  }
-  return {
-    total,
-    trivial,
-    nonTrivial: total - trivial,
-    files: files.map((f) => path2.relative(cwd, f)),
-    perFile
-  };
-}
-
-// src/observability.ts
-import { readFileSync as readFileSync2, existsSync as existsSync2 } from "node:fs";
-import * as path3 from "node:path";
-
-// src/constants.ts
-var CMD_TRUNCATION = 80;
-
-// src/observability.ts
-function detectLanguage(file) {
-  const ext = path3.extname(file).toLowerCase();
-  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
-  if (ext === ".py") return "py";
-  if (ext === ".rs") return "rs";
-  if (ext === ".cs") return "cs";
-  return null;
-}
-var LOG_PATTERNS = {
-  js: [
-    /\bconsole\.(log|error|warn|info|debug|trace)\s*\(/,
-    /\b(logger|log)\.(error|warn|info|debug|trace|fatal)\s*\(/,
-    /\bpino\./,
-    /\bwinston\./,
-    /\bbunyan\./
-  ],
-  py: [
-    /\blogging\.(debug|info|warning|error|critical|exception|log)\s*\(/,
-    /\b(logger|log|self\.logger|self\._logger)\.(debug|info|warning|warn|error|critical|exception|log)\s*\(/,
-    /\bloguru\./
-  ],
-  rs: [
-    /(?:\blog|error|warn|info|debug|trace)!\s*\(/,
-    /\beprintln!\s*\(/,
-    /\bdbg!\s*\(/,
-    /\btracing::(?:info|error|warn|debug|trace)\s*\(/
-  ],
-  cs: [
-    /\b(?:Log|_logger|logger|Logger)\.(?:Log(?:Information|Warning|Error|Debug|Critical|Trace)?|Information|Warning|Error|Debug|Fatal)\s*\(/,
-    /\bConsole\.Write(?:Line)?\s*\(/,
-    /\bDebug\.Write(?:Line)?\s*\(/
-  ]
-};
-function isLogStatement(line, lang) {
-  if (!lang) return false;
-  const patterns = LOG_PATTERNS[lang];
-  return patterns ? patterns.some((p) => p.test(line)) : false;
-}
-function findErrorHandlers(lines, lang) {
-  switch (lang) {
-    case "js":
-    case "cs":
-      return findBraceErrorHandlers(lines, lang);
-    case "py":
-      return findPyErrorHandlers(lines);
-    case "rs":
-      return findRsErrorHandlers(lines);
-    default:
-      return [];
-  }
-}
-function findBraceErrorHandlers(lines, lang) {
-  const results = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
-      const endLine = findBlockEnd(lines, i, "{", "}");
-      const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, lang));
-      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
-    }
-  }
-  return results;
-}
-function findPyErrorHandlers(lines) {
-  const results = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/^\s*except\b/.test(line)) {
-      const endLine = findPyBlockEnd(lines, i);
-      const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, "py"));
-      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
-    }
-  }
-  return results;
-}
-function findRsErrorHandlers(lines) {
-  const results = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/\bErr\s*\([^)]*\)\s*=>/.test(line) || /\bmatch\b.*\{/.test(line)) {
-      const endLine = findBlockEnd(lines, i, "{", "}");
-      const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, "rs"));
-      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
-    }
-  }
-  return results;
-}
-function findBlockEnd(lines, startIdx, open, close) {
-  const baseIndent = getIndent(lines[startIdx]);
-  const openLine = lines[startIdx];
-  let braceIdx = -1;
-  for (let j = 0; j < openLine.length; j++) {
-    if (openLine[j] === open) {
-      braceIdx = j;
-      break;
-    }
-  }
-  if (braceIdx === -1) return lines.length - 1;
-  let depth = 0;
-  for (let i = startIdx; i < lines.length; i++) {
-    const line = lines[i];
-    let inString = null;
-    const startCol = i === startIdx ? braceIdx : 0;
-    for (let j = startCol; j < line.length; j++) {
-      const ch = line[j];
-      const prev = j > 0 ? line[j - 1] : "";
-      if (inString) {
-        if (ch === inString && prev !== "\\") inString = null;
-        continue;
-      }
-      if (ch === '"' || ch === "'" || ch === "`") {
-        inString = ch;
-        continue;
-      }
-      if (ch === "/" && j + 1 < line.length && line[j + 1] === "/") {
-        break;
-      }
-      if (ch === open) depth++;
-      else if (ch === close) {
-        depth--;
-        if (depth === 0 && getIndent(line) <= baseIndent) {
-          return i;
-        }
-      }
-    }
-  }
-  return lines.length - 1;
-}
-function getIndent(line) {
-  const match = line.match(/^(\s*)/);
-  return match ? match[1].length : 0;
-}
-function isInlineEmptyCatch(line) {
-  return /\bcatch\b\s*(\([^)]*\))?\s*\{\s*\}\s*$/.test(line);
-}
-function findPyBlockEnd(lines, startIdx) {
-  const match = lines[startIdx].match(/^(\s*)/);
-  const baseIndent = match ? match[1].length : 0;
-  let i = startIdx + 1;
-  while (i < lines.length) {
-    const trimmed = lines[i].trim();
-    if (trimmed === "") {
-      i++;
-      continue;
-    }
-    const lineIndent = lines[i].match(/^(\s*)/)?.[1].length ?? 0;
-    if (lineIndent <= baseIndent) return i - 1;
-    i++;
-  }
-  return lines.length - 1;
-}
-function detectAntiPatterns(lines, lang, filePath) {
-  switch (lang) {
-    case "js":
-      return detectJsAntiPatterns(lines, filePath);
-    case "py":
-      return detectPyAntiPatterns(lines, filePath);
-    case "rs":
-      return detectRsAntiPatterns(lines, filePath);
-    default:
-      return [];
-  }
-}
-function detectJsAntiPatterns(lines, file) {
-  const hits = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-    if (/^\s*\/\/|^\s*\/\*|^\s*\*/.test(trimmed)) continue;
-    if (isInlineEmptyCatch(line)) {
-      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      continue;
-    }
-    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
-      const endLine = findBlockEnd(lines, i, "{", "}");
-      const body = lines.slice(i + 1, endLine).map((l) => l.trim()).filter((l) => l.length > 0);
-      if (body.length === 0) {
-        hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      }
-    }
-    if (isLogStatement(line, "js") && isBareStaticLog(line, "js")) {
-      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
-    }
-  }
-  return hits;
-}
-function detectPyAntiPatterns(lines, file) {
-  const hits = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/^\s*except\b.*:\s*pass\s*(#.*)?$/.test(line)) {
-      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      continue;
-    }
-    if (/^\s*except\b/.test(line)) {
-      const endLine = findPyBlockEnd(lines, i);
-      const body = lines.slice(i + 1, endLine + 1).map((l) => l.trim()).filter((l) => l.length > 0);
-      const allPass = body.length > 0 && body.every((l) => l === "pass" || /^\s*pass\s*(#.*)?$/.test(l));
-      if (allPass) {
-        hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      }
-    }
-    if (isLogStatement(line, "py") && isBareStaticLog(line, "py")) {
-      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
-    }
-  }
-  return hits;
-}
-function detectRsAntiPatterns(lines, file) {
-  const hits = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/\bErr\s*\([^)]*\)\s*=>\s*\{\s*\}\s*,?$/.test(line)) {
-      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      continue;
-    }
-    if (isLogStatement(line, "rs") && isBareStaticLog(line, "rs")) {
-      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
-    }
-  }
-  return hits;
-}
-function isBareStaticLog(line, lang) {
-  switch (lang) {
-    case "js":
-      return isBareStaticJs(line);
-    case "py":
-      return isBareStaticPy(line);
-    case "rs":
-      return isBareStaticRs(line);
-    default:
-      return false;
-  }
-}
-function isBareStaticJs(line) {
-  const match = line.match(/\b(?:console|logger|log|pino|winston)\.\w+\s*\(([^)]+)\)/);
-  if (!match) return false;
-  const args = match[1];
-  const argsList = splitArgs(args);
-  if (argsList.length === 0) return false;
-  if (argsList.some((a) => a.includes("`") && a.includes("${"))) return false;
-  if (argsList.length >= 2) return false;
-  const first = argsList[0].trim();
-  if (/^"[^"]*"$/.test(first) || /^'[^']*'$/.test(first) || /^`[^`]*`$/.test(first)) return true;
-  return false;
-}
-function isBareStaticPy(line) {
-  const match = line.match(/\b(?:logging|logger|log|self\.logger|self\._logger)\.\w+\s*\(([^)]+)\)/);
-  if (!match) return false;
-  const args = match[1];
-  const argsList = splitArgs(args);
-  if (argsList.length === 0) return false;
-  if (argsList.some((a) => a.startsWith('f"') || a.startsWith("f'"))) return false;
-  if (argsList.length >= 2) return false;
-  if (/%[sdfr]/.test(args)) return false;
-  const first = argsList[0].trim();
-  if (/^"[^"]*"$/.test(first) || /^'[^']*'$/.test(first)) return true;
-  return false;
-}
-function isBareStaticRs(line) {
-  const match = line.match(/\b(?:log|error|warn|info|debug|trace|eprintln|dbg)!\s*\(\s*("[^"]*")/);
-  if (!match) return false;
-  const msg = match[1];
-  if (/\{\}/.test(msg) || /\{[^}]*\}/.test(msg)) return false;
-  const afterStr = line.slice(line.indexOf(msg) + msg.length);
-  if (afterStr.includes(",") && afterStr.indexOf(",") < afterStr.indexOf(")")) return false;
-  return true;
-}
-function splitArgs(s) {
-  const args = [];
-  let depth = 0;
-  let current = "";
-  for (const ch of s) {
-    if (ch === "(" || ch === "{" || ch === "[") depth++;
-    else if (ch === ")" || ch === "}" || ch === "]") depth--;
-    if (ch === "," && depth === 0) {
-      args.push(current);
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  const trimmed = current.trim();
-  if (trimmed.length > 0) args.push(trimmed);
-  return args;
-}
-function detectSwallowedErrors(lines, lang, filePath) {
-  const hits = [];
-  if (lang !== "js" && lang !== "cs") return hits;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) continue;
-    const endLine = findBlockEnd(lines, i, "{", "}");
-    const blockLines = lines.slice(i + 1, endLine);
-    const codeLines = blockLines.map((l) => l.trim()).filter((l) => l.length > 0);
-    const hasLog = blockLines.some((l) => isLogStatement(l, lang));
-    const hasReturn = codeLines.some((l) => /\breturn\b/.test(l));
-    const hasThrow = codeLines.some((l) => /\bthrow\b/.test(l));
-    if (!hasLog && !hasThrow && codeLines.length > 0) {
-      hits.push({
-        file: filePath,
-        line: i + 1,
-        kind: "swallowed_error",
-        snippet: line.trim()
-      });
-    }
-  }
-  return hits;
-}
-var SOURCE_EXTS = /* @__PURE__ */ new Set([
-  ".js",
-  ".ts",
-  ".mjs",
-  ".cjs",
-  ".mts",
-  ".cts",
-  ".jsx",
-  ".tsx",
-  ".py",
-  ".rs",
-  ".cs",
-  ".go",
-  ".java",
-  ".rb",
-  ".swift",
-  ".kt"
-]);
-var SKIP_DIRS = /* @__PURE__ */ new Set(["dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git"]);
-function isSourceFile(filePath) {
-  const ext = path3.extname(filePath).toLowerCase();
-  return SOURCE_EXTS.has(ext);
-}
-function isInSkipDir(filePath) {
-  const parts = filePath.split(path3.sep);
-  return parts.some((p) => SKIP_DIRS.has(p));
-}
-function extractSourceFilesFromOutput(output, cwd) {
-  const files = [];
-  for (const line of output.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (/^[a-z_]+:/i.test(trimmed) && !trimmed.includes("/") && !trimmed.includes("\\")) continue;
-    if (trimmed.includes(".") || trimmed.includes("/") || trimmed.includes("\\")) {
-      const pathMatch = trimmed.match(/([^\s:]+\.[a-z]{1,6})\b/gi);
-      if (pathMatch) {
-        for (const candidate of pathMatch) {
-          const resolved = path3.resolve(cwd, candidate.trim());
-          if (isInSkipDir(resolved)) continue;
-          if (existsSync2(resolved) && isSourceFile(resolved)) {
-            files.push(resolved);
-          }
-        }
-      }
-    }
-  }
-  return [...new Set(files)];
-}
-function extractSourceFilesFromCommand(command, cwd) {
-  const tokens = command.split(/\s+/);
-  const files = [];
-  for (const token of tokens) {
-    if (token.startsWith("-")) continue;
-    if (/^(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go)$/.test(token)) continue;
-    if (token.includes("/") || token.includes("\\") || token.includes(".")) {
-      const resolved = path3.resolve(cwd, token);
-      if (isInSkipDir(resolved)) continue;
-      if (existsSync2(resolved) && isSourceFile(resolved)) {
-        files.push(resolved);
-      } else {
-        const dir = path3.dirname(resolved);
-        const pat = path3.basename(resolved);
-        if (existsSync2(dir) && pat.includes("*")) {
-          try {
-            const { readdirSync: readdirSync2 } = __require("node:fs");
-            const entries = readdirSync2(dir);
-            const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
-            for (const entry of entries) {
-              const full = path3.join(dir, entry);
-              if (isInSkipDir(full)) continue;
-              if (!existsSync2(full)) continue;
-              const stat = __require("node:fs").statSync(full);
-              if (stat.isFile() && isSourceFile(full)) {
-                files.push(full);
-              }
-            }
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            console.error("observability: unreadable dir", { dir, err: msg });
-          }
-        }
-      }
-    }
-  }
-  return [...new Set(files)];
-}
-function scanFile2(filePath, cwd) {
-  const lang = detectLanguage(filePath);
-  if (!lang) return { logCount: 0, errorHandlers: [], antiPatterns: [] };
-  const content = readFileSync2(filePath, "utf-8");
-  const lines = content.split(/\r?\n/);
-  let logCount = 0;
-  for (const line of lines) {
-    if (isLogStatement(line, lang)) logCount++;
-  }
-  const errorHandlerResults = findErrorHandlers(lines, lang);
-  const errorHandlers = errorHandlerResults.map((r) => ({
-    file: path3.relative(cwd, filePath),
-    line: r.line,
-    logged: r.logged,
-    snippet: r.snippet
-  }));
-  const antiPatterns = [
-    ...detectAntiPatterns(lines, lang, path3.relative(cwd, filePath)),
-    ...detectSwallowedErrors(lines, lang, path3.relative(cwd, filePath))
-  ];
-  return { logCount, errorHandlers, antiPatterns };
-}
-function analyseObservability(command, cwd) {
-  console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
-  const files = extractSourceFilesFromCommand(command, cwd);
-  if (files.length === 0) {
-    if (/\bgit\s+diff\b/.test(command) || /\bgit diff/.test(command)) {
-    }
-  }
-  if (files.length === 0) {
-    return null;
-  }
-  const perFile = [];
-  let totalLogStatements = 0;
-  let totalErrorHandlers = 0;
-  let errorHandlersLogged = 0;
-  const allAntiPatterns = [];
-  for (const file of files) {
-    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
-      console.debug("observability: skipping self-analysis of", file);
-      continue;
-    }
-    const result = scanFile2(file, cwd);
-    perFile.push({
-      file: path3.relative(cwd, file),
-      logCount: result.logCount,
-      errorHandlers: result.errorHandlers.length,
-      errorHandlersLogged: result.errorHandlers.filter((h) => h.logged).length,
-      antiPatterns: result.antiPatterns
-    });
-    totalLogStatements += result.logCount;
-    totalErrorHandlers += result.errorHandlers.length;
-    errorHandlersLogged += result.errorHandlers.filter((h) => h.logged).length;
-    allAntiPatterns.push(...result.antiPatterns);
-  }
-  return {
-    totalLogStatements,
-    totalErrorHandlers,
-    errorHandlersLogged,
-    antiPatterns: allAntiPatterns,
-    files: files.map((f) => path3.relative(cwd, f)),
-    perFile
-  };
-}
-function analyseObservabilityFromOutput(commandOutput, cwd) {
-  const files = extractSourceFilesFromOutput(commandOutput, cwd);
-  if (files.length === 0) return null;
-  const perFile = [];
-  let totalLogStatements = 0;
-  let totalErrorHandlers = 0;
-  let errorHandlersLogged = 0;
-  const allAntiPatterns = [];
-  for (const file of files) {
-    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
-      console.debug("observability: skipping self-analysis of", file);
-      continue;
-    }
-    const result = scanFile2(file, cwd);
-    perFile.push({
-      file: path3.relative(cwd, file),
-      logCount: result.logCount,
-      errorHandlers: result.errorHandlers.length,
-      errorHandlersLogged: result.errorHandlers.filter((h) => h.logged).length,
-      antiPatterns: result.antiPatterns
-    });
-    totalLogStatements += result.logCount;
-    totalErrorHandlers += result.errorHandlers.length;
-    errorHandlersLogged += result.errorHandlers.filter((h) => h.logged).length;
-    allAntiPatterns.push(...result.antiPatterns);
-  }
-  return {
-    totalLogStatements,
-    totalErrorHandlers,
-    errorHandlersLogged,
-    antiPatterns: allAntiPatterns,
-    files: files.map((f) => path3.relative(cwd, f)),
-    perFile
-  };
-}
+import * as path4 from "node:path";
 
 // src/brevity.ts
-import { readFileSync as readFileSync3, existsSync as existsSync3, readdirSync, statSync } from "node:fs";
-import * as path4 from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import * as path from "node:path";
 
 // src/find-functions.ts
 console.debug("find-functions: module loaded", { pid: process.pid });
@@ -21971,12 +21148,12 @@ var CONTROL_KEYWORDS = /* @__PURE__ */ new Set([
   "in",
   "of"
 ]);
-function getIndent2(line) {
+function getIndent(line) {
   const m = line.match(/^(\s*)/);
   return m ? m[1].length : 0;
 }
-function findBlockEnd2(lines, startIdx, open, close) {
-  const baseIndent = getIndent2(lines[startIdx]);
+function findBlockEnd(lines, startIdx, open, close) {
+  const baseIndent = getIndent(lines[startIdx]);
   const openLine = lines[startIdx];
   let braceIdx = openLine.indexOf(open);
   if (braceIdx === -1) braceIdx = 0;
@@ -22000,7 +21177,7 @@ function findBlockEnd2(lines, startIdx, open, close) {
       if (ch === open) depth++;
       else if (ch === close) {
         depth--;
-        if (depth === 0 && getIndent2(line) <= baseIndent) return i;
+        if (depth === 0 && getIndent(line) <= baseIndent) return i;
       }
     }
   }
@@ -22014,7 +21191,7 @@ function findJsFunctions(lines) {
     if (!trimmed || /^\s*\/\//.test(line) || /^\s*\/\*/.test(line)) continue;
     let m = line.match(/^\s*(?:export\s+(?:default\s+)?)?(?:async\s+)?function\s+(\w+)/);
     if (m) {
-      const end = findBlockEnd2(lines, i, "{", "}");
+      const end = findBlockEnd(lines, i, "{", "}");
       out.push({
         startLine: i + 1,
         endLine: end + 1,
@@ -22026,7 +21203,7 @@ function findJsFunctions(lines) {
     }
     m = line.match(/^\s*(?:static\s+)?(?:async\s+)?(?:get\s+|set\s+)?(\w+)\s*\([^)]*\)\s*\{/);
     if (m && !CONTROL_KEYWORDS.has(m[1])) {
-      const end = findBlockEnd2(lines, i, "{", "}");
+      const end = findBlockEnd(lines, i, "{", "}");
       out.push({
         startLine: i + 1,
         endLine: end + 1,
@@ -22038,7 +21215,7 @@ function findJsFunctions(lines) {
     }
     m = line.match(/^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>\s*\{/);
     if (m) {
-      const end = findBlockEnd2(lines, i, "{", "}");
+      const end = findBlockEnd(lines, i, "{", "}");
       out.push({
         startLine: i + 1,
         endLine: end + 1,
@@ -22050,7 +21227,7 @@ function findJsFunctions(lines) {
     }
     m = line.match(/^\s*(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?function\s*\(/);
     if (m) {
-      const end = findBlockEnd2(lines, i, "{", "}");
+      const end = findBlockEnd(lines, i, "{", "}");
       out.push({
         startLine: i + 1,
         endLine: end + 1,
@@ -22067,7 +21244,7 @@ function findPyFunctions(lines) {
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(/^\s*def\s+(\w+)\s*\(/);
     if (!m) continue;
-    const end = findPyBlockEnd2(lines, i);
+    const end = findPyBlockEnd(lines, i);
     if (end > i) {
       out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end + 1) });
       i = end;
@@ -22075,8 +21252,8 @@ function findPyFunctions(lines) {
   }
   return out;
 }
-function findPyBlockEnd2(lines, startIdx) {
-  const baseIndent = getIndent2(lines[startIdx]);
+function findPyBlockEnd(lines, startIdx) {
+  const baseIndent = getIndent(lines[startIdx]);
   let i = startIdx + 1;
   while (i < lines.length) {
     const trimmed = lines[i].trim();
@@ -22084,7 +21261,7 @@ function findPyBlockEnd2(lines, startIdx) {
       i++;
       continue;
     }
-    if (getIndent2(lines[i]) <= baseIndent) return i - 1;
+    if (getIndent(lines[i]) <= baseIndent) return i - 1;
     i++;
   }
   return lines.length - 1;
@@ -22096,7 +21273,7 @@ function findRsFunctions(lines) {
       /^\s*(?:pub(?:\s*\(\s*(?:crate|super|self)\s*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+(\w+)/
     );
     if (!m) continue;
-    const end = findBlockEnd2(lines, i, "{", "}");
+    const end = findBlockEnd(lines, i, "{", "}");
     out.push({
       startLine: i + 1,
       endLine: end + 1,
@@ -22118,7 +21295,7 @@ function findCsFunctions(lines) {
     if (!m) continue;
     const nameToken = m[2];
     if (CONTROL_KEYWORDS.has(nameToken)) continue;
-    const end = findBlockEnd2(lines, i, "{", "}");
+    const end = findBlockEnd(lines, i, "{", "}");
     out.push({
       startLine: i + 1,
       endLine: end + 1,
@@ -22224,7 +21401,7 @@ function checkUnnecessaryElse(bodyLines, lang) {
   if (!lang) return { count: 0 };
   const elseRe = ELSE_PATTERNS[lang];
   const jumpRe = JUMP_PATTERNS[lang];
-  if (!elseRe || !jumpRe) return { count: 0 };
+  if (!(elseRe && jumpRe)) return { count: 0 };
   let count = 0;
   for (let i = 0; i < bodyLines.length; i++) {
     const raw = bodyLines[i];
@@ -22239,12 +21416,12 @@ function checkUnnecessaryElse(bodyLines, lang) {
           continue;
         }
         if (t.endsWith("}") || t === "}") {
-          if (skipToDepth === null) skipToDepth = getIndent2(bodyLines[j]);
+          if (skipToDepth === null) skipToDepth = getIndent(bodyLines[j]);
           j--;
           continue;
         }
         if (skipToDepth !== null) {
-          if (getIndent2(bodyLines[j]) >= skipToDepth) {
+          if (getIndent(bodyLines[j]) >= skipToDepth) {
             j--;
             continue;
           }
@@ -22259,11 +21436,11 @@ function checkUnnecessaryElse(bodyLines, lang) {
         }
       }
     } else if (lang === "py" && (ELSE_PATTERNS.py.test(trimmed) || ELIF_PATTERN.test(trimmed))) {
-      const currentIndent = getIndent2(raw);
+      const currentIndent = getIndent(raw);
       let j = i - 1;
       while (j >= 0 && (bodyLines[j].trim() === "" || bodyLines[j].trim().startsWith("#"))) j--;
       if (j >= 0) {
-        const prevIndent = getIndent2(bodyLines[j]);
+        const prevIndent = getIndent(bodyLines[j]);
         if (prevIndent > currentIndent && jumpRe.test(stripStringsAndComments(bodyLines[j].trim()))) {
           count++;
         }
@@ -22276,10 +21453,10 @@ function checkAvoidableElse(bodyLines, lang) {
   if (!lang) return { count: 0 };
   const elseRe = ELSE_PATTERNS[lang];
   const jumpRe = JUMP_PATTERNS[lang];
-  if (!elseRe || !jumpRe) return { count: 0 };
+  if (!(elseRe && jumpRe)) return { count: 0 };
   let hasGuardClause = false;
   for (let i = 0; i < bodyLines.length; i++) {
-    const stripped = stripStringsAndComments(bodyLines[i]);
+    const _stripped = stripStringsAndComments(bodyLines[i]);
     const trimmed = bodyLines[i].trim();
     if (lang !== "py") {
       if (/\bif\s*\(/.test(trimmed) || /\belse\s+if\b/.test(trimmed)) {
@@ -22320,11 +21497,11 @@ function checkAvoidableElse(bodyLines, lang) {
       }
     } else {
       if (/\bif\s+/.test(trimmed) || /\belif\s+/.test(trimmed)) {
-        const blockIndent = getIndent2(bodyLines[i]);
+        const blockIndent = getIndent(bodyLines[i]);
         let blockEnd = i;
         for (let j = i + 1; j < bodyLines.length; j++) {
           if (bodyLines[j].trim() === "") continue;
-          if (getIndent2(bodyLines[j]) <= blockIndent) {
+          if (getIndent(bodyLines[j]) <= blockIndent) {
             blockEnd = j - 1;
             break;
           }
@@ -22332,7 +21509,7 @@ function checkAvoidableElse(bodyLines, lang) {
         }
         if (blockEnd > i && jumpRe.test(stripStringsAndComments(bodyLines[blockEnd].trim()))) {
           const nextLine = blockEnd + 1 < bodyLines.length ? bodyLines[blockEnd + 1].trim() : "";
-          if (!ELSE_PATTERNS.py.test(nextLine) && !ELIF_PATTERN.test(nextLine)) {
+          if (!(ELSE_PATTERNS.py.test(nextLine) || ELIF_PATTERN.test(nextLine))) {
             hasGuardClause = true;
             break;
           }
@@ -22361,8 +21538,8 @@ var DEFAULT_BREVITY_OPTS = {
   suggestGuardClauses: true,
   minReplacementRatio: 0.2
 };
-function detectLanguage2(file) {
-  const ext = path4.extname(file).toLowerCase();
+function detectLanguage(file) {
+  const ext = path.extname(file).toLowerCase();
   if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
   if (ext === ".py") return "py";
   if (ext === ".rs") return "rs";
@@ -22396,15 +21573,15 @@ function parseDiffOutput(output, cwd) {
       continue;
     }
     if (/\.\w{1,6}$/.test(trimmed) && (trimmed.includes("/") || trimmed.includes("\\"))) {
-      const abs = path4.resolve(cwd, trimmed);
-      if (!files.includes(abs) && !files.includes(trimmed)) {
+      const abs = path.resolve(cwd, trimmed);
+      if (!(files.includes(abs) || files.includes(trimmed))) {
         files.push(trimmed);
       }
     }
   }
   return { files, stats };
 }
-var SOURCE_EXTS2 = /* @__PURE__ */ new Set([
+var SOURCE_EXTS = /* @__PURE__ */ new Set([
   ".js",
   ".ts",
   ".mjs",
@@ -22422,32 +21599,32 @@ var SOURCE_EXTS2 = /* @__PURE__ */ new Set([
   ".swift",
   ".kt"
 ]);
-var SKIP_DIRS2 = /* @__PURE__ */ new Set(["dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git"]);
-function isSourceFile2(fp) {
-  return SOURCE_EXTS2.has(path4.extname(fp).toLowerCase());
+var SKIP_DIRS = /* @__PURE__ */ new Set(["dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git"]);
+function isSourceFile(fp) {
+  return SOURCE_EXTS.has(path.extname(fp).toLowerCase());
 }
-function isInSkipDir2(fp) {
-  return fp.split(path4.sep).some((p) => SKIP_DIRS2.has(p));
+function isInSkipDir(fp) {
+  return fp.split(path.sep).some((p) => SKIP_DIRS.has(p));
 }
-function extractSourceFilesFromCommand2(command, cwd) {
+function extractSourceFilesFromCommand(command, cwd) {
   const tokens = command.split(/\s+/);
   const files = [];
   for (const token of tokens) {
     if (token.startsWith("-")) continue;
     if (/^(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go|git)$/.test(token)) continue;
     if (token.includes("/") || token.includes("\\") || token.includes(".")) {
-      const resolved = path4.resolve(cwd, token);
-      if (isInSkipDir2(resolved)) continue;
-      if (existsSync3(resolved) && isSourceFile2(resolved)) files.push(resolved);
+      const resolved = path.resolve(cwd, token);
+      if (isInSkipDir(resolved)) continue;
+      if (existsSync(resolved) && isSourceFile(resolved)) files.push(resolved);
       else {
-        const dir = path4.dirname(resolved);
-        const pat = path4.basename(resolved);
-        if (existsSync3(dir) && pat.includes("*")) {
+        const dir = path.dirname(resolved);
+        const pat = path.basename(resolved);
+        if (existsSync(dir) && pat.includes("*")) {
           try {
             for (const entry of readdirSync(dir)) {
-              const full = path4.join(dir, entry);
+              const full = path.join(dir, entry);
               const s = statSync(full);
-              if (s.isFile() && !isInSkipDir2(full) && isSourceFile2(full)) files.push(full);
+              if (s.isFile() && !isInSkipDir(full) && isSourceFile(full)) files.push(full);
             }
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -22459,8 +21636,8 @@ function extractSourceFilesFromCommand2(command, cwd) {
   }
   return [...new Set(files)];
 }
-function scanFile3(filePath, cwd, opts) {
-  const lang = detectLanguage2(filePath);
+function scanFile(filePath, cwd, opts) {
+  const lang = detectLanguage(filePath);
   if (!lang) {
     return {
       violations: [],
@@ -22472,9 +21649,9 @@ function scanFile3(filePath, cwd, opts) {
       elseAvoidableCount: 0
     };
   }
-  const content = readFileSync3(filePath, "utf-8");
+  const content = readFileSync(filePath, "utf-8");
   const lines = content.split(/\r?\n/);
-  const relPath = path4.relative(cwd, filePath);
+  const relPath = path.relative(cwd, filePath);
   const violations = [];
   for (let i = 0; i < lines.length; i++) {
     const len = lines[i].length;
@@ -22558,21 +21735,21 @@ function scanFile3(filePath, cwd, opts) {
   };
 }
 function analyseBrevity(command, cwd, opts = DEFAULT_BREVITY_OPTS) {
-  const files = extractSourceFilesFromCommand2(command, cwd);
+  const files = extractSourceFilesFromCommand(command, cwd);
   if (files.length === 0) return null;
   return buildReport(files, cwd, opts, void 0);
 }
 function analyseBrevityFromOutput(commandOutput, cwd, opts = DEFAULT_BREVITY_OPTS) {
   const { files: diffFiles, stats } = parseDiffOutput(commandOutput, cwd);
-  const resolved = diffFiles.map((f) => path4.resolve(cwd, f)).filter((f) => existsSync3(f) && isSourceFile2(f) && !isInSkipDir2(f));
+  const resolved = diffFiles.map((f) => path.resolve(cwd, f)).filter((f) => existsSync(f) && isSourceFile(f) && !isInSkipDir(f));
   if (resolved.length === 0) {
     const extracted = [];
     for (const line of commandOutput.split(/\r?\n/)) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith(" ") || trimmed.startsWith("	")) continue;
       if (/\.\w{1,6}$/.test(trimmed)) {
-        const abs = path4.resolve(cwd, trimmed);
-        if (existsSync3(abs) && isSourceFile2(abs) && !isInSkipDir2(abs)) {
+        const abs = path.resolve(cwd, trimmed);
+        if (existsSync(abs) && isSourceFile(abs) && !isInSkipDir(abs)) {
           extracted.push(abs);
         }
       }
@@ -22590,10 +21767,10 @@ function buildReport(files, cwd, opts, diffStats) {
   const allViolations = [];
   const perFile = [];
   for (const file of files) {
-    const result = scanFile3(file, cwd, opts);
+    const result = scanFile(file, cwd, opts);
     const ext = [...result.violations];
     if (normalizedStats) {
-      const relPath2 = normalizeRelPath(path4.relative(cwd, file));
+      const relPath2 = normalizeRelPath(path.relative(cwd, file));
       const stat = normalizedStats.get(relPath2);
       if (stat && stat.insertions > 10) {
         const ratio = stat.deletions / stat.insertions;
@@ -22608,7 +21785,7 @@ function buildReport(files, cwd, opts, diffStats) {
       }
     }
     allViolations.push(...ext);
-    const relPath = normalizeRelPath(path4.relative(cwd, file));
+    const relPath = normalizeRelPath(path.relative(cwd, file));
     perFile.push({
       file: relPath,
       violations: ext,
@@ -22625,9 +21802,689 @@ function buildReport(files, cwd, opts, diffStats) {
   return {
     totalViolations: allViolations.length,
     violations: allViolations,
-    files: files.map((f) => normalizeRelPath(path4.relative(cwd, f))),
+    files: files.map((f) => normalizeRelPath(path.relative(cwd, f))),
     perFile
   };
+}
+
+// src/checker.ts
+import { exec } from "node:child_process";
+import { createHash as createHash2 } from "node:crypto";
+import { promisify } from "node:util";
+
+// src/constants.ts
+var CMD_TRUNCATION = 80;
+
+// src/assertions.ts
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import * as path2 from "node:path";
+var PY_TRIVIAL = [
+  // assert True / assert False / assert None
+  /^\s*assert\s+(True|False|None)\s*(#.*)?$/,
+  // assert 1, assert 3.14, assert "hello"
+  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
+  // assert CONST OP CONST (both sides literal)
+  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s* {4}(==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s* {4}(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
+  // self.assertX(CONST, CONST)
+  /^\s*self\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\s*\(\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(?:,\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*)?\)\s*(#.*)?$/
+];
+var JS_TRIVIAL = [
+  // expect(CONST).toXxx(CONST) — inline, no ^\s* anchor
+  /expect\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)\s*\.\s*(?:not\s*\.\s*)?(?:toBe|toEqual|toBeTruthy|toBeFalsy|toBeNull|toBeUndefined|toStrictEqual|toMatchObject|toContain|toHaveLength)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
+  // assert.equal(CONST, CONST) / assert.strictEqual(CONST, CONST)
+  /assert\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
+  // assert.ok(true) / assert.fail()
+  /assert\.(?:ok|fail)\s*\(\s*(true|false)\s*\)/
+];
+var PY_ASSERT = /^\s*(assert\b|self\.assert)/;
+var JS_ASSERT = /(expect\s*\(|assert\.)/;
+function classifyLine(line, detector, trivialPatterns) {
+  const globalDetector = new RegExp(detector.source, "g");
+  const matches = line.match(globalDetector);
+  if (!matches) return { count: 0, trivialCount: 0 };
+  const lineHasTrivial = trivialPatterns.some((p) => p.test(line));
+  return { count: matches.length, trivialCount: lineHasTrivial ? matches.length : 0 };
+}
+function languageForFile(file) {
+  const ext = path2.extname(file).toLowerCase();
+  if (ext === ".py") return "py";
+  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
+  return null;
+}
+function scanFile2(file) {
+  const lang = languageForFile(file);
+  if (!lang) return { total: 0, trivial: 0 };
+  const detector = lang === "py" ? PY_ASSERT : JS_ASSERT;
+  const trivialPatterns = lang === "py" ? PY_TRIVIAL : JS_TRIVIAL;
+  const content = readFileSync2(file, "utf-8");
+  const lines = content.split(/\r?\n/);
+  let total = 0;
+  let trivial = 0;
+  for (const line of lines) {
+    const result = classifyLine(line, detector, trivialPatterns);
+    total += result.count;
+    trivial += result.trivialCount;
+  }
+  return { total, trivial };
+}
+var TEST_FILE_PATTERNS = [
+  /^test_.*\.py$/,
+  /^.*_test\.py$/,
+  /\.test\.(ts|js|tsx|jsx|mts|mjs)$/,
+  /\.spec\.(ts|js|tsx|jsx|mts|mjs)$/
+];
+function isTestFile(filePath) {
+  const base = path2.basename(filePath);
+  return TEST_FILE_PATTERNS.some((p) => p.test(base));
+}
+function extractTestFilesFromCommand(command, cwd) {
+  const tokens = command.split(/\s+/);
+  const files = [];
+  for (const token of tokens) {
+    if (token.startsWith("-") || token.startsWith("--")) continue;
+    if (/^(python|python3?|pytest|node|npm|npx|pnpm|yarn|jest|vitest|mocha|ts-node|tsx)$/.test(token)) continue;
+    if (/^(test|run|exec)$/.test(token)) continue;
+    if (token.includes(".") || token.includes("/") || token.includes("\\")) {
+      const resolved = path2.resolve(cwd, token);
+      if (existsSync2(resolved) && isTestFile(resolved)) {
+        files.push(resolved);
+      }
+      const dir = path2.dirname(resolved);
+      const pat = path2.basename(resolved);
+      if (existsSync2(dir) && pat.includes("*")) {
+        try {
+          const { readdirSync: readdirSync2 } = __require("node:fs");
+          const entries = readdirSync2(dir);
+          const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
+          for (const entry of entries) {
+            if (regex.test(entry)) {
+              const full = path2.join(dir, entry);
+              if (isTestFile(full)) files.push(full);
+            }
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error("assertions: unreadable dir", { dir, err: msg });
+        }
+      }
+    }
+  }
+  return [...new Set(files)];
+}
+function analyseAssertions(command, cwd) {
+  const files = extractTestFilesFromCommand(command, cwd);
+  if (files.length === 0) {
+    return null;
+  }
+  const perFile = [];
+  let total = 0;
+  let trivial = 0;
+  for (const file of files) {
+    const counts = scanFile2(file);
+    perFile.push({ file: path2.relative(cwd, file), ...counts });
+    total += counts.total;
+    trivial += counts.trivial;
+  }
+  return {
+    total,
+    trivial,
+    nonTrivial: total - trivial,
+    files: files.map((f) => path2.relative(cwd, f)),
+    perFile
+  };
+}
+
+// src/manual.ts
+import { createHash } from "node:crypto";
+console.debug("manual: module loaded", { pid: process.pid });
+function perProofFingerprint(node) {
+  const data = [
+    node.command ?? "",
+    node.predicate?.type ?? "",
+    node.predicate?.value ?? "",
+    node.description ?? ""
+  ].join("|");
+  return createHash("sha256").update(data).digest("hex").slice(0, 12);
+}
+async function resolveManual(node, confirm, label = "Manual verification") {
+  const fingerprint = perProofFingerprint(node);
+  const cached2 = node.manual_result;
+  if (cached2 && cached2.answer === "pass" && cached2.proof_fingerprint === fingerprint) {
+    return {
+      status: "pass",
+      cached: true,
+      output: `${label} cached: PASS at ${cached2.confirmed_at} via ${cached2.channel}${cached2.note ? ` \u2014 "${cached2.note}"` : ""}`
+    };
+  }
+  const answer = await confirm(node);
+  node.manual_result = {
+    answer: answer.answer,
+    note: answer.note,
+    confirmed_at: (/* @__PURE__ */ new Date()).toISOString(),
+    channel: answer.channel,
+    proof_fingerprint: fingerprint
+  };
+  return {
+    status: answer.answer,
+    cached: false,
+    output: `${label} ${answer.answer.toUpperCase()} via ${answer.channel}${answer.note ? ` \u2014 "${answer.note}"` : ""}`
+  };
+}
+
+// src/observability.ts
+import { existsSync as existsSync3, readFileSync as readFileSync3 } from "node:fs";
+import * as path3 from "node:path";
+function detectLanguage2(file) {
+  const ext = path3.extname(file).toLowerCase();
+  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
+  if (ext === ".py") return "py";
+  if (ext === ".rs") return "rs";
+  if (ext === ".cs") return "cs";
+  return null;
+}
+var LOG_PATTERNS = {
+  js: [
+    /\bconsole\.(log|error|warn|info|debug|trace)\s*\(/,
+    /\b(logger|log)\.(error|warn|info|debug|trace|fatal)\s*\(/,
+    /\bpino\./,
+    /\bwinston\./,
+    /\bbunyan\./
+  ],
+  py: [
+    /\blogging\.(debug|info|warning|error|critical|exception|log)\s*\(/,
+    /\b(logger|log|self\.logger|self\._logger)\.(debug|info|warning|warn|error|critical|exception|log)\s*\(/,
+    /\bloguru\./
+  ],
+  rs: [
+    /(?:\blog|error|warn|info|debug|trace)!\s*\(/,
+    /\beprintln!\s*\(/,
+    /\bdbg!\s*\(/,
+    /\btracing::(?:info|error|warn|debug|trace)\s*\(/
+  ],
+  cs: [
+    /\b(?:Log|_logger|logger|Logger)\.(?:Log(?:Information|Warning|Error|Debug|Critical|Trace)?|Information|Warning|Error|Debug|Fatal)\s*\(/,
+    /\bConsole\.Write(?:Line)?\s*\(/,
+    /\bDebug\.Write(?:Line)?\s*\(/
+  ]
+};
+function isLogStatement(line, lang) {
+  if (!lang) return false;
+  const patterns = LOG_PATTERNS[lang];
+  return patterns ? patterns.some((p) => p.test(line)) : false;
+}
+function findErrorHandlers(lines, lang) {
+  switch (lang) {
+    case "js":
+    case "cs":
+      return findBraceErrorHandlers(lines, lang);
+    case "py":
+      return findPyErrorHandlers(lines);
+    case "rs":
+      return findRsErrorHandlers(lines);
+    default:
+      return [];
+  }
+}
+function findBraceErrorHandlers(lines, lang) {
+  const results = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
+      const endLine = findBlockEnd2(lines, i, "{", "}");
+      const blockLines = lines.slice(i, endLine + 1);
+      const hasLog = blockLines.some((l) => isLogStatement(l, lang));
+      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
+    }
+  }
+  return results;
+}
+function findPyErrorHandlers(lines) {
+  const results = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*except\b/.test(line)) {
+      const endLine = findPyBlockEnd2(lines, i);
+      const blockLines = lines.slice(i, endLine + 1);
+      const hasLog = blockLines.some((l) => isLogStatement(l, "py"));
+      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
+    }
+  }
+  return results;
+}
+function findRsErrorHandlers(lines) {
+  const results = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/\bErr\s*\([^)]*\)\s*=>/.test(line) || /\bmatch\b.*\{/.test(line)) {
+      const endLine = findBlockEnd2(lines, i, "{", "}");
+      const blockLines = lines.slice(i, endLine + 1);
+      const hasLog = blockLines.some((l) => isLogStatement(l, "rs"));
+      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
+    }
+  }
+  return results;
+}
+function findBlockEnd2(lines, startIdx, open, close) {
+  const baseIndent = getIndent2(lines[startIdx]);
+  const openLine = lines[startIdx];
+  let braceIdx = -1;
+  for (let j = 0; j < openLine.length; j++) {
+    if (openLine[j] === open) {
+      braceIdx = j;
+      break;
+    }
+  }
+  if (braceIdx === -1) return lines.length - 1;
+  let depth = 0;
+  for (let i = startIdx; i < lines.length; i++) {
+    const line = lines[i];
+    let inString = null;
+    const startCol = i === startIdx ? braceIdx : 0;
+    for (let j = startCol; j < line.length; j++) {
+      const ch = line[j];
+      const prev = j > 0 ? line[j - 1] : "";
+      if (inString) {
+        if (ch === inString && prev !== "\\") inString = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === "`") {
+        inString = ch;
+        continue;
+      }
+      if (ch === "/" && j + 1 < line.length && line[j + 1] === "/") {
+        break;
+      }
+      if (ch === open) depth++;
+      else if (ch === close) {
+        depth--;
+        if (depth === 0 && getIndent2(line) <= baseIndent) {
+          return i;
+        }
+      }
+    }
+  }
+  return lines.length - 1;
+}
+function getIndent2(line) {
+  const match = line.match(/^(\s*)/);
+  return match ? match[1].length : 0;
+}
+function isInlineEmptyCatch(line) {
+  return /\bcatch\b\s*(\([^)]*\))?\s*\{\s*\}\s*$/.test(line);
+}
+function findPyBlockEnd2(lines, startIdx) {
+  const match = lines[startIdx].match(/^(\s*)/);
+  const baseIndent = match ? match[1].length : 0;
+  let i = startIdx + 1;
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+    if (trimmed === "") {
+      i++;
+      continue;
+    }
+    const lineIndent = lines[i].match(/^(\s*)/)?.[1].length ?? 0;
+    if (lineIndent <= baseIndent) return i - 1;
+    i++;
+  }
+  return lines.length - 1;
+}
+function detectAntiPatterns(lines, lang, filePath) {
+  switch (lang) {
+    case "js":
+      return detectJsAntiPatterns(lines, filePath);
+    case "py":
+      return detectPyAntiPatterns(lines, filePath);
+    case "rs":
+      return detectRsAntiPatterns(lines, filePath);
+    default:
+      return [];
+  }
+}
+function detectJsAntiPatterns(lines, file) {
+  const hits = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (/^\s*\/\/|^\s*\/\*|^\s*\*/.test(trimmed)) continue;
+    if (isInlineEmptyCatch(line)) {
+      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      continue;
+    }
+    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
+      const endLine = findBlockEnd2(lines, i, "{", "}");
+      const body = lines.slice(i + 1, endLine).map((l) => l.trim()).filter((l) => l.length > 0);
+      if (body.length === 0) {
+        hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      }
+    }
+    if (isLogStatement(line, "js") && isBareStaticLog(line, "js")) {
+      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
+    }
+  }
+  return hits;
+}
+function detectPyAntiPatterns(lines, file) {
+  const hits = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*except\b.*:\s*pass\s*(#.*)?$/.test(line)) {
+      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      continue;
+    }
+    if (/^\s*except\b/.test(line)) {
+      const endLine = findPyBlockEnd2(lines, i);
+      const body = lines.slice(i + 1, endLine + 1).map((l) => l.trim()).filter((l) => l.length > 0);
+      const allPass = body.length > 0 && body.every((l) => l === "pass" || /^\s*pass\s*(#.*)?$/.test(l));
+      if (allPass) {
+        hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      }
+    }
+    if (isLogStatement(line, "py") && isBareStaticLog(line, "py")) {
+      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
+    }
+  }
+  return hits;
+}
+function detectRsAntiPatterns(lines, file) {
+  const hits = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/\bErr\s*\([^)]*\)\s*=>\s*\{\s*\}\s*,?$/.test(line)) {
+      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
+      continue;
+    }
+    if (isLogStatement(line, "rs") && isBareStaticLog(line, "rs")) {
+      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
+    }
+  }
+  return hits;
+}
+function isBareStaticLog(line, lang) {
+  switch (lang) {
+    case "js":
+      return isBareStaticJs(line);
+    case "py":
+      return isBareStaticPy(line);
+    case "rs":
+      return isBareStaticRs(line);
+    default:
+      return false;
+  }
+}
+function isBareStaticJs(line) {
+  const match = line.match(/\b(?:console|logger|log|pino|winston)\.\w+\s*\(([^)]+)\)/);
+  if (!match) return false;
+  const args = match[1];
+  const argsList = splitArgs(args);
+  if (argsList.length === 0) return false;
+  if (argsList.some((a) => a.includes("`") && a.includes("${"))) return false;
+  if (argsList.length >= 2) return false;
+  const first = argsList[0].trim();
+  if (/^"[^"]*"$/.test(first) || /^'[^']*'$/.test(first) || /^`[^`]*`$/.test(first)) return true;
+  return false;
+}
+function isBareStaticPy(line) {
+  const match = line.match(/\b(?:logging|logger|log|self\.logger|self\._logger)\.\w+\s*\(([^)]+)\)/);
+  if (!match) return false;
+  const args = match[1];
+  const argsList = splitArgs(args);
+  if (argsList.length === 0) return false;
+  if (argsList.some((a) => a.startsWith('f"') || a.startsWith("f'"))) return false;
+  if (argsList.length >= 2) return false;
+  if (/%[sdfr]/.test(args)) return false;
+  const first = argsList[0].trim();
+  if (/^"[^"]*"$/.test(first) || /^'[^']*'$/.test(first)) return true;
+  return false;
+}
+function isBareStaticRs(line) {
+  const match = line.match(/\b(?:log|error|warn|info|debug|trace|eprintln|dbg)!\s*\(\s*("[^"]*")/);
+  if (!match) return false;
+  const msg = match[1];
+  if (/\{\}/.test(msg) || /\{[^}]*\}/.test(msg)) return false;
+  const afterStr = line.slice(line.indexOf(msg) + msg.length);
+  if (afterStr.includes(",") && afterStr.indexOf(",") < afterStr.indexOf(")")) return false;
+  return true;
+}
+function splitArgs(s) {
+  const args = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of s) {
+    if (ch === "(" || ch === "{" || ch === "[") depth++;
+    else if (ch === ")" || ch === "}" || ch === "]") depth--;
+    if (ch === "," && depth === 0) {
+      args.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  const trimmed = current.trim();
+  if (trimmed.length > 0) args.push(trimmed);
+  return args;
+}
+function detectSwallowedErrors(lines, lang, filePath) {
+  const hits = [];
+  if (lang !== "js" && lang !== "cs") return hits;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) continue;
+    const endLine = findBlockEnd2(lines, i, "{", "}");
+    const blockLines = lines.slice(i + 1, endLine);
+    const codeLines = blockLines.map((l) => l.trim()).filter((l) => l.length > 0);
+    const hasLog = blockLines.some((l) => isLogStatement(l, lang));
+    const _hasReturn = codeLines.some((l) => /\breturn\b/.test(l));
+    const hasThrow = codeLines.some((l) => /\bthrow\b/.test(l));
+    if (!(hasLog || hasThrow) && codeLines.length > 0) {
+      hits.push({
+        file: filePath,
+        line: i + 1,
+        kind: "swallowed_error",
+        snippet: line.trim()
+      });
+    }
+  }
+  return hits;
+}
+var SOURCE_EXTS2 = /* @__PURE__ */ new Set([
+  ".js",
+  ".ts",
+  ".mjs",
+  ".cjs",
+  ".mts",
+  ".cts",
+  ".jsx",
+  ".tsx",
+  ".py",
+  ".rs",
+  ".cs",
+  ".go",
+  ".java",
+  ".rb",
+  ".swift",
+  ".kt"
+]);
+var SKIP_DIRS2 = /* @__PURE__ */ new Set(["dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git"]);
+function isSourceFile2(filePath) {
+  const ext = path3.extname(filePath).toLowerCase();
+  return SOURCE_EXTS2.has(ext);
+}
+function isInSkipDir2(filePath) {
+  const parts = filePath.split(path3.sep);
+  return parts.some((p) => SKIP_DIRS2.has(p));
+}
+function extractSourceFilesFromOutput(output, cwd) {
+  const files = [];
+  for (const line of output.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^[a-z_]+:/i.test(trimmed) && !trimmed.includes("/") && !trimmed.includes("\\")) continue;
+    if (trimmed.includes(".") || trimmed.includes("/") || trimmed.includes("\\")) {
+      const pathMatch = trimmed.match(/([^\s:]+\.[a-z]{1,6})\b/gi);
+      if (pathMatch) {
+        for (const candidate of pathMatch) {
+          const resolved = path3.resolve(cwd, candidate.trim());
+          if (isInSkipDir2(resolved)) continue;
+          if (existsSync3(resolved) && isSourceFile2(resolved)) {
+            files.push(resolved);
+          }
+        }
+      }
+    }
+  }
+  return [...new Set(files)];
+}
+function extractSourceFilesFromCommand2(command, cwd) {
+  const tokens = command.split(/\s+/);
+  const files = [];
+  for (const token of tokens) {
+    if (token.startsWith("-")) continue;
+    if (/^(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go)$/.test(token)) continue;
+    if (token.includes("/") || token.includes("\\") || token.includes(".")) {
+      const resolved = path3.resolve(cwd, token);
+      if (isInSkipDir2(resolved)) continue;
+      if (existsSync3(resolved) && isSourceFile2(resolved)) {
+        files.push(resolved);
+      } else {
+        const dir = path3.dirname(resolved);
+        const pat = path3.basename(resolved);
+        if (existsSync3(dir) && pat.includes("*")) {
+          try {
+            const { readdirSync: readdirSync2 } = __require("node:fs");
+            const entries = readdirSync2(dir);
+            const _regex2 = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
+            for (const entry of entries) {
+              const full = path3.join(dir, entry);
+              if (isInSkipDir2(full)) continue;
+              if (!existsSync3(full)) continue;
+              const stat = __require("node:fs").statSync(full);
+              if (stat.isFile() && isSourceFile2(full)) {
+                files.push(full);
+              }
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error("observability: unreadable dir", { dir, err: msg });
+          }
+        }
+      }
+    }
+  }
+  return [...new Set(files)];
+}
+function scanFile3(filePath, cwd) {
+  const lang = detectLanguage2(filePath);
+  if (!lang) return { logCount: 0, errorHandlers: [], antiPatterns: [] };
+  const content = readFileSync3(filePath, "utf-8");
+  const lines = content.split(/\r?\n/);
+  let logCount = 0;
+  for (const line of lines) {
+    if (isLogStatement(line, lang)) logCount++;
+  }
+  const errorHandlerResults = findErrorHandlers(lines, lang);
+  const errorHandlers = errorHandlerResults.map((r) => ({
+    file: path3.relative(cwd, filePath),
+    line: r.line,
+    logged: r.logged,
+    snippet: r.snippet
+  }));
+  const antiPatterns = [
+    ...detectAntiPatterns(lines, lang, path3.relative(cwd, filePath)),
+    ...detectSwallowedErrors(lines, lang, path3.relative(cwd, filePath))
+  ];
+  return { logCount, errorHandlers, antiPatterns };
+}
+function analyseObservability(command, cwd) {
+  console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
+  const files = extractSourceFilesFromCommand2(command, cwd);
+  if (files.length === 0) {
+    if (/\bgit\s+diff\b/.test(command) || /\bgit diff/.test(command)) {
+    }
+  }
+  if (files.length === 0) {
+    return null;
+  }
+  const perFile = [];
+  let totalLogStatements = 0;
+  let totalErrorHandlers = 0;
+  let errorHandlersLogged = 0;
+  const allAntiPatterns = [];
+  for (const file of files) {
+    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
+      console.debug("observability: skipping self-analysis of", file);
+      continue;
+    }
+    const result = scanFile3(file, cwd);
+    perFile.push({
+      file: path3.relative(cwd, file),
+      logCount: result.logCount,
+      errorHandlers: result.errorHandlers.length,
+      errorHandlersLogged: result.errorHandlers.filter((h) => h.logged).length,
+      antiPatterns: result.antiPatterns
+    });
+    totalLogStatements += result.logCount;
+    totalErrorHandlers += result.errorHandlers.length;
+    errorHandlersLogged += result.errorHandlers.filter((h) => h.logged).length;
+    allAntiPatterns.push(...result.antiPatterns);
+  }
+  return {
+    totalLogStatements,
+    totalErrorHandlers,
+    errorHandlersLogged,
+    antiPatterns: allAntiPatterns,
+    files: files.map((f) => path3.relative(cwd, f)),
+    perFile
+  };
+}
+function analyseObservabilityFromOutput(commandOutput, cwd) {
+  const files = extractSourceFilesFromOutput(commandOutput, cwd);
+  if (files.length === 0) return null;
+  const perFile = [];
+  let totalLogStatements = 0;
+  let totalErrorHandlers = 0;
+  let errorHandlersLogged = 0;
+  const allAntiPatterns = [];
+  for (const file of files) {
+    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
+      console.debug("observability: skipping self-analysis of", file);
+      continue;
+    }
+    const result = scanFile3(file, cwd);
+    perFile.push({
+      file: path3.relative(cwd, file),
+      logCount: result.logCount,
+      errorHandlers: result.errorHandlers.length,
+      errorHandlersLogged: result.errorHandlers.filter((h) => h.logged).length,
+      antiPatterns: result.antiPatterns
+    });
+    totalLogStatements += result.logCount;
+    totalErrorHandlers += result.errorHandlers.length;
+    errorHandlersLogged += result.errorHandlers.filter((h) => h.logged).length;
+    allAntiPatterns.push(...result.antiPatterns);
+  }
+  return {
+    totalLogStatements,
+    totalErrorHandlers,
+    errorHandlersLogged,
+    antiPatterns: allAntiPatterns,
+    files: files.map((f) => path3.relative(cwd, f)),
+    perFile
+  };
+}
+
+// src/regression.ts
+console.debug("regression: module loaded", { pid: process.pid });
+function extractNumber(stdout, extract) {
+  if (extract) {
+    const match = stdout.match(new RegExp(extract));
+    if (!match || match[1] === void 0) return null;
+    const value2 = Number(match[1]);
+    return Number.isFinite(value2) ? value2 : null;
+  }
+  const numbers = stdout.match(/-?\d+(?:\.\d+)?/g);
+  if (!numbers || numbers.length === 0) return null;
+  const value = Number(numbers[numbers.length - 1]);
+  return Number.isFinite(value) ? value : null;
 }
 
 // src/evaluate-proof.ts
@@ -22721,7 +22578,7 @@ async function hManual(n, b) {
   return mk(b, { status: "skipped", output: `${label} not verified \u2014 dod_verify(dod_id, "${n.id}")` });
 }
 function hExecFail(r, b) {
-  if (!r.killed && !r.notFound) return null;
+  if (!(r.killed || r.notFound)) return null;
   return mk(b, { status: "fail", output: r.combined, error: r.error, exit_code: r.exitCode, duration_ms: r.duration });
 }
 async function hMutate(n, r, b) {
@@ -23089,7 +22946,7 @@ async function hTdd(n, r, b, cmd, cwd) {
       exit_code: r.exitCode,
       duration_ms: r.duration
     });
-  if (!g && !n.seen_failing) {
+  if (!(g || n.seen_failing)) {
     n.seen_failing = true;
     n.seen_failing_at = (/* @__PURE__ */ new Date()).toISOString();
     return mk(b, {
@@ -23211,7 +23068,8 @@ function flattenLeaf(node, index, parentPath) {
   const currentPath = parentPath ? `${parentPath}.children.${index}` : `${index}`;
   if (node.children && node.children.length > 0) {
     return flattenConcreteLeaves(node.children, currentPath);
-  } else if (node.refinement === "concrete") {
+  }
+  if (node.refinement === "concrete") {
     return [{ node, node_path: currentPath }];
   }
   return [];
@@ -23242,9 +23100,9 @@ function traverseNodePath(nodes, parts, depth) {
   if (!node.children) return null;
   return traverseNodePath(node.children, parts, depth + 1);
 }
-function findNodeByPath(nodes, path8) {
-  if (!path8) return null;
-  return traverseNodePath(nodes, path8.split("."), 0);
+function findNodeByPath(nodes, path9) {
+  if (!path9) return null;
+  return traverseNodePath(nodes, path9.split("."), 0);
 }
 function isExecutablePredicate(type) {
   return type !== "manual" && type !== "review";
@@ -23274,7 +23132,7 @@ function computeProofFingerprint(roots) {
     if (node.advisory !== void 0) line += `|adv:${node.advisory}`;
     return line;
   }).join("\n");
-  return createHash3("sha256").update(data).digest("hex").slice(0, 12);
+  return createHash2("sha256").update(data).digest("hex").slice(0, 12);
 }
 async function runCommand(command, cwd) {
   const start = Date.now();
@@ -23513,10 +23371,6 @@ function carryForwardDrafts(nodes, parentPath, targetPath, out) {
     }
   }
 }
-
-// src/author.ts
-import { promises as fs2 } from "node:fs";
-import * as path5 from "node:path";
 
 // src/format-result.ts
 function formatCheckResult(result) {
@@ -23851,9 +23705,9 @@ function renderMarkdown(doc) {
 }
 async function writeMarkdown(doc) {
   const content = renderMarkdown(doc);
-  const dir = path5.dirname(doc.markdown_path);
-  await fs2.mkdir(dir, { recursive: true });
-  await fs2.writeFile(doc.markdown_path, content, "utf-8");
+  const dir = path4.dirname(doc.markdown_path);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(doc.markdown_path, content, "utf-8");
 }
 function updateDocFromCheckResult(doc, result) {
   for (const leafResult of result.leaves) {
@@ -23875,15 +23729,333 @@ function updateDocFromCheckResult(doc, result) {
   };
 }
 
+// src/command-check.ts
+import { execFile } from "node:child_process";
+import { existsSync as existsSync4 } from "node:fs";
+import * as path5 from "node:path";
+import { promisify as promisify2 } from "node:util";
+var execFileAsync = promisify2(execFile);
+var isWindows = process.platform === "win32";
+var CMD_BUILTINS = /* @__PURE__ */ new Set([
+  "assoc",
+  "break",
+  "call",
+  "cd",
+  "chdir",
+  "cls",
+  "color",
+  "copy",
+  "date",
+  "del",
+  "dir",
+  "echo",
+  "endlocal",
+  "erase",
+  "exit",
+  "for",
+  "ftype",
+  "goto",
+  "if",
+  "md",
+  "mkdir",
+  "mklink",
+  "move",
+  "path",
+  "pause",
+  "popd",
+  "prompt",
+  "pushd",
+  "rd",
+  "rem",
+  "ren",
+  "rename",
+  "rmdir",
+  "set",
+  "setlocal",
+  "shift",
+  "start",
+  "time",
+  "title",
+  "type",
+  "ver",
+  "verify",
+  "vol"
+]);
+var OPERATOR_CHARS = /* @__PURE__ */ new Set(["|", "&", ";", "(", ")", "`", "\n", "\r"]);
+function isQuote(c) {
+  return c === '"' || c === "'";
+}
+function splitCommands(command) {
+  const segments = [];
+  let buf = "";
+  let quote = null;
+  for (const c of command) {
+    if (quote) {
+      buf += c;
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (isQuote(c)) {
+      quote = c;
+      buf += c;
+      continue;
+    }
+    if (OPERATOR_CHARS.has(c)) {
+      if (buf.trim()) segments.push(buf);
+      buf = "";
+      continue;
+    }
+    buf += c;
+  }
+  if (buf.trim()) segments.push(buf);
+  return segments;
+}
+function skipRedirection(s) {
+  let t = s.trim();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    if (t[0] === ">" || t[0] === "<" || /^\d+>/.test(t)) {
+      const m = t.match(/^\S+\s*/);
+      t = (m ? t.slice(m[0].length) : t.slice(1)).trim();
+      changed = true;
+    }
+  }
+  return t;
+}
+function extractQuotedToken(s) {
+  const q = s[0];
+  const end = s.indexOf(q, 1);
+  const token = end === -1 ? s.slice(1) : s.slice(1, end);
+  return { token: token || null, rest: end === -1 ? "" : s.slice(end + 1) };
+}
+function extractBareToken(s) {
+  const m = s.match(/^(\S+)\s*/);
+  const token = m ? m[1] : s;
+  const rest = m ? s.slice(m[0].length) : "";
+  return { token, rest };
+}
+function isShellAssignment(s) {
+  if (!s) return false;
+  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(s);
+}
+function firstToken(segment) {
+  let s = skipRedirection(segment);
+  while (s.length > 0) {
+    if (isQuote(s[0])) {
+      const r2 = extractQuotedToken(s);
+      return r2.token;
+    }
+    const r = extractBareToken(s);
+    if (isShellAssignment(r.token)) {
+      s = r.rest.trim();
+      continue;
+    }
+    return r.token;
+  }
+  return null;
+}
+function hasAlnum(s) {
+  return /[A-Za-z0-9]/.test(s);
+}
+function extractCommandNames(command) {
+  const names = [];
+  for (const seg of splitCommands(command)) {
+    const tok = firstToken(seg);
+    if (tok && hasAlnum(tok) && !names.includes(tok)) names.push(tok);
+  }
+  return names;
+}
+var existsCache = /* @__PURE__ */ new Map();
+async function onPath(name) {
+  try {
+    if (isWindows) {
+      await execFileAsync("where", [name], { timeout: 5e3, windowsHide: true });
+    } else {
+      await execFileAsync("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5e3 });
+    }
+    return true;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("command-check: tool existence check failed", { name, err: msg });
+    return false;
+  }
+}
+function looksLikePath(name) {
+  return name.includes("/") || name.includes("\\") || /^[A-Za-z]:/.test(name) || name.startsWith(".");
+}
+async function toolExists(name, cwd) {
+  const key = `${isWindows ? name.toLowerCase() : name}|${cwd}`;
+  const cached2 = existsCache.get(key);
+  if (cached2 !== void 0) return cached2;
+  let ok;
+  if (isWindows && CMD_BUILTINS.has(name.toLowerCase())) {
+    ok = true;
+  } else if (looksLikePath(name)) {
+    ok = resolvePathExists(name, cwd);
+  } else {
+    ok = await onPath(name);
+  }
+  existsCache.set(key, ok);
+  return ok;
+}
+function resolvePathExists(name, cwd) {
+  const base = path5.isAbsolute(name) ? name : path5.resolve(cwd, name);
+  const candidates = isWindows ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
+  return candidates.some((p) => existsSync4(p));
+}
+async function findMissingTools(commands, cwd) {
+  const missing = [];
+  for (const command of commands) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const name of extractCommandNames(command)) {
+      if (seen.has(name)) continue;
+      seen.add(name);
+      if (!await toolExists(name, cwd)) missing.push({ command, tool: name });
+    }
+  }
+  return missing;
+}
+var currentOs = process.platform;
+
+// src/notify.ts
+import { spawn } from "node:child_process";
+var isWindows2 = process.platform === "win32";
+function playJingle() {
+  if (!isWindows2) return;
+  const tune = [
+    "[console]::beep(659,140)",
+    // E5
+    "[console]::beep(988,140)",
+    // B5
+    "[console]::beep(1319,180)",
+    // E6
+    "[console]::beep(988,90)",
+    // B5
+    "[console]::beep(1319,260)"
+    // E6 (hold)
+  ].join(";");
+  try {
+    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", tune], {
+      stdio: "ignore",
+      detached: true,
+      windowsHide: true
+    });
+    child.on("error", () => {
+    });
+    child.unref();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[dod-guard] playJingle failed", { err: msg });
+  }
+}
+var VERIFY_DIALOG_SCRIPT = `
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+$form = New-Object System.Windows.Forms.Form
+$form.Text = $env:DODG_TITLE
+$form.Width = 520
+$form.Height = 420
+$form.StartPosition = "CenterScreen"
+$form.Topmost = $true
+$form.FormBorderStyle = "FixedDialog"
+$form.MaximizeBox = $false
+$form.MinimizeBox = $false
+
+$msgBox = New-Object System.Windows.Forms.TextBox
+$msgBox.Multiline = $true
+$msgBox.ReadOnly = $true
+$msgBox.ScrollBars = "Vertical"
+$msgBox.Text = $env:DODG_MSG
+$msgBox.Location = New-Object System.Drawing.Point(10,10)
+$msgBox.Size = New-Object System.Drawing.Size(484,220)
+$form.Controls.Add($msgBox)
+
+$noteLabel = New-Object System.Windows.Forms.Label
+$noteLabel.Text = "Notes (optional):"
+$noteLabel.Location = New-Object System.Drawing.Point(10,238)
+$noteLabel.Size = New-Object System.Drawing.Size(200,20)
+$form.Controls.Add($noteLabel)
+
+$noteBox = New-Object System.Windows.Forms.TextBox
+$noteBox.Multiline = $true
+$noteBox.ScrollBars = "Vertical"
+$noteBox.Location = New-Object System.Drawing.Point(10,260)
+$noteBox.Size = New-Object System.Drawing.Size(484,60)
+$form.Controls.Add($noteBox)
+
+$passBtn = New-Object System.Windows.Forms.Button
+$passBtn.Text = "PASS"
+$passBtn.DialogResult = [System.Windows.Forms.DialogResult]::Yes
+$passBtn.Location = New-Object System.Drawing.Point(300,335)
+$passBtn.Size = New-Object System.Drawing.Size(90,30)
+$form.Controls.Add($passBtn)
+$form.AcceptButton = $passBtn
+
+$failBtn = New-Object System.Windows.Forms.Button
+$failBtn.Text = "FAIL"
+$failBtn.DialogResult = [System.Windows.Forms.DialogResult]::No
+$failBtn.Location = New-Object System.Drawing.Point(400,335)
+$failBtn.Size = New-Object System.Drawing.Size(90,30)
+$form.Controls.Add($failBtn)
+$form.CancelButton = $failBtn
+
+$dialogResult = $form.ShowDialog()
+
+$verdict = "no"
+if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) { $verdict = "yes" }
+
+$payload = @{ result = $verdict; note = $noteBox.Text } | ConvertTo-Json -Compress
+[Console]::Out.Write($payload)
+`;
+function showVerifyDialog(title, body) {
+  if (!isWindows2) return Promise.resolve({ result: "no" });
+  return new Promise((resolve8) => {
+    try {
+      const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", VERIFY_DIALOG_SCRIPT], {
+        stdio: ["ignore", "pipe", "ignore"],
+        windowsHide: true,
+        env: {
+          ...process.env,
+          DODG_MSG: body,
+          DODG_TITLE: title
+        }
+      });
+      let out = "";
+      child.stdout.on("data", (chunk) => {
+        out += chunk.toString();
+      });
+      child.on("error", () => resolve8({ result: "no" }));
+      child.on("close", () => {
+        try {
+          const parsed = JSON.parse(out.trim());
+          const result = parsed.result === "yes" ? "yes" : "no";
+          const note = typeof parsed.note === "string" && parsed.note.trim() ? parsed.note.trim() : void 0;
+          resolve8({ result, note });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error("[dod-guard] showVerifyDialog parse failed", { err: msg });
+          resolve8({ result: "no" });
+        }
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[dod-guard] showVerifyDialog spawn failed", { err: msg });
+      resolve8({ result: "no" });
+    }
+  });
+}
+
 // src/parser.ts
-import { promises as fs3 } from "node:fs";
+import { promises as fs2 } from "node:fs";
 function extractQuoted(text) {
   const m = text.match(/"([^"]+)"/);
   return m ? m[1] : null;
 }
 function extractExitCode(text, pattern) {
   const m = text.match(pattern);
-  return m ? parseInt(m[1], 10) : null;
+  return m ? Number.parseInt(m[1], 10) : null;
 }
 var INFERENCE_RULES = [
   {
@@ -23941,13 +24113,13 @@ function inferPredicate(description) {
     if (rule.test(lower)) return rule.infer(lower, description);
   }
   const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
-  if (exitMatch) return { type: "exit_code", value: parseInt(exitMatch[1], 10) };
+  if (exitMatch) return { type: "exit_code", value: Number.parseInt(exitMatch[1], 10) };
   if (lower.startsWith("manual")) return { type: "manual" };
   if (lower.startsWith("review") || lower.includes("review \u2014") || lower.includes("review:")) return { type: "review" };
   for (const [keywords, type] of CATEGORY_PATTERNS) {
     if (keywords.some((k) => lower.includes(k))) {
       const countMatch = type === "assertions" ? lower.match(/at least (\d+)/) : null;
-      const value = countMatch ? parseInt(countMatch[1], 10) : 0;
+      const value = countMatch ? Number.parseInt(countMatch[1], 10) : 0;
       return { type, value };
     }
   }
@@ -24128,435 +24300,8 @@ function parseContent(content) {
   return { title, goal, date: date3, cwd, sections, roots };
 }
 async function parseMarkdown(filePath) {
-  const content = await fs3.readFile(filePath, "utf-8");
+  const content = await fs2.readFile(filePath, "utf-8");
   return parseContent(content);
-}
-
-// src/notify.ts
-import { spawn } from "node:child_process";
-var isWindows = process.platform === "win32";
-function playJingle() {
-  if (!isWindows) return;
-  const tune = [
-    "[console]::beep(659,140)",
-    // E5
-    "[console]::beep(988,140)",
-    // B5
-    "[console]::beep(1319,180)",
-    // E6
-    "[console]::beep(988,90)",
-    // B5
-    "[console]::beep(1319,260)"
-    // E6 (hold)
-  ].join(";");
-  try {
-    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", tune], {
-      stdio: "ignore",
-      detached: true,
-      windowsHide: true
-    });
-    child.on("error", () => {
-    });
-    child.unref();
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[dod-guard] playJingle failed", { err: msg });
-  }
-}
-var VERIFY_DIALOG_SCRIPT = `
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
-$form = New-Object System.Windows.Forms.Form
-$form.Text = $env:DODG_TITLE
-$form.Width = 520
-$form.Height = 420
-$form.StartPosition = "CenterScreen"
-$form.Topmost = $true
-$form.FormBorderStyle = "FixedDialog"
-$form.MaximizeBox = $false
-$form.MinimizeBox = $false
-
-$msgBox = New-Object System.Windows.Forms.TextBox
-$msgBox.Multiline = $true
-$msgBox.ReadOnly = $true
-$msgBox.ScrollBars = "Vertical"
-$msgBox.Text = $env:DODG_MSG
-$msgBox.Location = New-Object System.Drawing.Point(10,10)
-$msgBox.Size = New-Object System.Drawing.Size(484,220)
-$form.Controls.Add($msgBox)
-
-$noteLabel = New-Object System.Windows.Forms.Label
-$noteLabel.Text = "Notes (optional):"
-$noteLabel.Location = New-Object System.Drawing.Point(10,238)
-$noteLabel.Size = New-Object System.Drawing.Size(200,20)
-$form.Controls.Add($noteLabel)
-
-$noteBox = New-Object System.Windows.Forms.TextBox
-$noteBox.Multiline = $true
-$noteBox.ScrollBars = "Vertical"
-$noteBox.Location = New-Object System.Drawing.Point(10,260)
-$noteBox.Size = New-Object System.Drawing.Size(484,60)
-$form.Controls.Add($noteBox)
-
-$passBtn = New-Object System.Windows.Forms.Button
-$passBtn.Text = "PASS"
-$passBtn.DialogResult = [System.Windows.Forms.DialogResult]::Yes
-$passBtn.Location = New-Object System.Drawing.Point(300,335)
-$passBtn.Size = New-Object System.Drawing.Size(90,30)
-$form.Controls.Add($passBtn)
-$form.AcceptButton = $passBtn
-
-$failBtn = New-Object System.Windows.Forms.Button
-$failBtn.Text = "FAIL"
-$failBtn.DialogResult = [System.Windows.Forms.DialogResult]::No
-$failBtn.Location = New-Object System.Drawing.Point(400,335)
-$failBtn.Size = New-Object System.Drawing.Size(90,30)
-$form.Controls.Add($failBtn)
-$form.CancelButton = $failBtn
-
-$dialogResult = $form.ShowDialog()
-
-$verdict = "no"
-if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) { $verdict = "yes" }
-
-$payload = @{ result = $verdict; note = $noteBox.Text } | ConvertTo-Json -Compress
-[Console]::Out.Write($payload)
-`;
-function showVerifyDialog(title, body) {
-  if (!isWindows) return Promise.resolve({ result: "no" });
-  return new Promise((resolve7) => {
-    try {
-      const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", VERIFY_DIALOG_SCRIPT], {
-        stdio: ["ignore", "pipe", "ignore"],
-        windowsHide: true,
-        env: {
-          ...process.env,
-          DODG_MSG: body,
-          DODG_TITLE: title
-        }
-      });
-      let out = "";
-      child.stdout.on("data", (chunk) => {
-        out += chunk.toString();
-      });
-      child.on("error", () => resolve7({ result: "no" }));
-      child.on("close", () => {
-        try {
-          const parsed = JSON.parse(out.trim());
-          const result = parsed.result === "yes" ? "yes" : "no";
-          const note = typeof parsed.note === "string" && parsed.note.trim() ? parsed.note.trim() : void 0;
-          resolve7({ result, note });
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error("[dod-guard] showVerifyDialog parse failed", { err: msg });
-          resolve7({ result: "no" });
-        }
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("[dod-guard] showVerifyDialog spawn failed", { err: msg });
-      resolve7({ result: "no" });
-    }
-  });
-}
-
-// src/command-check.ts
-import { execFile } from "node:child_process";
-import { promisify as promisify2 } from "node:util";
-import { existsSync as existsSync4 } from "node:fs";
-import * as path6 from "node:path";
-var execFileAsync = promisify2(execFile);
-var isWindows2 = process.platform === "win32";
-var CMD_BUILTINS = /* @__PURE__ */ new Set([
-  "assoc",
-  "break",
-  "call",
-  "cd",
-  "chdir",
-  "cls",
-  "color",
-  "copy",
-  "date",
-  "del",
-  "dir",
-  "echo",
-  "endlocal",
-  "erase",
-  "exit",
-  "for",
-  "ftype",
-  "goto",
-  "if",
-  "md",
-  "mkdir",
-  "mklink",
-  "move",
-  "path",
-  "pause",
-  "popd",
-  "prompt",
-  "pushd",
-  "rd",
-  "rem",
-  "ren",
-  "rename",
-  "rmdir",
-  "set",
-  "setlocal",
-  "shift",
-  "start",
-  "time",
-  "title",
-  "type",
-  "ver",
-  "verify",
-  "vol"
-]);
-var OPERATOR_CHARS = /* @__PURE__ */ new Set(["|", "&", ";", "(", ")", "`", "\n", "\r"]);
-function isQuote(c) {
-  return c === '"' || c === "'";
-}
-function splitCommands(command) {
-  const segments = [];
-  let buf = "";
-  let quote = null;
-  for (const c of command) {
-    if (quote) {
-      buf += c;
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (isQuote(c)) {
-      quote = c;
-      buf += c;
-      continue;
-    }
-    if (OPERATOR_CHARS.has(c)) {
-      if (buf.trim()) segments.push(buf);
-      buf = "";
-      continue;
-    }
-    buf += c;
-  }
-  if (buf.trim()) segments.push(buf);
-  return segments;
-}
-function skipRedirection(s) {
-  let t = s.trim();
-  let changed = true;
-  while (changed) {
-    changed = false;
-    if (t[0] === ">" || t[0] === "<" || /^\d+>/.test(t)) {
-      const m = t.match(/^\S+\s*/);
-      t = (m ? t.slice(m[0].length) : t.slice(1)).trim();
-      changed = true;
-    }
-  }
-  return t;
-}
-function extractQuotedToken(s) {
-  const q = s[0];
-  const end = s.indexOf(q, 1);
-  const token = end === -1 ? s.slice(1) : s.slice(1, end);
-  return { token: token || null, rest: end === -1 ? "" : s.slice(end + 1) };
-}
-function extractBareToken(s) {
-  const m = s.match(/^(\S+)\s*/);
-  const token = m ? m[1] : s;
-  const rest = m ? s.slice(m[0].length) : "";
-  return { token, rest };
-}
-function isShellAssignment(s) {
-  if (!s) return false;
-  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(s);
-}
-function firstToken(segment) {
-  let s = skipRedirection(segment);
-  while (s.length > 0) {
-    if (isQuote(s[0])) {
-      const r2 = extractQuotedToken(s);
-      return r2.token;
-    }
-    const r = extractBareToken(s);
-    if (isShellAssignment(r.token)) {
-      s = r.rest.trim();
-      continue;
-    }
-    return r.token;
-  }
-  return null;
-}
-function hasAlnum(s) {
-  return /[A-Za-z0-9]/.test(s);
-}
-function extractCommandNames(command) {
-  const names = [];
-  for (const seg of splitCommands(command)) {
-    const tok = firstToken(seg);
-    if (tok && hasAlnum(tok) && !names.includes(tok)) names.push(tok);
-  }
-  return names;
-}
-var existsCache = /* @__PURE__ */ new Map();
-async function onPath(name) {
-  try {
-    if (isWindows2) {
-      await execFileAsync("where", [name], { timeout: 5e3, windowsHide: true });
-    } else {
-      await execFileAsync("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5e3 });
-    }
-    return true;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("command-check: tool existence check failed", { name, err: msg });
-    return false;
-  }
-}
-function looksLikePath(name) {
-  return name.includes("/") || name.includes("\\") || /^[A-Za-z]:/.test(name) || name.startsWith(".");
-}
-async function toolExists(name, cwd) {
-  const key = `${isWindows2 ? name.toLowerCase() : name}|${cwd}`;
-  const cached2 = existsCache.get(key);
-  if (cached2 !== void 0) return cached2;
-  let ok;
-  if (isWindows2 && CMD_BUILTINS.has(name.toLowerCase())) {
-    ok = true;
-  } else if (looksLikePath(name)) {
-    ok = resolvePathExists(name, cwd);
-  } else {
-    ok = await onPath(name);
-  }
-  existsCache.set(key, ok);
-  return ok;
-}
-function resolvePathExists(name, cwd) {
-  const base = path6.isAbsolute(name) ? name : path6.resolve(cwd, name);
-  const candidates = isWindows2 ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
-  return candidates.some((p) => existsSync4(p));
-}
-async function findMissingTools(commands, cwd) {
-  const missing = [];
-  for (const command of commands) {
-    const seen = /* @__PURE__ */ new Set();
-    for (const name of extractCommandNames(command)) {
-      if (seen.has(name)) continue;
-      seen.add(name);
-      if (!await toolExists(name, cwd)) missing.push({ command, tool: name });
-    }
-  }
-  return missing;
-}
-var currentOs = process.platform;
-
-// src/baseline.ts
-var WIRING_LABEL = "Integration (wiring): a structural grep proving the change is connected to the real system (import in a real caller, route registration, public export).";
-var BEHAVIORAL_LABEL = "Integration (behavioral): exercise the change through the system's actual entry point (API/CLI/page render), not a test harness.";
-var TEST_LABEL = "Full test suite: a proof that the whole suite stays green (no regressions).";
-var HARD_MANDATORY = [
-  { cat: "integration_wiring", label: WIRING_LABEL },
-  { cat: "integration_behavioral", label: BEHAVIORAL_LABEL },
-  { cat: "test", label: TEST_LABEL }
-];
-var TDD_WARN_BUG = 'No "tdd" proof \u2014 a bug fix should include a regression test that fails first (red), then passes. Add a tdd proof, or provide a skip_reason.';
-var TDD_WARN_GENERAL = 'No "tdd" proof \u2014 new functionality should include a fail-first unit test. Add a tdd proof, or provide a skip_reason.';
-var MUTATION_WARN = 'No "mutation" proof \u2014 a green suite can still catch zero bugs. For critical logic, add a mutation proof (cargo-mutants / mutmut / Stryker), or provide a skip_reason.';
-var STREAMLINE_WARN = 'No "streamline" proof \u2014 when revising existing code, a streamline proof verifies old implementations were removed. Add one (grep/rg/findstr for old symbols), or provide a skip_reason.';
-var OBSERVABILITY_WARN = 'No "observability" proof \u2014 changed source files should have log statements at error paths, no empty catch/swallowed errors. Add an observability proof, or provide a skip_reason.';
-var BREVITY_WARN = `No "brevity" proof \u2014 changed source files should be scanned for structural bloat: functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines, mixed selection+iteration, files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines, lines >${DEFAULT_BREVITY_OPTS.maxLineLength} chars, replacement without removal. Add a brevity proof, or provide a skip_reason.`;
-var OPTIONAL_REQUIRING_JUSTIFICATION = [
-  {
-    cat: "tdd",
-    label: "TDD: a fail-first test for new/changed behavior.",
-    warnMsg: (t) => t === "bug" ? TDD_WARN_BUG : TDD_WARN_GENERAL
-  },
-  {
-    cat: "mutation",
-    label: "Mutation testing: prove the test suite actually catches bugs.",
-    warnMsg: () => MUTATION_WARN
-  },
-  { cat: "streamline", label: "Streamline: prove old implementations were removed.", warnMsg: () => STREAMLINE_WARN },
-  {
-    cat: "observability",
-    label: "Observability: prove changed files are instrumented for debugging.",
-    warnMsg: () => OBSERVABILITY_WARN
-  },
-  {
-    cat: "brevity",
-    label: "Brevity: prove code is clean \u2014 short functions, single-purpose.",
-    warnMsg: () => BREVITY_WARN
-  }
-];
-var REGRESSION_CATEGORIES = [
-  { cat: "performance", label: "Performance: prove no perf regression via regression predicate." },
-  { cat: "complexity", label: "Complexity: prove cyclomatic complexity does not regress." },
-  { cat: "coverage", label: "Coverage: prove test coverage does not drop." },
-  { cat: "duplication", label: "Duplication: prove code duplication does not increase." }
-];
-var STRONG = ["test", "tdd", "integration_behavioral", "manual"];
-var WEAK = ["structure", "lint", "format"];
-function collectPresent(steps) {
-  const present = /* @__PURE__ */ new Set();
-  for (const s of steps) for (const p of s.proofs) present.add(p.category);
-  return present;
-}
-function checkHardMandatory(present, type) {
-  const errors = [];
-  for (const m of HARD_MANDATORY) {
-    if (!present.has(m.cat)) {
-      errors.push(`Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`);
-    }
-  }
-  return errors;
-}
-function checkOptional(present, skipReasons) {
-  const errors = [];
-  const warnings = [];
-  const check2 = (cat, label, _warnMsg) => {
-    if (present.has(cat)) return;
-    const reason = skipReasons?.[cat];
-    if (reason) {
-      warnings.push(`\u26A0 "${cat}" omitted (skip_reason: "${reason}").`);
-    } else {
-      errors.push(
-        `Missing "${cat}" proof. ${label} Either add a proof for this category, or provide skip_reasons["${cat}"] with a justification for why it does not apply to this change.`
-      );
-    }
-  };
-  for (const opt of OPTIONAL_REQUIRING_JUSTIFICATION) {
-    check2(opt.cat, opt.label, opt.warnMsg("general"));
-  }
-  for (const rc of REGRESSION_CATEGORIES) {
-    check2(rc.cat, rc.label, rc.label);
-  }
-  return { errors, warnings };
-}
-function checkStrengthOnly(steps) {
-  const warnings = [];
-  for (const s of steps) {
-    if (s.proofs.length === 0) continue;
-    const hasStrong = s.proofs.some((p) => STRONG.includes(p.category));
-    const allWeak = s.proofs.every((p) => WEAK.includes(p.category));
-    if (!hasStrong && allWeak) {
-      warnings.push(
-        `Step "${s.title}" has only presence/structural proofs \u2014 these confirm code exists, not that it works. Add a behavioral or test proof.`
-      );
-    }
-  }
-  return warnings;
-}
-function validateBaseline(type, steps, skipReasons) {
-  console.debug("baseline: validateBaseline", { type, stepCount: steps.length });
-  const present = collectPresent(steps);
-  const errors = [];
-  const warnings = [];
-  errors.push(...checkHardMandatory(present, type));
-  const optResult = checkOptional(present, skipReasons);
-  errors.push(...optResult.errors);
-  warnings.push(...optResult.warnings);
-  warnings.push(...checkStrengthOnly(steps));
-  return { errors, warnings };
 }
 
 // src/schemas.ts
@@ -24640,6 +24385,151 @@ var SectionsSchema = external_exports.object({
   open_questions: external_exports.string().optional(),
   open_risks: external_exports.string().optional()
 });
+
+// src/store.ts
+import * as crypto from "node:crypto";
+import { promises as fs3 } from "node:fs";
+import * as os from "node:os";
+import * as path6 from "node:path";
+function getStoreDir() {
+  return process.env.DOD_STORE_DIR || path6.join(os.homedir(), ".claude", "dod-store");
+}
+async function ensureStoreDir() {
+  await fs3.mkdir(getStoreDir(), { recursive: true });
+}
+function docPath(id) {
+  return path6.join(getStoreDir(), `${id}.json`);
+}
+function generateId() {
+  return crypto.randomUUID();
+}
+async function save(doc) {
+  await ensureStoreDir();
+  await fs3.writeFile(docPath(doc.id), JSON.stringify(doc, null, 2), "utf-8");
+}
+async function load(id) {
+  try {
+    const data = await fs3.readFile(docPath(id), "utf-8");
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("store: failed to load document", { id, err: err instanceof Error ? err.message : String(err) });
+    return null;
+  }
+}
+async function loadRaw(id) {
+  try {
+    const data = await fs3.readFile(docPath(id), "utf-8");
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("store: failed to loadRaw document", { id, err: err instanceof Error ? err.message : String(err) });
+    return null;
+  }
+}
+async function findByPath(markdownPath) {
+  await ensureStoreDir();
+  const files = await fs3.readdir(getStoreDir());
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const data = await fs3.readFile(path6.join(getStoreDir(), file), "utf-8");
+      const doc = JSON.parse(data);
+      const normalizedStored = path6.resolve(doc.markdown_path).toLowerCase();
+      const normalizedSearch = path6.resolve(markdownPath).toLowerCase();
+      if (normalizedStored === normalizedSearch) return doc;
+    } catch (err) {
+      console.error("store: failed to read file during findByPath", {
+        file,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+  return null;
+}
+async function listAll() {
+  await ensureStoreDir();
+  const files = await fs3.readdir(getStoreDir());
+  const docs = [];
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const data = await fs3.readFile(path6.join(getStoreDir(), file), "utf-8");
+      docs.push(JSON.parse(data));
+    } catch (err) {
+      console.error("store: failed to read file during listAll", {
+        file,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+  return docs;
+}
+function legacyStepToTaskNode(step) {
+  const children = step.proofs.map((p) => ({
+    id: p.id,
+    title: p.title ?? p.description ?? step.title,
+    refinement: "concrete",
+    command: p.command,
+    predicate: p.predicate,
+    description: p.description ?? "",
+    category: p.category,
+    advisory: p.advisory,
+    last_status: p.last_status ?? "pending",
+    last_output: p.last_output,
+    last_checked: p.last_checked
+  }));
+  return {
+    id: step.id,
+    title: step.title,
+    refinement: "concrete",
+    last_status: children.length > 0 ? "pending" : "draft",
+    children
+  };
+}
+async function migrateDoc(doc) {
+  if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) return false;
+  const legacySteps = doc.steps;
+  if (!(legacySteps && Array.isArray(legacySteps)) || legacySteps.length === 0) {
+    return false;
+  }
+  doc.roots = legacySteps.map(legacyStepToTaskNode);
+  delete doc.steps;
+  delete doc.locked;
+  const leafLines = [];
+  function walk(nodes) {
+    for (const n of nodes) {
+      if (n.children) walk(n.children);
+      else if (n.refinement === "concrete" && n.command) {
+        leafLines.push(`${n.command}|${n.predicate?.type ?? ""}|${n.predicate?.value ?? ""}|${n.advisory ?? false}`);
+      }
+    }
+  }
+  walk(doc.roots);
+  if (leafLines.length > 0) {
+    const hash = crypto.createHash("sha256");
+    for (const line of leafLines.sort()) hash.update(line);
+    doc.proof_fingerprint = hash.digest("hex");
+  }
+  await save(doc);
+  return true;
+}
+async function listAllRaw() {
+  await ensureStoreDir();
+  const files = await fs3.readdir(getStoreDir());
+  const docs = [];
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const data = await fs3.readFile(path6.join(getStoreDir(), file), "utf-8");
+      docs.push(JSON.parse(data));
+    } catch (err) {
+      console.error("store: failed to read file during listAllRaw", {
+        file,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+  return docs;
+}
 
 // src/tree-utils.ts
 var nodeIdCounter = 0;
@@ -24757,6 +24647,338 @@ function collectBaselineProofs(node) {
   return results;
 }
 
+// src/tools/dod-add-node.ts
+async function handleDodAddNode(params) {
+  const { dod_id, parent_path, title, refinement, intent, command, predicate, description, category, advisory } = params;
+  const doc = await load(dod_id);
+  if (!doc) throw new Error("ERROR: DoD not found.");
+  let parent = null;
+  if (parent_path) {
+    parent = findNodeByPath(doc.roots, parent_path);
+    if (!parent) throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
+    if (!parent.children)
+      throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children. Add to a task group.`);
+  }
+  if (refinement === "concrete") {
+    if (!(command && predicate && description)) {
+      throw new Error("ERROR: concrete nodes require command, predicate, and description.");
+    }
+    const pred = predicate;
+    if (isExecutablePredicate(pred.type) && command.trim() !== "") {
+      const missing = await findMissingTools([command], doc.cwd);
+      if (missing.length > 0) {
+        throw new Error(formatMissingTools(missing));
+      }
+    }
+  }
+  if (refinement === "draft" && !intent) {
+    throw new Error("ERROR: draft nodes require an intent describing what this will prove.");
+  }
+  const node = {
+    id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title,
+    refinement,
+    last_status: refinement === "draft" ? "draft" : "pending"
+  };
+  if (refinement === "draft") node.intent = intent;
+  if (refinement === "concrete") {
+    node.command = command;
+    node.predicate = predicate;
+    node.description = description;
+    node.category = category;
+    if (advisory !== void 0) node.advisory = advisory;
+    else if (predicate?.type === "regression") node.advisory = true;
+    if (predicate?.type === "regression" && node.category === "coverage" && predicate.lower_is_better === void 0) {
+      node.predicate.lower_is_better = false;
+    }
+  }
+  if (parent) {
+    parent.children?.push(node);
+  } else {
+    doc.roots.push(node);
+  }
+  const fullPath = parent_path ? `${parent_path}.children.${(parent?.children?.length ?? 0) - 1}` : `${doc.roots.length - 1}`;
+  doc.amendments.push({
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    node_path: fullPath,
+    action: "added",
+    new_value: { title, refinement },
+    reason: `Added ${refinement} node: ${title}`
+  });
+  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
+  await save(doc);
+  await writeMarkdown(doc);
+  return {
+    path: fullPath,
+    message: `Node "${title}" (${refinement}) added at path "${fullPath}".
+Run dod_check to verify${refinement === "draft" ? " after refining with dod_refine" : ""}.`
+  };
+}
+
+// src/tools/dod-create.ts
+import * as path7 from "node:path";
+
+// src/baseline.ts
+var WIRING_LABEL = "Integration (wiring): a structural grep proving the change is connected to the real system (import in a real caller, route registration, public export).";
+var BEHAVIORAL_LABEL = "Integration (behavioral): exercise the change through the system's actual entry point (API/CLI/page render), not a test harness.";
+var TEST_LABEL = "Full test suite: a proof that the whole suite stays green (no regressions).";
+var HARD_MANDATORY = [
+  { cat: "integration_wiring", label: WIRING_LABEL },
+  { cat: "integration_behavioral", label: BEHAVIORAL_LABEL },
+  { cat: "test", label: TEST_LABEL }
+];
+var TDD_WARN_BUG = 'No "tdd" proof \u2014 a bug fix should include a regression test that fails first (red), then passes. Add a tdd proof, or provide a skip_reason.';
+var TDD_WARN_GENERAL = 'No "tdd" proof \u2014 new functionality should include a fail-first unit test. Add a tdd proof, or provide a skip_reason.';
+var MUTATION_WARN = 'No "mutation" proof \u2014 a green suite can still catch zero bugs. For critical logic, add a mutation proof (cargo-mutants / mutmut / Stryker), or provide a skip_reason.';
+var STREAMLINE_WARN = 'No "streamline" proof \u2014 when revising existing code, a streamline proof verifies old implementations were removed. Add one (grep/rg/findstr for old symbols), or provide a skip_reason.';
+var OBSERVABILITY_WARN = 'No "observability" proof \u2014 changed source files should have log statements at error paths, no empty catch/swallowed errors. Add an observability proof, or provide a skip_reason.';
+var BREVITY_WARN = `No "brevity" proof \u2014 changed source files should be scanned for structural bloat: functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines, mixed selection+iteration, files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines, lines >${DEFAULT_BREVITY_OPTS.maxLineLength} chars, replacement without removal. Add a brevity proof, or provide a skip_reason.`;
+var OPTIONAL_REQUIRING_JUSTIFICATION = [
+  {
+    cat: "tdd",
+    label: "TDD: a fail-first test for new/changed behavior.",
+    warnMsg: (t) => t === "bug" ? TDD_WARN_BUG : TDD_WARN_GENERAL
+  },
+  {
+    cat: "mutation",
+    label: "Mutation testing: prove the test suite actually catches bugs.",
+    warnMsg: () => MUTATION_WARN
+  },
+  { cat: "streamline", label: "Streamline: prove old implementations were removed.", warnMsg: () => STREAMLINE_WARN },
+  {
+    cat: "observability",
+    label: "Observability: prove changed files are instrumented for debugging.",
+    warnMsg: () => OBSERVABILITY_WARN
+  },
+  {
+    cat: "brevity",
+    label: "Brevity: prove code is clean \u2014 short functions, single-purpose.",
+    warnMsg: () => BREVITY_WARN
+  }
+];
+var REGRESSION_CATEGORIES = [
+  { cat: "performance", label: "Performance: prove no perf regression via regression predicate." },
+  { cat: "complexity", label: "Complexity: prove cyclomatic complexity does not regress." },
+  { cat: "coverage", label: "Coverage: prove test coverage does not drop." },
+  { cat: "duplication", label: "Duplication: prove code duplication does not increase." }
+];
+var STRONG = ["test", "tdd", "integration_behavioral", "manual"];
+var WEAK = ["structure", "lint", "format"];
+function collectPresent(steps) {
+  const present = /* @__PURE__ */ new Set();
+  for (const s of steps) for (const p of s.proofs) present.add(p.category);
+  return present;
+}
+function checkHardMandatory(present, type) {
+  const errors = [];
+  for (const m of HARD_MANDATORY) {
+    if (!present.has(m.cat)) {
+      errors.push(`Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`);
+    }
+  }
+  return errors;
+}
+function checkOptional(present, skipReasons) {
+  const errors = [];
+  const warnings = [];
+  const check2 = (cat, label, _warnMsg) => {
+    if (present.has(cat)) return;
+    const reason = skipReasons?.[cat];
+    if (reason) {
+      warnings.push(`\u26A0 "${cat}" omitted (skip_reason: "${reason}").`);
+    } else {
+      errors.push(
+        `Missing "${cat}" proof. ${label} Either add a proof for this category, or provide skip_reasons["${cat}"] with a justification for why it does not apply to this change.`
+      );
+    }
+  };
+  for (const opt of OPTIONAL_REQUIRING_JUSTIFICATION) {
+    check2(opt.cat, opt.label, opt.warnMsg("general"));
+  }
+  for (const rc of REGRESSION_CATEGORIES) {
+    check2(rc.cat, rc.label, rc.label);
+  }
+  return { errors, warnings };
+}
+function checkStrengthOnly(steps) {
+  const warnings = [];
+  for (const s of steps) {
+    if (s.proofs.length === 0) continue;
+    const hasStrong = s.proofs.some((p) => STRONG.includes(p.category));
+    const allWeak = s.proofs.every((p) => WEAK.includes(p.category));
+    if (!hasStrong && allWeak) {
+      warnings.push(
+        `Step "${s.title}" has only presence/structural proofs \u2014 these confirm code exists, not that it works. Add a behavioral or test proof.`
+      );
+    }
+  }
+  return warnings;
+}
+function validateBaseline(type, steps, skipReasons) {
+  console.debug("baseline: validateBaseline", { type, stepCount: steps.length });
+  const present = collectPresent(steps);
+  const errors = [];
+  const warnings = [];
+  errors.push(...checkHardMandatory(present, type));
+  const optResult = checkOptional(present, skipReasons);
+  errors.push(...optResult.errors);
+  warnings.push(...optResult.warnings);
+  warnings.push(...checkStrengthOnly(steps));
+  return { errors, warnings };
+}
+
+// src/tools/dod-create.ts
+async function handleDodCreate(params) {
+  const { title, goal, type, cwd, markdown_path, sections, roots: rootInputs, skip_reasons } = params;
+  const resolvedCwd = path7.resolve(cwd);
+  resetNodeIdCounter();
+  const roots = buildTaskNodes(rootInputs);
+  const osError = await checkCommandsForOs(roots, resolvedCwd);
+  if (osError) return osError.content?.[0]?.text ?? "ERROR: OS validation failed.";
+  validateBaseline(type, extractBaselineSteps(roots), skip_reasons);
+  const id = generateId();
+  const date3 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+  const fingerprint = computeProofFingerprint(roots);
+  const doc = {
+    id,
+    title,
+    goal,
+    date: date3,
+    type,
+    cwd: resolvedCwd,
+    markdown_path: path7.resolve(markdown_path),
+    created_at: (/* @__PURE__ */ new Date()).toISOString(),
+    skip_reasons,
+    sections,
+    roots,
+    proof_fingerprint: fingerprint || void 0,
+    amendments: []
+  };
+  await save(doc);
+  await writeMarkdown(doc);
+  const concreteCount = flattenConcreteLeaves(roots).length;
+  const draftCount = countDraftNodes(roots);
+  const rootCount = roots.length;
+  const baseline = validateBaseline(
+    type,
+    extractBaselineSteps(roots),
+    skip_reasons
+  );
+  const warningBlock = baseline.errors.length > 0 || baseline.warnings.length > 0 ? [
+    "",
+    "\u26A0\uFE0F Baseline advisories:",
+    ...baseline.errors.map((e) => `  \u2022 ${e} (will be enforced at dod_refine time)`),
+    ...baseline.warnings.map((w) => `  \u2022 ${w}`)
+  ] : [];
+  return [
+    "DoD created.",
+    "",
+    `ID: ${id}`,
+    `Path: ${markdown_path}`,
+    `Roots: ${rootCount}`,
+    `Concrete proofs: ${concreteCount}`,
+    `Draft nodes: ${draftCount}`,
+    fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
+    ...warningBlock,
+    "",
+    draftCount > 0 ? `${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end. Use dod_check(nodePath="0") to verify one subtree at a time.` : "All nodes are concrete \u2014 dod_check can verify the full DoD.",
+    "",
+    "NEXT: run `dod_check` to validate proof commands execute on this OS."
+  ].filter(Boolean).join("\n");
+}
+
+// src/tools/dod-refine.ts
+async function handleDodRefine(params) {
+  const { dod_id, node_path: nodePath, mode, command, predicate, description, category, advisory, children } = params;
+  const doc = await load(dod_id);
+  if (!doc) return "ERROR: DoD not found.";
+  const node = findNodeByPath(doc.roots, nodePath);
+  if (!node) return `ERROR: node not found at path "${nodePath}".`;
+  if (node.refinement !== "draft") return `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.`;
+  if (node.children && node.children.length > 0)
+    return `ERROR: node "${node.title}" is a task group with children \u2014 not a leaf. Refine its children instead.`;
+  const oldIntent = node.intent;
+  if (mode === "concretize") {
+    if (!(command && predicate)) {
+      return "ERROR: concretize mode requires command and predicate.";
+    }
+    const pred = predicate;
+    if (isExecutablePredicate(pred.type) && command.trim() !== "") {
+      const missing = await findMissingTools([command], doc.cwd);
+      if (missing.length > 0) {
+        return formatMissingTools(missing);
+      }
+    }
+    node.refinement = "concrete";
+    node.command = command;
+    node.predicate = pred;
+    node.description = description ?? "";
+    if (category) node.category = category;
+    if (advisory !== void 0) node.advisory = advisory;
+    else if (pred.type === "regression") node.advisory = true;
+    if (pred.type === "regression" && node.category === "coverage" && pred.lower_is_better === void 0) {
+      node.predicate.lower_is_better = false;
+    }
+    node.intent = void 0;
+    node.last_status = "pending";
+    doc.amendments.push({
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      node_path: nodePath,
+      action: "refined",
+      old_value: { refinement: "draft", intent: oldIntent },
+      new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
+      reason: `Refined draft \u2192 concrete: ${description ?? ""}`
+    });
+  } else {
+    if (!children || children.length === 0) {
+      return "ERROR: subdivide mode requires at least one child in children array.";
+    }
+    const childNodes = children.map((c) => {
+      const childId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${Math.random().toString(36).slice(2, 4)}`;
+      return {
+        id: childId,
+        title: c.title,
+        refinement: "draft",
+        intent: c.intent,
+        last_status: "draft"
+      };
+    });
+    node.children = childNodes;
+    node.refinement = "concrete";
+    node.intent = void 0;
+    delete node.command;
+    delete node.predicate;
+    delete node.description;
+    delete node.category;
+    doc.amendments.push({
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      node_path: nodePath,
+      action: "refined",
+      old_value: { refinement: "draft", intent: oldIntent },
+      new_value: { refinement: "concrete", children: childNodes },
+      reason: `Subdivided into ${children.length} child draft nodes`
+    });
+  }
+  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
+  const draftCount = countDraftNodes(doc.roots);
+  await save(doc);
+  await writeMarkdown(doc);
+  const msg = mode === "concretize" ? [
+    `Node refined: "${node.title}" is now concrete.`,
+    `Command: \`${command}\``,
+    `Predicate: ${predicate.type}:${predicate.value ?? "(no value)"}`,
+    `Description: ${description}`,
+    draftCount === 0 ? "\n\u{1F389} All nodes are now concrete \u2014 the DoD is fully verifiable. Run dod_check." : `
+${draftCount} draft node(s) remaining.`
+  ].join("\n") : [
+    `Node subdivided: "${node.title}" is now a task group with ${children?.length} child draft(s).`,
+    `Children: ${children?.map((c) => `"${c.title}"`).join(", ")}`,
+    `
+${draftCount} draft node(s) total. Refine each draft leaf before running dod_check.`
+  ].join("\n");
+  return msg;
+}
+
 // src/index.ts
 import { fileURLToPath } from "node:url";
 var server = new McpServer({
@@ -24778,68 +25000,9 @@ server.tool(
     ),
     skip_reasons: external_exports.record(external_exports.string()).optional().describe("Map from optional proof category to justification for omission.")
   },
-  async ({ title, goal, type, cwd, markdown_path, sections, roots: rootInputs, skip_reasons }) => {
-    const resolvedCwd = path7.resolve(cwd);
-    resetNodeIdCounter();
-    const roots = buildTaskNodes(rootInputs);
-    const osError = await checkCommandsForOs(roots, resolvedCwd);
-    if (osError) return osError;
-    const baseline = validateBaseline(
-      type,
-      extractBaselineSteps(roots),
-      skip_reasons
-    );
-    const id = generateId();
-    const date3 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-    const fingerprint = computeProofFingerprint(roots);
-    const doc = {
-      id,
-      title,
-      goal,
-      date: date3,
-      type,
-      cwd: resolvedCwd,
-      markdown_path: path7.resolve(markdown_path),
-      created_at: (/* @__PURE__ */ new Date()).toISOString(),
-      skip_reasons,
-      sections,
-      roots,
-      proof_fingerprint: fingerprint || void 0,
-      amendments: []
-    };
-    await save(doc);
-    await writeMarkdown(doc);
-    const concreteCount = flattenConcreteLeaves(roots).length;
-    const draftCount = countDraftNodes(roots);
-    const rootCount = roots.length;
-    const warningBlock = baseline.errors.length > 0 || baseline.warnings.length > 0 ? [
-      "",
-      "\u26A0\uFE0F Baseline advisories:",
-      ...baseline.errors.map((e) => `  \u2022 ${e} (will be enforced at dod_refine time)`),
-      ...baseline.warnings.map((w) => `  \u2022 ${w}`)
-    ] : [];
-    return {
-      content: [
-        {
-          type: "text",
-          text: [
-            "DoD created.",
-            "",
-            `ID: ${id}`,
-            `Path: ${markdown_path}`,
-            `Roots: ${rootCount}`,
-            `Concrete proofs: ${concreteCount}`,
-            `Draft nodes: ${draftCount}`,
-            fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
-            ...warningBlock,
-            "",
-            draftCount > 0 ? `${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end. Use dod_check(nodePath="0") to verify one subtree at a time.` : "All nodes are concrete \u2014 dod_check can verify the full DoD.",
-            "",
-            "NEXT: run `dod_check` to validate proof commands execute on this OS."
-          ].filter(Boolean).join("\n")
-        }
-      ]
-    };
+  async (params) => {
+    const result = await handleDodCreate(params);
+    return { content: [{ type: "text", text: result }] };
   }
 );
 var ELICITATION_MAX_WAIT_MS = 2147483647;
@@ -24996,110 +25159,9 @@ server.tool(
       })
     ).optional().describe("(subdivide) Child draft nodes \u2014 each becomes a draft leaf under the new task group")
   },
-  async ({ dod_id, node_path: nodePath, mode, command, predicate, description, category, advisory, children }) => {
-    const doc = await load(dod_id);
-    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
-    const node = findNodeByPath(doc.roots, nodePath);
-    if (!node) return { content: [{ type: "text", text: `ERROR: node not found at path "${nodePath}".` }] };
-    if (node.refinement !== "draft")
-      return {
-        content: [
-          { type: "text", text: `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.` }
-        ]
-      };
-    if (node.children && node.children.length > 0)
-      return {
-        content: [
-          {
-            type: "text",
-            text: `ERROR: node "${node.title}" is a task group with children \u2014 not a leaf. Refine its children instead.`
-          }
-        ]
-      };
-    const oldIntent = node.intent;
-    if (mode === "concretize") {
-      if (!command || !predicate) {
-        return { content: [{ type: "text", text: "ERROR: concretize mode requires command and predicate." }] };
-      }
-      const pred = predicate;
-      if (isExecutablePredicate(pred.type) && command.trim() !== "") {
-        const missing = await findMissingTools([command], doc.cwd);
-        if (missing.length > 0) {
-          return { content: [{ type: "text", text: formatMissingTools(missing) }] };
-        }
-      }
-      node.refinement = "concrete";
-      node.command = command;
-      node.predicate = pred;
-      node.description = description ?? "";
-      if (category) node.category = category;
-      if (advisory !== void 0) node.advisory = advisory;
-      else if (pred.type === "regression") node.advisory = true;
-      if (pred.type === "regression" && node.category === "coverage" && pred.lower_is_better === void 0) {
-        node.predicate.lower_is_better = false;
-      }
-      node.intent = void 0;
-      node.last_status = "pending";
-      doc.amendments.push({
-        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        node_path: nodePath,
-        action: "refined",
-        old_value: { refinement: "draft", intent: oldIntent },
-        new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
-        reason: `Refined draft \u2192 concrete: ${description ?? ""}`
-      });
-    } else {
-      if (!children || children.length === 0) {
-        return {
-          content: [
-            { type: "text", text: "ERROR: subdivide mode requires at least one child in children array." }
-          ]
-        };
-      }
-      const childNodes = children.map((c) => {
-        const childId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${Math.random().toString(36).slice(2, 4)}`;
-        return {
-          id: childId,
-          title: c.title,
-          refinement: "draft",
-          intent: c.intent,
-          last_status: "draft"
-        };
-      });
-      node.children = childNodes;
-      node.refinement = "concrete";
-      node.intent = void 0;
-      delete node.command;
-      delete node.predicate;
-      delete node.description;
-      delete node.category;
-      doc.amendments.push({
-        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        node_path: nodePath,
-        action: "refined",
-        old_value: { refinement: "draft", intent: oldIntent },
-        new_value: { refinement: "concrete", children: childNodes },
-        reason: `Subdivided into ${children.length} child draft nodes`
-      });
-    }
-    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
-    const draftCount = countDraftNodes(doc.roots);
-    await save(doc);
-    await writeMarkdown(doc);
-    const msg = mode === "concretize" ? [
-      `Node refined: "${node.title}" is now concrete.`,
-      `Command: \`${command}\``,
-      `Predicate: ${predicate.type}:${predicate.value ?? "(no value)"}`,
-      `Description: ${description}`,
-      draftCount === 0 ? "\n\u{1F389} All nodes are now concrete \u2014 the DoD is fully verifiable. Run dod_check." : `
-${draftCount} draft node(s) remaining.`
-    ].join("\n") : [
-      `Node subdivided: "${node.title}" is now a task group with ${children?.length} child draft(s).`,
-      `Children: ${children?.map((c) => `"${c.title}"`).join(", ")}`,
-      `
-${draftCount} draft node(s) total. Refine each draft leaf before running dod_check.`
-    ].join("\n");
-    return { content: [{ type: "text", text: msg }] };
+  async (params) => {
+    const result = await handleDodRefine(params);
+    return { content: [{ type: "text", text: result }] };
   }
 );
 server.tool(
@@ -25117,90 +25179,13 @@ server.tool(
     category: ProofCategorySchema.optional(),
     advisory: external_exports.boolean().optional()
   },
-  async ({ dod_id, parent_path, title, refinement, intent, command, predicate, description, category, advisory }) => {
-    const doc = await load(dod_id);
-    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
-    let parent = null;
-    if (parent_path) {
-      parent = findNodeByPath(doc.roots, parent_path);
-      if (!parent)
-        return { content: [{ type: "text", text: `ERROR: parent node not found at path "${parent_path}".` }] };
-      if (!parent.children)
-        return {
-          content: [
-            {
-              type: "text",
-              text: `ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children. Add to a task group.`
-            }
-          ]
-        };
+  async (params) => {
+    try {
+      const result = await handleDodAddNode(params);
+      return { content: [{ type: "text", text: result.message }] };
+    } catch (err) {
+      return { content: [{ type: "text", text: err instanceof Error ? err.message : String(err) }] };
     }
-    if (refinement === "concrete") {
-      if (!command || !predicate || !description) {
-        return {
-          content: [
-            { type: "text", text: "ERROR: concrete nodes require command, predicate, and description." }
-          ]
-        };
-      }
-      const pred = predicate;
-      if (isExecutablePredicate(pred.type) && command.trim() !== "") {
-        const missing = await findMissingTools([command], doc.cwd);
-        if (missing.length > 0) {
-          return { content: [{ type: "text", text: formatMissingTools(missing) }] };
-        }
-      }
-    }
-    if (refinement === "draft" && !intent) {
-      return {
-        content: [
-          { type: "text", text: "ERROR: draft nodes require an intent describing what this will prove." }
-        ]
-      };
-    }
-    const node = {
-      id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      title,
-      refinement,
-      last_status: refinement === "draft" ? "draft" : "pending"
-    };
-    if (refinement === "draft") node.intent = intent;
-    if (refinement === "concrete") {
-      node.command = command;
-      node.predicate = predicate;
-      node.description = description;
-      node.category = category;
-      if (advisory !== void 0) node.advisory = advisory;
-      else if (predicate?.type === "regression") node.advisory = true;
-      if (predicate?.type === "regression" && node.category === "coverage" && predicate.lower_is_better === void 0) {
-        node.predicate.lower_is_better = false;
-      }
-    }
-    if (parent) {
-      parent.children?.push(node);
-    } else {
-      doc.roots.push(node);
-    }
-    const fullPath = parent_path ? `${parent_path}.children.${(parent?.children?.length ?? 0) - 1}` : `${doc.roots.length - 1}`;
-    doc.amendments.push({
-      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      node_path: fullPath,
-      action: "added",
-      new_value: { title, refinement },
-      reason: `Added ${refinement} node: ${title}`
-    });
-    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
-    await save(doc);
-    await writeMarkdown(doc);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Node "${title}" (${refinement}) added at path "${fullPath}".
-Run dod_check to verify${refinement === "draft" ? " after refining with dod_refine" : ""}.`
-        }
-      ]
-    };
   }
 );
 server.tool(
@@ -25217,7 +25202,7 @@ server.tool(
     const lastPart = parts[parts.length - 1];
     if (lastPart === "children")
       return { content: [{ type: "text", text: "ERROR: path must target a node, not 'children'." }] };
-    const childIdx = parseInt(lastPart, 10);
+    const childIdx = Number.parseInt(lastPart, 10);
     if (Number.isNaN(childIdx))
       return { content: [{ type: "text", text: `ERROR: invalid path "${nodePath}".` }] };
     if (parts.length === 1) {
@@ -25467,7 +25452,7 @@ server.tool("dod_list", "List all tracked DoD documents with their last check st
   }
   const lines = docs.map((d) => {
     const status = d.last_check?.overall?.toUpperCase() ?? "UNCHECKED";
-    if (!d.roots || !Array.isArray(d.roots)) {
+    if (!(d.roots && Array.isArray(d.roots))) {
       const legacyCount = d.steps?.length ?? 0;
       return [
         `\u2022 ${d.title}`,
@@ -25511,7 +25496,7 @@ server.tool(
     }
     try {
       const parsed = await parseMarkdown(mdPath);
-      const resolvedCwd = path7.resolve(cwd);
+      const resolvedCwd = path8.resolve(cwd);
       const osError = await checkCommandsForOs(parsed.roots, resolvedCwd);
       if (osError) return osError;
       const id = generateId();
@@ -25522,7 +25507,7 @@ server.tool(
         goal: parsed.goal,
         date: parsed.date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
         cwd: resolvedCwd,
-        markdown_path: path7.resolve(mdPath),
+        markdown_path: path8.resolve(mdPath),
         created_at: (/* @__PURE__ */ new Date()).toISOString(),
         sections: parsed.sections,
         roots: parsed.roots,
@@ -25582,7 +25567,7 @@ server.tool(
         };
       }
       const legacySteps = doc.steps;
-      if (!legacySteps || !Array.isArray(legacySteps)) {
+      if (!(legacySteps && Array.isArray(legacySteps))) {
         return {
           content: [{ type: "text", text: `"${doc.title}" has no steps or roots \u2014 cannot migrate.` }]
         };
@@ -25617,7 +25602,7 @@ server.tool(
     }
     const allDocs = await listAllRaw();
     const legacyDocs = allDocs.filter(
-      (d) => d.steps && (!d.roots || !Array.isArray(d.roots) || d.roots.length === 0)
+      (d) => d.steps && (!(d.roots && Array.isArray(d.roots)) || d.roots.length === 0)
     );
     if (legacyDocs.length === 0) {
       return {
@@ -25667,12 +25652,12 @@ server.tool(
     };
   }
 );
-var _dodGuardFilename = fileURLToPath(import.meta.url);
+var _filename = fileURLToPath(import.meta.url);
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
-if (process.argv[1] === _dodGuardFilename) {
+if (process.argv[1] === _filename) {
   main().catch((err) => {
     process.stderr.write(`dod-guard MCP server failed: ${err}
 `);

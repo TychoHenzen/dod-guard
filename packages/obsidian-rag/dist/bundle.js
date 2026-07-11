@@ -6905,9 +6905,7 @@ __export(cli_exports, {
   cliGetTags: () => cliGetTags,
   cliListFiles: () => cliListFiles,
   cliReadNote: () => cliReadNote,
-  cliSearch: () => cliSearch,
   ensureObsidianRunning: () => ensureObsidianRunning,
-  getVaultInfo: () => getVaultInfo,
   listVaults: () => listVaults
 });
 import { execFile } from "node:child_process";
@@ -6948,25 +6946,6 @@ async function listVaults() {
   const { stdout } = await runObsidian(["vaults", "verbose"]);
   return parseVaultsOutput(stdout);
 }
-async function getVaultInfo(vaultName) {
-  const { stdout } = await obsidian(vaultName, ["vault"]);
-  const m = {};
-  for (const line of stdout.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const parts = trimmed.split("	");
-    if (parts.length >= 2) {
-      const key = parts[0].trim().toLowerCase();
-      const val = parts[1].trim();
-      if (key === "name") m.name = val;
-      if (key === "path") m.path = val;
-      if (key === "files") m.noteCount = parseInt(val, 10) || 0;
-      if (key === "folders") m.folderCount = parseInt(val, 10) || 0;
-      if (key === "size") m.size = val;
-    }
-  }
-  return m;
-}
 async function cliReadNote(vaultName, notePath) {
   const { stdout } = await obsidian(vaultName, ["read", `path=${notePath}`]);
   return stdout;
@@ -6979,15 +6958,6 @@ async function cliListFiles(vaultName, directory) {
     throw new Error(`obsidian CLI files failed: ${stdout.trim().split("\n")[0]}`);
   }
   return stdout.split("\n").map((s) => s.trim()).filter(Boolean);
-}
-async function cliSearch(vaultName, query, limit = 20) {
-  const { stdout } = await obsidian(vaultName, [
-    "search",
-    `query=${escapeArg(query)}`,
-    `limit=${limit}`,
-    "format=text"
-  ]);
-  return stdout.split("\n").filter(Boolean);
 }
 async function cliGetBacklinks(vaultName, notePath) {
   const { stdout } = await obsidian(vaultName, ["backlinks", `path=${notePath}`]);
@@ -7006,7 +6976,7 @@ async function cliGetTags(vaultName) {
     const parts = trimmed.split("	");
     if (parts.length >= 2) {
       const tag = parts[0].replace(/^#/, "").trim();
-      const count = parseInt(parts[1], 10) || 0;
+      const count = Number.parseInt(parts[1], 10) || 0;
       if (tag) counts.set(tag, count);
     }
   }
@@ -10537,7 +10507,6 @@ var vault_exports = {};
 __export(vault_exports, {
   aggregateTags: () => aggregateTags,
   extractWikilinks: () => extractWikilinks,
-  getBacklinks: () => getBacklinks,
   memoryDir: () => memoryDir,
   readMemories: () => readMemories,
   readNote: () => readNote,
@@ -10546,9 +10515,9 @@ __export(vault_exports, {
   writeMemory: () => writeMemory,
   writeNote: () => writeNote
 });
-import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
-import { join, relative, basename, dirname } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync as existsSync2 } from "node:fs";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { basename, dirname, join as join2, relative } from "node:path";
 async function walkVault(vaultPath) {
   const files = [];
   const dirs = [vaultPath];
@@ -10557,7 +10526,7 @@ async function walkVault(vaultPath) {
     if (!dir) continue;
     const entries = await readdir(dir, { withFileTypes: true });
     for (const e of entries) {
-      const full = join(dir, e.name);
+      const full = join2(dir, e.name);
       if (e.isDirectory()) {
         const base = e.name;
         if (!base.startsWith(".")) {
@@ -10571,22 +10540,22 @@ async function walkVault(vaultPath) {
   return files;
 }
 async function readNote(vaultPath, notePath) {
-  const fullPath = join(vaultPath, notePath);
+  const fullPath = join2(vaultPath, notePath);
   const raw = await readFile(fullPath, "utf-8");
   const { data: frontmatter, content } = (0, import_gray_matter.default)(raw);
   const meta = extractMeta(notePath, frontmatter, content);
   return { ...meta, content, raw };
 }
 async function readNoteMeta(vaultPath, notePath) {
-  const fullPath = join(vaultPath, notePath);
+  const fullPath = join2(vaultPath, notePath);
   const raw = await readFile(fullPath, "utf-8");
   const { data: frontmatter, content } = (0, import_gray_matter.default)(raw);
   return extractMeta(notePath, frontmatter, content);
 }
 async function writeNote(vaultPath, notePath, frontmatter, content) {
-  const fullPath = join(vaultPath, notePath);
+  const fullPath = join2(vaultPath, notePath);
   const dir = dirname(fullPath);
-  if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+  if (!existsSync2(dir)) await mkdir(dir, { recursive: true });
   const fmStr = import_gray_matter.default.stringify(content.trim(), frontmatter);
   await writeFile(fullPath, fmStr, "utf-8");
 }
@@ -10597,19 +10566,6 @@ function extractWikilinks(content) {
     links.push(match[1].trim());
   }
   return [...new Set(links)];
-}
-async function getBacklinks(vaultPath, targetPath) {
-  const targetName = basename(targetPath, ".md");
-  const allFiles = await walkVault(vaultPath);
-  const backlinks = [];
-  for (const file of allFiles) {
-    if (file === targetPath) continue;
-    const note = await readNote(vaultPath, file);
-    if (note.content.includes(`[[${targetName}]]`)) {
-      backlinks.push(file);
-    }
-  }
-  return backlinks;
 }
 async function aggregateTags(vaultPath) {
   const allFiles = await walkVault(vaultPath);
@@ -10628,14 +10584,14 @@ async function aggregateTags(vaultPath) {
   return tagCounts;
 }
 function memoryDir(vaultPath) {
-  return join(vaultPath, MEMORY_DIR);
+  return join2(vaultPath, MEMORY_DIR);
 }
 async function walkMemoryDir(baseDir) {
   const results = [];
-  if (!existsSync(baseDir)) return results;
+  if (!existsSync2(baseDir)) return results;
   const entries = await readdir(baseDir, { withFileTypes: true });
   for (const entry of entries) {
-    const full = join(baseDir, entry.name);
+    const full = join2(baseDir, entry.name);
     if (entry.isDirectory()) {
       const sub = await walkMemoryDir(full);
       results.push(...sub);
@@ -10653,12 +10609,15 @@ async function readMemories(vaultPath) {
     const raw = await readFile(fullPath, "utf-8");
     const { data: fm, content } = (0, import_gray_matter.default)(raw);
     const relPath = relative(vaultPath, fullPath);
+    const memType = fm.type || fm.metadata?.type || "reference";
+    const typeBase = join2(dir, memType);
+    const id = relative(typeBase, fullPath).replace(/\.md$/, "").replace(/\\/g, "/");
     entries.push({
-      id: basename(fullPath, ".md"),
+      id,
       path: relPath,
       title: fm.name || basename(fullPath, ".md"),
       description: fm.description || "",
-      type: fm.type || fm.metadata?.type || "reference",
+      type: memType,
       content: content.trim(),
       metadata: fm.metadata || {},
       created: fm.created || "",
@@ -10671,7 +10630,7 @@ async function writeMemory(vaultPath, entry) {
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const fileName = `${entry.id}.md`;
   const typeDir = entry.type || "reference";
-  const notePath = join(MEMORY_DIR, typeDir, fileName);
+  const notePath = join2(MEMORY_DIR, typeDir, fileName);
   const frontmatter = {
     name: entry.title,
     description: entry.description,
@@ -10881,7 +10840,7 @@ async function semanticSearch(store2, vaultName, query, embedder2, limit = 20) {
     } else {
       embedding = chunk.embedding;
     }
-    if (!embedding || !Array.isArray(embedding)) {
+    if (!(embedding && Array.isArray(embedding))) {
       return { chunk, similarity: 0 };
     }
     const similarity = cosineSimilarity(queryEmbedding, embedding);
@@ -10960,6 +10919,11 @@ var init_retriever = __esm({
     SEMANTIC_WEIGHT = 0.6;
   }
 });
+
+// src/index.ts
+import { existsSync as existsSync4, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join as join4 } from "node:path";
 
 // ../../node_modules/zod/v3/external.js
 var external_exports = {};
@@ -25175,15 +25139,11 @@ var StdioServerTransport = class {
 
 // src/index.ts
 init_cli();
-init_vault();
-import { join as join4 } from "node:path";
-import { homedir } from "node:os";
-import { existsSync as existsSync4, readFileSync } from "node:fs";
 
 // src/store.ts
+import { existsSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
-import { join as join2 } from "node:path";
-import { existsSync as existsSync2, mkdirSync } from "node:fs";
+import { join } from "node:path";
 var DB_FILENAME = "obsidian-rag.db";
 var req = createRequire(import.meta.url);
 function loadBetterSqlite3() {
@@ -25219,8 +25179,8 @@ var Store = class {
   _dbPath;
   _initRan = false;
   constructor(config2) {
-    if (!existsSync2(config2.dbDir)) mkdirSync(config2.dbDir, { recursive: true });
-    this._dbPath = join2(config2.dbDir, DB_FILENAME);
+    if (!existsSync(config2.dbDir)) mkdirSync(config2.dbDir, { recursive: true });
+    this._dbPath = join(config2.dbDir, DB_FILENAME);
   }
   /** Lazy DB handle — bootstraps native deps + opens DB on first access. */
   get db() {
@@ -25467,10 +25427,10 @@ var Store = class {
 
 // src/tools.ts
 var import_gray_matter2 = __toESM(require_gray_matter(), 1);
-import { join as join3, basename as basename2 } from "node:path";
 import { existsSync as existsSync3 } from "node:fs";
+import { basename as basename2, join as join3 } from "node:path";
 function registerTools(server, opts) {
-  const { getVault, waitForVault: waitForVault2, getEmbedder: getEmbedder2, store: store2, setSelectPromise, setSelectedVault } = opts;
+  const { getVault: _getVault, waitForVault: waitForVault2, getEmbedder: getEmbedder2, store: store2, setSelectPromise, setSelectedVault } = opts;
   server.tool("vault_list", "List all known Obsidian vaults. Requires Obsidian app running.", {}, async () => {
     const { listVaults: listVaults2, cliAvailable: cliAvailable2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
     const vaults = await listVaults2();
@@ -25540,7 +25500,7 @@ CLI status: ${cliOk ? "\u2705 available" : "\u274C not found"}`
         store2.setVault(vault);
         setSelectedVault(vault);
         resolveSelect?.();
-        const idxMsg = await indexVault2(vault.path, vault.name, store2);
+        const _idxMsg = await indexVault2(vault.path, vault.name, store2);
         const status = store2.getIndexStatus(vault.name);
         return {
           content: [
@@ -25757,7 +25717,9 @@ ${lines.join("\n")}` }] };
     "memory_save",
     "Save a memory entry to the vault's Claude-Memories directory. Memories are markdown notes with frontmatter compatible with Claude Code's memory system.",
     {
-      id: external_exports.string().describe("Memory ID (kebab-case slug, used as filename)"),
+      id: external_exports.string().describe(
+        "Memory ID (kebab-case slug, used as filename; may contain slashes for nested paths e.g. 'project/memory-name')"
+      ),
       title: external_exports.string().describe("Short display name"),
       description: external_exports.string().describe("One-line summary"),
       content: external_exports.string().describe("Memory body content (markdown)"),
@@ -25913,6 +25875,7 @@ ${content}`;
 }
 
 // src/index.ts
+init_vault();
 import { fileURLToPath } from "node:url";
 var DB_DIR = join4(homedir(), ".claude", "obsidian-rag");
 var store = new Store({ dbDir: DB_DIR });
@@ -26026,8 +25989,8 @@ async function main() {
   await server.connect(transport);
   console.error("obsidian-rag MCP server running (stdio)");
 }
-var _obsidianRagFilename = fileURLToPath(import.meta.url);
-if (process.argv[1] === _obsidianRagFilename) {
+var _filename = fileURLToPath(import.meta.url);
+if (process.argv[1] === _filename) {
   main().catch((err) => {
     console.error("Fatal:", err);
     process.exit(1);
