@@ -151,6 +151,11 @@ export async function evolve(
       }
     }
 
+    // Apply best patch so next generation builds on current best, not baseline.
+    if (bestPatch && !bestPatch.startsWith("(no")) {
+      applyPatch(bestPatch, spec.cwd);
+    }
+
     if (genScores.length > 0) {
       const meanScore = genScores.reduce((a, b) => a + b, 0) / genScores.length;
       fitnessHistory.push({
@@ -234,7 +239,10 @@ function readTargetFiles(cwd: string, patterns: string[]): TargetFile[] {
           }
         }
       }
-    } catch { /* skip */ }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("evolve: readTargetFiles error", { pattern, err: msg });
+    }
   }
   return files;
 }
@@ -249,8 +257,12 @@ function matchSimple(name: string, pattern: string): boolean {
 function saveState(cwd: string, backupDir: string): void {
   try {
     execSync(`git stash push --include-untracked -m "evomcp-backup"`, { cwd, timeout: 10_000 });
-  } catch {
-    // Stash may fail if nothing to stash — that's fine
+  } catch (e: unknown) {
+    // Stash fails with exit 1 when nothing to stash — expected, not an error.
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!msg.includes("No local changes")) {
+      console.error("evolve: saveState failed", { cwd, err: msg });
+    }
   }
 }
 
@@ -261,11 +273,16 @@ function restoreState(cwd: string, backupDir: string): void {
     // Pop stash if it exists
     try {
       execSync(`git stash pop`, { cwd, timeout: 10_000 });
-    } catch {
-      // No stash to pop — fine
+    } catch (e: unknown) {
+      // No stash to pop — expected when saveState had nothing to stash.
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!msg.includes("No stash") && !msg.includes("not a git repository")) {
+        console.error("evolve: stash pop failed", { cwd, err: msg });
+      }
     }
-  } catch {
-    // Best-effort restore
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("evolve: restoreState failed", { cwd, err: msg });
   }
 }
 

@@ -157,18 +157,23 @@ export async function spawnClaude(
   };
 
   const args = ["-p", prompt];
-  if (opts.systemPrompt) {
-    // Write system prompt to temp file
-    const tmpDir = os.tmpdir();
-    const tmpFile = path.join(tmpDir, `evomcp-system-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.md`);
-    fs.writeFileSync(tmpFile, opts.systemPrompt, "utf-8");
-    args.push("--system-prompt-file", tmpFile);
-  }
 
   return new Promise((resolve) => {
     let stdout = "";
     let stderr = "";
     let settled = false;
+    let tmpFile: string | undefined;
+
+    if (opts.systemPrompt) {
+      const tmpDir = os.tmpdir();
+      tmpFile = path.join(tmpDir, `evomcp-system-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.md`);
+      fs.writeFileSync(tmpFile, opts.systemPrompt, "utf-8");
+      args.push("--system-prompt-file", tmpFile);
+    }
+
+    const cleanup = () => {
+      if (tmpFile) { try { fs.unlinkSync(tmpFile); } catch {} }
+    };
 
     const child = spawn("claude", args, {
       cwd: opts.cwd,
@@ -184,6 +189,7 @@ export async function spawnClaude(
         setTimeout(() => {
           try { child.kill("SIGKILL"); } catch {}
         }, 2000);
+        cleanup();
         resolve({
           output: stdout + "\n" + stderr,
           exitCode: -1,
@@ -205,13 +211,7 @@ export async function spawnClaude(
       if (!settled) {
         settled = true;
         clearTimeout(timer);
-
-        // Cleanup temp system prompt file
-        if (opts.systemPrompt) {
-          const tmpFile = args[args.indexOf("--system-prompt-file") + 1];
-          try { fs.unlinkSync(tmpFile); } catch {}
-        }
-
+        cleanup();
         resolve({
           output: stdout + (stderr ? "\n" + stderr : ""),
           exitCode: code ?? -1,
@@ -225,6 +225,7 @@ export async function spawnClaude(
       if (!settled) {
         settled = true;
         clearTimeout(timer);
+        cleanup();
         resolve({
           output: `Failed to spawn claude: ${err.message}`,
           exitCode: -1,
