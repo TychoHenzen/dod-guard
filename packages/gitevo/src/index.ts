@@ -33,7 +33,7 @@ const server = new McpServer({
   version: "0.1.3",
 });
 
-function wrap(fn: (...args: any[]) => string): (...args: any[]) => string {
+export function wrap(fn: (...args: any[]) => string): (...args: any[]) => string {
   return (...args: any[]) => {
     try {
       return fn(...args);

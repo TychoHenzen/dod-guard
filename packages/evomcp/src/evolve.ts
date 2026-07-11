@@ -245,7 +245,7 @@ function readTargetFiles(cwd: string, patterns: string[]): TargetFile[] {
   return files;
 }
 
-function matchSimple(name: string, pattern: string): boolean {
+export function matchSimple(name: string, pattern: string): boolean {
   const regex = new RegExp(`^${pattern.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`);
   return regex.test(name);
 }

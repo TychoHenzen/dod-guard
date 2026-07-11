@@ -167,7 +167,9 @@ export class Store {
   }
 
   getVault(name: string): VaultInfo | null {
-    return this.db.prepare("SELECT * FROM vaults WHERE name = ?").get(name) as VaultInfo | null;
+    const row = this.db.prepare("SELECT * FROM vaults WHERE name = ?").get(name) as any;
+    if (!row) return null;
+    return { name: row.name, path: row.path, noteCount: row.note_count ?? 0, folderCount: row.folder_count ?? 0 };
   }
 
   // ── Notes ────────────────────────────────────────────────────────
@@ -231,7 +233,7 @@ export class Store {
       path: r.path,
       title: r.title,
       snippet: r.snippet || "",
-      score: 1 / (1 + (r.rank || 0)),
+      score: Math.max(0, 1 / (1 + (r.rank || 0))),
     }));
   }
 
