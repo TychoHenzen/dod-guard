@@ -653,7 +653,13 @@ async function main() {
   console.error("obsidian-rag MCP server running (stdio)");
 }
 
-main().catch((err) => {
-  console.error("Fatal:", err);
-  process.exit(1);
-});
+import { fileURLToPath } from "node:url";
+const _obsidianRagFilename = fileURLToPath(import.meta.url);
+
+// Only auto-start when run directly, not when imported
+if (process.argv[1] === _obsidianRagFilename) {
+  main().catch((err) => {
+    console.error("Fatal:", err);
+    process.exit(1);
+  });
+}
