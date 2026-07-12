@@ -13,14 +13,18 @@
       },
       "lines": 173,
       "error_count": 0,
-      "recent_commits": 4
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/author.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 279,
       "error_count": 0,
-      "recent_commits": 4
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/baseline.ts": {
       "last_tested": "2026-07-12",
@@ -35,7 +39,9 @@
       },
       "lines": 179,
       "error_count": 0,
-      "recent_commits": 4
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/brevity.ts": {
       "last_tested": "2026-07-12",
@@ -50,14 +56,18 @@
       },
       "lines": 399,
       "error_count": 0,
-      "recent_commits": 3
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/checker.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 441,
       "error_count": 0,
-      "recent_commits": 6
+      "recent_commits": 6,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/command-check.ts": {
       "last_tested": "2026-07-12",
@@ -72,7 +82,9 @@
       },
       "lines": 241,
       "error_count": 0,
-      "recent_commits": 4
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/evaluate-proof.ts": {
       "last_tested": "2026-07-12",
@@ -87,56 +99,72 @@
       },
       "lines": 654,
       "error_count": 0,
-      "recent_commits": 7
+      "recent_commits": 7,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/find-functions.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 474,
       "error_count": 0,
-      "recent_commits": 3
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/format-result.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 101,
       "error_count": 0,
-      "recent_commits": 2
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/index.ts": {
       "last_tested": null,
       "last_result": null,
-      "lines": 778,
+      "lines": 780,
       "error_count": 0,
-      "recent_commits": 15
+      "recent_commits": 15,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/manual.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 72,
       "error_count": 0,
-      "recent_commits": 2
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/notify.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 36,
       "error_count": 0,
-      "recent_commits": 2
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/observability.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 657,
       "error_count": 0,
-      "recent_commits": 5
+      "recent_commits": 5,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/parser.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 294,
       "error_count": 0,
-      "recent_commits": 4
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/regression.ts": {
       "last_tested": "2026-07-12",
@@ -151,77 +179,99 @@
       },
       "lines": 25,
       "error_count": 0,
-      "recent_commits": 1
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/store.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 181,
       "error_count": 0,
-      "recent_commits": 5
+      "recent_commits": 5,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/test-metrics.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 971,
       "error_count": 0,
-      "recent_commits": 4
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/tools/dod-add-node.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 90,
       "error_count": 0,
-      "recent_commits": 1
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/tools/dod-create.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 86,
       "error_count": 0,
-      "recent_commits": 3
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/tools/dod-refine.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 117,
       "error_count": 0,
-      "recent_commits": 1
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/dod-guard/src/tree-utils.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 162,
       "error_count": 0,
-      "recent_commits": 5
+      "recent_commits": 5,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/evomcp/src/agent.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 416,
       "error_count": 0,
-      "recent_commits": 5
+      "recent_commits": 5,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/evomcp/src/dedup.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 170,
       "error_count": 0,
-      "recent_commits": 2
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/evomcp/src/evolve.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 271,
       "error_count": 0,
-      "recent_commits": 6
+      "recent_commits": 6,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/evomcp/src/index.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 270,
       "error_count": 0,
-      "recent_commits": 9
+      "recent_commits": 9,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/evomcp/src/solve.ts": {
       "last_tested": "2026-07-12",
@@ -236,7 +286,9 @@
       },
       "lines": 193,
       "error_count": 0,
-      "recent_commits": 5
+      "recent_commits": 5,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/gitevo/src/index.ts": {
       "last_tested": "2026-07-12",
@@ -251,35 +303,45 @@
       },
       "lines": 178,
       "error_count": 0,
-      "recent_commits": 8
+      "recent_commits": 8,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/gitevo/src/operations.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 457,
       "error_count": 0,
-      "recent_commits": 5
+      "recent_commits": 5,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/obsidian-rag/src/cli.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 144,
       "error_count": 0,
-      "recent_commits": 7
+      "recent_commits": 7,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/obsidian-rag/src/index.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 161,
       "error_count": 0,
-      "recent_commits": 15
+      "recent_commits": 15,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/obsidian-rag/src/indexer.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 141,
       "error_count": 0,
-      "recent_commits": 5
+      "recent_commits": 5,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/obsidian-rag/src/retriever.ts": {
       "last_tested": "2026-07-12",
@@ -294,28 +356,36 @@
       },
       "lines": 134,
       "error_count": 0,
-      "recent_commits": 4
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/obsidian-rag/src/store.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 327,
       "error_count": 0,
-      "recent_commits": 9
+      "recent_commits": 9,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/obsidian-rag/src/tools.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 484,
       "error_count": 0,
-      "recent_commits": 7
+      "recent_commits": 7,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     },
     "packages/obsidian-rag/src/vault.ts": {
       "last_tested": null,
       "last_result": null,
       "lines": 172,
       "error_count": 0,
-      "recent_commits": 10
+      "recent_commits": 10,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     }
   },
   "cumulative": {

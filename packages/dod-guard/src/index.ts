@@ -98,7 +98,8 @@ function buildConfirmer(): Confirmer {
     const promptLabel = isReview ? "Code review required" : "Manual verification required";
     const instructions = manualInstructions(node);
 
-    playJingle();
+    // Fire-and-forget jingle — never block verification on audio.
+    try { playJingle(); } catch { /* audio best-effort */ }
 
     const caps = server.server.getClientCapabilities();
     if (caps?.elicitation) {
@@ -112,7 +113,7 @@ function buildConfirmer(): Confirmer {
                 result: {
                   type: "string",
                   enum: ["pass", "fail"],
-                  enumNames: ["✅ Verified — works as expected", "❌ Not verified — does not work"],
+                  enumNames: ["Verified works as expected", "Not verified does not work"],
                   description: "Did the manual verification pass?",
                 },
                 note: {
@@ -134,10 +135,11 @@ function buildConfirmer(): Confirmer {
         }
         return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
       } catch (err: unknown) {
-        // Elicitation failed — fall through to fail-safe
         const msg = err instanceof Error ? err.message : String(err);
         console.error("dod-guard: elicitation request failed", { err: msg });
       }
+    } else {
+      console.error("dod-guard: MCP client does not support elicitation — manual verification unavailable");
     }
 
     return { answer: "fail", note: "no verification channel available on this host", channel: "elicitation" };

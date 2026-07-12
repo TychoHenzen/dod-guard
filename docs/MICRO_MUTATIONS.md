@@ -1,6 +1,6 @@
 # Micro-Mutation Report
 
-**Generated**: 2026-07-12 | **Commit**: `031bcb5`
+**Generated**: 2026-07-12 | **Commit**: `fe3bb0c`
 
 ## Summary
 
@@ -19,43 +19,43 @@
 
 ## File Inventory
 
-| Prio | File | Lines | Churn | Stale | Last Tested | Result | Status |
-|------|------|-------|-------|-------|-------------|--------|--------|
-| 96% | packages/dod-guard/src/index.ts | 778 | 15 | 90d | — | — | ⬜ |
-| 91% | packages/obsidian-rag/src/store.ts | 327 | 9 | 90d | — | — | ⬜ |
-| 90% | packages/obsidian-rag/src/vault.ts | 172 | 10 | 90d | — | — | ⬜ |
-| 90% | packages/evomcp/src/index.ts | 270 | 9 | 90d | — | — | ⬜ |
-| 90% | packages/obsidian-rag/src/index.ts | 161 | 15 | 90d | — | — | ⬜ |
-| 88% | packages/obsidian-rag/src/tools.ts | 484 | 7 | 90d | — | — | ⬜ |
-| 86% | packages/dod-guard/src/checker.ts | 441 | 6 | 90d | — | — | ⬜ |
-| 86% | packages/dod-guard/src/observability.ts | 657 | 5 | 90d | — | — | ⬜ |
-| 85% | packages/dod-guard/src/test-metrics.ts | 971 | 4 | 90d | — | — | ⬜ |
-| 84% | packages/gitevo/src/operations.ts | 457 | 5 | 90d | — | — | ⬜ |
-| 84% | packages/evomcp/src/evolve.ts | 271 | 6 | 90d | — | — | ⬜ |
-| 84% | packages/evomcp/src/agent.ts | 416 | 5 | 90d | — | — | ⬜ |
-| 84% | packages/obsidian-rag/src/cli.ts | 144 | 7 | 90d | — | — | ⬜ |
-| 80% | packages/dod-guard/src/store.ts | 181 | 5 | 90d | — | — | ⬜ |
-| 80% | packages/dod-guard/src/parser.ts | 294 | 4 | 90d | — | — | ⬜ |
-| 80% | packages/dod-guard/src/find-functions.ts | 474 | 3 | 90d | — | — | ⬜ |
-| 80% | packages/dod-guard/src/author.ts | 279 | 4 | 90d | — | — | ⬜ |
-| 80% | packages/dod-guard/src/tree-utils.ts | 162 | 5 | 90d | — | — | ⬜ |
-| 79% | packages/obsidian-rag/src/indexer.ts | 141 | 5 | 90d | — | — | ⬜ |
-| 74% | packages/evomcp/src/dedup.ts | 170 | 2 | 90d | — | — | ⬜ |
-| 74% | packages/dod-guard/src/tools/dod-create.ts | 86 | 3 | 90d | — | — | ⬜ |
-| 72% | packages/dod-guard/src/format-result.ts | 101 | 2 | 90d | — | — | ⬜ |
-| 71% | packages/dod-guard/src/manual.ts | 72 | 2 | 90d | — | — | ⬜ |
-| 71% | packages/dod-guard/src/tools/dod-refine.ts | 117 | 1 | 90d | — | — | ⬜ |
-| 70% | packages/dod-guard/src/tools/dod-add-node.ts | 90 | 1 | 90d | — | — | ⬜ |
-| 68% | packages/dod-guard/src/notify.ts | 36 | 2 | 90d | — | — | ⬜ |
-| 40% | packages/dod-guard/src/evaluate-proof.ts | 654 | 7 | 0d | 2026-07-12 | 390/740 killed | ⚠️ |
-| 36% | packages/gitevo/src/index.ts | 178 | 8 | 0d | 2026-07-12 | 7/126 killed | ⚠️ |
-| 31% | packages/evomcp/src/solve.ts | 193 | 5 | 0d | 2026-07-12 | 0/177 killed | ⚠️ |
-| 30% | packages/dod-guard/src/command-check.ts | 241 | 4 | 0d | 2026-07-12 | 147/300 killed | ⚠️ |
-| 30% | packages/dod-guard/src/brevity.ts | 399 | 3 | 0d | 2026-07-12 | 147/366 killed | ⚠️ |
-| 28% | packages/dod-guard/src/baseline.ts | 179 | 4 | 0d | 2026-07-12 | 68/126 killed | ⚠️ |
-| 28% | packages/dod-guard/src/assertions.ts | 173 | 4 | 0d | 2026-07-12 | 89/319 killed | ⚠️ |
-| 27% | packages/obsidian-rag/src/retriever.ts | 134 | 4 | 0d | 2026-07-12 | 0/112 killed | ⚠️ |
-| 15% | packages/dod-guard/src/regression.ts | 25 | 1 | 0d | 2026-07-12 | 21/25 killed | ⚠️ |
+| Prio | File | Lines | Churn | Stale | Dirty | Last Tested | Result | Status |
+|------|------|-------|-------|-------|-------|-------------|--------|--------|
+| 111% | packages/dod-guard/src/index.ts | 780 | 15 | 90d | 🟡 | — | — | ⬜ |
+| 106% | packages/obsidian-rag/src/store.ts | 327 | 9 | 90d | 🟡 | — | — | ⬜ |
+| 105% | packages/obsidian-rag/src/vault.ts | 172 | 10 | 90d | 🟡 | — | — | ⬜ |
+| 105% | packages/evomcp/src/index.ts | 270 | 9 | 90d | 🟡 | — | — | ⬜ |
+| 105% | packages/obsidian-rag/src/index.ts | 161 | 15 | 90d | 🟡 | — | — | ⬜ |
+| 103% | packages/obsidian-rag/src/tools.ts | 484 | 7 | 90d | 🟡 | — | — | ⬜ |
+| 101% | packages/dod-guard/src/checker.ts | 441 | 6 | 90d | 🟡 | — | — | ⬜ |
+| 101% | packages/dod-guard/src/observability.ts | 657 | 5 | 90d | 🟡 | — | — | ⬜ |
+| 100% | packages/dod-guard/src/test-metrics.ts | 971 | 4 | 90d | 🟡 | — | — | ⬜ |
+| 99% | packages/gitevo/src/operations.ts | 457 | 5 | 90d | 🟡 | — | — | ⬜ |
+| 99% | packages/evomcp/src/evolve.ts | 271 | 6 | 90d | 🟡 | — | — | ⬜ |
+| 99% | packages/evomcp/src/agent.ts | 416 | 5 | 90d | 🟡 | — | — | ⬜ |
+| 99% | packages/obsidian-rag/src/cli.ts | 144 | 7 | 90d | 🟡 | — | — | ⬜ |
+| 95% | packages/dod-guard/src/store.ts | 181 | 5 | 90d | 🟡 | — | — | ⬜ |
+| 95% | packages/dod-guard/src/parser.ts | 294 | 4 | 90d | 🟡 | — | — | ⬜ |
+| 95% | packages/dod-guard/src/find-functions.ts | 474 | 3 | 90d | 🟡 | — | — | ⬜ |
+| 95% | packages/dod-guard/src/author.ts | 279 | 4 | 90d | 🟡 | — | — | ⬜ |
+| 95% | packages/dod-guard/src/tree-utils.ts | 162 | 5 | 90d | 🟡 | — | — | ⬜ |
+| 94% | packages/obsidian-rag/src/indexer.ts | 141 | 5 | 90d | 🟡 | — | — | ⬜ |
+| 89% | packages/evomcp/src/dedup.ts | 170 | 2 | 90d | 🟡 | — | — | ⬜ |
+| 89% | packages/dod-guard/src/tools/dod-create.ts | 86 | 3 | 90d | 🟡 | — | — | ⬜ |
+| 87% | packages/dod-guard/src/format-result.ts | 101 | 2 | 90d | 🟡 | — | — | ⬜ |
+| 86% | packages/dod-guard/src/manual.ts | 72 | 2 | 90d | 🟡 | — | — | ⬜ |
+| 86% | packages/dod-guard/src/tools/dod-refine.ts | 117 | 1 | 90d | 🟡 | — | — | ⬜ |
+| 85% | packages/dod-guard/src/tools/dod-add-node.ts | 90 | 1 | 90d | 🟡 | — | — | ⬜ |
+| 83% | packages/dod-guard/src/notify.ts | 36 | 2 | 90d | 🟡 | — | — | ⬜ |
+| 55% | packages/dod-guard/src/evaluate-proof.ts | 654 | 7 | 0d | 🟡 | 2026-07-12 | 390/740 killed | ⚠️ |
+| 51% | packages/gitevo/src/index.ts | 178 | 8 | 0d | 🟡 | 2026-07-12 | 7/126 killed | ⚠️ |
+| 46% | packages/evomcp/src/solve.ts | 193 | 5 | 0d | 🟡 | 2026-07-12 | 0/177 killed | ⚠️ |
+| 45% | packages/dod-guard/src/command-check.ts | 241 | 4 | 0d | 🟡 | 2026-07-12 | 147/300 killed | ⚠️ |
+| 45% | packages/dod-guard/src/brevity.ts | 399 | 3 | 0d | 🟡 | 2026-07-12 | 147/366 killed | ⚠️ |
+| 43% | packages/dod-guard/src/baseline.ts | 179 | 4 | 0d | 🟡 | 2026-07-12 | 68/126 killed | ⚠️ |
+| 43% | packages/dod-guard/src/assertions.ts | 173 | 4 | 0d | 🟡 | 2026-07-12 | 89/319 killed | ⚠️ |
+| 42% | packages/obsidian-rag/src/retriever.ts | 134 | 4 | 0d | 🟡 | 2026-07-12 | 0/112 killed | ⚠️ |
+| 30% | packages/dod-guard/src/regression.ts | 25 | 1 | 0d | 🟡 | 2026-07-12 | 21/25 killed | ⚠️ |
 
 ## Recent Runs
 

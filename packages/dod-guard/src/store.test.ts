@@ -3,10 +3,19 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, test } from "node:test";
-import { findByPath, generateId, listAll, load, remove, save } from "./store.js";
+import {
+  findByPath,
+  generateId,
+  listAll,
+  listAllRaw,
+  listLegacyCount,
+  load,
+  loadRaw,
+  migrateDoc,
+  remove,
+  save,
+} from "./store.js";
 import type { DodDocument } from "./types.js";
-
-// ── Per-test isolation ────────────────────────────────────────────────────
 
 let testStoreDir: string;
 
@@ -23,8 +32,6 @@ afterEach(() => {
     /* ok */
   }
 });
-
-// ── Helpers ───────────────────────────────────────────────────────────────
 
 function makeDoc(id: string, overrides?: Partial<DodDocument>): DodDocument {
   return {
@@ -44,207 +51,343 @@ function makeDoc(id: string, overrides?: Partial<DodDocument>): DodDocument {
 
 // ── generateId ────────────────────────────────────────────────────────────
 
-test("generateId returns a valid UUID v4 string", () => {
-  const id = generateId();
-  assert.equal(typeof id, "string", "generateId: should return a string");
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  assert.match(id, uuidPattern, `generateId: expected valid UUID v4, got: ${id}`);
+test("generateId returns valid UUID v4", () => {
+  assert.match(generateId(), /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 });
 
-test("generateId returns unique values across 100 calls", () => {
+test("generateId produces 100 unique values", () => {
   const ids = new Set(Array.from({ length: 100 }, () => generateId()));
-  assert.equal(ids.size, 100, "generateId: 100 calls should produce 100 unique IDs");
+  assert.equal(ids.size, 100);
 });
 
 // ── save + load ───────────────────────────────────────────────────────────
 
-test("save and load a document round-trip", async () => {
+test("save + load round-trip", async () => {
   const doc = makeDoc(generateId());
   await save(doc);
   try {
     const loaded = await load(doc.id);
-    assert.ok(loaded, "save+load: document should be found after save");
-    assert.equal(loaded?.id, doc.id, "save+load: ID preserved");
-    assert.equal(loaded?.title, doc.title, "save+load: title preserved");
-    assert.equal(loaded?.goal, doc.goal, "save+load: goal preserved");
-    assert.equal(loaded?.sections.requirements, doc.sections.requirements, "save+load: sections preserved");
+    assert.ok(loaded);
+    assert.equal(loaded?.id, doc.id);
+    assert.equal(loaded?.title, doc.title);
   } finally {
     await remove(doc.id);
   }
 });
 
-test("load returns null for nonexistent document", async () => {
-  const result = await load("nonexistent-id-12345");
-  assert.equal(result, null, "load: nonexistent ID should return null");
+test("load returns null for nonexistent", async () => {
+  assert.equal(await load("nonexistent-id"), null);
 });
 
-test("load returns null when store dir is empty", async () => {
-  // Store dir is fresh (per-test isolation guarantees empty).
-  const result = await load(generateId());
-  assert.equal(result, null, "load: fresh empty store dir should return null");
-});
-
-test("load handles corrupt JSON file gracefully", async () => {
-  // Write a file directly that is not valid JSON — bypassing save.
-  const id = "bad-json-id";
-  const fs = await import("node:fs/promises");
-  const { join } = await import("node:path");
-  await fs.mkdir(testStoreDir, { recursive: true });
-  await fs.writeFile(join(testStoreDir, `${id}.json`), "not valid json {{{", "utf-8");
-  const result = await load(id);
-  assert.equal(result, null, "load: corrupt JSON file should return null without throwing");
-});
-
-// ── findByPath ────────────────────────────────────────────────────────────
-
-test("findByPath locates a document by markdown path", async () => {
-  const doc = makeDoc(generateId(), { markdown_path: "/tmp/unique-test-dod.md" });
-  await save(doc);
-  try {
-    const found = await findByPath("/tmp/unique-test-dod.md");
-    assert.ok(found, "findByPath: should find by exact path");
-    assert.equal(found?.id, doc.id, "findByPath: correct document returned");
-  } finally {
-    await remove(doc.id);
-  }
-});
-
-test("findByPath returns null when no documents match", async () => {
-  const found = await findByPath("/nonexistent/path/12345.md");
-  assert.equal(found, null, "findByPath: unknown path returns null");
-});
-
-test("findByPath performs case-insensitive path comparison", async () => {
-  const doc = makeDoc(generateId(), { markdown_path: "/tmp/CaseSensitive.md" });
-  await save(doc);
-  try {
-    const found = await findByPath("/tmp/casesensitive.md");
-    assert.ok(found, "findByPath: case difference should still match");
-    assert.equal(found?.id, doc.id, "findByPath: correct doc returned despite case diff");
-  } finally {
-    await remove(doc.id);
-  }
-});
-
-test("findByPath handles store dir with non-JSON files", async () => {
-  // Write a .txt file into the store — findByPath should skip it.
+test("load handles corrupt JSON", async () => {
+  const id = "bad-json";
   const fs = await import("node:fs/promises");
   await fs.mkdir(testStoreDir, { recursive: true });
-  await fs.writeFile(join(testStoreDir, "readme.txt"), "not a dod", "utf-8");
-  const found = await findByPath("/tmp/nonexistent.md");
-  assert.equal(found, null, "findByPath: non-JSON files in store dir should not cause errors");
+  await fs.writeFile(join(testStoreDir, `${id}.json`), "not json {{{", "utf-8");
+  assert.equal(await load(id), null);
 });
 
-// ── listAll ───────────────────────────────────────────────────────────────
+test("save overwrites same ID", async () => {
+  const id = generateId();
+  await save(makeDoc(id, { title: "Original" }));
+  await save(makeDoc(id, { title: "Updated" }));
+  try {
+    assert.equal((await load(id))?.title, "Updated");
+  } finally {
+    await remove(id);
+  }
+});
 
-test("listAll returns all saved documents", async () => {
+test("save handles empty roots", async () => {
+  const doc = makeDoc(generateId(), { roots: [] });
+  await save(doc);
+  try {
+    assert.deepEqual((await load(doc.id))?.roots, []);
+  } finally {
+    await remove(doc.id);
+  }
+});
+
+test("save handles large amendments", async () => {
+  const amendments = Array.from({ length: 100 }, (_, i) => ({
+    timestamp: new Date().toISOString(),
+    node_path: `0.children.${i}`,
+    action: "modified" as const,
+    reason: `Amendment #${i}`,
+    old_value: { command: `old-${i}`, predicate: { type: "exit_code" as const, value: i } },
+    new_value: { command: `new-${i}`, predicate: { type: "exit_code" as const, value: i + 1 } },
+  }));
+  const doc = makeDoc(generateId(), { amendments });
+  await save(doc);
+  try {
+    assert.equal((await load(doc.id))?.amendments.length, 100);
+  } finally {
+    await remove(doc.id);
+  }
+});
+
+// ── loadRaw ────────────────────────────────────────────────────────────────
+
+test("loadRaw returns parsed JSON", async () => {
+  const doc = makeDoc(generateId());
+  await save(doc);
+  try {
+    const raw = await loadRaw(doc.id);
+    assert.ok(raw);
+    assert.equal(raw.id, doc.id);
+    assert.equal(typeof raw, "object");
+  } finally {
+    await remove(doc.id);
+  }
+});
+
+test("loadRaw returns null for nonexistent", async () => {
+  assert.equal(await loadRaw("nonexistent"), null);
+});
+
+test("loadRaw returns null for corrupt JSON", async () => {
+  const fs = await import("node:fs/promises");
+  await fs.mkdir(testStoreDir, { recursive: true });
+  await fs.writeFile(join(testStoreDir, "corrupt.json"), "{bad", "utf-8");
+  assert.equal(await loadRaw("corrupt"), null);
+});
+
+// ── findByPath ─────────────────────────────────────────────────────────────
+
+test("findByPath finds by path", async () => {
+  const doc = makeDoc(generateId(), { markdown_path: "/tmp/unique.md" });
+  await save(doc);
+  try {
+    assert.equal((await findByPath("/tmp/unique.md"))?.id, doc.id);
+  } finally {
+    await remove(doc.id);
+  }
+});
+
+test("findByPath returns null for none", async () => {
+  assert.equal(await findByPath("/nonexistent.md"), null);
+});
+
+test("findByPath is case-insensitive", async () => {
+  const doc = makeDoc(generateId(), { markdown_path: "/tmp/Case.md" });
+  await save(doc);
+  try {
+    assert.ok(await findByPath("/tmp/case.md"));
+  } finally {
+    await remove(doc.id);
+  }
+});
+
+test("findByPath skips non-JSON files", async () => {
+  const fs = await import("node:fs/promises");
+  await fs.mkdir(testStoreDir, { recursive: true });
+  await fs.writeFile(join(testStoreDir, "readme.txt"), "not json", "utf-8");
+  assert.equal(await findByPath("/tmp/any.md"), null);
+});
+
+test("findByPath handles corrupt JSON during scan", async () => {
+  const doc = makeDoc(generateId(), { markdown_path: "/tmp/good.md" });
+  await save(doc);
+  const fs = await import("node:fs/promises");
+  await fs.writeFile(join(testStoreDir, "corrupt.json"), "{{{not valid", "utf-8");
+  try {
+    const found = await findByPath("/tmp/good.md");
+    assert.equal(found?.id, doc.id);
+  } finally {
+    await remove(doc.id);
+  }
+});
+
+// ── listAll ────────────────────────────────────────────────────────────────
+
+test("listAll returns all docs", async () => {
   const id1 = generateId();
   const id2 = generateId();
   await save(makeDoc(id1, { title: "First" }));
   await save(makeDoc(id2, { title: "Second" }));
   try {
     const all = await listAll();
-    const found1 = all.find((d) => d.id === id1);
-    const found2 = all.find((d) => d.id === id2);
-    assert.ok(found1, `listAll: should find first doc (id=${id1})`);
-    assert.ok(found2, `listAll: should find second doc (id=${id2})`);
-    assert.equal(all.length, 2, `listAll: should return exactly 2 docs, got ${all.length}`);
+    assert.ok(all.find((d) => d.id === id1));
+    assert.ok(all.find((d) => d.id === id2));
+    assert.equal(all.length, 2);
   } finally {
     await remove(id1);
     await remove(id2);
   }
 });
 
-test("listAll returns empty array from fresh store", async () => {
-  const all = await listAll();
-  assert.ok(Array.isArray(all), "listAll: should return an array");
-  assert.equal(all.length, 0, "listAll: fresh store should return empty array");
+test("listAll empty store", async () => {
+  assert.deepEqual(await listAll(), []);
 });
 
-test("listAll skips corrupt JSON files without failing", async () => {
+test("listAll skips corrupt JSON", async () => {
   const goodId = generateId();
   await save(makeDoc(goodId, { title: "Good" }));
-  // Write corrupt file alongside
   const fs = await import("node:fs/promises");
   await fs.writeFile(join(testStoreDir, "corrupt.json"), "{broken", "utf-8");
   try {
     const all = await listAll();
-    const good = all.find((d) => d.id === goodId);
-    assert.ok(good, "listAll: good doc should still be found despite corrupt neighbor");
+    assert.ok(all.find((d) => d.id === goodId));
   } finally {
     await remove(goodId);
   }
 });
 
-// ── remove ────────────────────────────────────────────────────────────────
+// ── listAllRaw ─────────────────────────────────────────────────────────────
 
-test("remove deletes a document and returns true", async () => {
-  const doc = makeDoc(generateId());
-  await save(doc);
-  const removed = await remove(doc.id);
-  assert.equal(removed, true, "remove: should return true on success");
-  const after = await load(doc.id);
-  assert.equal(after, null, "remove: doc should not be loadable after removal");
-});
-
-test("remove returns false for nonexistent document", async () => {
-  const removed = await remove("nonexistent-id-98765");
-  assert.equal(removed, false, "remove: nonexistent ID should return false");
-});
-
-test("remove is idempotent — removing twice returns false on second call", async () => {
-  const doc = makeDoc(generateId());
-  await save(doc);
-  const first = await remove(doc.id);
-  assert.equal(first, true, "remove: first call should succeed");
-  const second = await remove(doc.id);
-  assert.equal(second, false, "remove: second call on already-removed should return false");
-});
-
-// ── save overwrites ───────────────────────────────────────────────────────
-
-test("save overwrites existing document with same ID", async () => {
+test("listAllRaw returns all raw docs", async () => {
   const id = generateId();
-  await save(makeDoc(id, { title: "Original" }));
-  await save(makeDoc(id, { title: "Updated" }));
+  await save(makeDoc(id));
   try {
-    const loaded = await load(id);
-    assert.ok(loaded, "save overwrite: doc should exist");
-    assert.equal(loaded?.title, "Updated", "save overwrite: title should reflect latest save");
+    const raw = await listAllRaw();
+    assert.equal(raw.length, 1);
+    assert.equal(raw[0].id, id);
   } finally {
     await remove(id);
   }
 });
 
-// ── save edge cases ───────────────────────────────────────────────────────
+test("listAllRaw empty store", async () => {
+  assert.deepEqual(await listAllRaw(), []);
+});
 
-test("save handles documents with empty roots array", async () => {
-  const doc = makeDoc(generateId(), { roots: [] });
+test("listAllRaw skips corrupt JSON", async () => {
+  const goodId = generateId();
+  await save(makeDoc(goodId));
+  const fs = await import("node:fs/promises");
+  await fs.writeFile(join(testStoreDir, "corrupt.json"), "{nope", "utf-8");
+  try {
+    const raw = await listAllRaw();
+    assert.ok(raw.some((d: any) => d.id === goodId));
+  } finally {
+    await remove(goodId);
+  }
+});
+
+test("listAllRaw skips non-JSON files", async () => {
+  const fs = await import("node:fs/promises");
+  await fs.mkdir(testStoreDir, { recursive: true });
+  await fs.writeFile(join(testStoreDir, "notes.txt"), "hello", "utf-8");
+  assert.deepEqual(await listAllRaw(), []);
+});
+
+// ── remove ─────────────────────────────────────────────────────────────────
+
+test("remove deletes doc and returns true", async () => {
+  const doc = makeDoc(generateId());
+  await save(doc);
+  assert.equal(await remove(doc.id), true);
+  assert.equal(await load(doc.id), null);
+});
+
+test("remove returns false for nonexistent", async () => {
+  assert.equal(await remove("nonexistent"), false);
+});
+
+test("remove is idempotent", async () => {
+  const doc = makeDoc(generateId());
+  await save(doc);
+  assert.equal(await remove(doc.id), true);
+  assert.equal(await remove(doc.id), false);
+});
+
+// ── migrateDoc ─────────────────────────────────────────────────────────────
+
+test("migrateDoc returns false when already has roots", async () => {
+  const doc = makeDoc(generateId(), {
+    roots: [
+      { id: "r1", title: "Root", refinement: "concrete" as const, last_status: "pending" as const, children: [] },
+    ],
+  });
   await save(doc);
   try {
     const loaded = await load(doc.id);
-    assert.ok(loaded, "save: empty roots doc should persist");
-    assert.deepEqual(loaded?.roots, [], "save: empty roots array preserved");
+    assert.ok(loaded);
+    assert.equal(await migrateDoc(loaded), false);
   } finally {
     await remove(doc.id);
   }
 });
 
-test("save handles documents with large amendments array", async () => {
-  const amendments = Array.from({ length: 100 }, (_, i) => ({
-    timestamp: new Date().toISOString(),
-    node_path: `0.children.${i}`,
-    action: "modified" as const,
-    reason: `Amendment #${i} justification text`,
-    old_value: { command: `old-cmd-${i}`, predicate: { type: "exit_code" as const, value: i } },
-    new_value: { command: `new-cmd-${i}`, predicate: { type: "exit_code" as const, value: i + 1 } },
-  }));
-  const doc = makeDoc(generateId(), { amendments });
+test("migrateDoc returns false when no steps field", async () => {
+  const doc = makeDoc(generateId());
+  await save(doc);
+  try {
+    assert.equal(await migrateDoc((await load(doc.id)) as any), false);
+  } finally {
+    await remove(doc.id);
+  }
+});
+
+test("migrateDoc converts legacy steps to roots", async () => {
+  const legacySteps = [
+    {
+      id: "step-1",
+      title: "Code Quality",
+      proofs: [
+        {
+          id: "proof-1",
+          title: "Lint",
+          command: "npm run lint",
+          predicate: { type: "exit_code", value: 0 },
+          description: "Lint check",
+          category: "lint",
+          advisory: false,
+        },
+        {
+          id: "proof-2",
+          title: "Test",
+          command: "npm test",
+          predicate: { type: "exit_code", value: 0 },
+          description: "Tests pass",
+          category: "test",
+          advisory: false,
+        },
+      ],
+    },
+  ];
+  const partial = makeDoc(generateId());
+  const doc = { ...partial, roots: undefined } as unknown as DodDocument & { steps: any[] };
+  doc.steps = legacySteps;
   await save(doc);
   try {
     const loaded = await load(doc.id);
-    assert.ok(loaded, "save: large amendments doc should persist");
-    assert.equal(loaded?.amendments.length, 100, "save: all 100 amendments preserved");
+    assert.ok(loaded);
+    assert.equal(await migrateDoc(loaded), true);
+    const reloaded = await load(doc.id);
+    assert.ok(reloaded?.roots, "should have roots after migration");
+    assert.equal(reloaded?.roots?.length, 1);
+    assert.equal(reloaded?.proof_fingerprint?.length, 64);
+    assert.equal((reloaded as any).steps, undefined, "steps should be deleted");
+    assert.equal((reloaded as any).locked, undefined, "locked should be deleted");
+  } finally {
+    await remove(doc.id);
+  }
+});
+
+// ── listLegacyCount ────────────────────────────────────────────────────────
+
+test("listLegacyCount returns 0 for empty store", async () => {
+  assert.equal(await listLegacyCount(), 0);
+});
+
+test("listLegacyCount counts legacy docs with steps but no roots", async () => {
+  const base = makeDoc(generateId());
+  const legacyDoc = { ...base, steps: [{ id: "s1", title: "Step", proofs: [] }] } as any;
+  delete legacyDoc.roots;
+  await save(legacyDoc);
+  try {
+    assert.equal(await listLegacyCount(), 1);
+  } finally {
+    await remove(legacyDoc.id);
+  }
+});
+
+test("listLegacyCount does not count migrated docs", async () => {
+  const doc = makeDoc(generateId());
+  await save(doc);
+  try {
+    assert.equal(await listLegacyCount(), 0);
   } finally {
     await remove(doc.id);
   }

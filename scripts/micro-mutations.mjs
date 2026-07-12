@@ -3,14 +3,18 @@
 // micro-mutations.mjs — Incremental mutation testing via Stryker + node --test
 //
 // Picks N files via weighted random selection (staleness×0.50 + size×0.30 +
-// churn×0.20), runs Stryker scoped to each, updates state JSON and generates
-// a human-readable markdown report. Designed for daily CI cron runs.
+// churn×0.20 + dirty×0.15), runs Stryker scoped to each, updates state JSON
+// and generates a human-readable markdown report. Designed for daily CI cron
+// runs. Tracks SHA-256 fingerprints to detect dirty files (modified since
+// last mutation run).
 //
 // Usage:
-//   node scripts/micro-mutations.mjs [--dry-run] [--init-state]
+//   node scripts/micro-mutations.mjs [--dry-run] [--init-state] [--never-tested]
 //   MICRO_MUTATION_COUNT=3 node scripts/micro-mutations.mjs
+//   node scripts/micro-mutations.mjs --never-tested   # mutate ALL untested files
 
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,11 +32,16 @@ const COUNT = parseInt(process.env.MICRO_MUTATION_COUNT || "3", 10);
 const W_STALENESS = parseFloat(process.env.STALENESS_WEIGHT || "0.50");
 const W_SIZE = parseFloat(process.env.SIZE_WEIGHT || "0.30");
 const W_CHURN = parseFloat(process.env.CHURN_WEIGHT || "0.20");
+const W_DIRTY = parseFloat(process.env.DIRTY_WEIGHT || "0.15");
 const DRY_RUN = process.argv.includes("--dry-run");
 const INIT_STATE = process.argv.includes("--init-state");
+const NEVER_TESTED = process.argv.includes("--never-tested");
 
 // Files excluded from mutation testing
 const EXCLUDE_PATTERNS = ["*.test.ts", "types.ts", "constants.ts", "schemas.ts"];
+
+// Sentinel fingerprint: never-tested files are dirty by definition
+const ZERO_FINGERPRINT = "0000000000000000000000000000000000000000000000000000000000000000";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -50,6 +59,17 @@ function globToRegex(pattern) {
     .replace(/\*/g, ".*")
     .replace(/\?/g, ".");
   return new RegExp(`^${escaped}$`);
+}
+
+// ── Fingerprint (SHA-256 of source file) ────────────────────────────────
+
+function computeFingerprint(filePath) {
+  try {
+    const content = readFileSync(join(ROOT, filePath), "utf-8");
+    return createHash("sha256").update(content).digest("hex");
+  } catch {
+    return null;
+  }
 }
 
 // ── Stryker output parser ────────────────────────────────────────────────
@@ -231,8 +251,16 @@ function computeScore(fileInfo, nowStr) {
   const churn90d = fileInfo.recent_commits || 0;
   const churnNorm = Math.min(churn90d / 10.0, 1.0);
 
-  const score = stalenessNorm * W_STALENESS + sizeNorm * W_SIZE + churnNorm * W_CHURN;
-  return { score, stalenessDays, lines, churn90d };
+  // Dirty bonus: file modified since last mutation run
+  const dirty = fileInfo.dirty ? 1.0 : 0.0;
+
+  const score =
+    stalenessNorm * W_STALENESS +
+    sizeNorm * W_SIZE +
+    churnNorm * W_CHURN +
+    dirty * W_DIRTY;
+
+  return { score, stalenessDays, lines, churn90d, dirty: !!fileInfo.dirty };
 }
 
 function selectFiles(state, nowStr, count) {
@@ -247,10 +275,27 @@ function selectFiles(state, nowStr, count) {
         lines: countLines(f),
         error_count: 0,
         recent_commits: churnMap[f] || 0,
+        fingerprint: ZERO_FINGERPRINT,
       };
     } else {
       state.files[f].lines = countLines(f);
       state.files[f].recent_commits = churnMap[f] || 0;
+    }
+  }
+
+  // Check fingerprints for ALL eligible files every run.
+  // Zero-fingerprint (never tested) == dirty by definition.
+  // Non-zero fingerprint: compare current SHA-256 against stored.
+  for (const f of eligible) {
+    const info = state.files[f];
+    const current = computeFingerprint(f);
+    if (!info.fingerprint || info.fingerprint === ZERO_FINGERPRINT) {
+      // Never tested, or pre-fingerprint era — dirty by definition
+      info.fingerprint = ZERO_FINGERPRINT;
+      info.dirty = true;
+    } else {
+      // Has real stored fingerprint — compare against current source
+      info.dirty = current !== null && current !== info.fingerprint;
     }
   }
 
@@ -266,10 +311,28 @@ function selectFiles(state, nowStr, count) {
   }));
   scored.sort((a, b) => b.score - a.score);
 
+  // ── --never-tested mode: select ALL files never tested ────────────────
+  if (NEVER_TESTED) {
+    const untested = scored.filter((s) => {
+      const info = state.files[s.path];
+      return !info.last_tested;
+    });
+    console.log(`--never-tested: ${untested.length} files never tested`);
+    for (const s of untested.slice(0, 10)) {
+      console.log(
+        `  ${(s.score * 100).toFixed(1)}%  ${s.path}  (stale=${s.stalenessDays}d, lines=${s.lines}, churn=${s.churn90d}, dirty=${s.dirty})`,
+      );
+    }
+    if (untested.length > 10) {
+      console.log(`  ... and ${untested.length - 10} more`);
+    }
+    return untested.map((s) => s.path);
+  }
+
   console.log("Top 10 priority files:");
   for (const s of scored.slice(0, 10)) {
     console.log(
-      `  ${(s.score * 100).toFixed(1)}%  ${s.path}  (stale=${s.stalenessDays}d, lines=${s.lines}, churn=${s.churn90d})`,
+      `  ${(s.score * 100).toFixed(1)}%  ${s.path}  (stale=${s.stalenessDays}d, lines=${s.lines}, churn=${s.churn90d}, dirty=${s.dirty})`,
     );
   }
 
@@ -305,10 +368,9 @@ function selectFiles(state, nowStr, count) {
 
 function srcToDist(srcPath) {
   // packages/dod-guard/src/checker.ts → packages/dod-guard/dist/checker.js
+  // packages/dod-guard/src/tools/dod-create.ts → packages/dod-guard/dist/tools/dod-create.js
   const normalized = srcPath.replace(/\\/g, "/");
-  const dir = dirname(normalized).replace(/\/src$/, "");
-  const base = basename(normalized).replace(/\.ts$/, ".js");
-  return join(dir, "dist", base).replace(/\\/g, "/");
+  return normalized.replace(/\/src\//, "/dist/").replace(/\.ts$/, ".js");
 }
 
 function pkgFromPath(srcPath) {
@@ -327,29 +389,9 @@ function runMutation(srcPath) {
 
   console.log(`\n=== MUTATING: ${srcPath} (${distPathFwd}) ===`);
 
-  // Build the package first
-  if (pkg && !DRY_RUN) {
-    console.log(`  building: ${pkg}`);
-    try {
-      execSync(`npm run build -w ${pkg}`, {
-        cwd: ROOT,
-        encoding: "utf-8",
-        stdio: "pipe",
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return {
-        output: msg,
-        result: {
-          total: 0, caught: 0, missed: 0, timeout: 0, unviable: 0,
-          status: "error", error: `build failed: ${msg.slice(0, 200)}`,
-        },
-      };
-    }
-  }
-
   if (!existsSync(join(ROOT, distPath))) {
     const msg = `dist file not found: ${distPathFwd}`;
+    console.log(`  → ${msg}`);
     return {
       output: msg,
       result: {
@@ -491,8 +533,8 @@ function generateMarkdown(state, nowStr, commit) {
   lines.push(
     "## File Inventory",
     "",
-    "| Prio | File | Lines | Churn | Stale | Last Tested | Result | Status |",
-    "|------|------|-------|-------|-------|-------------|--------|--------|",
+    "| Prio | File | Lines | Churn | Stale | Dirty | Last Tested | Result | Status |",
+    "|------|------|-------|-------|-------|-------|-------------|--------|--------|",
   );
 
   const scored = Object.entries(state.files).map(([path, info]) => ({
@@ -511,8 +553,9 @@ function generateMarkdown(state, nowStr, commit) {
         : `${lr.caught}/${lr.total} killed`
       : "—";
     const lrDate = s.info.last_tested || "—";
+    const dirtyMark = s.info.dirty ? "🟡" : "—";
     lines.push(
-      `| ${prio} | ${s.path} | ${s.lines} | ${s.churn90d} | ${s.stalenessDays}d | ${lrDate} | ${lrSummary} | ${statusIcon(lr)} |`,
+      `| ${prio} | ${s.path} | ${s.lines} | ${s.churn90d} | ${s.stalenessDays}d | ${dirtyMark} | ${lrDate} | ${lrSummary} | ${statusIcon(lr)} |`,
     );
   }
   lines.push("");
@@ -568,9 +611,9 @@ function main() {
     `micro-mutations.mjs — ${nowStr} — commit ${commit.slice(0, 7)}`,
   );
   console.log(
-    `count=${COUNT}, staleness=${W_STALENESS}, size=${W_SIZE}, churn=${W_CHURN}`,
+    `count=${COUNT}, staleness=${W_STALENESS}, size=${W_SIZE}, churn=${W_CHURN}, dirty=${W_DIRTY}`,
   );
-  console.log(`dry-run=${DRY_RUN}, init-state=${INIT_STATE}`);
+  console.log(`dry-run=${DRY_RUN}, init-state=${INIT_STATE}, never-tested=${NEVER_TESTED}`);
 
   const state = loadState();
 
@@ -585,6 +628,7 @@ function main() {
         lines: countLines(f),
         error_count: 0,
         recent_commits: churnMap[f] || 0,
+        fingerprint: ZERO_FINGERPRINT,
       };
     }
     saveState(state);
@@ -595,8 +639,8 @@ function main() {
     return;
   }
 
-  if (COUNT <= 0) {
-    console.log("MICRO_MUTATION_COUNT=0, nothing to do.");
+  if (COUNT <= 0 && !NEVER_TESTED) {
+    console.log("MICRO_MUTATION_COUNT=0 and --never-tested not set, nothing to do.");
     return;
   }
 
@@ -606,36 +650,82 @@ function main() {
     console.log(`  - ${f}`);
   }
 
-  for (const srcPath of selected) {
+  // Track built packages to avoid redundant builds
+  const builtPkgs = new Set();
+
+  for (let i = 0; i < selected.length; i++) {
+    const srcPath = selected[i];
+    console.log(`\n[${i + 1}/${selected.length}] ${srcPath}`);
+
+    // Build package once per package
+    const pkg = pkgFromPath(srcPath);
+    if (pkg && !builtPkgs.has(pkg) && !DRY_RUN) {
+      console.log(`  building: ${pkg}`);
+      try {
+        execSync(`npm run build -w ${pkg}`, {
+          cwd: ROOT,
+          encoding: "utf-8",
+          stdio: "pipe",
+        });
+        builtPkgs.add(pkg);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.log(`  build failed: ${msg.slice(0, 200)}`);
+        const info = state.files[srcPath];
+        if (info) {
+          info.last_tested = nowStr;
+          info.last_result = {
+            total: 0, caught: 0, missed: 0, timeout: 0, unviable: 0,
+            status: "error", error: `build failed: ${msg.slice(0, 200)}`,
+          };
+          info.error_count += 1;
+          info.fingerprint = ZERO_FINGERPRINT;
+        }
+        state.cumulative.error += 1;
+        state.cumulative.runs += 1;
+        state.runs.push({
+          date: nowStr, commit, file: srcPath,
+          result: info?.last_result || { status: "error" },
+        });
+        continue;
+      }
+    }
+
     const { result } = runMutation(srcPath);
 
-    const info = state.files[srcPath];
-    if (info) {
-      info.last_tested = nowStr;
-      info.last_result = result;
-      if (result?.status === "error" || result?.status === "parse_error") {
-        info.error_count += 1;
+    if (!DRY_RUN) {
+      const info = state.files[srcPath];
+      if (info) {
+        info.last_tested = nowStr;
+        info.last_result = result;
+        if (result?.status === "error" || result?.status === "parse_error") {
+          info.error_count += 1;
+        }
+        // Store fingerprint of the source file at test time
+        if (result?.status === "ok" || result?.status === "no_mutants") {
+          info.fingerprint = computeFingerprint(srcPath);
+          info.dirty = false;
+        }
       }
-    }
 
-    if (result) {
-      state.cumulative.total_mutants += result.total;
-      state.cumulative.caught += result.caught;
-      state.cumulative.missed += result.missed;
-      state.cumulative.timeout += result.timeout;
-      state.cumulative.unviable += result.unviable;
-      if (result.status === "error" || result.status === "parse_error") {
-        state.cumulative.error += 1;
+      if (result) {
+        state.cumulative.total_mutants += result.total;
+        state.cumulative.caught += result.caught;
+        state.cumulative.missed += result.missed;
+        state.cumulative.timeout += result.timeout;
+        state.cumulative.unviable += result.unviable;
+        if (result.status === "error" || result.status === "parse_error") {
+          state.cumulative.error += 1;
+        }
       }
-    }
-    state.cumulative.runs += 1;
-    state.cumulative.files_tested += 1;
+      state.cumulative.runs += 1;
+      state.cumulative.files_tested += 1;
 
-    state.runs.push({ date: nowStr, commit, file: srcPath, result });
-    if (state.runs.length > 100) state.runs = state.runs.slice(-100);
+      state.runs.push({ date: nowStr, commit, file: srcPath, result });
+      if (state.runs.length > 100) state.runs = state.runs.slice(-100);
+    }
 
     // Restore mutated dist files
-    const pkg = pkgFromPath(srcPath);
     if (!DRY_RUN && pkg) {
       try {
         execSync(`git checkout -- ${pkg}/dist/`, {

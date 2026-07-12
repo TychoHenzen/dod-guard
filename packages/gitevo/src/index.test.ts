@@ -26,7 +26,7 @@ mock.module("@modelcontextprotocol/sdk/server/mcp.js", {
 
 mock.module("@modelcontextprotocol/sdk/server/stdio.js", {
   namedExports: {
-    StdioServerTransport: function () { return {}; } as any,
+    StdioServerTransport: (() => ({})) as any,
   },
 });
 
@@ -43,17 +43,23 @@ describe("gitevo index", () => {
   describe("wrap", () => {
     it("returns result on success", () => assert.equal(mod.wrap(() => "ok")(), "ok"));
     it("catches EvoError", () => {
-      const r = mod.wrap(() => { throw new EvoError("init not run"); })();
+      const r = mod.wrap(() => {
+        throw new EvoError("init not run");
+      })();
       assert.ok(r.startsWith("ERROR: "));
       assert.ok(r.includes("init not run"));
     });
     it("catches generic Error", () => {
-      const r = mod.wrap(() => { throw new Error("boom"); })();
+      const r = mod.wrap(() => {
+        throw new Error("boom");
+      })();
       assert.ok(r.startsWith("ERROR: "));
       assert.ok(r.includes("boom"));
     });
     it("catches non-Error throw", () => {
-      const r = mod.wrap(() => { throw "raw"; })();
+      const r = mod.wrap(() => {
+        throw "raw";
+      })();
       assert.ok(r.startsWith("ERROR: "));
       assert.ok(r.includes("raw"));
     });
@@ -104,8 +110,18 @@ describe("gitevo index", () => {
     });
 
     it("param-less tools registered", () => {
-      for (const name of ["evo_summary", "evo_checkpoints", "evo_branches", "evo_lessons", "evo_export_lessons", "evo_finish"]) {
-        assert.ok(registeredTools.find((t) => t.name === name), `missing: ${name}`);
+      for (const name of [
+        "evo_summary",
+        "evo_checkpoints",
+        "evo_branches",
+        "evo_lessons",
+        "evo_export_lessons",
+        "evo_finish",
+      ]) {
+        assert.ok(
+          registeredTools.find((t) => t.name === name),
+          `missing: ${name}`,
+        );
       }
     });
   });

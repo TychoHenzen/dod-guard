@@ -11,7 +11,9 @@ let mkdirCalled: string[] = [];
 
 mock.module("node:fs/promises", {
   namedExports: {
-    mkdir: mock.fn(async (dir: string, _opts?: any) => { mkdirCalled.push(dir); }),
+    mkdir: mock.fn(async (dir: string, _opts?: any) => {
+      mkdirCalled.push(dir);
+    }),
     readdir: mock.fn(async (dir: string, _opts?: any) => {
       const key = String(dir).replace(/\\/g, "/");
       return [...(readdirReturns[key] ?? [])];
@@ -20,7 +22,9 @@ mock.module("node:fs/promises", {
       const key = String(p).replace(/\\/g, "/");
       return readFileMap[key] ?? "";
     }),
-    writeFile: mock.fn(async (p: string, content: string, _enc?: string) => { writtenFiles[String(p).replace(/\\/g, "/")] = content; }),
+    writeFile: mock.fn(async (p: string, content: string, _enc?: string) => {
+      writtenFiles[String(p).replace(/\\/g, "/")] = content;
+    }),
   },
 });
 
@@ -49,7 +53,13 @@ function parseFM(raw: string): { data: Record<string, unknown>; content: string 
           fm[key] = val;
         }
       }
-      return { data: fm, content: lines.slice(endIdx + 1).join("\n").trim() };
+      return {
+        data: fm,
+        content: lines
+          .slice(endIdx + 1)
+          .join("\n")
+          .trim(),
+      };
     }
   }
   return { data: {}, content: raw.trim() };
@@ -59,7 +69,7 @@ const matterMock = mock.fn(parseFM);
 (matterMock as any).stringify = mock.fn((content: string, fm: Record<string, unknown>) => {
   const fmLines = Object.entries(fm)
     .filter(([, v]) => v != null && v !== "")
-    .map(([k, v]) => Array.isArray(v) ? `${k}:\n  - ${(v as string[]).join("\n  - ")}` : `${k}: ${v}`)
+    .map(([k, v]) => (Array.isArray(v) ? `${k}:\n  - ${(v as string[]).join("\n  - ")}` : `${k}: ${v}`))
     .join("\n");
   return `---\n${fmLines}\n---\n${content}`;
 });
@@ -144,12 +154,8 @@ describe("vault", () => {
     });
 
     it("recurses into subdirectories", async () => {
-      setDir("/v", [
-        { name: "sub", isDirectory: () => true, isFile: () => false },
-      ]);
-      setDir("/v/sub", [
-        { name: "nested.md", isDirectory: () => false, isFile: () => true },
-      ]);
+      setDir("/v", [{ name: "sub", isDirectory: () => true, isFile: () => false }]);
+      setDir("/v/sub", [{ name: "nested.md", isDirectory: () => false, isFile: () => true }]);
       const result = await mod.walkVault("/v");
       assert.deepStrictEqual(result, ["sub\\nested.md"]);
     });
@@ -189,15 +195,13 @@ describe("vault", () => {
 
     it("reads memory files from type subdirectories", async () => {
       fsExistsSync = true;
-      setDir("/v/Claude-Memories", [
-        { name: "reference", isDirectory: () => true, isFile: () => false },
-      ]);
+      setDir("/v/Claude-Memories", [{ name: "reference", isDirectory: () => true, isFile: () => false }]);
       // Inside Claude-Memories/reference/:
-      setDir("/v/Claude-Memories/reference", [
-        { name: "my-mem.md", isDirectory: () => false, isFile: () => true },
-      ]);
-      setFile("/v/Claude-Memories/reference/my-mem.md",
-        "---\nname: my-mem\ndescription: A test memory\ntype: reference\n---\nMemory body");
+      setDir("/v/Claude-Memories/reference", [{ name: "my-mem.md", isDirectory: () => false, isFile: () => true }]);
+      setFile(
+        "/v/Claude-Memories/reference/my-mem.md",
+        "---\nname: my-mem\ndescription: A test memory\ntype: reference\n---\nMemory body",
+      );
       const memories = await mod.readMemories("/v");
       assert.equal(memories.length, 1);
       assert.equal(memories[0].id, "my-mem");
@@ -209,8 +213,12 @@ describe("vault", () => {
   describe("writeMemory", () => {
     it("writes to type subdir", async () => {
       await mod.writeMemory("/v", {
-        id: "mem-1", title: "Mem", description: "d", type: "reference",
-        content: "body", metadata: {},
+        id: "mem-1",
+        title: "Mem",
+        description: "d",
+        type: "reference",
+        content: "body",
+        metadata: {},
       });
       const p = Object.keys(writtenFiles)[0];
       assert.ok(p);
