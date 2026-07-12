@@ -99,7 +99,11 @@ function buildConfirmer(): Confirmer {
     const instructions = manualInstructions(node);
 
     // Fire-and-forget jingle — never block verification on audio.
-    try { playJingle(); } catch { /* audio best-effort */ }
+    try {
+      playJingle();
+    } catch {
+      /* audio best-effort */
+    }
 
     const caps = server.server.getClientCapabilities();
     if (caps?.elicitation) {
