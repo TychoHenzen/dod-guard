@@ -18,10 +18,18 @@
       "dirty": true
     },
     "packages/dod-guard/src/author.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/author.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
+      },
       "lines": 279,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 4,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -61,10 +69,18 @@
       "dirty": true
     },
     "packages/dod-guard/src/checker.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/s"
+      },
       "lines": 441,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 6,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -72,16 +88,16 @@
     "packages/dod-guard/src/command-check.ts": {
       "last_tested": "2026-07-12",
       "last_result": {
-        "total": 300,
-        "caught": 147,
-        "missed": 123,
-        "timeout": 8,
-        "unviable": 22,
-        "status": "ok",
-        "error": null
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/command-check.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/"
       },
       "lines": 241,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 4,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -89,16 +105,16 @@
     "packages/dod-guard/src/evaluate-proof.ts": {
       "last_tested": "2026-07-12",
       "last_result": {
-        "total": 740,
-        "caught": 390,
-        "missed": 236,
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
         "timeout": 0,
-        "unviable": 114,
-        "status": "ok",
-        "error": null
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core"
       },
       "lines": 654,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 7,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -122,28 +138,52 @@
       "dirty": true
     },
     "packages/dod-guard/src/index.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src"
+      },
       "lines": 780,
-      "error_count": 0,
-      "recent_commits": 15,
+      "error_count": 1,
+      "recent_commits": 16,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
     "packages/dod-guard/src/manual.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/manual.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
+      },
       "lines": 72,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 2,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
     "packages/dod-guard/src/notify.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/notify.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
+      },
       "lines": 36,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 2,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -184,28 +224,52 @@
       "dirty": true
     },
     "packages/dod-guard/src/store.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/store.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src"
+      },
       "lines": 181,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 5,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
     "packages/dod-guard/src/test-metrics.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/test-metrics.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/d"
+      },
       "lines": 971,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 4,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
     "packages/dod-guard/src/tools/dod-add-node.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/tools/dod-add-node.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/"
+      },
       "lines": 90,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 1,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -220,10 +284,18 @@
       "dirty": true
     },
     "packages/dod-guard/src/tools/dod-refine.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/tools/dod-refine.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/co"
+      },
       "lines": 117,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 1,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -265,10 +337,18 @@
       "dirty": true
     },
     "packages/evomcp/src/index.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/evomcp/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/pr"
+      },
       "lines": 270,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 9,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -293,16 +373,16 @@
     "packages/gitevo/src/index.ts": {
       "last_tested": "2026-07-12",
       "last_result": {
-        "total": 126,
-        "caught": 7,
-        "missed": 61,
-        "timeout": 2,
-        "unviable": 56,
-        "status": "ok",
-        "error": null
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/gitevo/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/pr"
       },
       "lines": 178,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 8,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -317,28 +397,52 @@
       "dirty": true
     },
     "packages/obsidian-rag/src/cli.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/cli.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
+      },
       "lines": 144,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 7,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
     "packages/obsidian-rag/src/index.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/"
+      },
       "lines": 161,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 15,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
     "packages/obsidian-rag/src/indexer.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/indexer.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dis"
+      },
       "lines": 141,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 5,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -370,19 +474,35 @@
       "dirty": true
     },
     "packages/obsidian-rag/src/tools.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/tools.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/"
+      },
       "lines": 484,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 7,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
     "packages/obsidian-rag/src/vault.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/vault.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/"
+      },
       "lines": 172,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 10,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -394,9 +514,9 @@
     "missed": 846,
     "timeout": 10,
     "unviable": 566,
-    "error": 0,
-    "runs": 9,
-    "files_tested": 9
+    "error": 18,
+    "runs": 27,
+    "files_tested": 27
   },
   "runs": [
     {
@@ -523,6 +643,258 @@
         "unviable": 15,
         "status": "ok",
         "error": null
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/obsidian-rag/src/indexer.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/indexer.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dis"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/obsidian-rag/src/cli.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/cli.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/author.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/author.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/checker.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/s"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/notify.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/notify.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/store.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/store.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/obsidian-rag/src/tools.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/tools.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/tools/dod-add-node.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/tools/dod-add-node.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/gitevo/src/index.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/gitevo/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/pr"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/tools/dod-refine.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/tools/dod-refine.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/co"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/command-check.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/command-check.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/obsidian-rag/src/vault.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/vault.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/index.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/obsidian-rag/src/index.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/test-metrics.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/test-metrics.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/d"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/manual.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/manual.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/dod-guard/src/evaluate-proof.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core"
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
+      "file": "packages/evomcp/src/index.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/evomcp/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/pr"
       }
     }
   ]
