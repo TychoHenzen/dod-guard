@@ -36,7 +36,7 @@ jobs:
       - name: Run micro-mutations
         id: mutations
         continue-on-error: true
-        run: node scripts/micro-mutations.mjs
+        run: node scripts/micro-mutations.mjs --dirty
         env:
           MICRO_MUTATION_COUNT: ${{ inputs.count || 3 }}
 

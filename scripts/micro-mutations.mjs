@@ -10,9 +10,10 @@
 // test history.
 //
 // Usage:
-//   node scripts/micro-mutations.mjs [--dry-run] [--init-state] [--all]
+//   node scripts/micro-mutations.mjs [--dry-run] [--init-state] [--all] [--dirty]
 //   MICRO_MUTATION_COUNT=3 node scripts/micro-mutations.mjs
-//   node scripts/micro-mutations.mjs --all   # mutate ALL eligible files
+//   node scripts/micro-mutations.mjs --all    # full sweep: all eligible files
+//   node scripts/micro-mutations.mjs --dirty  # CI daily: only dirty files
 
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -37,6 +38,7 @@ const W_DIRTY = parseFloat(process.env.DIRTY_WEIGHT || "0.15");
 const DRY_RUN = process.argv.includes("--dry-run");
 const INIT_STATE = process.argv.includes("--init-state");
 const ALL_MODE = process.argv.includes("--all");
+const DIRTY_MODE = process.argv.includes("--dirty");
 
 // Files excluded from mutation testing
 const EXCLUDE_PATTERNS = ["*.test.ts", "types.ts", "constants.ts", "schemas.ts"];
@@ -312,20 +314,38 @@ function selectFiles(state, nowStr, count) {
   }));
   scored.sort((a, b) => b.score - a.score);
 
-  // ── --all mode: select ALL eligible files ────────────────────────────
-  if (ALL_MODE) {
-    const all = [...scored];
-    const dirty = all.filter((s) => s.dirty).length;
-    console.log(`--all: ${all.length} files (${dirty} dirty)`);
-    for (const s of all.slice(0, 10)) {
+  // ── --all / --dirty modes: select files by flag ───────────────────────
+  // --all: every eligible file. --dirty: only files with changed fingerprint.
+  // Both flags respect COUNT if set (MICRO_MUTATION_COUNT env var).
+  if (ALL_MODE || DIRTY_MODE) {
+    let candidates = [...scored];
+    const modeLabel = ALL_MODE ? "--all" : "--dirty";
+
+    if (DIRTY_MODE) {
+      candidates = candidates.filter((s) => s.dirty);
+      if (candidates.length === 0) {
+        console.log("--dirty: no dirty files, nothing to do.");
+        return [];
+      }
+    }
+
+    // If COUNT is set to a positive value, limit candidates (sorted by score desc)
+    if (COUNT > 0 && COUNT < candidates.length) {
+      console.log(`${modeLabel}: limiting to top ${COUNT} of ${candidates.length} candidates`);
+      candidates = candidates.slice(0, COUNT);
+    }
+
+    const dirtyCount = candidates.filter((s) => s.dirty).length;
+    console.log(`${modeLabel}: ${candidates.length} files (${dirtyCount} dirty)`);
+    for (const s of candidates.slice(0, 10)) {
       console.log(
         `  ${(s.score * 100).toFixed(1)}%  ${s.path}  (stale=${s.stalenessDays}d, lines=${s.lines}, churn=${s.churn90d}, dirty=${s.dirty})`,
       );
     }
-    if (all.length > 10) {
-      console.log(`  ... and ${all.length - 10} more`);
+    if (candidates.length > 10) {
+      console.log(`  ... and ${candidates.length - 10} more`);
     }
-    return all.map((s) => s.path);
+    return candidates.map((s) => s.path);
   }
 
   console.log("Top 10 priority files:");
@@ -616,7 +636,7 @@ function main() {
   console.log(
     `count=${COUNT}, staleness=${W_STALENESS}, size=${W_SIZE}, churn=${W_CHURN}, dirty=${W_DIRTY}`,
   );
-  console.log(`dry-run=${DRY_RUN}, init-state=${INIT_STATE}, all=${ALL_MODE}`);
+  console.log(`dry-run=${DRY_RUN}, init-state=${INIT_STATE}, all=${ALL_MODE}, dirty=${DIRTY_MODE}`);
 
   const state = loadState();
 
@@ -642,8 +662,8 @@ function main() {
     return;
   }
 
-  if (COUNT <= 0 && !ALL_MODE) {
-    console.log("MICRO_MUTATION_COUNT=0 and --all not set, nothing to do.");
+  if (COUNT <= 0 && !ALL_MODE && !DIRTY_MODE) {
+    console.log("MICRO_MUTATION_COUNT=0, --all/--dirty not set, nothing to do.");
     return;
   }
 
