@@ -1,6 +1,5 @@
 import * as assert from "node:assert/strict";
 import { beforeEach, describe, it, mock } from "node:test";
-import * as path from "node:path";
 
 // ── Mock state ────────────────────────────────────────────────────────────
 
