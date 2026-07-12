@@ -39,7 +39,7 @@ What gets evaluated about a proof command's output:
 | `output_contains` / `output_not_contains` | Substring match in combined stdout+stderr |
 | `output_matches` / `output_not_matches` | Regex match |
 | `tdd` | Test must fail first (RED), then pass (GREEN). Bakes in assertion quality check. |
-| `manual` / `review` | Out-of-band human verification via popup or MCP elicitation |
+| `manual` / `review` | Out-of-band human verification via MCP elicitation |
 | `mutation` | Parse surviving mutants from Stryker/mutmut/cargo-mutants output |
 | `regression` | Capture baseline metric, compare subsequent runs with tolerance |
 | `assertions` | Static analysis: count non-trivial assertions in test files |
@@ -66,7 +66,7 @@ What gets evaluated about a proof command's output:
 | `dod_refine` | Turn a draft leaf into concrete (supply command + predicate + description) |
 | `dod_add_node` / `dod_remove_node` | Add/remove nodes anywhere in the tree |
 | `dod_amend` | Modify a concrete proof with audit trail. Blocks machine→out-of-band (manual/review) conversion. |
-| `dod_verify` | Popup/elicitation for one manual/review proof (must be called explicitly) |
+| `dod_verify` | MCP elicitation for one manual/review proof (must be called explicitly) |
 | `dod_status` | Read cached check result without re-running |
 | `dod_list` | List all tracked DoDs with status |
 | `dod_import` | Parse existing markdown DoD into canonical storage |
@@ -103,7 +103,7 @@ Company baseline from `standards/dod-baselines.md` is machine-enforced at `dod_c
 | `brevity.ts` | Static analysis: scan source files for line/function/file length, cohesion (mixed selection+iteration), replacement ratio |
 | `regression.ts` | Extract metric number from regression command output (last number or regex capture) |
 | `baseline.ts` | Baseline category enforcement with two-tier (hard error / warn-with-skip_reason) |
-| `notify.ts` | Windows messagebox + jingle for manual verification popups |
+| `notify.ts` | Jingle (PowerShell beep arpeggio) for manual verification attention chime |
 | `command-check.ts` | Validate proof commands reference tools available on the current OS |
 
 ### Predicate evaluation in checkDocument()
