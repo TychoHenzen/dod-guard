@@ -71,6 +71,23 @@ The correct flow:
 - Tag pointing at HEAD → matching publish job fires
 - `workflow_dispatch` fallback for manual publishes
 
+### Retriggering CI when tags end up on the wrong commit
+
+Tags on existing commits don't retrigger CI. If you need to move tags to a new commit (e.g., CI fix after tagging):
+
+```
+# 1. Delete old tags FIRST
+git tag -d <tag1> <tag2> ...
+git push origin --delete <tag1> <tag2> ...
+
+# 2. Tag+push commit WITH tags in place (atomically)
+git commit --allow-empty -m "chore: retrigger CI with tags"
+git tag <tag1> <tag2> ...
+git push origin master && git push origin <tag1> <tag2> ...
+```
+
+**Never**: commit first, then move tags after. Tags on a pre-existing commit don't retrigger — CI only fires on the push event that introduces both the commit AND the tag.
+
 ## Key architectural rules
 
 ### MCP server guard pattern
