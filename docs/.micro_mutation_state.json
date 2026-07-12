@@ -1,8 +1,16 @@
 {
   "files": {
     "packages/dod-guard/src/assertions.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 319,
+        "caught": 89,
+        "missed": 215,
+        "timeout": 0,
+        "unviable": 15,
+        "status": "ok",
+        "error": null
+      },
       "lines": 173,
       "error_count": 0,
       "recent_commits": 4
@@ -15,15 +23,31 @@
       "recent_commits": 4
     },
     "packages/dod-guard/src/baseline.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 126,
+        "caught": 68,
+        "missed": 58,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 179,
       "error_count": 0,
       "recent_commits": 4
     },
     "packages/dod-guard/src/brevity.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 366,
+        "caught": 147,
+        "missed": 149,
+        "timeout": 0,
+        "unviable": 70,
+        "status": "ok",
+        "error": null
+      },
       "lines": 399,
       "error_count": 0,
       "recent_commits": 3
@@ -36,8 +60,16 @@
       "recent_commits": 6
     },
     "packages/dod-guard/src/command-check.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 300,
+        "caught": 147,
+        "missed": 123,
+        "timeout": 8,
+        "unviable": 22,
+        "status": "ok",
+        "error": null
+      },
       "lines": 241,
       "error_count": 0,
       "recent_commits": 4
@@ -250,8 +282,16 @@
       "recent_commits": 5
     },
     "packages/obsidian-rag/src/retriever.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 112,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 112,
+        "status": "ok",
+        "error": null
+      },
       "lines": 134,
       "error_count": 0,
       "recent_commits": 4
@@ -279,14 +319,14 @@
     }
   },
   "cumulative": {
-    "total_mutants": 1068,
-    "caught": 418,
-    "missed": 301,
-    "timeout": 2,
-    "unviable": 347,
+    "total_mutants": 2291,
+    "caught": 869,
+    "missed": 846,
+    "timeout": 10,
+    "unviable": 566,
     "error": 0,
-    "runs": 4,
-    "files_tested": 4
+    "runs": 9,
+    "files_tested": 9
   },
   "runs": [
     {
@@ -341,6 +381,76 @@
         "missed": 61,
         "timeout": 2,
         "unviable": 56,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
+      "file": "packages/dod-guard/src/brevity.ts",
+      "result": {
+        "total": 366,
+        "caught": 147,
+        "missed": 149,
+        "timeout": 0,
+        "unviable": 70,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
+      "file": "packages/obsidian-rag/src/retriever.ts",
+      "result": {
+        "total": 112,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 112,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
+      "file": "packages/dod-guard/src/command-check.ts",
+      "result": {
+        "total": 300,
+        "caught": 147,
+        "missed": 123,
+        "timeout": 8,
+        "unviable": 22,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
+      "file": "packages/dod-guard/src/baseline.ts",
+      "result": {
+        "total": 126,
+        "caught": 68,
+        "missed": 58,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-07-12",
+      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
+      "file": "packages/dod-guard/src/assertions.ts",
+      "result": {
+        "total": 319,
+        "caught": 89,
+        "missed": 215,
+        "timeout": 0,
+        "unviable": 15,
         "status": "ok",
         "error": null
       }
