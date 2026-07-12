@@ -80,6 +80,30 @@ jobs:
       - name: Biome strict check
         run: npx @biomejs/biome check packages/*/src/ --max-diagnostics=200 --no-errors-on-unmatched
 
+      # Coverage thresholds — fail if any package drops below 90% statements
+      - name: Coverage gate (≥90% statements)
+        run: |
+          echo "=== Coverage gate (≥90% statements) ==="
+          FAILED=""
+          for pkg in dod-guard evomcp gitevo obsidian-rag; do
+            echo "--- $pkg ---"
+            npx c8 --include="packages/$pkg/src/*.ts" \
+                   --exclude="packages/$pkg/src/*.test.ts" \
+                   --exclude="packages/$pkg/src/types.ts" \
+                   --exclude="packages/$pkg/src/constants.ts" \
+                   --statements 90 \
+                   --branches 70 \
+                   --functions 80 \
+                   --lines 90 \
+                   --reporter=text \
+                   node --experimental-test-module-mocks --test "packages/$pkg/dist/*.test.js" || FAILED="$FAILED $pkg"
+          done
+          if [ -n "$FAILED" ]; then
+            echo "COVERAGE GATE FAILED for:$FAILED"
+            exit 1
+          fi
+          echo "All packages pass coverage gate."
+
       # Coverage gaps
       - name: Missing test coverage
         run: |

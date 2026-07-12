@@ -19,6 +19,7 @@
     "bundle": "node esbuild.config.mjs",
     "prepublishOnly": "npm run build && npm run bundle",
     "start": "node dist/bundle.js",
+    "coverage": "c8 --include=\"src/*.ts\" --exclude=\"src/*.test.ts\" --reporter=text --reporter=html node --experimental-test-module-mocks --test \"dist/index.test.js\"",
     "dev": "tsc --watch"
   },
   "keywords": [
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "c8": "^11.0.0",
     "esbuild": "^0.28.0",
     "typescript": "^5.7.0"
   }
