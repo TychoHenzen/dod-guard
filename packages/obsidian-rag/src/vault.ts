@@ -27,7 +27,8 @@ export async function walkVault(vaultPath: string): Promise<string[]> {
           dirs.push(full);
         }
       } else if (e.isFile() && e.name.endsWith(".md")) {
-        files.push(relative(vaultPath, full));
+        // Normalize to forward slash — cross-platform compatibility
+        files.push(relative(vaultPath, full).replace(/\\/g, "/"));
       }
     }
   }

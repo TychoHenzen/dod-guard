@@ -157,7 +157,7 @@ describe("vault", () => {
       setDir("/v", [{ name: "sub", isDirectory: () => true, isFile: () => false }]);
       setDir("/v/sub", [{ name: "nested.md", isDirectory: () => false, isFile: () => true }]);
       const result = await mod.walkVault("/v");
-      assert.deepStrictEqual(result, ["sub\\nested.md"]);
+      assert.deepStrictEqual(result, ["sub/nested.md"]);
     });
   });
 

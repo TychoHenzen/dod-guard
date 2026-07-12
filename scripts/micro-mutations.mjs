@@ -416,7 +416,7 @@ function runMutation(srcPath) {
   try {
     const strykerOut = execSync(
       `npx stryker run ${STRIKER_CONFIG} --mutate "${distPathFwd}" --concurrency 2`,
-      { cwd: ROOT, encoding: "utf-8", timeout: 15 * 60_000, stdio: "pipe" },
+      { cwd: ROOT, encoding: "utf-8", timeout: 15 * 60_000, stdio: ["pipe", "pipe", "pipe"] },
     );
 
     if (
@@ -464,12 +464,16 @@ function runMutation(srcPath) {
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.log("  → Stryker failed:", msg.slice(0, 200));
+    // Capture stderr — Stryker writes crash details (unhandled rejections, etc.) there
+    const stderrStr = (err && typeof err === "object" && "stderr" in err) ? String(err.stderr) : "";
+    const stderrTail = stderrStr ? stderrStr.split("\n").slice(-10).join("\n") : "";
+    console.log("  → Stryker failed:", msg.slice(0, 300));
+    if (stderrTail) console.log("  Stryker stderr tail:\n", stderrTail);
     return {
-      output: msg,
+      output: stderrTail || msg,
       result: {
         total: 0, caught: 0, missed: 0, timeout: 0, unviable: 0,
-        status: "error", error: msg.slice(0, 200),
+        status: "error", error: msg.slice(0, 300),
       },
     };
   }
