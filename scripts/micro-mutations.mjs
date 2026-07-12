@@ -439,7 +439,8 @@ function statusIcon(r) {
   if (!r) return "⬜";
   switch (r.status) {
     case "ok":
-      return r.missed === 0 ? "✅" : "⚠️";
+      // ✅ only when 100% kill rate (zero survivors AND at least one killed)
+      return r.missed === 0 && r.caught > 0 ? "✅" : "⚠️";
     case "no_mutants":
       return "➖";
     case "error":
