@@ -1,0 +1,3637 @@
+{
+  "source": "packages/dod-guard/src/observability.ts",
+  "date": "2026-07-12T19:27:59.620Z",
+  "summary": {
+    "total": 951,
+    "killed": 417,
+    "survived": 453,
+    "timeout": 11,
+    "unviable": 70
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 10
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "24",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 12,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "32",
+      "mutator": "Regex",
+      "replacement": "/\\bconsole\\.(log|error|warn|info|debug|trace)\\S*\\(/",
+      "line": 19,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "34",
+      "mutator": "Regex",
+      "replacement": "/\\b(logger|log)\\.(error|warn|info|debug|trace|fatal)\\S*\\(/",
+      "line": 20,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "37",
+      "mutator": "Regex",
+      "replacement": "/\\blogging\\.(debug|info|warning|error|critical|exception|log)\\S*\\(/",
+      "line": 26,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "39",
+      "mutator": "Regex",
+      "replacement": "/\\b(logger|log|self\\.logger|self\\._logger)\\.(debug|info|warning|warn|error|critical|exception|log)\\S*\\(/",
+      "line": 27,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "43",
+      "mutator": "Regex",
+      "replacement": "/\\beprintln!\\s\\(/",
+      "line": 32,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "42",
+      "mutator": "Regex",
+      "replacement": "/(?:\\blog|error|warn|info|debug|trace)!\\S*\\(/",
+      "line": 31,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "44",
+      "mutator": "Regex",
+      "replacement": "/\\beprintln!\\S*\\(/",
+      "line": 32,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "46",
+      "mutator": "Regex",
+      "replacement": "/\\bdbg!\\S*\\(/",
+      "line": 33,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "47",
+      "mutator": "Regex",
+      "replacement": "/\\btracing::(?:info|error|warn|debug|trace)\\s\\(/",
+      "line": 34,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "48",
+      "mutator": "Regex",
+      "replacement": "/\\btracing::(?:info|error|warn|debug|trace)\\S*\\(/",
+      "line": 34,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "50",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:Log|_logger|logger|Logger)\\.(?:Log(?:Information|Warning|Error|Debug|Critical|Trace)|Information|Warning|Error|Deb",
+      "line": 37,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "52",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:Log|_logger|logger|Logger)\\.(?:Log(?:Information|Warning|Error|Debug|Critical|Trace)?|Information|Warning|Error|De",
+      "line": 37,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "53",
+      "mutator": "Regex",
+      "replacement": "/\\bConsole\\.Write(?:Line)\\s*\\(/",
+      "line": 38,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "55",
+      "mutator": "Regex",
+      "replacement": "/\\bConsole\\.Write(?:Line)?\\S*\\(/",
+      "line": 38,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "56",
+      "mutator": "Regex",
+      "replacement": "/\\bDebug\\.Write(?:Line)\\s*\\(/",
+      "line": 39,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "57",
+      "mutator": "Regex",
+      "replacement": "/\\bDebug\\.Write(?:Line)?\\s\\(/",
+      "line": 39,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "62",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 43,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "58",
+      "mutator": "Regex",
+      "replacement": "/\\bDebug\\.Write(?:Line)?\\S*\\(/",
+      "line": 39,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "70",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 52,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "80",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= lines.length",
+      "line": 65,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "86",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s(\\([^)]*\\))?\\s*\\{/",
+      "line": 67,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "88",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))\\s*\\{/",
+      "line": 67,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "89",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]\\))?\\s*\\{/",
+      "line": 67,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "91",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\s\\{/",
+      "line": 67,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "94",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 68,
+      "col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "95",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 68,
+      "col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "96",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 69,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "97",
+      "mutator": "ArithmeticOperator",
+      "replacement": "endLine - 1",
+      "line": 69,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "102",
+      "mutator": "ArithmeticOperator",
+      "replacement": "endLine - 1",
+      "line": 71,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "101",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 71,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "103",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 71,
+      "col": 88
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "107",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= lines.length",
+      "line": 78,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "113",
+      "mutator": "Regex",
+      "replacement": "/\\s*except\\b/",
+      "line": 80,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "115",
+      "mutator": "Regex",
+      "replacement": "/^\\S*except\\b/",
+      "line": 80,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "117",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 82,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "123",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 84,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "124",
+      "mutator": "ArithmeticOperator",
+      "replacement": "endLine - 1",
+      "line": 84,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "125",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 84,
+      "col": 88
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "129",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= lines.length",
+      "line": 91,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "137",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\S*\\([^)]*\\)\\s*=>/",
+      "line": 94,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "138",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\s*\\([^)]\\)\\s*=>/",
+      "line": 94,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "140",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\s*\\([^)]*\\)\\s=>/",
+      "line": 94,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "144",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 95,
+      "col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "146",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 96,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "145",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 95,
+      "col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "147",
+      "mutator": "ArithmeticOperator",
+      "replacement": "endLine - 1",
+      "line": 96,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "152",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 98,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "153",
+      "mutator": "ArithmeticOperator",
+      "replacement": "endLine - 1",
+      "line": 98,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "154",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 98,
+      "col": 88
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "156",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "line": 113,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "157",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 114,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "158",
+      "mutator": "EqualityOperator",
+      "replacement": "j <= openLine.length",
+      "line": 114,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "159",
+      "mutator": "EqualityOperator",
+      "replacement": "j >= openLine.length",
+      "line": 114,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "161",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 114,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "162",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 115,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "163",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 115,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "164",
+      "mutator": "EqualityOperator",
+      "replacement": "openLine[j] !== open",
+      "line": 115,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "165",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 115,
+      "col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "166",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 120,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "167",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 120,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "168",
+      "mutator": "EqualityOperator",
+      "replacement": "braceIdx !== -1",
+      "line": 120,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "169",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "line": 120,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "171",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 124,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "172",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= lines.length",
+      "line": 124,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "173",
+      "mutator": "EqualityOperator",
+      "replacement": "i >= lines.length",
+      "line": 124,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "175",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 124,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "176",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 127,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "177",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 127,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "178",
+      "mutator": "EqualityOperator",
+      "replacement": "i !== startIdx",
+      "line": 127,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "179",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 128,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "180",
+      "mutator": "EqualityOperator",
+      "replacement": "j <= line.length",
+      "line": 128,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "183",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 128,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "184",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 130,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "185",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 130,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "186",
+      "mutator": "EqualityOperator",
+      "replacement": "j >= 0",
+      "line": 130,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "187",
+      "mutator": "EqualityOperator",
+      "replacement": "j <= 0",
+      "line": 130,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "188",
+      "mutator": "ArithmeticOperator",
+      "replacement": "j + 1",
+      "line": 130,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "189",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 130,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "190",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 131,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "191",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 131,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "192",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 131,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "193",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 132,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "194",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 132,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "195",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === inString || prev !== \"\\\\\"",
+      "line": 132,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "196",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 132,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "197",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== inString",
+      "line": 132,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "198",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 132,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "199",
+      "mutator": "EqualityOperator",
+      "replacement": "prev === \"\\\\\"",
+      "line": 132,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "200",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 132,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "201",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 136,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "202",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 136,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "203",
+      "mutator": "LogicalOperator",
+      "replacement": "(ch === '\"' || ch === \"'\") && ch === \"`\"",
+      "line": 136,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "204",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 136,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "205",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === '\"' && ch === \"'\"",
+      "line": 136,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "206",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 136,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "207",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== '\"'",
+      "line": 136,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "208",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 136,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "209",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 136,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "210",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \"'\"",
+      "line": 136,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "211",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 136,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "212",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 136,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "213",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \"`\"",
+      "line": 136,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "215",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 136,
+      "col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "214",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 136,
+      "col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "217",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 141,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "216",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 141,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "218",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === \"/\" && j + 1 < line.length || line[j + 1] === \"/\"",
+      "line": 141,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "219",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 141,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "220",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === \"/\" || j + 1 < line.length",
+      "line": 141,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "221",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 141,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "222",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \"/\"",
+      "line": 141,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "223",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 141,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "234",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 144,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "233",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 144,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "235",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== open",
+      "line": 144,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "236",
+      "mutator": "UpdateOperator",
+      "replacement": "depth--",
+      "line": 145,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "238",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 146,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "237",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 146,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "240",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 146,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "239",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== close",
+      "line": 146,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "241",
+      "mutator": "UpdateOperator",
+      "replacement": "depth++",
+      "line": 147,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "243",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 150,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "244",
+      "mutator": "LogicalOperator",
+      "replacement": "depth === 0 || getIndent(line) <= baseIndent",
+      "line": 150,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "245",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 150,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "246",
+      "mutator": "EqualityOperator",
+      "replacement": "depth !== 0",
+      "line": 150,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "247",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 150,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "248",
+      "mutator": "EqualityOperator",
+      "replacement": "getIndent(line) < baseIndent",
+      "line": 150,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "249",
+      "mutator": "EqualityOperator",
+      "replacement": "getIndent(line) > baseIndent",
+      "line": 150,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "250",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 150,
+      "col": 67
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "252",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 158,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "253",
+      "mutator": "Regex",
+      "replacement": "/(\\s*)/",
+      "line": 159,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "254",
+      "mutator": "Regex",
+      "replacement": "/^(\\s)/",
+      "line": 159,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "255",
+      "mutator": "Regex",
+      "replacement": "/^(\\S*)/",
+      "line": 159,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "257",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\s*\\{\\s*\\}\\s*/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "256",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 164,
+      "col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "259",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\S*(\\([^)]*\\))?\\s*\\{\\s*\\}\\s*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "258",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s(\\([^)]*\\))?\\s*\\{\\s*\\}\\s*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "260",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))\\s*\\{\\s*\\}\\s*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "261",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]\\))?\\s*\\{\\s*\\}\\s*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "262",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([)]*\\))?\\s*\\{\\s*\\}\\s*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "263",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\s\\{\\s*\\}\\s*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "264",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\S*\\{\\s*\\}\\s*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "265",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\s*\\{\\s\\}\\s*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "266",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\s*\\{\\S*\\}\\s*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "267",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\s*\\{\\s*\\}\\s$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "268",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\s*\\{\\s*\\}\\S*$/",
+      "line": 168,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "270",
+      "mutator": "Regex",
+      "replacement": "/(\\s*)/",
+      "line": 172,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "271",
+      "mutator": "Regex",
+      "replacement": "/^(\\s)/",
+      "line": 172,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "278",
+      "mutator": "MethodExpression",
+      "replacement": "lines[i]",
+      "line": 177,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "280",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 178,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "281",
+      "mutator": "EqualityOperator",
+      "replacement": "trimmed !== \"\"",
+      "line": 178,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "282",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 178,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "283",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 178,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "286",
+      "mutator": "OptionalChaining",
+      "replacement": "lines[i].match(/^(\\s*)/)[1]",
+      "line": 182,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "287",
+      "mutator": "Regex",
+      "replacement": "/(\\s*)/",
+      "line": 182,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "288",
+      "mutator": "Regex",
+      "replacement": "/^(\\s)/",
+      "line": 182,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "296",
+      "mutator": "ArithmeticOperator",
+      "replacement": "lines.length + 1",
+      "line": 187,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "305",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 199,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "313",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 207,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "315",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "316",
+      "mutator": "Regex",
+      "replacement": "/\\s*\\/\\/|^\\s*\\/\\*|^\\s*\\*/",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "317",
+      "mutator": "Regex",
+      "replacement": "/^\\s\\/\\/|^\\s*\\/\\*|^\\s*\\*/",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "318",
+      "mutator": "Regex",
+      "replacement": "/^\\S*\\/\\/|^\\s*\\/\\*|^\\s*\\*/",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "319",
+      "mutator": "Regex",
+      "replacement": "/^\\s*\\/\\/|\\s*\\/\\*|^\\s*\\*/",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "320",
+      "mutator": "Regex",
+      "replacement": "/^\\s*\\/\\/|^\\s\\/\\*|^\\s*\\*/",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "321",
+      "mutator": "Regex",
+      "replacement": "/^\\s*\\/\\/|^\\S*\\/\\*|^\\s*\\*/",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "323",
+      "mutator": "Regex",
+      "replacement": "/^\\s*\\/\\/|^\\s*\\/\\*|^\\s\\*/",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "322",
+      "mutator": "Regex",
+      "replacement": "/^\\s*\\/\\/|^\\s*\\/\\*|\\s*\\*/",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "324",
+      "mutator": "Regex",
+      "replacement": "/^\\s*\\/\\/|^\\s*\\/\\*|^\\S*\\*/",
+      "line": 209,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "326",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 213,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "327",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 213,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "329",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 214,
+      "col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "331",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 214,
+      "col": 74
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "333",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 218,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "335",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\S*(\\([^)]*\\))?\\s*\\{/",
+      "line": 218,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "334",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s(\\([^)]*\\))?\\s*\\{/",
+      "line": 218,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "336",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))\\s*\\{/",
+      "line": 218,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "337",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]\\))?\\s*\\{/",
+      "line": 218,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "338",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([)]*\\))?\\s*\\{/",
+      "line": 218,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "339",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\s\\{/",
+      "line": 218,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "340",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\S*\\{/",
+      "line": 218,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "341",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 218,
+      "col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "342",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 219,
+      "col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "343",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 219,
+      "col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "344",
+      "mutator": "MethodExpression",
+      "replacement": "lines.slice(i + 1, endLine).map(l => l.trim())",
+      "line": 220,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "345",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 220,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "346",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 221,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "348",
+      "mutator": "MethodExpression",
+      "replacement": "l",
+      "line": 222,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "350",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 223,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "352",
+      "mutator": "EqualityOperator",
+      "replacement": "l.length >= 0",
+      "line": 223,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "355",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 224,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "369",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 230,
+      "col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "371",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 230,
+      "col": 71
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "373",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 236,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "375",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= lines.length",
+      "line": 237,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "380",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "381",
+      "mutator": "Regex",
+      "replacement": "/\\s*except\\b.*:\\s*pass\\s*(#.*)?$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "382",
+      "mutator": "Regex",
+      "replacement": "/^\\s*except\\b.*:\\s*pass\\s*(#.*)?/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "384",
+      "mutator": "Regex",
+      "replacement": "/^\\S*except\\b.*:\\s*pass\\s*(#.*)?$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "383",
+      "mutator": "Regex",
+      "replacement": "/^\\sexcept\\b.*:\\s*pass\\s*(#.*)?$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "385",
+      "mutator": "Regex",
+      "replacement": "/^\\s*except\\b.:\\s*pass\\s*(#.*)?$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "386",
+      "mutator": "Regex",
+      "replacement": "/^\\s*except\\b.*:\\spass\\s*(#.*)?$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "387",
+      "mutator": "Regex",
+      "replacement": "/^\\s*except\\b.*:\\S*pass\\s*(#.*)?$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "388",
+      "mutator": "Regex",
+      "replacement": "/^\\s*except\\b.*:\\s*pass\\s(#.*)?$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "390",
+      "mutator": "Regex",
+      "replacement": "/^\\s*except\\b.*:\\s*pass\\s*(#.*)$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "389",
+      "mutator": "Regex",
+      "replacement": "/^\\s*except\\b.*:\\s*pass\\S*(#.*)?$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "391",
+      "mutator": "Regex",
+      "replacement": "/^\\s*except\\b.*:\\s*pass\\s*(#.)?$/",
+      "line": 240,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "397",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 245,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "399",
+      "mutator": "Regex",
+      "replacement": "/\\s*except\\b/",
+      "line": 245,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "401",
+      "mutator": "Regex",
+      "replacement": "/^\\S*except\\b/",
+      "line": 245,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "408",
+      "mutator": "MethodExpression",
+      "replacement": "l",
+      "line": 249,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "414",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 251,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "417",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 251,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "416",
+      "mutator": "LogicalOperator",
+      "replacement": "body.length > 0 || body.every(l => l === \"pass\" || /^\\s*pass\\s*(#.*)?$/.test(l))",
+      "line": 251,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "418",
+      "mutator": "EqualityOperator",
+      "replacement": "body.length >= 0",
+      "line": 251,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "420",
+      "mutator": "MethodExpression",
+      "replacement": "body.some(l => l === \"pass\" || /^\\s*pass\\s*(#.*)?$/.test(l))",
+      "line": 251,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "422",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 251,
+      "col": 66
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "425",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 251,
+      "col": 66
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "426",
+      "mutator": "EqualityOperator",
+      "replacement": "l !== \"pass\"",
+      "line": 251,
+      "col": 66
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "427",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 251,
+      "col": 72
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "428",
+      "mutator": "Regex",
+      "replacement": "/\\s*pass\\s*(#.*)?$/",
+      "line": 251,
+      "col": 82
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "429",
+      "mutator": "Regex",
+      "replacement": "/^\\s*pass\\s*(#.*)?/",
+      "line": 251,
+      "col": 82
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "431",
+      "mutator": "Regex",
+      "replacement": "/^\\S*pass\\s*(#.*)?$/",
+      "line": 251,
+      "col": 82
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "434",
+      "mutator": "Regex",
+      "replacement": "/^\\s*pass\\s*(#.*)$/",
+      "line": 251,
+      "col": 82
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "436",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 252,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "440",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 253,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "442",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 253,
+      "col": 78
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "450",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 258,
+      "col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "452",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 258,
+      "col": 71
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "454",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 264,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "456",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= lines.length",
+      "line": 265,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "462",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\s*\\([^)]*\\)\\s*=>\\s*\\{\\s*\\}\\s*,?/",
+      "line": 268,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "464",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\S*\\([^)]*\\)\\s*=>\\s*\\{\\s*\\}\\s*,?$/",
+      "line": 268,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "465",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\s*\\([^)]\\)\\s*=>\\s*\\{\\s*\\}\\s*,?$/",
+      "line": 268,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "467",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\s*\\([^)]*\\)\\s=>\\s*\\{\\s*\\}\\s*,?$/",
+      "line": 268,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "469",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\s*\\([^)]*\\)\\s*=>\\s\\{\\s*\\}\\s*,?$/",
+      "line": 268,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "471",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\s*\\([^)]*\\)\\s*=>\\s*\\{\\s\\}\\s*,?$/",
+      "line": 268,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "474",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\s*\\([^)]*\\)\\s*=>\\s*\\{\\s*\\}\\S*,?$/",
+      "line": 268,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "475",
+      "mutator": "Regex",
+      "replacement": "/\\bErr\\s*\\([^)]*\\)\\s*=>\\s*\\{\\s*\\}\\s*,$/",
+      "line": 268,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "478",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 269,
+      "col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "480",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 269,
+      "col": 74
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "490",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 274,
+      "col": 71
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "504",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:console|logger|log|pino|winston)\\.\\w+\\S*\\(([^)]+)\\)/",
+      "line": 303,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "509",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 304,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "512",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 309,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "516",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 312,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "517",
+      "mutator": "MethodExpression",
+      "replacement": "argsList.every(a => a.includes(\"`\") && a.includes(\"${\"))",
+      "line": 312,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "518",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 312,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "520",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 312,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "521",
+      "mutator": "LogicalOperator",
+      "replacement": "a.includes(\"`\") || a.includes(\"${\")",
+      "line": 312,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "522",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 312,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "530",
+      "mutator": "MethodExpression",
+      "replacement": "argsList[0]",
+      "line": 316,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "536",
+      "mutator": "Regex",
+      "replacement": "/\"[^\"]*\"$/",
+      "line": 318,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "537",
+      "mutator": "Regex",
+      "replacement": "/^\"[^\"]*\"/",
+      "line": 318,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "540",
+      "mutator": "Regex",
+      "replacement": "/'[^']*'$/",
+      "line": 318,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "541",
+      "mutator": "Regex",
+      "replacement": "/^'[^']*'/",
+      "line": 318,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "542",
+      "mutator": "Regex",
+      "replacement": "/^'[^']'$/",
+      "line": 318,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "543",
+      "mutator": "Regex",
+      "replacement": "/^'[']*'$/",
+      "line": 318,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "544",
+      "mutator": "Regex",
+      "replacement": "/`[^`]*`$/",
+      "line": 318,
+      "col": 63
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "545",
+      "mutator": "Regex",
+      "replacement": "/^`[^`]*`/",
+      "line": 318,
+      "col": 63
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "546",
+      "mutator": "Regex",
+      "replacement": "/^`[^`]`$/",
+      "line": 318,
+      "col": 63
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "547",
+      "mutator": "Regex",
+      "replacement": "/^`[`]*`$/",
+      "line": 318,
+      "col": 63
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "554",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:logging|logger|log|self\\.logger|self\\._logger)\\.\\w+\\S*\\(([^)]+)\\)/",
+      "line": 323,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "559",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 324,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "562",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 328,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "566",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 331,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "567",
+      "mutator": "MethodExpression",
+      "replacement": "argsList.every(a => a.startsWith('f\"') || a.startsWith(\"f'\"))",
+      "line": 331,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "568",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 331,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "571",
+      "mutator": "LogicalOperator",
+      "replacement": "a.startsWith('f\"') && a.startsWith(\"f'\")",
+      "line": 331,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "570",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 331,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "572",
+      "mutator": "MethodExpression",
+      "replacement": "a.endsWith('f\"')",
+      "line": 331,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "574",
+      "mutator": "MethodExpression",
+      "replacement": "a.endsWith(\"f'\")",
+      "line": 331,
+      "col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "583",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 336,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "584",
+      "mutator": "Regex",
+      "replacement": "/%[^sdfr]/",
+      "line": 336,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "586",
+      "mutator": "MethodExpression",
+      "replacement": "argsList[0]",
+      "line": 338,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "587",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 339,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "590",
+      "mutator": "Regex",
+      "replacement": "/\"[^\"]*\"$/",
+      "line": 339,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "591",
+      "mutator": "Regex",
+      "replacement": "/^\"[^\"]*\"/",
+      "line": 339,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "594",
+      "mutator": "Regex",
+      "replacement": "/'[^']*'$/",
+      "line": 339,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "595",
+      "mutator": "Regex",
+      "replacement": "/^'[^']*'/",
+      "line": 339,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "596",
+      "mutator": "Regex",
+      "replacement": "/^'[^']'$/",
+      "line": 339,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "597",
+      "mutator": "Regex",
+      "replacement": "/^'[']*'$/",
+      "line": 339,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "602",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:log|error|warn|info|debug|trace|eprintln|dbg)!\\S*\\(\\s*(\"[^\"]*\")/",
+      "line": 345,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "604",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:log|error|warn|info|debug|trace|eprintln|dbg)!\\s*\\(\\S*(\"[^\"]*\")/",
+      "line": 345,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "610",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "line": 347,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "612",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 350,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "613",
+      "mutator": "LogicalOperator",
+      "replacement": "/\\{\\}/.test(msg) && /\\{[^}]*\\}/.test(msg)",
+      "line": 350,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "614",
+      "mutator": "Regex",
+      "replacement": "/\\{[^}]\\}/",
+      "line": 350,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "615",
+      "mutator": "Regex",
+      "replacement": "/\\{[}]*\\}/",
+      "line": 350,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "617",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 353,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "618",
+      "mutator": "ArithmeticOperator",
+      "replacement": "line.indexOf(msg) - msg.length",
+      "line": 353,
+      "col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "620",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 354,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "634",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 364,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "635",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 364,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "636",
+      "mutator": "LogicalOperator",
+      "replacement": "(ch === \"(\" || ch === \"{\") && ch === \"[\"",
+      "line": 364,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "637",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 364,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "638",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === \"(\" && ch === \"{\"",
+      "line": 364,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "639",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 364,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "640",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \"(\"",
+      "line": 364,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "641",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 364,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "642",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 364,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "643",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \"{\"",
+      "line": 364,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "645",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 364,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "644",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 364,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "647",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 364,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "646",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \"[\"",
+      "line": 364,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "648",
+      "mutator": "UpdateOperator",
+      "replacement": "depth--",
+      "line": 365,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "649",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 366,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "650",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 366,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "651",
+      "mutator": "LogicalOperator",
+      "replacement": "(ch === \")\" || ch === \"}\") && ch === \"]\"",
+      "line": 366,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "652",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 366,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "653",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === \")\" && ch === \"}\"",
+      "line": 366,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "654",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 366,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "655",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \")\"",
+      "line": 366,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "656",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 366,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "657",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 366,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "658",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \"}\"",
+      "line": 366,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "659",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 366,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "660",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 366,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "661",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \"]\"",
+      "line": 366,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "663",
+      "mutator": "UpdateOperator",
+      "replacement": "depth++",
+      "line": 367,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "662",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 366,
+      "col": 53
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "665",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 368,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "669",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 368,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "670",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 368,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "671",
+      "mutator": "EqualityOperator",
+      "replacement": "depth !== 0",
+      "line": 368,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "673",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 370,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "672",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 368,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "676",
+      "mutator": "MethodExpression",
+      "replacement": "current",
+      "line": 376,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "677",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 377,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "679",
+      "mutator": "EqualityOperator",
+      "replacement": "trimmed.length >= 0",
+      "line": 377,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "684",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 388,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "689",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 388,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "690",
+      "mutator": "EqualityOperator",
+      "replacement": "lang === \"cs\"",
+      "line": 388,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "691",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 388,
+      "col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "693",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= lines.length",
+      "line": 390,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "700",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s(\\([^)]*\\))?\\s*\\{/",
+      "line": 392,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "702",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))\\s*\\{/",
+      "line": 392,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "703",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]\\))?\\s*\\{/",
+      "line": 392,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "705",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\b\\s*(\\([^)]*\\))?\\s\\{/",
+      "line": 392,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "707",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 394,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "708",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 394,
+      "col": 53
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "711",
+      "mutator": "MethodExpression",
+      "replacement": "blockLines.map(l => l.trim())",
+      "line": 396,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "710",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 395,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "713",
+      "mutator": "MethodExpression",
+      "replacement": "l",
+      "line": 396,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "715",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 396,
+      "col": 73
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "717",
+      "mutator": "EqualityOperator",
+      "replacement": "l.length >= 0",
+      "line": 396,
+      "col": 73
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "719",
+      "mutator": "MethodExpression",
+      "replacement": "blockLines.every(l => isLogStatement(l, lang))",
+      "line": 397,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "720",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 397,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "721",
+      "mutator": "MethodExpression",
+      "replacement": "codeLines.every(l => /\\breturn\\b/.test(l))",
+      "line": 398,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "722",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 398,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "723",
+      "mutator": "MethodExpression",
+      "replacement": "codeLines.every(l => /\\bthrow\\b/.test(l))",
+      "line": 399,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "724",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 399,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "731",
+      "mutator": "LogicalOperator",
+      "replacement": "hasLog && hasThrow",
+      "line": 401,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "737",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 404,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "739",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 406,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "741",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 414,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "743",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 416,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "744",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 417,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "745",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 418,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "746",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 419,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "747",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 420,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "748",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 421,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "752",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 425,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "753",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 426,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "754",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 427,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "755",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 428,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "756",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 429,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "757",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 432,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "768",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 437,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "769",
+      "mutator": "MethodExpression",
+      "replacement": "parts.every(p => SKIP_DIRS.has(p))",
+      "line": 439,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "770",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 439,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "773",
+      "mutator": "Regex",
+      "replacement": "/\\r\\n/",
+      "line": 449,
+      "col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "775",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 450,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "780",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 454,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "783",
+      "mutator": "LogicalOperator",
+      "replacement": "/^[a-z_]+:/i.test(trimmed) || !trimmed.includes(\"/\")",
+      "line": 454,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "784",
+      "mutator": "Regex",
+      "replacement": "/[a-z_]+:/i",
+      "line": 454,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "785",
+      "mutator": "Regex",
+      "replacement": "/^[a-z_]:/i",
+      "line": 454,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "778",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 451,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "786",
+      "mutator": "Regex",
+      "replacement": "/^[^a-z_]+:/i",
+      "line": 454,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "791",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 457,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "795",
+      "mutator": "LogicalOperator",
+      "replacement": "trimmed.includes(\".\") && trimmed.includes(\"/\")",
+      "line": 457,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "796",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 457,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "797",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 457,
+      "col": 55
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "798",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 457,
+      "col": 80
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "805",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 460,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "809",
+      "mutator": "MethodExpression",
+      "replacement": "candidate",
+      "line": 462,
+      "col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "811",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 463,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "814",
+      "mutator": "LogicalOperator",
+      "replacement": "existsSync(resolved) || isSourceFile(resolved)",
+      "line": 465,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "818",
+      "mutator": "Regex",
+      "replacement": "/\\s/",
+      "line": 479,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "823",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 482,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "824",
+      "mutator": "MethodExpression",
+      "replacement": "token.endsWith(\"-\")",
+      "line": 482,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "827",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 484,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "828",
+      "mutator": "Regex",
+      "replacement": "/(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go)$/",
+      "line": 484,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "829",
+      "mutator": "Regex",
+      "replacement": "/^(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go)/",
+      "line": 484,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "830",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 486,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "833",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 486,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "834",
+      "mutator": "LogicalOperator",
+      "replacement": "token.includes(\"/\") && token.includes(\"\\\\\")",
+      "line": 486,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "835",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 486,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "836",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 486,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "840",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 488,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "837",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 486,
+      "col": 75
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "845",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 494,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "846",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 497,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "847",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 497,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "848",
+      "mutator": "LogicalOperator",
+      "replacement": "existsSync(dir) || pat.includes(\"*\")",
+      "line": 497,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "849",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 497,
+      "col": 53
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "872",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 527,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "887",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 558,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "888",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 558,
+      "col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "889",
+      "mutator": "MethodExpression",
+      "replacement": "command",
+      "line": 558,
+      "col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "890",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 562,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "891",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 562,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "892",
+      "mutator": "EqualityOperator",
+      "replacement": "files.length !== 0",
+      "line": 562,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "893",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 562,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "894",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 564,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "895",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 564,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "896",
+      "mutator": "LogicalOperator",
+      "replacement": "/\\bgit\\s+diff\\b/.test(command) && /\\bgit diff/.test(command)",
+      "line": 564,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "897",
+      "mutator": "Regex",
+      "replacement": "/\\bgit\\sdiff\\b/",
+      "line": 564,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "898",
+      "mutator": "Regex",
+      "replacement": "/\\bgit\\S+diff\\b/",
+      "line": 564,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "907",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 581,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "908",
+      "mutator": "LogicalOperator",
+      "replacement": "file.endsWith(\"observability.ts\") && file.endsWith(\"observability.js\")",
+      "line": 581,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "909",
+      "mutator": "MethodExpression",
+      "replacement": "file.startsWith(\"observability.ts\")",
+      "line": 581,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "911",
+      "mutator": "MethodExpression",
+      "replacement": "file.startsWith(\"observability.js\")",
+      "line": 581,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "916",
+      "mutator": "MethodExpression",
+      "replacement": "result.errorHandlers",
+      "line": 590,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "917",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 590,
+      "col": 62
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "929",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 615,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "930",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 619,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "931",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 620,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "932",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 623,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "933",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 623,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "934",
+      "mutator": "LogicalOperator",
+      "replacement": "file.endsWith(\"observability.ts\") && file.endsWith(\"observability.js\")",
+      "line": 623,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "935",
+      "mutator": "MethodExpression",
+      "replacement": "file.startsWith(\"observability.ts\")",
+      "line": 623,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "936",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 623,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "937",
+      "mutator": "MethodExpression",
+      "replacement": "file.startsWith(\"observability.js\")",
+      "line": 623,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "938",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 623,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "941",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 628,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "942",
+      "mutator": "MethodExpression",
+      "replacement": "result.errorHandlers",
+      "line": 632,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "943",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 632,
+      "col": 62
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "944",
+      "mutator": "AssignmentOperator",
+      "replacement": "totalLogStatements -= result.logCount",
+      "line": 635,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "945",
+      "mutator": "AssignmentOperator",
+      "replacement": "totalErrorHandlers -= result.errorHandlers.length",
+      "line": 636,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "946",
+      "mutator": "AssignmentOperator",
+      "replacement": "errorHandlersLogged -= result.errorHandlers.filter(h => h.logged).length",
+      "line": 637,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "947",
+      "mutator": "MethodExpression",
+      "replacement": "result.errorHandlers",
+      "line": 637,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "948",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 637,
+      "col": 60
+    },
+    {
+      "file": "packages/dod-guard/dist/observability.js",
+      "id": "950",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 645,
+      "col": 26
+    }
+  ]
+}

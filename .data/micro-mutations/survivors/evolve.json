@@ -1,0 +1,957 @@
+{
+  "source": "packages/evomcp/src/evolve.ts",
+  "date": "2026-07-12T19:33:12.573Z",
+  "summary": {
+    "total": 244,
+    "killed": 94,
+    "survived": 118,
+    "timeout": 2,
+    "unviable": 30
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 31,
+      "col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "5",
+      "mutator": "LogicalOperator",
+      "replacement": "spec.population_size && DEFAULT_POPULATION",
+      "line": 34,
+      "col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "6",
+      "mutator": "LogicalOperator",
+      "replacement": "spec.higher_is_better && false",
+      "line": 35,
+      "col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "8",
+      "mutator": "BooleanLiteral",
+      "replacement": "proxyReady",
+      "line": 37,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "9",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 37,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "10",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 37,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "11",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 37,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 41,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "21",
+      "mutator": "MethodExpression",
+      "replacement": "baselineResult.output",
+      "line": 45,
+      "col": 123
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "29",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 51,
+      "col": 83
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "30",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 53,
+      "col": 45
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "31",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 53,
+      "col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "32",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 53,
+      "col": 92
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "34",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 58,
+      "col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "42",
+      "mutator": "ArithmeticOperator",
+      "replacement": "gen - 1",
+      "line": 60,
+      "col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "43",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 62,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "45",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= populationSize",
+      "line": 63,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "50",
+      "mutator": "MethodExpression",
+      "replacement": "elites",
+      "line": 65,
+      "col": 85
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "52",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 70,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "54",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 71,
+      "col": 80
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "58",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 79,
+      "col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "59",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 79,
+      "col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "60",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "line": 79,
+      "col": 44
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "61",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "line": 79,
+      "col": 73
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "70",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 86,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "71",
+      "mutator": "LogicalOperator",
+      "replacement": "r.timedOut && r.exitCode !== 0",
+      "line": 86,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "72",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 86,
+      "col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "75",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 95,
+      "col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "80",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 97,
+      "col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "81",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 97,
+      "col": 40
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "82",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 98,
+      "col": 55
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "83",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 98,
+      "col": 55
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "84",
+      "mutator": "EqualityOperator",
+      "replacement": "score >= bestScore",
+      "line": 98,
+      "col": 55
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "85",
+      "mutator": "EqualityOperator",
+      "replacement": "score <= bestScore",
+      "line": 98,
+      "col": 55
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "86",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 98,
+      "col": 75
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "88",
+      "mutator": "EqualityOperator",
+      "replacement": "score <= bestScore",
+      "line": 98,
+      "col": 75
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "90",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 99,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "93",
+      "mutator": "OptionalChaining",
+      "replacement": "onProgress(`    → NEW BEST: ${score.toFixed(2)}`)",
+      "line": 103,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "95",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 104,
+      "col": 37
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "96",
+      "mutator": "MethodExpression",
+      "replacement": "fitnessResult.output",
+      "line": 104,
+      "col": 45
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "97",
+      "mutator": "MethodExpression",
+      "replacement": "elites",
+      "line": 106,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "98",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 106,
+      "col": 37
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "100",
+      "mutator": "ArithmeticOperator",
+      "replacement": "a.score + b.score",
+      "line": 106,
+      "col": 85
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "101",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 107,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "102",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 107,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "103",
+      "mutator": "EqualityOperator",
+      "replacement": "elites.length >= 5",
+      "line": 107,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "104",
+      "mutator": "EqualityOperator",
+      "replacement": "elites.length <= 5",
+      "line": 107,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "110",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 115,
+      "col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "111",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 121,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "112",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 121,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "113",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 121,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "115",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 124,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "119",
+      "mutator": "ArithmeticOperator",
+      "replacement": "genScores.reduce((a, b) => a + b, 0) * genScores.length",
+      "line": 125,
+      "col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "120",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 125,
+      "col": 48
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "121",
+      "mutator": "ArithmeticOperator",
+      "replacement": "a - b",
+      "line": 125,
+      "col": 58
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "123",
+      "mutator": "ArithmeticOperator",
+      "replacement": "gen - 1",
+      "line": 127,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "125",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 131,
+      "col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "126",
+      "mutator": "ArithmeticOperator",
+      "replacement": "gen - 1",
+      "line": 131,
+      "col": 35
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "129",
+      "mutator": "ArithmeticOperator",
+      "replacement": "gen - 1",
+      "line": 135,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "134",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 143,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "135",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 145,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "136",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 145,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "137",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 145,
+      "col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "138",
+      "mutator": "LogicalOperator",
+      "replacement": "extractScore(finalResult.output) && bestScore",
+      "line": 149,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "139",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + startTime",
+      "line": 150,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "144",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 152,
+      "col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "149",
+      "mutator": "ArithmeticOperator",
+      "replacement": "finalScore + baselineScore",
+      "line": 159,
+      "col": 47
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "150",
+      "mutator": "ArithmeticOperator",
+      "replacement": "baselineScore + finalScore",
+      "line": 159,
+      "col": 76
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "151",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 160,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "152",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 162,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "153",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 162,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "154",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 163,
+      "col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "155",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 164,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "156",
+      "mutator": "MethodExpression",
+      "replacement": "finalResult.output",
+      "line": 165,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "157",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 166,
+      "col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "162",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 175,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "164",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 175,
+      "col": 72
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "165",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 176,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "166",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 176,
+      "col": 76
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "168",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 183,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "175",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 188,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "178",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 189,
+      "col": 40
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "179",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 191,
+      "col": 68
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "187",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 209,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "188",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 210,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "189",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 211,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "190",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 211,
+      "col": 75
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "199",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 221,
+      "col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "200",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 222,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "201",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 223,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "202",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 223,
+      "col": 36
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "203",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 224,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "204",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 224,
+      "col": 35
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "205",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 226,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "206",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 227,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "207",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 227,
+      "col": 39
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "208",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 229,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "209",
+      "mutator": "BooleanLiteral",
+      "replacement": "msg.includes(\"No stash\") || msg.includes(\"not a git repository\")",
+      "line": 232,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "210",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 232,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "211",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 232,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "212",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 232,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "213",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 232,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "214",
+      "mutator": "LogicalOperator",
+      "replacement": "msg.includes(\"No stash\") && msg.includes(\"not a git repository\")",
+      "line": 232,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "215",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 232,
+      "col": 32
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "226",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 244,
+      "col": 63
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "227",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 244,
+      "col": 71
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "228",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 244,
+      "col": 88
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "233",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 251,
+      "col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "234",
+      "mutator": "BooleanLiteral",
+      "replacement": "patch",
+      "line": 252,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "235",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 252,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "236",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 252,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "237",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 254,
+      "col": 46
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "238",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 255,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "239",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 256,
+      "col": 44
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "240",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 257,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "241",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 257,
+      "col": 46
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "242",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 262,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/evolve.js",
+      "id": "243",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 263,
+      "col": 13
+    }
+  ]
+}

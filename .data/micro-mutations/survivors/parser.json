@@ -1,0 +1,1445 @@
+{
+  "source": "packages/dod-guard/src/parser.ts",
+  "date": "2026-07-12T19:36:06.870Z",
+  "summary": {
+    "total": 556,
+    "killed": 358,
+    "survived": 179,
+    "timeout": 0,
+    "unviable": 19
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "11",
+      "mutator": "LogicalOperator",
+      "replacement": "l.includes(\"tdd\") && l.includes(\"must fail first\")",
+      "line": 15,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "18",
+      "mutator": "LogicalOperator",
+      "replacement": "extractExitCode(l, /exit\\s*(?:code\\s*)?(\\d+)/) && 0",
+      "line": 16,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "19",
+      "mutator": "Regex",
+      "replacement": "/exit\\s(?:code\\s*)?(\\d+)/",
+      "line": 16,
+      "col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "20",
+      "mutator": "Regex",
+      "replacement": "/exit\\S*(?:code\\s*)?(\\d+)/",
+      "line": 16,
+      "col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "21",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:code\\s*)(\\d+)/",
+      "line": 16,
+      "col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "22",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:code\\s)?(\\d+)/",
+      "line": 16,
+      "col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "23",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:code\\S*)?(\\d+)/",
+      "line": 16,
+      "col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "24",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:code\\s*)?(\\d)/",
+      "line": 16,
+      "col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "25",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:code\\s*)?(\\D+)/",
+      "line": 16,
+      "col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "27",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 19,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "29",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 20,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "50",
+      "mutator": "LogicalOperator",
+      "replacement": "l.includes(\"not match\") && l.includes(\"must not match\")",
+      "line": 30,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "94",
+      "mutator": "Regex",
+      "replacement": "/exit\\s(?:\\S+\\s+)?(\\d+)/",
+      "line": 52,
+      "col": 75
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "97",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:\\S\\s+)?(\\d+)/",
+      "line": 52,
+      "col": 75
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "98",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:\\s+\\s+)?(\\d+)/",
+      "line": 52,
+      "col": 75
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "99",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:\\S+\\s)?(\\d+)/",
+      "line": 52,
+      "col": 75
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "100",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:\\S+\\S+)?(\\d+)/",
+      "line": 52,
+      "col": 75
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "101",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:\\S+\\s+)?(\\d)/",
+      "line": 52,
+      "col": 75
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "134",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 7
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "135",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "136",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "143",
+      "mutator": "Regex",
+      "replacement": "/exit\\s(?:code\\s*)?(\\d+)/",
+      "line": 70,
+      "col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "146",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:code\\s)?(\\d+)/",
+      "line": 70,
+      "col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "147",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:code\\S*)?(\\d+)/",
+      "line": 70,
+      "col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "148",
+      "mutator": "Regex",
+      "replacement": "/exit\\s*(?:code\\s*)?(\\d)/",
+      "line": 70,
+      "col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "155",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 74,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "156",
+      "mutator": "MethodExpression",
+      "replacement": "lower.endsWith(\"manual\")",
+      "line": 74,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "158",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 75,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "159",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 75,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "164",
+      "mutator": "LogicalOperator",
+      "replacement": "lower.startsWith(\"review\") && lower.includes(\"review —\")",
+      "line": 76,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "165",
+      "mutator": "MethodExpression",
+      "replacement": "lower.endsWith(\"review\")",
+      "line": 76,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "177",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 81,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "181",
+      "mutator": "Regex",
+      "replacement": "/at least (\\d)/",
+      "line": 81,
+      "col": 68
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "184",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 86,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "185",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 86,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "188",
+      "mutator": "Regex",
+      "replacement": "/-\\s*\\[[ ~]\\s*\\]\\s*\\*\\*Draft\\*\\*:\\s*(.+)$/i",
+      "line": 92,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "189",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[[ ~]\\s*\\]\\s*\\*\\*Draft\\*\\*:\\s*(.+)/i",
+      "line": 92,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "190",
+      "mutator": "Regex",
+      "replacement": "/^-\\s\\[[ ~]\\s*\\]\\s*\\*\\*Draft\\*\\*:\\s*(.+)$/i",
+      "line": 92,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "194",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[[ ~]\\S*\\]\\s*\\*\\*Draft\\*\\*:\\s*(.+)$/i",
+      "line": 92,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "195",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[[ ~]\\s*\\]\\s\\*\\*Draft\\*\\*:\\s*(.+)$/i",
+      "line": 92,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "197",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[[ ~]\\s*\\]\\s*\\*\\*Draft\\*\\*:\\s(.+)$/i",
+      "line": 92,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "198",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[[ ~]\\s*\\]\\s*\\*\\*Draft\\*\\*:\\S*(.+)$/i",
+      "line": 92,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "204",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 95,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "205",
+      "mutator": "MethodExpression",
+      "replacement": "draftMatch[1]",
+      "line": 96,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "207",
+      "mutator": "MethodExpression",
+      "replacement": "draftMatch[1]",
+      "line": 98,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "209",
+      "mutator": "Regex",
+      "replacement": "/-\\s*\\[([ x~>])\\]\\s*Proof\\s*\\(TDD\\s+[^)]+\\):\\s*`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "210",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof\\s*\\(TDD\\s+[^)]+\\):\\s*`([^`]+)`\\s*→\\s*(.+)/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "211",
+      "mutator": "Regex",
+      "replacement": "/^-\\s\\[([ x~>])\\]\\s*Proof\\s*\\(TDD\\s+[^)]+\\):\\s*`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "214",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\sProof\\s*\\(TDD\\s+[^)]+\\):\\s*`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "216",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof\\s\\(TDD\\s+[^)]+\\):\\s*`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "218",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof\\s*\\(TDD\\s[^)]+\\):\\s*`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "222",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof\\s*\\(TDD\\s+[^)]+\\):\\s`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "226",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof\\s*\\(TDD\\s+[^)]+\\):\\s*`([^`]+)`\\s→\\s*(.+)$/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "228",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof\\s*\\(TDD\\s+[^)]+\\):\\s*`([^`]+)`\\s*→\\s(.+)$/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "229",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof\\s*\\(TDD\\s+[^)]+\\):\\s*`([^`]+)`\\s*→\\S*(.+)$/",
+      "line": 103,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "235",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 106,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "236",
+      "mutator": "MethodExpression",
+      "replacement": "tddMatch[3]",
+      "line": 107,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "237",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 108,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "238",
+      "mutator": "MethodExpression",
+      "replacement": "tddMatch[2]",
+      "line": 109,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "241",
+      "mutator": "MethodExpression",
+      "replacement": "tddMatch[3]",
+      "line": 111,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "242",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 112,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "253",
+      "mutator": "Regex",
+      "replacement": "/-\\s*\\[([ x~>])\\]\\s*Proof:\\s*`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 116,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "254",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof:\\s*`([^`]+)`\\s*→\\s*(.+)/",
+      "line": 116,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "255",
+      "mutator": "Regex",
+      "replacement": "/^-\\s\\[([ x~>])\\]\\s*Proof:\\s*`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 116,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "258",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\sProof:\\s*`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 116,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "260",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof:\\s`([^`]+)`\\s*→\\s*(.+)$/",
+      "line": 116,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "264",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof:\\s*`([^`]+)`\\s→\\s*(.+)$/",
+      "line": 116,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "266",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof:\\s*`([^`]+)`\\s*→\\s(.+)$/",
+      "line": 116,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "267",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof:\\s*`([^`]+)`\\s*→\\S*(.+)$/",
+      "line": 116,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "273",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 119,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "274",
+      "mutator": "MethodExpression",
+      "replacement": "cmdMatch[3]",
+      "line": 120,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "276",
+      "mutator": "MethodExpression",
+      "replacement": "cmdMatch[2]",
+      "line": 122,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "277",
+      "mutator": "MethodExpression",
+      "replacement": "cmdMatch[3]",
+      "line": 124,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "289",
+      "mutator": "Regex",
+      "replacement": "/-\\s*\\[([ x~>])\\]\\s*Proof:\\s*[Mm]anual[\\s—-]+(.+)$/",
+      "line": 129,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "290",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof:\\s*[Mm]anual[\\s—-]+(.+)/",
+      "line": 129,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "291",
+      "mutator": "Regex",
+      "replacement": "/^-\\s\\[([ x~>])\\]\\s*Proof:\\s*[Mm]anual[\\s—-]+(.+)$/",
+      "line": 129,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "294",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\sProof:\\s*[Mm]anual[\\s—-]+(.+)$/",
+      "line": 129,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "296",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof:\\s[Mm]anual[\\s—-]+(.+)$/",
+      "line": 129,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "299",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ x~>])\\]\\s*Proof:\\s*[Mm]anual[\\s—-](.+)$/",
+      "line": 129,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "303",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 130,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "307",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 132,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "308",
+      "mutator": "MethodExpression",
+      "replacement": "manualMatch[2]",
+      "line": 133,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "309",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 134,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "313",
+      "mutator": "MethodExpression",
+      "replacement": "manualMatch[2]",
+      "line": 137,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "314",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 138,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "315",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 138,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "316",
+      "mutator": "EqualityOperator",
+      "replacement": "manualMatch[1] !== \"x\"",
+      "line": 138,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "317",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 138,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "319",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 138,
+      "col": 60
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "320",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 138,
+      "col": 60
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "321",
+      "mutator": "EqualityOperator",
+      "replacement": "manualMatch[1] !== \"~\"",
+      "line": 138,
+      "col": 60
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "322",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 138,
+      "col": 79
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "324",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 138,
+      "col": 97
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "333",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 152,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "334",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 152,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "335",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 153,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "340",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 156,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "342",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 158,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "343",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 159,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "344",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 160,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "346",
+      "mutator": "Regex",
+      "replacement": "/## (.+?)(?:\\s*\\(.*\\))?$/",
+      "line": 163,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "350",
+      "mutator": "Regex",
+      "replacement": "/^## (.+?)(?:\\s\\(.*\\))?$/",
+      "line": 163,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "351",
+      "mutator": "Regex",
+      "replacement": "/^## (.+?)(?:\\S*\\(.*\\))?$/",
+      "line": 163,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "352",
+      "mutator": "Regex",
+      "replacement": "/^## (.+?)(?:\\s*\\(.\\))?$/",
+      "line": 163,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "357",
+      "mutator": "MethodExpression",
+      "replacement": "h2Match[1]",
+      "line": 166,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "361",
+      "mutator": "MethodExpression",
+      "replacement": "heading.endsWith(key)",
+      "line": 168,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "364",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 175,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "366",
+      "mutator": "Regex",
+      "replacement": "/---$/",
+      "line": 175,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "367",
+      "mutator": "Regex",
+      "replacement": "/^---/",
+      "line": 175,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "373",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 188,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "380",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 192,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "384",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 194,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "385",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 194,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "388",
+      "mutator": "Regex",
+      "replacement": "/### (.+?)(?:\\s*\\[([ x~])\\])?\\s*$/",
+      "line": 198,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "391",
+      "mutator": "Regex",
+      "replacement": "/^### (.+?)(?:\\s*\\[([ x~])\\])\\s*$/",
+      "line": 198,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "392",
+      "mutator": "Regex",
+      "replacement": "/^### (.+?)(?:\\s\\[([ x~])\\])?\\s*$/",
+      "line": 198,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "393",
+      "mutator": "Regex",
+      "replacement": "/^### (.+?)(?:\\S*\\[([ x~])\\])?\\s*$/",
+      "line": 198,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "396",
+      "mutator": "Regex",
+      "replacement": "/^### (.+?)(?:\\s*\\[([ x~])\\])?\\S*$/",
+      "line": 198,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "401",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 201,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "402",
+      "mutator": "UpdateOperator",
+      "replacement": "nodeCounter--",
+      "line": 201,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "403",
+      "mutator": "MethodExpression",
+      "replacement": "rootMatch[1]",
+      "line": 202,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "404",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 203,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "406",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 205,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "409",
+      "mutator": "Regex",
+      "replacement": "/\\s*\\*\\*(.+?)\\*\\*\\s*\\[([ x~])\\]\\s*$/",
+      "line": 213,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "410",
+      "mutator": "Regex",
+      "replacement": "/^\\s*\\*\\*(.+?)\\*\\*\\s*\\[([ x~])\\]\\s*/",
+      "line": 213,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "414",
+      "mutator": "Regex",
+      "replacement": "/^\\s*\\*\\*(.+?)\\*\\*\\s\\[([ x~])\\]\\s*$/",
+      "line": 213,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "418",
+      "mutator": "Regex",
+      "replacement": "/^\\s*\\*\\*(.+?)\\*\\*\\s*\\[([ x~])\\]\\S*$/",
+      "line": 213,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "425",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 216,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "426",
+      "mutator": "EqualityOperator",
+      "replacement": "stack.length >= 0",
+      "line": 216,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "432",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 218,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "434",
+      "mutator": "EqualityOperator",
+      "replacement": "stack.length >= 0",
+      "line": 218,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "438",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 220,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "439",
+      "mutator": "UpdateOperator",
+      "replacement": "nodeCounter--",
+      "line": 220,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "440",
+      "mutator": "MethodExpression",
+      "replacement": "groupMatch[1]",
+      "line": 221,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "441",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 222,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "443",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 224,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "444",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 226,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "446",
+      "mutator": "OptionalChaining",
+      "replacement": "parent.children",
+      "line": 226,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "448",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 233,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "451",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 234,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "452",
+      "mutator": "UpdateOperator",
+      "replacement": "nodeCounter--",
+      "line": 234,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "453",
+      "mutator": "ArithmeticOperator",
+      "replacement": "leadingSpaces * 2",
+      "line": 235,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "454",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 236,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "460",
+      "mutator": "EqualityOperator",
+      "replacement": "stack[stack.length - 1].depth > depth",
+      "line": 236,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "472",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 241,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "474",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 246,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "476",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 247,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "480",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 249,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "482",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 259,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "483",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 259,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "486",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 261,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "487",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 261,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "488",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 261,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "492",
+      "mutator": "LogicalOperator",
+      "replacement": "!title || line.startsWith(\"# \")",
+      "line": 263,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "495",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 263,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "497",
+      "mutator": "MethodExpression",
+      "replacement": "line.replace(/^#\\s+/, \"\").replace(/\\s*—.*$/, \"\")",
+      "line": 264,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "499",
+      "mutator": "Regex",
+      "replacement": "/^#\\s/",
+      "line": 265,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "498",
+      "mutator": "Regex",
+      "replacement": "/#\\s+/",
+      "line": 265,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "502",
+      "mutator": "Regex",
+      "replacement": "/\\s*—.*/",
+      "line": 266,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "503",
+      "mutator": "Regex",
+      "replacement": "/\\s—.*$/",
+      "line": 266,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "504",
+      "mutator": "Regex",
+      "replacement": "/\\S*—.*$/",
+      "line": 266,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "507",
+      "mutator": "Regex",
+      "replacement": "/\\*\\*Goal:\\*\\*\\s*(.+)/",
+      "line": 269,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "509",
+      "mutator": "Regex",
+      "replacement": "/^\\*\\*Goal:\\*\\*\\S*(.+)/",
+      "line": 269,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "508",
+      "mutator": "Regex",
+      "replacement": "/^\\*\\*Goal:\\*\\*\\s(.+)/",
+      "line": 269,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "513",
+      "mutator": "MethodExpression",
+      "replacement": "goalMatch[1]",
+      "line": 271,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "514",
+      "mutator": "Regex",
+      "replacement": "/\\*\\*Date:\\*\\*\\s*(.+)/",
+      "line": 272,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "515",
+      "mutator": "Regex",
+      "replacement": "/^\\*\\*Date:\\*\\*\\s(.+)/",
+      "line": 272,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "516",
+      "mutator": "Regex",
+      "replacement": "/^\\*\\*Date:\\*\\*\\S*(.+)/",
+      "line": 272,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "520",
+      "mutator": "MethodExpression",
+      "replacement": "dateMatch[1]",
+      "line": 274,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "521",
+      "mutator": "Regex",
+      "replacement": "/\\*\\*Target:\\*\\*\\s*`?([^`]+)`?/",
+      "line": 275,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "522",
+      "mutator": "Regex",
+      "replacement": "/^\\*\\*Target:\\*\\*\\s`?([^`]+)`?/",
+      "line": 275,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "524",
+      "mutator": "Regex",
+      "replacement": "/^\\*\\*Target:\\*\\*\\s*`([^`]+)`?/",
+      "line": 275,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "527",
+      "mutator": "Regex",
+      "replacement": "/^\\*\\*Target:\\*\\*\\s*`?([^`]+)`/",
+      "line": 275,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "530",
+      "mutator": "MethodExpression",
+      "replacement": "targetMatch[1]",
+      "line": 277,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "535",
+      "mutator": "MethodExpression",
+      "replacement": "cwdMatch[1]",
+      "line": 280,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "536",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "line": 284,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "544",
+      "mutator": "Regex",
+      "replacement": "/## Definition of Done/",
+      "line": 286,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "549",
+      "mutator": "EqualityOperator",
+      "replacement": "dodStart > 0",
+      "line": 291,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/parser.js",
+      "id": "551",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 291,
+      "col": 67
+    }
+  ]
+}

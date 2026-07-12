@@ -1,0 +1,1157 @@
+{
+  "source": "packages/dod-guard/src/brevity.ts",
+  "date": "2026-07-12T19:53:09.812Z",
+  "summary": {
+    "total": 366,
+    "killed": 153,
+    "survived": 143,
+    "timeout": 0,
+    "unviable": 70
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "2",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 10,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "5",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 15,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 10
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "14",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "17",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 17,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "18",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 17,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "19",
+      "mutator": "EqualityOperator",
+      "replacement": "ext !== \".py\"",
+      "line": 17,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "20",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 17,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "21",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 18,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "33",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 27,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "36",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 30,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "39",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 31,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "40",
+      "mutator": "Regex",
+      "replacement": "/(\\d+)\\t(\\d+)\\t(.+)$/",
+      "line": 34,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "41",
+      "mutator": "Regex",
+      "replacement": "/^(\\d+)\\t(\\d+)\\t(.+)/",
+      "line": 34,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "44",
+      "mutator": "Regex",
+      "replacement": "/^(\\d+)\\t(\\d)\\t(.+)$/",
+      "line": 34,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "50",
+      "mutator": "MethodExpression",
+      "replacement": "ns[3]",
+      "line": 36,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "52",
+      "mutator": "Regex",
+      "replacement": "/(.+?)\\s+\\|\\s+(\\d+)\\s+([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "53",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s+\\|\\s+(\\d+)\\s+([+-]*)/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "54",
+      "mutator": "Regex",
+      "replacement": "/^(.)\\s+\\|\\s+(\\d+)\\s+([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "55",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s\\|\\s+(\\d+)\\s+([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "56",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\S+\\|\\s+(\\d+)\\s+([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "57",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s+\\|\\s(\\d+)\\s+([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "58",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s+\\|\\S+(\\d+)\\s+([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "59",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s+\\|\\s+(\\d)\\s+([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "60",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s+\\|\\s+(\\D+)\\s+([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "61",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s+\\|\\s+(\\d+)\\s([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "62",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s+\\|\\s+(\\d+)\\S+([+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "63",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s+\\|\\s+(\\d+)\\s+([+-])$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "64",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\s+\\|\\s+(\\d+)\\s+([^+-]*)$/",
+      "line": 42,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "90",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 59,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "66",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 43,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "92",
+      "mutator": "LogicalOperator",
+      "replacement": "/\\.\\w{1,6}$/.test(trimmed) || trimmed.includes(\"/\") || trimmed.includes(\"\\\\\")",
+      "line": 59,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "91",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 59,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "93",
+      "mutator": "Regex",
+      "replacement": "/\\.\\w{1,6}/",
+      "line": 59,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "94",
+      "mutator": "Regex",
+      "replacement": "/\\.\\w$/",
+      "line": 59,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "96",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 59,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "97",
+      "mutator": "LogicalOperator",
+      "replacement": "trimmed.includes(\"/\") && trimmed.includes(\"\\\\\")",
+      "line": 59,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "98",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 59,
+      "col": 61
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "100",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 59,
+      "col": 94
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "101",
+      "mutator": "BooleanLiteral",
+      "replacement": "files.includes(abs) || files.includes(trimmed)",
+      "line": 62,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "102",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 62,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "103",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 62,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "95",
+      "mutator": "Regex",
+      "replacement": "/\\.\\W{1,6}$/",
+      "line": 59,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "104",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 62,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "105",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 62,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "106",
+      "mutator": "LogicalOperator",
+      "replacement": "files.includes(abs) && files.includes(trimmed)",
+      "line": 62,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "107",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 62,
+      "col": 68
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "110",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 71,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "112",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 73,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "113",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 74,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "114",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 75,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "115",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 76,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "116",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 77,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "117",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 78,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "119",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 80,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "120",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 81,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "121",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 82,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "122",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 83,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "123",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 84,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "124",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 85,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "125",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 86,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "141",
+      "mutator": "Regex",
+      "replacement": "/\\s/",
+      "line": 96,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "146",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 99,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "147",
+      "mutator": "MethodExpression",
+      "replacement": "token.endsWith(\"-\")",
+      "line": 99,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "150",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 101,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "151",
+      "mutator": "Regex",
+      "replacement": "/(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go|git)$/",
+      "line": 101,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "152",
+      "mutator": "Regex",
+      "replacement": "/^(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go|git)/",
+      "line": 101,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "153",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 103,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "155",
+      "mutator": "LogicalOperator",
+      "replacement": "(token.includes(\"/\") || token.includes(\"\\\\\")) && token.includes(\".\")",
+      "line": 103,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "156",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 103,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "157",
+      "mutator": "LogicalOperator",
+      "replacement": "token.includes(\"/\") && token.includes(\"\\\\\")",
+      "line": 103,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "158",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 103,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "159",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 103,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "160",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 103,
+      "col": 75
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "167",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 109,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "169",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 113,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "188",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 135,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "202",
+      "mutator": "EqualityOperator",
+      "replacement": "len >= opts.maxLineLength",
+      "line": 153,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "206",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 156,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "208",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 158,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "211",
+      "mutator": "EqualityOperator",
+      "replacement": "lineCount >= opts.maxFileLines",
+      "line": 164,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "216",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 170,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "219",
+      "mutator": "ArithmeticOperator",
+      "replacement": "fn.endLine + fn.startLine",
+      "line": 180,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "222",
+      "mutator": "EqualityOperator",
+      "replacement": "fnLen >= opts.maxFunctionLines",
+      "line": 181,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "225",
+      "mutator": "UpdateOperator",
+      "replacement": "longFunctions--",
+      "line": 182,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "228",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 187,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "231",
+      "mutator": "EqualityOperator",
+      "replacement": "complexity >= opts.maxComplexity",
+      "line": 192,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "234",
+      "mutator": "UpdateOperator",
+      "replacement": "highComplexityFunctions--",
+      "line": 193,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "237",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 198,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "246",
+      "mutator": "AssignmentOperator",
+      "replacement": "unnecessaryElseCount -= count",
+      "line": 205,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "249",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 210,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "250",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 210,
+      "col": 81
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "251",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 210,
+      "col": 81
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "252",
+      "mutator": "EqualityOperator",
+      "replacement": "count >= 1",
+      "line": 210,
+      "col": 81
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "253",
+      "mutator": "EqualityOperator",
+      "replacement": "count <= 1",
+      "line": 210,
+      "col": 81
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "255",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 210,
+      "col": 99
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "256",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 215,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "257",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 215,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "258",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 215,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "260",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 217,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "280",
+      "mutator": "MethodExpression",
+      "replacement": "diffFiles.map(f => path.resolve(cwd, f))",
+      "line": 255,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "283",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 257,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "285",
+      "mutator": "LogicalOperator",
+      "replacement": "existsSync(f) && isSourceFile(f) || !isInSkipDir(f)",
+      "line": 257,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "286",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 257,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "287",
+      "mutator": "LogicalOperator",
+      "replacement": "existsSync(f) || isSourceFile(f)",
+      "line": 257,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "294",
+      "mutator": "Regex",
+      "replacement": "/\\r\\n/",
+      "line": 261,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "295",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 261,
+      "col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "296",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 262,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "297",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 263,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "298",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 263,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "299",
+      "mutator": "LogicalOperator",
+      "replacement": "(!trimmed || trimmed.startsWith(\" \")) && trimmed.startsWith(\"\\t\")",
+      "line": 263,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "300",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 263,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "301",
+      "mutator": "LogicalOperator",
+      "replacement": "!trimmed && trimmed.startsWith(\" \")",
+      "line": 263,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "302",
+      "mutator": "BooleanLiteral",
+      "replacement": "trimmed",
+      "line": 263,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "303",
+      "mutator": "MethodExpression",
+      "replacement": "trimmed.endsWith(\" \")",
+      "line": 263,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "304",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 263,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "305",
+      "mutator": "MethodExpression",
+      "replacement": "trimmed.endsWith(\"\\t\")",
+      "line": 263,
+      "col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "306",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 263,
+      "col": 75
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "307",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 265,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "308",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 265,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "309",
+      "mutator": "Regex",
+      "replacement": "/\\.\\w{1,6}/",
+      "line": 265,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "310",
+      "mutator": "Regex",
+      "replacement": "/\\.\\w$/",
+      "line": 265,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "311",
+      "mutator": "Regex",
+      "replacement": "/\\.\\W{1,6}$/",
+      "line": 265,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "320",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 272,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "324",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 276,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "326",
+      "mutator": "EqualityOperator",
+      "replacement": "stats.size >= 0",
+      "line": 276,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "328",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 278,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "329",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 279,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "345",
+      "mutator": "EqualityOperator",
+      "replacement": "stat.insertions >= 10",
+      "line": 293,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "348",
+      "mutator": "ArithmeticOperator",
+      "replacement": "stat.deletions * stat.insertions",
+      "line": 294,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "349",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 295,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "351",
+      "mutator": "EqualityOperator",
+      "replacement": "ratio <= opts.minReplacementRatio",
+      "line": 295,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "356",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 300,
+      "col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "357",
+      "mutator": "ArithmeticOperator",
+      "replacement": "ratio / 100",
+      "line": 300,
+      "col": 92
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "358",
+      "mutator": "ArithmeticOperator",
+      "replacement": "opts.minReplacementRatio / 100",
+      "line": 300,
+      "col": 132
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "360",
+      "mutator": "OptionalChaining",
+      "replacement": "normalizedStats?.get(relPath).insertions",
+      "line": 316,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "362",
+      "mutator": "OptionalChaining",
+      "replacement": "normalizedStats?.get(relPath).deletions",
+      "line": 317,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/brevity.js",
+      "id": "365",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 323,
+      "col": 26
+    }
+  ]
+}

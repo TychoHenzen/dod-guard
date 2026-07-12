@@ -1,0 +1,1733 @@
+{
+  "source": "packages/dod-guard/src/assertions.ts",
+  "date": "2026-07-12T19:55:59.356Z",
+  "summary": {
+    "total": 319,
+    "killed": 89,
+    "survived": 215,
+    "timeout": 0,
+    "unviable": 15
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "1",
+      "mutator": "Regex",
+      "replacement": "/\\s*assert\\s+(True|False|None)\\s*(#.*)?$/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "3",
+      "mutator": "Regex",
+      "replacement": "/^\\sassert\\s+(True|False|None)\\s*(#.*)?$/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "2",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None)\\s*(#.*)?/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "5",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s(True|False|None)\\s*(#.*)?$/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "4",
+      "mutator": "Regex",
+      "replacement": "/^\\S*assert\\s+(True|False|None)\\s*(#.*)?$/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "7",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None)\\s(#.*)?$/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "6",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\S+(True|False|None)\\s*(#.*)?$/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "9",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None)\\s*(#.*)$/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "8",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None)\\S*(#.*)?$/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "10",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None)\\s*(#.)?$/",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "11",
+      "mutator": "Regex",
+      "replacement": "/\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "13",
+      "mutator": "Regex",
+      "replacement": "/^\\sassert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "14",
+      "mutator": "Regex",
+      "replacement": "/^\\S*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "15",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "16",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\S+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "17",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "19",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)|\"[^\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "20",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d)?|\"[^\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "21",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\D+)?|\"[^\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "22",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "23",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[\"]*\"|'[^']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "24",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "25",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[']*')\\s*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "26",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "27",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\S*(#.*)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "28",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s*(#.*)$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "29",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s*(#.)?$/",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "30",
+      "mutator": "Regex",
+      "replacement": "/\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "31",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "32",
+      "mutator": "Regex",
+      "replacement": "/^\\sassert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "33",
+      "mutator": "Regex",
+      "replacement": "/^\\S*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "34",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "35",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\S+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "36",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "37",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\D+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "38",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "39",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "40",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\D+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "41",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "42",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "43",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "44",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "45",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "46",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\S* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "47",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* (==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|Fals",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "49",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\S+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "48",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\snot|in|not\\s+in|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "51",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\S+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "50",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\sin|[<>]=?)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "52",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[^<>]=?)\\s* {4}(True|",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "53",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=)\\s* {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "54",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s {4}(True|Fa",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "55",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\S* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "57",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "56",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* (True|Fals",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "58",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "59",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "60",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "61",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "63",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "62",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "65",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "64",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "66",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "67",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "68",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "69",
+      "mutator": "Regex",
+      "replacement": "/^\\s*assert\\s+(True|False|None|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*')\\s* {4}(==|!=|is|is\\s+not|in|not\\s+in|[<>]=?)\\s* {4}(True|F",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "70",
+      "mutator": "Regex",
+      "replacement": "/\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|False",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "71",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "72",
+      "mutator": "Regex",
+      "replacement": "/^\\sself\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|False",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "73",
+      "mutator": "Regex",
+      "replacement": "/^\\S*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "75",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\S*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "74",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s\\(\\s*(True|False",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "76",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s(True|False",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "77",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\S*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "78",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "79",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "80",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "81",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "82",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "83",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "84",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "85",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "86",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "87",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "88",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "89",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "91",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "90",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "92",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "93",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "94",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "95",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "97",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "96",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "98",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "99",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "101",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "100",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "102",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "103",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "104",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "105",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "106",
+      "mutator": "Regex",
+      "replacement": "/^\\s*self\\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\\s*\\(\\s*(True|Fals",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "109",
+      "mutator": "Regex",
+      "replacement": "/expect\\S*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "111",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\S*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "112",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "113",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\D+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "114",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "115",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "116",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\D+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "117",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "118",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "119",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "120",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "121",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "122",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "124",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\S*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "126",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\S*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "128",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\S*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "130",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s\\.\\s*)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "131",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\S*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "132",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s)?(?:toBe|toEq",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "133",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\S*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "135",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "137",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "138",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "139",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "140",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "141",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "142",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "143",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "144",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "145",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "146",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "147",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "148",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "150",
+      "mutator": "Regex",
+      "replacement": "/expect\\s*\\(\\s*(true|false|null|undefined|\\d+(?:\\.\\d+)?|\"[^\"]*\"|'[^']*'|`[^`]*`)\\s*\\)\\s*\\.\\s*(?:not\\s*\\.\\s*)?(?:toBe|toE",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "151",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s\\(\\s*(true|false|null|und",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "152",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\S*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "153",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s(true|false|null|und",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "154",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\S*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "155",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "156",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "157",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "158",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "159",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "160",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "161",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "162",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "163",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "164",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "165",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "166",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "167",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "168",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "169",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "170",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "171",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "172",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "173",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "174",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "175",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "176",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "177",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "178",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "179",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "180",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "181",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "182",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\\s*\\(\\s*(true|false|null|un",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "183",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:ok|fail)\\s\\(\\s*(true|false)\\s*\\)/",
+      "line": 24,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "184",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:ok|fail)\\S*\\(\\s*(true|false)\\s*\\)/",
+      "line": 24,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "185",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:ok|fail)\\s*\\(\\s(true|false)\\s*\\)/",
+      "line": 24,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "186",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:ok|fail)\\s*\\(\\S*(true|false)\\s*\\)/",
+      "line": 24,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "187",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:ok|fail)\\s*\\(\\s*(true|false)\\s\\)/",
+      "line": 24,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "188",
+      "mutator": "Regex",
+      "replacement": "/assert\\.(?:ok|fail)\\s*\\(\\s*(true|false)\\S*\\)/",
+      "line": 24,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "189",
+      "mutator": "Regex",
+      "replacement": "/\\s*(assert\\b|self\\.assert)/",
+      "line": 27,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "193",
+      "mutator": "Regex",
+      "replacement": "/(expect\\S*\\(|assert\\.)/",
+      "line": 29,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "210",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 45,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "213",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 45,
+      "col": 10
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "215",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 45,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "216",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 45,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "217",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 45,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "218",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 45,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "219",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 45,
+      "col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "220",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 45,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "225",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 51,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "242",
+      "mutator": "Regex",
+      "replacement": "/test_.*\\.py$/",
+      "line": 68,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "243",
+      "mutator": "Regex",
+      "replacement": "/^test_.*\\.py/",
+      "line": 68,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "245",
+      "mutator": "Regex",
+      "replacement": "/.*_test\\.py$/",
+      "line": 69,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "246",
+      "mutator": "Regex",
+      "replacement": "/^.*_test\\.py/",
+      "line": 69,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "247",
+      "mutator": "Regex",
+      "replacement": "/^._test\\.py$/",
+      "line": 69,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "248",
+      "mutator": "Regex",
+      "replacement": "/\\.test\\.(ts|js|tsx|jsx|mts|mjs)/",
+      "line": 70,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "249",
+      "mutator": "Regex",
+      "replacement": "/\\.spec\\.(ts|js|tsx|jsx|mts|mjs)/",
+      "line": 71,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "254",
+      "mutator": "Regex",
+      "replacement": "/\\s/",
+      "line": 82,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "259",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 86,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "260",
+      "mutator": "LogicalOperator",
+      "replacement": "token.startsWith(\"-\") && token.startsWith(\"--\")",
+      "line": 86,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "261",
+      "mutator": "MethodExpression",
+      "replacement": "token.endsWith(\"-\")",
+      "line": 86,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "263",
+      "mutator": "MethodExpression",
+      "replacement": "token.endsWith(\"--\")",
+      "line": 86,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "266",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 89,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "267",
+      "mutator": "Regex",
+      "replacement": "/(python|python3?|pytest|node|npm|npx|pnpm|yarn|jest|vitest|mocha|ts-node|tsx)$/",
+      "line": 89,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "269",
+      "mutator": "Regex",
+      "replacement": "/^(python|python3|pytest|node|npm|npx|pnpm|yarn|jest|vitest|mocha|ts-node|tsx)$/",
+      "line": 89,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "271",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 92,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "272",
+      "mutator": "Regex",
+      "replacement": "/(test|run|exec)$/",
+      "line": 92,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "274",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 95,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "279",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 95,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "280",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 95,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "287",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 104,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "281",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 95,
+      "col": 74
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "288",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 104,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "289",
+      "mutator": "LogicalOperator",
+      "replacement": "existsSync(dir) || pat.includes(\"*\")",
+      "line": 104,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "290",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 104,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "311",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 138,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "313",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 143,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/assertions.js",
+      "id": "318",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 151,
+      "col": 26
+    }
+  ]
+}

@@ -1,0 +1,365 @@
+{
+  "source": "packages/dod-guard/src/format-result.ts",
+  "date": "2026-07-12T19:40:23.734Z",
+  "summary": {
+    "total": 191,
+    "killed": 145,
+    "survived": 44,
+    "timeout": 0,
+    "unviable": 2
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 2,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "2",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 2,
+      "col": 55
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "3",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 3,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 5,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 8,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 13,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 14,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 19,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "31",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 23,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "40",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 30,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "41",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 31,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "43",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 36,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "48",
+      "mutator": "OptionalChaining",
+      "replacement": "byRoot.get(rootIdx).push",
+      "line": 39,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "89",
+      "mutator": "OptionalChaining",
+      "replacement": "leaves[0].title",
+      "line": 50,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "91",
+      "mutator": "MethodExpression",
+      "replacement": "[passCount > 0 ? `${passCount} pass` : \"\", failCount > 0 ? `${failCount} fail` : \"\", skipCount > 0 ? `${skipCount} skipp",
+      "line": 51,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "93",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 52,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "95",
+      "mutator": "EqualityOperator",
+      "replacement": "passCount >= 0",
+      "line": 52,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "98",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 52,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "99",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 53,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "101",
+      "mutator": "EqualityOperator",
+      "replacement": "failCount >= 0",
+      "line": 53,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "104",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 53,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "105",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 54,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "107",
+      "mutator": "EqualityOperator",
+      "replacement": "skipCount >= 0",
+      "line": 54,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "110",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 54,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "111",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 55,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "113",
+      "mutator": "EqualityOperator",
+      "replacement": "draftCount >= 0",
+      "line": 55,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "112",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 55,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "114",
+      "mutator": "EqualityOperator",
+      "replacement": "draftCount <= 0",
+      "line": 55,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "115",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 55,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "116",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 55,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "120",
+      "mutator": "ArithmeticOperator",
+      "replacement": "leaf.node_path.split(\".children.\").length + 1",
+      "line": 61,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "121",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "143",
+      "mutator": "LogicalOperator",
+      "replacement": "leaf.output && \"human-confirmed\"",
+      "line": 69,
+      "col": 72
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "155",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 76,
+      "col": 116
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "165",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 82,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "170",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 87,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "179",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 90,
+      "col": 94
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "182",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 92,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "181",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 91,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "184",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 92,
+      "col": 72
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "183",
+      "mutator": "MethodExpression",
+      "replacement": "leaf.output.split(\"\\n\")",
+      "line": 92,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "185",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 92,
+      "col": 95
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "186",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 96,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/format-result.js",
+      "id": "190",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 101,
+      "col": 19
+    }
+  ]
+}

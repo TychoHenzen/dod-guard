@@ -1,0 +1,1901 @@
+{
+  "source": "packages/dod-guard/src/evaluate-proof.ts",
+  "date": "2026-07-12T19:43:56.236Z",
+  "summary": {
+    "total": 740,
+    "killed": 390,
+    "survived": 236,
+    "timeout": 0,
+    "unviable": 114
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "0",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 1,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "1",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 1,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "5",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 9,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "7",
+      "mutator": "LogicalOperator",
+      "replacement": "l.includes(\"|\") || /#\\s*survived/i.test(l)",
+      "line": 9,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "9",
+      "mutator": "Regex",
+      "replacement": "/#\\ssurvived/i",
+      "line": 9,
+      "col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 9,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "18",
+      "mutator": "MethodExpression",
+      "replacement": "c",
+      "line": 14,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "21",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 16,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "28",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 18,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "31",
+      "mutator": "MethodExpression",
+      "replacement": "l",
+      "line": 18,
+      "col": 53
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "38",
+      "mutator": "MethodExpression",
+      "replacement": "c",
+      "line": 21,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "43",
+      "mutator": "Regex",
+      "replacement": "/🙁[^\\d]*(\\d)/",
+      "line": 25,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "48",
+      "mutator": "Regex",
+      "replacement": "/(\\d+)\\smissed\\b/",
+      "line": 29,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "60",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 44,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "70",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 49,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "71",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 49,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "72",
+      "mutator": "ArithmeticOperator",
+      "replacement": "f.total + f.trivial",
+      "line": 49,
+      "col": 72
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "73",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 50,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "75",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 51,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "80",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 54,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "81",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 54,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "82",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 54,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "157",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 96,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "158",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 96,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "159",
+      "mutator": "EqualityOperator",
+      "replacement": "n.predicate?.type !== \"review\"",
+      "line": 96,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "160",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.type",
+      "line": 96,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "161",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 96,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "162",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 96,
+      "col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "163",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 96,
+      "col": 68
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "170",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 102,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "171",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 102,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "172",
+      "mutator": "EqualityOperator",
+      "replacement": "mr.answer !== \"fail\"",
+      "line": 102,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "173",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 102,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "174",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 102,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "178",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 106,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "180",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 107,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "184",
+      "mutator": "LogicalOperator",
+      "replacement": "r.killed && r.notFound",
+      "line": 107,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "183",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 107,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "189",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.value",
+      "line": 112,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "205",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.extract",
+      "line": 132,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "219",
+      "mutator": "LogicalOperator",
+      "replacement": "n.predicate?.lower_is_better && n.category !== \"coverage\"",
+      "line": 153,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "220",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.lower_is_better",
+      "line": 153,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "222",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 153,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "226",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.value",
+      "line": 154,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "229",
+      "mutator": "ArithmeticOperator",
+      "replacement": "bl / (1 - tol)",
+      "line": 156,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "230",
+      "mutator": "ArithmeticOperator",
+      "replacement": "1 + tol",
+      "line": 156,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "233",
+      "mutator": "EqualityOperator",
+      "replacement": "m < th",
+      "line": 157,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "237",
+      "mutator": "EqualityOperator",
+      "replacement": "m > th",
+      "line": 157,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "239",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 158,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "240",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 158,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "246",
+      "mutator": "LogicalOperator",
+      "replacement": "n.predicate?.value && 0",
+      "line": 168,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "247",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.value",
+      "line": 168,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "264",
+      "mutator": "MethodExpression",
+      "replacement": "l",
+      "line": 185,
+      "col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "275",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.value",
+      "line": 196,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "293",
+      "mutator": "LogicalOperator",
+      "replacement": "n.predicate?.value && 1",
+      "line": 224,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "294",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.value",
+      "line": 224,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "295",
+      "mutator": "BooleanLiteral",
+      "replacement": "report",
+      "line": 226,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "296",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 226,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "297",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 226,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "299",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 228,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "325",
+      "mutator": "LogicalOperator",
+      "replacement": "n.predicate?.value && 0",
+      "line": 257,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "326",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.value",
+      "line": 257,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "329",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 258,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "334",
+      "mutator": "LogicalOperator",
+      "replacement": "p.max_line_length && DEFAULT_BREVITY_OPTS.maxLineLength",
+      "line": 268,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "333",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 267,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "335",
+      "mutator": "LogicalOperator",
+      "replacement": "p.max_function_lines && DEFAULT_BREVITY_OPTS.maxFunctionLines",
+      "line": 269,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "336",
+      "mutator": "LogicalOperator",
+      "replacement": "p.max_file_lines && DEFAULT_BREVITY_OPTS.maxFileLines",
+      "line": 270,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "337",
+      "mutator": "LogicalOperator",
+      "replacement": "p.max_complexity && DEFAULT_BREVITY_OPTS.maxComplexity",
+      "line": 271,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "338",
+      "mutator": "LogicalOperator",
+      "replacement": "p.require_guard_clauses && DEFAULT_BREVITY_OPTS.requireGuardClauses",
+      "line": 272,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "339",
+      "mutator": "LogicalOperator",
+      "replacement": "p.suggest_guard_clauses && DEFAULT_BREVITY_OPTS.suggestGuardClauses",
+      "line": 273,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "340",
+      "mutator": "LogicalOperator",
+      "replacement": "p.min_replacement_ratio && DEFAULT_BREVITY_OPTS.minReplacementRatio",
+      "line": 274,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "341",
+      "mutator": "BooleanLiteral",
+      "replacement": "report",
+      "line": 277,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "342",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 277,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "343",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 277,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "345",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 279,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "358",
+      "mutator": "MethodExpression",
+      "replacement": "r.violations",
+      "line": 298,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "359",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 298,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "360",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 298,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "361",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 298,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "362",
+      "mutator": "EqualityOperator",
+      "replacement": "v.kind !== \"line_too_long\"",
+      "line": 298,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "363",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 298,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "366",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 299,
+      "col": 78
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "367",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 300,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "368",
+      "mutator": "MethodExpression",
+      "replacement": "f.violations",
+      "line": 301,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "369",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 301,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "370",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 301,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "371",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 301,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "372",
+      "mutator": "EqualityOperator",
+      "replacement": "v.kind !== \"line_too_long\"",
+      "line": 301,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "373",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 301,
+      "col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "374",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 302,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "375",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 302,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "376",
+      "mutator": "EqualityOperator",
+      "replacement": "fv.length !== 0",
+      "line": 302,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "377",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 304,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "378",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 306,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "379",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 308,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "380",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 308,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "381",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 309,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "383",
+      "mutator": "MethodExpression",
+      "replacement": "r.violations",
+      "line": 312,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "384",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 312,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "385",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 312,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "386",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 312,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "387",
+      "mutator": "EqualityOperator",
+      "replacement": "v.kind !== \"function_too_long\"",
+      "line": 312,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "388",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 312,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "391",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 313,
+      "col": 84
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "392",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 314,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "393",
+      "mutator": "MethodExpression",
+      "replacement": "f.violations",
+      "line": 315,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "394",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 315,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "395",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 315,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "396",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 315,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "397",
+      "mutator": "EqualityOperator",
+      "replacement": "v.kind !== \"function_too_long\"",
+      "line": 315,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "398",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 315,
+      "col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "399",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 316,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "400",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 316,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "401",
+      "mutator": "EqualityOperator",
+      "replacement": "fv.length !== 0",
+      "line": 316,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "403",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 320,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "402",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 318,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "405",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 322,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "404",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 322,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "406",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 323,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "408",
+      "mutator": "MethodExpression",
+      "replacement": "r.violations",
+      "line": 326,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "409",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 326,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "410",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 326,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "411",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 326,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "412",
+      "mutator": "EqualityOperator",
+      "replacement": "v.kind !== \"file_too_long\"",
+      "line": 326,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "413",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 326,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "417",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 328,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "416",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 327,
+      "col": 76
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "418",
+      "mutator": "MethodExpression",
+      "replacement": "f.violations",
+      "line": 329,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "419",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 329,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "421",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 329,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "420",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 329,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "422",
+      "mutator": "EqualityOperator",
+      "replacement": "v.kind !== \"file_too_long\"",
+      "line": 329,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "423",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 329,
+      "col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "424",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 330,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "425",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 330,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "426",
+      "mutator": "EqualityOperator",
+      "replacement": "fv.length !== 0",
+      "line": 330,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "427",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 332,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "428",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 334,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "429",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 336,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "430",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 336,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "431",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 337,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "433",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 340,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "434",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 340,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "435",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 340,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "437",
+      "mutator": "MethodExpression",
+      "replacement": "r.violations",
+      "line": 341,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "436",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 340,
+      "col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "438",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 341,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "441",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 342,
+      "col": 81
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "442",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 343,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "443",
+      "mutator": "MethodExpression",
+      "replacement": "f.violations",
+      "line": 344,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "444",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 344,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "445",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 345,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "446",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 345,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "447",
+      "mutator": "EqualityOperator",
+      "replacement": "fv.length !== 0",
+      "line": 345,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "448",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 347,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "449",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 347,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "450",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 348,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "451",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 348,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "452",
+      "mutator": "EqualityOperator",
+      "replacement": "f.highComplexityFunctions >= 0",
+      "line": 348,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "453",
+      "mutator": "EqualityOperator",
+      "replacement": "f.highComplexityFunctions <= 0",
+      "line": 348,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "454",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 349,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "455",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 350,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "456",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 350,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "457",
+      "mutator": "EqualityOperator",
+      "replacement": "f.unnecessaryElseCount >= 0",
+      "line": 350,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "458",
+      "mutator": "EqualityOperator",
+      "replacement": "f.unnecessaryElseCount <= 0",
+      "line": 350,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "459",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 351,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "460",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 352,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "461",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 352,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "463",
+      "mutator": "EqualityOperator",
+      "replacement": "f.elseAvoidableCount <= 0",
+      "line": 352,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "462",
+      "mutator": "EqualityOperator",
+      "replacement": "f.elseAvoidableCount >= 0",
+      "line": 352,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "465",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 354,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "466",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 356,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "468",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 358,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "467",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 358,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "470",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 358,
+      "col": 113
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "469",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 358,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "472",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 359,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "471",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 358,
+      "col": 175
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "474",
+      "mutator": "MethodExpression",
+      "replacement": "r.violations",
+      "line": 362,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "475",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 362,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "476",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 362,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "477",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 362,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "478",
+      "mutator": "EqualityOperator",
+      "replacement": "v.kind !== \"low_replacement_ratio\"",
+      "line": 362,
+      "col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "479",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 362,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "482",
+      "mutator": "ArithmeticOperator",
+      "replacement": "minRatio / 100",
+      "line": 364,
+      "col": 74
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "484",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 368,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "483",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 365,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "485",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 369,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "486",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 369,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "487",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 370,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "490",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 374,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "491",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 374,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "494",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 375,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "498",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 376,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "499",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 378,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "504",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 384,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "503",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 384,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "507",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 385,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "511",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 386,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "512",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 388,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "516",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 394,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "517",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 394,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "520",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 395,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "524",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 396,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "525",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 398,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "533",
+      "mutator": "LogicalOperator",
+      "replacement": "p.suggest_guard_clauses && DEFAULT_BREVITY_OPTS.suggestGuardClauses",
+      "line": 407,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "538",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 410,
+      "col": 63
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "539",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 413,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "540",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 415,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "544",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.value",
+      "line": 420,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "547",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 421,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "554",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 431,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "561",
+      "mutator": "MethodExpression",
+      "replacement": "report.violations",
+      "line": 441,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "571",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.value",
+      "line": 452,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "573",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.min_replacement_ratio",
+      "line": 453,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "572",
+      "mutator": "LogicalOperator",
+      "replacement": "n.predicate?.min_replacement_ratio && DEFAULT_BREVITY_OPTS.minReplacementRatio",
+      "line": 453,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "577",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 460,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "584",
+      "mutator": "MethodExpression",
+      "replacement": "report.violations",
+      "line": 470,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "586",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 470,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "597",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 476,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "598",
+      "mutator": "ArithmeticOperator",
+      "replacement": "minRatio / 100",
+      "line": 476,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "601",
+      "mutator": "OptionalChaining",
+      "replacement": "n.predicate.value",
+      "line": 483,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "638",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 517,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "639",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 517,
+      "col": 67
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "658",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 532,
+      "col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "670",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 541,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "660",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 533,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "674",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 548,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "702",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 578,
+      "col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "700",
+      "mutator": "ConditionalExpression",
+      "replacement": "default:",
+      "line": 575,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "703",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 578,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "708",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.type",
+      "line": 582,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "724",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 596,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "725",
+      "mutator": "ConditionalExpression",
+      "replacement": "case \"output_not_contains\":",
+      "line": 597,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "733",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 601,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/evaluate-proof.js",
+      "id": "731",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 600,
+      "col": 49
+    }
+  ]
+}

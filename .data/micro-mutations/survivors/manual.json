@@ -1,0 +1,109 @@
+{
+  "source": "packages/dod-guard/src/manual.ts",
+  "date": "2026-07-12T19:56:16.662Z",
+  "summary": {
+    "total": 44,
+    "killed": 28,
+    "survived": 12,
+    "timeout": 0,
+    "unviable": 4
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "1",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 7,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "0",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 7,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "7",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.type",
+      "line": 11,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "10",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.value",
+      "line": 12,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 12,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "14",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 14,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 28,
+      "col": 60
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "15",
+      "mutator": "MethodExpression",
+      "replacement": "createHash(\"sha256\").update(data).digest(\"hex\")",
+      "line": 15,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "34",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 35,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "36",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 35,
+      "col": 131
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "41",
+      "mutator": "MethodExpression",
+      "replacement": "answer.answer.toLowerCase()",
+      "line": 49,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/manual.js",
+      "id": "43",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 49,
+      "col": 119
+    }
+  ]
+}

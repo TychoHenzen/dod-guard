@@ -1,0 +1,1053 @@
+{
+  "source": "packages/evomcp/src/agent.ts",
+  "date": "2026-07-12T19:35:37.525Z",
+  "summary": {
+    "total": 335,
+    "killed": 135,
+    "survived": 130,
+    "timeout": 13,
+    "unviable": 57
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 20,
+      "col": 37
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "0",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 19,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 21,
+      "col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 21,
+      "col": 63
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "6",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 32,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 39,
+      "col": 57
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "16",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 42,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "17",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 42,
+      "col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "19",
+      "mutator": "LogicalOperator",
+      "replacement": "defaultName || cfg.backends",
+      "line": 42,
+      "col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "20",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 42,
+      "col": 45
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "24",
+      "mutator": "OptionalChaining",
+      "replacement": "backend.apiKey",
+      "line": 47,
+      "col": 14
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "48",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 87,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "49",
+      "mutator": "LogicalOperator",
+      "replacement": "proxyUrl && PROXY_URL",
+      "line": 87,
+      "col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "51",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 89,
+      "col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "54",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 90,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "62",
+      "mutator": "LogicalOperator",
+      "replacement": "proxyUrl && PROXY_URL",
+      "line": 105,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "66",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 110,
+      "col": 51
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "64",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 107,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "68",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 111,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "67",
+      "mutator": "BooleanLiteral",
+      "replacement": "fs.existsSync(path.join(deepclaudeDir, \"proxy\", \"start-proxy.js\"))",
+      "line": 111,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "70",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 111,
+      "col": 49
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "71",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 111,
+      "col": 58
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "69",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 111,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "73",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 112,
+      "col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "107",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 154,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "108",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 154,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "109",
+      "mutator": "EqualityOperator",
+      "replacement": "opts.useProxy === false",
+      "line": 154,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "110",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "line": 154,
+      "col": 40
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "111",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 156,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "112",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 156,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "113",
+      "mutator": "LogicalOperator",
+      "replacement": "opts.model && \"deepseek-v4-pro[1m]\"",
+      "line": 156,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "114",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 156,
+      "col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "115",
+      "mutator": "LogicalOperator",
+      "replacement": "opts.proxyUrl && PROXY_URL",
+      "line": 157,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "117",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 159,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "118",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 161,
+      "col": 39
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "119",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 162,
+      "col": 51
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "120",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 167,
+      "col": 40
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "121",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 171,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "122",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 171,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "124",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 173,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "125",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 174,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "72",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 111,
+      "col": 78
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "127",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 177,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "128",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 177,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "129",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 177,
+      "col": 32
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "130",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 179,
+      "col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "131",
+      "mutator": "MethodExpression",
+      "replacement": "Math.random().toString(36)",
+      "line": 179,
+      "col": 72
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "132",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 180,
+      "col": 58
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "133",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 181,
+      "col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "134",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 183,
+      "col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "135",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 184,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "136",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 184,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "137",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 184,
+      "col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "138",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 185,
+      "col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "139",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 191,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "140",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 191,
+      "col": 45
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "141",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 194,
+      "col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "142",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 194,
+      "col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "143",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 194,
+      "col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "144",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 194,
+      "col": 39
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "160",
+      "mutator": "OptionalChaining",
+      "replacement": "child.stdout.on",
+      "line": 216,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "161",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 216,
+      "col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "162",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 216,
+      "col": 45
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "163",
+      "mutator": "AssignmentOperator",
+      "replacement": "stdout -= chunk.toString()",
+      "line": 217,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "164",
+      "mutator": "OptionalChaining",
+      "replacement": "child.stderr.on",
+      "line": 219,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "165",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 219,
+      "col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "166",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 219,
+      "col": 45
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "167",
+      "mutator": "AssignmentOperator",
+      "replacement": "stderr -= chunk.toString()",
+      "line": 220,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "171",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 223,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "174",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 224,
+      "col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "176",
+      "mutator": "ArithmeticOperator",
+      "replacement": "stdout - (stderr ? `\\n${stderr}` : \"\")",
+      "line": 228,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "177",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 228,
+      "col": 48
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "179",
+      "mutator": "LogicalOperator",
+      "replacement": "code && -1",
+      "line": 229,
+      "col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "181",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + t0",
+      "line": 230,
+      "col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "182",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "line": 231,
+      "col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "186",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 236,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "189",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 237,
+      "col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "191",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 241,
+      "col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "193",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + t0",
+      "line": 243,
+      "col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "194",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "line": 244,
+      "col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "198",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 257,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "199",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 257,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "200",
+      "mutator": "EqualityOperator",
+      "replacement": "r.status !== \"fulfilled\"",
+      "line": 257,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "201",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 257,
+      "col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "208",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 275,
+      "col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "209",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 277,
+      "col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "210",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 279,
+      "col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "211",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 * 1024 / 1024",
+      "line": 280,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "212",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 / 1024",
+      "line": 280,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "215",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + t0",
+      "line": 285,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "217",
+      "mutator": "OptionalChaining",
+      "replacement": "err.stdout",
+      "line": 289,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "219",
+      "mutator": "OptionalChaining",
+      "replacement": "err.stderr",
+      "line": 290,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "222",
+      "mutator": "MethodExpression",
+      "replacement": "`${stdout}\\n${stderr}`",
+      "line": 292,
+      "col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "223",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 292,
+      "col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "226",
+      "mutator": "OptionalChaining",
+      "replacement": "err.status",
+      "line": 293,
+      "col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "228",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + t0",
+      "line": 294,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "240",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 304,
+      "col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "249",
+      "mutator": "MethodExpression",
+      "replacement": "output.replace(/\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?/g, \"<TIME>\").replace(/:\\d+:\\d+/g, \":<LINE>:<COL>\").replac",
+      "line": 325,
+      "col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "250",
+      "mutator": "Regex",
+      "replacement": "/\\d-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?/g",
+      "line": 326,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "261",
+      "mutator": "Regex",
+      "replacement": "/\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}:\\d(\\.\\d+)?/g",
+      "line": 326,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "264",
+      "mutator": "Regex",
+      "replacement": "/\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(\\.\\d)?/g",
+      "line": 326,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "265",
+      "mutator": "Regex",
+      "replacement": "/\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(\\.\\D+)?/g",
+      "line": 326,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "266",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 326,
+      "col": 69
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "267",
+      "mutator": "Regex",
+      "replacement": "/:\\d:\\d+/g",
+      "line": 327,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "268",
+      "mutator": "Regex",
+      "replacement": "/:\\D+:\\d+/g",
+      "line": 327,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "269",
+      "mutator": "Regex",
+      "replacement": "/:\\d+:\\d/g",
+      "line": 327,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "271",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 327,
+      "col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "274",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 328,
+      "col": 37
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "275",
+      "mutator": "Regex",
+      "replacement": "/\\/[^\\s]\\/[^\\s:]+:\\d+/g",
+      "line": 329,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "283",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 329,
+      "col": 44
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "286",
+      "mutator": "Regex",
+      "replacement": "/\\d+\\.\\dms/g",
+      "line": 330,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "288",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 330,
+      "col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "294",
+      "mutator": "ArithmeticOperator",
+      "replacement": "(hash << 5) - hash - char",
+      "line": 335,
+      "col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "295",
+      "mutator": "ArithmeticOperator",
+      "replacement": "(hash << 5) + hash",
+      "line": 335,
+      "col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "297",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 346,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "298",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 347,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "299",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 348,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "300",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 349,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "301",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 350,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "302",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 351,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "303",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 352,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "304",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 353,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "305",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 354,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "312",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i * strategies.length",
+      "line": 358,
+      "col": 37
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "314",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 359,
+      "col": 69
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "318",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 368,
+      "col": 65
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "320",
+      "mutator": "MethodExpression",
+      "replacement": "failureOutput",
+      "line": 369,
+      "col": 144
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "330",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 378,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "331",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 379,
+      "col": 11
+    },
+    {
+      "file": "packages/evomcp/dist/agent.js",
+      "id": "333",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 380,
+      "col": 65
+    }
+  ]
+}

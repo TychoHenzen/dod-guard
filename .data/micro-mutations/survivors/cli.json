@@ -1,0 +1,525 @@
+{
+  "source": "packages/obsidian-rag/src/cli.ts",
+  "date": "2026-07-12T19:49:33.856Z",
+  "summary": {
+    "total": 132,
+    "killed": 53,
+    "survived": 64,
+    "timeout": 3,
+    "unviable": 12
+  },
+  "survivors": [
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "0",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 22
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "3",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 10,
+      "col": 27
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 10,
+      "col": 28
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "8",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 18,
+      "col": 47
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "9",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 19,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "10",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 19,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "23",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 41,
+      "col": 42
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "24",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 41,
+      "col": 66
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "26",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 49,
+      "col": 34
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 49,
+      "col": 35
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "29",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 55,
+      "col": 42
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "30",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 55,
+      "col": 43
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "31",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 55,
+      "col": 53
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "33",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 61,
+      "col": 50
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "34",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 51
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "35",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 61,
+      "col": 59
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "37",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 67,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "38",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 67,
+      "col": 19
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "39",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 67,
+      "col": 28
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "40",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 68,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "41",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 68,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "42",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 69,
+      "col": 19
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "47",
+      "mutator": "MethodExpression",
+      "replacement": "stdout",
+      "line": 72,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "52",
+      "mutator": "MethodExpression",
+      "replacement": "stdout",
+      "line": 73,
+      "col": 55
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "53",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 73,
+      "col": 75
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "57",
+      "mutator": "MethodExpression",
+      "replacement": "s",
+      "line": 77,
+      "col": 21
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "59",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 83,
+      "col": 50
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "60",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 83,
+      "col": 51
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "61",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 83,
+      "col": 64
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "65",
+      "mutator": "MethodExpression",
+      "replacement": "s",
+      "line": 86,
+      "col": 21
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "67",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 91,
+      "col": 50
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "68",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 91,
+      "col": 51
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "69",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 91,
+      "col": 60
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "73",
+      "mutator": "MethodExpression",
+      "replacement": "s",
+      "line": 94,
+      "col": 21
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "75",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 100,
+      "col": 50
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "76",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 100,
+      "col": 51
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "77",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 100,
+      "col": 59
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "80",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 103,
+      "col": 25
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "83",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 104,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "85",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 108,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "90",
+      "mutator": "MethodExpression",
+      "replacement": "parts[0].replace(/^#/, \"\")",
+      "line": 109,
+      "col": 25
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "91",
+      "mutator": "Regex",
+      "replacement": "/#/",
+      "line": 109,
+      "col": 42
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "96",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 111,
+      "col": 17
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "98",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "line": 119,
+      "col": 74
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "99",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 119,
+      "col": 81
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "100",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 120,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "101",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 120,
+      "col": 19
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "102",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 120,
+      "col": 29
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "103",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 120,
+      "col": 49
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "104",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 121,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "105",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 121,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "107",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 126,
+      "col": 67
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "108",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 127,
+      "col": 31
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "109",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 127,
+      "col": 32
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "110",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 127,
+      "col": 42
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "111",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 127,
+      "col": 62
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "116",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 133,
+      "col": 25
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "119",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 134,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "121",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 138,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "127",
+      "mutator": "MethodExpression",
+      "replacement": "parts[0]",
+      "line": 139,
+      "col": 33
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "128",
+      "mutator": "MethodExpression",
+      "replacement": "parts[1]",
+      "line": 139,
+      "col": 56
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "129",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 145,
+      "col": 27
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "130",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 147,
+      "col": 33
+    },
+    {
+      "file": "packages/obsidian-rag/dist/cli.js",
+      "id": "131",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 147,
+      "col": 53
+    }
+  ]
+}

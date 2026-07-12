@@ -1,0 +1,349 @@
+{
+  "source": "packages/gitevo/src/index.ts",
+  "date": "2026-07-12T19:44:12.947Z",
+  "summary": {
+    "total": 124,
+    "killed": 26,
+    "survived": 42,
+    "timeout": 0,
+    "unviable": 56
+  },
+  "survivors": [
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 11
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "0",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 14,
+      "col": 30
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 16,
+      "col": 14
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "8",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 24,
+      "col": 17
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "9",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 24,
+      "col": 42
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 33,
+      "col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "14",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 33,
+      "col": 187
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "20",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 37,
+      "col": 31
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "22",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 38,
+      "col": 31
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 39,
+      "col": 38
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "24",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 40,
+      "col": 4
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "30",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 43,
+      "col": 32
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "31",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 43,
+      "col": 100
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "37",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 47,
+      "col": 26
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "39",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 48,
+      "col": 42
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "40",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 49,
+      "col": 37
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "41",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 50,
+      "col": 4
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "47",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 53,
+      "col": 29
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "48",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 53,
+      "col": 104
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "54",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 57,
+      "col": 26
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "56",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 58,
+      "col": 34
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "57",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 59,
+      "col": 4
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "63",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 62,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "64",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 62,
+      "col": 144
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "70",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 65,
+      "col": 35
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "71",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 65,
+      "col": 297
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "77",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 69,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "79",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 73,
+      "col": 19
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "81",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 75,
+      "col": 4
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "80",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 74,
+      "col": 44
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "87",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 79,
+      "col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "89",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 80,
+      "col": 39
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "90",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 81,
+      "col": 39
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "91",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 82,
+      "col": 4
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "97",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 85,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "98",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 85,
+      "col": 122
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "104",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 89,
+      "col": 26
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "106",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 90,
+      "col": 33
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "107",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 91,
+      "col": 4
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "113",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 94,
+      "col": 27
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "114",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 94,
+      "col": 178
+    },
+    {
+      "file": "packages/gitevo/dist/index.js",
+      "id": "121",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 104,
+      "col": 5
+    }
+  ]
+}

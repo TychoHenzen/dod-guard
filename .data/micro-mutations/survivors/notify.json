@@ -1,0 +1,77 @@
+{
+  "source": "packages/dod-guard/src/notify.ts",
+  "date": "2026-07-12T19:56:36.593Z",
+  "summary": {
+    "total": 29,
+    "killed": 0,
+    "survived": 8,
+    "timeout": 0,
+    "unviable": 21
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/notify.js",
+      "id": "1",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 2,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/notify.js",
+      "id": "0",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 2,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/notify.js",
+      "id": "2",
+      "mutator": "EqualityOperator",
+      "replacement": "process.platform !== \"win32\"",
+      "line": 2,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/notify.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 2,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/notify.js",
+      "id": "4",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 10,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/notify.js",
+      "id": "5",
+      "mutator": "BooleanLiteral",
+      "replacement": "isWindows",
+      "line": 11,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/notify.js",
+      "id": "6",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 11,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/notify.js",
+      "id": "7",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 11,
+      "col": 9
+    }
+  ]
+}

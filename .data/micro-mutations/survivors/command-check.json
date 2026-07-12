@@ -1,0 +1,989 @@
+{
+  "source": "packages/dod-guard/src/command-check.ts",
+  "date": "2026-07-12T19:50:48.691Z",
+  "summary": {
+    "total": 300,
+    "killed": 146,
+    "survived": 122,
+    "timeout": 9,
+    "unviable": 23
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "1",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 6,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "4",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 8,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 9,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 11,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 13,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 17,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "14",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 18,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 19,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 21,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "19",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 23,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "20",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 24,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "21",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 25,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "22",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 26,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 27,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 28,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 29,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "26",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 30,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 31,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "28",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 32,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "29",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 33,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "30",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 34,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "31",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 35,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "32",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 36,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "33",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 37,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "34",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 38,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "35",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 39,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "36",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 40,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "37",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 41,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "38",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 42,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "39",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 43,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "40",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 44,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "41",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 45,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "42",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 46,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "43",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 47,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "44",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 48,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "45",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 49,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "46",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 50,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "47",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 51,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "50",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 53,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "55",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 53,
+      "col": 63
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "56",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 53,
+      "col": 69
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "62",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 59,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "63",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 60,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "64",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "68",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 65,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "69",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 66,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "70",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 67,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "71",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 68,
+      "col": 10
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "72",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 69,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "73",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 70,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "74",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 71,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "82",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 75,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "84",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 75,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "94",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 84,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "103",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 94,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "105",
+      "mutator": "MethodExpression",
+      "replacement": "buf",
+      "line": 94,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "108",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 101,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "110",
+      "mutator": "MethodExpression",
+      "replacement": "buf",
+      "line": 101,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "121",
+      "mutator": "LogicalOperator",
+      "replacement": "t[0] === \">\" && t[0] === \"<\"",
+      "line": 110,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "120",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 110,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "122",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 110,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "125",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 110,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "124",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 110,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "127",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 110,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "129",
+      "mutator": "Regex",
+      "replacement": "/^\\d>/",
+      "line": 110,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "132",
+      "mutator": "Regex",
+      "replacement": "/\\S+\\s*/",
+      "line": 111,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "135",
+      "mutator": "Regex",
+      "replacement": "/^\\S+\\s/",
+      "line": 111,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "136",
+      "mutator": "Regex",
+      "replacement": "/^\\S+\\S*/",
+      "line": 111,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "137",
+      "mutator": "MethodExpression",
+      "replacement": "m ? t.slice(m[0].length) : t.slice(1)",
+      "line": 112,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "140",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 113,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "143",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 121,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "145",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "line": 121,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "152",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 122,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "153",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 122,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "154",
+      "mutator": "EqualityOperator",
+      "replacement": "end !== -1",
+      "line": 122,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "155",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "line": 122,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "157",
+      "mutator": "MethodExpression",
+      "replacement": "s",
+      "line": 122,
+      "col": 60
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "158",
+      "mutator": "ArithmeticOperator",
+      "replacement": "end - 1",
+      "line": 122,
+      "col": 68
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "160",
+      "mutator": "Regex",
+      "replacement": "/(\\S+)\\s*/",
+      "line": 125,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "163",
+      "mutator": "Regex",
+      "replacement": "/^(\\S+)\\s/",
+      "line": 125,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "164",
+      "mutator": "Regex",
+      "replacement": "/^(\\S+)\\S*/",
+      "line": 125,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "171",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 131,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "173",
+      "mutator": "Regex",
+      "replacement": "/[A-Za-z_][A-Za-z0-9_]*=/",
+      "line": 133,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "179",
+      "mutator": "EqualityOperator",
+      "replacement": "s.length >= 0",
+      "line": 137,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "188",
+      "mutator": "MethodExpression",
+      "replacement": "r.rest",
+      "line": 144,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "198",
+      "mutator": "Regex",
+      "replacement": "/^\\d+/",
+      "line": 159,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "199",
+      "mutator": "Regex",
+      "replacement": "/^\\d$/",
+      "line": 159,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "204",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 161,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "205",
+      "mutator": "LogicalOperator",
+      "replacement": "tok || hasAlnum(tok)",
+      "line": 161,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "213",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 176,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "214",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 176,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "215",
+      "mutator": "EqualityOperator",
+      "replacement": "c !== quote",
+      "line": 176,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "222",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 180,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "224",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 180,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "233",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 193,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "244",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 197,
+      "col": 79
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "246",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 201,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "247",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 203,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "248",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 203,
+      "col": 69
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "250",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 207,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "252",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 208,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "253",
+      "mutator": "LogicalOperator",
+      "replacement": "(name.includes(\"/\") || name.includes(\"\\\\\") || /^[A-Za-z]:/.test(name)) && name.startsWith(\".\")",
+      "line": 208,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "254",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 208,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "255",
+      "mutator": "LogicalOperator",
+      "replacement": "(name.includes(\"/\") || name.includes(\"\\\\\")) && /^[A-Za-z]:/.test(name)",
+      "line": 208,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "256",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 208,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "257",
+      "mutator": "LogicalOperator",
+      "replacement": "name.includes(\"/\") && name.includes(\"\\\\\")",
+      "line": 208,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "260",
+      "mutator": "Regex",
+      "replacement": "/[A-Za-z]:/",
+      "line": 208,
+      "col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "261",
+      "mutator": "Regex",
+      "replacement": "/^[^A-Za-z]:/",
+      "line": 208,
+      "col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "262",
+      "mutator": "MethodExpression",
+      "replacement": "name.endsWith(\".\")",
+      "line": 208,
+      "col": 84
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "268",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 213,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "271",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 216,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "272",
+      "mutator": "LogicalOperator",
+      "replacement": "isWindows || CMD_BUILTINS.has(name.toLowerCase())",
+      "line": 216,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "277",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 219,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/command-check.js",
+      "id": "293",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 239,
+      "col": 17
+    }
+  ]
+}

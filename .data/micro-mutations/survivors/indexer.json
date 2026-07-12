@@ -1,0 +1,493 @@
+{
+  "source": "packages/obsidian-rag/src/indexer.ts",
+  "date": "2026-07-12T19:53:23.054Z",
+  "summary": {
+    "total": 121,
+    "killed": 58,
+    "survived": 60,
+    "timeout": 0,
+    "unviable": 3
+  },
+  "survivors": [
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 10,
+      "col": 24
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 11,
+      "col": 26
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "12",
+      "mutator": "EqualityOperator",
+      "replacement": "currentChunk.length + text.length >= MAX_CHUNK_CHARS",
+      "line": 16,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "15",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 16,
+      "col": 68
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "16",
+      "mutator": "EqualityOperator",
+      "replacement": "currentChunk.length >= 0",
+      "line": 16,
+      "col": 68
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "17",
+      "mutator": "EqualityOperator",
+      "replacement": "currentChunk.length <= 0",
+      "line": 16,
+      "col": 68
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "19",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 18,
+      "col": 25
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "20",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 19,
+      "col": 21
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "21",
+      "mutator": "MethodExpression",
+      "replacement": "currentChunk",
+      "line": 22,
+      "col": 26
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "22",
+      "mutator": "UpdateOperator",
+      "replacement": "chunkIndex--",
+      "line": 24,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "23",
+      "mutator": "MethodExpression",
+      "replacement": "currentChunk",
+      "line": 26,
+      "col": 29
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "24",
+      "mutator": "UnaryOperator",
+      "replacement": "+CHUNK_OVERLAP_CHARS",
+      "line": 26,
+      "col": 48
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "28",
+      "mutator": "ArithmeticOperator",
+      "replacement": "(currentChunk ? \"\\n\\n\" : \"\") - text",
+      "line": 30,
+      "col": 29
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "29",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 30,
+      "col": 45
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "30",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 30,
+      "col": 54
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "31",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 35,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "33",
+      "mutator": "MethodExpression",
+      "replacement": "currentChunk",
+      "line": 35,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "36",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 37,
+      "col": 17
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "37",
+      "mutator": "MethodExpression",
+      "replacement": "currentChunk",
+      "line": 40,
+      "col": 22
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "42",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 45,
+      "col": 21
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "43",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 46,
+      "col": 17
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "44",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 48,
+      "col": 22
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "45",
+      "mutator": "MethodExpression",
+      "replacement": "content",
+      "line": 49,
+      "col": 22
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "49",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 57,
+      "col": 26
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "50",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 58,
+      "col": 23
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "54",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 62,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "55",
+      "mutator": "MethodExpression",
+      "replacement": "line.trim().endsWith(\"```\")",
+      "line": 62,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "56",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 62,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "58",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 62,
+      "col": 44
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "59",
+      "mutator": "BooleanLiteral",
+      "replacement": "inCodeBlock",
+      "line": 63,
+      "col": 27
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "60",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 64,
+      "col": 28
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "65",
+      "mutator": "Regex",
+      "replacement": "/#{1,6}\\s/",
+      "line": 68,
+      "col": 29
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "66",
+      "mutator": "Regex",
+      "replacement": "/^#\\s/",
+      "line": 68,
+      "col": 29
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "69",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 69,
+      "col": 17
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "71",
+      "mutator": "MethodExpression",
+      "replacement": "currentText",
+      "line": 69,
+      "col": 17
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "74",
+      "mutator": "MethodExpression",
+      "replacement": "currentText",
+      "line": 70,
+      "col": 64
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "75",
+      "mutator": "MethodExpression",
+      "replacement": "line.replace(/^#+\\s*/, \"\")",
+      "line": 72,
+      "col": 30
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "76",
+      "mutator": "Regex",
+      "replacement": "/#+\\s*/",
+      "line": 72,
+      "col": 43
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "77",
+      "mutator": "Regex",
+      "replacement": "/^#\\s*/",
+      "line": 72,
+      "col": 43
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "78",
+      "mutator": "Regex",
+      "replacement": "/^#+\\s/",
+      "line": 72,
+      "col": 43
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "79",
+      "mutator": "Regex",
+      "replacement": "/^#+\\S*/",
+      "line": 72,
+      "col": 43
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "81",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 73,
+      "col": 27
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "84",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 79,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "86",
+      "mutator": "MethodExpression",
+      "replacement": "currentText",
+      "line": 79,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "89",
+      "mutator": "MethodExpression",
+      "replacement": "currentText",
+      "line": 80,
+      "col": 56
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "95",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 91,
+      "col": 35
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "96",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 91,
+      "col": 73
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "100",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 100,
+      "col": 17
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "102",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 100,
+      "col": 29
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "103",
+      "mutator": "EqualityOperator",
+      "replacement": "hashContent(existing.content) !== contentHash",
+      "line": 100,
+      "col": 29
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "104",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 100,
+      "col": 76
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "107",
+      "mutator": "AssignmentOperator",
+      "replacement": "totalChunks -= chunks.length",
+      "line": 111,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "112",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 121,
+      "col": 35
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "113",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "line": 125,
+      "col": 19
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "114",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 128,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "115",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 128,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "116",
+      "mutator": "EqualityOperator",
+      "replacement": "totalChunks >= 0",
+      "line": 128,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "117",
+      "mutator": "EqualityOperator",
+      "replacement": "totalChunks <= 0",
+      "line": 128,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "118",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 128,
+      "col": 26
+    },
+    {
+      "file": "packages/obsidian-rag/dist/indexer.js",
+      "id": "119",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 129,
+      "col": 39
+    }
+  ]
+}

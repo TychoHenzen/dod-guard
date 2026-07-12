@@ -1,0 +1,533 @@
+{
+  "source": "packages/obsidian-rag/src/vault.ts",
+  "date": "2026-07-12T19:40:47.417Z",
+  "summary": {
+    "total": 160,
+    "killed": 84,
+    "survived": 65,
+    "timeout": 2,
+    "unviable": 9
+  },
+  "survivors": [
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "9",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 14,
+      "col": 13
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "10",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 16,
+      "col": 44
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "11",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 16,
+      "col": 61
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "17",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 22,
+      "col": 21
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "19",
+      "mutator": "MethodExpression",
+      "replacement": "base.endsWith(\".\")",
+      "line": 22,
+      "col": 22
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "28",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 28,
+      "col": 69
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "30",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 37,
+      "col": 42
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "33",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 44,
+      "col": 42
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "36",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 52,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "38",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 53,
+      "col": 26
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "39",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 53,
+      "col": 39
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "40",
+      "mutator": "MethodExpression",
+      "replacement": "content",
+      "line": 54,
+      "col": 36
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "41",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 55,
+      "col": 38
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "56",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 73,
+      "col": 17
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "70",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 93,
+      "col": 9
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "71",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 95,
+      "col": 44
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "72",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 95,
+      "col": 61
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "77",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 102,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "79",
+      "mutator": "LogicalOperator",
+      "replacement": "entry.isFile() || entry.name.endsWith(\".md\")",
+      "line": 102,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "81",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 102,
+      "col": 56
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "86",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 113,
+      "col": 46
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "89",
+      "mutator": "LogicalOperator",
+      "replacement": "(fm.type || fm.metadata?.type) && \"reference\"",
+      "line": 117,
+      "col": 25
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "90",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 117,
+      "col": 25
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "91",
+      "mutator": "LogicalOperator",
+      "replacement": "fm.type && fm.metadata?.type",
+      "line": 117,
+      "col": 25
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "94",
+      "mutator": "Regex",
+      "replacement": "/\\.md/",
+      "line": 119,
+      "col": 57
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "96",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 119,
+      "col": 85
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "98",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 123,
+      "col": 20
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "99",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 123,
+      "col": 20
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "100",
+      "mutator": "LogicalOperator",
+      "replacement": "fm.name && basename(fullPath, \".md\")",
+      "line": 123,
+      "col": 20
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "102",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 124,
+      "col": 26
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "103",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 124,
+      "col": 26
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "104",
+      "mutator": "LogicalOperator",
+      "replacement": "fm.description && \"\"",
+      "line": 124,
+      "col": 26
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "106",
+      "mutator": "MethodExpression",
+      "replacement": "content",
+      "line": 126,
+      "col": 22
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "107",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 127,
+      "col": 23
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "108",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 127,
+      "col": 23
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "109",
+      "mutator": "LogicalOperator",
+      "replacement": "fm.metadata && {}",
+      "line": 127,
+      "col": 23
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "110",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 128,
+      "col": 22
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "111",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 128,
+      "col": 22
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "112",
+      "mutator": "LogicalOperator",
+      "replacement": "fm.created && \"\"",
+      "line": 128,
+      "col": 22
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "113",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 128,
+      "col": 36
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "114",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 129,
+      "col": 23
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "115",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 129,
+      "col": 23
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "116",
+      "mutator": "LogicalOperator",
+      "replacement": "fm.modified && \"\"",
+      "line": 129,
+      "col": 23
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "117",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 129,
+      "col": 38
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "122",
+      "mutator": "LogicalOperator",
+      "replacement": "entry.type && \"reference\"",
+      "line": 138,
+      "col": 21
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "124",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 140,
+      "col": 25
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "125",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 143,
+      "col": 15
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "126",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 143,
+      "col": 15
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "127",
+      "mutator": "LogicalOperator",
+      "replacement": "entry.type && \"reference\"",
+      "line": 143,
+      "col": 15
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "129",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 145,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "130",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 145,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "131",
+      "mutator": "LogicalOperator",
+      "replacement": "entry.created && now",
+      "line": 145,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "140",
+      "mutator": "Regex",
+      "replacement": "/,\\s/",
+      "line": 157,
+      "col": 28
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "143",
+      "mutator": "Regex",
+      "replacement": "/#/",
+      "line": 157,
+      "col": 57
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "144",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 157,
+      "col": 63
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "150",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 162,
+      "col": 56
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "151",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 165,
+      "col": 20
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "152",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 167,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "153",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 167,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "154",
+      "mutator": "LogicalOperator",
+      "replacement": "frontmatter.created && \"\"",
+      "line": 167,
+      "col": 18
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "155",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 167,
+      "col": 41
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "156",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 168,
+      "col": 19
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "157",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 168,
+      "col": 19
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "158",
+      "mutator": "LogicalOperator",
+      "replacement": "frontmatter.modified && \"\"",
+      "line": 168,
+      "col": 19
+    },
+    {
+      "file": "packages/obsidian-rag/dist/vault.js",
+      "id": "159",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 168,
+      "col": 43
+    }
+  ]
+}

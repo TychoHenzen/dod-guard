@@ -1,0 +1,3141 @@
+{
+  "source": "packages/dod-guard/src/find-functions.ts",
+  "date": "2026-07-12T19:39:44.042Z",
+  "summary": {
+    "total": 830,
+    "killed": 412,
+    "survived": 391,
+    "timeout": 10,
+    "unviable": 17
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "1",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 1,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "0",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 1,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 5,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 7,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 8,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 9,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 10,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 11,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 12,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 13,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 14,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "14",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 16,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 17,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 18,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 19,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "19",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 20,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "20",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 21,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "21",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "22",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 23,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 24,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 25,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 26,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "26",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 27,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 28,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "28",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 29,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "29",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 30,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "30",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 31,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "31",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 32,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "32",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 33,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "34",
+      "mutator": "Regex",
+      "replacement": "/(\\s*)/",
+      "line": 36,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "38",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 43,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "39",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 43,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "40",
+      "mutator": "EqualityOperator",
+      "replacement": "braceIdx !== -1",
+      "line": 43,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "41",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "line": 43,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "48",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 49,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "51",
+      "mutator": "EqualityOperator",
+      "replacement": "j <= line.length",
+      "line": 50,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "55",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 52,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "56",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 52,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "57",
+      "mutator": "EqualityOperator",
+      "replacement": "j >= 0",
+      "line": 52,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "58",
+      "mutator": "EqualityOperator",
+      "replacement": "j <= 0",
+      "line": 52,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "59",
+      "mutator": "ArithmeticOperator",
+      "replacement": "j + 1",
+      "line": 52,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "60",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 52,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "62",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 53,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "63",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 53,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "64",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 54,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "65",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 54,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "66",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === inString || prev !== \"\\\\\"",
+      "line": 54,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "67",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 54,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "68",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== inString",
+      "line": 54,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "69",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 54,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "70",
+      "mutator": "EqualityOperator",
+      "replacement": "prev === \"\\\\\"",
+      "line": 54,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "71",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 54,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "73",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 58,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "74",
+      "mutator": "LogicalOperator",
+      "replacement": "(ch === '\"' || ch === \"'\") && ch === \"`\"",
+      "line": 58,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "75",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 58,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "76",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === '\"' && ch === \"'\"",
+      "line": 58,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "77",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 58,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "79",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 58,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "80",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 58,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "82",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 58,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "83",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 58,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "85",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 58,
+      "col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "86",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 58,
+      "col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "88",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 62,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "89",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === \"/\" && j + 1 < line.length || line[j + 1] === \"/\"",
+      "line": 62,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "90",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 62,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "91",
+      "mutator": "LogicalOperator",
+      "replacement": "ch === \"/\" || j + 1 < line.length",
+      "line": 62,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "93",
+      "mutator": "EqualityOperator",
+      "replacement": "ch !== \"/\"",
+      "line": 62,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "92",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 62,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "95",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 62,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "96",
+      "mutator": "EqualityOperator",
+      "replacement": "j + 1 <= line.length",
+      "line": 62,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "97",
+      "mutator": "EqualityOperator",
+      "replacement": "j + 1 >= line.length",
+      "line": 62,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "98",
+      "mutator": "ArithmeticOperator",
+      "replacement": "j - 1",
+      "line": 62,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "99",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 62,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "100",
+      "mutator": "EqualityOperator",
+      "replacement": "line[j + 1] !== \"/\"",
+      "line": 62,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "101",
+      "mutator": "ArithmeticOperator",
+      "replacement": "j - 1",
+      "line": 62,
+      "col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "102",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 62,
+      "col": 70
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "94",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 62,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "114",
+      "mutator": "LogicalOperator",
+      "replacement": "depth === 0 || getIndent(line) <= baseIndent",
+      "line": 68,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "115",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 68,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "117",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 68,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "128",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "line": 80,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "131",
+      "mutator": "LogicalOperator",
+      "replacement": "(!trimmed || /^\\s*\\/\\//.test(line)) && /^\\s*\\/\\*/.test(line)",
+      "line": 81,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "130",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 81,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "133",
+      "mutator": "LogicalOperator",
+      "replacement": "!trimmed && /^\\s*\\/\\//.test(line)",
+      "line": 81,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "132",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 81,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "135",
+      "mutator": "Regex",
+      "replacement": "/\\s*\\/\\//",
+      "line": 81,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "136",
+      "mutator": "Regex",
+      "replacement": "/^\\s\\/\\//",
+      "line": 81,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "137",
+      "mutator": "Regex",
+      "replacement": "/^\\S*\\/\\//",
+      "line": 81,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "138",
+      "mutator": "Regex",
+      "replacement": "/\\s*\\/\\*/",
+      "line": 81,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "139",
+      "mutator": "Regex",
+      "replacement": "/^\\s\\/\\*/",
+      "line": 81,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "140",
+      "mutator": "Regex",
+      "replacement": "/^\\S*\\/\\*/",
+      "line": 81,
+      "col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "141",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:export\\s+(?:default\\s+)?)?(?:async\\s+)?function\\s+(\\w+)/",
+      "line": 83,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "143",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:export\\s+(?:default\\s+)?)?(?:async\\s+)?function\\s+(\\w+)/",
+      "line": 83,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "145",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s(?:default\\s+)?)?(?:async\\s+)?function\\s+(\\w+)/",
+      "line": 83,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "148",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s+(?:default\\s)?)?(?:async\\s+)?function\\s+(\\w+)/",
+      "line": 83,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "151",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s+(?:default\\s+)?)?(?:async\\s)?function\\s+(\\w+)/",
+      "line": 83,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "153",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s+(?:default\\s+)?)?(?:async\\s+)?function\\s(\\w+)/",
+      "line": 83,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "171",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:static\\s)?(?:async\\s+)?(?:get\\s+|set\\s+)?(\\w+)\\s*\\([^)]*\\)\\s*\\{/",
+      "line": 95,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "174",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:static\\s+)?(?:async\\s)?(?:get\\s+|set\\s+)?(\\w+)\\s*\\([^)]*\\)\\s*\\{/",
+      "line": 95,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "177",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:static\\s+)?(?:async\\s+)?(?:get\\s|set\\s+)?(\\w+)\\s*\\([^)]*\\)\\s*\\{/",
+      "line": 95,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "179",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s)?(\\w+)\\s*\\([^)]*\\)\\s*\\{/",
+      "line": 95,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "184",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?(\\w+)\\S*\\([^)]*\\)\\s*\\{/",
+      "line": 95,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "187",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?(\\w+)\\s*\\([^)]*\\)\\s\\{/",
+      "line": 95,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "194",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 97,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "195",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 97,
+      "col": 53
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "197",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 99,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "198",
+      "mutator": "ArithmeticOperator",
+      "replacement": "end - 1",
+      "line": 100,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "199",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 102,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "200",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 102,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "201",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:export\\s+)?(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s*)?\\([^)]*\\)\\s*=>\\s*\\{/",
+      "line": 107,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "203",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:export\\s+)?(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s*)?\\([^)]*\\)\\s*=>\\s*\\{/",
+      "line": 107,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "205",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s)?(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s*)?\\([^)]*\\)\\s*=>\\s*\\{/",
+      "line": 107,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "207",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s+)?(?:const|let|var)\\s(\\w+)\\s*=\\s*(?:async\\s*)?\\([^)]*\\)\\s*=>\\s*\\{/",
+      "line": 107,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "211",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s+)?(?:const|let|var)\\s+(\\w+)\\s=\\s*(?:async\\s*)?\\([^)]*\\)\\s*=>\\s*\\{/",
+      "line": 107,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "213",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s+)?(?:const|let|var)\\s+(\\w+)\\s*=\\s(?:async\\s*)?\\([^)]*\\)\\s*=>\\s*\\{/",
+      "line": 107,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "216",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s+)?(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s)?\\([^)]*\\)\\s*=>\\s*\\{/",
+      "line": 107,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "220",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s+)?(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s*)?\\([^)]*\\)\\s=>\\s*\\{/",
+      "line": 107,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "222",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:export\\s+)?(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s*)?\\([^)]*\\)\\s*=>\\s\\{/",
+      "line": 107,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "230",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 111,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "231",
+      "mutator": "ArithmeticOperator",
+      "replacement": "end - 1",
+      "line": 112,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "232",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 114,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "233",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 114,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "234",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s+)?function\\s*\\(/",
+      "line": 119,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "236",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s+)?function\\s*\\(/",
+      "line": 119,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "237",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:const|let|var)\\s(\\w+)\\s*=\\s*(?:async\\s+)?function\\s*\\(/",
+      "line": 119,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "241",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:const|let|var)\\s+(\\w+)\\s=\\s*(?:async\\s+)?function\\s*\\(/",
+      "line": 119,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "243",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:const|let|var)\\s+(\\w+)\\s*=\\s(?:async\\s+)?function\\s*\\(/",
+      "line": 119,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "246",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s)?function\\s*\\(/",
+      "line": 119,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "247",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\S+)?function\\s*\\(/",
+      "line": 119,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "253",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 121,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "254",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 121,
+      "col": 53
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "249",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s+)?function\\S*\\(/",
+      "line": 119,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "256",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 123,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "257",
+      "mutator": "ArithmeticOperator",
+      "replacement": "end - 1",
+      "line": 124,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "258",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 126,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "259",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 126,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "270",
+      "mutator": "Regex",
+      "replacement": "/^\\s*def\\s(\\w+)\\s*\\(/",
+      "line": 137,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "275",
+      "mutator": "Regex",
+      "replacement": "/^\\s*def\\s+(\\w+)\\S*\\(/",
+      "line": 137,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "279",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 141,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "281",
+      "mutator": "EqualityOperator",
+      "replacement": "end >= i",
+      "line": 141,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "286",
+      "mutator": "ArithmeticOperator",
+      "replacement": "end - 1",
+      "line": 142,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "287",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 142,
+      "col": 83
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "288",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 142,
+      "col": 95
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "289",
+      "mutator": "ArithmeticOperator",
+      "replacement": "end - 1",
+      "line": 142,
+      "col": 102
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "296",
+      "mutator": "MethodExpression",
+      "replacement": "lines[i]",
+      "line": 152,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "319",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:pub(?:\\s*\\(\\s*(?:crate|super|self)\\s*\\))?\\s+)?(?:async\\s+)?(?:unsafe\\s+)?fn\\s+(\\w+)/",
+      "line": 167,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "323",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub(?:\\S*\\(\\s*(?:crate|super|self)\\s*\\))?\\s+)?(?:async\\s+)?(?:unsafe\\s+)?fn\\s+(\\w+)/",
+      "line": 167,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "325",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub(?:\\s*\\(\\S*(?:crate|super|self)\\s*\\))?\\s+)?(?:async\\s+)?(?:unsafe\\s+)?fn\\s+(\\w+)/",
+      "line": 167,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "328",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub(?:\\s*\\(\\s*(?:crate|super|self)\\s*\\))?\\s)?(?:async\\s+)?(?:unsafe\\s+)?fn\\s+(\\w+)/",
+      "line": 167,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "327",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub(?:\\s*\\(\\s*(?:crate|super|self)\\S*\\))?\\s+)?(?:async\\s+)?(?:unsafe\\s+)?fn\\s+(\\w+)/",
+      "line": 167,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "331",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub(?:\\s*\\(\\s*(?:crate|super|self)\\s*\\))?\\s+)?(?:async\\s)?(?:unsafe\\s+)?fn\\s+(\\w+)/",
+      "line": 167,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "334",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub(?:\\s*\\(\\s*(?:crate|super|self)\\s*\\))?\\s+)?(?:async\\s+)?(?:unsafe\\s)?fn\\s+(\\w+)/",
+      "line": 167,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "336",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub(?:\\s*\\(\\s*(?:crate|super|self)\\s*\\))?\\s+)?(?:async\\s+)?(?:unsafe\\s+)?fn\\s(\\w+)/",
+      "line": 167,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "343",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 170,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "344",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 170,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "346",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 172,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "348",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 175,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "347",
+      "mutator": "ArithmeticOperator",
+      "replacement": "end - 1",
+      "line": 173,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "349",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 175,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "357",
+      "mutator": "MethodExpression",
+      "replacement": "lines[i]",
+      "line": 185,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "359",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 186,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "360",
+      "mutator": "LogicalOperator",
+      "replacement": "(!line || line.startsWith(\"//\") || line.startsWith(\"[\")) && line.startsWith(\"/*\")",
+      "line": 186,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "361",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 186,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "362",
+      "mutator": "LogicalOperator",
+      "replacement": "(!line || line.startsWith(\"//\")) && line.startsWith(\"[\")",
+      "line": 186,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "363",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 186,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "364",
+      "mutator": "LogicalOperator",
+      "replacement": "!line && line.startsWith(\"//\")",
+      "line": 186,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "366",
+      "mutator": "MethodExpression",
+      "replacement": "line.endsWith(\"//\")",
+      "line": 186,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "368",
+      "mutator": "MethodExpression",
+      "replacement": "line.endsWith(\"[\")",
+      "line": 186,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "370",
+      "mutator": "MethodExpression",
+      "replacement": "line.endsWith(\"/*\")",
+      "line": 186,
+      "col": 71
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "372",
+      "mutator": "Regex",
+      "replacement": "/(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\\s",
+      "line": 188,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "374",
+      "mutator": "Regex",
+      "replacement": "/^(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\\",
+      "line": 188,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "381",
+      "mutator": "Regex",
+      "replacement": "/^(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\\",
+      "line": 188,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "388",
+      "mutator": "Regex",
+      "replacement": "/^(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\\",
+      "line": 188,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "389",
+      "mutator": "Regex",
+      "replacement": "/^(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\\",
+      "line": 188,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "392",
+      "mutator": "Regex",
+      "replacement": "/^(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\\",
+      "line": 188,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "394",
+      "mutator": "Regex",
+      "replacement": "/^(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\\",
+      "line": 188,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "393",
+      "mutator": "Regex",
+      "replacement": "/^(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\\",
+      "line": 188,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "395",
+      "mutator": "Regex",
+      "replacement": "/^(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\\",
+      "line": 188,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "401",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 194,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "402",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 194,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "404",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 196,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "405",
+      "mutator": "ArithmeticOperator",
+      "replacement": "end - 1",
+      "line": 197,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "406",
+      "mutator": "MethodExpression",
+      "replacement": "lines",
+      "line": 199,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "407",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 199,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "413",
+      "mutator": "ConditionalExpression",
+      "replacement": "case \"rs\":",
+      "line": 212,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "421",
+      "mutator": "Regex",
+      "replacement": "/\\bif\\s\\(/g",
+      "line": 225,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "423",
+      "mutator": "Regex",
+      "replacement": "/\\belse\\sif\\b/g",
+      "line": 226,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "424",
+      "mutator": "Regex",
+      "replacement": "/\\belse\\S+if\\b/g",
+      "line": 226,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "425",
+      "mutator": "Regex",
+      "replacement": "/\\bfor\\s\\(/g",
+      "line": 227,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "427",
+      "mutator": "Regex",
+      "replacement": "/\\bwhile\\s\\(/g",
+      "line": 228,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "429",
+      "mutator": "Regex",
+      "replacement": "/\\bdo\\s\\{/g",
+      "line": 229,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "431",
+      "mutator": "Regex",
+      "replacement": "/\\bcase\\s[^:]+:/g",
+      "line": 230,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "433",
+      "mutator": "Regex",
+      "replacement": "/\\bcase\\s+[^:]:/g",
+      "line": 230,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "436",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\S*[({]/g",
+      "line": 231,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "435",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\s[({]/g",
+      "line": 231,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "438",
+      "mutator": "Regex",
+      "replacement": "/\\?[^:]:/g",
+      "line": 236,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "437",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\s*[^({]/g",
+      "line": 231,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "439",
+      "mutator": "Regex",
+      "replacement": "/\\?[:]+:/g",
+      "line": 236,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "441",
+      "mutator": "Regex",
+      "replacement": "/\\bif\\s/g",
+      "line": 238,
+      "col": 10
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "443",
+      "mutator": "Regex",
+      "replacement": "/\\belif\\s/g",
+      "line": 238,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "445",
+      "mutator": "Regex",
+      "replacement": "/\\bfor\\s/g",
+      "line": 238,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "447",
+      "mutator": "Regex",
+      "replacement": "/\\bwhile\\s/g",
+      "line": 238,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "448",
+      "mutator": "Regex",
+      "replacement": "/\\bwhile\\S+/g",
+      "line": 238,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "449",
+      "mutator": "Regex",
+      "replacement": "/\\bexcept\\s:/g",
+      "line": 238,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "450",
+      "mutator": "Regex",
+      "replacement": "/\\bexcept\\S*:/g",
+      "line": 238,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "451",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 239,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "452",
+      "mutator": "Regex",
+      "replacement": "/\\bif\\s/g",
+      "line": 240,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "453",
+      "mutator": "Regex",
+      "replacement": "/\\bif\\S+/g",
+      "line": 240,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "454",
+      "mutator": "Regex",
+      "replacement": "/\\belse\\sif\\b/g",
+      "line": 241,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "455",
+      "mutator": "Regex",
+      "replacement": "/\\belse\\S+if\\b/g",
+      "line": 241,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "456",
+      "mutator": "Regex",
+      "replacement": "/\\bfor\\s/g",
+      "line": 242,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "457",
+      "mutator": "Regex",
+      "replacement": "/\\bfor\\S+/g",
+      "line": 242,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "458",
+      "mutator": "Regex",
+      "replacement": "/\\bwhile\\s/g",
+      "line": 243,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "459",
+      "mutator": "Regex",
+      "replacement": "/\\bwhile\\S+/g",
+      "line": 243,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "460",
+      "mutator": "Regex",
+      "replacement": "/\\bloop\\s\\{/g",
+      "line": 244,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "461",
+      "mutator": "Regex",
+      "replacement": "/\\bloop\\S*\\{/g",
+      "line": 244,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "462",
+      "mutator": "Regex",
+      "replacement": "/\\bmatch\\s/g",
+      "line": 245,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "463",
+      "mutator": "Regex",
+      "replacement": "/\\bmatch\\S+/g",
+      "line": 245,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "464",
+      "mutator": "Regex",
+      "replacement": "/\\bcase\\s/g",
+      "line": 246,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "465",
+      "mutator": "Regex",
+      "replacement": "/\\bcase\\S+/g",
+      "line": 246,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "466",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 251,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "467",
+      "mutator": "Regex",
+      "replacement": "/\\bif\\s\\(/g",
+      "line": 252,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "468",
+      "mutator": "Regex",
+      "replacement": "/\\bif\\S*\\(/g",
+      "line": 252,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "469",
+      "mutator": "Regex",
+      "replacement": "/\\belse\\sif\\b/g",
+      "line": 253,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "470",
+      "mutator": "Regex",
+      "replacement": "/\\belse\\S+if\\b/g",
+      "line": 253,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "471",
+      "mutator": "Regex",
+      "replacement": "/\\bfor\\s\\(/g",
+      "line": 254,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "472",
+      "mutator": "Regex",
+      "replacement": "/\\bfor\\S*\\(/g",
+      "line": 254,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "473",
+      "mutator": "Regex",
+      "replacement": "/\\bforeach\\s\\(/g",
+      "line": 255,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "474",
+      "mutator": "Regex",
+      "replacement": "/\\bforeach\\S*\\(/g",
+      "line": 255,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "475",
+      "mutator": "Regex",
+      "replacement": "/\\bwhile\\s\\(/g",
+      "line": 256,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "476",
+      "mutator": "Regex",
+      "replacement": "/\\bwhile\\S*\\(/g",
+      "line": 256,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "477",
+      "mutator": "Regex",
+      "replacement": "/\\bdo\\s\\{/g",
+      "line": 257,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "478",
+      "mutator": "Regex",
+      "replacement": "/\\bdo\\S*\\{/g",
+      "line": 257,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "480",
+      "mutator": "Regex",
+      "replacement": "/\\bcase\\S+[^:]+:/g",
+      "line": 258,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "479",
+      "mutator": "Regex",
+      "replacement": "/\\bcase\\s[^:]+:/g",
+      "line": 258,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "482",
+      "mutator": "Regex",
+      "replacement": "/\\bcase\\s+[:]+:/g",
+      "line": 258,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "481",
+      "mutator": "Regex",
+      "replacement": "/\\bcase\\s+[^:]:/g",
+      "line": 258,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "484",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\S*[({]/g",
+      "line": 259,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "483",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\s[({]/g",
+      "line": 259,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "485",
+      "mutator": "Regex",
+      "replacement": "/\\bcatch\\s*[^({]/g",
+      "line": 259,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "486",
+      "mutator": "Regex",
+      "replacement": "/\\?\\s[^:]+:/g",
+      "line": 263,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "487",
+      "mutator": "Regex",
+      "replacement": "/\\?\\S*[^:]+:/g",
+      "line": 263,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "488",
+      "mutator": "Regex",
+      "replacement": "/\\?\\s*[^:]:/g",
+      "line": 263,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "489",
+      "mutator": "Regex",
+      "replacement": "/\\?\\s*[:]+:/g",
+      "line": 263,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "492",
+      "mutator": "Regex",
+      "replacement": "/\\}\\selse\\b/",
+      "line": 275,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "494",
+      "mutator": "Regex",
+      "replacement": "/\\s*else\\s*:/",
+      "line": 276,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "496",
+      "mutator": "Regex",
+      "replacement": "/^\\S*else\\s*:/",
+      "line": 276,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "498",
+      "mutator": "Regex",
+      "replacement": "/^\\s*else\\S*:/",
+      "line": 276,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "499",
+      "mutator": "Regex",
+      "replacement": "/\\}\\selse\\b/",
+      "line": 277,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "500",
+      "mutator": "Regex",
+      "replacement": "/\\}\\S*else\\b/",
+      "line": 277,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "501",
+      "mutator": "Regex",
+      "replacement": "/\\}\\selse\\b/",
+      "line": 278,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "503",
+      "mutator": "Regex",
+      "replacement": "/\\s*elif\\s+/",
+      "line": 281,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "502",
+      "mutator": "Regex",
+      "replacement": "/\\}\\S*else\\b/",
+      "line": 278,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "505",
+      "mutator": "Regex",
+      "replacement": "/^\\S*elif\\s+/",
+      "line": 281,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "506",
+      "mutator": "Regex",
+      "replacement": "/^\\s*elif\\s/",
+      "line": 281,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "509",
+      "mutator": "Regex",
+      "replacement": "/\\/\\/.*/",
+      "line": 284,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "510",
+      "mutator": "Regex",
+      "replacement": "/\\/\\/.$/",
+      "line": 284,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "511",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 284,
+      "col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "512",
+      "mutator": "Regex",
+      "replacement": "/#.*/",
+      "line": 284,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "513",
+      "mutator": "Regex",
+      "replacement": "/#.$/",
+      "line": 284,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "514",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 284,
+      "col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "515",
+      "mutator": "Regex",
+      "replacement": "/`[^`]`/g",
+      "line": 287,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "516",
+      "mutator": "Regex",
+      "replacement": "/`[`]*`/g",
+      "line": 287,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "517",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 287,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "518",
+      "mutator": "Regex",
+      "replacement": "/\"[^\"]\"/g",
+      "line": 288,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "519",
+      "mutator": "Regex",
+      "replacement": "/\"[\"]*\"/g",
+      "line": 288,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "520",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 288,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "521",
+      "mutator": "Regex",
+      "replacement": "/'[^']'/g",
+      "line": 289,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "522",
+      "mutator": "Regex",
+      "replacement": "/'[']*'/g",
+      "line": 289,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "523",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 289,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "527",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 298,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "542",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 322,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "546",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 326,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "547",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 326,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "549",
+      "mutator": "LogicalOperator",
+      "replacement": "elseRe || jumpRe",
+      "line": 326,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "556",
+      "mutator": "MethodExpression",
+      "replacement": "raw",
+      "line": 331,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "560",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 333,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "562",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 333,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "565",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 340,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "566",
+      "mutator": "EqualityOperator",
+      "replacement": "j > 0",
+      "line": 340,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "567",
+      "mutator": "EqualityOperator",
+      "replacement": "j < 0",
+      "line": 340,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "569",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[j]",
+      "line": 341,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "571",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 342,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "572",
+      "mutator": "LogicalOperator",
+      "replacement": "(t === \"\" || t.startsWith(\"//\")) && t.startsWith(\"/*\")",
+      "line": 342,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "573",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 342,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "574",
+      "mutator": "LogicalOperator",
+      "replacement": "t === \"\" && t.startsWith(\"//\")",
+      "line": 342,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "575",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 342,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "577",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 342,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "578",
+      "mutator": "MethodExpression",
+      "replacement": "t.endsWith(\"//\")",
+      "line": 342,
+      "col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "580",
+      "mutator": "MethodExpression",
+      "replacement": "t.endsWith(\"/*\")",
+      "line": 342,
+      "col": 55
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "585",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 347,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "586",
+      "mutator": "LogicalOperator",
+      "replacement": "t.endsWith(\"}\") && t === \"}\"",
+      "line": 347,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "587",
+      "mutator": "MethodExpression",
+      "replacement": "t.startsWith(\"}\")",
+      "line": 347,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "589",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 347,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "591",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 347,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "598",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 354,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "607",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 363,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "609",
+      "mutator": "EqualityOperator",
+      "replacement": "j > 0",
+      "line": 363,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "612",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[j]",
+      "line": 364,
+      "col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "619",
+      "mutator": "LogicalOperator",
+      "replacement": "lang === \"py\" || ELSE_PATTERNS.py.test(trimmed) || ELIF_PATTERN.test(trimmed)",
+      "line": 370,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "620",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 370,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "623",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 370,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "626",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i + 1",
+      "line": 373,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "627",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 375,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "629",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 375,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "631",
+      "mutator": "EqualityOperator",
+      "replacement": "j < 0",
+      "line": 375,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "630",
+      "mutator": "EqualityOperator",
+      "replacement": "j > 0",
+      "line": 375,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "633",
+      "mutator": "LogicalOperator",
+      "replacement": "bodyLines[j].trim() === \"\" && bodyLines[j].trim().startsWith(\"#\")",
+      "line": 375,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "634",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 375,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "636",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[j]",
+      "line": 375,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "637",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 375,
+      "col": 55
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "638",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[j].trim().endsWith(\"#\")",
+      "line": 375,
+      "col": 61
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "639",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[j]",
+      "line": 375,
+      "col": 61
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "642",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 377,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "644",
+      "mutator": "EqualityOperator",
+      "replacement": "j > 0",
+      "line": 377,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "647",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 380,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "649",
+      "mutator": "LogicalOperator",
+      "replacement": "prevIndent > currentIndent || jumpRe.test(stripStringsAndComments(bodyLines[j].trim()))",
+      "line": 380,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "650",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 380,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "651",
+      "mutator": "EqualityOperator",
+      "replacement": "prevIndent >= currentIndent",
+      "line": 380,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "653",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[j]",
+      "line": 380,
+      "col": 87
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "660",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 397,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "664",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 401,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "665",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 401,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "667",
+      "mutator": "LogicalOperator",
+      "replacement": "elseRe || jumpRe",
+      "line": 401,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "675",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[i]",
+      "line": 407,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "677",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 409,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "681",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 411,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "684",
+      "mutator": "Regex",
+      "replacement": "/\\bif\\s\\(/",
+      "line": 411,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "687",
+      "mutator": "Regex",
+      "replacement": "/\\belse\\S+if\\b/",
+      "line": 411,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "686",
+      "mutator": "Regex",
+      "replacement": "/\\belse\\sif\\b/",
+      "line": 411,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "689",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "line": 414,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "710",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 425,
+      "col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "712",
+      "mutator": "LogicalOperator",
+      "replacement": "started || depth === 0",
+      "line": 425,
+      "col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "713",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 425,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "718",
+      "mutator": "EqualityOperator",
+      "replacement": "blockEnd > 0",
+      "line": 431,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "722",
+      "mutator": "EqualityOperator",
+      "replacement": "blockEnd >= i",
+      "line": 434,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "725",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[blockEnd - 1]",
+      "line": 436,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "727",
+      "mutator": "ArithmeticOperator",
+      "replacement": "blockEnd + 1",
+      "line": 437,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "728",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 438,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "730",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 438,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "731",
+      "mutator": "EqualityOperator",
+      "replacement": "j2 >= i",
+      "line": 438,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "732",
+      "mutator": "EqualityOperator",
+      "replacement": "j2 <= i",
+      "line": 438,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "734",
+      "mutator": "LogicalOperator",
+      "replacement": "(prevLine === \"\" || prevLine.startsWith(\"//\")) && prevLine === \"}\"",
+      "line": 438,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "735",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 438,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "736",
+      "mutator": "LogicalOperator",
+      "replacement": "prevLine === \"\" && prevLine.startsWith(\"//\")",
+      "line": 438,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "737",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 438,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "739",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 438,
+      "col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "740",
+      "mutator": "MethodExpression",
+      "replacement": "prevLine.endsWith(\"//\")",
+      "line": 438,
+      "col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "742",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 438,
+      "col": 87
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "744",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 438,
+      "col": 100
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "746",
+      "mutator": "UpdateOperator",
+      "replacement": "j2++",
+      "line": 439,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "747",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[j2]",
+      "line": 440,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "751",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 444,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "752",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 444,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "753",
+      "mutator": "EqualityOperator",
+      "replacement": "blockEnd + 1 <= bodyLines.length",
+      "line": 444,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "754",
+      "mutator": "EqualityOperator",
+      "replacement": "blockEnd + 1 >= bodyLines.length",
+      "line": 444,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "755",
+      "mutator": "ArithmeticOperator",
+      "replacement": "blockEnd - 1",
+      "line": 444,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "756",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[blockEnd + 1]",
+      "line": 444,
+      "col": 76
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "757",
+      "mutator": "ArithmeticOperator",
+      "replacement": "blockEnd - 1",
+      "line": 444,
+      "col": 86
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "760",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 445,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "765",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 455,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "768",
+      "mutator": "Regex",
+      "replacement": "/\\bif\\s/",
+      "line": 455,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "770",
+      "mutator": "Regex",
+      "replacement": "/\\belif\\s/",
+      "line": 455,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "771",
+      "mutator": "Regex",
+      "replacement": "/\\belif\\S+/",
+      "line": 455,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "775",
+      "mutator": "EqualityOperator",
+      "replacement": "j <= bodyLines.length",
+      "line": 458,
+      "col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "780",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 459,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "783",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 459,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "782",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[j]",
+      "line": 459,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "790",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 467,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "792",
+      "mutator": "LogicalOperator",
+      "replacement": "blockEnd > i || jumpRe.test(stripStringsAndComments(bodyLines[blockEnd].trim()))",
+      "line": 467,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "793",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 467,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "794",
+      "mutator": "EqualityOperator",
+      "replacement": "blockEnd >= i",
+      "line": 467,
+      "col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "796",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[blockEnd]",
+      "line": 467,
+      "col": 73
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "798",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 469,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "799",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 469,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "800",
+      "mutator": "EqualityOperator",
+      "replacement": "blockEnd + 1 <= bodyLines.length",
+      "line": 469,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "801",
+      "mutator": "EqualityOperator",
+      "replacement": "blockEnd + 1 >= bodyLines.length",
+      "line": 469,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "802",
+      "mutator": "ArithmeticOperator",
+      "replacement": "blockEnd - 1",
+      "line": 469,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "803",
+      "mutator": "MethodExpression",
+      "replacement": "bodyLines[blockEnd + 1]",
+      "line": 469,
+      "col": 72
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "804",
+      "mutator": "ArithmeticOperator",
+      "replacement": "blockEnd - 1",
+      "line": 469,
+      "col": 82
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "807",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 470,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "810",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 470,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "811",
+      "mutator": "LogicalOperator",
+      "replacement": "ELSE_PATTERNS.py.test(nextLine) && ELIF_PATTERN.test(nextLine)",
+      "line": 470,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "818",
+      "mutator": "MethodExpression",
+      "replacement": "raw",
+      "line": 483,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "822",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 484,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "824",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 484,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "825",
+      "mutator": "EqualityOperator",
+      "replacement": "lang !== \"py\"",
+      "line": 484,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/find-functions.js",
+      "id": "826",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 484,
+      "col": 47
+    }
+  ]
+}

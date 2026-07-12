@@ -1,0 +1,477 @@
+{
+  "source": "packages/dod-guard/src/baseline.ts",
+  "date": "2026-07-12T19:53:34.106Z",
+  "summary": {
+    "total": 126,
+    "killed": 68,
+    "survived": 58,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 4,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "0",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 3,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 5,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 6,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 7,
+      "col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 15,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 14,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "14",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 16,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 17,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 18,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 19,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 20,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "19",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 21,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "20",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 22,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "21",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 23,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "22",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 24,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 25,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 26,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 27,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "26",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 28,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 29,
+      "col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "31",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 33,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "32",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 34,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "33",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 34,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "34",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 34,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "35",
+      "mutator": "EqualityOperator",
+      "replacement": "t !== \"bug\"",
+      "line": 34,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "36",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 34,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "39",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 38,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "40",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 39,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "43",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 41,
+      "col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "44",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 41,
+      "col": 97
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "47",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 44,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "48",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 45,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "51",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 49,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "52",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 50,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "56",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 55,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "59",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 56,
+      "col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "62",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 57,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "65",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 58,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "66",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 61,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "67",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "68",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "69",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "70",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 61,
+      "col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "73",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 62,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "74",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 62,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "97",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 92,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "96",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 91,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "98",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 93,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "100",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 97,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "107",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 107,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "109",
+      "mutator": "MethodExpression",
+      "replacement": "s.proofs.every(p => STRONG.includes(p.category))",
+      "line": 109,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "110",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 109,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "111",
+      "mutator": "MethodExpression",
+      "replacement": "s.proofs.some(p => WEAK.includes(p.category))",
+      "line": 110,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "115",
+      "mutator": "LogicalOperator",
+      "replacement": "!hasStrong || allWeak",
+      "line": 111,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "119",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 113,
+      "col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "121",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 120,
+      "col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/baseline.js",
+      "id": "122",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 120,
+      "col": 49
+    }
+  ]
+}

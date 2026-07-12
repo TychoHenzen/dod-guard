@@ -1,0 +1,1493 @@
+{
+  "source": "packages/gitevo/src/operations.ts",
+  "date": "2026-07-12T19:32:48.484Z",
+  "summary": {
+    "total": 487,
+    "killed": 269,
+    "survived": 185,
+    "timeout": 0,
+    "unviable": 33
+  },
+  "survivors": [
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 20,
+      "col": 21
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 28,
+      "col": 17
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "6",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 28,
+      "col": 16
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 28,
+      "col": 27
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 28,
+      "col": 35
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "11",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 31,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "17",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 35,
+      "col": 24
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "18",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 35,
+      "col": 24
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "19",
+      "mutator": "LogicalOperator",
+      "replacement": "(result.stderr || \"\").trim() && (result.stdout || \"\").trim()",
+      "line": 35,
+      "col": 24
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "20",
+      "mutator": "MethodExpression",
+      "replacement": "result.stderr || \"\"",
+      "line": 35,
+      "col": 24
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "21",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 35,
+      "col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "22",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 35,
+      "col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "23",
+      "mutator": "LogicalOperator",
+      "replacement": "result.stderr && \"\"",
+      "line": 35,
+      "col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "39",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 50,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "43",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 53,
+      "col": 11
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "44",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 54,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "45",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 57,
+      "col": 22
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "51",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 59,
+      "col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "53",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 59,
+      "col": 43
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "73",
+      "mutator": "MethodExpression",
+      "replacement": "l",
+      "line": 73,
+      "col": 52
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "89",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 77,
+      "col": 67
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "92",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 78,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "93",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 79,
+      "col": 16
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "94",
+      "mutator": "MethodExpression",
+      "replacement": "output.split(\"\\n\")",
+      "line": 80,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "106",
+      "mutator": "MethodExpression",
+      "replacement": "msg",
+      "line": 89,
+      "col": 16
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "119",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 105,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "124",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 122,
+      "col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "126",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 125,
+      "col": 22
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "128",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 126,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "129",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 126,
+      "col": 35
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "130",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 127,
+      "col": 52
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "131",
+      "mutator": "BooleanLiteral",
+      "replacement": "content.includes(\".evo/\")",
+      "line": 128,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "132",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 128,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "133",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 128,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "134",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 128,
+      "col": 31
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "136",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 132,
+      "col": 10
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "147",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 142,
+      "col": 41
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "148",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 143,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "153",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 153,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "163",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 163,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "167",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 178,
+      "col": 73
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "168",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 179,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "172",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 188,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "175",
+      "mutator": "MethodExpression",
+      "replacement": "fs.readFileSync(paths.lessonsFile, \"utf-8\")",
+      "line": 191,
+      "col": 21
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "182",
+      "mutator": "MethodExpression",
+      "replacement": "content.split(\"\\n\")",
+      "line": 194,
+      "col": 21
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "185",
+      "mutator": "MethodExpression",
+      "replacement": "l",
+      "line": 196,
+      "col": 24
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "189",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 199,
+      "col": 38
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "190",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 199,
+      "col": 96
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "194",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 208,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "197",
+      "mutator": "MethodExpression",
+      "replacement": "fs.readFileSync(paths.lessonsFile, \"utf-8\")",
+      "line": 211,
+      "col": 21
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "201",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 212,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "204",
+      "mutator": "MethodExpression",
+      "replacement": "content.split(\"\\n\")",
+      "line": 214,
+      "col": 21
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "207",
+      "mutator": "MethodExpression",
+      "replacement": "l",
+      "line": 216,
+      "col": 24
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "211",
+      "mutator": "MethodExpression",
+      "replacement": "parsed.content",
+      "line": 220,
+      "col": 35
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "212",
+      "mutator": "MethodExpression",
+      "replacement": "Math.random().toString(36)",
+      "line": 220,
+      "col": 81
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "213",
+      "mutator": "MethodExpression",
+      "replacement": "parsed.content",
+      "line": 221,
+      "col": 20
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "218",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 235,
+      "col": 24
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "219",
+      "mutator": "MethodExpression",
+      "replacement": "text.toLowerCase().replace(/[^\\w\\s-]/g, \"\").replace(/\\s+/g, \"-\").replace(/-+/g, \"-\")",
+      "line": 236,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "220",
+      "mutator": "MethodExpression",
+      "replacement": "text.toUpperCase()",
+      "line": 236,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "221",
+      "mutator": "Regex",
+      "replacement": "/[\\w\\s-]/g",
+      "line": 238,
+      "col": 18
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "222",
+      "mutator": "Regex",
+      "replacement": "/[^\\W\\s-]/g",
+      "line": 238,
+      "col": 18
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "223",
+      "mutator": "Regex",
+      "replacement": "/[^\\w\\S-]/g",
+      "line": 238,
+      "col": 18
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "224",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 238,
+      "col": 31
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "225",
+      "mutator": "Regex",
+      "replacement": "/\\s/g",
+      "line": 239,
+      "col": 18
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "226",
+      "mutator": "Regex",
+      "replacement": "/\\S+/g",
+      "line": 239,
+      "col": 18
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "227",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 239,
+      "col": 26
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "228",
+      "mutator": "Regex",
+      "replacement": "/-/g",
+      "line": 240,
+      "col": 18
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "229",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 240,
+      "col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "234",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 252,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "235",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 252,
+      "col": 32
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "236",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 253,
+      "col": 42
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "237",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 253,
+      "col": 60
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "238",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 254,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "239",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 254,
+      "col": 85
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "240",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 254,
+      "col": 85
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "241",
+      "mutator": "LogicalOperator",
+      "replacement": "available && \"none\"",
+      "line": 254,
+      "col": 85
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "246",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 257,
+      "col": 78
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "248",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 258,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "249",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 258,
+      "col": 40
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "250",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 259,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "251",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "line": 263,
+      "col": 19
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "252",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 264,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "253",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 264,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "254",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 264,
+      "col": 19
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "259",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 265,
+      "col": 37
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "264",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 271,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "273",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 279,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "275",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 287,
+      "col": 33
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "277",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 288,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "280",
+      "mutator": "MethodExpression",
+      "replacement": "tags.sort()",
+      "line": 291,
+      "col": 5
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "281",
+      "mutator": "MethodExpression",
+      "replacement": "tags",
+      "line": 291,
+      "col": 5
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "285",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 296,
+      "col": 40
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "287",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 304,
+      "col": 34
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "288",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 304,
+      "col": 35
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "290",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 304,
+      "col": 53
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "289",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 304,
+      "col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "295",
+      "mutator": "MethodExpression",
+      "replacement": "branches",
+      "line": 306,
+      "col": 22
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "297",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 306,
+      "col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "299",
+      "mutator": "LogicalOperator",
+      "replacement": "b && !defaultNames.has(b) || b !== rootBranch",
+      "line": 306,
+      "col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "300",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 306,
+      "col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "301",
+      "mutator": "LogicalOperator",
+      "replacement": "b || !defaultNames.has(b)",
+      "line": 306,
+      "col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "303",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 306,
+      "col": 74
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "306",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 307,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "310",
+      "mutator": "MethodExpression",
+      "replacement": "attempts",
+      "line": 309,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "311",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 309,
+      "col": 49
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "316",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 322,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "326",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 331,
+      "col": 38
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "328",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 334,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "333",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 336,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "339",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 341,
+      "col": 22
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "345",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 346,
+      "col": 22
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "346",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 349,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "350",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 352,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "354",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 362,
+      "col": 23
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "355",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 362,
+      "col": 37
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "358",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 363,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "368",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 379,
+      "col": 36
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "369",
+      "mutator": "MethodExpression",
+      "replacement": "allTags",
+      "line": 380,
+      "col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "370",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 380,
+      "col": 40
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "371",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 380,
+      "col": 47
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "372",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 380,
+      "col": 47
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "373",
+      "mutator": "LogicalOperator",
+      "replacement": "!t.startsWith(\"evo-dead-\") || t !== \"evo-adopted\"",
+      "line": 380,
+      "col": 47
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "374",
+      "mutator": "BooleanLiteral",
+      "replacement": "t.startsWith(\"evo-dead-\")",
+      "line": 380,
+      "col": 47
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "375",
+      "mutator": "MethodExpression",
+      "replacement": "t.endsWith(\"evo-dead-\")",
+      "line": 380,
+      "col": 48
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "376",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 380,
+      "col": 61
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "377",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 380,
+      "col": 77
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "378",
+      "mutator": "EqualityOperator",
+      "replacement": "t === \"evo-adopted\"",
+      "line": 380,
+      "col": 77
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "379",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 380,
+      "col": 83
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "380",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 384,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "381",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 384,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "382",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 384,
+      "col": 43
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "383",
+      "mutator": "MethodExpression",
+      "replacement": "fs.readFileSync(paths.lessonsFile, \"utf-8\")",
+      "line": 385,
+      "col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "385",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 386,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "386",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 386,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "387",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 386,
+      "col": 22
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "388",
+      "mutator": "MethodExpression",
+      "replacement": "content.split(\"\\n\")",
+      "line": 387,
+      "col": 27
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "389",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 387,
+      "col": 41
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "390",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 387,
+      "col": 54
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "391",
+      "mutator": "MethodExpression",
+      "replacement": "l",
+      "line": 387,
+      "col": 61
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "392",
+      "mutator": "MethodExpression",
+      "replacement": "allTags",
+      "line": 391,
+      "col": 26
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "393",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 391,
+      "col": 41
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "394",
+      "mutator": "MethodExpression",
+      "replacement": "t.endsWith(\"evo-dead-\")",
+      "line": 391,
+      "col": 48
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "395",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 391,
+      "col": 61
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "396",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 391,
+      "col": 79
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "397",
+      "mutator": "MethodExpression",
+      "replacement": "t",
+      "line": 391,
+      "col": 86
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "398",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 391,
+      "col": 94
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "399",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 393,
+      "col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "404",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 398,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "405",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 398,
+      "col": 49
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "406",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 398,
+      "col": 49
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "407",
+      "mutator": "EqualityOperator",
+      "replacement": "deadBranches.length >= 0",
+      "line": 398,
+      "col": 49
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "408",
+      "mutator": "EqualityOperator",
+      "replacement": "deadBranches.length <= 0",
+      "line": 398,
+      "col": 49
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "409",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 398,
+      "col": 75
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "410",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 398,
+      "col": 98
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "411",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 398,
+      "col": 109
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "412",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 399,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "413",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 399,
+      "col": 31
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "414",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 399,
+      "col": 39
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "415",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 400,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "418",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 408,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "427",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 412,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "430",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 417,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "431",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 417,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "432",
+      "mutator": "EqualityOperator",
+      "replacement": "originalBranch === rootBranch",
+      "line": 417,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "439",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 423,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "440",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 424,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "441",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 424,
+      "col": 14
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "442",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 424,
+      "col": 21
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "443",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 424,
+      "col": 27
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "449",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 427,
+      "col": 44
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "450",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 428,
+      "col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "456",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 441,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "457",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 441,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "458",
+      "mutator": "EqualityOperator",
+      "replacement": "current === rootBranch",
+      "line": 441,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "460",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 445,
+      "col": 39
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "466",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 453,
+      "col": 34
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "467",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 453,
+      "col": 35
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "468",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 453,
+      "col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "469",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 453,
+      "col": 53
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "472",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 455,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "473",
+      "mutator": "LogicalOperator",
+      "replacement": "branch === rootBranch && defaultNames.has(branch)",
+      "line": 455,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "474",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 455,
+      "col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "480",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 464,
+      "col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "485",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 465,
+      "col": 59
+    },
+    {
+      "file": "packages/gitevo/dist/operations.js",
+      "id": "486",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 467,
+      "col": 12
+    }
+  ]
+}

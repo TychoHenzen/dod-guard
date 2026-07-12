@@ -1,0 +1,45 @@
+{
+  "source": "packages/dod-guard/src/regression.ts",
+  "date": "2026-07-12T19:56:45.901Z",
+  "summary": {
+    "total": 25,
+    "killed": 21,
+    "survived": 4,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/regression.js",
+      "id": "1",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 13,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/regression.js",
+      "id": "0",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 13,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/regression.js",
+      "id": "10",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 17,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/regression.js",
+      "id": "22",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 23,
+      "col": 21
+    }
+  ]
+}

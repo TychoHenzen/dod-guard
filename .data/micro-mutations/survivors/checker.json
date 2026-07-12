@@ -1,0 +1,1725 @@
+{
+  "source": "packages/dod-guard/src/checker.ts",
+  "date": "2026-07-12T19:47:39.500Z",
+  "summary": {
+    "total": 567,
+    "killed": 252,
+    "survived": 214,
+    "timeout": 0,
+    "unviable": 101
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "7",
+      "mutator": "EqualityOperator",
+      "replacement": "node.children.length >= 0",
+      "line": 12,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "6",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 12,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "29",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 35,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "30",
+      "mutator": "EqualityOperator",
+      "replacement": "node.children.length >= 0",
+      "line": 35,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "37",
+      "mutator": "MethodExpression",
+      "replacement": "nodes.every(nodeDraftOrDescendant)",
+      "line": 41,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "40",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 45,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "41",
+      "mutator": "EqualityOperator",
+      "replacement": "depth > parts.length",
+      "line": 45,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "51",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 51,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "52",
+      "mutator": "LogicalOperator",
+      "replacement": "!Number.isInteger(idx) && idx < 0",
+      "line": 51,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "54",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 51,
+      "col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "58",
+      "mutator": "EqualityOperator",
+      "replacement": "idx > nodes.length",
+      "line": 51,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "66",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 54,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "67",
+      "mutator": "LogicalOperator",
+      "replacement": "depth === parts.length - 2 || parts[parts.length - 1] === \"children\"",
+      "line": 54,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "68",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 54,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "69",
+      "mutator": "EqualityOperator",
+      "replacement": "depth !== parts.length - 2",
+      "line": 54,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "70",
+      "mutator": "ArithmeticOperator",
+      "replacement": "parts.length + 2",
+      "line": 54,
+      "col": 61
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "79",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 57,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "84",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 63,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "102",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 76,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "103",
+      "mutator": "LogicalOperator",
+      "replacement": "leaf.node.command || leaf.node.predicate",
+      "line": 76,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "107",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 85,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "108",
+      "mutator": "BooleanLiteral",
+      "replacement": "hasDraftNodes(nodes)",
+      "line": 86,
+      "col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "113",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 91,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "114",
+      "mutator": "EqualityOperator",
+      "replacement": "node.children.length >= 0",
+      "line": 91,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "130",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.type",
+      "line": 113,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "131",
+      "mutator": "LogicalOperator",
+      "replacement": "node.predicate?.value && \"\"",
+      "line": 113,
+      "col": 63
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "132",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.value",
+      "line": 113,
+      "col": 63
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "133",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 113,
+      "col": 88
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "134",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 114,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "135",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 114,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "136",
+      "mutator": "EqualityOperator",
+      "replacement": "node.predicate?.lower_is_better === undefined",
+      "line": 114,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "137",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.lower_is_better",
+      "line": 114,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "140",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 116,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "142",
+      "mutator": "EqualityOperator",
+      "replacement": "node.advisory === undefined",
+      "line": 116,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "144",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 120,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "151",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 127,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "153",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 127,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "156",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 128,
+      "col": 61
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "157",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 * 1024 / 1024",
+      "line": 131,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "158",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 / 1024",
+      "line": 131,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "159",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 133,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "161",
+      "mutator": "MethodExpression",
+      "replacement": "stdout + stderr",
+      "line": 135,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "163",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + start",
+      "line": 135,
+      "col": 85
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "165",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + start",
+      "line": 138,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "166",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 140,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "167",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 140,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "168",
+      "mutator": "MethodExpression",
+      "replacement": "command",
+      "line": 140,
+      "col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "169",
+      "mutator": "LogicalOperator",
+      "replacement": "execErr.code && 1",
+      "line": 142,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "170",
+      "mutator": "LogicalOperator",
+      "replacement": "execErr.stdout && \"\"",
+      "line": 143,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "172",
+      "mutator": "LogicalOperator",
+      "replacement": "execErr.stderr && \"\"",
+      "line": 144,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "174",
+      "mutator": "MethodExpression",
+      "replacement": "stdout + stderr",
+      "line": 145,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "177",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 146,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "184",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 155,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "185",
+      "mutator": "LogicalOperator",
+      "replacement": "(exitCode === 127 || exitCode === 9009) && /not recognized|command not found|no such file/i.test(stderr + (execErr.messa",
+      "line": 155,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "186",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 155,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "187",
+      "mutator": "LogicalOperator",
+      "replacement": "exitCode === 127 && exitCode === 9009",
+      "line": 155,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "188",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 155,
+      "col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "190",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 156,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "192",
+      "mutator": "ArithmeticOperator",
+      "replacement": "stderr - (execErr.message ?? \"\")",
+      "line": 157,
+      "col": 67
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "193",
+      "mutator": "LogicalOperator",
+      "replacement": "execErr.message && \"\"",
+      "line": 157,
+      "col": 77
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "196",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 158,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "201",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 167,
+      "col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "202",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 167,
+      "col": 55
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "203",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 167,
+      "col": 55
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "204",
+      "mutator": "LogicalOperator",
+      "replacement": "stderr.slice(0, 2000) && undefined",
+      "line": 167,
+      "col": 55
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "205",
+      "mutator": "MethodExpression",
+      "replacement": "stderr",
+      "line": 167,
+      "col": 55
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "224",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 194,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "228",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 197,
+      "col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "229",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 197,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "231",
+      "mutator": "MethodExpression",
+      "replacement": "allLeaves",
+      "line": 198,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "233",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 198,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "238",
+      "mutator": "BooleanLiteral",
+      "replacement": "target",
+      "line": 202,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "237",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 198,
+      "col": 98
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "239",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 202,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "240",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 202,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "246",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 206,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "248",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 209,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "249",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 209,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "250",
+      "mutator": "EqualityOperator",
+      "replacement": "target.refinement !== \"concrete\"",
+      "line": 209,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "251",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 209,
+      "col": 36
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "252",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 209,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "254",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 214,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "255",
+      "mutator": "MethodExpression",
+      "replacement": "allLeaves",
+      "line": 215,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "256",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 215,
+      "col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "257",
+      "mutator": "BooleanLiteral",
+      "replacement": "inScopePaths.has(l.node_path)",
+      "line": 215,
+      "col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "285",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 233,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "286",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 233,
+      "col": 74
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "288",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 234,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "290",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 234,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "291",
+      "mutator": "EqualityOperator",
+      "replacement": "node.children.length >= 0",
+      "line": 234,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "292",
+      "mutator": "EqualityOperator",
+      "replacement": "node.children.length <= 0",
+      "line": 234,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "293",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 234,
+      "col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "294",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 237,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "300",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 240,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "301",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 240,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "302",
+      "mutator": "EqualityOperator",
+      "replacement": "node.refinement !== \"draft\"",
+      "line": 240,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "303",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 240,
+      "col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "304",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 240,
+      "col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "305",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 241,
+      "col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "306",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 247,
+      "col": 83
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "307",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 248,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "309",
+      "mutator": "LogicalOperator",
+      "replacement": "!targetPath && outOfScope.length === 0",
+      "line": 248,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "310",
+      "mutator": "BooleanLiteral",
+      "replacement": "targetPath",
+      "line": 248,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "311",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 248,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "312",
+      "mutator": "EqualityOperator",
+      "replacement": "outOfScope.length !== 0",
+      "line": 248,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "328",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 266,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "332",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 266,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "333",
+      "mutator": "BooleanLiteral",
+      "replacement": "node.advisory",
+      "line": 266,
+      "col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "334",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "line": 267,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "335",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 268,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "340",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.type",
+      "line": 268,
+      "col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "342",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 268,
+      "col": 71
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "343",
+      "mutator": "EqualityOperator",
+      "replacement": "node.predicate?.type !== \"review\"",
+      "line": 268,
+      "col": 71
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "344",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.type",
+      "line": 268,
+      "col": 71
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "345",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 268,
+      "col": 96
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "348",
+      "mutator": "LogicalOperator",
+      "replacement": "result.status === \"skipped\" || isManualOrReview",
+      "line": 269,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "349",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 269,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "356",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 278,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "372",
+      "mutator": "LogicalOperator",
+      "replacement": "node?.title && a.node_path",
+      "line": 285,
+      "col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "373",
+      "mutator": "OptionalChaining",
+      "replacement": "node.title",
+      "line": 285,
+      "col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "381",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 300,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "384",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 301,
+      "col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "385",
+      "mutator": "MethodExpression",
+      "replacement": "[...amendmentCounts.entries()]",
+      "line": 304,
+      "col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "388",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 305,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "390",
+      "mutator": "EqualityOperator",
+      "replacement": "v.count >= 2",
+      "line": 305,
+      "col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "399",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 308,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "400",
+      "mutator": "LogicalOperator",
+      "replacement": "!targetPath || draftCount === 0",
+      "line": 308,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "402",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 308,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "408",
+      "mutator": "ArithmeticOperator",
+      "replacement": "inScope.length - outOfScope.length",
+      "line": 310,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "409",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 311,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "410",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 311,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "411",
+      "mutator": "LogicalOperator",
+      "replacement": "!targetPath && concreteCount > 5 || draftCount > 0",
+      "line": 311,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "412",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 311,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "413",
+      "mutator": "LogicalOperator",
+      "replacement": "!targetPath || concreteCount > 5",
+      "line": 311,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "414",
+      "mutator": "BooleanLiteral",
+      "replacement": "targetPath",
+      "line": 311,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "415",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 311,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "416",
+      "mutator": "EqualityOperator",
+      "replacement": "concreteCount >= 5",
+      "line": 311,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "417",
+      "mutator": "EqualityOperator",
+      "replacement": "concreteCount <= 5",
+      "line": 311,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "436",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 326,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "438",
+      "mutator": "MethodExpression",
+      "replacement": "leafResults",
+      "line": 328,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "439",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 328,
+      "col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "440",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 328,
+      "col": 53
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "441",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 328,
+      "col": 53
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "442",
+      "mutator": "EqualityOperator",
+      "replacement": "r.status === \"draft\"",
+      "line": 328,
+      "col": 53
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "443",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 328,
+      "col": 66
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "444",
+      "mutator": "MethodExpression",
+      "replacement": "leafResults",
+      "line": 329,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "445",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 329,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "446",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 329,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "447",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 329,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "448",
+      "mutator": "EqualityOperator",
+      "replacement": "r.status !== \"pass\"",
+      "line": 329,
+      "col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "449",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 329,
+      "col": 62
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "450",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 331,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "451",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 332,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "452",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 332,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "453",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 332,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "454",
+      "mutator": "EqualityOperator",
+      "replacement": "draftCount >= 0",
+      "line": 332,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "455",
+      "mutator": "EqualityOperator",
+      "replacement": "draftCount <= 0",
+      "line": 332,
+      "col": 64
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "456",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 332,
+      "col": 81
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "457",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 332,
+      "col": 128
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "458",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 334,
+      "col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "460",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 335,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "459",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 335,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "461",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 335,
+      "col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "462",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 336,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "463",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 338,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "464",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 338,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "465",
+      "mutator": "LogicalOperator",
+      "replacement": "!targetPath || manualUnverified > 0",
+      "line": 338,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "466",
+      "mutator": "BooleanLiteral",
+      "replacement": "targetPath",
+      "line": 338,
+      "col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "467",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 338,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "468",
+      "mutator": "EqualityOperator",
+      "replacement": "manualUnverified >= 0",
+      "line": 338,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "469",
+      "mutator": "EqualityOperator",
+      "replacement": "manualUnverified <= 0",
+      "line": 338,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "470",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 338,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "471",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 339,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "472",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 341,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "473",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 341,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "474",
+      "mutator": "EqualityOperator",
+      "replacement": "amendmentWarnings.length >= 0",
+      "line": 341,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "476",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 341,
+      "col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "475",
+      "mutator": "EqualityOperator",
+      "replacement": "amendmentWarnings.length <= 0",
+      "line": 341,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "477",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 342,
+      "col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "478",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 342,
+      "col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "480",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 343,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "479",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 342,
+      "col": 97
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "481",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 345,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "482",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 345,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "485",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 348,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "486",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 348,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "487",
+      "mutator": "LogicalOperator",
+      "replacement": "!targetPath && draftCount > 0 || !suggestScoped",
+      "line": 348,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "488",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 348,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "489",
+      "mutator": "LogicalOperator",
+      "replacement": "!targetPath || draftCount > 0",
+      "line": 348,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "490",
+      "mutator": "BooleanLiteral",
+      "replacement": "targetPath",
+      "line": 348,
+      "col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "491",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 348,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "492",
+      "mutator": "EqualityOperator",
+      "replacement": "draftCount >= 0",
+      "line": 348,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "494",
+      "mutator": "BooleanLiteral",
+      "replacement": "suggestScoped",
+      "line": 348,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "493",
+      "mutator": "EqualityOperator",
+      "replacement": "draftCount <= 0",
+      "line": 348,
+      "col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "495",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 348,
+      "col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "496",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 349,
+      "col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "497",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 352,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "498",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 353,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "499",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 353,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "500",
+      "mutator": "EqualityOperator",
+      "replacement": "guidance.length >= 0",
+      "line": 353,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "502",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "line": 354,
+      "col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "501",
+      "mutator": "EqualityOperator",
+      "replacement": "guidance.length <= 0",
+      "line": 353,
+      "col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "504",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 354,
+      "col": 51
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "503",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 354,
+      "col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "516",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 374,
+      "col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "517",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 374,
+      "col": 74
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "519",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 375,
+      "col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "521",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 375,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "522",
+      "mutator": "EqualityOperator",
+      "replacement": "node.children.length >= 0",
+      "line": 375,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "524",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 375,
+      "col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "523",
+      "mutator": "EqualityOperator",
+      "replacement": "node.children.length <= 0",
+      "line": 375,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "525",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 378,
+      "col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "531",
+      "mutator": "LogicalOperator",
+      "replacement": "node.intent && node.title",
+      "line": 383,
+      "col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/checker.js",
+      "id": "533",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "line": 385,
+      "col": 26
+    }
+  ]
+}

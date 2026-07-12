@@ -1,0 +1,797 @@
+{
+  "source": "packages/evomcp/src/solve.ts",
+  "date": "2026-07-12T19:49:47.985Z",
+  "summary": {
+    "total": 177,
+    "killed": 48,
+    "survived": 98,
+    "timeout": 1,
+    "unviable": 30
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "1",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 23,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "0",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 22,
+      "col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 24,
+      "col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "3",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 24,
+      "col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 24,
+      "col": 60
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "5",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 25,
+      "col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "7",
+      "mutator": "LogicalOperator",
+      "replacement": "diff && null",
+      "line": 25,
+      "col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 39,
+      "col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "14",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 43,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "17",
+      "mutator": "OptionalChaining",
+      "replacement": "onProgress(\"WARNING: deepclaude proxy not running. Attempting direct mode with DEEPSEEK_API_KEY...\")",
+      "line": 44,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "21",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 52,
+      "col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 59,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "24",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "line": 61,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "36",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 69,
+      "col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "37",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 70,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "38",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 71,
+      "col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "39",
+      "mutator": "MethodExpression",
+      "replacement": "r.output",
+      "line": 71,
+      "col": 58
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "40",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 73,
+      "col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "43",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 81,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "45",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 81,
+      "col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "46",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 82,
+      "col": 32
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "48",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 83,
+      "col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "49",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i - 1",
+      "line": 83,
+      "col": 32
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "50",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + startTime",
+      "line": 84,
+      "col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "53",
+      "mutator": "LogicalOperator",
+      "replacement": "captureDiff(spec.cwd) && `claude -p output (${r.exitCode}):\\n${r.output.slice(0, 500)}`",
+      "line": 87,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "56",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 92,
+      "col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "61",
+      "mutator": "MethodExpression",
+      "replacement": "candidates.filter(c => c.status === \"failed\" && c.verdict).sort((a, b) => {\n  const aCode = a.verdict?.exit_code ?? 1;\n ",
+      "line": 99,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "62",
+      "mutator": "MethodExpression",
+      "replacement": "candidates.filter(c => c.status === \"failed\" && c.verdict)",
+      "line": 99,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "63",
+      "mutator": "MethodExpression",
+      "replacement": "candidates",
+      "line": 99,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "64",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 100,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "65",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 100,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "66",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 100,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "67",
+      "mutator": "LogicalOperator",
+      "replacement": "c.status === \"failed\" || c.verdict",
+      "line": 100,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "68",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 100,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "69",
+      "mutator": "EqualityOperator",
+      "replacement": "c.status !== \"failed\"",
+      "line": 100,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "70",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 100,
+      "col": 37
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "71",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 101,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "72",
+      "mutator": "LogicalOperator",
+      "replacement": "a.verdict?.exit_code && 1",
+      "line": 102,
+      "col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "73",
+      "mutator": "OptionalChaining",
+      "replacement": "a.verdict.exit_code",
+      "line": 102,
+      "col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "74",
+      "mutator": "LogicalOperator",
+      "replacement": "b.verdict?.exit_code && 1",
+      "line": 103,
+      "col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "75",
+      "mutator": "OptionalChaining",
+      "replacement": "b.verdict.exit_code",
+      "line": 103,
+      "col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "76",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 104,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "77",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 104,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "78",
+      "mutator": "EqualityOperator",
+      "replacement": "aCode === bCode",
+      "line": 104,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "80",
+      "mutator": "ArithmeticOperator",
+      "replacement": "(b.verdict?.output?.length ?? 0) + (a.verdict?.output?.length ?? 0)",
+      "line": 106,
+      "col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "81",
+      "mutator": "LogicalOperator",
+      "replacement": "b.verdict?.output?.length && 0",
+      "line": 106,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "82",
+      "mutator": "OptionalChaining",
+      "replacement": "b.verdict?.output.length",
+      "line": 106,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "83",
+      "mutator": "OptionalChaining",
+      "replacement": "b.verdict.output",
+      "line": 106,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "84",
+      "mutator": "LogicalOperator",
+      "replacement": "a.verdict?.output?.length && 0",
+      "line": 106,
+      "col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "85",
+      "mutator": "OptionalChaining",
+      "replacement": "a.verdict?.output.length",
+      "line": 106,
+      "col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "86",
+      "mutator": "OptionalChaining",
+      "replacement": "a.verdict.output",
+      "line": 106,
+      "col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "87",
+      "mutator": "MethodExpression",
+      "replacement": "Math.min(2, Math.ceil(numParallel / 2))",
+      "line": 108,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "88",
+      "mutator": "ArithmeticOperator",
+      "replacement": "numParallel * 2",
+      "line": 108,
+      "col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "89",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 109,
+      "col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "90",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 110,
+      "col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "91",
+      "mutator": "EqualityOperator",
+      "replacement": "repair < MAX_REPAIRS",
+      "line": 110,
+      "col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "92",
+      "mutator": "EqualityOperator",
+      "replacement": "repair > MAX_REPAIRS",
+      "line": 110,
+      "col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "94",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "line": 110,
+      "col": 63
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "97",
+      "mutator": "LogicalOperator",
+      "replacement": "candidate.verdict?.output && \"\"",
+      "line": 112,
+      "col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "98",
+      "mutator": "OptionalChaining",
+      "replacement": "candidate.verdict.output",
+      "line": 112,
+      "col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "100",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "line": 113,
+      "col": 54
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "101",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 120,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "102",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 120,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "108",
+      "mutator": "MethodExpression",
+      "replacement": "result.output",
+      "line": 129,
+      "col": 82
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "110",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 130,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "122",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 143,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "123",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 143,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "124",
+      "mutator": "LogicalOperator",
+      "replacement": "candidate.failure_signature || sig === candidate.failure_signature",
+      "line": 143,
+      "col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "125",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 143,
+      "col": 48
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "126",
+      "mutator": "EqualityOperator",
+      "replacement": "sig !== candidate.failure_signature",
+      "line": 143,
+      "col": 48
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "134",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 156,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "137",
+      "mutator": "ArithmeticOperator",
+      "replacement": "(sigCounts.get(c.failure_signature) ?? 0) - 1",
+      "line": 157,
+      "col": 48
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "138",
+      "mutator": "LogicalOperator",
+      "replacement": "sigCounts.get(c.failure_signature) && 0",
+      "line": 157,
+      "col": 49
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "139",
+      "mutator": "MethodExpression",
+      "replacement": "[...sigCounts.entries()]",
+      "line": 160,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "141",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 160,
+      "col": 55
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "142",
+      "mutator": "ArithmeticOperator",
+      "replacement": "b[1] + a[1]",
+      "line": 160,
+      "col": 65
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "143",
+      "mutator": "MethodExpression",
+      "replacement": "candidates.filter(c => c.verdict)",
+      "line": 162,
+      "col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "144",
+      "mutator": "MethodExpression",
+      "replacement": "candidates",
+      "line": 162,
+      "col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "146",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "line": 164,
+      "col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "147",
+      "mutator": "ArithmeticOperator",
+      "replacement": "(a.verdict?.exit_code ?? 1) + (b.verdict?.exit_code ?? 1)",
+      "line": 164,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "148",
+      "mutator": "LogicalOperator",
+      "replacement": "a.verdict?.exit_code && 1",
+      "line": 164,
+      "col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "149",
+      "mutator": "OptionalChaining",
+      "replacement": "a.verdict.exit_code",
+      "line": 164,
+      "col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "150",
+      "mutator": "LogicalOperator",
+      "replacement": "b.verdict?.exit_code && 1",
+      "line": 164,
+      "col": 56
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "151",
+      "mutator": "OptionalChaining",
+      "replacement": "b.verdict.exit_code",
+      "line": 164,
+      "col": 56
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "155",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 166,
+      "col": 48
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "157",
+      "mutator": "MethodExpression",
+      "replacement": "bestCandidate?.verdict?.output",
+      "line": 168,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "158",
+      "mutator": "OptionalChaining",
+      "replacement": "bestCandidate?.verdict?.output.slice",
+      "line": 168,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "159",
+      "mutator": "OptionalChaining",
+      "replacement": "bestCandidate?.verdict.output",
+      "line": 168,
+      "col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "162",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 171,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "163",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 172,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "164",
+      "mutator": "LogicalOperator",
+      "replacement": "bestCandidate?.verdict?.exit_code && \"N/A\"",
+      "line": 172,
+      "col": 32
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "165",
+      "mutator": "OptionalChaining",
+      "replacement": "bestCandidate?.verdict.exit_code",
+      "line": 172,
+      "col": 32
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "167",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 172,
+      "col": 69
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "168",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "line": 173,
+      "col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "169",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 173,
+      "col": 84
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "170",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 174,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "171",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 175,
+      "col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/solve.js",
+      "id": "172",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + startTime",
+      "line": 177,
+      "col": 25
+    }
+  ]
+}

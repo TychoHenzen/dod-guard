@@ -1,0 +1,709 @@
+{
+  "source": "packages/evomcp/src/dedup.ts",
+  "date": "2026-07-12T19:40:01.597Z",
+  "summary": {
+    "total": 167,
+    "killed": 77,
+    "survived": 87,
+    "timeout": 3,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "4",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 15,
+      "col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "16",
+      "mutator": "MethodExpression",
+      "replacement": "text.toLowerCase().replace(/[^\\w\\s]/g, \" \").replace(/\\s+/g, \" \")",
+      "line": 37,
+      "col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "17",
+      "mutator": "MethodExpression",
+      "replacement": "text.toUpperCase()",
+      "line": 37,
+      "col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "20",
+      "mutator": "Regex",
+      "replacement": "/[^\\w\\S]/g",
+      "line": 39,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "21",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 39,
+      "col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "22",
+      "mutator": "Regex",
+      "replacement": "/\\s/g",
+      "line": 40,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 40,
+      "col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "27",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 53,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "28",
+      "mutator": "LogicalOperator",
+      "replacement": "tokensA.length === 0 && tokensB.length === 0",
+      "line": 53,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "29",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 53,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "31",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 53,
+      "col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "46",
+      "mutator": "ArithmeticOperator",
+      "replacement": "overlap * shorter.length",
+      "line": 64,
+      "col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "49",
+      "mutator": "EqualityOperator",
+      "replacement": "ratio >= 0.65",
+      "line": 65,
+      "col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "53",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 73,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "54",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 74,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "55",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 75,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "56",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 76,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "57",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 77,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "58",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 78,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "59",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 79,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "60",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 80,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "61",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 81,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "62",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 82,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "63",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 83,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "64",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 84,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "65",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 85,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "66",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 86,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "67",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 87,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "68",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 88,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "69",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 89,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "70",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 90,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "71",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 91,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "72",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 92,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "73",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 93,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "74",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 94,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "75",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 95,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "76",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 96,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "77",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 97,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "78",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 98,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "79",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 99,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "80",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 100,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "81",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 101,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "82",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 102,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "83",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 103,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "84",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 104,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "85",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 105,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "86",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 106,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "87",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 107,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "88",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 108,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "89",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 109,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "90",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 110,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "91",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 111,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "92",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 112,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "93",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 113,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "94",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 114,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "95",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 115,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "96",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 116,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "97",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 117,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "98",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 118,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "99",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 119,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "100",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 120,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "101",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 121,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "102",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 122,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "103",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 123,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "104",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 124,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "105",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 125,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "106",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 126,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "107",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 127,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "108",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 128,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "109",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 129,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "110",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 130,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "111",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 131,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "112",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 132,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "113",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 133,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "114",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 134,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "115",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 135,
+      "col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "121",
+      "mutator": "Regex",
+      "replacement": "/[^\\w\\S]/g",
+      "line": 140,
+      "col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "122",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "line": 140,
+      "col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "123",
+      "mutator": "Regex",
+      "replacement": "/\\s/",
+      "line": 141,
+      "col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "129",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "line": 142,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "130",
+      "mutator": "EqualityOperator",
+      "replacement": "t.length >= 2",
+      "line": 142,
+      "col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "135",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 150,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "136",
+      "mutator": "EqualityOperator",
+      "replacement": "plans.length < 1",
+      "line": 150,
+      "col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "144",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 160,
+      "col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "150",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "line": 163,
+      "col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "152",
+      "mutator": "ArithmeticOperator",
+      "replacement": "totalDistance * allPairs.length",
+      "line": 163,
+      "col": 40
+    },
+    {
+      "file": "packages/evomcp/dist/dedup.js",
+      "id": "156",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= arr.length",
+      "line": 167,
+      "col": 21
+    }
+  ]
+}
