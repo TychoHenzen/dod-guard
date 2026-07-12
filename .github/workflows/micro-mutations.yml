@@ -5,8 +5,17 @@ on:
     - cron: '31 6 * * *'   # 06:31 UTC daily, off-peak minute
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'Selection mode'
+        default: 'dirty'
+        required: false
+        type: choice
+        options:
+          - dirty
+          - all
+          - random
       count:
-        description: 'Files to mutate'
+        description: 'Files to mutate (max in --all/--dirty, exact count in random)'
         default: '3'
         required: false
         type: string
@@ -36,7 +45,13 @@ jobs:
       - name: Run micro-mutations
         id: mutations
         continue-on-error: true
-        run: node scripts/micro-mutations.mjs --dirty
+        run: |
+          MODE_FLAG=""
+          MODE="${{ inputs.mode || 'dirty' }}"
+          if [ "$MODE" = "all" ]; then MODE_FLAG="--all"; fi
+          if [ "$MODE" = "dirty" ]; then MODE_FLAG="--dirty"; fi
+          echo "Mode: $MODE, Flag: $MODE_FLAG"
+          node scripts/micro-mutations.mjs $MODE_FLAG
         env:
           MICRO_MUTATION_COUNT: ${{ inputs.count || 3 }}
 
