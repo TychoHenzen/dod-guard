@@ -6,12 +6,13 @@
 // churn×0.20 + dirty×0.15), runs Stryker scoped to each, updates state JSON
 // and generates a human-readable markdown report. Designed for daily CI cron
 // runs. Tracks SHA-256 fingerprints to detect dirty files (modified since
-// last mutation run).
+// last mutation run). --all mode selects every eligible file regardless of
+// test history.
 //
 // Usage:
-//   node scripts/micro-mutations.mjs [--dry-run] [--init-state] [--never-tested]
+//   node scripts/micro-mutations.mjs [--dry-run] [--init-state] [--all]
 //   MICRO_MUTATION_COUNT=3 node scripts/micro-mutations.mjs
-//   node scripts/micro-mutations.mjs --never-tested   # mutate ALL untested files
+//   node scripts/micro-mutations.mjs --all   # mutate ALL eligible files
 
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -35,7 +36,7 @@ const W_CHURN = parseFloat(process.env.CHURN_WEIGHT || "0.20");
 const W_DIRTY = parseFloat(process.env.DIRTY_WEIGHT || "0.15");
 const DRY_RUN = process.argv.includes("--dry-run");
 const INIT_STATE = process.argv.includes("--init-state");
-const NEVER_TESTED = process.argv.includes("--never-tested");
+const ALL_MODE = process.argv.includes("--all");
 
 // Files excluded from mutation testing
 const EXCLUDE_PATTERNS = ["*.test.ts", "types.ts", "constants.ts", "schemas.ts"];
@@ -311,22 +312,20 @@ function selectFiles(state, nowStr, count) {
   }));
   scored.sort((a, b) => b.score - a.score);
 
-  // ── --never-tested mode: select ALL files never tested ────────────────
-  if (NEVER_TESTED) {
-    const untested = scored.filter((s) => {
-      const info = state.files[s.path];
-      return !info.last_tested;
-    });
-    console.log(`--never-tested: ${untested.length} files never tested`);
-    for (const s of untested.slice(0, 10)) {
+  // ── --all mode: select ALL eligible files ────────────────────────────
+  if (ALL_MODE) {
+    const all = [...scored];
+    const dirty = all.filter((s) => s.dirty).length;
+    console.log(`--all: ${all.length} files (${dirty} dirty)`);
+    for (const s of all.slice(0, 10)) {
       console.log(
         `  ${(s.score * 100).toFixed(1)}%  ${s.path}  (stale=${s.stalenessDays}d, lines=${s.lines}, churn=${s.churn90d}, dirty=${s.dirty})`,
       );
     }
-    if (untested.length > 10) {
-      console.log(`  ... and ${untested.length - 10} more`);
+    if (all.length > 10) {
+      console.log(`  ... and ${all.length - 10} more`);
     }
-    return untested.map((s) => s.path);
+    return all.map((s) => s.path);
   }
 
   console.log("Top 10 priority files:");
@@ -617,7 +616,7 @@ function main() {
   console.log(
     `count=${COUNT}, staleness=${W_STALENESS}, size=${W_SIZE}, churn=${W_CHURN}, dirty=${W_DIRTY}`,
   );
-  console.log(`dry-run=${DRY_RUN}, init-state=${INIT_STATE}, never-tested=${NEVER_TESTED}`);
+  console.log(`dry-run=${DRY_RUN}, init-state=${INIT_STATE}, all=${ALL_MODE}`);
 
   const state = loadState();
 
@@ -643,8 +642,8 @@ function main() {
     return;
   }
 
-  if (COUNT <= 0 && !NEVER_TESTED) {
-    console.log("MICRO_MUTATION_COUNT=0 and --never-tested not set, nothing to do.");
+  if (COUNT <= 0 && !ALL_MODE) {
+    console.log("MICRO_MUTATION_COUNT=0 and --all not set, nothing to do.");
     return;
   }
 

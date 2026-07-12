@@ -148,9 +148,9 @@
         "status": "error",
         "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src"
       },
-      "lines": 780,
+      "lines": 784,
       "error_count": 1,
-      "recent_commits": 16,
+      "recent_commits": 17,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
@@ -501,9 +501,9 @@
         "status": "error",
         "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/vault.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/"
       },
-      "lines": 172,
+      "lines": 173,
       "error_count": 1,
-      "recent_commits": 10,
+      "recent_commits": 11,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     }

@@ -1,6 +1,6 @@
 # Micro-Mutation Report
 
-**Generated**: 2026-07-12 | **Commit**: `90beeef`
+**Generated**: 2026-07-12 | **Commit**: `5e78f59`
 
 ## Summary
 
@@ -32,8 +32,8 @@
 | 89% | packages/evomcp/src/dedup.ts | 170 | 2 | 90d | 🟡 | — | — | ⬜ |
 | 89% | packages/dod-guard/src/tools/dod-create.ts | 86 | 3 | 90d | 🟡 | — | — | ⬜ |
 | 87% | packages/dod-guard/src/format-result.ts | 101 | 2 | 90d | 🟡 | — | — | ⬜ |
-| 61% | packages/dod-guard/src/index.ts | 780 | 16 | 0d | 🟡 | 2026-07-12 | 0/0 killed | ❌ |
-| 55% | packages/obsidian-rag/src/vault.ts | 172 | 10 | 0d | 🟡 | 2026-07-12 | 0/0 killed | ❌ |
+| 61% | packages/dod-guard/src/index.ts | 784 | 17 | 0d | 🟡 | 2026-07-12 | 0/0 killed | ❌ |
+| 55% | packages/obsidian-rag/src/vault.ts | 173 | 11 | 0d | 🟡 | 2026-07-12 | 0/0 killed | ❌ |
 | 55% | packages/evomcp/src/index.ts | 270 | 9 | 0d | 🟡 | 2026-07-12 | 0/0 killed | ❌ |
 | 55% | packages/obsidian-rag/src/index.ts | 161 | 15 | 0d | 🟡 | 2026-07-12 | 0/0 killed | ❌ |
 | 55% | packages/dod-guard/src/evaluate-proof.ts | 654 | 7 | 0d | 🟡 | 2026-07-12 | 0/0 killed | ❌ |
