@@ -16,8 +16,6 @@ export async function handleDodCreate(params) {
     const osError = await checkCommandsForOs(roots, resolvedCwd);
     if (osError)
         return osError.content?.[0]?.text ?? "ERROR: OS validation failed.";
-    // Baseline enforcement (advisory-only at creation)
-    validateBaseline(type, extractBaselineSteps(roots), skip_reasons);
     const id = store.generateId();
     const date = new Date().toISOString().split("T")[0];
     const fingerprint = computeProofFingerprint(roots);
