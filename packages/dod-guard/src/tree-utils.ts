@@ -127,10 +127,7 @@ function suggestionFor(tool: string): string {
 
 import { extractExecutableCommands } from "./checker.js";
 
-export async function checkCommandsForOs(
-  roots: TaskNode[],
-  cwd: string,
-): Promise<string | null> {
+export async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promise<string | null> {
   const commands = extractExecutableCommands(roots);
   const missing = await findMissingTools(commands, cwd);
 

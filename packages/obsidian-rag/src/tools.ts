@@ -328,7 +328,10 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
       content: z.string().describe("Memory body content (markdown)"),
       type: z.enum(["user", "feedback", "project", "reference"]).default("reference").describe("Memory type"),
       metadata: z.record(z.unknown()).optional().describe("Additional metadata key-value pairs"),
-      overwrite: z.boolean().default(true).describe("If false, refuse to overwrite an existing memory with the same id"),
+      overwrite: z
+        .boolean()
+        .default(true)
+        .describe("If false, refuse to overwrite an existing memory with the same id"),
     },
     async ({ id, title, description, content, type, metadata, overwrite }) => {
       const vault = await waitForVault();
