@@ -48,9 +48,22 @@ function vaultGuard(): VaultInfo {
   return selectedVault;
 }
 
-/** Await selection if in progress, then guard. */
+/** Await selection if in progress, then guard. Auto-selects last vault when none selected. */
 async function waitForVault(): Promise<VaultInfo> {
   if (selectedVault) return selectedVault;
+
+  // ── Auto-select from last vault ──
+  if (!selectedVault) {
+    const lastPath = store.getLastVaultPath();
+    if (lastPath) {
+      const vault = store.getVaultByPath(lastPath);
+      if (vault && existsSync(vault.path) && existsSync(join(vault.path, ".obsidian"))) {
+        selectedVault = vault;
+        return selectedVault;
+      }
+    }
+  }
+
   if (_selectPromise) {
     try {
       await _selectPromise;

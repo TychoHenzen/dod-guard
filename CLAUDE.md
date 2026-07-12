@@ -20,6 +20,9 @@ npm workspaces monorepo with four MCP server plugins for Claude Code, distribute
 All commands from the **monorepo root**:
 
 ```bash
+# Clean build (recommended — removes stale .js from deleted .ts sources)
+npm run clean && npm run build
+
 # Build all packages (tsc)
 npm run build -w packages/<name>     # single package
 npm run build                         # all packages

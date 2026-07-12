@@ -18,7 +18,7 @@ Two-phase workflow for complex multi-sub-problem work. A ratchet only moves forw
 
 **Phase A (Setup — this session, interactive):** Triage → research → requirements via AskUserQuestion → DoD tree → contrarian review → baseline check → gitevo init → **user lock-in gate**. You do not write a single line of implementation code in Phase A.
 
-**Phase B (Execution — /loop dynamic, autonomous):** User runs `/loop` to enter dynamic mode. The agent then self-paces via `ScheduleWakeup`, processing one sub-problem per iteration. Each iteration: refine drafts → implement → scoped dod_check → full regression check → learn → checkpoint → schedule next wakeup. Loop terminates via `ScheduleWakeup(stop=true)` when dod_check returns PASS, or when escalated for manual intervention.
+**Phase B (Execution — /loop dynamic, autonomous):** User runs `/loop dod-guard:ratchet phase-b` (bare `/loop` shows usage — always include a prompt argument). The agent then self-paces via `ScheduleWakeup`, processing one sub-problem per iteration. Each iteration: refine drafts → implement → scoped dod_check → full regression check → learn → checkpoint → schedule next wakeup. Loop terminates via `ScheduleWakeup(stop=true)` when dod_check returns PASS, or when escalated for manual intervention.
 
 **Announce at start:** "Using the ratchet workflow — Phase A: requirements gathering + DoD creation (no code yet). Phase B: autonomous /loop execution with ratchet gates every cycle."
 
@@ -218,7 +218,7 @@ roots:
 - **Draft leaf** — `refinement: "draft"`, has `intent`. Use when implementation-dependent.
 - **Concrete leaf** — `refinement: "concrete"`, has `command`, `predicate`, `description`, `category`. Use when known upfront.
 - **3 levels max** — roots → 2-4 task groups per root → leaves.
-- **~40-60% concrete, ~40-60% draft** — some proofs known upfront, others discovered during implementation.
+- **Draft only when genuinely unresolved.** If the proof command, predicate, and description are known at create time, make it concrete. Drafts exist to stop the LLM from guessing when circumstances are unclear — they're not a quota to fill. Use drafts when there's uncertainty or ambiguity about approach.
 
 ### Sub-Problem Identification
 
@@ -323,9 +323,9 @@ Phase B runs autonomously via `/loop` (dynamic mode — no fixed interval). Each
 
 ## B.1 Entering Loop Dynamic Mode
 
-After user confirms in A.8, tell the user: **"Phase A complete. Run `/loop` to begin Phase B autonomous execution."**
+After user confirms in A.8, tell the user: **"Phase A complete. Run `/loop dod-guard:ratchet phase-b` to begin Phase B autonomous execution."**
 
-The user runs `/loop` with no arguments — this enters self-paced dynamic mode. The agent then takes control: it calls `ScheduleWakeup` to self-pace through sub-problems, one per iteration.
+The user runs `/loop dod-guard:ratchet phase-b` — bare `/loop` without a prompt argument shows usage info and does NOT enter dynamic mode. Always provide a prompt argument.
 
 ### First Iteration (Bootstrapping)
 
@@ -391,6 +391,7 @@ EXACTLY the wrong instinct here. Read before every iteration:
 
 ## Process (one sub-problem, one iteration)
 
+0. FORMAT: Run `biome check --write` on changed files BEFORE dod_check. Biome format/lint errors in full dod_check runs catch stale state that scoped runs miss.
 1. REFINE: dod_refine any draft nodes in this subtree to concrete
 2. SPAWN: evo_spawn("baseline" or last checkpoint, "ratchet/<slug>")
 3. IMPLEMENT: cascade (evomcp solve) or direct. See cascade-vs-direct rules.
@@ -611,6 +612,25 @@ mcp__plugin_dod-guard_dod-guard__dod_list()  # dod-guard connected?
 | code-review-graph | Skip A.2.1 impact analysis. Use grep/glob for manual assessment. |
 
 **Minimum viable ratchet:** dod-guard alone. Create DoD (Phase A), implement sub-problems sequentially with dod_check after each (Phase B direct). No cascade, no branching, no persistence — but still a ratchet.
+
+---
+
+## Platform Notes
+
+### Windows (cmd.exe)
+
+- **Globs not expanded by cmd.exe.** `packages/*/src/` in a command string is passed literally to the tool. Use explicit paths or tools that handle their own globbing (e.g. Biome). dod-guard's `dod_create` now warns when glob wildcards are detected.
+- **Use backslashes for findstr paths.** `findstr /C:"pattern" packages\dod-guard\src\file.ts` not forward slashes.
+- **Node test runner** outputs TAP format — never contains the string "tests pass". Use `exit_code` predicate for test commands, never `output_contains`.
+- **Proof commands run on the host OS.** Write them for Windows (`findstr`, `type`, `dir`, `del`), not Unix (`grep`, `cat`, `ls`, `rm`). dod-guard validates tool availability at create time.
+
+### code-review-graph dead_code
+
+- **~50% false positive rate** on `refactor_tool(mode="dead_code")`. Graph parser flags file-level constants used within the same file, and cannot distinguish internal module use from export-only. Always `grep` for the symbol before deleting anything flagged as dead.
+
+### Biome --unsafe
+
+- `biome check --write` skips "unsafe" fixes like unused import removal (Biome classifies import removal as unsafe since it can cause side-effect losses). Use `biome check --write --unsafe` for full cleanup after code extraction. Consider running `--write` without `--unsafe` first, review the output, then add `--unsafe` for import cleanup.
 
 ---
 

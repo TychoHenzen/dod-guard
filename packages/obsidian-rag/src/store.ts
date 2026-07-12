@@ -146,6 +146,11 @@ export class Store {
         embedded_chunks INTEGER DEFAULT 0,
         last_indexed TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS config (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      );
     `);
 
     // Migration: add content column if missing (pre-0.1.2 DBs)
@@ -170,6 +175,24 @@ export class Store {
     const row = this.db.prepare("SELECT * FROM vaults WHERE name = ?").get(name) as any;
     if (!row) return null;
     return { name: row.name, path: row.path, noteCount: row.note_count ?? 0, folderCount: row.folder_count ?? 0 };
+  }
+
+  /** Find a vault by its path. */
+  getVaultByPath(path: string): VaultInfo | null {
+    const row = this.db.prepare("SELECT * FROM vaults WHERE path = ?").get(path) as any;
+    if (!row) return null;
+    return { name: row.name, path: row.path, noteCount: row.note_count ?? 0, folderCount: row.folder_count ?? 0 };
+  }
+
+  // ── Config ────────────────────────────────────────────────────────
+
+  getLastVaultPath(): string | null {
+    const row = this.db.prepare("SELECT value FROM config WHERE key = ?").get("last_selected_vault") as any;
+    return row?.value ?? null;
+  }
+
+  setLastVaultPath(path: string): void {
+    this.db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)").run("last_selected_vault", path);
   }
 
   // ── Notes ────────────────────────────────────────────────────────

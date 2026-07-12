@@ -49,8 +49,14 @@ server.tool(
       .record(z.string())
       .optional()
       .describe("Map from optional proof category to justification for omission."),
+    dod_id: z.string().optional().describe("REJECTED: dod_create creates new DoDs. Use dod_amend to update an existing one."),
   },
   async (params) => {
+    if (params.dod_id) {
+      return {
+        content: [{ type: "text" as const, text: "ERROR: dod_create creates NEW DoDs. To update an existing DoD, use dod_amend for individual proofs or dod_check to verify. The dod_id parameter is not accepted here — it's only for dod_check, dod_amend, and other update tools." }],
+      };
+    }
     const result = await handleDodCreate(params as any);
     return { content: [{ type: "text" as const, text: result }] };
   },
@@ -480,18 +486,44 @@ server.tool(
 
 server.tool(
   "dod_amend",
-  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending.",
+  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons.",
   {
     dod_id: z.string().describe("DoD ID"),
-    node_path: z.string().describe("Dot-separated path to the concrete leaf node"),
+    node_path: z.string().describe("Dot-separated path to the concrete leaf node, or '__meta__' for DoD-level metadata"),
     new_command: z.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: z.string().optional(),
+    new_skip_reasons: z.record(z.string()).optional().describe("(__meta__ only) Replace DoD skip_reasons map"),
     reason: z.string().describe("Why this amendment is needed — logged permanently"),
   },
-  async ({ dod_id, node_path: nodePath, new_command, new_predicate, new_description, reason }) => {
+  async ({ dod_id, node_path: nodePath, new_command, new_predicate, new_description, new_skip_reasons, reason }) => {
     const doc = await store.load(dod_id);
     if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
+
+    // __meta__ path: update DoD-level metadata (skip_reasons)
+    if (nodePath === "__meta__") {
+      if (new_skip_reasons === undefined) {
+        return { content: [{ type: "text" as const, text: "ERROR: node_path='__meta__' requires new_skip_reasons parameter." }] };
+      }
+      const oldSkip = doc.skip_reasons ? { ...doc.skip_reasons } : {};
+      doc.skip_reasons = new_skip_reasons as Record<string, string>;
+      doc.amendments.push({
+        timestamp: new Date().toISOString(),
+        node_path: "__meta__",
+        action: "modified",
+        old_value: oldSkip as any,
+        new_value: doc.skip_reasons as any,
+        reason,
+      });
+      await store.save(doc);
+      await writeMarkdown(doc);
+      return {
+        content: [{
+          type: "text" as const,
+          text: `DoD metadata amended.\n\nSkip reasons updated. ${Object.keys(new_skip_reasons).length} categories.\nReason: ${reason}\n\nRun dod_check to re-verify.`,
+        }],
+      };
+    }
 
     const node = findNodeByPath(doc.roots, nodePath);
     if (!node) return { content: [{ type: "text" as const, text: `ERROR: node not found at path "${nodePath}".` }] };
@@ -644,7 +676,7 @@ server.tool(
       const resolvedCwd = path.resolve(cwd);
 
       const osError = await checkCommandsForOs(parsed.roots, resolvedCwd);
-      if (osError) return osError;
+      if (osError) return { content: [{ type: "text" as const, text: osError }] };
 
       const id = store.generateId();
       const fingerprint = computeProofFingerprint(parsed.roots);

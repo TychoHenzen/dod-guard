@@ -1,4 +1,4 @@
-import { currentOs, findMissingTools, type MissingTool } from "./command-check.js";
+import { currentOs, findMissingTools, hasGlobWildcards, type MissingTool } from "./command-check.js";
 import type { Predicate, ProofCategory, TaskNode } from "./types.js";
 
 // ── Node ID generation ────────────────────────────────────────────────
@@ -130,11 +130,33 @@ import { extractExecutableCommands } from "./checker.js";
 export async function checkCommandsForOs(
   roots: TaskNode[],
   cwd: string,
-): Promise<{ content: { type: "text"; text: string }[] } | null> {
+): Promise<string | null> {
   const commands = extractExecutableCommands(roots);
   const missing = await findMissingTools(commands, cwd);
-  if (missing.length === 0) return null;
-  return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
+
+  const lines: string[] = [];
+
+  // Glob detection — cmd.exe does not expand wildcards in arguments
+  const isWin = process.platform === "win32";
+  if (isWin) {
+    const globCmds = commands.filter(hasGlobWildcards);
+    if (globCmds.length > 0) {
+      lines.push(
+        `WARNING: ${globCmds.length} proof command(s) contain glob wildcards (*, ?, [) — cmd.exe does NOT expand globs.`,
+        "Use explicit paths or tools that handle their own globbing.",
+        "",
+      );
+      for (const cmd of globCmds) lines.push(`  • ${cmd}`);
+      lines.push("");
+    }
+  }
+
+  if (missing.length > 0) {
+    lines.push(formatMissingTools(missing));
+  }
+
+  if (lines.length === 0) return null;
+  return lines.join("\n");
 }
 
 // ── Baseline extraction ───────────────────────────────────────────────

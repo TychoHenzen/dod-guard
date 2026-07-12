@@ -597,22 +597,22 @@ async function hTdd(
   });
 }
 export async function executeProof(node: TaskNode, cwd: string, execFn: ExecFn): Promise<LeafResult> {
+  const isOutOfBand = node.predicate?.type === "manual" || node.predicate?.type === "review";
+  const cmd = node.command || "";
+  const base = { node_path: "", id: node.id, title: node.title, description: node.description ?? "", command: cmd };
+
+  // Manual/review proofs are verified by humans — allow empty commands.
+  if (isOutOfBand) return hManual(node, base);
+
   if (!node.command)
     return {
-      node_path: "",
-      id: node.id,
-      title: node.title,
-      description: node.description ?? "",
-      command: "",
+      ...base,
       status: "fail",
       output: "",
       error: "no command",
       exit_code: -1,
       duration_ms: 0,
     };
-  const cmd = node.command;
-  const base = { node_path: "", id: node.id, title: node.title, description: node.description ?? "", command: cmd };
-  if (node.predicate?.type === "manual" || node.predicate?.type === "review") return hManual(node, base);
   const run = await execFn(cmd, cwd);
   const ef = await hExecFail(run, base);
   if (ef) return ef;

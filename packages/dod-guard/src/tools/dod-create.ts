@@ -31,7 +31,7 @@ export async function handleDodCreate(params: CreateParams): Promise<string> {
 
   // OS validation: concrete leaves only
   const osError = await checkCommandsForOs(roots, resolvedCwd);
-  if (osError) return osError.content?.[0]?.text ?? "ERROR: OS validation failed.";
+  if (osError) return osError;
 
   const id = store.generateId();
   const date = new Date().toISOString().split("T")[0];

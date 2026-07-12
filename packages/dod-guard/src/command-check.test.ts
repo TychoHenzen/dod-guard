@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { extractCommandNames, findMissingTools, suggestionFor } from "./command-check.js";
+import { extractCommandNames, findMissingTools, hasGlobWildcards, suggestionFor } from "./command-check.js";
 
 test("extracts a simple command", () => {
   assert.deepEqual(extractCommandNames("grep -i foo file.txt"), ["grep"], "should extract grep from a simple command");
@@ -89,10 +89,10 @@ test("findMissingTools handles a known-invalid command without crashing", async 
 
 // ── Edge cases: redirection & substitution ───────────────────────────────
 
-test("handles output redirection — extracts command and fd target", () => {
+test("handles output redirection — skips fd numbers", () => {
   const names = extractCommandNames("node app.js > out.txt 2>&1");
-  // 2>&1 redirects stderr to stdout — fd number 1 surfaces as a path-like token
-  assert.deepEqual(names.sort(), ["1", "node"], "should extract node and fd target from redirection command");
+  // fd numbers (like 1 in 2>&1) are never command names.
+  assert.deepEqual(names, ["node"], "should extract only node, not fd target 1");
 });
 
 test("handles input redirection — extracts command before <", () => {
@@ -166,4 +166,33 @@ test("suggestionFor is case-insensitive and handles unknown tools", () => {
   assert.equal(suggestionFor("GREP"), "findstr", "uppercase GREP maps to findstr");
   assert.equal(suggestionFor("Ls"), "dir", "mixed-case Ls maps to dir");
   assert.equal(suggestionFor("nonexistant_tool_xyz"), undefined, "unknown tool returns undefined");
+});
+
+// ── fd-number filtering ──────────────────────────────────────────────
+
+test("extractCommandNames skips bare integers (fd targets from 2>&1)", () => {
+  const names = extractCommandNames("my-tool --flag 2>&1 1>&2");
+  assert.deepEqual(names, ["my-tool"], "should extract only my-tool, skip fd numbers");
+});
+
+// ── Glob detection ───────────────────────────────────────────────────
+
+test("hasGlobWildcards detects unquoted asterisk", () => {
+  assert.equal(hasGlobWildcards("ls *.js"), true, "unquoted * is a glob");
+});
+
+test("hasGlobWildcards ignores quoted asterisk", () => {
+  assert.equal(hasGlobWildcards('grep "*.ts" file'), false, "quoted * is not a glob");
+});
+
+test("hasGlobWildcards detects unquoted question-mark", () => {
+  assert.equal(hasGlobWildcards("ls file?.js"), true, "unquoted ? is a glob");
+});
+
+test("hasGlobWildcards detects bracket range", () => {
+  assert.equal(hasGlobWildcards("rm file[0-9].txt"), true, "unquoted [ is a glob");
+});
+
+test("hasGlobWildcards returns false for plain commands", () => {
+  assert.equal(hasGlobWildcards("node --version"), false, "plain command has no globs");
 });

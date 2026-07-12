@@ -171,9 +171,35 @@ export function extractCommandNames(command: string): string[] {
   const names: string[] = [];
   for (const seg of splitCommands(command)) {
     const tok = firstToken(seg);
+    // Skip bare fd-numbers (e.g. "1" in "2>&1") — never command names.
+    if (tok && /^\d+$/.test(tok)) continue;
     if (tok && hasAlnum(tok) && !names.includes(tok)) names.push(tok);
   }
   return names;
+}
+
+// ── Glob detection ────────────────────────────────────────────────────────
+
+const GLOB_CHARS = /[*?[]/;
+
+/**
+ * Check whether a command string contains unquoted glob wildcards.
+ * cmd.exe does not expand globs — tools must accept literal paths.
+ */
+export function hasGlobWildcards(command: string): boolean {
+  let quote: '"' | "'" | null = null;
+  for (const c of command) {
+    if (quote) {
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      continue;
+    }
+    if (GLOB_CHARS.test(c)) return true;
+  }
+  return false;
 }
 
 // ── Tool existence ────────────────────────────────────────────────────────

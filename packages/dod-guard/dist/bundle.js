@@ -22984,22 +22984,19 @@ async function hTdd(n, r, b, cmd, cwd) {
   });
 }
 async function executeProof(node, cwd, execFn) {
+  const isOutOfBand = node.predicate?.type === "manual" || node.predicate?.type === "review";
+  const cmd = node.command || "";
+  const base = { node_path: "", id: node.id, title: node.title, description: node.description ?? "", command: cmd };
+  if (isOutOfBand) return hManual(node, base);
   if (!node.command)
     return {
-      node_path: "",
-      id: node.id,
-      title: node.title,
-      description: node.description ?? "",
-      command: "",
+      ...base,
       status: "fail",
       output: "",
       error: "no command",
       exit_code: -1,
       duration_ms: 0
     };
-  const cmd = node.command;
-  const base = { node_path: "", id: node.id, title: node.title, description: node.description ?? "", command: cmd };
-  if (node.predicate?.type === "manual" || node.predicate?.type === "review") return hManual(node, base);
   const run = await execFn(cmd, cwd);
   const ef = await hExecFail(run, base);
   if (ef) return ef;
@@ -23862,9 +23859,26 @@ function extractCommandNames(command) {
   const names = [];
   for (const seg of splitCommands(command)) {
     const tok = firstToken(seg);
+    if (tok && /^\d+$/.test(tok)) continue;
     if (tok && hasAlnum(tok) && !names.includes(tok)) names.push(tok);
   }
   return names;
+}
+var GLOB_CHARS = /[*?[]/;
+function hasGlobWildcards(command) {
+  let quote = null;
+  for (const c of command) {
+    if (quote) {
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      continue;
+    }
+    if (GLOB_CHARS.test(c)) return true;
+  }
+  return false;
 }
 var existsCache = /* @__PURE__ */ new Map();
 async function onPath(name) {
@@ -24622,8 +24636,25 @@ function suggestionFor(tool) {
 async function checkCommandsForOs(roots, cwd) {
   const commands = extractExecutableCommands(roots);
   const missing = await findMissingTools(commands, cwd);
-  if (missing.length === 0) return null;
-  return { content: [{ type: "text", text: formatMissingTools(missing) }] };
+  const lines = [];
+  const isWin = process.platform === "win32";
+  if (isWin) {
+    const globCmds = commands.filter(hasGlobWildcards);
+    if (globCmds.length > 0) {
+      lines.push(
+        `WARNING: ${globCmds.length} proof command(s) contain glob wildcards (*, ?, [) \u2014 cmd.exe does NOT expand globs.`,
+        "Use explicit paths or tools that handle their own globbing.",
+        ""
+      );
+      for (const cmd of globCmds) lines.push(`  \u2022 ${cmd}`);
+      lines.push("");
+    }
+  }
+  if (missing.length > 0) {
+    lines.push(formatMissingTools(missing));
+  }
+  if (lines.length === 0) return null;
+  return lines.join("\n");
 }
 function extractBaselineSteps(roots) {
   return roots.map((root) => ({
@@ -24834,8 +24865,7 @@ async function handleDodCreate(params) {
   resetNodeIdCounter();
   const roots = buildTaskNodes(rootInputs);
   const osError = await checkCommandsForOs(roots, resolvedCwd);
-  if (osError) return osError.content?.[0]?.text ?? "ERROR: OS validation failed.";
-  validateBaseline(type, extractBaselineSteps(roots), skip_reasons);
+  if (osError) return osError;
   const id = generateId();
   const date3 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
   const fingerprint = computeProofFingerprint(roots);
@@ -24998,9 +25028,15 @@ server.tool(
     roots: external_exports.array(TaskNodeInputSchema).describe(
       "Root-level task nodes forming the decomposition tree. Task groups have children. Draft leaves have intent. Concrete leaves have command+predicate+description+category."
     ),
-    skip_reasons: external_exports.record(external_exports.string()).optional().describe("Map from optional proof category to justification for omission.")
+    skip_reasons: external_exports.record(external_exports.string()).optional().describe("Map from optional proof category to justification for omission."),
+    dod_id: external_exports.string().optional().describe("REJECTED: dod_create creates new DoDs. Use dod_amend to update an existing one.")
   },
   async (params) => {
+    if (params.dod_id) {
+      return {
+        content: [{ type: "text", text: "ERROR: dod_create creates NEW DoDs. To update an existing DoD, use dod_amend for individual proofs or dod_check to verify. The dod_id parameter is not accepted here \u2014 it's only for dod_check, dod_amend, and other update tools." }]
+      };
+    }
     const result = await handleDodCreate(params);
     return { content: [{ type: "text", text: result }] };
   }
@@ -25363,18 +25399,47 @@ server.tool(
 );
 server.tool(
   "dod_amend",
-  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending.",
+  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons.",
   {
     dod_id: external_exports.string().describe("DoD ID"),
-    node_path: external_exports.string().describe("Dot-separated path to the concrete leaf node"),
+    node_path: external_exports.string().describe("Dot-separated path to the concrete leaf node, or '__meta__' for DoD-level metadata"),
     new_command: external_exports.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: external_exports.string().optional(),
+    new_skip_reasons: external_exports.record(external_exports.string()).optional().describe("(__meta__ only) Replace DoD skip_reasons map"),
     reason: external_exports.string().describe("Why this amendment is needed \u2014 logged permanently")
   },
-  async ({ dod_id, node_path: nodePath, new_command, new_predicate, new_description, reason }) => {
+  async ({ dod_id, node_path: nodePath, new_command, new_predicate, new_description, new_skip_reasons, reason }) => {
     const doc = await load(dod_id);
     if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
+    if (nodePath === "__meta__") {
+      if (new_skip_reasons === void 0) {
+        return { content: [{ type: "text", text: "ERROR: node_path='__meta__' requires new_skip_reasons parameter." }] };
+      }
+      const oldSkip = doc.skip_reasons ? { ...doc.skip_reasons } : {};
+      doc.skip_reasons = new_skip_reasons;
+      doc.amendments.push({
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        node_path: "__meta__",
+        action: "modified",
+        old_value: oldSkip,
+        new_value: doc.skip_reasons,
+        reason
+      });
+      await save(doc);
+      await writeMarkdown(doc);
+      return {
+        content: [{
+          type: "text",
+          text: `DoD metadata amended.
+
+Skip reasons updated. ${Object.keys(new_skip_reasons).length} categories.
+Reason: ${reason}
+
+Run dod_check to re-verify.`
+        }]
+      };
+    }
     const node = findNodeByPath(doc.roots, nodePath);
     if (!node) return { content: [{ type: "text", text: `ERROR: node not found at path "${nodePath}".` }] };
     if (node.refinement !== "concrete") {
@@ -25498,7 +25563,7 @@ server.tool(
       const parsed = await parseMarkdown(mdPath);
       const resolvedCwd = path8.resolve(cwd);
       const osError = await checkCommandsForOs(parsed.roots, resolvedCwd);
-      if (osError) return osError;
+      if (osError) return { content: [{ type: "text", text: osError }] };
       const id = generateId();
       const fingerprint = computeProofFingerprint(parsed.roots);
       const doc = {

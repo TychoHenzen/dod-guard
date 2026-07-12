@@ -264,10 +264,16 @@ describe("evo_spawn", () => {
     assert.strictEqual(branch, "feature-x");
   });
 
-  it("refuses dirty tree", () => {
+  it("auto-stashes dirty tree and pops after checkout", () => {
     git(["checkout", "master"], dir);
     fs.writeFileSync(path.join(dir, "file.txt"), "modified");
-    assert.throws(() => evo_spawn("base", "feature-y"), EvoError);
+    const result = evo_spawn("base", "feature-y");
+    const branch = git(["branch", "--show-current"], dir);
+    assert.strictEqual(branch, "feature-y");
+    // Changes should be restored from stash
+    const content = fs.readFileSync(path.join(dir, "file.txt"), "utf-8");
+    assert.strictEqual(content, "modified");
+    assert.ok(!result.includes("Auto-stash could not be reapplied"), `unexpected conflict warning: ${result}`);
     git(["checkout", "."], dir);
   });
 

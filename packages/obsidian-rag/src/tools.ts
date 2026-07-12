@@ -101,6 +101,7 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         }
 
         store.setVault(vault);
+        store.setLastVaultPath(vault.path);
         setSelectedVault(vault);
         resolveSelect?.();
 
@@ -327,10 +328,29 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
       content: z.string().describe("Memory body content (markdown)"),
       type: z.enum(["user", "feedback", "project", "reference"]).default("reference").describe("Memory type"),
       metadata: z.record(z.unknown()).optional().describe("Additional metadata key-value pairs"),
+      overwrite: z.boolean().default(true).describe("If false, refuse to overwrite an existing memory with the same id"),
     },
-    async ({ id, title, description, content, type, metadata }) => {
+    async ({ id, title, description, content, type, metadata, overwrite }) => {
       const vault = await waitForVault();
       const { writeMemory } = await import("./vault.js");
+
+      // Check if a memory with this id already exists on disk
+      const typeDir = type || "reference";
+      const targetPath = join(vault.path, "Claude-Memories", typeDir, `${id}.md`);
+      const alreadyExists = existsSync(targetPath);
+
+      if (alreadyExists && !overwrite) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Memory '${id}' already exists and overwrite is disabled. Set overwrite: true to overwrite.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
       const entry: Omit<MemoryEntry, "path" | "created" | "modified"> = {
         id,
         title,
@@ -340,6 +360,18 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         metadata: metadata || {},
       };
       const notePath = await writeMemory(vault.path, entry);
+
+      if (alreadyExists) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Memory '${id}' already exists and will be overwritten. Set overwrite: false to prevent this.`,
+            },
+          ],
+        };
+      }
+
       return { content: [{ type: "text", text: `✅ Memory saved: **${title}** → \`${notePath}\`` }] };
     },
   );

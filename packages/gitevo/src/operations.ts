@@ -285,15 +285,12 @@ function slugify(text: string): string {
 
 /**
  * Create a new branch from a checkpoint tag and check it out.
- * Refuses if tree is dirty, checkpoint not found, or branch exists.
+ * Auto-stashes dirty tracked changes before spawning, then pops them on the new branch.
+ * If stash pop fails (merge conflict), the stash is left in place with a warning.
  */
 export function evo_spawn(checkpoint_name: string, new_branch: string): string {
   const { cwd } = getRepo();
   requireInit(cwd);
-
-  if (isDirty(cwd)) {
-    throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
-  }
 
   const tagName = `evo-${checkpoint_name}`;
   if (!hasTag(tagName, cwd)) {
@@ -309,8 +306,25 @@ export function evo_spawn(checkpoint_name: string, new_branch: string): string {
     throw new EvoError(`Branch '${new_branch}' already exists.`);
   }
 
+  // Auto-stash if dirty
+  const wasDirty = isDirty(cwd);
+  let stashed = false;
+  if (wasDirty) {
+    git(["stash", "push", "-m", "gitevo: auto-stash before spawn"], cwd);
+    stashed = true;
+  }
+
   // Create branch from tag and checkout
   git(["checkout", "-b", new_branch, tagName], cwd);
+
+  // Pop stash on the new branch
+  if (stashed) {
+    try {
+      git(["stash", "pop"], cwd);
+    } catch {
+      return `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'. Auto-stash could not be reapplied — your changes are in the stash. Run git stash pop manually.`;
+    }
+  }
 
   return `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
 }
