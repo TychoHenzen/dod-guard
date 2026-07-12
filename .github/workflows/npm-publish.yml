@@ -50,10 +50,13 @@ jobs:
   static-analysis:
     needs: build-test
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - run: git config core.fileMode false  # Windows builds set +x on bundle.js — ignore mode changes
       - uses: actions/setup-node@v4
         with:
           node-version: 22
