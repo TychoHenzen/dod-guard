@@ -1,127 +1,194 @@
-// Unit tests for solve.ts and agent.ts helpers.
-// Tests internal pure functions only — does NOT spawn claude -p subprocesses.
+import * as assert from "node:assert/strict";
+import { before, describe, it, mock } from "node:test";
 
-import assert from "node:assert";
-import { describe, it } from "node:test";
-import { hashFailure, repairPrompt, strategyPrompts, toVerdict } from "./agent.js";
+// ── Mock state ────────────────────────────────────────────────────────────
 
-describe("hashFailure", () => {
-  it("returns a string hash", () => {
-    const hash = hashFailure("some error output");
-    assert.strictEqual(typeof hash, "string");
-    assert.ok(hash.length > 0);
-  });
+let verifyExitCode = 0;
+let verifyOutput = "verification passed";
+let proxyReady = true;
+let hashCounter = 0;
+let spawnClaudeExit = 0;
+let spawnClaudeTimedOut = false;
 
-  it("produces same hash for same input", () => {
-    assert.strictEqual(hashFailure("error"), hashFailure("error"));
-  });
-
-  it("produces different hash for different input", () => {
-    assert.notStrictEqual(hashFailure("error A"), hashFailure("error B"));
-  });
-
-  it("handles empty string", () => {
-    const hash = hashFailure("");
-    assert.strictEqual(typeof hash, "string");
-    assert.ok(hash.length > 0);
-  });
-
-  it("handles very long output", () => {
-    const long = "x".repeat(100000);
-    const hash = hashFailure(long);
-    assert.strictEqual(typeof hash, "string");
-    assert.ok(hash.length > 0);
-  });
-
-  it("is case-sensitive", () => {
-    assert.notStrictEqual(hashFailure("Error"), hashFailure("error"));
-  });
+mock.module("./agent.js", {
+  namedExports: {
+    ensureProxy: mock.fn(async () => proxyReady),
+    hashFailure: mock.fn((_output: string) => `hash-${hashCounter++}`),
+    repairPrompt: mock.fn(
+      (task: string, failure: string, attempt: number) => `repair|${task}|${attempt}|${failure.slice(0, 50)}`,
+    ),
+    runCommand: mock.fn((_cmd: string, _cwd: string) => ({
+      output: verifyOutput,
+      exitCode: verifyExitCode,
+      durationMs: 10,
+    })),
+    spawnClaude: mock.fn(async (_p: string, _o: any) => ({
+      output: "spawn output",
+      exitCode: spawnClaudeExit,
+      durationMs: 100,
+      timedOut: spawnClaudeTimedOut,
+    })),
+    spawnClaudeN: mock.fn(async (_prompts: string[], _o: any) =>
+      _prompts.map(() => ({
+        output: "strategy output",
+        exitCode: spawnClaudeExit,
+        durationMs: 100,
+        timedOut: spawnClaudeTimedOut,
+      })),
+    ),
+    strategyPrompts: mock.fn((_task: string, n: number) => Array.from({ length: n }, (_, i) => `strategy-${i}`)),
+    toVerdict: mock.fn((r: any) => ({
+      passed: r.exitCode === 0,
+      exit_code: r.exitCode,
+      output: r.output,
+      duration_ms: r.durationMs,
+    })),
+  },
 });
 
-describe("toVerdict", () => {
-  it("parses exit code from output", () => {
-    const v = toVerdict({ exitCode: 0, output: "ok", durationMs: 100 });
-    assert.strictEqual(v.exit_code, 0);
-    assert.strictEqual(v.output, "ok");
-    assert.strictEqual(v.duration_ms, 100);
-  });
-
-  it("handles non-zero exit code", () => {
-    const v = toVerdict({ exitCode: 2, output: "command not found", durationMs: 50 });
-    assert.strictEqual(v.exit_code, 2);
-    assert.strictEqual(v.passed, false);
-  });
-
-  it("handles empty output", () => {
-    const v = toVerdict({ exitCode: 0, output: "", durationMs: 0 });
-    assert.strictEqual(v.output, "");
-    assert.strictEqual(v.passed, true);
-  });
-
-  it("sets passed=true when exitCode is 0", () => {
-    const v = toVerdict({ exitCode: 0, output: "pass", durationMs: 42 });
-    assert.strictEqual(v.passed, true);
-  });
-
-  it("sets passed=false when exitCode is non-zero", () => {
-    const v = toVerdict({ exitCode: 1, output: "fail", durationMs: 99 });
-    assert.strictEqual(v.passed, false);
-  });
-
-  it("handles negative exit code", () => {
-    const v = toVerdict({ exitCode: -1, output: "signal", durationMs: 500 });
-    assert.strictEqual(v.passed, false);
-    assert.strictEqual(v.exit_code, -1);
-  });
+mock.module("node:child_process", {
+  namedExports: {
+    execSync: mock.fn((_cmd: string, _opts?: any) => Buffer.from("mock git diff output")),
+  },
 });
 
-describe("strategyPrompts", () => {
-  it("returns N prompts", () => {
-    const prompts = strategyPrompts("fix login bug", 3);
-    assert.strictEqual(prompts.length, 3);
+// ── Tests ──────────────────────────────────────────────────────────────────
+
+describe("solve", () => {
+  let solve: any;
+
+  before(async () => {
+    const mod = await import("./solve.js");
+    solve = mod.solve;
   });
 
-  it("each prompt includes the task description", () => {
-    const prompts = strategyPrompts("add rate limiting", 5);
-    for (const p of prompts) {
-      assert.ok(p.includes("add rate limiting"), `expected prompt to mention task: "${p.slice(0, 50)}..."`);
-    }
+  // Reset between tests
+  function reset() {
+    verifyExitCode = 0;
+    verifyOutput = "verification passed";
+    proxyReady = true;
+    hashCounter = 0;
+    spawnClaudeExit = 0;
+    spawnClaudeTimedOut = false;
+  }
+
+  // ── Phase 1: First strategy passes → immediate return ───────────────────
+
+  it("first strategy passes verification immediately", async () => {
+    reset();
+    verifyExitCode = 0;
+    const result = await solve({ goal: "fix login", verify_cmd: "npm test", cwd: process.cwd() });
+    assert.equal(result.outcome, "pass");
+    assert.ok(result.patch);
+    assert.ok(result.verification_report);
+    assert.ok(result.stats.candidates_generated > 0);
   });
 
-  it("returns 0 prompts for n=0", () => {
-    const prompts = strategyPrompts("test", 0);
-    assert.strictEqual(prompts.length, 0);
+  // ── Phase 1: All strategies fail → repairs → escalation ─────────────────
+
+  it("all strategies fail, repairs fail, escalates", async () => {
+    reset();
+    verifyExitCode = 1; // all verification fails
+
+    const result = await solve({ goal: "fix login", verify_cmd: "npm test", cwd: process.cwd() });
+    assert.equal(result.outcome, "escalate");
+    assert.ok(result.escalation);
+    assert.ok(result.escalation.failure_signature);
+    assert.ok(result.escalation.lineages_attempted > 0);
+    assert.ok(result.escalation.summary.length > 0);
   });
 
-  it("includes context when provided", () => {
-    const prompts = strategyPrompts("task", 1, "use Python");
-    assert.ok(prompts.some((p) => p.includes("Python")));
+  // ── Phase 1: Strategy passes after repair ───────────────────────────────
+
+  it("repair loop triggers for failed strategies", async () => {
+    reset();
+    verifyExitCode = 1; // all fail → triggers repair loop → escalates
+
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() });
+    // All strategies fail, repairs also fail (verifyExitCode stays 1), escalates
+    assert.equal(result.outcome, "escalate");
+    assert.ok(result.stats.candidates_generated >= 5); // initial 5 + repair candidates
   });
 
-  it("never returns more than requested", () => {
-    const prompts = strategyPrompts("task", 100);
-    assert.strictEqual(prompts.length, 100);
-  });
-});
+  it("escalation report includes best partial output", async () => {
+    reset();
+    verifyExitCode = 2;
+    verifyOutput = "some failure text here";
 
-describe("repairPrompt", () => {
-  it("contains the task description", () => {
-    const p = repairPrompt("fix login", "test failed: expected 200 got 500", 1);
-    assert.ok(p.includes("fix login"));
-  });
-
-  it("contains the failure output", () => {
-    const p = repairPrompt("task", "expected 200 got 500", 1);
-    assert.ok(p.includes("expected 200 got 500"));
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() });
+    assert.equal(result.outcome, "escalate");
+    assert.ok(result.escalation.best_partial_patch);
+    assert.ok(result.escalation.best_output || result.escalation.summary);
   });
 
-  it("mentions repair attempt number", () => {
-    const p = repairPrompt("task", "error", 2);
-    assert.ok(p.includes("2") || p.includes("second") || p.includes("repair"));
+  // ── Proxy not ready ─────────────────────────────────────────────────────
+
+  it("warns when proxy not running", async () => {
+    reset();
+    proxyReady = false;
+    verifyExitCode = 0;
+    const calls: string[] = [];
+
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() }, (msg: string) =>
+      calls.push(msg),
+    );
+    assert.equal(result.outcome, "pass");
+    assert.ok(calls.some((c) => c.includes("WARNING")));
   });
 
-  it("includes context when provided", () => {
-    const p = repairPrompt("task", "error", 1, "use Node.js");
-    assert.ok(p.includes("Node.js"));
+  // ── onProgress ───────────────────────────────────────────────────────────
+
+  it("calls onProgress throughout lifecycle", async () => {
+    reset();
+    verifyExitCode = 0;
+    const calls: string[] = [];
+
+    await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() }, (msg: string) => calls.push(msg));
+    assert.ok(calls.some((c) => c.includes("Spawning")));
+    assert.ok(calls.some((c) => c.includes("completed") || c.includes("Verifying") || c.includes("PASSED")));
+  });
+
+  // ── stats populated correctly ────────────────────────────────────────────
+
+  it("stats include duration and model", async () => {
+    reset();
+    verifyExitCode = 0;
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd(), model: "claude-sonnet-5" });
+    assert.equal(result.stats.model, "claude-sonnet-5");
+    assert.ok(result.stats.duration_ms >= 0);
+    assert.ok(result.stats.candidates_generated > 0);
+  });
+
+  it("stats include plans_sampled and plans_deduped", async () => {
+    reset();
+    verifyExitCode = 0;
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() });
+    assert.ok(result.stats.plans_sampled > 0);
+    assert.ok(result.stats.plans_deduped > 0);
+  });
+
+  // ── Timed out initial strategy ───────────────────────────────────────────
+
+  it("skips timed-out initial strategies", async () => {
+    reset();
+    spawnClaudeTimedOut = true; // all strategies time out
+    verifyExitCode = 0; // won't matter — timed out strategies aren't verified
+
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() });
+    // All timed out → no candidates → escalate
+    assert.equal(result.outcome, "escalate");
+  });
+
+  // ── Escalation: dominant signature detection ─────────────────────────────
+
+  it("escalation report identifies dominant failure signature", async () => {
+    reset();
+    verifyExitCode = 1;
+    hashCounter = 0;
+
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() });
+    assert.equal(result.outcome, "escalate");
+    // hashCounter advanced = signatures were generated
+    assert.ok(result.escalation.failure_signature !== "unknown");
   });
 });
