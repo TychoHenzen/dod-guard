@@ -1,0 +1,57 @@
+name: micro-mutations
+
+on:
+  schedule:
+    - cron: '31 6 * * *'   # 06:31 UTC daily, off-peak minute
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Files to mutate'
+        default: '3'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  mutate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git churn
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Run micro-mutations
+        id: mutations
+        continue-on-error: true
+        run: node scripts/micro-mutations.mjs
+        env:
+          MICRO_MUTATION_COUNT: ${{ inputs.count || 3 }}
+
+      - name: Restore mutated files
+        if: always()
+        run: git checkout -- packages/
+
+      - name: Commit report
+        if: always() && steps.mutations.outcome != 'skipped'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/.micro_mutation_state.json docs/MICRO_MUTATIONS.md
+          git diff --staged --quiet || (
+            git commit -m "docs: update micro-mutation report [skip ci]" &&
+            git pull --rebase origin master &&
+            git push origin master
+          )

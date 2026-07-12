@@ -30,3 +30,7 @@ npm-debug.log*
 # Cache
 .cache/
 .evo/
+
+# Stryker
+.stryker-tmp/
+reports/

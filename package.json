@@ -12,5 +12,9 @@
     "bundle": "npm run bundle --workspaces",
     "build:evomcp": "npm run build -w packages/evomcp && npm run bundle -w packages/evomcp",
     "build:gitevo": "npm run build -w packages/gitevo && npm run bundle -w packages/gitevo"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^9.6.0",
+    "@stryker-mutator/tap-runner": "^9.6.0"
   }
 }
