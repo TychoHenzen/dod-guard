@@ -17,16 +17,18 @@
 
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // ── Paths (relative to repo root) ───────────────────────────────────────
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const STATE_FILE = join(ROOT, "docs", ".micro_mutation_state.json");
-const REPORT_FILE = join(ROOT, "docs", "MICRO_MUTATIONS.md");
+const DATA_DIR = join(ROOT, ".data", "micro-mutations");
+const STATE_FILE = join(DATA_DIR, "state.json");
+const REPORT_FILE = join(DATA_DIR, "REPORT.md");
 const STRIKER_CONFIG = "stryker.config.json";
+const STRIKER_JSON = join(ROOT, "reports", "mutation", "mutation.json");
 
 // ── Configuration ───────────────────────────────────────────────────────
 
@@ -73,6 +75,64 @@ function computeFingerprint(filePath) {
   } catch {
     return null;
   }
+}
+
+// ── Survivor extraction from Stryker JSON ────────────────────────────────
+
+function loadStrykerJson() {
+  try {
+    if (existsSync(STRIKER_JSON)) {
+      return JSON.parse(readFileSync(STRIKER_JSON, "utf-8"));
+    }
+  } catch {
+    // JSON may be invalid or not exist
+  }
+  return null;
+}
+
+function extractSurvivors(strykerJson) {
+  const survivors = [];
+  if (!strykerJson?.files) return survivors;
+
+  for (const [filePath, fileData] of Object.entries(strykerJson.files)) {
+    if (!fileData.mutants) continue;
+    for (const m of fileData.mutants) {
+      if (m.status === "Survived") {
+        survivors.push({
+          file: filePath,
+          id: m.id,
+          mutator: m.mutatorName,
+          replacement: m.replacement?.slice(0, 120),
+          line: m.location?.start?.line,
+          col: m.location?.start?.column,
+        });
+      }
+    }
+  }
+  return survivors;
+}
+
+function saveSurvivors(srcPath, survivors, result) {
+  const dir = join(DATA_DIR, "survivors");
+  mkdirSync(dir, { recursive: true });
+  const slug = basename(srcPath, ".ts").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const outFile = join(dir, `${slug}.json`);
+
+  const data = {
+    source: srcPath,
+    date: new Date().toISOString(),
+    summary: {
+      total: result.total,
+      killed: result.caught,
+      survived: result.missed,
+      timeout: result.timeout,
+      unviable: result.unviable,
+    },
+    survivors,
+  };
+
+  writeFileSync(outFile, JSON.stringify(data, null, 2), "utf-8");
+  console.log(`  → ${survivors.length} survivors saved to ${outFile}`);
 }
 
 // ── Stryker output parser ────────────────────────────────────────────────
@@ -433,8 +493,10 @@ function runMutation(srcPath) {
 
   console.log("  running Stryker...");
   try {
+    // Clear stale JSON report before run
+    try { execSync(`rm -f "${STRIKER_JSON}"`, { cwd: ROOT, stdio: "pipe" }); } catch { /* ok */ }
     const strykerOut = execSync(
-      `npx stryker run ${STRIKER_CONFIG} --mutate "${distPathFwd}" --concurrency 2`,
+      `npx stryker run ${STRIKER_CONFIG} --mutate "${distPathFwd}" --concurrency 2 --reporters clear-text,json`,
       { cwd: ROOT, encoding: "utf-8", timeout: 15 * 60_000, stdio: ["pipe", "pipe", "pipe"] },
     );
 
@@ -469,6 +531,11 @@ function runMutation(srcPath) {
     console.log(
       `  → ${parsed.total} mutants: ${parsed.killed} killed, ${parsed.survived} survived, ${parsed.timeout} timeout, ${parsed.unviable} no-cov`,
     );
+
+    // Extract survivor details from Stryker JSON report
+    const json = loadStrykerJson();
+    const survivors = json ? extractSurvivors(json) : [];
+
     return {
       output: strykerOut,
       result: {
@@ -480,6 +547,7 @@ function runMutation(srcPath) {
         status: "ok",
         error: null,
       },
+      survivors,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -603,6 +671,34 @@ function generateMarkdown(state, nowStr, commit) {
     lines.push("");
   }
 
+  // Survivor data
+  const survDir = join(DATA_DIR, "survivors");
+  if (existsSync(survDir)) {
+    const survFiles = readdirSync(survDir).filter((f) => f.endsWith(".json"));
+    if (survFiles.length > 0) {
+      lines.push(
+        "## Survivor Reports",
+        "",
+        "Per-file survivor JSON with mutator type, line number, and replacement.",
+        "Use these to identify weak tests and add targeted assertions.",
+        "",
+        "| File | Survivors | Source |",
+        "|------|-----------|--------|",
+      );
+      for (const sf of survFiles.sort()) {
+        try {
+          const data = JSON.parse(readFileSync(join(survDir, sf), "utf-8"));
+          lines.push(
+            `| [${sf}](.data/micro-mutations/survivors/${sf}) | ${data.survivors?.length || 0} | ${data.source || "—"} |`,
+          );
+        } catch {
+          // skip corrupt files
+        }
+      }
+      lines.push("");
+    }
+  }
+
   // Exclusions
   lines.push(
     "## Exclusions",
@@ -714,9 +810,13 @@ function main() {
       }
     }
 
-    const { result } = runMutation(srcPath);
+    const { result, survivors: fileSurvivors } = runMutation(srcPath);
 
     if (!DRY_RUN) {
+      // Save per-file survivor report for actionable fix data
+      if (fileSurvivors && fileSurvivors.length > 0) {
+        saveSurvivors(srcPath, fileSurvivors, result);
+      }
       const info = state.files[srcPath];
       if (info) {
         info.last_tested = nowStr;
