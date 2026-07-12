@@ -43,8 +43,16 @@
       "recent_commits": 4
     },
     "packages/dod-guard/src/evaluate-proof.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-07-12",
+      "last_result": {
+        "total": 740,
+        "caught": 390,
+        "missed": 236,
+        "timeout": 0,
+        "unviable": 114,
+        "status": "ok",
+        "error": null
+      },
       "lines": 654,
       "error_count": 0,
       "recent_commits": 7
@@ -247,14 +255,29 @@
     }
   },
   "cumulative": {
-    "total_mutants": 0,
-    "caught": 0,
-    "missed": 0,
+    "total_mutants": 740,
+    "caught": 390,
+    "missed": 236,
     "timeout": 0,
-    "unviable": 0,
+    "unviable": 114,
     "error": 0,
-    "runs": 0,
-    "files_tested": 0
+    "runs": 1,
+    "files_tested": 1
   },
-  "runs": []
+  "runs": [
+    {
+      "date": "2026-07-12",
+      "commit": "d2bf00c0019b2bde26755d556a076cd8896b4705",
+      "file": "packages/dod-guard/src/evaluate-proof.ts",
+      "result": {
+        "total": 740,
+        "caught": 390,
+        "missed": 236,
+        "timeout": 0,
+        "unviable": 114,
+        "status": "ok",
+        "error": null
+      }
+    }
+  ]
 }

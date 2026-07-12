@@ -1,19 +1,21 @@
 # Micro-Mutation Report
 
-**Generated**: 2026-07-12 | **Commit**: `c4b4771`
+**Generated**: 2026-07-12 | **Commit**: `d2bf00c`
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
-| Total mutants | 0 |
-| Killed | 0 |
-| Missed | 0 |
+| Total mutants | 740 |
+| Killed | 390 |
+| Missed | 236 |
 | Timeout | 0 |
-| No coverage | 0 |
-| Catch rate | N/A% |
-| Runs | 0 |
-| Files tested | 0 |
+| No coverage | 114 |
+| Catch rate | 52.7% |
+| Runs | 1 |
+| Files tested | 1 |
+
+**Last run**: 2026-07-12 — `packages/dod-guard/src/evaluate-proof.ts` → ok
 
 ## File Inventory
 
@@ -24,7 +26,6 @@
 | 90% | packages/obsidian-rag/src/vault.ts | 172 | 10 | 90d | — | — | ⬜ |
 | 90% | packages/evomcp/src/index.ts | 270 | 9 | 90d | — | — | ⬜ |
 | 90% | packages/obsidian-rag/src/index.ts | 161 | 15 | 90d | — | — | ⬜ |
-| 90% | packages/dod-guard/src/evaluate-proof.ts | 654 | 7 | 90d | — | — | ⬜ |
 | 88% | packages/obsidian-rag/src/tools.ts | 484 | 7 | 90d | — | — | ⬜ |
 | 86% | packages/gitevo/src/index.ts | 178 | 8 | 90d | — | — | ⬜ |
 | 86% | packages/dod-guard/src/checker.ts | 441 | 6 | 90d | — | — | ⬜ |
@@ -54,6 +55,13 @@
 | 70% | packages/dod-guard/src/tools/dod-add-node.ts | 90 | 1 | 90d | — | — | ⬜ |
 | 68% | packages/dod-guard/src/notify.ts | 36 | 2 | 90d | — | — | ⬜ |
 | 65% | packages/dod-guard/src/regression.ts | 25 | 1 | 90d | — | — | ⬜ |
+| 40% | packages/dod-guard/src/evaluate-proof.ts | 654 | 7 | 0d | 2026-07-12 | 390/740 killed | ⚠️ |
+
+## Recent Runs
+
+| Date | Commit | File | Mutants | Killed | Missed | Status |
+|------|--------|------|---------|--------|--------|--------|
+| 2026-07-12 | `d2bf00c` | packages/dod-guard/src/evaluate-proof.ts | 740 | 390 | 236 | ok |
 
 ## Exclusions
 
