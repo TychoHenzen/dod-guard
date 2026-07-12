@@ -49,12 +49,20 @@ server.tool(
       .record(z.string())
       .optional()
       .describe("Map from optional proof category to justification for omission."),
-    dod_id: z.string().optional().describe("REJECTED: dod_create creates new DoDs. Use dod_amend to update an existing one."),
+    dod_id: z
+      .string()
+      .optional()
+      .describe("REJECTED: dod_create creates new DoDs. Use dod_amend to update an existing one."),
   },
   async (params) => {
     if (params.dod_id) {
       return {
-        content: [{ type: "text" as const, text: "ERROR: dod_create creates NEW DoDs. To update an existing DoD, use dod_amend for individual proofs or dod_check to verify. The dod_id parameter is not accepted here — it's only for dod_check, dod_amend, and other update tools." }],
+        content: [
+          {
+            type: "text" as const,
+            text: "ERROR: dod_create creates NEW DoDs. To update an existing DoD, use dod_amend for individual proofs or dod_check to verify. The dod_id parameter is not accepted here — it's only for dod_check, dod_amend, and other update tools.",
+          },
+        ],
       };
     }
     const result = await handleDodCreate(params as any);
@@ -489,7 +497,9 @@ server.tool(
   "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons.",
   {
     dod_id: z.string().describe("DoD ID"),
-    node_path: z.string().describe("Dot-separated path to the concrete leaf node, or '__meta__' for DoD-level metadata"),
+    node_path: z
+      .string()
+      .describe("Dot-separated path to the concrete leaf node, or '__meta__' for DoD-level metadata"),
     new_command: z.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: z.string().optional(),
@@ -503,7 +513,11 @@ server.tool(
     // __meta__ path: update DoD-level metadata (skip_reasons)
     if (nodePath === "__meta__") {
       if (new_skip_reasons === undefined) {
-        return { content: [{ type: "text" as const, text: "ERROR: node_path='__meta__' requires new_skip_reasons parameter." }] };
+        return {
+          content: [
+            { type: "text" as const, text: "ERROR: node_path='__meta__' requires new_skip_reasons parameter." },
+          ],
+        };
       }
       const oldSkip = doc.skip_reasons ? { ...doc.skip_reasons } : {};
       doc.skip_reasons = new_skip_reasons as Record<string, string>;
@@ -518,10 +532,12 @@ server.tool(
       await store.save(doc);
       await writeMarkdown(doc);
       return {
-        content: [{
-          type: "text" as const,
-          text: `DoD metadata amended.\n\nSkip reasons updated. ${Object.keys(new_skip_reasons).length} categories.\nReason: ${reason}\n\nRun dod_check to re-verify.`,
-        }],
+        content: [
+          {
+            type: "text" as const,
+            text: `DoD metadata amended.\n\nSkip reasons updated. ${Object.keys(new_skip_reasons).length} categories.\nReason: ${reason}\n\nRun dod_check to re-verify.`,
+          },
+        ],
       };
     }
 
