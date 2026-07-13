@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { promisify } from "node:util";
 
@@ -299,7 +299,11 @@ export function expandGlobsInCommand(command: string, cwd: string): { expanded: 
     for (const m of command.matchAll(re)) {
       matches.push({ prefix: m[1], pattern: m[2], fullMatch: m[0] });
     }
+    // Dedupe identical fullMatch strings so a glob appearing twice isn't double-counted.
+    const seen = new Set<string>();
     for (const { prefix, pattern, fullMatch } of matches) {
+      if (seen.has(fullMatch)) continue;
+      seen.add(fullMatch);
       try {
         const parentDir = path.resolve(cwd, prefix);
         if (!existsSync(parentDir)) continue;
@@ -312,7 +316,8 @@ export function expandGlobsInCommand(command: string, cwd: string): { expanded: 
 
         if (entries.length > 0) {
           const replacement = entries.map((e) => `${prefix}${sep}${e}${sep}`).join(" ");
-          expanded = expanded.replace(fullMatch, replacement);
+          // replaceAll (via split/join) so every occurrence of the glob expands, not just the first.
+          expanded = expanded.split(fullMatch).join(replacement);
           count += entries.length;
         }
       } catch {
@@ -376,6 +381,64 @@ export function detectMutatingFlags(command: string): string[] {
     }
   }
   return warnings;
+}
+
+// ── Placeholder (no-op) command detection ───────────────────────────────────
+
+/**
+ * No-op commands that always exit 0 and verify nothing (#45, #12). Used as
+ * temporary placeholders during authoring — they must be replaced with a real
+ * verification before a DoD is considered complete, since dod_check cannot
+ * distinguish "real test passed" from "placeholder exited 0".
+ */
+const PLACEHOLDER_PATTERNS: ReadonlyArray<RegExp> = [
+  /^node\s+(?:-e|--eval)\s+["']?\s*process\.exit\s*\(\s*0\s*\)\s*["']?$/i,
+  /^node\s+(?:-e|--eval)\s+["']\s*["']$/i, // empty eval body
+  /^process\.exit\s*\(\s*0\s*\)$/i,
+  /^echo\s+(?:ok|done|pass(?:ed)?)$/i,
+  /^true$/,
+  /^:\s*$/, // shell no-op
+  /^exit\s+0$/i,
+  /^exit\s+\/b\s+0$/i,
+  /^cmd\s+\/c\s+["']?exit(?:\s+\/b)?\s+0["']?$/i,
+  /^rem\b/i, // cmd.exe comment — always exits 0
+];
+
+/** True when the command is a no-op that always exits 0 (zero verification). */
+export function isPlaceholderCommand(command: string): boolean {
+  const cmd = command.trim();
+  if (!cmd) return false;
+  return PLACEHOLDER_PATTERNS.some((re) => re.test(cmd));
+}
+
+// ── ESM `node -e "require(...)"` detection ───────────────────────────────────
+
+/**
+ * True when a command inlines `require(` through `node -e`/`--eval`. In a
+ * `"type": "module"` package this throws `ERR_REQUIRE_ESM` (friction S2), so
+ * such proof commands fail for reasons unrelated to the code under test.
+ */
+export function usesNodeEvalRequire(command: string): boolean {
+  return /\bnode\b.*\s(?:-e|--eval)\b/.test(command) && /\brequire\s*\(/.test(command);
+}
+
+/** Walk up from cwd to the nearest package.json; true if it declares type: module. */
+export function isEsmPackage(cwd: string): boolean {
+  let dir = path.resolve(cwd);
+  for (let i = 0; i < 20; i++) {
+    const pkg = path.join(dir, "package.json");
+    if (existsSync(pkg)) {
+      try {
+        return JSON.parse(readFileSync(pkg, "utf-8")).type === "module";
+      } catch {
+        return false;
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return false;
 }
 
 /** The platform commands are validated against (matches the checker's host). */

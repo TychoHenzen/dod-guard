@@ -214,3 +214,30 @@ export function validateBaseline(
 
   return { errors, warnings };
 }
+
+/**
+ * Enforcement gate for a "locked" DoD (no draft nodes remain). A locked tree is
+ * claimed to be complete, so the company baseline becomes mandatory here — this
+ * is the point where advisory create-time hints turn into a hard block. Returns
+ * a formatted error message if mandatory categories are missing, else null.
+ *
+ * `minimal` DoDs never produce errors (validateBaseline skips them), so they
+ * lock freely.
+ */
+export function baselineLockError(
+  type: "bug" | "general" | "minimal",
+  steps: BaselineStepInput[],
+  skipReasons?: Record<string, string>,
+): string | null {
+  const { errors } = validateBaseline(type, steps, skipReasons);
+  if (errors.length === 0) return null;
+  return [
+    "ERROR: cannot lock DoD — mandatory baseline categories are missing.",
+    "A DoD with no draft nodes is complete and must satisfy the company baseline.",
+    "",
+    ...errors.map((e) => `  • ${e}`),
+    "",
+    'Add a proof for each category, or pass skip_reasons["<category>"] with a justification.',
+    'Use type: "minimal" for narrow-scope changes that legitimately skip the baseline.',
+  ].join("\n");
+}

@@ -2,10 +2,11 @@
  * dod_refine — Refine a draft TaskNode into concrete or subdivide into children.
  */
 import { writeMarkdown } from "../author.js";
+import { baselineLockError } from "../baseline.js";
 import { computeProofFingerprint, countDraftNodes, findNodeByPath, isExecutablePredicate } from "../checker.js";
-import { findMissingTools } from "../command-check.js";
+import { findMissingTools, isPlaceholderCommand } from "../command-check.js";
 import * as store from "../store.js";
-import { formatMissingTools } from "../tree-utils.js";
+import { extractBaselineSteps, formatMissingTools } from "../tree-utils.js";
 export async function handleDodRefine(params) {
     const { dod_id, node_path: nodePath, mode, command, predicate, description, category, advisory, children } = params;
     const doc = await store.load(dod_id);
@@ -57,18 +58,12 @@ export async function handleDodRefine(params) {
             reason: `Refined draft → concrete: ${description ?? ""}`,
         });
         // Detect placeholder proofs that always pass (no real verification)
-        const cmd = command?.trim() ?? "";
-        const isPlaceholder = /^node\s+(?:-e|--eval)\s+["']\s*process\.exit\s*\(\s*0\s*\)\s*["']/.test(cmd) ||
-            cmd === "process.exit(0)" ||
-            /^echo\s+ok$/i.test(cmd) ||
-            cmd === "true" ||
-            cmd === "exit 0";
-        placeholderWarn = isPlaceholder
+        placeholderWarn = isPlaceholderCommand(command ?? "")
             ? [
                 "",
                 "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
                 "The proof will pass dod_check regardless of whether the code actually works.",
-                'Replace with a real verification command before considering this DoD complete.',
+                "Replace with a real verification command before considering this DoD complete.",
                 "Examples: actual test run, linter check, build verification, grep for expected output.",
             ]
             : [];
@@ -106,8 +101,16 @@ export async function handleDodRefine(params) {
             reason: `Subdivided into ${children.length} child draft nodes`,
         });
     }
-    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
     const draftCount = countDraftNodes(doc.roots);
+    // Lock gate: concretizing the last draft "locks" the DoD (no drafts remain).
+    // A locked DoD must satisfy the company baseline — reject before persisting so
+    // the tree stays in its pre-refine state and the author can add the missing proof.
+    if (mode === "concretize" && draftCount === 0) {
+        const lockErr = baselineLockError(doc.type ?? "general", extractBaselineSteps(doc.roots), doc.skip_reasons);
+        if (lockErr)
+            return lockErr;
+    }
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
     await store.save(doc);
     await writeMarkdown(doc);
     const msg = mode === "concretize"

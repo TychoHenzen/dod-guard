@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { extractCommandNames, findMissingTools, hasGlobWildcards, suggestionFor } from "./command-check.js";
+import {
+  expandGlobsInCommand,
+  extractCommandNames,
+  findMissingTools,
+  hasGlobWildcards,
+  isEsmPackage,
+  isPlaceholderCommand,
+  suggestionFor,
+  usesNodeEvalRequire,
+} from "./command-check.js";
 
 test("extracts a simple command", () => {
   assert.deepEqual(extractCommandNames("grep -i foo file.txt"), ["grep"], "should extract grep from a simple command");
@@ -195,4 +204,61 @@ test("hasGlobWildcards detects bracket range", () => {
 
 test("hasGlobWildcards returns false for plain commands", () => {
   assert.equal(hasGlobWildcards("node --version"), false, "plain command has no globs");
+});
+
+// ── isPlaceholderCommand (F4 / #45) ─────────────────────────────────────────
+
+test("isPlaceholderCommand flags node -e process.exit(0) variants", () => {
+  assert.equal(isPlaceholderCommand('node -e "process.exit(0)"'), true);
+  assert.equal(isPlaceholderCommand("node --eval 'process.exit( 0 )'"), true);
+  assert.equal(isPlaceholderCommand("process.exit(0)"), true);
+});
+
+test("isPlaceholderCommand flags trivial shell no-ops", () => {
+  for (const cmd of ["true", "exit 0", "exit /b 0", "echo ok", "echo done", "cmd /c exit 0", "rem placeholder", ":"]) {
+    assert.equal(isPlaceholderCommand(cmd), true, `"${cmd}" should be a placeholder`);
+  }
+});
+
+test("isPlaceholderCommand does NOT flag real verification commands", () => {
+  for (const cmd of ["npm test", "node build.js", 'findstr /C:"export" file.ts', "echo hello world", ""]) {
+    assert.equal(isPlaceholderCommand(cmd), false, `"${cmd}" should NOT be a placeholder`);
+  }
+});
+
+// ── usesNodeEvalRequire (F3 / S2) ───────────────────────────────────────────
+
+test("usesNodeEvalRequire detects require() inside node -e / --eval", () => {
+  assert.equal(usesNodeEvalRequire("node -e \"require('fs').readFileSync('x')\""), true);
+  assert.equal(usesNodeEvalRequire("node --eval \"const a = require('path')\""), true);
+});
+
+test("usesNodeEvalRequire ignores commands without both node-eval and require", () => {
+  assert.equal(usesNodeEvalRequire("node -e \"import('fs')\""), false, "ESM import is fine");
+  assert.equal(usesNodeEvalRequire("node build.js"), false, "no eval flag");
+  assert.equal(usesNodeEvalRequire('grep "require(" file.js'), false, "require in grep, not node -e");
+});
+
+test("isEsmPackage detects this repo's type:module root", () => {
+  // The monorepo root package.json declares "type": "module".
+  assert.equal(isEsmPackage(process.cwd()), true);
+});
+
+// ── expandGlobsInCommand replaceAll (F5 / #19) ──────────────────────────────
+
+test("expandGlobsInCommand is a no-op on non-Windows platforms", () => {
+  if (process.platform === "win32") return; // Windows-only path exercised by the test below
+  const r = expandGlobsInCommand("findstr x packages/*/src/", process.cwd());
+  assert.equal(r.expanded_count, 0, "no expansion off Windows");
+  assert.equal(r.expanded, "findstr x packages/*/src/", "command unchanged off Windows");
+});
+
+test("expandGlobsInCommand expands EVERY occurrence of a repeated dir glob (Windows)", () => {
+  if (process.platform !== "win32") return; // depends on cmd.exe glob semantics + repo layout
+  // The same glob appears twice — replaceAll must expand both, not just the first.
+  // cwd during tests is the package dir, which has a dist/ containing subdirs.
+  const cmd = "type dist/*/ && type dist/*/";
+  const r = expandGlobsInCommand(cmd, process.cwd());
+  assert.ok(r.expanded_count > 0, "at least one dist subdir should resolve");
+  assert.ok(!r.expanded.includes("dist/*/"), "no unexpanded glob token should remain");
 });

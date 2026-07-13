@@ -4,7 +4,9 @@ import {
   expandGlobsInCommand,
   findMissingTools,
   hasGlobWildcards,
+  isEsmPackage,
   type MissingTool,
+  usesNodeEvalRequire,
 } from "./command-check.js";
 import type { Predicate, ProofCategory, TaskNode } from "./types.js";
 
@@ -186,6 +188,25 @@ export async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promis
       for (const f of flags.slice(0, 2)) lines.push(`    → ${f}`);
     }
     lines.push("");
+  }
+
+  // ESM require() detection (S2): `node -e "require(...)"` throws ERR_REQUIRE_ESM
+  // in a "type": "module" package — the proof fails for reasons unrelated to the code.
+  if (isEsmPackage(cwd)) {
+    const esmReqCmds = commands.filter(usesNodeEvalRequire);
+    if (esmReqCmds.length > 0) {
+      if (lines.length > 0) lines.push("");
+      lines.push(
+        `WARNING: ${esmReqCmds.length} proof command(s) use \`node -e\` with require() in an ESM ("type": "module") package.`,
+        "These throw ERR_REQUIRE_ESM at runtime. Use one of:",
+        "  • OS-native verification (Windows: `type file | findstr pattern`, POSIX: `grep`)",
+        '  • `node --input-type=commonjs -e "..."` to force CommonJS',
+        "  • ESM syntax: `node --input-type=module -e \"import('node:fs')...\"`",
+        "",
+      );
+      for (const cmd of esmReqCmds) lines.push(`  • \`${cmd.slice(0, 80)}\``);
+      lines.push("");
+    }
   }
 
   if (lines.length === 0) return null;

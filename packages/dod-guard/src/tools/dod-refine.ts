@@ -3,10 +3,11 @@
  */
 
 import { writeMarkdown } from "../author.js";
+import { baselineLockError } from "../baseline.js";
 import { computeProofFingerprint, countDraftNodes, findNodeByPath, isExecutablePredicate } from "../checker.js";
-import { findMissingTools } from "../command-check.js";
+import { findMissingTools, isPlaceholderCommand } from "../command-check.js";
 import * as store from "../store.js";
-import { formatMissingTools } from "../tree-utils.js";
+import { extractBaselineSteps, formatMissingTools } from "../tree-utils.js";
 import type { Predicate, ProofCategory, TaskNode } from "../types.js";
 
 interface RefineParams {
@@ -75,14 +76,7 @@ export async function handleDodRefine(params: RefineParams): Promise<string> {
     });
 
     // Detect placeholder proofs that always pass (no real verification)
-    const cmd = command?.trim() ?? "";
-    const isPlaceholder =
-      /^node\s+(?:-e|--eval)\s+["']\s*process\.exit\s*\(\s*0\s*\)\s*["']/.test(cmd) ||
-      cmd === "process.exit(0)" ||
-      /^echo\s+ok$/i.test(cmd) ||
-      cmd === "true" ||
-      cmd === "exit 0";
-    placeholderWarn = isPlaceholder
+    placeholderWarn = isPlaceholderCommand(command ?? "")
       ? [
           "",
           "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
@@ -128,9 +122,17 @@ export async function handleDodRefine(params: RefineParams): Promise<string> {
     });
   }
 
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
-
   const draftCount = countDraftNodes(doc.roots);
+
+  // Lock gate: concretizing the last draft "locks" the DoD (no drafts remain).
+  // A locked DoD must satisfy the company baseline — reject before persisting so
+  // the tree stays in its pre-refine state and the author can add the missing proof.
+  if (mode === "concretize" && draftCount === 0) {
+    const lockErr = baselineLockError(doc.type ?? "general", extractBaselineSteps(doc.roots), doc.skip_reasons);
+    if (lockErr) return lockErr;
+  }
+
+  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
 
   await store.save(doc);
   await writeMarkdown(doc);

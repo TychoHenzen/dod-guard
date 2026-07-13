@@ -81,9 +81,9 @@ Every mutation (create, refine, amend, add/remove node) recomputes `doc.proof_fi
 
 ### Baseline enforcement (baseline.ts)
 
-Company baseline from `standards/dod-baselines.md` is machine-enforced at `dod_create`:
+Company baseline from `standards/dod-baselines.md` is machine-enforced. `validateBaseline()` classifies category coverage; `baselineLockError()` is the hard gate.
 
-- **`type: "minimal"`**: Only lint+format+test enforced. All other checks skipped. Use for narrow-scope changes.
+- **`type: "minimal"`**: No baseline categories enforced — `validateBaseline` returns zero errors regardless of coverage (only advisory strength warnings still fire). Use for narrow-scope changes that legitimately skip the baseline.
 - **`type: "bug"`**: Hard mandatory + optional + regression categories enforced. TDD warning mentions regression test.
 - **`type: "general"`**: Full enforcement — hard mandatory + all optional-requiring-justification + all regression categories.
 
@@ -91,8 +91,13 @@ Company baseline from `standards/dod-baselines.md` is machine-enforced at `dod_c
 **Optional requiring justification** (absent + no skip_reason → hard error): `tdd`, `mutation`, `streamline`, `observability`
 **Regression categories** (same escalation): `performance`, `complexity`, `coverage`, `duplication`
 
-Proof categories now include `"regression"` (added 2026-07-13) to avoid confusion with the `regression` predicate type.
-- Advisory-only at creation for optional cats (they get filled during refinement)
+Proof categories include `"regression"` (added 2026-07-13) to avoid confusion with the `regression` predicate type.
+
+**Enforcement point — the lock gate (F1, 2026-07-13):** the baseline is a *hard block* the moment a DoD becomes "locked" (no draft nodes remain), because a locked tree claims to be complete. `baselineLockError()` runs at:
+- `dod_create` when the tree is created fully-concrete (zero drafts), and
+- `dod_refine` (concretize) when the last remaining draft is concretized.
+
+If mandatory categories are missing (and not covered by `skip_reasons`), the operation is **rejected without persisting** — the author must add the proof, add a `skip_reason`, or switch to `type: "minimal"`. While draft nodes still remain, `dod_create` only shows the baseline as an advisory (categories get filled during refinement).
 
 ### File responsibilities
 
@@ -111,7 +116,7 @@ Proof categories now include `"regression"` (added 2026-07-13) to avoid confusio
 | `regression.ts` | Extract metric number from regression command output (last number or regex capture) |
 | `baseline.ts` | Baseline category enforcement with two-tier (hard error / warn-with-skip_reason) |
 | `notify.ts` | Jingle (PowerShell beep arpeggio) for manual verification attention chime |
-| `command-check.ts` | Validate proof commands: OS tool availability, glob expansion (`expandGlobsInCommand()`), mutating flag detection (`detectMutatingFlags()`) |
+| `command-check.ts` | Validate proof commands: OS tool availability, glob expansion (`expandGlobsInCommand()`), mutating flag detection (`detectMutatingFlags()`), placeholder no-op detection (`isPlaceholderCommand()`), ESM `node -e require()` detection (`usesNodeEvalRequire()` + `isEsmPackage()`) |
 | `evaluate-proof.ts` | Predicate-specific analysis: builders (`buildLineLenFail`, etc.) and handlers (`hAssertions`, `hObservability`, `hBrevity`, `hManual`) that evaluate complex predicates (assertions/observability/brevity/regression/mutation) against analysis reports |
 
 ### Predicate evaluation in checkDocument()
@@ -143,7 +148,8 @@ Additional command validation at `dod_create`/`dod_refine` time:
 
 - **Glob expansion**: `expandGlobsInCommand()` auto-resolves directory-level globs (`packages/*/src/`) on Windows, showing the expanded form in warnings so users can copy it.
 - **Mutating flag detection**: `detectMutatingFlags()` scans for 12 patterns that dirty the working tree (`--write`, `--fix`, `tsc` without `--noEmit`, `git add/commit`, `npm install`, etc.) and warns with check-only alternatives.
-- **Placeholder detection**: `dod_refine` warns when the command is a no-op (`node -e "process.exit(0)"`, `echo ok`, `exit 0`). These always pass and provide zero verification.
+- **Placeholder detection**: `isPlaceholderCommand()` flags no-ops (`node -e "process.exit(0)"`, `echo ok`, `true`, `exit 0`, `exit /b 0`, `cmd /c exit 0`, `rem`, `:`) that always pass and verify nothing. Warns at both `dod_refine` (concretize) and `dod_amend`.
+- **ESM `require()` detection**: `usesNodeEvalRequire()` flags `node -e "require(...)"` when the nearest `package.json` (`isEsmPackage()`) declares `"type": "module"` — those throw `ERR_REQUIRE_ESM`. Warns with OS-native / `--input-type` alternatives (friction S2).
 
 ### Adding a new predicate type — execution gate
 

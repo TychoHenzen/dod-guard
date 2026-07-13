@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { type BaselineStepInput, validateBaseline } from "./baseline.js";
+import { type BaselineStepInput, baselineLockError, validateBaseline } from "./baseline.js";
 import type { ProofCategory } from "./types.js";
 
 function step(title: string, ...cats: ProofCategory[]): BaselineStepInput {
@@ -353,4 +353,46 @@ test("unrecognized skipReasons keys do not cause errors", () => {
 test("bug type coverage: all optional categories absent errors apply to bug type", () => {
   const r = validateBaseline("bug", minimalSteps()); // NO skip_reasons
   assert.equal(r.errors.length, 9, "bug type also enforces all 9 optional categories");
+});
+
+// ── minimal type (F2 / #21) ────────────────────────────────────────────────
+
+test("minimal type produces zero errors even with no proofs and no skip_reasons", () => {
+  const r = validateBaseline("minimal", [step("Anything", "lint")]); // no mandatory, no skip
+  assert.deepEqual(r.errors, [], "minimal enforces no baseline categories");
+});
+
+test("minimal type still emits strength warnings for weak-only steps", () => {
+  const r = validateBaseline("minimal", [step("Weak step", "lint", "format")]);
+  assert.equal(r.errors.length, 0, "minimal never errors on baseline");
+  assert.ok(
+    r.warnings.some((w) => /only presence\/structural proofs/.test(w)),
+    "strength check runs regardless of type",
+  );
+});
+
+test("minimal type with empty tree has no errors", () => {
+  const r = validateBaseline("minimal", []);
+  assert.deepEqual(r.errors, []);
+});
+
+// ── baselineLockError (F1) ─────────────────────────────────────────────────
+
+test("baselineLockError returns null for a complete general DoD", () => {
+  assert.equal(baselineLockError("general", completeSteps()), null);
+});
+
+test("baselineLockError returns a formatted message when mandatory categories are missing", () => {
+  const err = baselineLockError("general", minimalSteps()); // missing all 9 optional, no skip
+  assert.ok(err, "should return an error message");
+  assert.match(err as string, /cannot lock DoD/);
+  assert.match(err as string, /minimal/, "should hint at the minimal escape hatch");
+});
+
+test("baselineLockError returns null for minimal type regardless of missing categories", () => {
+  assert.equal(baselineLockError("minimal", [step("x", "lint")]), null);
+});
+
+test("baselineLockError returns null when missing categories are all skipped with reasons", () => {
+  assert.equal(baselineLockError("general", minimalSteps(), ALL_SKIPPED), null);
 });

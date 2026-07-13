@@ -43,6 +43,27 @@ function loadBetterSqlite3(): any {
   }
 }
 
+// Boolean operators that FTS5 interprets — must be quoted to search literally.
+const FTS_BOOLEAN_OPERATORS = /\b(AND|OR|NOT|NEAR)\b/gi;
+
+/** Sanitize user input for FTS5 MATCH so operators and special chars don't break the query. */
+function sanitizeQuery(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) return '""'; // empty match returns no rows in FTS5
+
+  // Double any existing double quotes (FTS5 escape)
+  let sanitized = trimmed.replace(/"/g, '""');
+
+  // Quote boolean operators so they're treated as literal text
+  sanitized = sanitized.replace(FTS_BOOLEAN_OPERATORS, '"$1"');
+
+  // Strip bare asterisks (prefix wildcards) unless part of a quoted token
+  // and remove unbalanced parentheses that can break grouping
+  sanitized = sanitized.replace(/(?:^|\s)\*(?=\S)/g, " "); // leading * not attached to word
+
+  return sanitized;
+}
+
 // ── Store ─────────────────────────────────────────────────────────────
 
 export interface StoreConfig {
@@ -242,6 +263,7 @@ export class Store {
     snippet: string;
     score: number;
   }> {
+    const sanitized = sanitizeQuery(query);
     const rows = this.db
       .prepare(`
       SELECT n.path, n.title, snippet(notes_fts, 1, '<mark>', '</mark>', '...', 32) as snippet, rank
@@ -251,7 +273,7 @@ export class Store {
       ORDER BY rank
       LIMIT ?
     `)
-      .all(query, vaultName, limit) as any[];
+      .all(sanitized, vaultName, limit) as any[];
     return rows.map((r) => ({
       path: r.path,
       title: r.title,

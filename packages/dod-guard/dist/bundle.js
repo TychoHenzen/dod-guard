@@ -23735,7 +23735,7 @@ function updateDocFromCheckResult(doc, result) {
 
 // src/command-check.ts
 import { execFile } from "node:child_process";
-import { existsSync as existsSync4, readdirSync as readdirSync2 } from "node:fs";
+import { existsSync as existsSync4, readdirSync as readdirSync2, readFileSync as readFileSync4 } from "node:fs";
 import * as path5 from "node:path";
 import { promisify as promisify2 } from "node:util";
 var execFileAsync = promisify2(execFile);
@@ -23943,44 +23943,35 @@ function expandGlobsInCommand(command, cwd) {
   const dirGlobReFwd = /([A-Za-z0-9_.-]+)\/([*?][^/]*)\//g;
   let expanded = command;
   let count = 0;
-  let match;
-  while ((match = dirGlobRe.exec(command)) !== null) {
-    const prefix = match[1];
-    const pattern = match[2];
-    const fullMatch = match[0];
-    try {
-      const parentDir = path5.resolve(cwd, prefix);
-      if (!existsSync4(parentDir)) continue;
-      const entries = readdirSync2(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
-      if (entries.length > 0) {
-        const replacement = entries.map((e) => `${prefix}\\${e}\\`).join(" ");
-        expanded = expanded.replace(fullMatch, replacement);
-        count += entries.length;
-      }
-    } catch {
+  const globResolve = (re, sep3) => {
+    const matches = [];
+    for (const m of command.matchAll(re)) {
+      matches.push({ prefix: m[1], pattern: m[2], fullMatch: m[0] });
     }
-  }
-  while ((match = dirGlobReFwd.exec(command)) !== null) {
-    const prefix = match[1];
-    const pattern = match[2];
-    const fullMatch = match[0];
-    try {
-      const parentDir = path5.resolve(cwd, prefix);
-      if (!existsSync4(parentDir)) continue;
-      const entries = readdirSync2(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
-      if (entries.length > 0) {
-        const replacement = entries.map((e) => `${prefix}/${e}/`).join(" ");
-        expanded = expanded.replace(fullMatch, replacement);
-        count += entries.length;
+    const seen = /* @__PURE__ */ new Set();
+    for (const { prefix, pattern, fullMatch } of matches) {
+      if (seen.has(fullMatch)) continue;
+      seen.add(fullMatch);
+      try {
+        const parentDir = path5.resolve(cwd, prefix);
+        if (!existsSync4(parentDir)) continue;
+        const entries = readdirSync2(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
+        if (entries.length > 0) {
+          const replacement = entries.map((e) => `${prefix}${sep3}${e}${sep3}`).join(" ");
+          expanded = expanded.split(fullMatch).join(replacement);
+          count += entries.length;
+        }
+      } catch {
       }
-    } catch {
     }
-  }
+  };
+  globResolve(dirGlobRe, "\\");
+  globResolve(dirGlobReFwd, "/");
   return { expanded, expanded_count: count };
 }
 function wildcardMatch(str, pattern) {
   const re = new RegExp(
-    "^" + pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$"
+    `^${pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`
   );
   return re.test(str);
 }
@@ -24007,6 +23998,46 @@ function detectMutatingFlags(command) {
     }
   }
   return warnings;
+}
+var PLACEHOLDER_PATTERNS = [
+  /^node\s+(?:-e|--eval)\s+["']?\s*process\.exit\s*\(\s*0\s*\)\s*["']?$/i,
+  /^node\s+(?:-e|--eval)\s+["']\s*["']$/i,
+  // empty eval body
+  /^process\.exit\s*\(\s*0\s*\)$/i,
+  /^echo\s+(?:ok|done|pass(?:ed)?)$/i,
+  /^true$/,
+  /^:\s*$/,
+  // shell no-op
+  /^exit\s+0$/i,
+  /^exit\s+\/b\s+0$/i,
+  /^cmd\s+\/c\s+["']?exit(?:\s+\/b)?\s+0["']?$/i,
+  /^rem\b/i
+  // cmd.exe comment — always exits 0
+];
+function isPlaceholderCommand(command) {
+  const cmd = command.trim();
+  if (!cmd) return false;
+  return PLACEHOLDER_PATTERNS.some((re) => re.test(cmd));
+}
+function usesNodeEvalRequire(command) {
+  return /\bnode\b.*\s(?:-e|--eval)\b/.test(command) && /\brequire\s*\(/.test(command);
+}
+function isEsmPackage(cwd) {
+  let dir = path5.resolve(cwd);
+  for (let i = 0; i < 20; i++) {
+    const pkg = path5.join(dir, "package.json");
+    if (existsSync4(pkg)) {
+      try {
+        return JSON.parse(readFileSync4(pkg, "utf-8")).type === "module";
+      } catch {
+        return false;
+      }
+    }
+    const parent = path5.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return false;
 }
 var currentOs = process.platform;
 
@@ -24662,6 +24693,22 @@ async function checkCommandsForOs(roots, cwd) {
     }
     lines.push("");
   }
+  if (isEsmPackage(cwd)) {
+    const esmReqCmds = commands.filter(usesNodeEvalRequire);
+    if (esmReqCmds.length > 0) {
+      if (lines.length > 0) lines.push("");
+      lines.push(
+        `WARNING: ${esmReqCmds.length} proof command(s) use \`node -e\` with require() in an ESM ("type": "module") package.`,
+        "These throw ERR_REQUIRE_ESM at runtime. Use one of:",
+        "  \u2022 OS-native verification (Windows: `type file | findstr pattern`, POSIX: `grep`)",
+        '  \u2022 `node --input-type=commonjs -e "..."` to force CommonJS',
+        "  \u2022 ESM syntax: `node --input-type=module -e \"import('node:fs')...\"`",
+        ""
+      );
+      for (const cmd of esmReqCmds) lines.push(`  \u2022 \`${cmd.slice(0, 80)}\``);
+      lines.push("");
+    }
+  }
   if (lines.length === 0) return null;
   return lines.join("\n");
 }
@@ -24868,6 +24915,19 @@ function validateBaseline(type, steps, skipReasons) {
   warnings.push(...checkStrengthOnly(steps));
   return { errors, warnings };
 }
+function baselineLockError(type, steps, skipReasons) {
+  const { errors } = validateBaseline(type, steps, skipReasons);
+  if (errors.length === 0) return null;
+  return [
+    "ERROR: cannot lock DoD \u2014 mandatory baseline categories are missing.",
+    "A DoD with no draft nodes is complete and must satisfy the company baseline.",
+    "",
+    ...errors.map((e) => `  \u2022 ${e}`),
+    "",
+    'Add a proof for each category, or pass skip_reasons["<category>"] with a justification.',
+    'Use type: "minimal" for narrow-scope changes that legitimately skip the baseline.'
+  ].join("\n");
+}
 
 // src/tools/dod-create.ts
 async function handleDodCreate(params) {
@@ -24877,6 +24937,10 @@ async function handleDodCreate(params) {
   const roots = buildTaskNodes(rootInputs);
   const osError = await checkCommandsForOs(roots, resolvedCwd);
   if (osError) return osError;
+  if (countDraftNodes(roots) === 0) {
+    const lockErr = baselineLockError(type, extractBaselineSteps(roots), skip_reasons);
+    if (lockErr) return lockErr;
+  }
   const id = generateId();
   const date3 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
   const fingerprint = computeProofFingerprint(roots);
@@ -24971,9 +25035,7 @@ async function handleDodRefine(params) {
       new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
       reason: `Refined draft \u2192 concrete: ${description ?? ""}`
     });
-    const cmd = command?.trim() ?? "";
-    const isPlaceholder = /^node\s+(?:-e|--eval)\s+["']\s*process\.exit\s*\(\s*0\s*\)\s*["']/.test(cmd) || cmd === "process.exit(0)" || /^echo\s+ok$/i.test(cmd) || cmd === "true" || cmd === "exit 0";
-    placeholderWarn = isPlaceholder ? [
+    placeholderWarn = isPlaceholderCommand(command ?? "") ? [
       "",
       "\u26A0\uFE0F  PLACEHOLDER PROOF: This command always exits 0 \u2014 it provides zero verification.",
       "The proof will pass dod_check regardless of whether the code actually works.",
@@ -25010,8 +25072,12 @@ async function handleDodRefine(params) {
       reason: `Subdivided into ${children.length} child draft nodes`
     });
   }
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
   const draftCount = countDraftNodes(doc.roots);
+  if (mode === "concretize" && draftCount === 0) {
+    const lockErr = baselineLockError(doc.type ?? "general", extractBaselineSteps(doc.roots), doc.skip_reasons);
+    if (lockErr) return lockErr;
+  }
+  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
   await save(doc);
   await writeMarkdown(doc);
   const msg = mode === "concretize" ? [
@@ -25043,7 +25109,9 @@ server.tool(
   {
     title: external_exports.string().describe("Feature/plan title"),
     goal: external_exports.string().describe("One-sentence goal"),
-    type: external_exports.enum(["bug", "general", "minimal"]).describe("Work type \u2014 selects the company baseline. 'minimal' enforces only lint+format+test; 'bug' adds tdd; 'general' enforces all categories (standards/dod-baselines.md)."),
+    type: external_exports.enum(["bug", "general", "minimal"]).describe(
+      "Work type \u2014 selects the company baseline. 'minimal' enforces only lint+format+test; 'bug' adds tdd; 'general' enforces all categories (standards/dod-baselines.md)."
+    ),
     cwd: external_exports.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: external_exports.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
@@ -25423,7 +25491,9 @@ server.tool(
   "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
   {
     dod_id: external_exports.string().describe("DoD ID"),
-    node_path: external_exports.string().describe("Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata"),
+    node_path: external_exports.string().describe(
+      "Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata"
+    ),
     new_command: external_exports.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: external_exports.string().optional(),
@@ -25475,9 +25545,7 @@ Run dod_check to re-verify.`
         };
       }
       if (new_predicate && !isExecutablePredicate(new_predicate.type)) {
-        const machineLeaves = leaves.filter(
-          ({ node: node2 }) => node2.predicate && isExecutablePredicate(node2.predicate.type)
-        );
+        const machineLeaves = leaves.filter(({ node: node2 }) => node2.predicate && isExecutablePredicate(node2.predicate.type));
         if (machineLeaves.length > 0) {
           return {
             content: [
@@ -25592,6 +25660,11 @@ Run dod_check to re-verify.`
     doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
     await save(doc);
     await writeMarkdown(doc);
+    const placeholderWarn = isExecutablePredicate(effectivePredicate.type) && isPlaceholderCommand(effectiveCommand) ? [
+      "",
+      "\u26A0\uFE0F  PLACEHOLDER PROOF: This command always exits 0 \u2014 it provides zero verification.",
+      "Replace with a real verification command before considering this DoD complete."
+    ] : [];
     return {
       content: [
         {
@@ -25603,6 +25676,7 @@ Run dod_check to re-verify.`
             `Old command: \`${oldSnapshot.command}\``,
             `New command: \`${node.command}\``,
             `Reason: ${reason}`,
+            ...placeholderWarn,
             "",
             "Status reset to pending. Run dod_check to re-verify."
           ].join("\n")

@@ -11,7 +11,7 @@ import {
   flattenConcreteLeaves,
   isExecutablePredicate,
 } from "./checker.js";
-import { findMissingTools } from "./command-check.js";
+import { findMissingTools, isPlaceholderCommand } from "./command-check.js";
 import { type Confirmer, type ManualAnswer, resolveManual } from "./manual.js";
 import { playJingle } from "./notify.js";
 import { parseMarkdown } from "./parser.js";
@@ -695,6 +695,15 @@ server.tool(
     await store.save(doc);
     await writeMarkdown(doc);
 
+    const placeholderWarn =
+      isExecutablePredicate(effectivePredicate.type) && isPlaceholderCommand(effectiveCommand)
+        ? [
+            "",
+            "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
+            "Replace with a real verification command before considering this DoD complete.",
+          ]
+        : [];
+
     return {
       content: [
         {
@@ -706,6 +715,7 @@ server.tool(
             `Old command: \`${oldSnapshot.command}\``,
             `New command: \`${node.command}\``,
             `Reason: ${reason}`,
+            ...placeholderWarn,
             "",
             "Status reset to pending. Run dod_check to re-verify.",
           ].join("\n"),

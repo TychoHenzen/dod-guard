@@ -6,6 +6,24 @@ Friction points encountered during ratchet workflow use. Feed into ratchet skill
 
 ---
 
+## 2026-07-13 — Correctness Audit of Prior Fixes (this session)
+
+Re-reviewed the ✅ code fixes below for *correctness* and *whether a better solution prevents the issue more effectively*. Ran the suite first: 657/657 green, so prior fixes are test-backed. Found gaps and fixed them (now 672/672 green).
+
+| # | Finding | Resolution | Files |
+|---|---------|------------|-------|
+| F1 | **Baseline enforcement was a no-op.** `baseline.ts` claimed "machine-enforced at dod_create," but `validateBaseline` ran only as advisory text; the create message said "will be enforced at dod_refine time" — refine never called it, and `dod_check` never checked categories. An agent could ship a `general` DoD with zero `integration_behavioral`/`test`/`tdd` and still PASS. Defeated the anti-cheat thesis and made #21's `minimal` type meaningless. | Added `baselineLockError()` — a hard gate at the **lock point** (tree has no draft nodes): `dod_create` when created fully-concrete, and `dod_refine` concretizing the last draft. Rejects without persisting when mandatory categories are missing (and not skip_reasoned). Verified end-to-end against dist. | `baseline.ts`, `tools/dod-create.ts`, `tools/dod-refine.ts` |
+| F2 | **`minimal` type untested + doc lie.** No test exercised `validateBaseline("minimal", …)` (branch uncovered). Docs claimed minimal "Only lint+format+test enforced" — code enforced nothing. | Added minimal + `baselineLockError` tests. Corrected CLAUDE.md: minimal enforces **no** baseline categories (advisory strength warnings only). | `baseline.test.ts`, `CLAUDE.md` |
+| F3 | **Open friction S2 was code-preventable.** `node -e "require(...)"` throws `ERR_REQUIRE_ESM` in this `"type":"module"` repo — proofs failed for reasons unrelated to the code. | `usesNodeEvalRequire()` + `isEsmPackage()` warn at `dod_create`/`dod_refine` with OS-native / `--input-type` alternatives. **Closes S2.** | `command-check.ts`, `tree-utils.ts` |
+| F4 | **#45 placeholder check** fired only at `dod_refine` and had a narrow inline regex; `dod_amend` to a placeholder slipped through. | Extracted `isPlaceholderCommand()` (broadened: `true`, `exit /b 0`, `cmd /c exit 0`, `rem`, `:`, empty eval). Wired into `dod_refine` **and** `dod_amend`. | `command-check.ts`, `tools/dod-refine.ts`, `index.ts` |
+| F5 | **#19 `expandGlobsInCommand`** used `String.replace()` (first match only) + could double-count a repeated glob. | replaceAll via split/join + fullMatch dedupe. | `command-check.ts` |
+
+**Verified correct (no change needed):** #18 (`exit_code` defaults `value ?? 0`), #30 (`timeout_ms` passthrough), #2 (empty-command guard), #22 (`detectMutatingFlags`), #28/#29 (gitevo `preflightCheckoutSafety` — conservative, blocks on untracked source).
+
+**Still external / out of scope:** #33 (Edit tool races — Anthropic's), #37/#38 (Node `--test-name-pattern` in describe blocks), #41 (multi-layer shell escaping), S5 (cached bundle vs local dist — publish-workflow, not code).
+
+---
+
 ## 2026-07-13 — Friction Log Triage (this session)
 
 Resolved 7 ⚠️ issues with code fixes, then 7 more in second pass:

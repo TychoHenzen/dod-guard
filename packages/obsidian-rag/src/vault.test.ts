@@ -129,6 +129,34 @@ describe("vault", () => {
       await mod.writeNote("/v", "sub/n.md", {}, "c");
       assert.ok(mkdirCalled.length > 0);
     });
+
+    it("rejects ../ path traversal (write)", async () => {
+      await assert.rejects(
+        () => mod.writeNote("/v", "../../evil.md", {}, "traversal"),
+        /Path traversal denied/,
+      );
+    });
+
+    it("rejects ..\\ path traversal (write, backslash)", async () => {
+      await assert.rejects(
+        () => mod.writeNote("/v", "..\\..\\evil2.md", {}, "traversal"),
+        /Path traversal denied/,
+      );
+    });
+
+    it("rejects nested ../ path traversal (read)", async () => {
+      await assert.rejects(
+        () => mod.readNote("/v", "sub/../../../evil3.md"),
+        /Path traversal denied/,
+      );
+    });
+
+    it("allows safe paths within vault", async () => {
+      // Should not throw
+      await mod.writeNote("/v", "deeply/nested/path/note.md", { title: "Deep" }, "content");
+      const p = Object.keys(writtenFiles)[0];
+      assert.ok(p);
+    });
   });
 
   describe("walkVault", () => {

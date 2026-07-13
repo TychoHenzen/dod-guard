@@ -3,7 +3,7 @@
  */
 import * as path from "node:path";
 import { writeMarkdown } from "../author.js";
-import { validateBaseline } from "../baseline.js";
+import { baselineLockError, validateBaseline } from "../baseline.js";
 import { computeProofFingerprint, countDraftNodes, flattenConcreteLeaves } from "../checker.js";
 import * as store from "../store.js";
 import { buildTaskNodes, checkCommandsForOs, extractBaselineSteps, resetNodeIdCounter } from "../tree-utils.js";
@@ -16,6 +16,14 @@ export async function handleDodCreate(params) {
     const osError = await checkCommandsForOs(roots, resolvedCwd);
     if (osError)
         return osError;
+    // Lock gate: a DoD created with zero draft nodes is already "locked" (complete),
+    // so the baseline is mandatory now — same enforcement point as concretizing the
+    // last draft in dod_refine. When drafts remain, baseline stays advisory (below).
+    if (countDraftNodes(roots) === 0) {
+        const lockErr = baselineLockError(type, extractBaselineSteps(roots), skip_reasons);
+        if (lockErr)
+            return lockErr;
+    }
     const id = store.generateId();
     const date = new Date().toISOString().split("T")[0];
     const fingerprint = computeProofFingerprint(roots);

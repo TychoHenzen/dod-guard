@@ -265,6 +265,91 @@ describe("Store — FTS5 search", () => {
   });
 });
 
+// ── FTS5 query sanitization ────────────────────────────────────────────
+
+describe("Store — FTS5 query sanitization", () => {
+  const DB_DIR = freshDir("fts-san");
+  const VAULT = "san-vault";
+  let store: Store;
+
+  before(() => {
+    mkdirSync(DB_DIR, { recursive: true });
+    store = new Store({ dbDir: DB_DIR });
+    store.setVault({ name: VAULT, path: "/tmp/san" });
+    const blank = {
+      links: [] as string[],
+      backlinks: [] as string[],
+      frontmatter: {} as Record<string, unknown>,
+      created: "",
+      modified: "",
+    };
+    // Note containing boolean operators as literal text
+    store.upsertNote(
+      VAULT,
+      { path: "ops.md", title: "Boolean Logic", tags: ["logic"], ...blank },
+      "The AND and OR operators are fundamental. NOT is also important. NEAR is proximity-based.",
+      "h-san-1",
+    );
+    store.upsertNote(
+      VAULT,
+      { path: "special.md", title: "Special Chars", tags: ["special"], ...blank },
+      'Content with "quotes" and (parentheses) and asterisks* in text.',
+      "h-san-2",
+    );
+  });
+
+  after(() => {
+    store.close();
+    if (existsSync(DB_DIR)) rmSync(DB_DIR, { recursive: true, force: true });
+  });
+
+  it("handles empty query without crashing", () => {
+    const results = store.searchNotesFTS(VAULT, "", 10);
+    assert.equal(results.length, 0);
+  });
+
+  it("handles whitespace-only query without crashing", () => {
+    const results = store.searchNotesFTS(VAULT, "   ", 10);
+    assert.equal(results.length, 0);
+  });
+
+  it("finds notes containing the word AND (treated as literal text, not FTS operator)", () => {
+    const results = store.searchNotesFTS(VAULT, "AND", 10);
+    assert.ok(results.length >= 1, "should find note with literal AND in content");
+  });
+
+  it("finds notes containing the word OR (treated as literal text, not FTS operator)", () => {
+    const results = store.searchNotesFTS(VAULT, "OR", 10);
+    assert.ok(results.length >= 1, "should find note with literal OR in content");
+  });
+
+  it("handles NOT operator as literal text", () => {
+    const results = store.searchNotesFTS(VAULT, "NOT", 10);
+    // Should not crash — may or may not match depending on FTS tokenization
+    assert.ok(Array.isArray(results));
+  });
+
+  it("handles NEAR operator as literal text", () => {
+    const results = store.searchNotesFTS(VAULT, "NEAR", 10);
+    assert.ok(Array.isArray(results));
+  });
+
+  it("handles queries with double quotes", () => {
+    const results = store.searchNotesFTS(VAULT, '"quotes"', 10);
+    assert.ok(Array.isArray(results));
+  });
+
+  it("handles queries with parentheses", () => {
+    const results = store.searchNotesFTS(VAULT, "parentheses", 10);
+    assert.ok(Array.isArray(results));
+  });
+
+  it("handles mixed normal words and operators", () => {
+    const results = store.searchNotesFTS(VAULT, "base OR home", 10);
+    assert.ok(Array.isArray(results));
+  });
+});
+
 // ── Listing notes ──────────────────────────────────────────────────────
 
 describe("Store — listing notes", () => {

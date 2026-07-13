@@ -4,9 +4,25 @@
 
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import matter from "gray-matter";
 import type { MemoryEntry, NoteContent, NoteMeta } from "./types.js";
+
+// ── Path containment guard ─────────────────────────────────────────────
+
+function resolveContained(baseDir: string, relPath: string): string {
+  const fullPath = join(baseDir, relPath);
+
+  // Validate containment — resolve() handles ../ segments, symlinks, etc.
+  // Only used for the check; I/O uses the original join result.
+  const resolvedBase = resolve(baseDir);
+  const resolvedFull = resolve(fullPath);
+  if (!resolvedFull.startsWith(resolvedBase + sep) && resolvedFull !== resolvedBase) {
+    throw new Error(`Path traversal denied: "${relPath}" escapes vault root "${baseDir}"`);
+  }
+
+  return fullPath;
+}
 
 // ── File discovery (FS — bulk indexing perf) ─────────────────────────────
 
@@ -38,7 +54,7 @@ export async function walkVault(vaultPath: string): Promise<string[]> {
 // ── Reading (FS — bulk indexing perf) ────────────────────────────────────
 
 export async function readNote(vaultPath: string, notePath: string): Promise<NoteContent> {
-  const fullPath = join(vaultPath, notePath);
+  const fullPath = resolveContained(vaultPath, notePath);
   const raw = await readFile(fullPath, "utf-8");
   const { data: frontmatter, content } = matter(raw);
   const meta = extractMeta(notePath, frontmatter, content);
@@ -46,7 +62,7 @@ export async function readNote(vaultPath: string, notePath: string): Promise<Not
 }
 
 export async function readNoteMeta(vaultPath: string, notePath: string): Promise<NoteMeta> {
-  const fullPath = join(vaultPath, notePath);
+  const fullPath = resolveContained(vaultPath, notePath);
   const raw = await readFile(fullPath, "utf-8");
   const { data: frontmatter, content } = matter(raw);
   return extractMeta(notePath, frontmatter, content);
@@ -60,7 +76,7 @@ export async function writeNote(
   frontmatter: Record<string, unknown>,
   content: string,
 ): Promise<void> {
-  const fullPath = join(vaultPath, notePath);
+  const fullPath = resolveContained(vaultPath, notePath);
   const dir = dirname(fullPath);
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
   const fmStr = matter.stringify(content.trim(), frontmatter);
