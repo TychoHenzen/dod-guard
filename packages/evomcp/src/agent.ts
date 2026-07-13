@@ -121,6 +121,52 @@ export interface AgentResult {
   timedOut: boolean;
 }
 
+// ── Proxy cost tracking ───────────────────────────────────────────────
+
+export interface ProxyCost {
+  input_tokens: number;
+  output_tokens: number;
+  requests: number;
+}
+
+export interface ProxyCostSnapshot {
+  /** Per-backend token + request counts. */
+  backends: Record<string, ProxyCost>;
+  /** Sum of (input + output) tokens across all backends. */
+  total_tokens: number;
+  /** Estimated dollar cost. */
+  total_cost: number;
+}
+
+/**
+ * Snapshot the proxy's cumulative cost counters.
+ * Returns null if the proxy is not reachable or /_proxy/cost is unavailable.
+ */
+export async function getProxyCost(proxyUrl?: string): Promise<ProxyCostSnapshot | null> {
+  const url = `${proxyUrl ?? PROXY_URL}/_proxy/cost`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      backends?: Record<string, ProxyCost>;
+      total_cost?: number;
+    };
+    let totalTokens = 0;
+    const backends: Record<string, ProxyCost> = {};
+    for (const [name, b] of Object.entries(data.backends ?? {})) {
+      backends[name] = { ...b };
+      totalTokens += (b.input_tokens ?? 0) + (b.output_tokens ?? 0);
+    }
+    return {
+      backends,
+      total_tokens: totalTokens,
+      total_cost: data.total_cost ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ── Proxy health check ────────────────────────────────────────────────
 
 /**

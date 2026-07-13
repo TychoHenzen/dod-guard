@@ -36,6 +36,10 @@ const TaskSpecSchema = z.object({
     ),
   cwd: z.string().describe("Working directory for running verify_cmd (absolute path)"),
   budget_tokens: z.number().optional().describe("Maximum DeepSeek API tokens to spend (default ~100k)"),
+  fanout: z
+    .number()
+    .optional()
+    .describe("Number of parallel claude -p instances (default 5, max 16)"),
   strategy: z
     .enum(["auto", "best-of-n", "evolve"])
     .optional()
@@ -218,7 +222,7 @@ function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
       "### Stats",
       `- Plans: ${result.stats.plans_sampled}`,
       `- Candidates: ${result.stats.candidates_generated}`,
-      `- Tokens: ${result.stats.tokens_consumed}`,
+      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A"}`,
       `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
       `- Model: ${result.stats.model}`,
     ].join("\n");
@@ -307,7 +311,7 @@ function formatEvolveResult(result: Awaited<ReturnType<typeof evolve>>): string 
     "",
     "### Stats",
     `- Candidates: ${result.stats.candidates_generated}`,
-    `- Tokens: ${result.stats.tokens_consumed}`,
+    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A"}`,
     `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
     `- Model: ${result.stats.model}`,
   ].join("\n");

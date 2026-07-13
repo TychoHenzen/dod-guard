@@ -16,6 +16,8 @@ export interface TaskSpec {
   strategy?: "auto" | "best-of-n" | "evolve";
   /** Files the solver is allowed to modify (glob patterns). If empty, all files fair game. */
   allowed_files?: string[];
+  /** Number of parallel claude -p instances to spawn (default: 5, min: 1). */
+  fanout?: number;
   /** Context: relevant file snippets, existing code, test output, etc. */
   context?: string;
   /** Model to use for generation (default: "deepseek-chat"). */

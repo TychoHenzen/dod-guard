@@ -88,9 +88,9 @@ function isDirty(cwd: string): boolean {
 /** Files that exist in HEAD but would be removed by switching to targetRef. */
 function filesRemovedByCheckout(targetRef: string, cwd: string): string[] {
   try {
-    // --name-only --diff-filter=D: files deleted going from targetRef to HEAD
+    // --name-only --diff-filter=D: files deleted going from HEAD to targetRef
     // (i.e., files present in HEAD but not in targetRef)
-    const diff = git(["diff", "--name-only", "--diff-filter=D", targetRef, "HEAD"], cwd);
+    const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
     return diff.split("\n").filter(Boolean);
   } catch {
     return [];

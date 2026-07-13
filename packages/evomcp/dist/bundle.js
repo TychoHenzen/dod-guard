@@ -21141,6 +21141,27 @@ function apiKeySource(optKey) {
   if (getBackendApiKey()) return "backends_json";
   return "none";
 }
+async function getProxyCost(proxyUrl) {
+  const url = `${proxyUrl ?? PROXY_URL}/_proxy/cost`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(2e3) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    let totalTokens = 0;
+    const backends = {};
+    for (const [name, b] of Object.entries(data.backends ?? {})) {
+      backends[name] = { ...b };
+      totalTokens += (b.input_tokens ?? 0) + (b.output_tokens ?? 0);
+    }
+    return {
+      backends,
+      total_tokens: totalTokens,
+      total_cost: data.total_cost ?? 0
+    };
+  } catch {
+    return null;
+  }
+}
 async function checkProxyHealth(proxyUrl) {
   const url = `${proxyUrl ?? PROXY_URL}/_proxy/status`;
   try {
@@ -21433,7 +21454,7 @@ async function evolve(spec, onProgress) {
     plans_sampled: 0,
     plans_deduped: 0,
     candidates_generated: 0,
-    tokens_consumed: 0,
+    tokens_consumed: -1,
     duration_ms: 0,
     model: spec.model ?? "deepseek-v4-pro[1m]"
   };
@@ -21455,6 +21476,7 @@ Output: ${baselineResult.output.slice(0, 500)}`
     );
   }
   onProgress?.(`Baseline fitness: ${baselineScore.toFixed(2)}`);
+  const costBefore = proxyReady ? await getProxyCost() : null;
   const targetContents = readTargetFiles(spec.cwd, spec.target_files);
   if (targetContents.length === 0) {
     throw new Error(`No target files found matching: ${spec.target_files.join(", ")}`);
@@ -21551,6 +21573,10 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
   const finalResult = runCommand(spec.fitness_cmd, spec.cwd);
   const finalScore = extractScore(finalResult.output) ?? bestScore;
   stats.duration_ms = Date.now() - startTime;
+  if (costBefore) {
+    const costAfter = await getProxyCost();
+    if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
+  }
   return {
     best_patch: bestPatch || "(no improvement over baseline)",
     best_score: finalScore,
@@ -21674,7 +21700,7 @@ async function solve(spec, onProgress) {
     plans_sampled: 0,
     plans_deduped: 0,
     candidates_generated: 0,
-    tokens_consumed: 0,
+    tokens_consumed: -1,
     duration_ms: 0,
     model: spec.model ?? "deepseek-v4-pro[1m]"
   };
@@ -21682,7 +21708,8 @@ async function solve(spec, onProgress) {
   if (!proxyReady) {
     onProgress?.("WARNING: deepclaude proxy not running. Attempting direct mode with DEEPSEEK_API_KEY...");
   }
-  const numParallel = DEFAULT_N;
+  const numParallel = spec.fanout ?? DEFAULT_N;
+  const costBefore = proxyReady ? await getProxyCost() : null;
   stats.plans_sampled = numParallel;
   stats.plans_deduped = numParallel;
   const strategies = strategyPrompts(spec.goal, numParallel, spec.context);
@@ -21697,10 +21724,47 @@ async function solve(spec, onProgress) {
   onProgress?.(`All ${numParallel} instances completed. Verifying...`);
   const candidates = [];
   const failureSignatures = /* @__PURE__ */ new Set();
+  const diagnostics = [];
+  const STRATEGY_LABELS = [
+    "simplest",
+    "robust",
+    "performant",
+    "modular",
+    "defensive",
+    "functional",
+    "pragmatic",
+    "elegant"
+  ];
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
+    const stratLabel = STRATEGY_LABELS[i % STRATEGY_LABELS.length];
+    const hasOutput = r.output.trim().length > 0;
     if (r.timedOut) {
       onProgress?.(`  [${i + 1}] timed out \u2014 skipping`);
+      diagnostics.push({
+        lineage_id: `strategy-${i}`,
+        strategy: stratLabel,
+        timed_out: true,
+        claude_exit_code: r.exitCode,
+        claude_no_output: !hasOutput,
+        claude_output_sample: r.output.slice(0, 500),
+        repair_attempts: 0,
+        final_status: "timed_out"
+      });
+      continue;
+    }
+    if (!hasOutput) {
+      onProgress?.(`  [${i + 1}] no output from claude -p (exit ${r.exitCode}) \u2014 skipping`);
+      diagnostics.push({
+        lineage_id: `strategy-${i}`,
+        strategy: stratLabel,
+        timed_out: false,
+        claude_exit_code: r.exitCode,
+        claude_no_output: true,
+        claude_output_sample: "",
+        repair_attempts: 0,
+        final_status: "no_output"
+      });
       continue;
     }
     const candidate = {
@@ -21719,6 +21783,10 @@ ${r.output.slice(0, 500)}`,
       candidate.status = "passed";
       onProgress?.(`  [${i + 1}] PASSED in ${r.durationMs}ms!`);
       stats.duration_ms = Date.now() - startTime;
+      if (costBefore) {
+        const costAfter = await getProxyCost();
+        if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
+      }
       return {
         outcome: "pass",
         patch: captureDiff(spec.cwd) ?? `claude -p output (${r.exitCode}):
@@ -21731,6 +21799,19 @@ ${r.output.slice(0, 500)}`,
     candidate.failure_signature = hashFailure(verdict.output);
     failureSignatures.add(candidate.failure_signature);
     onProgress?.(`  [${i + 1}] failed (exit ${verdict.exit_code}): ${verdict.output.slice(0, 120)}`);
+    diagnostics.push({
+      lineage_id: `strategy-${i}`,
+      strategy: stratLabel,
+      timed_out: false,
+      claude_exit_code: r.exitCode,
+      claude_no_output: false,
+      claude_output_sample: r.output.slice(0, 500),
+      verify_failed: true,
+      verify_exit_code: verdict.exit_code,
+      verify_output_sample: verdict.output.slice(0, 300),
+      repair_attempts: 0,
+      final_status: "failed"
+    });
   }
   const repairable = candidates.filter((c) => c.status === "failed" && c.verdict).sort((a, b) => {
     const aCode = a.verdict?.exit_code ?? 1;
@@ -21741,6 +21822,8 @@ ${r.output.slice(0, 500)}`,
   for (const candidate of repairable) {
     for (let repair = 1; repair <= MAX_REPAIRS; repair++) {
       onProgress?.(`  Repair attempt ${repair}/${MAX_REPAIRS} for ${candidate.plan_id}...`);
+      const diag = diagnostics.find((d) => d.lineage_id === candidate.plan_id);
+      if (diag) diag.repair_attempts = repair;
       const prompt = repairPrompt(spec.goal, candidate.verdict?.output ?? "", repair, spec.context);
       const result = await spawnClaude(prompt, {
         cwd: spec.cwd,
@@ -21751,6 +21834,7 @@ ${r.output.slice(0, 500)}`,
       });
       if (result.timedOut) {
         onProgress?.(`    \u2192 timed out`);
+        if (diag) diag.final_status = "timed_out";
         break;
       }
       stats.candidates_generated++;
@@ -21762,8 +21846,17 @@ ${r.output.slice(0, 500)}`,
 ${result.output.slice(0, 500)}`;
       if (repairVerdict.exit_code === 0) {
         candidate.status = "passed";
+        if (diag) {
+          diag.final_status = "passed";
+          diag.verify_exit_code = 0;
+          diag.verify_output_sample = repairVerdict.output.slice(0, 300);
+        }
         onProgress?.(`  \u2192 REPAIR ${repair} PASSED!`);
         stats.duration_ms = Date.now() - startTime;
+        if (costBefore) {
+          const costAfter = await getProxyCost();
+          if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
+        }
         return {
           outcome: "pass",
           patch: captureDiff(spec.cwd) ?? `repair #${repair} output (${result.exitCode}):
@@ -21775,6 +21868,11 @@ ${result.output.slice(0, 500)}`,
       const sig = hashFailure(repairVerdict.output);
       if (candidate.failure_signature && sig === candidate.failure_signature) {
         onProgress?.(`    \u2192 stuck (same failure after repair ${repair})`);
+        if (diag) {
+          diag.final_status = "stuck";
+          diag.verify_exit_code = repairVerdict.exit_code;
+          diag.verify_output_sample = repairVerdict.output.slice(0, 300);
+        }
         break;
       }
       candidate.failure_signature = sig;
@@ -21795,6 +21893,7 @@ ${result.output.slice(0, 500)}`,
     best_partial_patch: bestCandidate?.patch,
     best_output: bestCandidate?.verdict?.output?.slice(0, 2e3),
     lineages_attempted: numParallel,
+    lineage_diagnostics: diagnostics,
     summary: [
       `${numParallel} strategies attempted, ${stats.candidates_generated} candidates generated.`,
       `Best exit code: ${bestCandidate?.verdict?.exit_code ?? "N/A"}`,
@@ -21803,6 +21902,10 @@ ${result.output.slice(0, 500)}`,
     ].join(" ")
   };
   stats.duration_ms = Date.now() - startTime;
+  if (costBefore) {
+    const costAfter = await getProxyCost();
+    if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
+  }
   onProgress?.(`Escalating: ${escalation.summary}`);
   return {
     outcome: "escalate",
@@ -21824,6 +21927,7 @@ var TaskSpecSchema = external_exports.object({
   ),
   cwd: external_exports.string().describe("Working directory for running verify_cmd (absolute path)"),
   budget_tokens: external_exports.number().optional().describe("Maximum DeepSeek API tokens to spend (default ~100k)"),
+  fanout: external_exports.number().optional().describe("Number of parallel claude -p instances (default 5, max 16)"),
   strategy: external_exports.enum(["auto", "best-of-n", "evolve"]).optional().default("auto").describe("Strategy hint. 'auto' inspects verify_cmd for scalar output \u2192 evolve, else best-of-n"),
   context: external_exports.string().optional().describe("Relevant context: file snippets, existing test output, constraints"),
   model: external_exports.string().optional().describe("Model override (default: deepseek-v4-pro[1m])"),
@@ -21972,10 +22076,26 @@ function formatSolveResult(result) {
       "### Stats",
       `- Plans: ${result.stats.plans_sampled}`,
       `- Candidates: ${result.stats.candidates_generated}`,
-      `- Tokens: ${result.stats.tokens_consumed}`,
+      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A"}`,
       `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
       `- Model: ${result.stats.model}`
     ].join("\n");
+  }
+  const diagLines = [];
+  if (result.escalation?.lineage_diagnostics && result.escalation.lineage_diagnostics.length > 0) {
+    diagLines.push("### Lineage Diagnostics", "");
+    for (const d of result.escalation.lineage_diagnostics) {
+      const statusEmoji = d.final_status === "passed" ? "\u2705" : d.final_status === "failed" ? "\u274C" : d.final_status === "stuck" ? "\u{1F501}" : d.final_status === "no_output" ? "\u{1F92B}" : "\u23F1\uFE0F";
+      diagLines.push(
+        `| ${statusEmoji} | ${d.lineage_id} | ${d.strategy} | repairs=${d.repair_attempts} | ${d.timed_out ? "TIMED OUT" : d.claude_no_output ? `NO OUTPUT (exit=${d.claude_exit_code})` : `verify_exit=${d.verify_exit_code ?? "N/A"}`} |`
+      );
+      if (d.claude_no_output) {
+        diagLines.push(`  \u26A0\uFE0F \`claude -p\` produced NO output \u2014 proxy or API key issue?`);
+      } else if (d.timed_out) {
+        diagLines.push(`  \u26A0\uFE0F \`claude -p\` timed out \u2014 increase timeout or simplify task`);
+      }
+    }
+    diagLines.push("");
   }
   return [
     "## Solve: ESCALATED",
@@ -21986,7 +22106,7 @@ function formatSolveResult(result) {
     `- Lineages attempted: ${result.escalation?.lineages_attempted}`,
     `- Failure signature: ${result.escalation?.failure_signature}`,
     `- Summary: ${result.escalation?.summary}`,
-    "",
+    ...diagLines,
     "### Best Partial Output",
     "```",
     result.escalation?.best_output?.slice(0, 2e3) ?? "(none)",
@@ -22032,7 +22152,7 @@ function formatEvolveResult(result) {
     "",
     "### Stats",
     `- Candidates: ${result.stats.candidates_generated}`,
-    `- Tokens: ${result.stats.tokens_consumed}`,
+    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A"}`,
     `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
     `- Model: ${result.stats.model}`
   ].join("\n");

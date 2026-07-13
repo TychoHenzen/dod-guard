@@ -19,7 +19,7 @@
     "bundle": "node esbuild.config.mjs",
     "prepublishOnly": "npm run build && npm run bundle",
     "start": "node dist/bundle.js",
-    "coverage": "c8 --include=\"src/*.ts\" --exclude=\"src/*.test.ts\" --reporter=text --reporter=html node --experimental-test-module-mocks --test \"dist/index.test.js\"",
+    "coverage": "c8 --include=\"src/*.ts\" --exclude=\"src/*.test.ts\" --reporter=text --reporter=html node --experimental-test-module-mocks --test \"dist/index.test.js\" \"dist/operations.test.js\"",
     "dev": "tsc --watch"
   },
   "keywords": [

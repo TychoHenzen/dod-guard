@@ -16,6 +16,7 @@
 import { execSync } from "node:child_process";
 import {
   ensureProxy,
+  getProxyCost,
   hashFailure,
   repairPrompt,
   runCommand,
@@ -47,7 +48,7 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
     plans_sampled: 0,
     plans_deduped: 0,
     candidates_generated: 0,
-    tokens_consumed: 0,
+    tokens_consumed: -1,
     duration_ms: 0,
     model: spec.model ?? "deepseek-v4-pro[1m]",
   };
@@ -58,7 +59,11 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
     onProgress?.("WARNING: deepclaude proxy not running. Attempting direct mode with DEEPSEEK_API_KEY...");
   }
 
-  const numParallel = DEFAULT_N;
+  const numParallel = spec.fanout ?? DEFAULT_N;
+
+  // Snapshot proxy cost before spawning subprocesses
+  const costBefore = proxyReady ? await getProxyCost() : null;
+
   stats.plans_sampled = numParallel;
   stats.plans_deduped = numParallel;
 
@@ -148,6 +153,10 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
       onProgress?.(`  [${i + 1}] PASSED in ${r.durationMs}ms!`);
 
       stats.duration_ms = Date.now() - startTime;
+      if (costBefore) {
+        const costAfter = await getProxyCost();
+        if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
+      }
       return {
         outcome: "pass",
         patch: captureDiff(spec.cwd) ?? `claude -p output (${r.exitCode}):\n${r.output.slice(0, 500)}`,
@@ -232,6 +241,10 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
         onProgress?.(`  → REPAIR ${repair} PASSED!`);
 
         stats.duration_ms = Date.now() - startTime;
+        if (costBefore) {
+          const costAfter = await getProxyCost();
+          if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
+        }
         return {
           outcome: "pass",
           patch:
@@ -291,6 +304,10 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
   };
 
   stats.duration_ms = Date.now() - startTime;
+  if (costBefore) {
+    const costAfter = await getProxyCost();
+    if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
+  }
   onProgress?.(`Escalating: ${escalation.summary}`);
 
   return {

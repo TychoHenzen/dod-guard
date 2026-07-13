@@ -17,7 +17,7 @@ import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { ensureProxy, extractScore, mutationPrompt, runCommand, spawnClaude } from "./agent.js";
+import { ensureProxy, extractScore, getProxyCost, mutationPrompt, runCommand, spawnClaude } from "./agent.js";
 import type { EvolveResult, EvolveSpec, RunStats } from "./types.js";
 
 const DEFAULT_GENERATIONS = 5;
@@ -30,7 +30,7 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
     plans_sampled: 0,
     plans_deduped: 0,
     candidates_generated: 0,
-    tokens_consumed: 0,
+    tokens_consumed: -1,
     duration_ms: 0,
     model: spec.model ?? "deepseek-v4-pro[1m]",
   };
@@ -55,6 +55,9 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
     );
   }
   onProgress?.(`Baseline fitness: ${baselineScore.toFixed(2)}`);
+
+  // Snapshot proxy cost before spawning subprocesses
+  const costBefore = proxyReady ? await getProxyCost() : null;
 
   // ── Read target files ───────────────────────────────────────────────
 
@@ -182,6 +185,12 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
   const finalScore = extractScore(finalResult.output) ?? bestScore;
 
   stats.duration_ms = Date.now() - startTime;
+
+  // Compute token delta from proxy cost snapshot
+  if (costBefore) {
+    const costAfter = await getProxyCost();
+    if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
+  }
 
   return {
     best_patch: bestPatch || "(no improvement over baseline)",

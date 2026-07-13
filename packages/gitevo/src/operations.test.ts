@@ -136,9 +136,13 @@ describe("evo_checkpoint", () => {
     assert.ok(tagInfo.includes("first checkpoint"), `description not in: ${tagInfo}`);
   });
 
-  it("refuses dirty tree", () => {
-    fs.writeFileSync(path.join(dir, "file.txt"), "modified");
-    assert.throws(() => evo_checkpoint("v2", "should fail"), EvoError);
+  it("auto-stashes dirty tree and preserves changes", () => {
+    fs.writeFileSync(path.join(dir, "file.txt"), "dirty-for-checkpoint");
+    const result = evo_checkpoint("v2", "auto-stash checkpoint");
+    assert.ok(result.includes("v2"), `checkpoint not created: ${result}`);
+    // Dirty content should be preserved after auto-stash pop
+    const content = fs.readFileSync(path.join(dir, "file.txt"), "utf-8");
+    assert.strictEqual(content, "dirty-for-checkpoint");
     // Clean up for other tests
     git(["checkout", "."], dir);
   });
@@ -373,9 +377,12 @@ describe("evo_abandon", () => {
     assert.ok(!content.includes("bad work"), `should not contain bad work: ${content}`);
   });
 
-  it("refuses dirty tree", () => {
-    fs.writeFileSync(path.join(dir, "file.txt"), "uncommitted");
-    assert.throws(() => evo_abandon(), EvoError);
+  it("auto-stashes dirty tree before abandon", () => {
+    fs.writeFileSync(path.join(dir, "file.txt"), "uncommitted-work");
+    // Auto-stash handles dirty tree — abandon should succeed, not throw
+    const result = evo_abandon(undefined, undefined, false);
+    assert.ok(result.includes("abandoned"), `abandon should succeed: ${result}`);
+    // Clean up
     git(["checkout", "."], dir);
   });
 

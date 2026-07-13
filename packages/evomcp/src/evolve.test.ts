@@ -37,6 +37,7 @@ mock.module("./agent.js", {
       return m ? Number.parseFloat(m[0]) : null;
     }),
     mutationPrompt: mock.fn(() => "mutation prompt"),
+    getProxyCost: mock.fn(async () => null),
   },
 });
 

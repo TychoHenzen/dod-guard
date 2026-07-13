@@ -9,6 +9,8 @@ let proxyReady = true;
 let hashCounter = 0;
 let spawnClaudeExit = 0;
 let spawnClaudeTimedOut = false;
+let spawnClaudeEmptyOutput = false;
+let costSnapshotCalls = 0;
 
 mock.module("./agent.js", {
   namedExports: {
@@ -29,12 +31,15 @@ mock.module("./agent.js", {
       timedOut: spawnClaudeTimedOut,
     })),
     spawnClaudeN: mock.fn(async (_prompts: string[], _o: any) =>
-      _prompts.map(() => ({
-        output: "strategy output",
-        exitCode: spawnClaudeExit,
-        durationMs: 100,
-        timedOut: spawnClaudeTimedOut,
-      })),
+      _prompts.map(() => {
+        if (spawnClaudeEmptyOutput) return { output: "", exitCode: 0, durationMs: 100, timedOut: false };
+        return {
+          output: "strategy output",
+          exitCode: spawnClaudeExit,
+          durationMs: 100,
+          timedOut: spawnClaudeTimedOut,
+        };
+      }),
     ),
     strategyPrompts: mock.fn((_task: string, n: number) => Array.from({ length: n }, (_, i) => `strategy-${i}`)),
     toVerdict: mock.fn((r: any) => ({
@@ -43,6 +48,11 @@ mock.module("./agent.js", {
       output: r.output,
       duration_ms: r.durationMs,
     })),
+    getProxyCost: mock.fn(async () => {
+      costSnapshotCalls++;
+      // Return increasing totals to simulate real proxy accumulating tokens
+      return { backends: { deepseek: { input_tokens: 1000 * costSnapshotCalls, output_tokens: 500 * costSnapshotCalls, requests: costSnapshotCalls } }, total_tokens: 1500 * costSnapshotCalls, total_cost: 0.002 * costSnapshotCalls };
+    }),
   },
 });
 
@@ -70,6 +80,8 @@ describe("solve", () => {
     hashCounter = 0;
     spawnClaudeExit = 0;
     spawnClaudeTimedOut = false;
+    spawnClaudeEmptyOutput = false;
+    costSnapshotCalls = 0;
   }
 
   // ── Phase 1: First strategy passes → immediate return ───────────────────
@@ -179,6 +191,24 @@ describe("solve", () => {
     assert.equal(result.outcome, "escalate");
   });
 
+  // ── No-output lineage diagnostic ──────────────────────────────────────
+
+  it("reports no_output diagnostic when claude -p produces no output", async () => {
+    reset();
+    spawnClaudeEmptyOutput = true;
+    verifyExitCode = 1; // Ensure verification also fails so we hit escalation
+
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() });
+    assert.equal(result.outcome, "escalate");
+    assert.ok(result.escalation);
+    // Lineage diagnostics should contain entries with final_status "no_output"
+    const diags = result.escalation.lineage_diagnostics;
+    assert.ok(diags && diags.length > 0, "expected lineage diagnostics");
+    const noOutputDiags = diags.filter((d: any) => d.final_status === "no_output");
+    assert.ok(noOutputDiags.length > 0, "expected at least one no_output diagnostic");
+    assert.ok(noOutputDiags.every((d: any) => d.claude_no_output === true));
+  });
+
   // ── Escalation: dominant signature detection ─────────────────────────────
 
   it("escalation report identifies dominant failure signature", async () => {
@@ -190,5 +220,28 @@ describe("solve", () => {
     assert.equal(result.outcome, "escalate");
     // hashCounter advanced = signatures were generated
     assert.ok(result.escalation.failure_signature !== "unknown");
+  });
+
+  // ── Token tracking via proxy cost snapshot ────────────────────────────
+
+  it("tracks tokens via proxy cost delta on pass", async () => {
+    reset();
+    verifyExitCode = 0;
+    proxyReady = true;
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() });
+    assert.equal(result.outcome, "pass");
+    // The getProxyCost mock returns increasing values, so delta should be > 0
+    assert.ok(result.stats.tokens_consumed > 0, `expected tokens_consumed > 0, got ${result.stats.tokens_consumed}`);
+    // costSnapshotCalls should be >= 2 (before + after)
+    assert.ok(costSnapshotCalls >= 2, `expected >=2 cost snapshots, got ${costSnapshotCalls}`);
+  });
+
+  it("tracks tokens via proxy cost delta on escalation", async () => {
+    reset();
+    verifyExitCode = 1;
+    proxyReady = true;
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() });
+    assert.equal(result.outcome, "escalate");
+    assert.ok(result.stats.tokens_consumed > 0, `expected tokens_consumed > 0, got ${result.stats.tokens_consumed}`);
   });
 });
