@@ -5,6 +5,7 @@ import type { Predicate, ProofCategory } from "../types.js";
 interface AddNodeParams {
     dod_id: string;
     parent_path: string;
+    parent_id?: string;
     title: string;
     refinement: "draft" | "concrete";
     intent?: string;

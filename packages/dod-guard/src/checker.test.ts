@@ -12,6 +12,7 @@ import {
   parseSurvivors,
 } from "./checker.js";
 import { perProofFingerprint } from "./manual.js";
+import { countAllNodes, findNodeById, formatTree } from "./tree-utils.js";
 import type { DodDocument, TaskNode } from "./types.js";
 
 // ── Test helpers ─────────────────────────────────────────────────────
@@ -1057,5 +1058,222 @@ describe("checkDocument brevity-family predicates", () => {
       `0% deletion ratio should fail, got: ${res.leaves[0].error?.slice(0, 120)}`,
     );
     assert.ok(res.leaves[0].error?.includes("replacement_ratio FAIL"));
+  });
+});
+
+// ── findNodeById & formatTree ───────────────────────────────────────
+
+describe("findNodeById", () => {
+  function makeRoots(): TaskNode[] {
+    return [
+      {
+        id: "node-root-0",
+        title: "Root Group",
+        refinement: "concrete",
+        last_status: "pending",
+        children: [
+          {
+            id: "node-child-0",
+            title: "First Child",
+            refinement: "concrete",
+            last_status: "pass",
+            command: "echo ok",
+            predicate: { type: "exit_code", value: 0 },
+            description: "proof 1",
+          },
+          {
+            id: "node-child-1",
+            title: "Second Child",
+            refinement: "draft",
+            intent: "will prove something",
+            last_status: "draft",
+          },
+        ],
+      },
+      {
+        id: "node-root-1",
+        title: "Standalone Proof",
+        refinement: "concrete",
+        last_status: "fail",
+        command: "exit 1",
+        predicate: { type: "exit_code", value: 0 },
+        description: "standalone",
+      },
+    ];
+  }
+
+  it("finds root-level node by ID with correct path", () => {
+    const roots = makeRoots();
+    const found = findNodeById(roots, "node-root-1");
+    assert.ok(found);
+    assert.equal(found.node.id, "node-root-1");
+    assert.equal(found.node.title, "Standalone Proof");
+    assert.equal(found.path, "1");
+  });
+
+  it("finds nested child node by ID with correct path", () => {
+    const roots = makeRoots();
+    const found = findNodeById(roots, "node-child-0");
+    assert.ok(found);
+    assert.equal(found.node.id, "node-child-0");
+    assert.equal(found.node.title, "First Child");
+    assert.equal(found.path, "0.children.0");
+  });
+
+  it("finds draft node by ID", () => {
+    const roots = makeRoots();
+    const found = findNodeById(roots, "node-child-1");
+    assert.ok(found);
+    assert.equal(found.node.refinement, "draft");
+    assert.equal(found.path, "0.children.1");
+  });
+
+  it("returns null for non-existent ID", () => {
+    const roots = makeRoots();
+    assert.equal(findNodeById(roots, "nonexistent"), null);
+  });
+
+  it("path reflects tree state after removal (indices shift)", () => {
+    const roots = makeRoots();
+    // Remove first child — second child shifts from index 1 to index 0
+    const group = roots[0];
+    if (group.children) group.children.splice(0, 1);
+    const found = findNodeById(roots, "node-child-1");
+    assert.ok(found);
+    assert.equal(found.path, "0.children.0", "path should reflect shifted index after removal");
+  });
+
+  it("path reflects tree state after add (appended at end)", () => {
+    const roots = makeRoots();
+    const group = roots[0];
+    if (group.children) group.children.push({
+      id: "node-new",
+      title: "New Node",
+      refinement: "concrete",
+      last_status: "pending",
+      command: "echo new",
+      predicate: { type: "exit_code", value: 0 },
+      description: "added later",
+    });
+    const found = findNodeById(roots, "node-new");
+    assert.ok(found);
+    assert.equal(found.path, "0.children.2", "path should be last index");
+  });
+});
+
+describe("formatTree", () => {
+  function makeRoots(): TaskNode[] {
+    return [
+      {
+        id: "g1",
+        title: "Core Features",
+        refinement: "concrete",
+        last_status: "pending",
+        children: [
+          {
+            id: "p1",
+            title: "Build passes",
+            refinement: "concrete",
+            last_status: "pass",
+            command: "npm run build",
+            predicate: { type: "exit_code", value: 0 },
+            description: "build check",
+          },
+          {
+            id: "d1",
+            title: "Test coverage",
+            refinement: "draft",
+            intent: "ensure 80% coverage",
+            last_status: "draft",
+          },
+        ],
+      },
+      {
+        id: "p2",
+        title: "Lint check",
+        refinement: "concrete",
+        last_status: "fail",
+        command: "npm run lint",
+        predicate: { type: "exit_code", value: 0 },
+        description: "lint",
+      },
+    ];
+  }
+
+  it("shows correct node counts in header", () => {
+    const roots = makeRoots();
+    const tree = formatTree(roots, { title: "Test DoD", id: "test-1" });
+    assert.ok(tree.includes("Test DoD (test-1)"));
+    assert.ok(tree.includes("4 nodes:"));
+    assert.ok(tree.includes("2 concrete"));
+    assert.ok(tree.includes("1 draft"));
+  });
+
+  it("renders all node types with paths and IDs", () => {
+    const roots = makeRoots();
+    const tree = formatTree(roots);
+    // Group
+    assert.ok(tree.includes("0 [g1] GROUP: \"Core Features\""));
+    // Concrete proof
+    assert.ok(tree.includes("0.children.0 [p1] PROOF: \"Build passes\" (pass)"));
+    // Draft
+    assert.ok(tree.includes("0.children.1 [d1] DRAFT: \"Test coverage\""));
+    // Root-level concrete
+    assert.ok(tree.includes("1 [p2] PROOF: \"Lint check\" (fail)"));
+  });
+
+  it("scopes to subtree by node_id", () => {
+    const roots = makeRoots();
+    const tree = formatTree(roots, { scopeId: "g1" });
+    // Should show children of g1 but NOT p2
+    assert.ok(tree.includes("(scoped to Core Features [g1]"));
+    assert.ok(tree.includes("[p1] PROOF"));
+    assert.ok(tree.includes("[d1] DRAFT"));
+    assert.ok(!tree.includes("[p2]"), "p2 should not appear in scoped view");
+  });
+
+  it("scopes to subtree by node_path", () => {
+    const roots = makeRoots();
+    const tree = formatTree(roots, { scopePath: "0" });
+    assert.ok(tree.includes("(scoped to Core Features @ 0)"));
+    assert.ok(tree.includes("[p1] PROOF"));
+    assert.ok(!tree.includes("[p2]"), "p2 should not appear in scoped view");
+  });
+
+  it("returns error for bad scopeId", () => {
+    const roots = makeRoots();
+    assert.ok(formatTree(roots, { scopeId: "nope" }).startsWith("ERROR:"));
+  });
+
+  it("returns error for bad scopePath", () => {
+    const roots = makeRoots();
+    assert.ok(formatTree(roots, { scopePath: "99" }).startsWith("ERROR:"));
+  });
+});
+
+describe("countAllNodes", () => {
+  it("counts groups + leaves across tree", () => {
+    const roots: TaskNode[] = [
+      {
+        id: "a",
+        title: "A",
+        refinement: "concrete",
+        last_status: "pending",
+        children: [
+          { id: "b", title: "B", refinement: "concrete", last_status: "pass", command: "x", predicate: { type: "exit_code", value: 0 }, description: "b" },
+          { id: "c", title: "C", refinement: "draft", intent: "c", last_status: "draft" },
+        ],
+      },
+    ];
+    // 3 nodes: A (group) + B (concrete) + C (draft)
+    assert.equal(countAllNodes(roots), 3);
+  });
+
+  it("counts flat roots", () => {
+    const roots: TaskNode[] = [
+      { id: "x", title: "X", refinement: "concrete", last_status: "pass", command: "x", predicate: { type: "exit_code", value: 0 }, description: "x" },
+      { id: "y", title: "Y", refinement: "concrete", last_status: "fail", command: "y", predicate: { type: "exit_code", value: 0 }, description: "y" },
+    ];
+    assert.equal(countAllNodes(roots), 2);
   });
 });

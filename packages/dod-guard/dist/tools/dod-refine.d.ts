@@ -5,6 +5,7 @@ import type { Predicate, ProofCategory } from "../types.js";
 interface RefineParams {
     dod_id: string;
     node_path: string;
+    node_id?: string;
     mode: "concretize" | "subdivide";
     command?: string;
     predicate?: Predicate;

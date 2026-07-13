@@ -6,13 +6,25 @@ import { baselineLockError } from "../baseline.js";
 import { computeProofFingerprint, countDraftNodes, findNodeByPath, isExecutablePredicate } from "../checker.js";
 import { findMissingTools, isPlaceholderCommand } from "../command-check.js";
 import * as store from "../store.js";
-import { extractBaselineSteps, formatMissingTools } from "../tree-utils.js";
+import { extractBaselineSteps, findNodeById, formatMissingTools } from "../tree-utils.js";
 export async function handleDodRefine(params) {
-    const { dod_id, node_path: nodePath, mode, command, predicate, description, category, advisory, children } = params;
+    const { dod_id, node_path: nodePath, node_id: nodeId, mode, command, predicate, description, category, advisory, children } = params;
     const doc = await store.load(dod_id);
     if (!doc)
         return "ERROR: DoD not found.";
-    const node = findNodeByPath(doc.roots, nodePath);
+    // Resolve node — node_id takes precedence (stable across tree mutations)
+    let resolvedPath = nodePath;
+    let node = null;
+    if (nodeId) {
+        const found = findNodeById(doc.roots, nodeId);
+        if (!found)
+            return `ERROR: node not found by id "${nodeId}".`;
+        node = found.node;
+        resolvedPath = found.path;
+    }
+    else {
+        node = findNodeByPath(doc.roots, nodePath);
+    }
     if (!node)
         return `ERROR: node not found at path "${nodePath}".`;
     if (node.refinement !== "draft")
@@ -51,7 +63,7 @@ export async function handleDodRefine(params) {
         node.last_status = "pending";
         doc.amendments.push({
             timestamp: new Date().toISOString(),
-            node_path: nodePath,
+            node_path: resolvedPath,
             action: "refined",
             old_value: { refinement: "draft", intent: oldIntent },
             new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
@@ -94,7 +106,7 @@ export async function handleDodRefine(params) {
         delete node.category;
         doc.amendments.push({
             timestamp: new Date().toISOString(),
-            node_path: nodePath,
+            node_path: resolvedPath,
             action: "refined",
             old_value: { refinement: "draft", intent: oldIntent },
             new_value: { refinement: "concrete", children: childNodes },

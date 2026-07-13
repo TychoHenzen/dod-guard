@@ -20,7 +20,7 @@ import * as store from "./store.js";
 import { handleDodAddNode } from "./tools/dod-add-node.js";
 import { handleDodCreate } from "./tools/dod-create.js";
 import { handleDodRefine } from "./tools/dod-refine.js";
-import { checkCommandsForOs, findNodeInTree, formatMissingTools } from "./tree-utils.js";
+import { checkCommandsForOs, findNodeById, findNodeInTree, formatMissingTools, formatTree } from "./tree-utils.js";
 import type { DodDocument, Predicate, TaskNode } from "./types.js";
 
 const server = new McpServer({
@@ -158,7 +158,7 @@ function buildConfirmer(): Confirmer {
 
 server.tool(
   "dod_check",
-  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Manual/review proofs are NEVER auto-prompted — call dod_verify on that proof_id when verification is relevant.",
+  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Use `dod_tree` to discover current node paths before scoping. Manual/review proofs are NEVER auto-prompted — call dod_verify on that proof_id when verification is relevant.",
   {
     dod_id: z.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
@@ -232,6 +232,7 @@ server.tool(
   {
     dod_id: z.string().describe("DoD ID"),
     node_path: z.string().describe("Dot-separated path to the draft leaf, e.g. '0.children.1'"),
+    node_id: z.string().optional().describe("Stable node ID (alternative to node_path — survives tree mutations)"),
     mode: z
       .enum(["concretize", "subdivide"])
       .default("concretize")
@@ -267,6 +268,7 @@ server.tool(
   {
     dod_id: z.string().describe("DoD ID"),
     parent_path: z.string().describe("Dot-separated path to parent task group, or empty string to add at root level"),
+    parent_id: z.string().optional().describe("Stable node ID of parent (alternative to parent_path — survives tree mutations)"),
     title: z.string(),
     refinement: z.enum(["draft", "concrete"]).default("draft"),
     intent: z.string().optional(),
@@ -294,13 +296,23 @@ server.tool(
   {
     dod_id: z.string().describe("DoD ID"),
     node_path: z.string().describe("Dot-separated path to the node to remove"),
+    node_id: z.string().optional().describe("Stable node ID (alternative to node_path — survives tree mutations)"),
   },
-  async ({ dod_id, node_path: nodePath }) => {
+  async ({ dod_id, node_path: nodePath, node_id: nodeId }) => {
     const doc = await store.load(dod_id);
     if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
 
+    // Resolve node_id to path (stable across tree mutations)
+    const resolvedPath = nodeId ? (() => {
+      const found = findNodeById(doc.roots, nodeId);
+      if (!found) return null;
+      return found.path;
+    })() : nodePath;
+    if (resolvedPath === null)
+      return { content: [{ type: "text" as const, text: `ERROR: node not found by id "${nodeId}".` }] };
+
     // Find parent and index
-    const parts = nodePath.split(".");
+    const parts = resolvedPath.split(".");
     const lastPart = parts[parts.length - 1];
     if (lastPart === "children")
       return { content: [{ type: "text" as const, text: "ERROR: path must target a node, not 'children'." }] };
@@ -321,7 +333,7 @@ server.tool(
       const removed = doc.roots.splice(childIdx, 1)[0];
       doc.amendments.push({
         timestamp: new Date().toISOString(),
-        node_path: nodePath,
+        node_path: resolvedPath,
         action: "removed",
         old_value: { title: removed.title, refinement: removed.refinement },
         reason: `Removed node: ${removed.title}`,
@@ -363,7 +375,7 @@ server.tool(
 
     doc.amendments.push({
       timestamp: new Date().toISOString(),
-      node_path: nodePath,
+      node_path: resolvedPath,
       action: "removed",
       old_value: { title: removed.title, refinement: removed.refinement },
       reason: `Removed node: ${removed.title}`,
@@ -493,6 +505,32 @@ server.tool(
   },
 );
 
+// ── dod_tree ────────────────────────────────────────────────────────
+
+server.tool(
+  "dod_tree",
+  "Display the full TaskNode tree with stable IDs, current paths, titles, and statuses. Read-only structural dump — no proof execution. Use to discover node paths without running dod_check. Accepts optional dod_id/path to select the DoD, and optional node_id/node_path to scope the view to a subtree.",
+  {
+    dod_id: z.string().optional().describe("DoD ID"),
+    path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
+    node_id: z.string().optional().describe("Scope tree view to this node's subtree (by stable ID)"),
+    node_path: z.string().optional().describe("Scope tree view to this node's subtree (by path)"),
+  },
+  async ({ dod_id, path: mdPath, node_id: scopeId, node_path: scopePath }) => {
+    const doc = dod_id ? await store.load(dod_id) : mdPath ? await store.findByPath(mdPath) : null;
+    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found. Provide dod_id or path." }] };
+
+    const text = formatTree(doc.roots, {
+      title: doc.title,
+      id: doc.id,
+      scopeId,
+      scopePath,
+    });
+
+    return { content: [{ type: "text" as const, text }] };
+  },
+);
+
 // ── dod_amend ───────────────────────────────────────────────────────
 
 server.tool(
@@ -505,15 +543,21 @@ server.tool(
       .describe(
         "Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata",
       ),
+    node_id: z.string().optional().describe("Stable node ID (alternative to node_path — survives tree mutations). Incompatible with '*' and '__meta__'."),
     new_command: z.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: z.string().optional(),
     new_skip_reasons: z.record(z.string()).optional().describe("(__meta__ only) Replace DoD skip_reasons map"),
     reason: z.string().describe("Why this amendment is needed — logged permanently"),
   },
-  async ({ dod_id, node_path: nodePath, new_command, new_predicate, new_description, new_skip_reasons, reason }) => {
+  async ({ dod_id, node_path: nodePath, node_id: nodeId, new_command, new_predicate, new_description, new_skip_reasons, reason }) => {
     const doc = await store.load(dod_id);
     if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
+
+    // node_id incompatible with special paths
+    if (nodeId && (nodePath === "__meta__" || nodePath === "*")) {
+      return { content: [{ type: "text" as const, text: `ERROR: node_id is incompatible with node_path="${nodePath}". Use one or the other.` }] };
+    }
 
     // __meta__ path: update DoD-level metadata (skip_reasons)
     if (nodePath === "__meta__") {
@@ -631,7 +675,18 @@ server.tool(
       };
     }
 
-    const node = findNodeByPath(doc.roots, nodePath);
+    // Resolve node — node_id takes precedence (stable across tree mutations)
+    let resolvedPath = nodePath;
+    let node: TaskNode | null = null;
+    if (nodeId) {
+      const found = findNodeById(doc.roots, nodeId);
+      if (!found) return { content: [{ type: "text" as const, text: `ERROR: node not found by id "${nodeId}".` }] };
+      node = found.node;
+      resolvedPath = found.path;
+    } else {
+      node = findNodeByPath(doc.roots, nodePath);
+    }
+
     if (!node) return { content: [{ type: "text" as const, text: `ERROR: node not found at path "${nodePath}".` }] };
     if (node.refinement !== "concrete") {
       return {
@@ -679,7 +734,7 @@ server.tool(
 
     doc.amendments.push({
       timestamp: new Date().toISOString(),
-      node_path: nodePath,
+      node_path: resolvedPath,
       action: "modified",
       old_value: oldSnapshot as Partial<TaskNode>,
       new_value: {

@@ -5,14 +5,25 @@ import { writeMarkdown } from "../author.js";
 import { computeProofFingerprint, findNodeByPath, isExecutablePredicate } from "../checker.js";
 import { findMissingTools } from "../command-check.js";
 import * as store from "../store.js";
-import { formatMissingTools } from "../tree-utils.js";
+import { findNodeById, formatMissingTools } from "../tree-utils.js";
 export async function handleDodAddNode(params) {
-    const { dod_id, parent_path, title, refinement, intent, command, predicate, description, category, advisory } = params;
+    const { dod_id, parent_path, parent_id: parentId, title, refinement, intent, command, predicate, description, category, advisory } = params;
     const doc = await store.load(dod_id);
     if (!doc)
         throw new Error("ERROR: DoD not found.");
+    // Resolve parent — parent_id takes precedence (stable across tree mutations)
+    let resolvedParentPath = parent_path;
     let parent = null;
-    if (parent_path) {
+    if (parentId) {
+        const found = findNodeById(doc.roots, parentId);
+        if (!found)
+            throw new Error(`ERROR: parent node not found by id "${parentId}".`);
+        parent = found.node;
+        resolvedParentPath = found.path;
+        if (!parent.children)
+            throw new Error(`ERROR: parent "${parent.title}" is a leaf — cannot add children. Add to a task group.`);
+    }
+    else if (parent_path) {
         parent = findNodeByPath(doc.roots, parent_path);
         if (!parent)
             throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
@@ -62,8 +73,8 @@ export async function handleDodAddNode(params) {
     else {
         doc.roots.push(node);
     }
-    const fullPath = parent_path
-        ? `${parent_path}.children.${(parent?.children?.length ?? 0) - 1}`
+    const fullPath = resolvedParentPath
+        ? `${resolvedParentPath}.children.${(parent?.children?.length ?? 0) - 1}`
         : `${doc.roots.length - 1}`;
     doc.amendments.push({
         timestamp: new Date().toISOString(),

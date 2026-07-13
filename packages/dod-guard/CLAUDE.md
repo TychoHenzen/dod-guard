@@ -70,10 +70,13 @@ What gets evaluated about a proof command's output:
 | `dod_status` | Read cached check result without re-running |
 | `dod_list` | List all tracked DoDs with status |
 | `dod_import` | Parse existing markdown DoD into canonical storage |
+| `dod_tree` | Read-only structural dump — path, ID, title, status per node. No proof execution. Scopable via `node_id` or `node_path`. |
+
+All mutation tools (`dod_refine`, `dod_amend`, `dod_add_node`, `dod_remove_node`) accept optional `node_id` as alternative to `node_path`/`parent_path`. Node IDs are stable UUIDs — they survive tree mutations (adds, removes, subdivisions) that shift positional paths. Use `dod_tree` to discover current paths and IDs.
 
 ### Scoped runs
 
-`dod_check` accepts optional `nodePath` (dot-separated, e.g. `"0.children.1"`). Only that subtree executes; others are carried forward from last state. Scoped runs always return `INCOMPLETE` — only a full run can return `PASS`.
+`dod_check` accepts optional `nodePath` (dot-separated, e.g. `"0.children.1"`). Only that subtree executes; others are carried forward from last state. Scoped runs always return `INCOMPLETE` — only a full run can return `PASS`. Use `dod_tree` to discover current node paths before scoping.
 
 ### Tamper detection
 
@@ -109,6 +112,7 @@ If mandatory categories are missing (and not covered by `skip_reasons`), the ope
 | `author.ts` | Markdown rendering: `renderMarkdown()` → `<claude_instructions>`, `<definition_of_done>`, XML-tagged sections |
 | `parser.ts` | Reverse: parse existing DoD markdown → `DodDocument`. Handles indentation-based tree structure. |
 | `store.ts` | JSON file persistence in `~/.claude/dod-store/{uuid}.json` |
+| `tree-utils.ts` | Tree utilities: ID-based path resolution (`findNodeById`), tree display (`formatTree`), node counting (`countAllNodes`), node ID generation (`nextNodeId`), tree construction (`buildTaskNodes`), OS command validation |
 | `manual.ts` | Human verification: fingerprint caching, `resolveManual()` with confirmer callback |
 | `assertions.ts` | Static analysis: scan test files for trivial assertions (constant-on-constant, always-passing) |
 | `observability.ts` | Static analysis: scan source files for log statements, error handler coverage, anti-patterns (empty catch, swallowed errors, bare static logs) |

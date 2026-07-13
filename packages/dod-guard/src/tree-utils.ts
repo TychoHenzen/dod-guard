@@ -99,6 +99,157 @@ export function findInChildren(nodes: TaskNode[], proofId: string): TaskNode | n
   return null;
 }
 
+// ── ID-based path resolution ───────────────────────────────────────────
+
+/**
+ * Find a node by its stable ID and return both the node and its current
+ * positional path. Unlike findNodeInTree (node-only), this also tracks the
+ * dot-separated path during traversal so callers get the up-to-date position
+ * without needing a separate path lookup.
+ */
+export function findNodeById(
+  roots: TaskNode[],
+  id: string,
+): { node: TaskNode; path: string } | null {
+  function search(nodes: TaskNode[], parentPath: string): { node: TaskNode; path: string } | null {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+      if (node.id === id) return { node, path: currentPath };
+      if (node.children) {
+        const found = search(node.children, currentPath);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  return search(roots, "");
+}
+
+/**
+ * Count all nodes in a tree (groups + leaves, draft + concrete).
+ */
+export function countAllNodes(nodes: TaskNode[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    count++;
+    if (node.children) count += countAllNodes(node.children);
+  }
+  return count;
+}
+
+// ── Tree display ────────────────────────────────────────────────────────
+
+/**
+ * Render a TaskNode tree as a human-readable, path-prefixed listing.
+ * Pure structural dump — no proof execution.
+ *
+ * @param roots Root nodes of the DoD tree.
+ * @param opts.title Optional DoD title for header.
+ * @param opts.id Optional DoD ID for header.
+ * @param opts.scopeId Optional node ID to scope the view to a subtree.
+ * @param opts.scopePath Optional node path to scope the view to a subtree.
+ */
+export function formatTree(
+  roots: TaskNode[],
+  opts?: { title?: string; id?: string; scopeId?: string; scopePath?: string },
+): string {
+  const lines: string[] = [];
+
+  // Resolve scope
+  let displayRoots = roots;
+  let scopeLabel = "";
+  if (opts?.scopeId) {
+    const found = findNodeById(roots, opts.scopeId);
+    if (!found) return `ERROR: node not found by id "${opts.scopeId}".`;
+    displayRoots = found.node.children ? found.node.children : [found.node];
+    scopeLabel = ` (scoped to ${found.node.title} [${found.node.id}] @ ${found.path})`;
+  } else if (opts?.scopePath) {
+    const node = findNodeByPath(roots, opts.scopePath);
+    if (!node) return `ERROR: node not found at path "${opts.scopePath}".`;
+    displayRoots = node.children ? node.children : [node];
+    scopeLabel = ` (scoped to ${node.title} @ ${opts.scopePath})`;
+  }
+
+  // Stats
+  const totalNodes = countAllNodes(roots);
+  const draftCount = countAllDrafts(roots);
+  const concreteCount = countAllConcrete(roots);
+
+  // Header
+  if (opts?.title) lines.push(`${opts.title}${opts.id ? ` (${opts.id})` : ""}`);
+  lines.push(`${totalNodes} nodes: ${concreteCount} concrete, ${draftCount} draft${scopeLabel}`);
+  lines.push("");
+
+  // Render
+  function render(nodes: TaskNode[], parentPath: string, depth: number): void {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+      const indent = "  ".repeat(depth);
+
+      if (node.children && node.children.length > 0) {
+        // Task group
+        const hasDrafts = hasDraftNodes(node.children);
+        const allPass = allGroupLeavesPass(node.children);
+        let groupMark = "";
+        if (allPass && !hasDrafts && node.children.length > 0) groupMark = " ✓";
+        else if (hasDrafts) groupMark = " ~";
+        lines.push(`${indent}${currentPath} [${node.id}] GROUP: "${node.title}"${groupMark}`);
+        render(node.children, currentPath, depth + 1);
+      } else if (node.refinement === "concrete") {
+        const status = node.last_status ?? "pending";
+        const cat = node.category ? ` | ${node.category}` : "";
+        const adv = node.advisory ? " [advisory]" : "";
+        lines.push(`${indent}${currentPath} [${node.id}] PROOF: "${node.title}" (${status}${cat}${adv})`);
+      } else {
+        // Draft leaf
+        const intent = node.intent ? ` — ${node.intent.slice(0, 80)}${node.intent.length > 80 ? "..." : ""}` : "";
+        lines.push(`${indent}${currentPath} [${node.id}] DRAFT: "${node.title}"${intent}`);
+      }
+    }
+  }
+
+  render(displayRoots, opts?.scopeId || opts?.scopePath ? "" : "", 0);
+
+  return lines.join("\n");
+}
+
+function countAllDrafts(nodes: TaskNode[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      count += countAllDrafts(node.children);
+    } else if (node.refinement === "draft") {
+      count++;
+    }
+  }
+  return count;
+}
+
+function countAllConcrete(nodes: TaskNode[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      count += countAllConcrete(node.children);
+    } else if (node.refinement === "concrete") {
+      count++;
+    }
+  }
+  return count;
+}
+
+function allGroupLeavesPass(nodes: TaskNode[]): boolean {
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      if (!allGroupLeavesPass(node.children)) return false;
+    } else if (node.refinement === "concrete") {
+      if (node.last_status !== "pass" && node.last_status !== "skipped") return false;
+    }
+  }
+  return true;
+}
+
 // ── OS command validation ─────────────────────────────────────────────
 
 export function formatMissingTools(missing: MissingTool[]): string {
@@ -134,7 +285,7 @@ function suggestionFor(tool: string): string {
   return map[tool.toLowerCase()] ?? "";
 }
 
-import { extractExecutableCommands } from "./checker.js";
+import { extractExecutableCommands, findNodeByPath, hasDraftNodes } from "./checker.js";
 
 export async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promise<string | null> {
   const commands = extractExecutableCommands(roots);
