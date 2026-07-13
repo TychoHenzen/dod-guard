@@ -12,7 +12,7 @@ import type { DodDocument, DodSections } from "../types.js";
 interface CreateParams {
   title: string;
   goal: string;
-  type: "bug" | "general";
+  type: "bug" | "general" | "minimal";
   cwd: string;
   markdown_path: string;
   sections: DodSections;

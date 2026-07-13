@@ -19,6 +19,8 @@ export async function handleDodRefine(params) {
     if (node.children && node.children.length > 0)
         return `ERROR: node "${node.title}" is a task group with children — not a leaf. Refine its children instead.`;
     const oldIntent = node.intent;
+    // Collect placeholder warnings (function-scoped so msg construction can reference them)
+    let placeholderWarn = [];
     if (mode === "concretize") {
         if (!(command && predicate)) {
             return "ERROR: concretize mode requires command and predicate.";
@@ -54,6 +56,22 @@ export async function handleDodRefine(params) {
             new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
             reason: `Refined draft → concrete: ${description ?? ""}`,
         });
+        // Detect placeholder proofs that always pass (no real verification)
+        const cmd = command?.trim() ?? "";
+        const isPlaceholder = /^node\s+(?:-e|--eval)\s+["']\s*process\.exit\s*\(\s*0\s*\)\s*["']/.test(cmd) ||
+            cmd === "process.exit(0)" ||
+            /^echo\s+ok$/i.test(cmd) ||
+            cmd === "true" ||
+            cmd === "exit 0";
+        placeholderWarn = isPlaceholder
+            ? [
+                "",
+                "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
+                "The proof will pass dod_check regardless of whether the code actually works.",
+                'Replace with a real verification command before considering this DoD complete.',
+                "Examples: actual test run, linter check, build verification, grep for expected output.",
+            ]
+            : [];
     }
     else {
         // subdivide mode
@@ -98,6 +116,7 @@ export async function handleDodRefine(params) {
             `Command: \`${command}\``,
             `Predicate: ${predicate.type}:${predicate.value ?? "(no value)"}`,
             `Description: ${description}`,
+            ...placeholderWarn,
             draftCount === 0
                 ? "\n🎉 All nodes are now concrete — the DoD is fully verifiable. Run dod_check."
                 : `\n${draftCount} draft node(s) remaining.`,

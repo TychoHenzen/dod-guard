@@ -54,6 +54,8 @@ export function formatCheckResult(result: CheckResult): string {
     byRoot.get(rootIdx)?.push(leaf);
   }
 
+  const summaryMode = result.summary_mode === true;
+
   for (const [rootIdx, leaves] of byRoot) {
     const passCount = leaves.filter((p) => p.status === "pass").length;
     const failCount = leaves.filter((p) => p.status === "fail").length;
@@ -80,6 +82,8 @@ export function formatCheckResult(result: CheckResult): string {
       const indent = "  ".repeat(depth + 1);
 
       if (leaf.status === "draft") {
+        // Summary mode: collapse all drafts to a single count line per root
+        if (summaryMode) continue; // drafts handled by collapsed line below
         l.push(`${indent}📝 ${leaf.description} — DRAFT (use dod_refine to concretize)`);
       } else if (leaf.status === "pass") {
         const isManual = leaf.command === "manual";
@@ -103,6 +107,12 @@ export function formatCheckResult(result: CheckResult): string {
         }
       }
     }
+
+    // Summary mode: add collapsed draft count after concrete results
+    if (summaryMode && draftCount > 0) {
+      l.push(`  📝 ${draftCount} draft node(s) unchanged — use dod_refine to concretize`);
+    }
+
     l.push("");
   }
 

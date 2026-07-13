@@ -36,7 +36,7 @@ server.tool(
   {
     title: z.string().describe("Feature/plan title"),
     goal: z.string().describe("One-sentence goal"),
-    type: z.enum(["bug", "general"]).describe("Work type — selects the company baseline (standards/dod-baselines.md)."),
+    type: z.enum(["bug", "general", "minimal"]).describe("Work type — selects the company baseline. 'minimal' enforces only lint+format+test; 'bug' adds tdd; 'general' enforces all categories (standards/dod-baselines.md)."),
     cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: z.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
@@ -165,8 +165,14 @@ server.tool(
       .describe(
         "Dot-separated path to a subtree (e.g. '0.children.1') to verify in isolation. Omit to run the full check.",
       ),
+    summary: z
+      .boolean()
+      .optional()
+      .describe(
+        "Collapse unchanged draft nodes into a single count line. Use for large DoDs where drafts dominate the output.",
+      ),
   },
-  async ({ dod_id, path: mdPath, cwd_override, nodePath }) => {
+  async ({ dod_id, path: mdPath, cwd_override, nodePath, summary }) => {
     let doc: DodDocument | null = null;
     if (dod_id) doc = await store.load(dod_id);
     else if (mdPath) doc = await store.findByPath(mdPath);
@@ -193,7 +199,7 @@ server.tool(
       };
     }
 
-    const result = await checkDocument(doc, cwd_override, nodePath ? { nodePath } : undefined);
+    const result = await checkDocument(doc, cwd_override, { nodePath, summary });
 
     if (!doc.proof_fingerprint && result.proof_fingerprint) {
       doc.proof_fingerprint = result.proof_fingerprint;
@@ -487,12 +493,12 @@ server.tool(
 
 server.tool(
   "dod_amend",
-  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons.",
+  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
   {
     dod_id: z.string().describe("DoD ID"),
     node_path: z
       .string()
-      .describe("Dot-separated path to the concrete leaf node, or '__meta__' for DoD-level metadata"),
+      .describe("Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata"),
     new_command: z.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: z.string().optional(),
@@ -529,6 +535,93 @@ server.tool(
           {
             type: "text" as const,
             text: `DoD metadata amended.\n\nSkip reasons updated. ${Object.keys(new_skip_reasons).length} categories.\nReason: ${reason}\n\nRun dod_check to re-verify.`,
+          },
+        ],
+      };
+    }
+
+    // Wildcard: apply to all concrete leaves
+    if (nodePath === "*") {
+      const leaves = flattenConcreteLeaves(doc.roots);
+      if (leaves.length === 0) {
+        return {
+          content: [{ type: "text" as const, text: "ERROR: no concrete leaves to amend. Refine drafts first." }],
+        };
+      }
+
+      // Block weakening on any leaf
+      if (new_predicate && !isExecutablePredicate(new_predicate.type)) {
+        const machineLeaves = leaves.filter(
+          ({ node }) => node.predicate && isExecutablePredicate(node.predicate.type),
+        );
+        if (machineLeaves.length > 0) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `ERROR: Cannot convert ${machineLeaves.length} machine-checkable proof(s) to manual/review — this would bypass verification.`,
+              },
+            ],
+          };
+        }
+      }
+
+      // Validate commands against OS
+      if (new_command !== undefined) {
+        const missing = await findMissingTools([new_command], doc.cwd);
+        if (missing.length > 0) {
+          return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
+        }
+      }
+
+      let amendedCount = 0;
+      for (const { node, node_path: leafPath } of leaves) {
+        const oldSnap = {
+          command: node.command,
+          predicate: node.predicate ? { ...node.predicate } : undefined,
+          description: node.description,
+        };
+        if (new_command !== undefined) node.command = new_command;
+        if (new_predicate !== undefined) node.predicate = new_predicate as Predicate;
+        if (new_description !== undefined) node.description = new_description;
+        node.last_status = "pending";
+
+        doc.amendments.push({
+          timestamp: new Date().toISOString(),
+          node_path: leafPath,
+          action: "modified",
+          old_value: oldSnap as Partial<TaskNode>,
+          new_value: {
+            command: node.command,
+            predicate: node.predicate ? { ...node.predicate } : undefined,
+            description: node.description,
+          },
+          reason,
+        });
+        amendedCount++;
+      }
+
+      doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
+      await store.save(doc);
+      await writeMarkdown(doc);
+
+      const changes: string[] = [];
+      if (new_command !== undefined) changes.push(`command → \`${new_command}\``);
+      if (new_predicate !== undefined) changes.push(`predicate → ${new_predicate.type}`);
+      if (new_description !== undefined) changes.push("description updated");
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: [
+              `Bulk amend: ${amendedCount} concrete proof(s) updated.`,
+              "",
+              `Changes: ${changes.join(", ")}`,
+              `Reason: ${reason}`,
+              "",
+              "All statuses reset to pending. Run dod_check to re-verify.",
+            ].join("\n"),
           },
         ],
       };

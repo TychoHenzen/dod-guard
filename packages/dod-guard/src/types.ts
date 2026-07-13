@@ -107,6 +107,7 @@ export type ProofCategory =
   | "streamline"
   | "observability"
   | "brevity"
+  | "regression"
   | "manual"
   | "other";
 
@@ -197,7 +198,7 @@ export interface DodDocument {
    */
   skip_reasons?: Record<string, string>;
   /** Work type, selects the applicable company baseline. */
-  type?: "bug" | "general";
+  type?: "bug" | "general" | "minimal";
   sections: DodSections;
   /** Root-level task nodes — the top of the decomposition tree. */
   roots: TaskNode[];
@@ -256,6 +257,8 @@ export interface CheckResult {
   /** When true: all concrete proofs pass but manual verification is still needed.
    * The DoD is NOT complete — don't report done until manuals are verified. */
   blocked_by_manuals: boolean;
+  /** When true: format output in summary mode (collapse unchanged drafts). */
+  summary_mode?: boolean;
 }
 
 export interface LeafResult {

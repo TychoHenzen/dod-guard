@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import * as path from "node:path";
 import { promisify } from "node:util";
 
@@ -265,6 +265,136 @@ export async function findMissingTools(commands: string[], cwd: string): Promise
 
 export function suggestionFor(tool: string): string | undefined {
   return WINDOWS_EQUIVALENTS[tool.toLowerCase()];
+}
+
+// ── Glob expansion (Windows cmd.exe compatibility) ──────────────────────────
+
+/**
+ * Expand unquoted glob wildcards in a command string by reading the filesystem.
+ * Only expands directory-level globs (e.g. `packages/{star}/src/`) — file-level globs
+ * are left as-is since the target tool handles its own globbing.
+ *
+ * On Windows, cmd.exe does NOT expand globs in arguments. Tools like biome,
+ * eslint, and prettier handle their own globbing, but shell commands (findstr,
+ * type, dir) do not. This function bridges the gap for the common monorepo
+ * pattern where `packages/{star}/src/` needs to become explicit paths.
+ *
+ * Returns the expanded command, or the original if no directory globs were found
+ * or expansion failed.
+ */
+export function expandGlobsInCommand(command: string, cwd: string): { expanded: string; expanded_count: number } {
+  if (process.platform !== "win32") return { expanded: command, expanded_count: 0 };
+
+  // Only expand directory-level globs: <dir>/*/ or <dir>/*\  patterns
+  // Match segments like "packages/*/src/" or "packages\*\src\"
+  const dirGlobRe = /([A-Za-z0-9_.-]+)\\([*?][^\\]*)\\/g;
+  const dirGlobReFwd = /([A-Za-z0-9_.-]+)\/([*?][^/]*)\//g;
+
+  let expanded = command;
+  let count = 0;
+
+  // Try backslash patterns first (Windows native)
+  let match: RegExpExecArray | null;
+  while ((match = dirGlobRe.exec(command)) !== null) {
+    const prefix = match[1];
+    const pattern = match[2];
+    const fullMatch = match[0];
+
+    try {
+      const parentDir = path.resolve(cwd, prefix);
+      if (!existsSync(parentDir)) continue;
+
+      const entries = readdirSync(parentDir, { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name)
+        .filter((name) => wildcardMatch(name, pattern))
+        .sort();
+
+      if (entries.length > 0) {
+        const replacement = entries.map((e) => `${prefix}\\${e}\\`).join(" ");
+        expanded = expanded.replace(fullMatch, replacement);
+        count += entries.length;
+      }
+    } catch {
+      // Directory doesn't exist or can't be read — leave glob as-is
+    }
+  }
+
+  // Try forward-slash patterns
+  while ((match = dirGlobReFwd.exec(command)) !== null) {
+    const prefix = match[1];
+    const pattern = match[2];
+    const fullMatch = match[0];
+
+    try {
+      const parentDir = path.resolve(cwd, prefix);
+      if (!existsSync(parentDir)) continue;
+
+      const entries = readdirSync(parentDir, { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name)
+        .filter((name) => wildcardMatch(name, pattern))
+        .sort();
+
+      if (entries.length > 0) {
+        const replacement = entries.map((e) => `${prefix}/${e}/`).join(" ");
+        expanded = expanded.replace(fullMatch, replacement);
+        count += entries.length;
+      }
+    } catch {
+      // Directory doesn't exist or can't be read — leave glob as-is
+    }
+  }
+
+  return { expanded, expanded_count: count };
+}
+
+/** Simple wildcard match: supports * (any chars) and ? (single char). */
+function wildcardMatch(str: string, pattern: string): boolean {
+  const re = new RegExp(
+    "^" + pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$",
+  );
+  return re.test(str);
+}
+
+// ── Mutating command detection ──────────────────────────────────────────────
+
+/**
+ * Flags that modify files in-place. Proof commands using these dirty the
+ * working tree, causing false failures in subsequent proof runs (#22, S7).
+ *
+ * Each entry: [flag, description] — flag may appear standalone or as part
+ * of a tool name (e.g. `biome check --write` or `tsc` which writes dist/).
+ */
+const MUTATING_FLAGS: ReadonlyArray<[RegExp, string]> = [
+  [/\bb(?:iome|eautifier)\b.*--write\b/, "biome/prettier --write modifies files in-place"],
+  [/\beslint\b.*--fix\b/, "eslint --fix modifies files in-place"],
+  [/\b(?:biome|prettier)\s+format\b(?!.*--check\b)/, "biome/prettier format (without --check) may modify files"],
+  [/\btsc\b(?!.*--noEmit\b)/, "tsc writes compiled .js files to dist/ — use --noEmit for check-only"],
+  [/\bstryker\b\s+run\b/, "Stryker mutates dist/ files in-place — use git checkout to restore after run"],
+  [/\bgit\s+add\b/, "git add stages changes — never use in proof commands"],
+  [/\bgit\s+commit\b/, "git commit creates commits — never use in proof commands"],
+  [/\bgit\s+reset\b/, "git reset modifies working tree — never use in proof commands"],
+  [/\brm\s+-[rf]/, "rm -rf deletes files — dangerous in proof commands"],
+  [/\bdel\s+\/[sfq]/, "Windows del with flags deletes files — dangerous in proof commands"],
+  [/\bnpm\s+(?:install|update|ci)\b/, "npm install/update/ci modifies node_modules/ and package-lock.json"],
+  [/\bpnpm\s+(?:install|update)\b/, "pnpm install/update modifies node_modules/ and lockfile"],
+  [/\bcargo\s+build\b(?!.*--check\b)/, "cargo build writes compiled artifacts (use cargo check for lint-only)"],
+];
+
+/**
+ * Scan a command for mutating flags. Returns warnings for any detected
+ * side-effect patterns. Proof commands should be side-effect-free — use
+ * check-only equivalents (biome format, tsc --noEmit, eslint without --fix).
+ */
+export function detectMutatingFlags(command: string): string[] {
+  const warnings: string[] = [];
+  for (const [re, desc] of MUTATING_FLAGS) {
+    if (re.test(command)) {
+      warnings.push(desc);
+    }
+  }
+  return warnings;
 }
 
 /** The platform commands are validated against (matches the checker's host). */

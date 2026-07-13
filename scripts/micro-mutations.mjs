@@ -10,10 +10,15 @@
 // test history.
 //
 // Usage:
-//   node scripts/micro-mutations.mjs [--dry-run] [--init-state] [--all] [--dirty]
+//   node scripts/micro-mutations.mjs [--dry-run] [--init-state] [--all] [--dirty] [--incremental]
 //   MICRO_MUTATION_COUNT=3 node scripts/micro-mutations.mjs
 //   node scripts/micro-mutations.mjs --all    # full sweep: all eligible files
 //   node scripts/micro-mutations.mjs --dirty  # CI daily: only dirty files
+//   node scripts/micro-mutations.mjs --incremental  # Stryker incremental: only re-test surviving mutants
+//
+// Fingerprint note: fingerprints are SHA-256 of SOURCE (.ts) files only, not test files.
+// Test-only edits never trigger a dirty flag — dirty means the production source changed.
+// This is intentional: the file's mutation surface doesn't change when only tests change.
 
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -41,6 +46,7 @@ const DRY_RUN = process.argv.includes("--dry-run");
 const INIT_STATE = process.argv.includes("--init-state");
 const ALL_MODE = process.argv.includes("--all");
 const DIRTY_MODE = process.argv.includes("--dirty");
+const INCREMENTAL = process.argv.includes("--incremental");
 
 // Files excluded from mutation testing
 const EXCLUDE_PATTERNS = ["*.test.ts", "types.ts", "constants.ts", "schemas.ts"];
@@ -77,6 +83,97 @@ function computeFingerprint(filePath) {
   }
 }
 
+// ── Source map utilities ──────────────────────────────────────────────────
+
+/**
+ * Load a source map (.js.map) and resolve a compiled dist position to the
+ * original source .ts position. Returns null when the source map is missing
+ * or the position can't be resolved.
+ */
+function resolveSourcePosition(distFile, distLine, distCol) {
+  try {
+    const mapPath = join(ROOT, distFile + ".map");
+    if (!existsSync(mapPath)) return null;
+
+    const map = JSON.parse(readFileSync(mapPath, "utf-8"));
+    if (!map.mappings || !map.sources || !map.sourcesContent) return null;
+
+    // Decode VLQ mappings
+    const lines = map.mappings.split(";");
+    const targetLine = distLine - 1; // 0-indexed
+    if (targetLine < 0 || targetLine >= lines.length) return null;
+
+    const vlqChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    function decodeVLQ(lineStr) {
+      const groups = [];
+      let i = 0;
+      let srcCol = 0, srcLine = 0, srcIdx = 0, nameIdx = 0;
+      while (i < lineStr.length) {
+        // Decode segments until comma
+        const seg = [];
+        for (let field = 0; field < 5 && i < lineStr.length; field++) {
+          let value = 0;
+          let shift = 0;
+          let cont = true;
+          while (cont) {
+            const c = lineStr[i++];
+            const digit = vlqChars.indexOf(c);
+            if (digit < 0) { cont = false; break; }
+            cont = !!(digit & 0x20);
+            value |= (digit & 0x1f) << shift;
+            shift += 5;
+          }
+          // Sign extend: lowest bit is sign
+          if (value & 1) value = -(value >> 1);
+          else value = value >> 1;
+          if (field === 0) value += distCol || 0;
+          else if (field === 1) { srcIdx += value; }
+          else if (field === 2) { srcLine += value; }
+          else if (field === 3) { srcCol += value; }
+          else if (field === 4) { nameIdx += value; }
+          seg.push({ field, value, srcIdx, srcLine, srcCol, nameIdx });
+        }
+        // Push the resolved position from the last segment in this group
+        if (seg.length > 0) {
+          const last = seg[seg.length - 1];
+          groups.push({
+            srcIdx: last.srcIdx,
+            srcLine: last.srcLine,
+            srcCol: last.srcCol,
+          });
+        }
+        if (lineStr[i] === ",") { i++; continue; }
+        break;
+      }
+      return groups;
+    }
+
+    // Try to find the nearest segment for the requested column
+    const groups = decodeVLQ(lines[targetLine]);
+    if (groups.length === 0) return null;
+
+    // Find segment closest to distCol
+    let best = groups[0];
+    for (const g of groups) {
+      if (g.srcCol <= distCol) best = g;
+    }
+
+    if (best.srcIdx < 0 || best.srcIdx >= (map.sources?.length || 0)) return null;
+
+    const srcFile = map.sources[best.srcIdx];
+    const srcContent = map.sourcesContent[best.srcIdx];
+    if (!srcFile || !srcContent) return null;
+
+    return {
+      file: srcFile,
+      line: best.srcLine + 1, // 1-indexed
+      col: best.srcCol + 1,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ── Survivor extraction from Stryker JSON ────────────────────────────────
 
 function loadStrykerJson() {
@@ -98,13 +195,24 @@ function extractSurvivors(strykerJson) {
     if (!fileData.mutants) continue;
     for (const m of fileData.mutants) {
       if (m.status === "Survived") {
+        const distLine = m.location?.start?.line;
+        const distCol = m.location?.start?.column;
+        const srcPos = distLine !== undefined
+          ? resolveSourcePosition(filePath, distLine, distCol)
+          : null;
+
         survivors.push({
           file: filePath,
           id: m.id,
           mutator: m.mutatorName,
           replacement: m.replacement?.slice(0, 120),
-          line: m.location?.start?.line,
-          col: m.location?.start?.column,
+          // dist position (where Stryker mutated the compiled JS)
+          dist_line: distLine,
+          dist_col: distCol,
+          // src position (reverse-looked up from source map)
+          src_line: srcPos?.line,
+          src_col: srcPos?.col,
+          src_file: srcPos?.file,
         });
       }
     }
@@ -452,6 +560,19 @@ function srcToDist(srcPath) {
   return normalized.replace(/\/src\//, "/dist/").replace(/\.ts$/, ".js");
 }
 
+/**
+ * Map a source file to its corresponding test file.
+ * packages/dod-guard/src/checker.ts → packages/dod-guard/dist/checker.test.js
+ * Falls back to the glob "*" pattern if no specific test file found.
+ */
+function srcToTestFile(srcPath) {
+  const distPath = srcToDist(srcPath).replace(/\\/g, "/");
+  const testPath = distPath.replace(/\.js$/, ".test.js");
+  const fullPath = join(ROOT, testPath);
+  if (existsSync(fullPath)) return testPath;
+  return null;
+}
+
 function pkgFromPath(srcPath) {
   const parts = srcPath.split(/[\\/]/);
   if (parts[0] === "packages" && parts[1]) {
@@ -466,7 +587,19 @@ function runMutation(srcPath) {
   // Normalize to forward slashes for cross-platform Stryker/cli compatibility
   const distPathFwd = distPath.replace(/\\/g, "/");
 
+  // Auto-scope testFiles to match --mutate (#35, #40)
+  // Instead of globbing ALL dist/*.test.js (which runs every test in the repo),
+  // scope to only the test file matching the mutated source file.
+  // Falls back to the full glob if no matching test file exists.
+  const testFile = srcToTestFile(srcPath);
+  const testFilesOverride = testFile
+    ? `--testFiles '${testFile.replace(/\\/g, "/")}'`
+    : "";
+
   console.log(`\n=== MUTATING: ${srcPath} (${distPathFwd}) ===`);
+  if (testFilesOverride) {
+    console.log(`  testFiles scoped: ${testFile}`);
+  }
 
   if (!existsSync(join(ROOT, distPath))) {
     const msg = `dist file not found: ${distPathFwd}`;
@@ -495,8 +628,34 @@ function runMutation(srcPath) {
   try {
     // Clear stale JSON report before run
     try { execSync(`rm -f "${STRIKER_JSON}"`, { cwd: ROOT, stdio: "pipe" }); } catch { /* ok */ }
+
+    // Build Stryker CLI args
+    // Auto-scope testFiles to match --mutate (#35, #40):
+    // Instead of globbing ALL dist/*.test.js (which runs every test in the repo),
+    // scope to only the test file matching the mutated source file.
+    // This prevents 1 broken test from blocking 9 other files' mutation runs.
+    // Falls back to the stryker.config.json glob if no matching test file exists.
+    const incFlag = INCREMENTAL
+      ? " --incremental --incrementalFile .data/micro-mutations/stryker-incremental.json"
+      : "";
+
+    // Stryker CLI dot-notation overrides for nested config
+    const testFileOverride = testFile
+      ? `--tap.testFiles '["${testFile.replace(/\\/g, "/")}"]' --tap.nodeArgs '["--experimental-test-module-mocks"]'`
+      : "";
+
+    const strykerCmd = [
+      "npx stryker run",
+      testFileOverride || STRIKER_CONFIG,
+      `--mutate "${distPathFwd}"`,
+      "--concurrency 2",
+      "--reporters clear-text,json",
+      incFlag,
+    ].filter(Boolean).join(" ");
+
+    console.log(`  cmd: ${strykerCmd.slice(0, 250)}`);
     const strykerOut = execSync(
-      `npx stryker run ${STRIKER_CONFIG} --mutate "${distPathFwd}" --concurrency 2 --reporters clear-text,json`,
+      strykerCmd,
       { cwd: ROOT, encoding: "utf-8", timeout: 15 * 60_000, stdio: ["pipe", "pipe", "pipe"] },
     );
 

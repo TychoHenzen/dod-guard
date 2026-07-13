@@ -62,10 +62,10 @@ What gets evaluated about a proof command's output:
 | Tool | Purpose |
 |------|---------|
 | `dod_create` | Build a new DoD with roots tree, validate baseline, check OS tool availability |
-| `dod_check` | Run all (or scoped) proofs, produce pass/fail/incomplete verdict |
+| `dod_check` | Run all (or scoped) proofs, produce pass/fail/incomplete verdict. Pass `summary: true` to collapse unchanged drafts into a count line. |
 | `dod_refine` | Turn a draft leaf into concrete (supply command + predicate + description) |
 | `dod_add_node` / `dod_remove_node` | Add/remove nodes anywhere in the tree |
-| `dod_amend` | Modify a concrete proof with audit trail. Blocks machine→out-of-band (manual/review) conversion. |
+| `dod_amend` | Modify a concrete proof with audit trail. `node_path='*'` bulk-amends all concrete leaves. `node_path='__meta__'` updates DoD-level skip_reasons. Blocks machine→out-of-band (manual/review) conversion. |
 | `dod_verify` | MCP elicitation for one manual/review proof (must be called explicitly) |
 | `dod_status` | Read cached check result without re-running |
 | `dod_list` | List all tracked DoDs with status |
@@ -82,9 +82,16 @@ Every mutation (create, refine, amend, add/remove node) recomputes `doc.proof_fi
 ### Baseline enforcement (baseline.ts)
 
 Company baseline from `standards/dod-baselines.md` is machine-enforced at `dod_create`:
-- **Hard mandatory** for all work types: `integration_wiring`, `integration_behavioral`, `test`
-- **Optional requiring justification** (absent + no skip_reason → hard error): `tdd`, `mutation`, `streamline`, `observability`
-- **Regression categories** (same escalation): `performance`, `complexity`, `coverage`, `duplication`
+
+- **`type: "minimal"`**: Only lint+format+test enforced. All other checks skipped. Use for narrow-scope changes.
+- **`type: "bug"`**: Hard mandatory + optional + regression categories enforced. TDD warning mentions regression test.
+- **`type: "general"`**: Full enforcement — hard mandatory + all optional-requiring-justification + all regression categories.
+
+**Hard mandatory** for `bug` and `general`: `integration_wiring`, `integration_behavioral`, `test`
+**Optional requiring justification** (absent + no skip_reason → hard error): `tdd`, `mutation`, `streamline`, `observability`
+**Regression categories** (same escalation): `performance`, `complexity`, `coverage`, `duplication`
+
+Proof categories now include `"regression"` (added 2026-07-13) to avoid confusion with the `regression` predicate type.
 - Advisory-only at creation for optional cats (they get filled during refinement)
 
 ### File responsibilities
@@ -104,7 +111,7 @@ Company baseline from `standards/dod-baselines.md` is machine-enforced at `dod_c
 | `regression.ts` | Extract metric number from regression command output (last number or regex capture) |
 | `baseline.ts` | Baseline category enforcement with two-tier (hard error / warn-with-skip_reason) |
 | `notify.ts` | Jingle (PowerShell beep arpeggio) for manual verification attention chime |
-| `command-check.ts` | Validate proof commands reference tools available on the current OS |
+| `command-check.ts` | Validate proof commands: OS tool availability, glob expansion (`expandGlobsInCommand()`), mutating flag detection (`detectMutatingFlags()`) |
 | `evaluate-proof.ts` | Predicate-specific analysis: builders (`buildLineLenFail`, etc.) and handlers (`hAssertions`, `hObservability`, `hBrevity`, `hManual`) that evaluate complex predicates (assertions/observability/brevity/regression/mutation) against analysis reports |
 
 ### Predicate evaluation in checkDocument()
@@ -131,6 +138,12 @@ After `executeProof()` runs the command:
 ### OS awareness
 
 Proof commands run on the host OS. `dod_create`/`dod_refine`/`dod_amend` validate that commands reference tools available on the current platform (Windows/Linux/macOS) via `findMissingTools()` in `command-check.ts`. Validation is skipped for out-of-band predicate types (manual, review) — use `isExecutablePredicate()` from checker.ts as the single gate. On Windows, `exec()` uses `cmd.exe` shell.
+
+Additional command validation at `dod_create`/`dod_refine` time:
+
+- **Glob expansion**: `expandGlobsInCommand()` auto-resolves directory-level globs (`packages/*/src/`) on Windows, showing the expanded form in warnings so users can copy it.
+- **Mutating flag detection**: `detectMutatingFlags()` scans for 12 patterns that dirty the working tree (`--write`, `--fix`, `tsc` without `--noEmit`, `git add/commit`, `npm install`, etc.) and warns with check-only alternatives.
+- **Placeholder detection**: `dod_refine` warns when the command is a no-op (`node -e "process.exit(0)"`, `echo ok`, `exit 0`). These always pass and provide zero verification.
 
 ### Adding a new predicate type — execution gate
 

@@ -346,10 +346,17 @@ function collectAmendmentCounts(
 
 // ── Main entry point ──────────────────────────────────────────────────
 
+export interface CheckOptions {
+  nodePath?: string;
+  execFn?: typeof runCommand;
+  /** Collapse unchanged drafts into a single count line (--summary). Default: false. */
+  summary?: boolean;
+}
+
 export async function checkDocument(
   doc: DodDocument,
   cwdOverride?: string,
-  opts?: { nodePath?: string; execFn?: typeof runCommand },
+  opts?: CheckOptions,
 ): Promise<CheckResult> {
   const cwd = cwdOverride ?? doc.cwd;
   const targetPath = opts?.nodePath;
@@ -454,6 +461,7 @@ export async function checkDocument(
     manual_unverified: manualUnverified,
     amendment_warnings: amendmentWarnings,
     blocked_by_manuals: blockedByManuals,
+    summary_mode: opts?.summary === true ? true : undefined,
     ...(targetPath ? { scoped: true, ran_node_path: targetPath } : {}),
     ...(tampered ? { tampered: true } : {}),
   };

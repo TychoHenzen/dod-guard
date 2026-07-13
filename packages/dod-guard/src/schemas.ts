@@ -81,6 +81,7 @@ export const ProofCategorySchema = z.enum([
   "streamline",
   "observability",
   "brevity",
+  "regression",
   "manual",
   "other",
 ]);

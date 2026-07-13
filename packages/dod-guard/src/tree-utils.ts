@@ -1,4 +1,4 @@
-import { currentOs, findMissingTools, hasGlobWildcards, type MissingTool } from "./command-check.js";
+import { currentOs, detectMutatingFlags, expandGlobsInCommand, findMissingTools, hasGlobWildcards, type MissingTool } from "./command-check.js";
 import type { Predicate, ProofCategory, TaskNode } from "./types.js";
 
 // ── Node ID generation ────────────────────────────────────────────────
@@ -143,13 +143,42 @@ export async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promis
         "Use explicit paths or tools that handle their own globbing.",
         "",
       );
-      for (const cmd of globCmds) lines.push(`  • ${cmd}`);
+      for (const cmd of globCmds) {
+        lines.push(`  • ${cmd}`);
+        // Show expanded form if possible
+        const { expanded, expanded_count } = expandGlobsInCommand(cmd, cwd);
+        if (expanded_count > 0) {
+          lines.push(`    → Auto-expanded: \`${expanded}\``);
+          lines.push(`    → Copy the expanded form above and replace the glob in your proof command.`);
+        }
+      }
       lines.push("");
     }
   }
 
   if (missing.length > 0) {
     lines.push(formatMissingTools(missing));
+  }
+
+  // Mutating command detection (#22): warn about proof commands that dirty the working tree
+  const mutatingCmds = commands.filter((cmd) => detectMutatingFlags(cmd).length > 0);
+  if (mutatingCmds.length > 0) {
+    if (lines.length > 0) lines.push("");
+    lines.push(
+      `WARNING: ${mutatingCmds.length} proof command(s) mutate the working tree — this causes false dirty-tree signals on subsequent proof runs.`,
+      "Use check-only equivalents where possible:",
+      "  • biome format / prettier --check (not --write)",
+      "  • tsc --noEmit (check types without emitting .js)",
+      "  • eslint (without --fix)",
+      "  • npx stryker run → follow with git checkout -- <pkg>/dist/ to restore mutated files",
+      "",
+    );
+    for (const cmd of mutatingCmds) {
+      const flags = detectMutatingFlags(cmd);
+      lines.push(`  • \`${cmd.slice(0, 80)}\``);
+      for (const f of flags.slice(0, 2)) lines.push(`    → ${f}`);
+    }
+    lines.push("");
   }
 
   if (lines.length === 0) return null;

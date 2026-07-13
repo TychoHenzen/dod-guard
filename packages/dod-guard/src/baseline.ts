@@ -193,7 +193,7 @@ function checkStrengthOnly(steps: BaselineStepInput[]): string[] {
 // ── Public API ────────────────────────────────────────────────────────────
 
 export function validateBaseline(
-  type: "bug" | "general",
+  type: "bug" | "general" | "minimal",
   steps: BaselineStepInput[],
   skipReasons?: Record<string, string>,
 ): BaselineReport {
@@ -202,11 +202,13 @@ export function validateBaseline(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  errors.push(...checkHardMandatory(present, type));
+  if (type !== "minimal") {
+    errors.push(...checkHardMandatory(present, type));
 
-  const optResult = checkOptional(present, skipReasons);
-  errors.push(...optResult.errors);
-  warnings.push(...optResult.warnings);
+    const optResult = checkOptional(present, skipReasons);
+    errors.push(...optResult.errors);
+    warnings.push(...optResult.warnings);
+  }
 
   warnings.push(...checkStrengthOnly(steps));
 
