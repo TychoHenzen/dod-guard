@@ -131,24 +131,17 @@ describe("vault", () => {
     });
 
     it("rejects ../ path traversal (write)", async () => {
-      await assert.rejects(
-        () => mod.writeNote("/v", "../../evil.md", {}, "traversal"),
-        /Path traversal denied/,
-      );
+      await assert.rejects(() => mod.writeNote("/v", "../../evil.md", {}, "traversal"), /Path traversal denied/);
     });
 
-    it("rejects ..\\ path traversal (write, backslash)", { skip: process.platform !== "win32" ? "backslash is a valid filename char on POSIX, not a separator" : false }, async () => {
-      await assert.rejects(
-        () => mod.writeNote("/v", "..\\..\\evil2.md", {}, "traversal"),
-        /Path traversal denied/,
-      );
+    it("rejects ..\\ path traversal (write, backslash)", {
+      skip: process.platform !== "win32" ? "backslash is a valid filename char on POSIX, not a separator" : false,
+    }, async () => {
+      await assert.rejects(() => mod.writeNote("/v", "..\\..\\evil2.md", {}, "traversal"), /Path traversal denied/);
     });
 
     it("rejects nested ../ path traversal (read)", async () => {
-      await assert.rejects(
-        () => mod.readNote("/v", "sub/../../../evil3.md"),
-        /Path traversal denied/,
-      );
+      await assert.rejects(() => mod.readNote("/v", "sub/../../../evil3.md"), /Path traversal denied/);
     });
 
     it("allows safe paths within vault", async () => {
