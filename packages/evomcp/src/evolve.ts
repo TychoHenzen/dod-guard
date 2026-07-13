@@ -152,7 +152,7 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
       try {
         execSync("git checkout .", { cwd: spec.cwd, timeout: 10_000 });
         execSync("git clean -fd", { cwd: spec.cwd, timeout: 10_000 });
-      } catch (cleanErr) {
+      } catch (_cleanErr) {
         // Ignore cleanup failures — non-critical
       }
     }
@@ -262,11 +262,16 @@ function readTargetFiles(cwd: string, patterns: string[]): TargetFile[] {
 }
 
 export function matchSimple(name: string, pattern: string): boolean {
-  const regex = new RegExp(`^${pattern.replace(/[.+?^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
+  const regex = new RegExp(
+    `^${pattern
+      .replace(/[.+?^${}()|\\]/g, "\\$&")
+      .replace(/\*/g, ".*")
+      .replace(/\?/g, ".")}$`,
+  );
   return regex.test(name);
 }
 
-function saveState(cwd: string): void {
+function _saveState(cwd: string): void {
   try {
     execSync(`git stash push --include-untracked -m "evomcp-backup"`, { cwd, timeout: 10_000 });
   } catch (e: unknown) {
@@ -278,7 +283,7 @@ function saveState(cwd: string): void {
   }
 }
 
-function restoreState(cwd: string): void {
+function _restoreState(cwd: string): void {
   try {
     execSync(`git checkout .`, { cwd, timeout: 10_000 });
     execSync(`git clean -fd`, { cwd, timeout: 10_000 });
