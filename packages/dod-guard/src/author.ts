@@ -296,13 +296,15 @@ export function updateDocFromCheckResult(doc: DodDocument, result: CheckResult):
     // Don't clobber a pending proof with "skipped" on scoped runs
     // Use strict path-boundary comparison to avoid numeric prefix confusion
     // (e.g. "0.children.10".startsWith("0.children.1") → true but should be false)
-    const ranPath = result.ran_node_path ?? "";
-    const isUnderScope = leafResult.node_path === ranPath ||
-      leafResult.node_path.startsWith(ranPath + ".");
+    // Undefined ran_node_path → full tree ran, don't skip any leaf.
+    // Otherwise use strict path-boundary comparison to avoid numeric
+    // prefix confusion (e.g. "0.children.1" matching "0.children.10").
+    const ranPath = result.ran_node_path;
     if (
       result.scoped &&
-      leafResult.node_path !== result.ran_node_path &&
-      !isUnderScope
+      ranPath != null &&
+      leafResult.node_path !== ranPath &&
+      !leafResult.node_path.startsWith(ranPath + ".")
     )
       continue;
 
