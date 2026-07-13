@@ -285,9 +285,10 @@ export class Store {
   listNotes(vaultName: string, directory?: string): Array<{ path: string; title: string; tags: string[] }> {
     let rows: any[];
     if (directory) {
+      const pattern = directory.endsWith("/") ? `${directory}%` : `${directory}/%`;
       rows = this.db
         .prepare("SELECT path, title, tags FROM notes WHERE vault_name = ? AND path LIKE ? ORDER BY path")
-        .all(vaultName, `${directory}%`);
+        .all(vaultName, pattern);
     } else {
       rows = this.db.prepare("SELECT path, title, tags FROM notes WHERE vault_name = ? ORDER BY path").all(vaultName);
     }

@@ -116,12 +116,8 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
       const r = results[i];
       if (r.timedOut || r.exitCode !== 0) continue;
 
-      // Save current state so we can revert
-      saveState(spec.cwd);
-
+      // Measure fitness on mutated code FIRST (before saveState reverts to HEAD)
       try {
-        // Apply claude's changes (claude -p already wrote to files via tools)
-        // Run fitness command
         const fitnessResult = runCommand(spec.fitness_cmd, spec.cwd);
         const score = extractScore(fitnessResult.output);
 
@@ -132,11 +128,15 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
           const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
           if (isBetter) {
             bestScore = score;
-            // Capture the current state as best patch
+            // Capture diff while mutated code is still in working tree
             bestPatch = captureState(spec.cwd, spec.target_files);
             onProgress?.(`    → NEW BEST: ${score.toFixed(2)}`);
 
-            elites.push({ code: fitnessResult.output.slice(0, 2000), score });
+            // Store actual source code (not fitness command output) as elite example
+            const eliteCode = readTargetFiles(spec.cwd, spec.target_files)
+              .map((t) => `=== ${t.path} ===\n${t.content}`)
+              .join("\n\n");
+            elites.push({ code: eliteCode.slice(0, 2000), score });
             // Keep only top 5 elites
             elites.sort((a, b) => (higherIsBetter ? b.score - a.score : a.score - b.score));
             if (elites.length > 5) elites.length = 5;
@@ -144,9 +144,16 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
         }
       } catch (err) {
         onProgress?.(`  [${i + 1}] error: ${String(err).slice(0, 80)}`);
-      } finally {
-        // Revert to best state for next generation
-        restoreState(spec.cwd);
+      }
+
+      // Revert to HEAD for next candidate
+      // NOTE: saveState/restoreState removed — claude -p already wrote files,
+      // and mutations run in parallel so per-candidate stashing is unreliable.
+      try {
+        execSync("git checkout .", { cwd: spec.cwd, timeout: 10_000 });
+        execSync("git clean -fd", { cwd: spec.cwd, timeout: 10_000 });
+      } catch (cleanErr) {
+        // Ignore cleanup failures — non-critical
       }
     }
 
@@ -255,7 +262,7 @@ function readTargetFiles(cwd: string, patterns: string[]): TargetFile[] {
 }
 
 export function matchSimple(name: string, pattern: string): boolean {
-  const regex = new RegExp(`^${pattern.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`);
+  const regex = new RegExp(`^${pattern.replace(/[.+?^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
   return regex.test(name);
 }
 

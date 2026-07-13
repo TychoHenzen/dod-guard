@@ -87,14 +87,16 @@ function isDirty(cwd: string): boolean {
 
 /** Files that exist in HEAD but would be removed by switching to targetRef. */
 function filesRemovedByCheckout(targetRef: string, cwd: string): string[] {
+  // Validate ref exists first — don't silently return [] on git errors
   try {
-    // --name-only --diff-filter=D: files deleted going from HEAD to targetRef
-    // (i.e., files present in HEAD but not in targetRef)
-    const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
-    return diff.split("\n").filter(Boolean);
+    git(["rev-parse", "--verify", targetRef], cwd);
   } catch {
-    return [];
+    throw new EvoError(`target ref '${targetRef}' does not exist`);
   }
+  // --name-only --diff-filter=D: files deleted going from HEAD to targetRef
+  // (i.e., files present in HEAD but not in targetRef)
+  const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
+  return diff.split("\n").filter(Boolean);
 }
 
 /** Untracked source files at risk of being clobbered by checkout. */
@@ -300,8 +302,9 @@ export function evo_checkpoint(name: string, description: string): string {
 /**
  * Append a lesson to .evo/lessons.jsonl with timestamp and branch.
  */
-export function evo_learn(content: string): string {
-  const { cwd } = getRepo();
+export function evo_learn(content: string, repoOverride?: { cwd: string; rootBranch: string }): string {
+  const repo = repoOverride ?? getRepo();
+  const { cwd } = repo;
   requireInit(cwd);
 
   const branch = currentBranch(cwd);
@@ -500,7 +503,7 @@ export function evo_branches(): string {
  * Optionally records reason as a lesson. Refuses if dirty tree.
  */
 export function evo_abandon(checkpoint?: string, reason?: string, force?: boolean): string {
-  const { cwd } = getRepo();
+  const { cwd, rootBranch } = getRepo();
   requireInit(cwd);
 
   // Auto-stash if dirty
@@ -546,19 +549,19 @@ export function evo_abandon(checkpoint?: string, reason?: string, force?: boolea
     );
   }
 
-  // Tag as dead
+  // Hard reset to target FIRST — only tag dead after success
+  git(["reset", "--hard", targetRef], cwd);
+
+  // Tag as dead (only after reset succeeded)
   const deadTag = `evo-dead-${branchName}`;
   try {
     git(["tag", "-d", deadTag], cwd);
   } catch {}
   git(["tag", "-a", deadTag, "-m", `Abandoned branch '${branchName}'`], cwd);
 
-  // Hard reset to target
-  git(["reset", "--hard", targetRef], cwd);
-
-  // Optionally record reason as lesson
+  // Optionally record reason as lesson (pass repo info directly — avoid getRepo() post-reset)
   if (reason) {
-    evo_learn(`[ABANDON] ${reason}`);
+    evo_learn(`[ABANDON] ${reason}`, { cwd, rootBranch });
   }
 
   const abandonMsg = `Branch '${branchName}' abandoned. Reverted to ${targetDesc}.${stashed ? " Auto-stashed dirty changes — run git stash pop to recover." : ""}`;

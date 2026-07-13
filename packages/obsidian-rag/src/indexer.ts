@@ -37,6 +37,23 @@ export function chunkMarkdown(notePath: string, content: string): Chunk[] {
     } else {
       currentChunk += (currentChunk ? "\n\n" : "") + text;
     }
+
+    // Sub-split oversized chunks (when a single section exceeds MAX_CHUNK_CHARS)
+    while (currentChunk.length > MAX_CHUNK_CHARS) {
+      const splitPoint = currentChunk.lastIndexOf(". ", MAX_CHUNK_CHARS);
+      const cut = splitPoint > MAX_CHUNK_CHARS / 2 ? splitPoint + 1 : MAX_CHUNK_CHARS;
+      chunks.push({
+        id: `${notePath}#${chunkIndex}`,
+        notePath,
+        heading: currentHeading,
+        content: currentChunk.slice(0, cut).trim(),
+      });
+      chunkIndex++;
+      const remainder = currentChunk.slice(cut).trim();
+      // Overlap: keep last bit of previous chunk
+      const overlapEnd = currentChunk.slice(0, cut).slice(-CHUNK_OVERLAP_CHARS);
+      currentChunk = `${overlapEnd}\n\n${remainder}`;
+    }
     currentHeading = displayHeading;
   }
 

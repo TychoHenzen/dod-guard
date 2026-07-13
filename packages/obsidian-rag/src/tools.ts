@@ -117,7 +117,10 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         };
       } catch (err) {
         rejectSelect?.(err as Error);
-        throw err;
+        return {
+          content: [{ type: "text", text: `Failed to select vault: ${(err as Error).message}` }],
+          isError: true,
+        };
       }
     },
   );

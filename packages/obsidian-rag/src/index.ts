@@ -64,6 +64,26 @@ async function waitForVault(): Promise<VaultInfo> {
     }
   }
 
+  // ── Auto-select from vault list: prefer "claude", else first available ──
+  if (!selectedVault) {
+    try {
+      const { listVaults } = await import("./cli.js");
+      const vaults = await listVaults();
+      if (vaults.length > 0) {
+        const claudeVault = vaults.find((v) => v.name.toLowerCase() === "claude");
+        const vault = claudeVault ?? vaults[0];
+        store.setVault(vault);
+        store.setLastVaultPath(vault.path);
+        selectedVault = vault;
+        const { indexVault } = await import("./indexer.js");
+        await indexVault(vault.path, vault.name, store);
+        return selectedVault;
+      }
+    } catch {
+      // listVaults may fail if Obsidian not running — fall through to existing logic
+    }
+  }
+
   if (_selectPromise) {
     try {
       await _selectPromise;
@@ -158,7 +178,7 @@ async function main() {
     async (uri: URL) => {
       const vault = await waitForVault().catch(() => null);
       if (!vault) return { contents: [{ text: "No vault selected.", uri: uri.href, mimeType: "text/plain" }] };
-      const notePath = decodeURIComponent(uri.pathname.split("/notes/")[1] || "");
+      const notePath = decodeURIComponent(uri.pathname.replace(/^\/notes\//, ""));
       try {
         const note = await readNote(vault.path, notePath);
         return { contents: [{ text: note.raw, uri: uri.href, mimeType: "text/markdown" }] };

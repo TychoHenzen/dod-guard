@@ -35,7 +35,7 @@ const REPAIR_TIMEOUT_MS = 180_000; // 3 min for repairs
 /** Capture git diff for the working tree — what claude -p actually changed. */
 function captureDiff(cwd: string): string | null {
   try {
-    const diff = execSync("git diff", { cwd, encoding: "utf-8", timeout: 10_000 });
+    const diff = execSync("git diff HEAD", { cwd, encoding: "utf-8", timeout: 10_000 });
     return diff || null;
   } catch {
     return null;
