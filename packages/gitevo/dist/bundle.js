@@ -3644,49 +3644,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative, options, skipNormalization) {
+    function resolveComponent(base, relative2, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative = parse3(serialize(relative, options), options);
+        relative2 = parse3(serialize(relative2, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative.scheme) {
-        target.scheme = relative.scheme;
-        target.userinfo = relative.userinfo;
-        target.host = relative.host;
-        target.port = relative.port;
-        target.path = removeDotSegments(relative.path || "");
-        target.query = relative.query;
+      if (!options.tolerant && relative2.scheme) {
+        target.scheme = relative2.scheme;
+        target.userinfo = relative2.userinfo;
+        target.host = relative2.host;
+        target.port = relative2.port;
+        target.path = removeDotSegments(relative2.path || "");
+        target.query = relative2.query;
       } else {
-        if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
-          target.userinfo = relative.userinfo;
-          target.host = relative.host;
-          target.port = relative.port;
-          target.path = removeDotSegments(relative.path || "");
-          target.query = relative.query;
+        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
+          target.userinfo = relative2.userinfo;
+          target.host = relative2.host;
+          target.port = relative2.port;
+          target.path = removeDotSegments(relative2.path || "");
+          target.query = relative2.query;
         } else {
-          if (!relative.path) {
+          if (!relative2.path) {
             target.path = base.path;
-            if (relative.query !== void 0) {
-              target.query = relative.query;
+            if (relative2.query !== void 0) {
+              target.query = relative2.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative.path[0] === "/") {
-              target.path = removeDotSegments(relative.path);
+            if (relative2.path[0] === "/") {
+              target.path = removeDotSegments(relative2.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative.path;
+                target.path = "/" + relative2.path;
               } else if (!base.path) {
-                target.path = relative.path;
+                target.path = relative2.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative.query;
+            target.query = relative2.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3694,7 +3694,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative.fragment;
+      target.fragment = relative2.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -21155,6 +21155,75 @@ function isDirty2(cwd) {
   const lines = status.split("\n").filter((l) => l.trim() && !l.startsWith("??"));
   return lines.length > 0;
 }
+function filesRemovedByCheckout(targetRef, cwd) {
+  try {
+    const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
+    return diff.split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+function untrackedSourceFiles(cwd) {
+  const status = git(["status", "--porcelain"], cwd);
+  return status.split("\n").filter((l) => l.startsWith("??")).map((l) => l.slice(3).trim()).filter((f) => /\.(ts|js|mjs|json|md|yml|yaml)$/.test(f));
+}
+function staleDistFiles(cwd) {
+  const stale = [];
+  function scan(dir) {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules") continue;
+        scan(full);
+      } else if (entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+        const tsFile = full.replace(/\.js$/, ".ts");
+        if (!fs.existsSync(tsFile)) {
+          stale.push(path.relative(cwd, full));
+        }
+      }
+    }
+  }
+  const pkgsDir = path.join(cwd, "packages");
+  if (fs.existsSync(pkgsDir)) {
+    for (const pkg of fs.readdirSync(pkgsDir, { withFileTypes: true })) {
+      if (pkg.isDirectory()) {
+        scan(path.join(pkgsDir, pkg.name, "dist"));
+      }
+    }
+  }
+  scan(path.join(cwd, "dist"));
+  return stale;
+}
+function preflightCheckoutSafety(targetRef, cwd) {
+  const warnings = [];
+  const untracked = untrackedSourceFiles(cwd);
+  if (untracked.length > 0) {
+    warnings.push(
+      `Untracked source files (would persist but risk loss if directory removed):
+${untracked.map((f) => `  \u2022 ${f}`).join("\n")}`
+    );
+  }
+  const removed = filesRemovedByCheckout(targetRef, cwd);
+  const sourceRemoved = removed.filter((f) => /\.ts$/.test(f) && !f.includes("dist/"));
+  if (sourceRemoved.length > 0) {
+    warnings.push(
+      `Source files in HEAD NOT in '${targetRef}' \u2014 WILL BE DELETED by checkout:
+${sourceRemoved.map((f) => `  \u2022 ${f}`).join("\n")}
+Commit or stash these before spawning.`
+    );
+  }
+  const stale = staleDistFiles(cwd);
+  if (stale.length > 0) {
+    warnings.push(
+      `Stale dist/*.js without matching .ts source:
+${stale.map((f) => `  \u2022 ${f}`).join("\n")}
+These will survive checkout \u2014 clean with 'npm run clean && npm run build'.`
+    );
+  }
+  if (warnings.length === 0) return null;
+  return warnings.join("\n\n");
+}
 function tagsWithPrefix(prefix, cwd) {
   const output = gitOrNull(["tag", "-l", `${prefix}*`], cwd) || "";
   if (!output) return [];
@@ -21210,8 +21279,10 @@ function evo_init() {
 function evo_checkpoint(name, description) {
   const { cwd } = getRepo();
   requireInit(cwd);
+  let stashed = false;
   if (isDirty2(cwd)) {
-    throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
+    git(["stash", "push", "-m", `gitevo: auto-stash before checkpoint '${name}'`], cwd);
+    stashed = true;
   }
   const tagName = `evo-${name}`;
   try {
@@ -21219,6 +21290,13 @@ function evo_checkpoint(name, description) {
   } catch {
   }
   git(["tag", "-a", tagName, "-m", description], cwd);
+  if (stashed) {
+    try {
+      git(["stash", "pop"], cwd);
+    } catch {
+      return `Checkpoint '${name}' created, but auto-stash could not be reapplied \u2014 your changes are in the stash.`;
+    }
+  }
   return `Checkpoint '${name}' created.`;
 }
 function evo_learn(content) {
@@ -21274,12 +21352,9 @@ function evo_export_lessons() {
 function slugify(text) {
   return text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 50);
 }
-function evo_spawn(checkpoint_name, new_branch) {
+function evo_spawn(checkpoint_name, new_branch, force) {
   const { cwd } = getRepo();
   requireInit(cwd);
-  if (isDirty2(cwd)) {
-    throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
-  }
   const tagName = `evo-${checkpoint_name}`;
   if (!hasTag(tagName, cwd)) {
     const available = tagsWithPrefix("evo-", cwd).join(", ");
@@ -21291,8 +21366,45 @@ function evo_spawn(checkpoint_name, new_branch) {
   if (branches.includes(new_branch)) {
     throw new EvoError(`Branch '${new_branch}' already exists.`);
   }
+  const wasDirty = isDirty2(cwd);
+  let stashed = false;
+  if (wasDirty) {
+    git(["stash", "push", "-m", "gitevo: auto-stash before spawn"], cwd);
+    stashed = true;
+  }
+  const safetyWarnings = preflightCheckoutSafety(tagName, cwd);
+  if (safetyWarnings && !force) {
+    if (stashed) {
+      try {
+        git(["stash", "pop"], cwd);
+      } catch {
+      }
+    }
+    throw new EvoError(
+      `SAFETY CHECK FAILED \u2014 checkout to '${tagName}' would lose data:
+
+${safetyWarnings}
+
+Pass force=true to proceed anyway (you accept the risk of data loss).`
+    );
+  }
   git(["checkout", "-b", new_branch, tagName], cwd);
-  return `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
+  if (stashed) {
+    try {
+      git(["stash", "pop"], cwd);
+    } catch {
+      return `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'. Auto-stash could not be reapplied \u2014 your changes are in the stash. Run git stash pop manually.`;
+    }
+  }
+  const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
+  if (force && safetyWarnings) {
+    return `${spawnMsg}
+
+\u26A0\uFE0F FORCED \u2014 safety checks bypassed:
+
+${safetyWarnings}`;
+  }
+  return spawnMsg;
 }
 function evo_checkpoints() {
   const { cwd } = getRepo();
@@ -21317,35 +21429,69 @@ function evo_branches() {
   return `Branches:
   ${attempts.sort().join("\n  ")}`;
 }
-function evo_abandon(checkpoint, reason) {
+function evo_abandon(checkpoint, reason, force) {
   const { cwd } = getRepo();
   requireInit(cwd);
+  let stashed = false;
   if (isDirty2(cwd)) {
-    throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
+    git(["stash", "push", "-m", "gitevo: auto-stash before abandon"], cwd);
+    stashed = true;
   }
   const branchName = currentBranch(cwd);
+  let targetRef;
+  let targetDesc;
+  if (checkpoint) {
+    const tagName = `evo-${checkpoint}`;
+    if (!hasTag(tagName, cwd)) {
+      if (stashed) {
+        try {
+          git(["stash", "pop"], cwd);
+        } catch {
+        }
+      }
+      throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
+    }
+    targetRef = tagName;
+    targetDesc = `checkpoint '${checkpoint}'`;
+  } else {
+    targetRef = "HEAD~1";
+    targetDesc = "parent commit";
+  }
+  const safetyWarnings = preflightCheckoutSafety(targetRef, cwd);
+  if (safetyWarnings && !force) {
+    if (stashed) {
+      try {
+        git(["stash", "pop"], cwd);
+      } catch {
+      }
+    }
+    throw new EvoError(
+      `SAFETY CHECK FAILED \u2014 reset to '${targetRef}' would lose data:
+
+${safetyWarnings}
+
+Pass force=true to proceed anyway (you accept the risk of data loss).`
+    );
+  }
   const deadTag = `evo-dead-${branchName}`;
   try {
     git(["tag", "-d", deadTag], cwd);
   } catch {
   }
   git(["tag", "-a", deadTag, "-m", `Abandoned branch '${branchName}'`], cwd);
-  let targetDesc;
-  if (checkpoint) {
-    const tagName = `evo-${checkpoint}`;
-    if (!hasTag(tagName, cwd)) {
-      throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
-    }
-    git(["reset", "--hard", tagName], cwd);
-    targetDesc = `checkpoint '${checkpoint}'`;
-  } else {
-    git(["reset", "--hard", "HEAD~1"], cwd);
-    targetDesc = "parent commit";
-  }
+  git(["reset", "--hard", targetRef], cwd);
   if (reason) {
     evo_learn(`[ABANDON] ${reason}`);
   }
-  return `Branch '${branchName}' abandoned. Reverted to ${targetDesc}.`;
+  const abandonMsg = `Branch '${branchName}' abandoned. Reverted to ${targetDesc}.${stashed ? " Auto-stashed dirty changes \u2014 run git stash pop to recover." : ""}`;
+  if (force && safetyWarnings) {
+    return `${abandonMsg}
+
+\u26A0\uFE0F FORCED \u2014 safety checks bypassed:
+
+${safetyWarnings}`;
+  }
+  return abandonMsg;
 }
 function evo_diff(checkpoint_a, checkpoint_b) {
   const { cwd } = getRepo();
@@ -21479,13 +21625,14 @@ server.tool("evo_checkpoints", "List all evo-* tags with descriptions, roughly n
 }));
 server.tool(
   "evo_spawn",
-  "Create a new branch from a checkpoint tag and check it out. Refuses if tree dirty, checkpoint not found, or branch already exists.",
+  "Create a new branch from a checkpoint tag and check it out. Auto-stashes dirty changes before checkout. Refuses if checkout would lose data (untracked source files, files removed by target ref, stale dist). Pass force=true to bypass safety checks.",
   {
     checkpoint_name: external_exports.string().describe("Checkpoint name to spawn from (without evo- prefix)"),
-    new_branch: external_exports.string().describe("Name for the new branch")
+    new_branch: external_exports.string().describe("Name for the new branch"),
+    force: external_exports.boolean().optional().describe("If true, bypass pre-flight safety checks (accept risk of data loss).")
   },
-  async ({ checkpoint_name, new_branch }) => ({
-    content: [{ type: "text", text: wrap(evo_spawn)(checkpoint_name, new_branch) }]
+  async ({ checkpoint_name, new_branch, force }) => ({
+    content: [{ type: "text", text: wrap(evo_spawn)(checkpoint_name, new_branch, force ?? false) }]
   })
 );
 server.tool("evo_branches", "List all attempt branches (non-root, non-default like main/master).", {}, async () => ({
@@ -21519,13 +21666,14 @@ server.tool(
 );
 server.tool(
   "evo_abandon",
-  "Abandon current branch: tag as evo-dead-{branch} and revert to checkpoint or parent commit. Optionally record reason as a lesson. Refuses if tree dirty.",
+  "Abandon current branch: tag as evo-dead-{branch} and revert to checkpoint or parent commit. Auto-stashes dirty changes. Refuses if hard reset would lose data (files in HEAD not in target). Pass force=true to bypass. Optionally record reason as a lesson.",
   {
     checkpoint: external_exports.string().optional().describe("Checkpoint name to revert to (without evo- prefix). If omitted, reverts to parent commit (HEAD~1)."),
-    reason: external_exports.string().optional().describe("Why this branch was abandoned \u2014 recorded as a lesson")
+    reason: external_exports.string().optional().describe("Why this branch was abandoned \u2014 recorded as a lesson"),
+    force: external_exports.boolean().optional().describe("If true, bypass pre-flight safety checks (accept risk of data loss from hard reset).")
   },
-  async ({ checkpoint, reason }) => ({
-    content: [{ type: "text", text: wrap(evo_abandon)(checkpoint, reason) }]
+  async ({ checkpoint, reason, force }) => ({
+    content: [{ type: "text", text: wrap(evo_abandon)(checkpoint, reason, force ?? false) }]
   })
 );
 server.tool(
