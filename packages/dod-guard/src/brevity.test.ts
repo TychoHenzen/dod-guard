@@ -354,11 +354,41 @@ describe("brevity edge cases", () => {
   it("handles binary files without crashing", () => {
     const full = path.join(tmpDir, "src", "binary.ts");
     fs.mkdirSync(path.dirname(full), { recursive: true });
-    // Write bytes that look like binary (null bytes)
     const buf = Buffer.from([0x00, 0x01, 0x02, 0x03, 0x00]);
     fs.writeFileSync(full, buf);
     const report = analyseBrevity("node src/binary.ts", tmpDir);
-    // Should not throw — binary content is handled gracefully
     assert.ok(report !== undefined, "binary files should not crash analyser");
+  });
+
+  // ── Survivor-targeting tests ────────────────────────────────────────
+
+  it("detects low replacement ratio after >10 insertions with 0 deletions", () => {
+    writeFile("src/accrete.ts", "export function fn(): number { return 1; }");
+    execSync("git add src/accrete.ts", { cwd: tmpDir, stdio: "ignore" });
+    execSync('git commit -m "base"', { cwd: tmpDir, stdio: "ignore" });
+    const lines = ["export function fn(): number { return 2; }"];
+    for (let i = 0; i < 12; i++) lines.push("// extra " + i);
+    writeFile("src/accrete.ts", lines.join("\n"));
+    const diff = execSync("git diff --numstat", { cwd: tmpDir, encoding: "utf-8" });
+    const r = analyseBrevityFromOutput(diff, tmpDir, { ...DEFAULT_BREVITY_OPTS, minReplacementRatio: 0.2 });
+    assert.ok(r, "should parse diff with numstat");
+    const ratioV = r?.violations.filter((v) => v.kind === "low_replacement_ratio");
+    assert.equal(ratioV.length, 1, ">10 ins + 0 del should trigger low_replacement_ratio");
+  });
+
+  it("returns null for output without file mentions", () => {
+    assert.equal(analyseBrevityFromOutput("just random output no files", tmpDir), null);
+  });
+
+  it("handles tab-separated numstat with full analysis", () => {
+    writeFile("src/tabbed.ts", "export const x = 1;");
+    execSync("git add src/tabbed.ts", { cwd: tmpDir, stdio: "ignore" });
+    execSync('git commit -m "init2"', { cwd: tmpDir, stdio: "ignore" });
+    const lines = ["export const x = 2;"];
+    for (let i = 0; i < 12; i++) lines.push("// extra " + i);
+    writeFile("src/tabbed.ts", lines.join("\n"));
+    const diff = execSync("git diff --numstat", { cwd: tmpDir, encoding: "utf-8" });
+    const r = analyseBrevityFromOutput(diff, tmpDir, { ...DEFAULT_BREVITY_OPTS, minReplacementRatio: 0.2 });
+    assert.ok(r, "should parse tab-separated numstat fields");
   });
 });

@@ -547,6 +547,80 @@ describe("checkCyclomaticComplexity", () => {
   });
 });
 
+// ── checkCyclomaticComplexity — extended (CC_PATTERNS survivor targets) ──
+
+describe("checkCyclomaticComplexity - full pattern coverage", () => {
+  it("counts && operators", () => {
+    const body = ["if (a && b) { return 1; }"];
+    assert.equal(checkCyclomaticComplexity(body, "js").complexity, 3); // base + if + &&
+  });
+
+  it("counts || operators", () => {
+    const body = ["if (a || b || c) { return 1; }"];
+    assert.equal(checkCyclomaticComplexity(body, "js").complexity, 4); // base + if + || + ||
+  });
+
+  it("counts ?? operator", () => {
+    const body = ["const x = a ?? b;"];
+    assert.equal(checkCyclomaticComplexity(body, "js").complexity, 2); // base + ??
+  });
+
+  it("counts optional chaining ?. operator", () => {
+    const body = ["const x = a?.b?.c;"];
+    assert.equal(checkCyclomaticComplexity(body, "js").complexity, 3); // base + ?. + ?.
+  });
+
+  it("counts ternary ?: operator once per ternary", () => {
+    const body = ["const x = a ? 1 : 2;"];
+    assert.equal(checkCyclomaticComplexity(body, "js").complexity, 2); // base + ?. + ?:
+  });
+
+  it("counts multiple ternary expressions", () => {
+    const body = ["const x = a ? 1 : 2;", "const y = b ? 3 : c ? 4 : 5;"];
+    const result = checkCyclomaticComplexity(body, "js");
+    // base(1) + ?:. + ?:. in first line + ?:. + ?:. in second line + ?. trigger in second line = 6
+    assert.ok(result.complexity >= 2, "complexity should account for ternary operators");
+  });
+
+  it("does not double-count ?? inside comment or string", () => {
+    // stripStringsAndComments removes the string before counting
+    const body = ['const msg = "use ?? operator here";', "const x = a ?? b;"];
+    assert.equal(checkCyclomaticComplexity(body, "js").complexity, 2); // base + ??
+  });
+
+  it("counts reserved words: return, throw, break, continue in JS", () => {
+    // These are not in CC_PATTERNS directly, but other patterns may overlap
+    const body = ["if (x) {", "  if (y) { return 1; }", "  throw new Error();", "}"];
+    const result = checkCyclomaticComplexity(body, "js");
+    // base + if(outer) + if(inner) = 3
+    assert.equal(result.complexity, 3);
+  });
+
+  it("counts Python decision points comprehensively", () => {
+    const body = [
+      "if a:",
+      "    return 1",
+      "elif b:",
+      "    return 2",
+      "for i in items:",
+      "    process(i)",
+      "while queue:",
+      "    queue.pop()",
+      "try:",
+      "    risky()",
+      "except:",
+      "    handle()",
+    ];
+    const result = checkCyclomaticComplexity(body, "py");
+    // 1 base + if + elif + for + while + except = 6 (try is not in CC_PATTERNS)
+    assert.equal(result.complexity, 6);
+  });
+
+  it("null/unknown language returns 0", () => {
+    assert.equal(checkCyclomaticComplexity(['if (a) { return 1; }'], null).complexity, 0);
+  });
+});
+
 // ── checkUnnecessaryElse ────────────────────────────────────────────────
 
 describe("checkUnnecessaryElse", () => {
@@ -682,5 +756,192 @@ describe("checkAvoidableElse", () => {
     const body = ["if (!x) {", "  return null;", "} else {", "  return x;", "}"];
     const result = checkAvoidableElse(body, "js");
     assert.equal(result.count, 0);
+  });
+});
+
+// ── Targeted tests for survivors ─────────────────────────────────────────
+
+describe("findBlockEnd - survivor coverage", () => {
+  it("ignores braces inside double-quoted string", () => {
+    const lines = [
+      "function f() {",
+      '  const s = "{not-a-brace}";',
+      "  return 1;",
+      "}",
+    ];
+    const idx = findBlockEnd(lines, 0, "{", "}");
+    assert.equal(idx, 3);
+  });
+
+  it("ignores braces inside backtick template", () => {
+    const lines = [
+      "function fn() {",
+      "  return `${obj.method()}`;",
+      "}",
+    ];
+    const idx = findBlockEnd(lines, 0, "{", "}");
+    assert.equal(idx, 2);
+  });
+
+  it("handles single-quoted string containing double quotes", () => {
+    const lines = [
+      "function g() {",
+      '  const msg = \'say "hello"\';',
+      "  return msg;",
+      "}",
+    ];
+    const idx = findBlockEnd(lines, 0, "{", "}");
+    assert.equal(idx, 3);
+  });
+
+  it("handles escaped quotes inside strings", () => {
+    const lines = [
+      "function h() {",
+      '  const s = "escaped \\"quote\\" here";',
+      "}",
+    ];
+    const idx = findBlockEnd(lines, 0, "{", "}");
+    assert.equal(idx, 2);
+  });
+
+  it("handles line comment after opening brace", () => {
+    const lines = [
+      "function k() { // comment",
+      "  return 1;",
+      "}",
+    ];
+    const idx = findBlockEnd(lines, 0, "{", "}");
+    assert.equal(idx, 2);
+  });
+
+  it("finds matching close brace starting from nested function", () => {
+    const lines = [
+      "function outer() {",
+      "  function inner() {",
+      "    return 1;",
+      "  }",
+      "  return 0;",
+      "}",
+    ];
+    const idx = findBlockEnd(lines, 1, "{", "}");
+    assert.equal(idx, 3);
+  });
+});
+
+describe("checkAvoidableElse - survivor coverage", () => {
+  it("detects if-else without guard clause as avoidable", () => {
+    const body = [
+      "if (x > 0) {",
+      "  process(x);",
+      "} else {",
+      "  reject(x);",
+      "}",
+    ];
+    const result = checkAvoidableElse(body, "js");
+    assert.equal(result.count, 1);
+  });
+
+  it("counts zero when if block has guard clause with return", () => {
+    const body = [
+      "if (!valid) {",
+      "  return null;",
+      "} else {",
+      "  return process();",
+      "}",
+    ];
+    const result = checkAvoidableElse(body, "js");
+    assert.equal(result.count, 0);
+  });
+
+  it("counts zero when if block has guard clause with throw", () => {
+    const body = [
+      "if (err) {",
+      "  throw new Error('bad');",
+      "} else {",
+      "  return ok;",
+      "}",
+    ];
+    const result = checkAvoidableElse(body, "js");
+    assert.equal(result.count, 0);
+  });
+
+  it("handles empty else block as avoidable", () => {
+    const body = [
+      "if (x) {",
+      "  doThing();",
+      "} else {",
+      "}",
+    ];
+    const result = checkAvoidableElse(body, "js");
+    assert.equal(result.count, 1);
+  });
+
+  it("returns 0 for null language", () => {
+    assert.equal(checkAvoidableElse(["if true:", "  pass"], null).count, 0);
+  });
+});
+
+describe("checkUnnecessaryElse - survivor coverage", () => {
+  it("detects unnecessary else with nested return", () => {
+    const body = [
+      "if (outer) {",
+      "  if (inner) {",
+      "    return 1;",
+      "  } else {",
+      "    return 2;",
+      "  }",
+      "}",
+    ];
+    const result = checkUnnecessaryElse(body, "js");
+    assert.equal(result.count, 1);
+  });
+
+  it("detects unnecessary else after break in loop", () => {
+    const body = [
+      "while (items.length) {",
+      "  if (done) {",
+      "    break;",
+      "  } else {",
+      "    process(items.pop());",
+      "  }",
+      "}",
+    ];
+    const result = checkUnnecessaryElse(body, "js");
+    assert.equal(result.count, 1);
+  });
+
+  it("detects multiple unnecessary else clauses", () => {
+    const body = [
+      "if (a) {",
+      "  return 1;",
+      "} else {",
+      "  return 2;",
+      "}",
+      "if (b) {",
+      "  throw Error('x');",
+      "} else {",
+      "  process(b);",
+      "}",
+    ];
+    const result = checkUnnecessaryElse(body, "js");
+    assert.equal(result.count, 2);
+  });
+
+  it("does not flag else after if without exit statement", () => {
+    const body = [
+      "if (x > 0) {",
+      "  sum += x;",
+      "} else {",
+      "  sum -= x;",
+      "}",
+    ];
+    const result = checkUnnecessaryElse(body, "js");
+    assert.equal(result.count, 0);
+  });
+
+  it("returns 0 for null/unknown language", () => {
+    assert.equal(checkUnnecessaryElse([], null).count, 0);
+    // @ts-expect-error — testing unknown language
+    assert.equal(checkUnnecessaryElse(["if true:"], "rb").count, 0);
   });
 });

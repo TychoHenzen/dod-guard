@@ -105,6 +105,7 @@ Company baseline from `standards/dod-baselines.md` is machine-enforced at `dod_c
 | `baseline.ts` | Baseline category enforcement with two-tier (hard error / warn-with-skip_reason) |
 | `notify.ts` | Jingle (PowerShell beep arpeggio) for manual verification attention chime |
 | `command-check.ts` | Validate proof commands reference tools available on the current OS |
+| `evaluate-proof.ts` | Predicate-specific analysis: builders (`buildLineLenFail`, etc.) and handlers (`hAssertions`, `hObservability`, `hBrevity`, `hManual`) that evaluate complex predicates (assertions/observability/brevity/regression/mutation) against analysis reports |
 
 ### Predicate evaluation in checkDocument()
 
@@ -138,6 +139,8 @@ When adding a new predicate type, check whether it needs a runnable command or i
 ## Lessons
 
 - [LESSON] `mock.module` + ESM dynamic import: `mock.module("node:child_process", ...)` MUST run before the module under test is imported (ESM caching caches the original dependency). Use dynamic `import()` in `before` hooks after `mock.module` registration to get a mock-wired instance. The `--experimental-test-module-mocks` flag is required on Node 22. `mock.method()` does NOT work on named ESM exports — use `mock.module` with `namedExports` instead. Discovered when adding behavioral tests for `notify.test.ts` that needed to intercept `child_process.spawn`.
+
+- [LESSON] ESM mock isolation via separate test file: When a target module's existing test file has static `import` of the target (locking in unmocked dependency resolution via ESM cache), tests that need `mock.module` for the same target's transitive dependencies MUST live in a separate file. That file must have ZERO static imports from the target — use `import type` for types only, and dynamic `import()` in `before` hooks after `mock.module` registration. See `evaluate-proof-builders.test.ts` (needs mocked assertions/observability/brevity modules, separate from `evaluate-proof.test.ts` which statically imports evaluate-proof.js).
 
 ## Bundled Skills
 

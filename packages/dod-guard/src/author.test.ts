@@ -226,7 +226,6 @@ test("renderMarkdown handles XML-special characters in section content", () => {
   const md = renderMarkdown(doc);
   assert.match(md, /<requirements>/, "should have opening tag");
   assert.match(md, /<\/requirements>/, "should have closing tag");
-  // Content is rendered as-is inside CDATA-like XML sections without escaping
   assert.match(md, /<script>/, "content should include special chars literally");
 });
 
@@ -241,7 +240,6 @@ test("renderMarkdown handles unicode and empty strings in sections", () => {
   const md = renderMarkdown(doc);
   assert.match(md, /🚀/, "should preserve emoji");
   assert.match(md, /日本語/, "should preserve CJK characters");
-  // Empty-string sections are omitted from output entirely
   assert.doesNotMatch(md, /<open_questions>/, "empty open_questions should not render");
   assert.doesNotMatch(md, /<open_risks>/, "empty open_risks should not render");
 });
@@ -459,4 +457,30 @@ test("updateDocFromCheckResult: handles non-matching leaf paths gracefully", () 
   };
   updateDocFromCheckResult(doc, res);
   assert.equal(doc.last_check?.overall, "pass", "should set overall despite non-matching leaf");
+});
+
+// ── Survivor-targeting: renderLeaf predicate branches ───────────────────
+
+const predTypes = ["brevity", "line_length", "function_size", "file_size", "cohesion", "replacement_ratio", "regression"] as const;
+test("renderMarkdown covers all brevity-family predicates", () => {
+  const roots = predTypes.map((t, i) => {
+    const n = concNode("p" + i, t, "echo ok", "check " + t);
+    if (n.predicate) n.predicate.type = t;
+    if (t === "regression" && n.predicate) n.predicate.value = 0.1;
+    return n;
+  });
+  const doc = makeDoc({ roots });
+  const md = renderMarkdown(doc);
+  predTypes.forEach((t) => assert.match(md, new RegExp(t), "should mention " + t));
+});
+
+test("renderMarkdown handles mixed concrete+draft trees", () => {
+  const doc = makeDoc({
+    roots: [
+      concNode("n1", "done", "exit 0", "passes"),
+      draftNode("n2", "pending", "not there yet"),
+    ],
+  });
+  const md = renderMarkdown(doc);
+  assert.ok(md.includes("DRAFT") || md.includes("not there yet"), "should show draft content");
 });
