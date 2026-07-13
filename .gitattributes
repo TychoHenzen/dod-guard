@@ -1,0 +1,9 @@
+# Enforce LF line endings for all text files — prevents CRLF/LF mismatch
+# on Windows (git autocrlf=true converts on checkout, breaking scripts).
+* text=auto eol=lf
+
+# Explicitly binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.bundle.js binary

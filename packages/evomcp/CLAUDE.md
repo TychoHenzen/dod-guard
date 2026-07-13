@@ -37,11 +37,12 @@ DeepSeek has an `/anthropic` endpoint that speaks the Anthropic Messages API. By
 
 ### Solve flow
 1. Spawn N parallel `claude -p` instances, each with different strategy prompt
-2. Verify each result against `verify_cmd`
-3. Failed candidates get up to 3 repair iterations with failure feedback
-4. Stuck detection: same failure after repair → kill lineage
-5. Returns first passing patch + verification report
-6. All lineages fail → escalation report for parent Claude
+2. Detect silent failures: no-output (proxy/API issue) and timed-out lineages → skip to diagnostics
+3. Verify each result against `verify_cmd`
+4. Failed candidates get up to 3 repair iterations with failure feedback
+5. Stuck detection: same failure after repair → kill lineage, mark in diagnostics
+6. Returns first passing patch + verification report
+7. All lineages fail → escalation report with per-lineage diagnostics (strategy, exit codes, output samples, repair counts, failure status)
 
 ### Evolve flow
 1. Measure baseline fitness via `fitness_cmd`

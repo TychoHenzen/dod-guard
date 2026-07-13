@@ -24,7 +24,7 @@ import {
   strategyPrompts,
   toVerdict,
 } from "./agent.js";
-import type { Candidate, EscalationReport, RunStats, SolveResult, TaskSpec } from "./types.js";
+import type { Candidate, EscalationReport, LineageDiagnostic, RunStats, SolveResult, TaskSpec } from "./types.js";
 
 const MAX_REPAIRS = 3;
 const DEFAULT_N = 5;
@@ -81,11 +81,45 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
 
   const candidates: Candidate[] = [];
   const failureSignatures = new Set<string>();
+  const diagnostics: LineageDiagnostic[] = [];
+
+  const STRATEGY_LABELS = [
+    "simplest", "robust", "performant", "modular",
+    "defensive", "functional", "pragmatic", "elegant",
+  ];
 
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
+    const stratLabel = STRATEGY_LABELS[i % STRATEGY_LABELS.length];
+    const hasOutput = r.output.trim().length > 0;
+
     if (r.timedOut) {
       onProgress?.(`  [${i + 1}] timed out — skipping`);
+      diagnostics.push({
+        lineage_id: `strategy-${i}`,
+        strategy: stratLabel,
+        timed_out: true,
+        claude_exit_code: r.exitCode,
+        claude_no_output: !hasOutput,
+        claude_output_sample: r.output.slice(0, 500),
+        repair_attempts: 0,
+        final_status: "timed_out",
+      });
+      continue;
+    }
+
+    if (!hasOutput) {
+      onProgress?.(`  [${i + 1}] no output from claude -p (exit ${r.exitCode}) — skipping`);
+      diagnostics.push({
+        lineage_id: `strategy-${i}`,
+        strategy: stratLabel,
+        timed_out: false,
+        claude_exit_code: r.exitCode,
+        claude_no_output: true,
+        claude_output_sample: "",
+        repair_attempts: 0,
+        final_status: "no_output",
+      });
       continue;
     }
 
@@ -120,6 +154,21 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
     candidate.failure_signature = hashFailure(verdict.output);
     failureSignatures.add(candidate.failure_signature);
     onProgress?.(`  [${i + 1}] failed (exit ${verdict.exit_code}): ${verdict.output.slice(0, 120)}`);
+
+    // Track initial diagnostic for this lineage
+    diagnostics.push({
+      lineage_id: `strategy-${i}`,
+      strategy: stratLabel,
+      timed_out: false,
+      claude_exit_code: r.exitCode,
+      claude_no_output: false,
+      claude_output_sample: r.output.slice(0, 500),
+      verify_failed: true,
+      verify_exit_code: verdict.exit_code,
+      verify_output_sample: verdict.output.slice(0, 300),
+      repair_attempts: 0,
+      final_status: "failed",
+    });
   }
 
   // ── Phase 3: Repair loop ────────────────────────────────────────────
@@ -139,6 +188,10 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
     for (let repair = 1; repair <= MAX_REPAIRS; repair++) {
       onProgress?.(`  Repair attempt ${repair}/${MAX_REPAIRS} for ${candidate.plan_id}...`);
 
+      // Update diagnostic for this lineage
+      const diag = diagnostics.find((d) => d.lineage_id === candidate.plan_id);
+      if (diag) diag.repair_attempts = repair;
+
       const prompt = repairPrompt(spec.goal, candidate.verdict?.output ?? "", repair, spec.context);
 
       const result = await spawnClaude(prompt, {
@@ -151,6 +204,7 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
 
       if (result.timedOut) {
         onProgress?.(`    → timed out`);
+        if (diag) diag.final_status = "timed_out";
         break;
       }
 
@@ -164,6 +218,11 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
 
       if (repairVerdict.exit_code === 0) {
         candidate.status = "passed";
+        if (diag) {
+          diag.final_status = "passed";
+          diag.verify_exit_code = 0;
+          diag.verify_output_sample = repairVerdict.output.slice(0, 300);
+        }
         onProgress?.(`  → REPAIR ${repair} PASSED!`);
 
         stats.duration_ms = Date.now() - startTime;
@@ -181,6 +240,11 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
       // Stuck detection: same failure after repair
       if (candidate.failure_signature && sig === candidate.failure_signature) {
         onProgress?.(`    → stuck (same failure after repair ${repair})`);
+        if (diag) {
+          diag.final_status = "stuck";
+          diag.verify_exit_code = repairVerdict.exit_code;
+          diag.verify_output_sample = repairVerdict.output.slice(0, 300);
+        }
         break;
       }
 
@@ -211,6 +275,7 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
     best_partial_patch: bestCandidate?.patch,
     best_output: bestCandidate?.verdict?.output?.slice(0, 2000),
     lineages_attempted: numParallel,
+    lineage_diagnostics: diagnostics,
     summary: [
       `${numParallel} strategies attempted, ${stats.candidates_generated} candidates generated.`,
       `Best exit code: ${bestCandidate?.verdict?.exit_code ?? "N/A"}`,

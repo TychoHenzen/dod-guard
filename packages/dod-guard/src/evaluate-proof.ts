@@ -47,7 +47,7 @@ export type RunResult = {
   killed?: boolean;
   notFound?: boolean;
 };
-export type ExecFn = (cmd: string, cwd: string) => Promise<RunResult>;
+export type ExecFn = (cmd: string, cwd: string, timeoutMs?: number) => Promise<RunResult>;
 function mk(b: Record<string, unknown>, ov: Partial<LeafResult>): LeafResult {
   return { ...b, ...ov } as LeafResult;
 }
@@ -613,7 +613,7 @@ export async function executeProof(node: TaskNode, cwd: string, execFn: ExecFn):
       exit_code: -1,
       duration_ms: 0,
     };
-  const run = await execFn(cmd, cwd);
+  const run = await execFn(cmd, cwd, (node.predicate?.timeout_ms as number) ?? undefined);
   const ef = await hExecFail(run, base);
   if (ef) return ef;
   switch (node.predicate?.type) {
@@ -648,7 +648,7 @@ export async function executeProof(node: TaskNode, cwd: string, execFn: ExecFn):
   return mk(base, {
     status: passed ? "pass" : "fail",
     output: run.combined,
-    error: passed ? undefined : `pred ${node.predicate?.type} fail (exit=${run.exitCode})`,
+    error: passed ? undefined : `pred ${node.predicate?.type} fail (exit=${run.exitCode}, expected=${(node.predicate?.value as number) ?? 0})`,
     exit_code: run.exitCode,
     duration_ms: run.duration,
   });
@@ -656,7 +656,7 @@ export async function executeProof(node: TaskNode, cwd: string, execFn: ExecFn):
 function evaluatePredicate(predicate: Predicate, exitCode: number, stdout: string): boolean {
   switch (predicate.type) {
     case "exit_code":
-      return exitCode === (predicate.value as number);
+      return exitCode === ((predicate.value as number) ?? 0);
     case "exit_code_not":
       return exitCode !== (predicate.value as number);
     case "output_contains":

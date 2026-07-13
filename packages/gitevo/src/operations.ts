@@ -85,6 +85,95 @@ function isDirty(cwd: string): boolean {
   return lines.length > 0;
 }
 
+/** Files that exist in HEAD but would be removed by switching to targetRef. */
+function filesRemovedByCheckout(targetRef: string, cwd: string): string[] {
+  try {
+    // --name-only --diff-filter=D: files deleted going from targetRef to HEAD
+    // (i.e., files present in HEAD but not in targetRef)
+    const diff = git(["diff", "--name-only", "--diff-filter=D", targetRef, "HEAD"], cwd);
+    return diff.split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** Untracked source files at risk of being clobbered by checkout. */
+function untrackedSourceFiles(cwd: string): string[] {
+  const status = git(["status", "--porcelain"], cwd);
+  return status
+    .split("\n")
+    .filter((l) => l.startsWith("??"))
+    .map((l) => l.slice(3).trim())
+    .filter((f) => /\.(ts|js|mjs|json|md|yml|yaml)$/.test(f));
+}
+
+/** dist/*.js files with no matching .ts source — stale compilation artifacts. */
+function staleDistFiles(cwd: string): string[] {
+  const stale: string[] = [];
+  function scan(dir: string): void {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules") continue;
+        scan(full);
+      } else if (entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+        // Check if matching .ts source exists
+        const tsFile = full.replace(/\.js$/, ".ts");
+        if (!fs.existsSync(tsFile)) {
+          stale.push(path.relative(cwd, full));
+        }
+      }
+    }
+  }
+  // Scan monorepo packages/*/dist/ directories
+  const pkgsDir = path.join(cwd, "packages");
+  if (fs.existsSync(pkgsDir)) {
+    for (const pkg of fs.readdirSync(pkgsDir, { withFileTypes: true })) {
+      if (pkg.isDirectory()) {
+        scan(path.join(pkgsDir, pkg.name, "dist"));
+      }
+    }
+  }
+  // Also scan root dist/ if it exists
+  scan(path.join(cwd, "dist"));
+  return stale;
+}
+
+/**
+ * Pre-flight safety check for operations that switch branches/tags.
+ * Detects:
+ *  (a) untracked source files that checkout might clobber
+ *  (b) files committed in HEAD that would be removed by the target ref
+ *  (c) stale dist/*.js without matching .ts source
+ *
+ * Returns null if safe, or a diagnostic message string if risks found.
+ */
+function preflightCheckoutSafety(targetRef: string, cwd: string): string | null {
+  const warnings: string[] = [];
+
+  const untracked = untrackedSourceFiles(cwd);
+  if (untracked.length > 0) {
+    warnings.push(`Untracked source files (would persist but risk loss if directory removed):\n${untracked.map((f) => `  • ${f}`).join("\n")}`);
+  }
+
+  const removed = filesRemovedByCheckout(targetRef, cwd);
+  const sourceRemoved = removed.filter((f) => /\.ts$/.test(f) && !f.includes("dist/"));
+  if (sourceRemoved.length > 0) {
+    warnings.push(
+      `Source files in HEAD NOT in '${targetRef}' — WILL BE DELETED by checkout:\n${sourceRemoved.map((f) => `  • ${f}`).join("\n")}\nCommit or stash these before spawning.`,
+    );
+  }
+
+  const stale = staleDistFiles(cwd);
+  if (stale.length > 0) {
+    warnings.push(`Stale dist/*.js without matching .ts source:\n${stale.map((f) => `  • ${f}`).join("\n")}\nThese will survive checkout — clean with 'npm run clean && npm run build'.`);
+  }
+
+  if (warnings.length === 0) return null;
+  return warnings.join("\n\n");
+}
+
 function tagsWithPrefix(prefix: string, cwd: string): string[] {
   const output = gitOrNull(["tag", "-l", `${prefix}*`], cwd) || "";
   if (!output) return [];
@@ -177,8 +266,11 @@ export function evo_checkpoint(name: string, description: string): string {
   const { cwd } = getRepo();
   requireInit(cwd);
 
+  // Auto-stash if dirty
+  let stashed = false;
   if (isDirty(cwd)) {
-    throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
+    git(["stash", "push", "-m", `gitevo: auto-stash before checkpoint '${name}'`], cwd);
+    stashed = true;
   }
 
   const tagName = `evo-${name}`;
@@ -188,6 +280,15 @@ export function evo_checkpoint(name: string, description: string): string {
     /* doesn't exist */
   }
   git(["tag", "-a", tagName, "-m", description], cwd);
+
+  // Pop stash after tagging
+  if (stashed) {
+    try {
+      git(["stash", "pop"], cwd);
+    } catch {
+      return `Checkpoint '${name}' created, but auto-stash could not be reapplied — your changes are in the stash.`;
+    }
+  }
 
   return `Checkpoint '${name}' created.`;
 }
@@ -288,7 +389,7 @@ function slugify(text: string): string {
  * Auto-stashes dirty tracked changes before spawning, then pops them on the new branch.
  * If stash pop fails (merge conflict), the stash is left in place with a warning.
  */
-export function evo_spawn(checkpoint_name: string, new_branch: string): string {
+export function evo_spawn(checkpoint_name: string, new_branch: string, force?: boolean): string {
   const { cwd } = getRepo();
   requireInit(cwd);
 
@@ -314,6 +415,19 @@ export function evo_spawn(checkpoint_name: string, new_branch: string): string {
     stashed = true;
   }
 
+  // Pre-flight safety: detect files at risk before checkout
+  const safetyWarnings = preflightCheckoutSafety(tagName, cwd);
+  if (safetyWarnings && !force) {
+    // Pop stash if we stashed
+    if (stashed) {
+      try { git(["stash", "pop"], cwd); } catch { /* leave in stash */ }
+    }
+    throw new EvoError(
+      `SAFETY CHECK FAILED — checkout to '${tagName}' would lose data:\n\n${safetyWarnings}\n\n` +
+        `Pass force=true to proceed anyway (you accept the risk of data loss).`,
+    );
+  }
+
   // Create branch from tag and checkout
   git(["checkout", "-b", new_branch, tagName], cwd);
 
@@ -326,7 +440,11 @@ export function evo_spawn(checkpoint_name: string, new_branch: string): string {
     }
   }
 
-  return `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
+  const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
+  if (force && safetyWarnings) {
+    return `${spawnMsg}\n\n⚠️ FORCED — safety checks bypassed:\n\n${safetyWarnings}`;
+  }
+  return spawnMsg;
 }
 
 /**
@@ -373,15 +491,48 @@ export function evo_branches(): string {
  * to that checkpoint tag. Otherwise reverts to parent commit (git reset --hard HEAD~1).
  * Optionally records reason as a lesson. Refuses if dirty tree.
  */
-export function evo_abandon(checkpoint?: string, reason?: string): string {
+export function evo_abandon(checkpoint?: string, reason?: string, force?: boolean): string {
   const { cwd } = getRepo();
   requireInit(cwd);
 
+  // Auto-stash if dirty
+  let stashed = false;
   if (isDirty(cwd)) {
-    throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
+    git(["stash", "push", "-m", "gitevo: auto-stash before abandon"], cwd);
+    stashed = true;
   }
 
   const branchName = currentBranch(cwd);
+
+  // Determine revert target for safety check
+  let targetRef: string;
+  let targetDesc: string;
+  if (checkpoint) {
+    const tagName = `evo-${checkpoint}`;
+    if (!hasTag(tagName, cwd)) {
+      if (stashed) {
+        try { git(["stash", "pop"], cwd); } catch {}
+      }
+      throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
+    }
+    targetRef = tagName;
+    targetDesc = `checkpoint '${checkpoint}'`;
+  } else {
+    targetRef = "HEAD~1";
+    targetDesc = "parent commit";
+  }
+
+  // Pre-flight safety: detect files at risk before hard reset
+  const safetyWarnings = preflightCheckoutSafety(targetRef, cwd);
+  if (safetyWarnings && !force) {
+    if (stashed) {
+      try { git(["stash", "pop"], cwd); } catch {}
+    }
+    throw new EvoError(
+      `SAFETY CHECK FAILED — reset to '${targetRef}' would lose data:\n\n${safetyWarnings}\n\n` +
+        `Pass force=true to proceed anyway (you accept the risk of data loss).`,
+    );
+  }
 
   // Tag as dead
   const deadTag = `evo-dead-${branchName}`;
@@ -390,28 +541,19 @@ export function evo_abandon(checkpoint?: string, reason?: string): string {
   } catch {}
   git(["tag", "-a", deadTag, "-m", `Abandoned branch '${branchName}'`], cwd);
 
-  // Determine revert target
-  let targetDesc: string;
-  if (checkpoint) {
-    const tagName = `evo-${checkpoint}`;
-    if (!hasTag(tagName, cwd)) {
-      throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
-    }
-    // Hard reset to checkpoint tag
-    git(["reset", "--hard", tagName], cwd);
-    targetDesc = `checkpoint '${checkpoint}'`;
-  } else {
-    // Revert to parent commit
-    git(["reset", "--hard", "HEAD~1"], cwd);
-    targetDesc = "parent commit";
-  }
+  // Hard reset to target
+  git(["reset", "--hard", targetRef], cwd);
 
   // Optionally record reason as lesson
   if (reason) {
     evo_learn(`[ABANDON] ${reason}`);
   }
 
-  return `Branch '${branchName}' abandoned. Reverted to ${targetDesc}.`;
+  const abandonMsg = `Branch '${branchName}' abandoned. Reverted to ${targetDesc}.${stashed ? " Auto-stashed dirty changes — run git stash pop to recover." : ""}`;
+  if (force && safetyWarnings) {
+    return `${abandonMsg}\n\n⚠️ FORCED — safety checks bypassed:\n\n${safetyWarnings}`;
+  }
+  return abandonMsg;
 }
 
 /**

@@ -32,7 +32,8 @@ evo_init → evo_checkpoint → evo_spawn → (work) → evo_learn → evo_check
 ### Key design decisions
 
 - **Tag names**: evo-{name} for checkpoints, evo-dead-{branch} for abandoned, evo-root for root, evo-adopted for merged winners
-- **Refuses dirty tree**: checkpoint, spawn, abandon, adopt all check `isDirty()` (tracked file modifications only — untracked files OK)
+- **Auto-stash dirty tree**: checkpoint, spawn, abandon, adopt all auto-stash before operating, pop after (stash left in place if pop fails)
+- **Pre-flight safety checks**: `evo_spawn` and `evo_abandon` scan for untracked source files, stale dist/*.js, and files in HEAD not in target ref before destructive operations. Refuse with diagnostic unless `force=true`.
 - **Re-running init**: clears lessons.jsonl, re-tags evo-root (idempotent)
 - **Lesson export**: `evo_export_lessons` outputs obsidian-rag memory_save compatible JSON
 - **Error handling**: `EvoError` for user-facing errors (init not run, wrong state). Extends Error for clean instanceof checks.

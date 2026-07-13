@@ -35,7 +35,7 @@ What gets evaluated about a proof command's output:
 
 | Type | Behavior |
 |------|----------|
-| `exit_code` / `exit_code_not` | Pass/fail based on exit code |
+| `exit_code` / `exit_code_not` | Pass/fail based on exit code. `exit_code` defaults to `value: 0` when value is omitted. Issue #18. |
 | `output_contains` / `output_not_contains` | Substring match in combined stdout+stderr |
 | `output_matches` / `output_not_matches` | Regex match |
 | `tdd` | Test must fail first (RED), then pass (GREEN). Bakes in assertion quality check. |
@@ -51,7 +51,7 @@ What gets evaluated about a proof command's output:
 
 `checkDocument()` is the main entry point:
 1. Flatten concrete leaves via `flattenConcreteLeaves()` (skips drafts, recurses into groups)
-2. For each leaf: `executeProof()` → runs command via `exec()`, evaluates predicate
+2. For each leaf: `executeProof()` → runs command via `exec()` with timeout from `predicate.timeout_ms` (default 120s). Slow tools like Stryker use 600s.
 3. Manual/review proofs check `manual_result` cache (fingerprint-match = reuse without re-prompting)
 4. TDD proofs track `seen_failing` state across runs (must fail before passing)
 5. `computeProofFingerprint()` hashes all concrete leaves → compared against stored hash for tamper detection

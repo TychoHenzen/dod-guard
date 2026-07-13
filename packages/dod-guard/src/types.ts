@@ -82,6 +82,8 @@ export interface Predicate {
    * `replacement_ratio` predicate, `value` is max violations allowed (default 0).
    */
   min_replacement_ratio?: number;
+  /** Override the default 120s command timeout (ms). Slow tools like Stryker need up to 600s. */
+  timeout_ms?: number;
 }
 
 /**

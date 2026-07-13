@@ -59,6 +59,10 @@ export const PredicateSchema = z.object({
     .number()
     .optional()
     .describe("brevity / replacement_ratio: minimum deletion/insertion ratio (default 0.2)."),
+  timeout_ms: z
+    .number()
+    .optional()
+    .describe("Override the default 120s command timeout in milliseconds. Use for slow tools like Stryker (600s)."),
 });
 
 export const ProofCategorySchema = z.enum([
@@ -110,6 +114,7 @@ export const TaskNodeInputSchema: z.ZodType<{
     require_guard_clauses?: boolean;
     suggest_guard_clauses?: boolean;
     min_replacement_ratio?: number;
+    timeout_ms?: number;
   };
   description?: string;
   category?: string;

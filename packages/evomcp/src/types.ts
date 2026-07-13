@@ -91,6 +91,25 @@ export interface EscalationReport {
   lineages_attempted: number;
   /** Summary of what went wrong across all attempts. */
   summary: string;
+  /** Per-lineage diagnostics: what each candidate produced and why it failed. */
+  lineage_diagnostics?: LineageDiagnostic[];
+}
+
+export interface LineageDiagnostic {
+  lineage_id: string;
+  strategy: string;
+  timed_out: boolean;
+  claude_exit_code: number;
+  /** Was claude -p output empty or just whitespace? */
+  claude_no_output: boolean;
+  /** First 500 chars of claude -p output for diagnostics. */
+  claude_output_sample: string;
+  /** Verification result after claude -p (if candidate survived to verification). */
+  verify_failed?: boolean;
+  verify_exit_code?: number;
+  verify_output_sample?: string;
+  repair_attempts: number;
+  final_status: "passed" | "failed" | "stuck" | "no_output" | "timed_out";
 }
 
 export interface RunStats {

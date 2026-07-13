@@ -80,13 +80,17 @@ server.tool("evo_checkpoints", "List all evo-* tags with descriptions, roughly n
 
 server.tool(
   "evo_spawn",
-  "Create a new branch from a checkpoint tag and check it out. Refuses if tree dirty, checkpoint not found, or branch already exists.",
+  "Create a new branch from a checkpoint tag and check it out. Auto-stashes dirty changes before checkout. Refuses if checkout would lose data (untracked source files, files removed by target ref, stale dist). Pass force=true to bypass safety checks.",
   {
     checkpoint_name: z.string().describe("Checkpoint name to spawn from (without evo- prefix)"),
     new_branch: z.string().describe("Name for the new branch"),
+    force: z
+      .boolean()
+      .optional()
+      .describe("If true, bypass pre-flight safety checks (accept risk of data loss)."),
   },
-  async ({ checkpoint_name, new_branch }) => ({
-    content: [{ type: "text" as const, text: wrap(evo_spawn)(checkpoint_name, new_branch) }],
+  async ({ checkpoint_name, new_branch, force }) => ({
+    content: [{ type: "text" as const, text: wrap(evo_spawn)(checkpoint_name, new_branch, force ?? false) }],
   }),
 );
 
@@ -129,16 +133,20 @@ server.tool(
 
 server.tool(
   "evo_abandon",
-  "Abandon current branch: tag as evo-dead-{branch} and revert to checkpoint or parent commit. Optionally record reason as a lesson. Refuses if tree dirty.",
+  "Abandon current branch: tag as evo-dead-{branch} and revert to checkpoint or parent commit. Auto-stashes dirty changes. Refuses if hard reset would lose data (files in HEAD not in target). Pass force=true to bypass. Optionally record reason as a lesson.",
   {
     checkpoint: z
       .string()
       .optional()
       .describe("Checkpoint name to revert to (without evo- prefix). If omitted, reverts to parent commit (HEAD~1)."),
     reason: z.string().optional().describe("Why this branch was abandoned — recorded as a lesson"),
+    force: z
+      .boolean()
+      .optional()
+      .describe("If true, bypass pre-flight safety checks (accept risk of data loss from hard reset)."),
   },
-  async ({ checkpoint, reason }) => ({
-    content: [{ type: "text" as const, text: wrap(evo_abandon)(checkpoint, reason) }],
+  async ({ checkpoint, reason, force }) => ({
+    content: [{ type: "text" as const, text: wrap(evo_abandon)(checkpoint, reason, force ?? false) }],
   }),
 );
 

@@ -134,6 +134,7 @@ export function computeProofFingerprint(roots: TaskNode[]): string {
 async function runCommand(
   command: string,
   cwd: string,
+  timeoutMs?: number,
 ): Promise<{
   exitCode: number;
   combined: string;
@@ -142,12 +143,13 @@ async function runCommand(
   killed?: boolean;
   notFound?: boolean;
 }> {
+  const effectiveTimeout = timeoutMs ?? TIMEOUT_MS;
   const start = Date.now();
   try {
     const shellCmd = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
     const { stdout, stderr } = await execAsync(command, {
       cwd,
-      timeout: TIMEOUT_MS,
+      timeout: effectiveTimeout,
       maxBuffer: 10 * 1024 * 1024,
       shell: shellCmd,
       windowsHide: true,
@@ -166,7 +168,7 @@ async function runCommand(
     if (execErr.killed) {
       return {
         exitCode,
-        combined: `TIMEOUT after ${TIMEOUT_MS}ms`,
+        combined: `TIMEOUT after ${effectiveTimeout}ms`,
         duration,
         error: "Process killed due to timeout",
         killed: true,

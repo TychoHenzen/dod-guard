@@ -224,6 +224,23 @@ function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
     ].join("\n");
   }
 
+  const diagLines: string[] = [];
+  if (result.escalation?.lineage_diagnostics && result.escalation.lineage_diagnostics.length > 0) {
+    diagLines.push("### Lineage Diagnostics", "");
+    for (const d of result.escalation.lineage_diagnostics) {
+      const statusEmoji = d.final_status === "passed" ? "✅" : d.final_status === "failed" ? "❌" : d.final_status === "stuck" ? "🔁" : d.final_status === "no_output" ? "🤫" : "⏱️";
+      diagLines.push(
+        `| ${statusEmoji} | ${d.lineage_id} | ${d.strategy} | repairs=${d.repair_attempts} | ${d.timed_out ? "TIMED OUT" : d.claude_no_output ? "NO OUTPUT (exit=" + d.claude_exit_code + ")" : "verify_exit=" + (d.verify_exit_code ?? "N/A")} |`,
+      );
+      if (d.claude_no_output) {
+        diagLines.push(`  ⚠️ \`claude -p\` produced NO output — proxy or API key issue?`);
+      } else if (d.timed_out) {
+        diagLines.push(`  ⚠️ \`claude -p\` timed out — increase timeout or simplify task`);
+      }
+    }
+    diagLines.push("");
+  }
+
   return [
     "## Solve: ESCALATED",
     "",
@@ -233,7 +250,7 @@ function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
     `- Lineages attempted: ${result.escalation?.lineages_attempted}`,
     `- Failure signature: ${result.escalation?.failure_signature}`,
     `- Summary: ${result.escalation?.summary}`,
-    "",
+    ...diagLines,
     "### Best Partial Output",
     "```",
     result.escalation?.best_output?.slice(0, 2000) ?? "(none)",
