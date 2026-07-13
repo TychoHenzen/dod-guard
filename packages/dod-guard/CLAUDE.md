@@ -163,7 +163,7 @@ When adding a new predicate type, check whether it needs a runnable command or i
 
 ## Bundled Skills
 
-The plugin ships five skills in `skills/`:
+The plugin ships six skills in `skills/`:
 
 | Skill | File | Purpose |
 |-------|------|---------|
@@ -172,6 +172,7 @@ The plugin ships five skills in `skills/`:
 | `test-verification` | `skills/test-verification/SKILL.md` | Score test files across 8 dimensions + source code quality analysis |
 | `test-fixer` | `skills/test-fixer/SKILL.md` | Apply targeted fixes from test-verification findings |
 | `ratchet` | `skills/ratchet/SKILL.md` | Unified ratcheting workflow combining dod-guard + gitevo + evomcp + obsidian-rag + code-review-graph |
+| `clean-house` | `skills/clean-house/SKILL.md` | Hunt down duplicate/obsolete implementations via git archaeology and aggressively remove dead code |
 
 **Skill dependency chain**: `quality-upgrade` orchestrates `test-verification` and `test-fixer`. `test-fixer` requires `test-verification` manifest. `ratchet` orchestrates `interview` (requirements), `quality-upgrade`/`test-verification` (quality baseline), and delegates to gitevo/evomcp/obsidian-rag for branching/cascade/memory.
 

@@ -8,7 +8,7 @@ npm workspaces monorepo with four MCP server plugins for Claude Code, distribute
 
 | Package | npm name | Purpose |
 |---------|----------|---------|
-| `dod-guard` | `dod-guard` | Anti-cheat DoD verification with locked proofs. Ships `/interview`, `/quality-upgrade`, `/test-verification`, `/test-fixer`, `/ratchet` skills. |
+| `dod-guard` | `dod-guard` | Anti-cheat DoD verification with locked proofs. Ships `/interview`, `/quality-upgrade`, `/test-verification`, `/test-fixer`, `/ratchet`, `/clean-house` skills. |
 | `evomcp` | `evomcp` | Cascade solver: cheap-model fanout (best-of-N + repair chains) + scalar-fitness evolution. |
 | `gitevo` | `gitevo` | Evolutionary git branching for LLM agents. Checkpoint, spawn, learn, abandon, adopt. |
 | `obsidian-rag` | `obsidian-rag` | RAG/memory on Obsidian vaults. Semantic search, note CRUD, memory recall. |

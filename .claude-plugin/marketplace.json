@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "dod-guard",
-      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Ships /interview, /quality-upgrade, /test-verification, and /test-fixer skills.",
+      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Ships 6 skills: /interview, /quality-upgrade, /test-verification, /test-fixer, /ratchet, and /clean-house.",
       "source": "./packages/dod-guard",
       "category": "productivity"
     },

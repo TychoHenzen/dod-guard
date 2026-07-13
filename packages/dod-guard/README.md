@@ -56,7 +56,7 @@ npm install -g dod-guard
 
 ## Skills
 
-The plugin ships four skills for a complete quality workflow:
+The plugin ships six skills for a complete quality workflow:
 
 ### `/interview`
 
@@ -82,14 +82,28 @@ Multi-phase orchestrator that iteratively brings test quality and source code he
 
 Triggers: "upgrade quality", "improve quality to 8", "quality loop", "full quality pass", "bring tests to 8/10".
 
+### `/ratchet`
+
+Unified ratcheting workflow combining dod-guard, gitevo, evomcp, obsidian-rag, and code-review-graph. Two-phase: interactive setup (triage + requirements + DoD + user lock-in), then autonomous /loop execution with verification gates every cycle. For complex multi-sub-problem work.
+
+Triggers: "solve with ratchet", "ratchet this", "complex problem", "multi-step solution".
+
+### `/clean-house`
+
+Aggressively hunts down duplicate and obsolete implementations using git archaeology. Finds old versions of replaced features, traces authorship via git blame, migrates confused-model changes to the current version, then deletes dead code. Backwards compatibility is treated as irrelevant unless proven otherwise.
+
+Triggers: "clean house", "dedupe", "clean up old versions", "remove dead implementations", "consolidate duplicates", "debloat".
+
 ### Skill dependencies
 
 ```
 quality-upgrade → test-verification + test-fixer
 test-fixer → test-verification
+ratchet → interview + quality-upgrade + test-verification
+clean-house → code-review-graph (optional, for dead_code scan)
 ```
 
-All four skills are self-contained in the plugin — no manual installation needed.
+All six skills are self-contained in the plugin — no manual installation needed.
 
 > **Note for existing users:** If you previously installed `test-verification`, `test-fixer`, or `quality-upgrade` manually in `~/.claude/skills/`, remove those copies. The plugin versions are the canonical source and having both installed causes name conflicts.
 
