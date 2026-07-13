@@ -74,6 +74,19 @@ The correct flow:
 - Tag pointing at HEAD → matching publish job fires
 - `workflow_dispatch` fallback for manual publishes
 
+**NEVER split branch push from tag push.** CI only sees tags when they arrive in the same push as the commit. Always push together:
+
+```bash
+# ✅ CORRECT — branch + tags in one compound command
+git push origin master && git push origin <tag1> <tag2> ...
+
+# ❌ WRONG — push branch first, tags later
+git push origin master
+git push origin <tag1> <tag2> ...
+```
+
+If you push branch first without tags, CI fires on a HEAD with no tags → publish jobs skip (0s). Tags pushed afterwards won't retrigger CI because the commit already exists.
+
 ### Retriggering CI when tags end up on the wrong commit
 
 Tags on existing commits don't retrigger CI. If you need to move tags to a new commit (e.g., CI fix after tagging):
