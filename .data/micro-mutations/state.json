@@ -45,11 +45,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 179,
+      "lines": 207,
       "error_count": 0,
-      "recent_commits": 4,
+      "recent_commits": 6,
       "fingerprint": "8e27fff5a8772fc05e0820f36d98fc30f848a78875014aa53b0403ad7b2e1bc2",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/brevity.ts": {
       "last_tested": "2026-07-12",
@@ -79,11 +79,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 441,
+      "lines": 446,
       "error_count": 1,
-      "recent_commits": 6,
+      "recent_commits": 9,
       "fingerprint": "6289e671303c1ff8868507b301d00d36a0e333a6ca4911e59b70b91456fba20a",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/command-check.ts": {
       "last_tested": "2026-07-12",
@@ -96,28 +96,28 @@
         "status": "ok",
         "error": null
       },
-      "lines": 241,
+      "lines": 396,
       "error_count": 1,
-      "recent_commits": 4,
+      "recent_commits": 8,
       "fingerprint": "750f8afb33939b533f26adc3f1992e288c8e41c7c511a4db65b6f25fe9fe1c1b",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/evaluate-proof.ts": {
-      "last_tested": "2026-07-12",
+      "last_tested": "2026-07-13",
       "last_result": {
-        "total": 740,
-        "caught": 390,
-        "missed": 236,
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
         "timeout": 0,
-        "unviable": 114,
-        "status": "ok",
-        "error": null
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/evaluate-proof.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
-      "lines": 654,
-      "error_count": 1,
-      "recent_commits": 7,
+      "lines": 656,
+      "error_count": 2,
+      "recent_commits": 9,
       "fingerprint": "07e6176530f6d5613f27bd15ba6c351ce8dc993492da0eaf4de3f784dd1ee215",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/find-functions.ts": {
       "last_tested": "2026-07-12",
@@ -147,28 +147,28 @@
         "status": "ok",
         "error": null
       },
-      "lines": 101,
+      "lines": 108,
       "error_count": 0,
-      "recent_commits": 2,
+      "recent_commits": 3,
       "fingerprint": "f74b06547eff7e738f0bc0942adf33929e736e194ee08254ae626281815aff0d",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/index.ts": {
-      "last_tested": "2026-07-12",
+      "last_tested": "2026-07-13",
       "last_result": {
-        "total": 827,
+        "total": 0,
         "caught": 0,
         "missed": 0,
         "timeout": 0,
-        "unviable": 827,
-        "status": "ok",
-        "error": null
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
       },
-      "lines": 784,
-      "error_count": 1,
-      "recent_commits": 17,
+      "lines": 882,
+      "error_count": 2,
+      "recent_commits": 20,
       "fingerprint": "9a2c95705a747f21b973dda9612648d169d07dbfb0ccde5ea61510b7eeee3524",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/manual.ts": {
       "last_tested": "2026-07-12",
@@ -317,11 +317,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 86,
+      "lines": 93,
       "error_count": 0,
-      "recent_commits": 3,
+      "recent_commits": 5,
       "fingerprint": "c97873a412122c5f865e2abb0bd2545a392fd2dee8524df3846c3c8ed8b813ac",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/tools/dod-refine.ts": {
       "last_tested": "2026-07-12",
@@ -334,11 +334,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 117,
+      "lines": 138,
       "error_count": 1,
-      "recent_commits": 1,
+      "recent_commits": 4,
       "fingerprint": "2d704212a94e21a4788bd61969d60a402f5449ec3c6896de320ee1c7f20798d6",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/tree-utils.ts": {
       "last_tested": "2026-07-12",
@@ -351,11 +351,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 162,
+      "lines": 217,
       "error_count": 0,
-      "recent_commits": 5,
+      "recent_commits": 8,
       "fingerprint": "a4ab4d99751cd602dadb8757408320ae86bac1b305c187fbf4d374b420840d18",
-      "dirty": false
+      "dirty": true
     },
     "packages/evomcp/src/agent.ts": {
       "last_tested": "2026-07-12",
@@ -368,11 +368,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 416,
+      "lines": 458,
       "error_count": 0,
-      "recent_commits": 5,
+      "recent_commits": 6,
       "fingerprint": "86922aedbb839b3d30e8bc8ffbe8425cae925be46ed85747d1c911048eb2b8e9",
-      "dirty": false
+      "dirty": true
     },
     "packages/evomcp/src/dedup.ts": {
       "last_tested": "2026-07-12",
@@ -402,11 +402,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 271,
+      "lines": 278,
       "error_count": 0,
-      "recent_commits": 6,
+      "recent_commits": 7,
       "fingerprint": "9e02850252ccfbf468bd91c487ad2457d88b9bc7f02fbad178e8561b30b0ddcd",
-      "dirty": false
+      "dirty": true
     },
     "packages/evomcp/src/index.ts": {
       "last_tested": "2026-07-12",
@@ -419,11 +419,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 270,
+      "lines": 296,
       "error_count": 1,
-      "recent_commits": 9,
+      "recent_commits": 13,
       "fingerprint": "6d047d5428d46161faa359ac25ed744e65b97dee4bd891321b2de2b6a06afd37",
-      "dirty": false
+      "dirty": true
     },
     "packages/evomcp/src/solve.ts": {
       "last_tested": "2026-07-12",
@@ -436,11 +436,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 193,
+      "lines": 274,
       "error_count": 0,
-      "recent_commits": 5,
+      "recent_commits": 8,
       "fingerprint": "e8b0f022e2e27d53a467bc61b35772f00bbd44362b73d5c85474ba72b7496bed",
-      "dirty": false
+      "dirty": true
     },
     "packages/gitevo/src/index.ts": {
       "last_tested": "2026-07-12",
@@ -453,11 +453,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 178,
+      "lines": 183,
       "error_count": 1,
-      "recent_commits": 8,
+      "recent_commits": 10,
       "fingerprint": "137f0919203407e74720b94cdaa1a57b13badded990af1b8ec49c4694e7511c9",
-      "dirty": false
+      "dirty": true
     },
     "packages/gitevo/src/operations.ts": {
       "last_tested": "2026-07-12",
@@ -470,11 +470,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 457,
+      "lines": 599,
       "error_count": 0,
-      "recent_commits": 5,
+      "recent_commits": 8,
       "fingerprint": "a38bcd89c9bebf7da13be49d8d48a7f5c61484f1ad6acb22acd618f61d29448e",
-      "dirty": false
+      "dirty": true
     },
     "packages/obsidian-rag/src/cli.ts": {
       "last_tested": "2026-07-12",
@@ -545,21 +545,21 @@
       "dirty": false
     },
     "packages/obsidian-rag/src/store.ts": {
-      "last_tested": "2026-07-12",
+      "last_tested": "2026-07-13",
       "last_result": {
-        "total": 244,
-        "caught": 163,
-        "missed": 28,
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
         "timeout": 0,
-        "unviable": 53,
-        "status": "ok",
-        "error": null
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/store.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/store.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
-      "lines": 327,
-      "error_count": 0,
-      "recent_commits": 9,
+      "lines": 343,
+      "error_count": 1,
+      "recent_commits": 10,
       "fingerprint": "f88ef5f1028864002a0e5f41712cf2d4a380999684100d7db8865d09b90f1384",
-      "dirty": false
+      "dirty": true
     },
     "packages/obsidian-rag/src/tools.ts": {
       "last_tested": "2026-07-12",
@@ -589,11 +589,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 173,
+      "lines": 185,
       "error_count": 1,
-      "recent_commits": 11,
+      "recent_commits": 12,
       "fingerprint": "c2f04ed6bb692695c2f335c348e8991b4b5b10203697984d4927e848cfdcebc7",
-      "dirty": false
+      "dirty": true
     }
   },
   "cumulative": {
@@ -602,9 +602,9 @@
     "missed": 5380,
     "timeout": 65,
     "unviable": 4103,
-    "error": 18,
-    "runs": 62,
-    "files_tested": 62
+    "error": 21,
+    "runs": 65,
+    "files_tested": 65
   },
   "runs": [
     {
@@ -1473,6 +1473,48 @@
         "unviable": 0,
         "status": "ok",
         "error": null
+      }
+    },
+    {
+      "date": "2026-07-13",
+      "commit": "ef271d3c0a70efafa59f6058f8c90a7d3fa9f928",
+      "file": "packages/dod-guard/src/index.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
+      }
+    },
+    {
+      "date": "2026-07-13",
+      "commit": "ef271d3c0a70efafa59f6058f8c90a7d3fa9f928",
+      "file": "packages/dod-guard/src/evaluate-proof.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/evaluate-proof.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
+      }
+    },
+    {
+      "date": "2026-07-13",
+      "commit": "ef271d3c0a70efafa59f6058f8c90a7d3fa9f928",
+      "file": "packages/obsidian-rag/src/store.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/store.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/store.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       }
     }
   ]
