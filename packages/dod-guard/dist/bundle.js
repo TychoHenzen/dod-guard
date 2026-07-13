@@ -21893,8 +21893,8 @@ function extractTestFilesFromCommand(command, cwd) {
       const pat = path2.basename(resolved);
       if (existsSync2(dir) && pat.includes("*")) {
         try {
-          const { readdirSync: readdirSync2 } = __require("node:fs");
-          const entries = readdirSync2(dir);
+          const { readdirSync: readdirSync3 } = __require("node:fs");
+          const entries = readdirSync3(dir);
           const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
           for (const entry of entries) {
             if (regex.test(entry)) {
@@ -22350,8 +22350,8 @@ function extractSourceFilesFromCommand2(command, cwd) {
         const pat = path3.basename(resolved);
         if (existsSync3(dir) && pat.includes("*")) {
           try {
-            const { readdirSync: readdirSync2 } = __require("node:fs");
-            const entries = readdirSync2(dir);
+            const { readdirSync: readdirSync3 } = __require("node:fs");
+            const entries = readdirSync3(dir);
             const _regex2 = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
             for (const entry of entries) {
               const full = path3.join(dir, entry);
@@ -22997,7 +22997,7 @@ async function executeProof(node, cwd, execFn) {
       exit_code: -1,
       duration_ms: 0
     };
-  const run = await execFn(cmd, cwd);
+  const run = await execFn(cmd, cwd, node.predicate?.timeout_ms ?? void 0);
   const ef = await hExecFail(run, base);
   if (ef) return ef;
   switch (node.predicate?.type) {
@@ -23032,7 +23032,7 @@ async function executeProof(node, cwd, execFn) {
   return mk(base, {
     status: passed ? "pass" : "fail",
     output: run.combined,
-    error: passed ? void 0 : `pred ${node.predicate?.type} fail (exit=${run.exitCode})`,
+    error: passed ? void 0 : `pred ${node.predicate?.type} fail (exit=${run.exitCode}, expected=${node.predicate?.value ?? 0})`,
     exit_code: run.exitCode,
     duration_ms: run.duration
   });
@@ -23040,7 +23040,7 @@ async function executeProof(node, cwd, execFn) {
 function evaluatePredicate(predicate, exitCode, stdout) {
   switch (predicate.type) {
     case "exit_code":
-      return exitCode === predicate.value;
+      return exitCode === (predicate.value ?? 0);
     case "exit_code_not":
       return exitCode !== predicate.value;
     case "output_contains":
@@ -23131,13 +23131,14 @@ function computeProofFingerprint(roots) {
   }).join("\n");
   return createHash2("sha256").update(data).digest("hex").slice(0, 12);
 }
-async function runCommand(command, cwd) {
+async function runCommand(command, cwd, timeoutMs) {
+  const effectiveTimeout = timeoutMs ?? TIMEOUT_MS;
   const start = Date.now();
   try {
     const shellCmd = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
     const { stdout, stderr } = await execAsync(command, {
       cwd,
-      timeout: TIMEOUT_MS,
+      timeout: effectiveTimeout,
       maxBuffer: 10 * 1024 * 1024,
       shell: shellCmd,
       windowsHide: true
@@ -23155,7 +23156,7 @@ async function runCommand(command, cwd) {
     if (execErr.killed) {
       return {
         exitCode,
-        combined: `TIMEOUT after ${TIMEOUT_MS}ms`,
+        combined: `TIMEOUT after ${effectiveTimeout}ms`,
         duration: duration3,
         error: "Process killed due to timeout",
         killed: true
@@ -23325,6 +23326,7 @@ async function checkDocument(doc, cwdOverride, opts) {
     manual_unverified: manualUnverified,
     amendment_warnings: amendmentWarnings,
     blocked_by_manuals: blockedByManuals,
+    summary_mode: opts?.summary === true ? true : void 0,
     ...targetPath ? { scoped: true, ran_node_path: targetPath } : {},
     ...tampered ? { tampered: true } : {}
   };
@@ -23416,6 +23418,7 @@ function formatCheckResult(result) {
     if (!byRoot.has(rootIdx)) byRoot.set(rootIdx, []);
     byRoot.get(rootIdx)?.push(leaf);
   }
+  const summaryMode = result.summary_mode === true;
   for (const [rootIdx, leaves] of byRoot) {
     const passCount = leaves.filter((p) => p.status === "pass").length;
     const failCount = leaves.filter((p) => p.status === "fail").length;
@@ -23437,6 +23440,7 @@ function formatCheckResult(result) {
       const depth = leaf.node_path.split(".children.").length - 1;
       const indent = "  ".repeat(depth + 1);
       if (leaf.status === "draft") {
+        if (summaryMode) continue;
         l.push(`${indent}\u{1F4DD} ${leaf.description} \u2014 DRAFT (use dod_refine to concretize)`);
       } else if (leaf.status === "pass") {
         const isManual = leaf.command === "manual";
@@ -23461,6 +23465,9 @@ ${indent}  `)}`);
 ${indent}  `)}`);
         }
       }
+    }
+    if (summaryMode && draftCount > 0) {
+      l.push(`  \u{1F4DD} ${draftCount} draft node(s) unchanged \u2014 use dod_refine to concretize`);
     }
     l.push("");
   }
@@ -23728,7 +23735,7 @@ function updateDocFromCheckResult(doc, result) {
 
 // src/command-check.ts
 import { execFile } from "node:child_process";
-import { existsSync as existsSync4 } from "node:fs";
+import { existsSync as existsSync4, readdirSync as readdirSync2 } from "node:fs";
 import * as path5 from "node:path";
 import { promisify as promisify2 } from "node:util";
 var execFileAsync = promisify2(execFile);
@@ -23930,6 +23937,77 @@ async function findMissingTools(commands, cwd) {
   }
   return missing;
 }
+function expandGlobsInCommand(command, cwd) {
+  if (process.platform !== "win32") return { expanded: command, expanded_count: 0 };
+  const dirGlobRe = /([A-Za-z0-9_.-]+)\\([*?][^\\]*)\\/g;
+  const dirGlobReFwd = /([A-Za-z0-9_.-]+)\/([*?][^/]*)\//g;
+  let expanded = command;
+  let count = 0;
+  let match;
+  while ((match = dirGlobRe.exec(command)) !== null) {
+    const prefix = match[1];
+    const pattern = match[2];
+    const fullMatch = match[0];
+    try {
+      const parentDir = path5.resolve(cwd, prefix);
+      if (!existsSync4(parentDir)) continue;
+      const entries = readdirSync2(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
+      if (entries.length > 0) {
+        const replacement = entries.map((e) => `${prefix}\\${e}\\`).join(" ");
+        expanded = expanded.replace(fullMatch, replacement);
+        count += entries.length;
+      }
+    } catch {
+    }
+  }
+  while ((match = dirGlobReFwd.exec(command)) !== null) {
+    const prefix = match[1];
+    const pattern = match[2];
+    const fullMatch = match[0];
+    try {
+      const parentDir = path5.resolve(cwd, prefix);
+      if (!existsSync4(parentDir)) continue;
+      const entries = readdirSync2(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
+      if (entries.length > 0) {
+        const replacement = entries.map((e) => `${prefix}/${e}/`).join(" ");
+        expanded = expanded.replace(fullMatch, replacement);
+        count += entries.length;
+      }
+    } catch {
+    }
+  }
+  return { expanded, expanded_count: count };
+}
+function wildcardMatch(str, pattern) {
+  const re = new RegExp(
+    "^" + pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$"
+  );
+  return re.test(str);
+}
+var MUTATING_FLAGS = [
+  [/\bb(?:iome|eautifier)\b.*--write\b/, "biome/prettier --write modifies files in-place"],
+  [/\beslint\b.*--fix\b/, "eslint --fix modifies files in-place"],
+  [/\b(?:biome|prettier)\s+format\b(?!.*--check\b)/, "biome/prettier format (without --check) may modify files"],
+  [/\btsc\b(?!.*--noEmit\b)/, "tsc writes compiled .js files to dist/ \u2014 use --noEmit for check-only"],
+  [/\bstryker\b\s+run\b/, "Stryker mutates dist/ files in-place \u2014 use git checkout to restore after run"],
+  [/\bgit\s+add\b/, "git add stages changes \u2014 never use in proof commands"],
+  [/\bgit\s+commit\b/, "git commit creates commits \u2014 never use in proof commands"],
+  [/\bgit\s+reset\b/, "git reset modifies working tree \u2014 never use in proof commands"],
+  [/\brm\s+-[rf]/, "rm -rf deletes files \u2014 dangerous in proof commands"],
+  [/\bdel\s+\/[sfq]/, "Windows del with flags deletes files \u2014 dangerous in proof commands"],
+  [/\bnpm\s+(?:install|update|ci)\b/, "npm install/update/ci modifies node_modules/ and package-lock.json"],
+  [/\bpnpm\s+(?:install|update)\b/, "pnpm install/update modifies node_modules/ and lockfile"],
+  [/\bcargo\s+build\b(?!.*--check\b)/, "cargo build writes compiled artifacts (use cargo check for lint-only)"]
+];
+function detectMutatingFlags(command) {
+  const warnings = [];
+  for (const [re, desc] of MUTATING_FLAGS) {
+    if (re.test(command)) {
+      warnings.push(desc);
+    }
+  }
+  return warnings;
+}
 var currentOs = process.platform;
 
 // src/notify.ts
@@ -23962,103 +24040,6 @@ function playJingle() {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[dod-guard] playJingle failed", { err: msg });
   }
-}
-var VERIFY_DIALOG_SCRIPT = `
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
-$form = New-Object System.Windows.Forms.Form
-$form.Text = $env:DODG_TITLE
-$form.Width = 520
-$form.Height = 420
-$form.StartPosition = "CenterScreen"
-$form.Topmost = $true
-$form.FormBorderStyle = "FixedDialog"
-$form.MaximizeBox = $false
-$form.MinimizeBox = $false
-
-$msgBox = New-Object System.Windows.Forms.TextBox
-$msgBox.Multiline = $true
-$msgBox.ReadOnly = $true
-$msgBox.ScrollBars = "Vertical"
-$msgBox.Text = $env:DODG_MSG
-$msgBox.Location = New-Object System.Drawing.Point(10,10)
-$msgBox.Size = New-Object System.Drawing.Size(484,220)
-$form.Controls.Add($msgBox)
-
-$noteLabel = New-Object System.Windows.Forms.Label
-$noteLabel.Text = "Notes (optional):"
-$noteLabel.Location = New-Object System.Drawing.Point(10,238)
-$noteLabel.Size = New-Object System.Drawing.Size(200,20)
-$form.Controls.Add($noteLabel)
-
-$noteBox = New-Object System.Windows.Forms.TextBox
-$noteBox.Multiline = $true
-$noteBox.ScrollBars = "Vertical"
-$noteBox.Location = New-Object System.Drawing.Point(10,260)
-$noteBox.Size = New-Object System.Drawing.Size(484,60)
-$form.Controls.Add($noteBox)
-
-$passBtn = New-Object System.Windows.Forms.Button
-$passBtn.Text = "PASS"
-$passBtn.DialogResult = [System.Windows.Forms.DialogResult]::Yes
-$passBtn.Location = New-Object System.Drawing.Point(300,335)
-$passBtn.Size = New-Object System.Drawing.Size(90,30)
-$form.Controls.Add($passBtn)
-$form.AcceptButton = $passBtn
-
-$failBtn = New-Object System.Windows.Forms.Button
-$failBtn.Text = "FAIL"
-$failBtn.DialogResult = [System.Windows.Forms.DialogResult]::No
-$failBtn.Location = New-Object System.Drawing.Point(400,335)
-$failBtn.Size = New-Object System.Drawing.Size(90,30)
-$form.Controls.Add($failBtn)
-$form.CancelButton = $failBtn
-
-$dialogResult = $form.ShowDialog()
-
-$verdict = "no"
-if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) { $verdict = "yes" }
-
-$payload = @{ result = $verdict; note = $noteBox.Text } | ConvertTo-Json -Compress
-[Console]::Out.Write($payload)
-`;
-function showVerifyDialog(title, body) {
-  if (!isWindows2) return Promise.resolve({ result: "no" });
-  return new Promise((resolve8) => {
-    try {
-      const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", VERIFY_DIALOG_SCRIPT], {
-        stdio: ["ignore", "pipe", "ignore"],
-        windowsHide: true,
-        env: {
-          ...process.env,
-          DODG_MSG: body,
-          DODG_TITLE: title
-        }
-      });
-      let out = "";
-      child.stdout.on("data", (chunk) => {
-        out += chunk.toString();
-      });
-      child.on("error", () => resolve8({ result: "no" }));
-      child.on("close", () => {
-        try {
-          const parsed = JSON.parse(out.trim());
-          const result = parsed.result === "yes" ? "yes" : "no";
-          const note = typeof parsed.note === "string" && parsed.note.trim() ? parsed.note.trim() : void 0;
-          resolve8({ result, note });
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error("[dod-guard] showVerifyDialog parse failed", { err: msg });
-          resolve8({ result: "no" });
-        }
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("[dod-guard] showVerifyDialog spawn failed", { err: msg });
-      resolve8({ result: "no" });
-    }
-  });
 }
 
 // src/parser.ts
@@ -24357,7 +24338,8 @@ var PredicateSchema = external_exports.object({
   suggest_guard_clauses: external_exports.boolean().optional().describe(
     "brevity / cohesion: flag if/else pairs in functions lacking guard clauses \u2014 advisory suggestion (default true)."
   ),
-  min_replacement_ratio: external_exports.number().optional().describe("brevity / replacement_ratio: minimum deletion/insertion ratio (default 0.2).")
+  min_replacement_ratio: external_exports.number().optional().describe("brevity / replacement_ratio: minimum deletion/insertion ratio (default 0.2)."),
+  timeout_ms: external_exports.number().optional().describe("Override the default 120s command timeout in milliseconds. Use for slow tools like Stryker (600s).")
 });
 var ProofCategorySchema = external_exports.enum([
   "lint",
@@ -24375,6 +24357,7 @@ var ProofCategorySchema = external_exports.enum([
   "streamline",
   "observability",
   "brevity",
+  "regression",
   "manual",
   "other"
 ]);
@@ -24646,12 +24629,38 @@ async function checkCommandsForOs(roots, cwd) {
         "Use explicit paths or tools that handle their own globbing.",
         ""
       );
-      for (const cmd of globCmds) lines.push(`  \u2022 ${cmd}`);
+      for (const cmd of globCmds) {
+        lines.push(`  \u2022 ${cmd}`);
+        const { expanded, expanded_count } = expandGlobsInCommand(cmd, cwd);
+        if (expanded_count > 0) {
+          lines.push(`    \u2192 Auto-expanded: \`${expanded}\``);
+          lines.push(`    \u2192 Copy the expanded form above and replace the glob in your proof command.`);
+        }
+      }
       lines.push("");
     }
   }
   if (missing.length > 0) {
     lines.push(formatMissingTools(missing));
+  }
+  const mutatingCmds = commands.filter((cmd) => detectMutatingFlags(cmd).length > 0);
+  if (mutatingCmds.length > 0) {
+    if (lines.length > 0) lines.push("");
+    lines.push(
+      `WARNING: ${mutatingCmds.length} proof command(s) mutate the working tree \u2014 this causes false dirty-tree signals on subsequent proof runs.`,
+      "Use check-only equivalents where possible:",
+      "  \u2022 biome format / prettier --check (not --write)",
+      "  \u2022 tsc --noEmit (check types without emitting .js)",
+      "  \u2022 eslint (without --fix)",
+      "  \u2022 npx stryker run \u2192 follow with git checkout -- <pkg>/dist/ to restore mutated files",
+      ""
+    );
+    for (const cmd of mutatingCmds) {
+      const flags = detectMutatingFlags(cmd);
+      lines.push(`  \u2022 \`${cmd.slice(0, 80)}\``);
+      for (const f of flags.slice(0, 2)) lines.push(`    \u2192 ${f}`);
+    }
+    lines.push("");
   }
   if (lines.length === 0) return null;
   return lines.join("\n");
@@ -24850,10 +24859,12 @@ function validateBaseline(type, steps, skipReasons) {
   const present = collectPresent(steps);
   const errors = [];
   const warnings = [];
-  errors.push(...checkHardMandatory(present, type));
-  const optResult = checkOptional(present, skipReasons);
-  errors.push(...optResult.errors);
-  warnings.push(...optResult.warnings);
+  if (type !== "minimal") {
+    errors.push(...checkHardMandatory(present, type));
+    const optResult = checkOptional(present, skipReasons);
+    errors.push(...optResult.errors);
+    warnings.push(...optResult.warnings);
+  }
   warnings.push(...checkStrengthOnly(steps));
   return { errors, warnings };
 }
@@ -24928,6 +24939,7 @@ async function handleDodRefine(params) {
   if (node.children && node.children.length > 0)
     return `ERROR: node "${node.title}" is a task group with children \u2014 not a leaf. Refine its children instead.`;
   const oldIntent = node.intent;
+  let placeholderWarn = [];
   if (mode === "concretize") {
     if (!(command && predicate)) {
       return "ERROR: concretize mode requires command and predicate.";
@@ -24959,6 +24971,15 @@ async function handleDodRefine(params) {
       new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
       reason: `Refined draft \u2192 concrete: ${description ?? ""}`
     });
+    const cmd = command?.trim() ?? "";
+    const isPlaceholder = /^node\s+(?:-e|--eval)\s+["']\s*process\.exit\s*\(\s*0\s*\)\s*["']/.test(cmd) || cmd === "process.exit(0)" || /^echo\s+ok$/i.test(cmd) || cmd === "true" || cmd === "exit 0";
+    placeholderWarn = isPlaceholder ? [
+      "",
+      "\u26A0\uFE0F  PLACEHOLDER PROOF: This command always exits 0 \u2014 it provides zero verification.",
+      "The proof will pass dod_check regardless of whether the code actually works.",
+      "Replace with a real verification command before considering this DoD complete.",
+      "Examples: actual test run, linter check, build verification, grep for expected output."
+    ] : [];
   } else {
     if (!children || children.length === 0) {
       return "ERROR: subdivide mode requires at least one child in children array.";
@@ -24998,6 +25019,7 @@ async function handleDodRefine(params) {
     `Command: \`${command}\``,
     `Predicate: ${predicate.type}:${predicate.value ?? "(no value)"}`,
     `Description: ${description}`,
+    ...placeholderWarn,
     draftCount === 0 ? "\n\u{1F389} All nodes are now concrete \u2014 the DoD is fully verifiable. Run dod_check." : `
 ${draftCount} draft node(s) remaining.`
   ].join("\n") : [
@@ -25021,7 +25043,7 @@ server.tool(
   {
     title: external_exports.string().describe("Feature/plan title"),
     goal: external_exports.string().describe("One-sentence goal"),
-    type: external_exports.enum(["bug", "general"]).describe("Work type \u2014 selects the company baseline (standards/dod-baselines.md)."),
+    type: external_exports.enum(["bug", "general", "minimal"]).describe("Work type \u2014 selects the company baseline. 'minimal' enforces only lint+format+test; 'bug' adds tdd; 'general' enforces all categories (standards/dod-baselines.md)."),
     cwd: external_exports.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: external_exports.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
@@ -25034,7 +25056,12 @@ server.tool(
   async (params) => {
     if (params.dod_id) {
       return {
-        content: [{ type: "text", text: "ERROR: dod_create creates NEW DoDs. To update an existing DoD, use dod_amend for individual proofs or dod_check to verify. The dod_id parameter is not accepted here \u2014 it's only for dod_check, dod_amend, and other update tools." }]
+        content: [
+          {
+            type: "text",
+            text: "ERROR: dod_create creates NEW DoDs. To update an existing DoD, use dod_amend for individual proofs or dod_check to verify. The dod_id parameter is not accepted here \u2014 it's only for dod_check, dod_amend, and other update tools."
+          }
+        ]
       };
     }
     const result = await handleDodCreate(params);
@@ -25042,7 +25069,6 @@ server.tool(
   }
 );
 var ELICITATION_MAX_WAIT_MS = 2147483647;
-var isWindowsHost = process.platform === "win32";
 function manualInstructions(node) {
   const isReview = node.predicate?.type === "review";
   const lines = [node.description ?? node.title];
@@ -25065,19 +25091,9 @@ function buildConfirmer() {
     const isReview = node.predicate?.type === "review";
     const promptLabel = isReview ? "Code review required" : "Manual verification required";
     const instructions = manualInstructions(node);
-    playJingle();
-    if (isWindowsHost) {
-      const dialog = await showVerifyDialog(
-        `DoD manual verification \u2014 ${node.id}`,
-        `${instructions}
-
-Click PASS only if it passed.`
-      );
-      return {
-        answer: dialog.result === "yes" ? "pass" : "fail",
-        note: dialog.note,
-        channel: "messagebox"
-      };
+    try {
+      playJingle();
+    } catch {
     }
     const caps = server.server.getClientCapabilities();
     if (caps?.elicitation) {
@@ -25093,7 +25109,7 @@ ${instructions}`,
                 result: {
                   type: "string",
                   enum: ["pass", "fail"],
-                  enumNames: ["\u2705 Verified \u2014 works as expected", "\u274C Not verified \u2014 does not work"],
+                  enumNames: ["Verified works as expected", "Not verified does not work"],
                   description: "Did the manual verification pass?"
                 },
                 note: {
@@ -25117,8 +25133,10 @@ ${instructions}`,
         const msg = err instanceof Error ? err.message : String(err);
         console.error("dod-guard: elicitation request failed", { err: msg });
       }
+    } else {
+      console.error("dod-guard: MCP client does not support elicitation \u2014 manual verification unavailable");
     }
-    return { answer: "fail", note: "no verification channel available on this host", channel: "messagebox" };
+    return { answer: "fail", note: "no verification channel available on this host", channel: "elicitation" };
   };
 }
 server.tool(
@@ -25130,9 +25148,12 @@ server.tool(
     cwd_override: external_exports.string().optional().describe("Override working directory for this check run"),
     nodePath: external_exports.string().optional().describe(
       "Dot-separated path to a subtree (e.g. '0.children.1') to verify in isolation. Omit to run the full check."
+    ),
+    summary: external_exports.boolean().optional().describe(
+      "Collapse unchanged draft nodes into a single count line. Use for large DoDs where drafts dominate the output."
     )
   },
-  async ({ dod_id, path: mdPath, cwd_override, nodePath }) => {
+  async ({ dod_id, path: mdPath, cwd_override, nodePath, summary }) => {
     let doc = null;
     if (dod_id) doc = await load(dod_id);
     else if (mdPath) doc = await findByPath(mdPath);
@@ -25157,7 +25178,7 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
         ]
       };
     }
-    const result = await checkDocument(doc, cwd_override, nodePath ? { nodePath } : void 0);
+    const result = await checkDocument(doc, cwd_override, { nodePath, summary });
     if (!doc.proof_fingerprint && result.proof_fingerprint) {
       doc.proof_fingerprint = result.proof_fingerprint;
     }
@@ -25399,10 +25420,10 @@ server.tool(
 );
 server.tool(
   "dod_amend",
-  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons.",
+  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
   {
     dod_id: external_exports.string().describe("DoD ID"),
-    node_path: external_exports.string().describe("Dot-separated path to the concrete leaf node, or '__meta__' for DoD-level metadata"),
+    node_path: external_exports.string().describe("Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata"),
     new_command: external_exports.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: external_exports.string().optional(),
@@ -25414,7 +25435,11 @@ server.tool(
     if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
     if (nodePath === "__meta__") {
       if (new_skip_reasons === void 0) {
-        return { content: [{ type: "text", text: "ERROR: node_path='__meta__' requires new_skip_reasons parameter." }] };
+        return {
+          content: [
+            { type: "text", text: "ERROR: node_path='__meta__' requires new_skip_reasons parameter." }
+          ]
+        };
       }
       const oldSkip = doc.skip_reasons ? { ...doc.skip_reasons } : {};
       doc.skip_reasons = new_skip_reasons;
@@ -25429,15 +25454,93 @@ server.tool(
       await save(doc);
       await writeMarkdown(doc);
       return {
-        content: [{
-          type: "text",
-          text: `DoD metadata amended.
+        content: [
+          {
+            type: "text",
+            text: `DoD metadata amended.
 
 Skip reasons updated. ${Object.keys(new_skip_reasons).length} categories.
 Reason: ${reason}
 
 Run dod_check to re-verify.`
-        }]
+          }
+        ]
+      };
+    }
+    if (nodePath === "*") {
+      const leaves = flattenConcreteLeaves(doc.roots);
+      if (leaves.length === 0) {
+        return {
+          content: [{ type: "text", text: "ERROR: no concrete leaves to amend. Refine drafts first." }]
+        };
+      }
+      if (new_predicate && !isExecutablePredicate(new_predicate.type)) {
+        const machineLeaves = leaves.filter(
+          ({ node: node2 }) => node2.predicate && isExecutablePredicate(node2.predicate.type)
+        );
+        if (machineLeaves.length > 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `ERROR: Cannot convert ${machineLeaves.length} machine-checkable proof(s) to manual/review \u2014 this would bypass verification.`
+              }
+            ]
+          };
+        }
+      }
+      if (new_command !== void 0) {
+        const missing = await findMissingTools([new_command], doc.cwd);
+        if (missing.length > 0) {
+          return { content: [{ type: "text", text: formatMissingTools(missing) }] };
+        }
+      }
+      let amendedCount = 0;
+      for (const { node: node2, node_path: leafPath } of leaves) {
+        const oldSnap = {
+          command: node2.command,
+          predicate: node2.predicate ? { ...node2.predicate } : void 0,
+          description: node2.description
+        };
+        if (new_command !== void 0) node2.command = new_command;
+        if (new_predicate !== void 0) node2.predicate = new_predicate;
+        if (new_description !== void 0) node2.description = new_description;
+        node2.last_status = "pending";
+        doc.amendments.push({
+          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+          node_path: leafPath,
+          action: "modified",
+          old_value: oldSnap,
+          new_value: {
+            command: node2.command,
+            predicate: node2.predicate ? { ...node2.predicate } : void 0,
+            description: node2.description
+          },
+          reason
+        });
+        amendedCount++;
+      }
+      doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
+      await save(doc);
+      await writeMarkdown(doc);
+      const changes = [];
+      if (new_command !== void 0) changes.push(`command \u2192 \`${new_command}\``);
+      if (new_predicate !== void 0) changes.push(`predicate \u2192 ${new_predicate.type}`);
+      if (new_description !== void 0) changes.push("description updated");
+      return {
+        content: [
+          {
+            type: "text",
+            text: [
+              `Bulk amend: ${amendedCount} concrete proof(s) updated.`,
+              "",
+              `Changes: ${changes.join(", ")}`,
+              `Reason: ${reason}`,
+              "",
+              "All statuses reset to pending. Run dod_check to re-verify."
+            ].join("\n")
+          }
+        ]
       };
     }
     const node = findNodeByPath(doc.roots, nodePath);
