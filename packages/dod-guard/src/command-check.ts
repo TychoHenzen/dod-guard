@@ -330,7 +330,10 @@ export function expandGlobsInCommand(command: string, cwd: string): { expanded: 
 /** Simple wildcard match: supports * (any chars) and ? (single char). */
 function wildcardMatch(str: string, pattern: string): boolean {
   const re = new RegExp(
-    "^" + pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$",
+    `^${pattern
+      .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+      .replace(/\*/g, ".*")
+      .replace(/\?/g, ".")}$`,
   );
   return re.test(str);
 }

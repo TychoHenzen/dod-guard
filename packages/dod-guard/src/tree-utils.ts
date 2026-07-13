@@ -1,4 +1,11 @@
-import { currentOs, detectMutatingFlags, expandGlobsInCommand, findMissingTools, hasGlobWildcards, type MissingTool } from "./command-check.js";
+import {
+  currentOs,
+  detectMutatingFlags,
+  expandGlobsInCommand,
+  findMissingTools,
+  hasGlobWildcards,
+  type MissingTool,
+} from "./command-check.js";
 import type { Predicate, ProofCategory, TaskNode } from "./types.js";
 
 // ── Node ID generation ────────────────────────────────────────────────

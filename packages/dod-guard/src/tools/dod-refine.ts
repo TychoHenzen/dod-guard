@@ -87,7 +87,7 @@ export async function handleDodRefine(params: RefineParams): Promise<string> {
           "",
           "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
           "The proof will pass dod_check regardless of whether the code actually works.",
-          'Replace with a real verification command before considering this DoD complete.',
+          "Replace with a real verification command before considering this DoD complete.",
           "Examples: actual test run, linter check, build verification, grep for expected output.",
         ]
       : [];

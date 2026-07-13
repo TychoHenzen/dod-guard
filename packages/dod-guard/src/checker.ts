@@ -353,11 +353,7 @@ export interface CheckOptions {
   summary?: boolean;
 }
 
-export async function checkDocument(
-  doc: DodDocument,
-  cwdOverride?: string,
-  opts?: CheckOptions,
-): Promise<CheckResult> {
+export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts?: CheckOptions): Promise<CheckResult> {
   const cwd = cwdOverride ?? doc.cwd;
   const targetPath = opts?.nodePath;
 

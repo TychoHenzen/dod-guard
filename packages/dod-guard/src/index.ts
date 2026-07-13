@@ -36,7 +36,11 @@ server.tool(
   {
     title: z.string().describe("Feature/plan title"),
     goal: z.string().describe("One-sentence goal"),
-    type: z.enum(["bug", "general", "minimal"]).describe("Work type — selects the company baseline. 'minimal' enforces only lint+format+test; 'bug' adds tdd; 'general' enforces all categories (standards/dod-baselines.md)."),
+    type: z
+      .enum(["bug", "general", "minimal"])
+      .describe(
+        "Work type — selects the company baseline. 'minimal' enforces only lint+format+test; 'bug' adds tdd; 'general' enforces all categories (standards/dod-baselines.md).",
+      ),
     cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: z.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
@@ -498,7 +502,9 @@ server.tool(
     dod_id: z.string().describe("DoD ID"),
     node_path: z
       .string()
-      .describe("Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata"),
+      .describe(
+        "Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata",
+      ),
     new_command: z.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: z.string().optional(),
@@ -551,9 +557,7 @@ server.tool(
 
       // Block weakening on any leaf
       if (new_predicate && !isExecutablePredicate(new_predicate.type)) {
-        const machineLeaves = leaves.filter(
-          ({ node }) => node.predicate && isExecutablePredicate(node.predicate.type),
-        );
+        const machineLeaves = leaves.filter(({ node }) => node.predicate && isExecutablePredicate(node.predicate.type));
         if (machineLeaves.length > 0) {
           return {
             content: [
