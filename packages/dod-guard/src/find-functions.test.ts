@@ -617,7 +617,7 @@ describe("checkCyclomaticComplexity - full pattern coverage", () => {
   });
 
   it("null/unknown language returns 0", () => {
-    assert.equal(checkCyclomaticComplexity(['if (a) { return 1; }'], null).complexity, 0);
+    assert.equal(checkCyclomaticComplexity(["if (a) { return 1; }"], null).complexity, 0);
   });
 });
 
@@ -763,12 +763,7 @@ describe("checkAvoidableElse", () => {
 
 describe("findBlockEnd - survivor coverage", () => {
   it("ignores braces inside double-quoted string", () => {
-    const lines = [
-      "function f() {",
-      '  const s = "{not-a-brace}";',
-      "  return 1;",
-      "}",
-    ];
+    const lines = ["function f() {", '  const s = "{not-a-brace}";', "  return 1;", "}"];
     const idx = findBlockEnd(lines, 0, "{", "}");
     assert.equal(idx, 3);
   });
@@ -776,6 +771,7 @@ describe("findBlockEnd - survivor coverage", () => {
   it("ignores braces inside backtick template", () => {
     const lines = [
       "function fn() {",
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: test fixture — must contain template literal inside string
       "  return `${obj.method()}`;",
       "}",
     ];
@@ -784,45 +780,25 @@ describe("findBlockEnd - survivor coverage", () => {
   });
 
   it("handles single-quoted string containing double quotes", () => {
-    const lines = [
-      "function g() {",
-      '  const msg = \'say "hello"\';',
-      "  return msg;",
-      "}",
-    ];
+    const lines = ["function g() {", "  const msg = 'say \"hello\"';", "  return msg;", "}"];
     const idx = findBlockEnd(lines, 0, "{", "}");
     assert.equal(idx, 3);
   });
 
   it("handles escaped quotes inside strings", () => {
-    const lines = [
-      "function h() {",
-      '  const s = "escaped \\"quote\\" here";',
-      "}",
-    ];
+    const lines = ["function h() {", '  const s = "escaped \\"quote\\" here";', "}"];
     const idx = findBlockEnd(lines, 0, "{", "}");
     assert.equal(idx, 2);
   });
 
   it("handles line comment after opening brace", () => {
-    const lines = [
-      "function k() { // comment",
-      "  return 1;",
-      "}",
-    ];
+    const lines = ["function k() { // comment", "  return 1;", "}"];
     const idx = findBlockEnd(lines, 0, "{", "}");
     assert.equal(idx, 2);
   });
 
   it("finds matching close brace starting from nested function", () => {
-    const lines = [
-      "function outer() {",
-      "  function inner() {",
-      "    return 1;",
-      "  }",
-      "  return 0;",
-      "}",
-    ];
+    const lines = ["function outer() {", "  function inner() {", "    return 1;", "  }", "  return 0;", "}"];
     const idx = findBlockEnd(lines, 1, "{", "}");
     assert.equal(idx, 3);
   });
@@ -830,48 +806,25 @@ describe("findBlockEnd - survivor coverage", () => {
 
 describe("checkAvoidableElse - survivor coverage", () => {
   it("detects if-else without guard clause as avoidable", () => {
-    const body = [
-      "if (x > 0) {",
-      "  process(x);",
-      "} else {",
-      "  reject(x);",
-      "}",
-    ];
+    const body = ["if (x > 0) {", "  process(x);", "} else {", "  reject(x);", "}"];
     const result = checkAvoidableElse(body, "js");
     assert.equal(result.count, 1);
   });
 
   it("counts zero when if block has guard clause with return", () => {
-    const body = [
-      "if (!valid) {",
-      "  return null;",
-      "} else {",
-      "  return process();",
-      "}",
-    ];
+    const body = ["if (!valid) {", "  return null;", "} else {", "  return process();", "}"];
     const result = checkAvoidableElse(body, "js");
     assert.equal(result.count, 0);
   });
 
   it("counts zero when if block has guard clause with throw", () => {
-    const body = [
-      "if (err) {",
-      "  throw new Error('bad');",
-      "} else {",
-      "  return ok;",
-      "}",
-    ];
+    const body = ["if (err) {", "  throw new Error('bad');", "} else {", "  return ok;", "}"];
     const result = checkAvoidableElse(body, "js");
     assert.equal(result.count, 0);
   });
 
   it("handles empty else block as avoidable", () => {
-    const body = [
-      "if (x) {",
-      "  doThing();",
-      "} else {",
-      "}",
-    ];
+    const body = ["if (x) {", "  doThing();", "} else {", "}"];
     const result = checkAvoidableElse(body, "js");
     assert.equal(result.count, 1);
   });
@@ -883,15 +836,7 @@ describe("checkAvoidableElse - survivor coverage", () => {
 
 describe("checkUnnecessaryElse - survivor coverage", () => {
   it("detects unnecessary else with nested return", () => {
-    const body = [
-      "if (outer) {",
-      "  if (inner) {",
-      "    return 1;",
-      "  } else {",
-      "    return 2;",
-      "  }",
-      "}",
-    ];
+    const body = ["if (outer) {", "  if (inner) {", "    return 1;", "  } else {", "    return 2;", "  }", "}"];
     const result = checkUnnecessaryElse(body, "js");
     assert.equal(result.count, 1);
   });
@@ -928,13 +873,7 @@ describe("checkUnnecessaryElse - survivor coverage", () => {
   });
 
   it("does not flag else after if without exit statement", () => {
-    const body = [
-      "if (x > 0) {",
-      "  sum += x;",
-      "} else {",
-      "  sum -= x;",
-      "}",
-    ];
+    const body = ["if (x > 0) {", "  sum += x;", "} else {", "  sum -= x;", "}"];
     const result = checkUnnecessaryElse(body, "js");
     assert.equal(result.count, 0);
   });
