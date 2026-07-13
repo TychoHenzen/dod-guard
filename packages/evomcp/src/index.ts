@@ -36,10 +36,7 @@ const TaskSpecSchema = z.object({
     ),
   cwd: z.string().describe("Working directory for running verify_cmd (absolute path)"),
   budget_tokens: z.number().optional().describe("Maximum DeepSeek API tokens to spend (default ~100k)"),
-  fanout: z
-    .number()
-    .optional()
-    .describe("Number of parallel claude -p instances (default 5, max 16)"),
+  fanout: z.number().optional().describe("Number of parallel claude -p instances (default 5, max 16)"),
   strategy: z
     .enum(["auto", "best-of-n", "evolve"])
     .optional()

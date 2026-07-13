@@ -51,7 +51,17 @@ mock.module("./agent.js", {
     getProxyCost: mock.fn(async () => {
       costSnapshotCalls++;
       // Return increasing totals to simulate real proxy accumulating tokens
-      return { backends: { deepseek: { input_tokens: 1000 * costSnapshotCalls, output_tokens: 500 * costSnapshotCalls, requests: costSnapshotCalls } }, total_tokens: 1500 * costSnapshotCalls, total_cost: 0.002 * costSnapshotCalls };
+      return {
+        backends: {
+          deepseek: {
+            input_tokens: 1000 * costSnapshotCalls,
+            output_tokens: 500 * costSnapshotCalls,
+            requests: costSnapshotCalls,
+          },
+        },
+        total_tokens: 1500 * costSnapshotCalls,
+        total_cost: 0.002 * costSnapshotCalls,
+      };
     }),
   },
 });
