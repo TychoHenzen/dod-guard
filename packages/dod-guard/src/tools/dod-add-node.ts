@@ -24,8 +24,19 @@ interface AddNodeParams {
 }
 
 export async function handleDodAddNode(params: AddNodeParams): Promise<{ path: string; message: string }> {
-  const { dod_id, parent_path, parent_id: parentId, title, refinement, intent, command, predicate, description, category, advisory } =
-    params;
+  const {
+    dod_id,
+    parent_path,
+    parent_id: parentId,
+    title,
+    refinement,
+    intent,
+    command,
+    predicate,
+    description,
+    category,
+    advisory,
+  } = params;
 
   const doc = await store.load(dod_id);
   if (!doc) throw new Error("ERROR: DoD not found.");

@@ -24,7 +24,18 @@ interface RefineParams {
 }
 
 export async function handleDodRefine(params: RefineParams): Promise<string> {
-  const { dod_id, node_path: nodePath, node_id: nodeId, mode, command, predicate, description, category, advisory, children } = params;
+  const {
+    dod_id,
+    node_path: nodePath,
+    node_id: nodeId,
+    mode,
+    command,
+    predicate,
+    description,
+    category,
+    advisory,
+    children,
+  } = params;
 
   const doc = await store.load(dod_id);
   if (!doc) return "ERROR: DoD not found.";

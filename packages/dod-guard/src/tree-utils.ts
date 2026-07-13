@@ -107,10 +107,7 @@ export function findInChildren(nodes: TaskNode[], proofId: string): TaskNode | n
  * dot-separated path during traversal so callers get the up-to-date position
  * without needing a separate path lookup.
  */
-export function findNodeById(
-  roots: TaskNode[],
-  id: string,
-): { node: TaskNode; path: string } | null {
+export function findNodeById(roots: TaskNode[], id: string): { node: TaskNode; path: string } | null {
   function search(nodes: TaskNode[], parentPath: string): { node: TaskNode; path: string } | null {
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];

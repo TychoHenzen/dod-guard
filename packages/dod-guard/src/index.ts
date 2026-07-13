@@ -268,7 +268,10 @@ server.tool(
   {
     dod_id: z.string().describe("DoD ID"),
     parent_path: z.string().describe("Dot-separated path to parent task group, or empty string to add at root level"),
-    parent_id: z.string().optional().describe("Stable node ID of parent (alternative to parent_path — survives tree mutations)"),
+    parent_id: z
+      .string()
+      .optional()
+      .describe("Stable node ID of parent (alternative to parent_path — survives tree mutations)"),
     title: z.string(),
     refinement: z.enum(["draft", "concrete"]).default("draft"),
     intent: z.string().optional(),
@@ -303,11 +306,13 @@ server.tool(
     if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
 
     // Resolve node_id to path (stable across tree mutations)
-    const resolvedPath = nodeId ? (() => {
-      const found = findNodeById(doc.roots, nodeId);
-      if (!found) return null;
-      return found.path;
-    })() : nodePath;
+    const resolvedPath = nodeId
+      ? (() => {
+          const found = findNodeById(doc.roots, nodeId);
+          if (!found) return null;
+          return found.path;
+        })()
+      : nodePath;
     if (resolvedPath === null)
       return { content: [{ type: "text" as const, text: `ERROR: node not found by id "${nodeId}".` }] };
 
@@ -543,20 +548,41 @@ server.tool(
       .describe(
         "Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata",
       ),
-    node_id: z.string().optional().describe("Stable node ID (alternative to node_path — survives tree mutations). Incompatible with '*' and '__meta__'."),
+    node_id: z
+      .string()
+      .optional()
+      .describe(
+        "Stable node ID (alternative to node_path — survives tree mutations). Incompatible with '*' and '__meta__'.",
+      ),
     new_command: z.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: z.string().optional(),
     new_skip_reasons: z.record(z.string()).optional().describe("(__meta__ only) Replace DoD skip_reasons map"),
     reason: z.string().describe("Why this amendment is needed — logged permanently"),
   },
-  async ({ dod_id, node_path: nodePath, node_id: nodeId, new_command, new_predicate, new_description, new_skip_reasons, reason }) => {
+  async ({
+    dod_id,
+    node_path: nodePath,
+    node_id: nodeId,
+    new_command,
+    new_predicate,
+    new_description,
+    new_skip_reasons,
+    reason,
+  }) => {
     const doc = await store.load(dod_id);
     if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
 
     // node_id incompatible with special paths
     if (nodeId && (nodePath === "__meta__" || nodePath === "*")) {
-      return { content: [{ type: "text" as const, text: `ERROR: node_id is incompatible with node_path="${nodePath}". Use one or the other.` }] };
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `ERROR: node_id is incompatible with node_path="${nodePath}". Use one or the other.`,
+          },
+        ],
+      };
     }
 
     // __meta__ path: update DoD-level metadata (skip_reasons)

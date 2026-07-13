@@ -1146,15 +1146,16 @@ describe("findNodeById", () => {
   it("path reflects tree state after add (appended at end)", () => {
     const roots = makeRoots();
     const group = roots[0];
-    if (group.children) group.children.push({
-      id: "node-new",
-      title: "New Node",
-      refinement: "concrete",
-      last_status: "pending",
-      command: "echo new",
-      predicate: { type: "exit_code", value: 0 },
-      description: "added later",
-    });
+    if (group.children)
+      group.children.push({
+        id: "node-new",
+        title: "New Node",
+        refinement: "concrete",
+        last_status: "pending",
+        command: "echo new",
+        predicate: { type: "exit_code", value: 0 },
+        description: "added later",
+      });
     const found = findNodeById(roots, "node-new");
     assert.ok(found);
     assert.equal(found.path, "0.children.2", "path should be last index");
@@ -1213,13 +1214,13 @@ describe("formatTree", () => {
     const roots = makeRoots();
     const tree = formatTree(roots);
     // Group
-    assert.ok(tree.includes("0 [g1] GROUP: \"Core Features\""));
+    assert.ok(tree.includes('0 [g1] GROUP: "Core Features"'));
     // Concrete proof
-    assert.ok(tree.includes("0.children.0 [p1] PROOF: \"Build passes\" (pass)"));
+    assert.ok(tree.includes('0.children.0 [p1] PROOF: "Build passes" (pass)'));
     // Draft
-    assert.ok(tree.includes("0.children.1 [d1] DRAFT: \"Test coverage\""));
+    assert.ok(tree.includes('0.children.1 [d1] DRAFT: "Test coverage"'));
     // Root-level concrete
-    assert.ok(tree.includes("1 [p2] PROOF: \"Lint check\" (fail)"));
+    assert.ok(tree.includes('1 [p2] PROOF: "Lint check" (fail)'));
   });
 
   it("scopes to subtree by node_id", () => {
@@ -1260,7 +1261,15 @@ describe("countAllNodes", () => {
         refinement: "concrete",
         last_status: "pending",
         children: [
-          { id: "b", title: "B", refinement: "concrete", last_status: "pass", command: "x", predicate: { type: "exit_code", value: 0 }, description: "b" },
+          {
+            id: "b",
+            title: "B",
+            refinement: "concrete",
+            last_status: "pass",
+            command: "x",
+            predicate: { type: "exit_code", value: 0 },
+            description: "b",
+          },
           { id: "c", title: "C", refinement: "draft", intent: "c", last_status: "draft" },
         ],
       },
@@ -1271,8 +1280,24 @@ describe("countAllNodes", () => {
 
   it("counts flat roots", () => {
     const roots: TaskNode[] = [
-      { id: "x", title: "X", refinement: "concrete", last_status: "pass", command: "x", predicate: { type: "exit_code", value: 0 }, description: "x" },
-      { id: "y", title: "Y", refinement: "concrete", last_status: "fail", command: "y", predicate: { type: "exit_code", value: 0 }, description: "y" },
+      {
+        id: "x",
+        title: "X",
+        refinement: "concrete",
+        last_status: "pass",
+        command: "x",
+        predicate: { type: "exit_code", value: 0 },
+        description: "x",
+      },
+      {
+        id: "y",
+        title: "Y",
+        refinement: "concrete",
+        last_status: "fail",
+        command: "y",
+        predicate: { type: "exit_code", value: 0 },
+        description: "y",
+      },
     ];
     assert.equal(countAllNodes(roots), 2);
   });
