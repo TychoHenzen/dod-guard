@@ -489,11 +489,11 @@ function carryForwardDrafts(nodes: TaskNode[], parentPath: string, targetPath: s
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    const isUnderTarget = currentPath === targetPath || currentPath.startsWith(targetPath + ".");
     if (node.children && node.children.length > 0) {
-      // Only descend into children if targetPath starts with this prefix
-      if (targetPath.startsWith(currentPath)) continue; // in scope, handled by execute
+      if (isUnderTarget) continue; // in scope, handled by execute
       carryForwardDrafts(node.children, currentPath, targetPath, out);
-    } else if (node.refinement === "draft" && !targetPath.startsWith(currentPath)) {
+    } else if (node.refinement === "draft" && !isUnderTarget) {
       out.push({
         node_path: currentPath,
         id: node.id,

@@ -7,7 +7,7 @@ import { findMissingTools } from "../command-check.js";
 import * as store from "../store.js";
 import { findNodeById, formatMissingTools } from "../tree-utils.js";
 export async function handleDodAddNode(params) {
-    const { dod_id, parent_path, parent_id: parentId, title, refinement, intent, command, predicate, description, category, advisory } = params;
+    const { dod_id, parent_path, parent_id: parentId, title, refinement, intent, command, predicate, description, category, advisory, } = params;
     const doc = await store.load(dod_id);
     if (!doc)
         throw new Error("ERROR: DoD not found.");

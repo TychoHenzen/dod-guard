@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import * as path from "node:path";
 
 /**
@@ -146,7 +146,6 @@ function extractTestFilesFromCommand(command: string, cwd: string): string[] {
       if (existsSync(dir) && pat.includes("*")) {
         // Simple wildcard matching in the directory
         try {
-          const { readdirSync } = require("node:fs");
           const entries = readdirSync(dir);
           const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
           for (const entry of entries) {

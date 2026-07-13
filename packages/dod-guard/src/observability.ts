@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import * as path from "node:path";
 import { CMD_TRUNCATION } from "./constants.js";
 
@@ -559,14 +559,13 @@ function extractSourceFilesFromCommand(command: string, cwd: string): string[] {
         const pat = path.basename(resolved);
         if (existsSync(dir) && pat.includes("*")) {
           try {
-            const { readdirSync } = require("node:fs");
             const entries = readdirSync(dir);
             const _regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
             for (const entry of entries) {
               const full = path.join(dir, entry);
               if (isInSkipDir(full)) continue;
               if (!existsSync(full)) continue;
-              const stat = require("node:fs").statSync(full);
+              const stat = statSync(full);
               if (stat.isFile() && isSourceFile(full)) {
                 files.push(full);
               }

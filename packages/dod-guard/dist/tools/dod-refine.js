@@ -8,7 +8,7 @@ import { findMissingTools, isPlaceholderCommand } from "../command-check.js";
 import * as store from "../store.js";
 import { extractBaselineSteps, findNodeById, formatMissingTools } from "../tree-utils.js";
 export async function handleDodRefine(params) {
-    const { dod_id, node_path: nodePath, node_id: nodeId, mode, command, predicate, description, category, advisory, children } = params;
+    const { dod_id, node_path: nodePath, node_id: nodeId, mode, command, predicate, description, category, advisory, children, } = params;
     const doc = await store.load(dod_id);
     if (!doc)
         return "ERROR: DoD not found.";
