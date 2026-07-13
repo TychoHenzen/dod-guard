@@ -137,7 +137,7 @@ describe("vault", () => {
       );
     });
 
-    it("rejects ..\\ path traversal (write, backslash)", async () => {
+    it("rejects ..\\ path traversal (write, backslash)", { skip: process.platform !== "win32" ? "backslash is a valid filename char on POSIX, not a separator" : false }, async () => {
       await assert.rejects(
         () => mod.writeNote("/v", "..\\..\\evil2.md", {}, "traversal"),
         /Path traversal denied/,
