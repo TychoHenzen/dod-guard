@@ -304,7 +304,7 @@ export function updateDocFromCheckResult(doc: DodDocument, result: CheckResult):
       result.scoped &&
       ranPath != null &&
       leafResult.node_path !== ranPath &&
-      !leafResult.node_path.startsWith(ranPath + ".")
+      !leafResult.node_path.startsWith(`${ranPath}.`)
     )
       continue;
 

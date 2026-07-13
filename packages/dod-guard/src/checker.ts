@@ -489,7 +489,7 @@ function carryForwardDrafts(nodes: TaskNode[], parentPath: string, targetPath: s
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-    const isUnderTarget = currentPath === targetPath || currentPath.startsWith(targetPath + ".");
+    const isUnderTarget = currentPath === targetPath || currentPath.startsWith(`${targetPath}.`);
     if (node.children && node.children.length > 0) {
       if (isUnderTarget) continue; // in scope, handled by execute
       carryForwardDrafts(node.children, currentPath, targetPath, out);
