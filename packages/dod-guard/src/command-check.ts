@@ -293,58 +293,36 @@ export function expandGlobsInCommand(command: string, cwd: string): { expanded: 
   let expanded = command;
   let count = 0;
 
-  // Try backslash patterns first (Windows native)
-  let match: RegExpExecArray | null;
-  while ((match = dirGlobRe.exec(command)) !== null) {
-    const prefix = match[1];
-    const pattern = match[2];
-    const fullMatch = match[0];
-
-    try {
-      const parentDir = path.resolve(cwd, prefix);
-      if (!existsSync(parentDir)) continue;
-
-      const entries = readdirSync(parentDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
-        .map((d) => d.name)
-        .filter((name) => wildcardMatch(name, pattern))
-        .sort();
-
-      if (entries.length > 0) {
-        const replacement = entries.map((e) => `${prefix}\\${e}\\`).join(" ");
-        expanded = expanded.replace(fullMatch, replacement);
-        count += entries.length;
-      }
-    } catch {
-      // Directory doesn't exist or can't be read — leave glob as-is
+  // Resolve directory-level globs: readdir + wildcard match → explicit paths
+  const globResolve = (re: RegExp, sep: "\\" | "/") => {
+    const matches: { prefix: string; pattern: string; fullMatch: string }[] = [];
+    for (const m of command.matchAll(re)) {
+      matches.push({ prefix: m[1], pattern: m[2], fullMatch: m[0] });
     }
-  }
+    for (const { prefix, pattern, fullMatch } of matches) {
+      try {
+        const parentDir = path.resolve(cwd, prefix);
+        if (!existsSync(parentDir)) continue;
 
-  // Try forward-slash patterns
-  while ((match = dirGlobReFwd.exec(command)) !== null) {
-    const prefix = match[1];
-    const pattern = match[2];
-    const fullMatch = match[0];
+        const entries = readdirSync(parentDir, { withFileTypes: true })
+          .filter((d) => d.isDirectory())
+          .map((d) => d.name)
+          .filter((name) => wildcardMatch(name, pattern))
+          .sort();
 
-    try {
-      const parentDir = path.resolve(cwd, prefix);
-      if (!existsSync(parentDir)) continue;
-
-      const entries = readdirSync(parentDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
-        .map((d) => d.name)
-        .filter((name) => wildcardMatch(name, pattern))
-        .sort();
-
-      if (entries.length > 0) {
-        const replacement = entries.map((e) => `${prefix}/${e}/`).join(" ");
-        expanded = expanded.replace(fullMatch, replacement);
-        count += entries.length;
+        if (entries.length > 0) {
+          const replacement = entries.map((e) => `${prefix}${sep}${e}${sep}`).join(" ");
+          expanded = expanded.replace(fullMatch, replacement);
+          count += entries.length;
+        }
+      } catch {
+        // Directory doesn't exist or can't be read — leave glob as-is
       }
-    } catch {
-      // Directory doesn't exist or can't be read — leave glob as-is
     }
-  }
+  };
+
+  globResolve(dirGlobRe, "\\");
+  globResolve(dirGlobReFwd, "/");
 
   return { expanded, expanded_count: count };
 }
