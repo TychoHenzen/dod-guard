@@ -84,10 +84,7 @@ server.tool(
   {
     checkpoint_name: z.string().describe("Checkpoint name to spawn from (without evo- prefix)"),
     new_branch: z.string().describe("Name for the new branch"),
-    force: z
-      .boolean()
-      .optional()
-      .describe("If true, bypass pre-flight safety checks (accept risk of data loss)."),
+    force: z.boolean().optional().describe("If true, bypass pre-flight safety checks (accept risk of data loss)."),
   },
   async ({ checkpoint_name, new_branch, force }) => ({
     content: [{ type: "text" as const, text: wrap(evo_spawn)(checkpoint_name, new_branch, force ?? false) }],

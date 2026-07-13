@@ -461,25 +461,30 @@ test("updateDocFromCheckResult: handles non-matching leaf paths gracefully", () 
 
 // ── Survivor-targeting: renderLeaf predicate branches ───────────────────
 
-const predTypes = ["brevity", "line_length", "function_size", "file_size", "cohesion", "replacement_ratio", "regression"] as const;
+const predTypes = [
+  "brevity",
+  "line_length",
+  "function_size",
+  "file_size",
+  "cohesion",
+  "replacement_ratio",
+  "regression",
+] as const;
 test("renderMarkdown covers all brevity-family predicates", () => {
   const roots = predTypes.map((t, i) => {
-    const n = concNode("p" + i, t, "echo ok", "check " + t);
+    const n = concNode(`p${i}`, t, "echo ok", `check ${t}`);
     if (n.predicate) n.predicate.type = t;
     if (t === "regression" && n.predicate) n.predicate.value = 0.1;
     return n;
   });
   const doc = makeDoc({ roots });
   const md = renderMarkdown(doc);
-  predTypes.forEach((t) => assert.match(md, new RegExp(t), "should mention " + t));
+  for (const t of predTypes) assert.match(md, new RegExp(t), `should mention ${t}`);
 });
 
 test("renderMarkdown handles mixed concrete+draft trees", () => {
   const doc = makeDoc({
-    roots: [
-      concNode("n1", "done", "exit 0", "passes"),
-      draftNode("n2", "pending", "not there yet"),
-    ],
+    roots: [concNode("n1", "done", "exit 0", "passes"), draftNode("n2", "pending", "not there yet")],
   });
   const md = renderMarkdown(doc);
   assert.ok(md.includes("DRAFT") || md.includes("not there yet"), "should show draft content");

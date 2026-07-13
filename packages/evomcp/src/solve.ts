@@ -84,8 +84,14 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
   const diagnostics: LineageDiagnostic[] = [];
 
   const STRATEGY_LABELS = [
-    "simplest", "robust", "performant", "modular",
-    "defensive", "functional", "pragmatic", "elegant",
+    "simplest",
+    "robust",
+    "performant",
+    "modular",
+    "defensive",
+    "functional",
+    "pragmatic",
+    "elegant",
   ];
 
   for (let i = 0; i < results.length; i++) {

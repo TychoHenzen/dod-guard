@@ -648,7 +648,9 @@ export async function executeProof(node: TaskNode, cwd: string, execFn: ExecFn):
   return mk(base, {
     status: passed ? "pass" : "fail",
     output: run.combined,
-    error: passed ? undefined : `pred ${node.predicate?.type} fail (exit=${run.exitCode}, expected=${(node.predicate?.value as number) ?? 0})`,
+    error: passed
+      ? undefined
+      : `pred ${node.predicate?.type} fail (exit=${run.exitCode}, expected=${(node.predicate?.value as number) ?? 0})`,
     exit_code: run.exitCode,
     duration_ms: run.duration,
   });

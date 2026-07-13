@@ -154,7 +154,9 @@ function preflightCheckoutSafety(targetRef: string, cwd: string): string | null 
 
   const untracked = untrackedSourceFiles(cwd);
   if (untracked.length > 0) {
-    warnings.push(`Untracked source files (would persist but risk loss if directory removed):\n${untracked.map((f) => `  • ${f}`).join("\n")}`);
+    warnings.push(
+      `Untracked source files (would persist but risk loss if directory removed):\n${untracked.map((f) => `  • ${f}`).join("\n")}`,
+    );
   }
 
   const removed = filesRemovedByCheckout(targetRef, cwd);
@@ -167,7 +169,9 @@ function preflightCheckoutSafety(targetRef: string, cwd: string): string | null 
 
   const stale = staleDistFiles(cwd);
   if (stale.length > 0) {
-    warnings.push(`Stale dist/*.js without matching .ts source:\n${stale.map((f) => `  • ${f}`).join("\n")}\nThese will survive checkout — clean with 'npm run clean && npm run build'.`);
+    warnings.push(
+      `Stale dist/*.js without matching .ts source:\n${stale.map((f) => `  • ${f}`).join("\n")}\nThese will survive checkout — clean with 'npm run clean && npm run build'.`,
+    );
   }
 
   if (warnings.length === 0) return null;
@@ -420,7 +424,11 @@ export function evo_spawn(checkpoint_name: string, new_branch: string, force?: b
   if (safetyWarnings && !force) {
     // Pop stash if we stashed
     if (stashed) {
-      try { git(["stash", "pop"], cwd); } catch { /* leave in stash */ }
+      try {
+        git(["stash", "pop"], cwd);
+      } catch {
+        /* leave in stash */
+      }
     }
     throw new EvoError(
       `SAFETY CHECK FAILED — checkout to '${tagName}' would lose data:\n\n${safetyWarnings}\n\n` +
@@ -511,7 +519,9 @@ export function evo_abandon(checkpoint?: string, reason?: string, force?: boolea
     const tagName = `evo-${checkpoint}`;
     if (!hasTag(tagName, cwd)) {
       if (stashed) {
-        try { git(["stash", "pop"], cwd); } catch {}
+        try {
+          git(["stash", "pop"], cwd);
+        } catch {}
       }
       throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
     }
@@ -526,7 +536,9 @@ export function evo_abandon(checkpoint?: string, reason?: string, force?: boolea
   const safetyWarnings = preflightCheckoutSafety(targetRef, cwd);
   if (safetyWarnings && !force) {
     if (stashed) {
-      try { git(["stash", "pop"], cwd); } catch {}
+      try {
+        git(["stash", "pop"], cwd);
+      } catch {}
     }
     throw new EvoError(
       `SAFETY CHECK FAILED — reset to '${targetRef}' would lose data:\n\n${safetyWarnings}\n\n` +

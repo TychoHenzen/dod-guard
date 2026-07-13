@@ -367,7 +367,7 @@ describe("brevity edge cases", () => {
     execSync("git add src/accrete.ts", { cwd: tmpDir, stdio: "ignore" });
     execSync('git commit -m "base"', { cwd: tmpDir, stdio: "ignore" });
     const lines = ["export function fn(): number { return 2; }"];
-    for (let i = 0; i < 12; i++) lines.push("// extra " + i);
+    for (let i = 0; i < 12; i++) lines.push(`// extra ${i}`);
     writeFile("src/accrete.ts", lines.join("\n"));
     const diff = execSync("git diff --numstat", { cwd: tmpDir, encoding: "utf-8" });
     const r = analyseBrevityFromOutput(diff, tmpDir, { ...DEFAULT_BREVITY_OPTS, minReplacementRatio: 0.2 });
@@ -385,7 +385,7 @@ describe("brevity edge cases", () => {
     execSync("git add src/tabbed.ts", { cwd: tmpDir, stdio: "ignore" });
     execSync('git commit -m "init2"', { cwd: tmpDir, stdio: "ignore" });
     const lines = ["export const x = 2;"];
-    for (let i = 0; i < 12; i++) lines.push("// extra " + i);
+    for (let i = 0; i < 12; i++) lines.push(`// extra ${i}`);
     writeFile("src/tabbed.ts", lines.join("\n"));
     const diff = execSync("git diff --numstat", { cwd: tmpDir, encoding: "utf-8" });
     const r = analyseBrevityFromOutput(diff, tmpDir, { ...DEFAULT_BREVITY_OPTS, minReplacementRatio: 0.2 });

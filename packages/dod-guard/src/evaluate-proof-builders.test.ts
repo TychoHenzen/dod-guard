@@ -20,8 +20,8 @@ import type { TaskNode } from "./types.js";
 // ── Type imports for mock report construction ───────────────────────────
 
 import type { AssertionReport } from "./assertions.js";
-import type { BrevityReport, BrevityViolation, BrevityOpts } from "./brevity.js";
-import type { ObservabilityReport, AntiPatternHit } from "./observability.js";
+import type { BrevityOpts, BrevityReport, BrevityViolation } from "./brevity.js";
+import type { ObservabilityReport } from "./observability.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ const CWD = "/fake/project";
 
 // ── Mock report factories ───────────────────────────────────────────────
 
-function emptyAssertionReport(): AssertionReport {
+function _emptyAssertionReport(): AssertionReport {
   return { total: 0, trivial: 0, nonTrivial: 0, files: [], perFile: [] };
 }
 
@@ -73,7 +73,7 @@ function multiFileAssertionReport(): AssertionReport {
   };
 }
 
-function emptyBrevityReport(): BrevityReport {
+function _emptyBrevityReport(): BrevityReport {
   return { totalViolations: 0, violations: [], files: [], perFile: [] };
 }
 
@@ -88,10 +88,7 @@ interface MockBrevityFile {
   deletions?: number;
 }
 
-function brevityReport(
-  violations: BrevityViolation[],
-  perFileOverrides?: MockBrevityFile,
-): BrevityReport {
+function brevityReport(violations: BrevityViolation[], perFileOverrides?: MockBrevityFile): BrevityReport {
   const byFile = new Map<string, BrevityViolation[]>();
   for (const v of violations) {
     const arr = byFile.get(v.file) ?? [];
@@ -108,7 +105,8 @@ function brevityReport(
       longFunctions: perFileOverrides?.longFunctions ?? fv.filter((v) => v.kind === "function_too_long").length,
       highComplexityFunctions:
         perFileOverrides?.highComplexityFunctions ?? fv.filter((v) => v.kind === "high_complexity").length,
-      unnecessaryElseCount: perFileOverrides?.unnecessaryElseCount ?? fv.filter((v) => v.kind === "unnecessary_else").length,
+      unnecessaryElseCount:
+        perFileOverrides?.unnecessaryElseCount ?? fv.filter((v) => v.kind === "unnecessary_else").length,
       elseAvoidableCount: perFileOverrides?.elseAvoidableCount ?? fv.filter((v) => v.kind === "else_avoidable").length,
       insertions: perFileOverrides?.insertions,
       deletions: perFileOverrides?.deletions,
@@ -135,19 +133,39 @@ function fileSizeViolation(file: string, lines: number, max: number): BrevityVio
 }
 
 function complexityViolation(file: string, line: number, name: string, cc: number, max: number): BrevityViolation {
-  return { file, line, kind: "high_complexity", detail: `"${name}" CC=${cc}, exceeds max ${max} — extract decision-heavy blocks into helpers` };
+  return {
+    file,
+    line,
+    kind: "high_complexity",
+    detail: `"${name}" CC=${cc}, exceeds max ${max} — extract decision-heavy blocks into helpers`,
+  };
 }
 
 function unnecElseViolation(file: string, line: number, name: string, count: number): BrevityViolation {
-  return { file, line, kind: "unnecessary_else", detail: `"${name}" has ${count} unnecessary else clause${count > 1 ? "s" : ""} after exit statement — use guard clause instead` };
+  return {
+    file,
+    line,
+    kind: "unnecessary_else",
+    detail: `"${name}" has ${count} unnecessary else clause${count > 1 ? "s" : ""} after exit statement — use guard clause instead`,
+  };
 }
 
 function avoidElseViolation(file: string, line: number, name: string, count: number): BrevityViolation {
-  return { file, line, kind: "else_avoidable", detail: `"${name}" has ${count} if/else pair${count > 1 ? "s" : ""} and zero guard clauses — refactor if-branch to exit early, eliminate else` };
+  return {
+    file,
+    line,
+    kind: "else_avoidable",
+    detail: `"${name}" has ${count} if/else pair${count > 1 ? "s" : ""} and zero guard clauses — refactor if-branch to exit early, eliminate else`,
+  };
 }
 
 function replRatioViolation(file: string, ins: number, del: number, ratio: number, min: number): BrevityViolation {
-  return { file, line: 1, kind: "low_replacement_ratio", detail: `+${ins} -${del} (deletion ratio ${(ratio * 100).toFixed(0)}% < required ${(min * 100).toFixed(0)}%) — old code not removed` };
+  return {
+    file,
+    line: 1,
+    kind: "low_replacement_ratio",
+    detail: `+${ins} -${del} (deletion ratio ${(ratio * 100).toFixed(0)}% < required ${(min * 100).toFixed(0)}%) — old code not removed`,
+  };
 }
 
 function obsReport(overrides?: Partial<ObservabilityReport>): ObservabilityReport {
@@ -176,9 +194,13 @@ const DEFAULT_BREVITY_OPTS: BrevityOpts = {
 
 const analyseAssertionsMock = mock.fn<() => AssertionReport | null>(() => null);
 const analyseBrevityMock = mock.fn<() => BrevityReport | null>(() => null);
-const analyseBrevityFromOutputMock = mock.fn<(_output: string, _cwd: string, _opts: BrevityOpts) => BrevityReport | null>(() => null);
+const analyseBrevityFromOutputMock = mock.fn<
+  (_output: string, _cwd: string, _opts: BrevityOpts) => BrevityReport | null
+>(() => null);
 const analyseObservabilityMock = mock.fn<() => ObservabilityReport | null>(() => null);
-const analyseObservabilityFromOutputMock = mock.fn<(_output: string, _cwd: string) => ObservabilityReport | null>(() => null);
+const analyseObservabilityFromOutputMock = mock.fn<(_output: string, _cwd: string) => ObservabilityReport | null>(
+  () => null,
+);
 
 mock.module("./assertions.js", {
   namedExports: { analyseAssertions: analyseAssertionsMock },
@@ -270,7 +292,9 @@ describe("buildAssertFail (via assertions predicate)", () => {
 
   it("passes with single file report", async () => {
     const report: AssertionReport = {
-      total: 5, trivial: 1, nonTrivial: 4,
+      total: 5,
+      trivial: 1,
+      nonTrivial: 4,
       files: ["test/foo.test.ts"],
       perFile: [{ file: "test/foo.test.ts", total: 5, trivial: 1 }],
     };
@@ -299,7 +323,9 @@ describe("buildAssertFail (via assertions predicate)", () => {
 
   it("uses min=1 as default when value not set", async () => {
     const report: AssertionReport = {
-      total: 0, trivial: 0, nonTrivial: 0,
+      total: 0,
+      trivial: 0,
+      nonTrivial: 0,
       files: ["test/foo.test.ts"],
       perFile: [{ file: "test/foo.test.ts", total: 0, trivial: 0 }],
     };
@@ -327,7 +353,9 @@ describe("buildObsFail (via observability predicate)", () => {
   });
 
   it("reports fail when error handlers lack logs", async () => {
-    analyseObservabilityMock.mock.mockImplementation(() => obsReport({ totalErrorHandlers: 5, errorHandlersLogged: 2 }));
+    analyseObservabilityMock.mock.mockImplementation(() =>
+      obsReport({ totalErrorHandlers: 5, errorHandlersLogged: 2 }),
+    );
     const node = concreteNode({ predicate: { type: "observability", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
     assert.equal(result.status, "fail");
@@ -338,9 +366,7 @@ describe("buildObsFail (via observability predicate)", () => {
     analyseObservabilityMock.mock.mockImplementation(() =>
       obsReport({
         totalLogStatements: 0,
-        antiPatterns: [
-          { file: "src/foo.ts", line: 42, kind: "empty_catch", snippet: "catch (e) { }" },
-        ],
+        antiPatterns: [{ file: "src/foo.ts", line: 42, kind: "empty_catch", snippet: "catch (e) { }" }],
       }),
     );
     const node = concreteNode({ predicate: { type: "observability", value: 1 } });
@@ -411,9 +437,7 @@ describe("buildLineLenFail (via line_length predicate)", () => {
   beforeEachReset();
 
   it("reports single line-length violation", async () => {
-    analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([lineLenViolation("src/foo.ts", 42, 150, 120)]),
-    );
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([lineLenViolation("src/foo.ts", 42, 150, 120)]));
     const node = concreteNode({ predicate: { type: "line_length", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
     assert.equal(result.status, "fail");
@@ -448,10 +472,7 @@ describe("buildLineLenFail (via line_length predicate)", () => {
 
   it("fails when violations exceed max even if some are other kinds (filter only line_too_long)", async () => {
     analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([
-        lineLenViolation("src/foo.ts", 42, 150, 120),
-        fnSizeViolation("src/foo.ts", 1, "bigFn", 50, 30),
-      ]),
+      brevityReport([lineLenViolation("src/foo.ts", 42, 150, 120), fnSizeViolation("src/foo.ts", 1, "bigFn", 50, 30)]),
     );
     const node = concreteNode({ predicate: { type: "line_length", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
@@ -462,18 +483,14 @@ describe("buildLineLenFail (via line_length predicate)", () => {
   });
 
   it("includes remediation hint in fail message", async () => {
-    analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([lineLenViolation("src/foo.ts", 1, 150, 120)]),
-    );
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([lineLenViolation("src/foo.ts", 1, 150, 120)]));
     const node = concreteNode({ predicate: { type: "line_length", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
     assert.match(result.error ?? "", /Remediation/);
   });
 
   it("uses custom max_line_length from predicate", async () => {
-    analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([lineLenViolation("src/foo.ts", 1, 110, 100)]),
-    );
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([lineLenViolation("src/foo.ts", 1, 110, 100)]));
     const node = concreteNode({
       predicate: { type: "line_length", value: 0, max_line_length: 100 },
     });
@@ -541,9 +558,7 @@ describe("buildFnSizeFail (via function_size predicate)", () => {
   });
 
   it("uses custom max_function_lines from predicate", async () => {
-    analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([fnSizeViolation("src/foo.ts", 1, "fn", 25, 20)]),
-    );
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([fnSizeViolation("src/foo.ts", 1, "fn", 25, 20)]));
     const node = concreteNode({
       predicate: { type: "function_size", value: 0, max_function_lines: 20 },
     });
@@ -563,10 +578,7 @@ describe("buildFnSizeFail (via function_size predicate)", () => {
 
   it("filters only function_too_long violations (ignores other kinds)", async () => {
     analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([
-        fnSizeViolation("src/foo.ts", 1, "bigFn", 50, 30),
-        lineLenViolation("src/foo.ts", 42, 150, 120),
-      ]),
+      brevityReport([fnSizeViolation("src/foo.ts", 1, "bigFn", 50, 30), lineLenViolation("src/foo.ts", 42, 150, 120)]),
     );
     const node = concreteNode({ predicate: { type: "function_size", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
@@ -583,9 +595,7 @@ describe("buildFileSizeFail (via file_size predicate)", () => {
   beforeEachReset();
 
   it("reports single file-size violation", async () => {
-    analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([fileSizeViolation("src/big.ts", 500, 300)]),
-    );
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([fileSizeViolation("src/big.ts", 500, 300)]));
     const node = concreteNode({ predicate: { type: "file_size", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
     assert.equal(result.status, "fail");
@@ -596,10 +606,7 @@ describe("buildFileSizeFail (via file_size predicate)", () => {
 
   it("reports multiple file-size violations", async () => {
     analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([
-        fileSizeViolation("src/a.ts", 400, 300),
-        fileSizeViolation("src/b.ts", 350, 300),
-      ]),
+      brevityReport([fileSizeViolation("src/a.ts", 400, 300), fileSizeViolation("src/b.ts", 350, 300)]),
     );
     const node = concreteNode({ predicate: { type: "file_size", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
@@ -616,9 +623,7 @@ describe("buildFileSizeFail (via file_size predicate)", () => {
   });
 
   it("uses custom max_file_lines from predicate", async () => {
-    analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([fileSizeViolation("src/foo.ts", 250, 200)]),
-    );
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([fileSizeViolation("src/foo.ts", 250, 200)]));
     const node = concreteNode({
       predicate: { type: "file_size", value: 0, max_file_lines: 200 },
     });
@@ -726,10 +731,12 @@ describe("buildCohesionFail (via cohesion predicate)", () => {
 
   it("shows per-file CC and unnec else counts", async () => {
     analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport(
-        [complexityViolation("src/foo.ts", 10, "bigFn", 8, 5)],
-        { functionCount: 5, highComplexityFunctions: 1, unnecessaryElseCount: 3, elseAvoidableCount: 1 },
-      ),
+      brevityReport([complexityViolation("src/foo.ts", 10, "bigFn", 8, 5)], {
+        functionCount: 5,
+        highComplexityFunctions: 1,
+        unnecessaryElseCount: 3,
+        elseAvoidableCount: 1,
+      }),
     );
     const node = concreteNode({ predicate: { type: "cohesion", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
@@ -849,9 +856,7 @@ describe("hBrev (via brevity predicate)", () => {
   });
 
   it("fails when total violations > max", async () => {
-    analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([lineLenViolation("src/foo.ts", 42, 150, 120)]),
-    );
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([lineLenViolation("src/foo.ts", 42, 150, 120)]));
     const node = concreteNode({ predicate: { type: "brevity", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
     assert.equal(result.status, "fail");
@@ -860,11 +865,15 @@ describe("hBrev (via brevity predicate)", () => {
 
   it("shows per-file summary with violation counts", async () => {
     const r = brevityReport(
-      [
-        lineLenViolation("src/foo.ts", 42, 150, 120),
-        complexityViolation("src/foo.ts", 10, "bigFn", 8, 5),
-      ],
-      { functionCount: 5, lineCount: 100, longFunctions: 0, highComplexityFunctions: 1, unnecessaryElseCount: 0, elseAvoidableCount: 0 },
+      [lineLenViolation("src/foo.ts", 42, 150, 120), complexityViolation("src/foo.ts", 10, "bigFn", 8, 5)],
+      {
+        functionCount: 5,
+        lineCount: 100,
+        longFunctions: 0,
+        highComplexityFunctions: 1,
+        unnecessaryElseCount: 0,
+        elseAvoidableCount: 0,
+      },
     );
     analyseBrevityMock.mock.mockImplementation(() => r);
     const node = concreteNode({ predicate: { type: "brevity", value: 0 } });
@@ -874,9 +883,7 @@ describe("hBrev (via brevity predicate)", () => {
   });
 
   it("reports failure with full brevity report and remediation", async () => {
-    analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([lineLenViolation("src/foo.ts", 1, 200, 120)]),
-    );
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([lineLenViolation("src/foo.ts", 1, 200, 120)]));
     const node = concreteNode({ predicate: { type: "brevity", value: 0 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
     assert.equal(result.status, "fail");
@@ -887,9 +894,7 @@ describe("hBrev (via brevity predicate)", () => {
   });
 
   it("uses custom brevity opts from predicate", async () => {
-    analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([lineLenViolation("src/foo.ts", 1, 110, 100)]),
-    );
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([lineLenViolation("src/foo.ts", 1, 110, 100)]));
     const node = concreteNode({
       predicate: { type: "brevity", value: 0, max_line_length: 100 },
     });
@@ -941,10 +946,7 @@ describe("hBrevity edge cases", () => {
 
   it("passes when violation count equals max (boundary)", async () => {
     analyseBrevityMock.mock.mockImplementation(() =>
-      brevityReport([
-        lineLenViolation("src/a.ts", 1, 130, 120),
-        lineLenViolation("src/b.ts", 1, 140, 120),
-      ]),
+      brevityReport([lineLenViolation("src/a.ts", 1, 130, 120), lineLenViolation("src/b.ts", 1, 140, 120)]),
     );
     const node = concreteNode({ predicate: { type: "line_length", value: 2 } });
     const result = await executeProof(node, CWD, fakeExec(0, ""));
