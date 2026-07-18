@@ -69,7 +69,7 @@
       "dirty": false
     },
     "packages/dod-guard/src/checker.ts": {
-      "last_tested": "2026-07-16",
+      "last_tested": "2026-07-18",
       "last_result": {
         "total": 0,
         "caught": 0,
@@ -80,7 +80,7 @@
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/checker.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
       "lines": 446,
-      "error_count": 3,
+      "error_count": 4,
       "recent_commits": 11,
       "fingerprint": "6289e671303c1ff8868507b301d00d36a0e333a6ca4911e59b70b91456fba20a",
       "dirty": true
@@ -103,7 +103,7 @@
       "dirty": true
     },
     "packages/dod-guard/src/evaluate-proof.ts": {
-      "last_tested": "2026-07-15",
+      "last_tested": "2026-07-18",
       "last_result": {
         "total": 0,
         "caught": 0,
@@ -114,7 +114,7 @@
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/evaluate-proof.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
       "lines": 656,
-      "error_count": 3,
+      "error_count": 4,
       "recent_commits": 9,
       "fingerprint": "07e6176530f6d5613f27bd15ba6c351ce8dc993492da0eaf4de3f784dd1ee215",
       "dirty": true
@@ -154,7 +154,7 @@
       "dirty": true
     },
     "packages/dod-guard/src/index.ts": {
-      "last_tested": "2026-07-17",
+      "last_tested": "2026-07-18",
       "last_result": {
         "total": 0,
         "caught": 0,
@@ -165,7 +165,7 @@
         "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
       },
       "lines": 956,
-      "error_count": 6,
+      "error_count": 7,
       "recent_commits": 22,
       "fingerprint": "9a2c95705a747f21b973dda9612648d169d07dbfb0ccde5ea61510b7eeee3524",
       "dirty": true
@@ -602,9 +602,9 @@
     "missed": 5380,
     "timeout": 65,
     "unviable": 4103,
-    "error": 33,
-    "runs": 77,
-    "files_tested": 77
+    "error": 36,
+    "runs": 80,
+    "files_tested": 80
   },
   "runs": [
     {
@@ -1683,6 +1683,48 @@
         "unviable": 0,
         "status": "error",
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/gitevo/dist/operations.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/gitevo/dist/operations.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
+      }
+    },
+    {
+      "date": "2026-07-18",
+      "commit": "6492b5457dda754a68c0f69eaee899acc3cf50ea",
+      "file": "packages/dod-guard/src/index.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
+      }
+    },
+    {
+      "date": "2026-07-18",
+      "commit": "6492b5457dda754a68c0f69eaee899acc3cf50ea",
+      "file": "packages/dod-guard/src/evaluate-proof.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/evaluate-proof.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
+      }
+    },
+    {
+      "date": "2026-07-18",
+      "commit": "6492b5457dda754a68c0f69eaee899acc3cf50ea",
+      "file": "packages/dod-guard/src/checker.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/checker.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       }
     }
   ]
