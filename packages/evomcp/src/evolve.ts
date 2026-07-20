@@ -20,16 +20,56 @@ import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { evo_checkpoint } from "../../gitevo/dist/operations.js";
-import { ensureProxy, extractScore, getProxyCost, mutationPrompt, runCommand, spawnClaude } from "./agent.js";
+import type { AgentResult } from "./agent.js";
+import {
+  ensureProxy,
+  extractScore,
+  getProxyCost,
+  mutationPrompt,
+  proxyTokenDelta,
+  runCommand,
+  spawnClaude,
+} from "./agent.js";
+import {
+  assembleContext,
+  type ContextLayers,
+  generateFactSheet,
+  makeTargetFiles,
+} from "./context.js";
+import { detectDegenerate, isDegenerateReject } from "./degenerate.js";
 import type { FitnessHistoryPoint } from "./convergence.js";
 import { checkConvergence } from "./convergence.js";
 import { GateRunner } from "./gates.js";
+import { commitOrNoop, getRootBranch } from "./git-helpers.js";
 import { abandonLoser, adoptWinner, checkpointGeneration, spawnCandidate } from "./gitevo-integration.js";
 import type { EvolveResult, EvolveSpec, GateResult, RunStats } from "./types.js";
+import { createBudgetState, type BudgetState, recordAttempt, budgetSummary } from "./budget.js";
+import { createEscalationState, type EscalationState } from "./escalation.js";
 
 const DEFAULT_GENERATIONS = 5;
 const DEFAULT_POPULATION = 6;
 const DEFAULT_TIMEOUT_MS = 180_000; // 3 min per mutation
+
+/**
+ * Bounded-concurrency map: runs `fn` on each item, at most `limit` at a time.
+ */
+async function mapConcurrent<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  const queue = items.map((_, i) => i);
+  const worker = async () => {
+    while (queue.length > 0) {
+      const idx = queue.shift()!;
+      results[idx] = await fn(items[idx], idx);
+    }
+  };
+  const count = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: count }, () => worker()));
+  return results;
+}
 
 /**
  * Run gates when gate fields (build_cmd/test_cmd/lint_cmd) are configured.
@@ -80,10 +120,23 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
   const populationSize = spec.population_size ?? DEFAULT_POPULATION;
   const higherIsBetter = spec.higher_is_better ?? false;
 
+  // Budget tracking (token limits per evolve run)
+  let budget = createBudgetState({
+    implement: { tokenLimit: spec.budget_tokens ?? 200_000 },
+    total: { tokenLimit: spec.budget_tokens ?? 200_000 },
+  });
+  const emittedBudgetWarnings = new Set<string>();
+
+  // Escalation state (created for completeness; actively used in solve's repair loop)
+  const evolveEscState = createEscalationState();
+
   const proxyReady = await ensureProxy();
   if (!proxyReady) {
     onProgress?.("WARNING: deepclaude proxy not running. Attempting direct mode...");
   }
+
+  // Per-candidate cumulative token tracking
+  let totalCandidateTokens = -1;
 
   // ── Phase 1: Baseline ───────────────────────────────────────────────
 
@@ -105,15 +158,26 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
     }
   }
 
-  // Snapshot proxy cost before spawning subprocesses
-  const costBefore = proxyReady ? await getProxyCost() : null;
-
   // ── Read target files ───────────────────────────────────────────────
 
   const targetContents = readTargetFiles(spec.cwd, spec.target_files);
   if (targetContents.length === 0) {
     throw new Error(`No target files found matching: ${spec.target_files.join(", ")}`);
   }
+
+  // ── Build curated context for mutation prompts ─────────────────────
+
+  const factSheet = generateFactSheet(spec.cwd);
+  const goalWithCtx = spec.context ? `${spec.goal}\n\nAdditional context: ${spec.context}` : spec.goal;
+  const evolveLayers: ContextLayers = {
+    goal: goalWithCtx,
+    targetFiles: makeTargetFiles(targetContents),
+    constraints: factSheet
+      ? { lintRules: "", conventions: factSheet, typeConfig: "" }
+      : undefined,
+  };
+  const evolveCtx = assembleContext(evolveLayers);
+
   // ── Phase 2: Evolutionary loop (gitevo-aware) ──────────────────────
 
   let bestScore = baselineScore;
@@ -131,21 +195,38 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
 
   // Create baseline checkpoint before evolution starts
   try {
-    evo_checkpoint("evolve-baseline", "baseline before evolution");
+    evo_checkpoint("evolve-baseline", "baseline before evolution", spec.cwd);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     onProgress?.(`Baseline checkpoint note: ${msg}`);
   }
 
   // Remember root branch so we can return to it if no improvement found
-  let rootBranch: string;
-  try {
-    rootBranch = execSync("git rev-parse --abbrev-ref HEAD", { cwd: spec.cwd, timeout: 5_000 }).toString().trim();
-  } catch {
-    rootBranch = "master";
-  }
+  const rootBranch = getRootBranch(spec.cwd);
 
   for (let gen = 0; gen < generations; gen++) {
+    // Check budget exhaustion before starting a new generation
+    if (budget.exhausted) {
+      onProgress?.(`Budget exhausted — stopping after ${gen} generations`);
+      // Emit any un-reported budget warnings
+      for (const w of budget.warnings) {
+        const wkey = `${w.stage}:${w.threshold}`;
+        if (!emittedBudgetWarnings.has(wkey)) {
+          emittedBudgetWarnings.add(wkey);
+          onProgress?.(`  Budget: ${w.stage} at ${w.threshold}% (${w.resource})`);
+        }
+      }
+      break;
+    }
+
+    // Emit budget warnings at thresholds
+    for (const w of budget.warnings) {
+      const wkey = `${w.stage}:${w.threshold}`;
+      if (!emittedBudgetWarnings.has(wkey)) {
+        emittedBudgetWarnings.add(wkey);
+        onProgress?.(`  Budget: ${w.stage} at ${w.threshold}% (${w.resource})`);
+      }
+    }
     onProgress?.(`\nGeneration ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
 
     // Tag generation checkpoint -- enables rollback to start of gen
@@ -160,116 +241,166 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
         targetFile.content,
         bestScore,
         elites.slice(0, 3), // Top 3 elites as examples
-        spec.context,
+        evolveCtx,
       );
       prompts.push(prompt);
     }
 
-    // Sequential candidate evaluation (NO Promise.all -- each candidate runs one at a time)
-    onProgress?.(`  Evaluating ${populationSize} candidates (sequential)...`);
-    const genScores: number[] = [];
+    // ── Phase 1: Serial branch spawn ────────────────────────────
+    interface EvoSlot {
+      index: number;
+      branchName: string;
+      prompt: string;
+      costBefore: any;
+      result: AgentResult | null;
+    }
 
+    const evoSlots: EvoSlot[] = [];
     for (let i = 0; i < populationSize; i++) {
       const branchName = `evolve-gen${gen}-candidate${i}`;
-
-      // a) Spawn a new git branch from the generation checkpoint
       try {
         await spawnCandidate(`evolve-gen${gen}`, branchName, spec.cwd);
       } catch (err) {
         onProgress?.(`  [${i + 1}] spawn failed: ${String(err).slice(0, 80)}`);
         continue;
       }
+      evoSlots.push({
+        index: i,
+        branchName,
+        prompt: prompts[i],
+        costBefore: proxyReady ? await getProxyCost() : null,
+        result: null,
+      });
+    }
 
-      // b) Run claude -p on this branch (sequential)
-      const result = await spawnClaude(prompts[i], {
+    // ── Phase 2: Parallel claude -p (bounded concurrency) ─────────
+    const concurrency = Math.min(evoSlots.length, 4);
+    onProgress?.(`  Running ${evoSlots.length} mutation calls with concurrency ${concurrency}...`);
+
+    await mapConcurrent(evoSlots, concurrency, async (slot): Promise<void> => {
+      try {
+        execSync(`git checkout ${slot.branchName}`, { cwd: spec.cwd, timeout: 10_000, stdio: "ignore" });
+      } catch {
+        slot.result = null;
+        return;
+      }
+      const r = await spawnClaude(slot.prompt, {
         cwd: spec.cwd,
         model: spec.model,
         apiKey: spec.api_key,
         useProxy: proxyReady,
         timeoutMs: DEFAULT_TIMEOUT_MS,
       }).catch((err) => {
-        onProgress?.(`  [${i + 1}] claude failed: ${String(err)}`);
+        onProgress?.(`  [${slot.index + 1}] claude failed: ${String(err)}`);
         return { output: "", exitCode: -1, durationMs: 0, timedOut: false };
       });
+      slot.result = r;
+    });
+
+    // ── Phase 3: Serial per-candidate commit + fitness + gates ───
+    onProgress?.(`  Processing ${evoSlots.length} candidates serially...`);
+    const genScores: number[] = [];
+
+    for (const slot of evoSlots) {
+      const { index: i, branchName, costBefore: costBeforeCandidate, result } = slot;
+
+      if (!result) {
+        continue;
+      }
+
+      const processCost = async () => {
+        const _d = await proxyTokenDelta(costBeforeCandidate);
+        if (_d > 0) {
+          totalCandidateTokens = totalCandidateTokens < 0 ? _d : totalCandidateTokens + _d;
+          budget = recordAttempt(budget, "implement", _d, Date.now() - startTime);
+        }
+      };
 
       stats.candidates_generated++;
 
-      // c) If claude -p failed, abandon the branch and move on
       if (result.timedOut || result.exitCode !== 0) {
         onProgress?.(`  [${i + 1}] claude -p failed (exit=${result.exitCode}${result.timedOut ? ", timed out" : ""})`);
         try {
           await abandonLoser(branchName, `claude -p failed (exit=${result.exitCode})`, spec.cwd);
         } catch {}
+        await processCost();
         continue;
       }
 
-      // d) Commit candidate changes to the branch
       try {
-        execSync("git add -A", { cwd: spec.cwd, timeout: 10_000 });
-        execSync(`git commit -m "evolve gen${gen} candidate${i}"`, { cwd: spec.cwd, timeout: 10_000 });
+        execSync(`git checkout ${branchName}`, { cwd: spec.cwd, timeout: 10_000, stdio: "ignore" });
       } catch {
+        await processCost();
+        continue;
+      }
+
+      const commitResult = commitOrNoop(spec.cwd, `evolve gen${gen} candidate${i}`);
+      if (!commitResult.committed) {
         onProgress?.(`  [${i + 1}] no changes produced by claude -p`);
         try {
           await abandonLoser(branchName, "no changes produced", spec.cwd);
         } catch {}
+        await processCost();
         continue;
       }
 
-      // e) Measure fitness on the committed code
       try {
         const fitnessResult = runCommand(spec.fitness_cmd, spec.cwd);
         const score = extractScore(fitnessResult.output);
 
         if (score === null) {
           onProgress?.(`  [${i + 1}] no numeric score in fitness output`);
-          try {
-            await abandonLoser(branchName, "no numeric score", spec.cwd);
-          } catch {}
-          continue;
-        }
+        } else {
+          if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
+            const { passed } = await runGates(spec, spec.cwd, onProgress);
+            if (!passed) {
+              onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}, GATES FAILED -- skipping`);
+              try {
+                await abandonLoser(branchName, "gates failed", spec.cwd);
+              } catch {}
+              await processCost();
+              continue;
+            }
+          }
 
-        // f) Run gates if configured -- fail fast on broken candidates
-        if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
-          const { passed, results: gateResults } = await runGates(spec, spec.cwd, onProgress);
-          if (!passed) {
-            onProgress?.(
-              `  [${i + 1}] score=${score.toFixed(2)}, GATES FAILED (${gateResults
-                .filter((r) => !r.passed)
-                .map((r) => r.gate)
-                .join(", ")}) -- skipping`,
-            );
+          genScores.push(score);
+          onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
+
+          // ── Degenerate detection ──────────────────────────────────
+          const branchDiff = execSync(`git diff ${rootBranch}...${branchName}`, {
+            cwd: spec.cwd, encoding: "utf-8", timeout: 10_000,
+          }).toString() || "";
+          const degenerateReport = detectDegenerate(branchDiff);
+          if (isDegenerateReject(degenerateReport)) {
+            onProgress?.(`    -> DEGENERATE: ${degenerateReport.summary}`);
             try {
-              await abandonLoser(branchName, "gates failed", spec.cwd);
+              await abandonLoser(branchName, `degenerate: ${degenerateReport.summary}`, spec.cwd);
             } catch {}
+            await processCost();
             continue;
           }
-        }
 
-        genScores.push(score);
-        onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
+          const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
+          if (isBetter) {
+            bestScore = score;
+            bestBranch = branchName;
+            onProgress?.(`    -> NEW BEST: ${score.toFixed(2)}`);
 
-        const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
-        if (isBetter) {
-          bestScore = score;
-          bestBranch = branchName;
-          onProgress?.(`    -> NEW BEST: ${score.toFixed(2)}`);
-
-          // Store actual source code as elite example for future mutation prompts
-          const eliteCode = readTargetFiles(spec.cwd, spec.target_files)
-            .map((t) => `=== ${t.path} ===\n${t.content}`)
-            .join("\n\n");
-          elites.push({ code: eliteCode.slice(0, 2000), score });
-          elites.sort((a, b) => (higherIsBetter ? b.score - a.score : a.score - b.score));
-          if (elites.length > 5) elites.length = 5;
-        } else {
-          // g) Not better than current best -- abandon the branch
-          try {
-            await abandonLoser(
-              branchName,
-              `score ${score.toFixed(2)} not better than best ${bestScore.toFixed(2)}`,
-              spec.cwd,
-            );
-          } catch {}
+            const eliteCode = readTargetFiles(spec.cwd, spec.target_files)
+              .map((t) => `=== ${t.path} ===\n${t.content}`)
+              .join("\n\n");
+            elites.push({ code: eliteCode.slice(0, 2000), score });
+            elites.sort((a, b) => (higherIsBetter ? b.score - a.score : a.score - b.score));
+            if (elites.length > 5) elites.length = 5;
+          } else {
+            try {
+              await abandonLoser(
+                branchName,
+                `score ${score.toFixed(2)} not better than best ${bestScore.toFixed(2)}`,
+                spec.cwd,
+              );
+            } catch {}
+          }
         }
       } catch (err) {
         onProgress?.(`  [${i + 1}] error: ${String(err).slice(0, 80)}`);
@@ -277,6 +408,7 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
           await abandonLoser(branchName, `error: ${String(err).slice(0, 60)}`, spec.cwd);
         } catch {}
       }
+      await processCost();
     }
 
     // After generation: checkout best branch so next gen builds on it
@@ -371,13 +503,12 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
   const finalResult = runCommand(spec.fitness_cmd, spec.cwd);
   const finalScore = extractScore(finalResult.output) ?? bestScore;
 
+  // In the evolve flow, mutation prompts are the "plans" — one per population member per generation.
+  // No plan-level dedup in evolve, so sampled = deduped.
+  stats.plans_sampled = populationSize * generations;
+  stats.plans_deduped = populationSize * generations;
   stats.duration_ms = Date.now() - startTime;
-
-  // Compute token delta from proxy cost snapshot
-  if (costBefore) {
-    const costAfter = await getProxyCost();
-    if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
-  }
+  stats.tokens_consumed = totalCandidateTokens;
 
   return {
     ...earlyExit,
@@ -395,6 +526,8 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
         .join("\n"),
       "",
       finalResult.output.slice(0, 2000),
+      "",
+      budgetSummary(budget),
       "",
       finalGateReport,
     ].join("\n"),

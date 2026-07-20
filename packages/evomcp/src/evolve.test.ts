@@ -11,6 +11,7 @@ let runCmdBaseOutput = "42.5";
 let useProgressiveScores = false;
 let runCmdCall = 0;
 let runCmdMutationStep = 0;
+let mockDiffOutput: string | null = null;
 
 mock.module("./agent.js", {
   namedExports: {
@@ -37,7 +38,18 @@ mock.module("./agent.js", {
       return m ? Number.parseFloat(m[0]) : null;
     }),
     mutationPrompt: mock.fn(() => "mutation prompt"),
-    getProxyCost: mock.fn(async () => null),
+    getProxyCost: mock.fn(async () => {
+      if (!proxyReady) return null;
+      return {
+        backends: { deepseek: { input_tokens: 1000, output_tokens: 500, requests: 1 } },
+        total_tokens: 1500,
+        total_cost: 0.002,
+      };
+    }),
+    proxyTokenDelta: mock.fn(async (costBefore: any) => {
+      if (!costBefore) return -1;
+      return 1500;
+    }),
   },
 });
 
@@ -45,7 +57,10 @@ mock.module("node:child_process", {
   namedExports: {
     execSync: mock.fn((cmd: string) => {
       const s = String(cmd);
-      if (s.includes("git diff")) return Buffer.from("mock patch diff\n+improved");
+      if (s.includes("git diff")) {
+        if (mockDiffOutput !== null) return mockDiffOutput;
+        return "mock patch diff\n+improved";
+      }
       if (s.includes("git stash push")) return Buffer.from("Saved");
       if (s.includes("git stash pop")) throw Object.assign(new Error("No stash entries found."), { status: 1 });
       return Buffer.from("");
@@ -158,6 +173,7 @@ describe("evolve", () => {
     useProgressiveScores = false;
     runCmdCall = 0;
     runCmdMutationStep = 0;
+    mockDiffOutput = null;
     evolveFn = (await import("./evolve.js")).evolve;
   });
 
@@ -407,5 +423,60 @@ describe("evolve", () => {
       population_size: 2,
     });
     assert.ok(r.best_patch !== "(no improvement over baseline)", `got: ${r.best_patch}`);
+  });
+
+  // ── Degenerate detection ──────────────────────────────────────────────
+
+  it("skips degenerate candidate in elite selection", async () => {
+    runCmdBaseOutput = "50";
+    useProgressiveScores = true;
+    // A diff with disabled_lint (block-level) → degenerate
+    mockDiffOutput = [
+      "diff --git a/src/app.ts b/src/app.ts",
+      "--- a/src/app.ts",
+      "+++ b/src/app.ts",
+      "@@ -1,0 +1,2 @@",
+      "+// eslint-disable-next-line no-eval",
+      '+eval("unsafe")',
+    ].join("\n");
+
+    const r = await evolveFn({
+      goal: "min",
+      fitness_cmd: "echo 50",
+      cwd: process.cwd(),
+      target_files: ["package.json"],
+      generations: 1,
+      population_size: 2,
+    });
+    // Baseline is 50, candidate would score 49 (improvement) but is degenerate
+    // → fitness_history best_score stays at baseline (loop tracking)
+    assert.equal(r.fitness_history[0].best_score, 50, "loop best should be unchanged");
+    // best_patch indicates no improvement was adopted
+    assert.equal(r.best_patch, "(no improvement over baseline)", "no improvement adopted");
+  });
+
+  // ── Budget exhaustion ─────────────────────────────────────────────────
+
+  it("budget exhaustion stops generations and returns best result with warning", async () => {
+    proxyReady = true;
+    runCmdBaseOutput = "100";
+    const calls: string[] = [];
+    const r = await evolveFn(
+      {
+        goal: "min",
+        fitness_cmd: "echo 100",
+        cwd: process.cwd(),
+        target_files: ["package.json"],
+        generations: 3,
+        population_size: 2,
+        budget_tokens: 1000, // each candidate costs 1500, so budget exhausted after first generation
+      },
+      (msg: string) => calls.push(msg),
+    );
+    // Should have stopped early, not done 3 generations
+    assert.ok(r.fitness_history.length < 3, `expected fewer than 3 generations, got ${r.fitness_history.length}`);
+    assert.equal(r.best_score, 100);
+    // Budget summary in progress
+    assert.ok(calls.some((c) => c.includes("Budget")), "budget warning emitted");
   });
 });

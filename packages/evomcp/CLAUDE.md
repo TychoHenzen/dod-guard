@@ -22,50 +22,62 @@ DeepSeek has an `/anthropic` endpoint that speaks the Anthropic Messages API. By
 |------|---------|
 | `solve` | Best-of-N + repair chains for binary fitness (feature work) |
 | `evolve` | Population-based evolution for scalar fitness (optimization) |
+| `orchestrate` | Full playbook driver: SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE |
 | `status` | Check if deepclaude proxy is running |
 
 ### Files
 
 | File | Role |
 |------|------|
-| `index.ts` | MCP server entry: tool registration, Zod schemas, formatting |
-| `types.ts` | All TypeScript types/interfaces (includes GateResult, Diagnostic, OracleResult, JudgeVerdict) |
-| `agent.ts` | Spawn `claude -p` subprocesses, proxy health, API key resolution, memory bus integration |
-| `solve.ts` | Best-of-N solver: fanout → gates → verify → repair → escalate → judge |
-| `evolve.ts` | Evolutionary optimizer: baseline → generations → elites → final. Build/test/lint/mutation gates. |
-| `dedup.ts` | Plan deduplication with token-overlap heuristic |
+| `index.ts` | MCP server entry: tool registration (solve, evolve, orchestrate, status), Zod schemas, result formatters, auto-dispatch routing |
+| `types.ts` | All TypeScript types/interfaces (includes GateResult, Diagnostic, OracleResult, JudgeVerdict, OrchestrateSpec) |
+| `agent.ts` | Spawn `claude -p` subprocesses (prompt via stdin), proxy health, API key resolution, SHA-256 failure hashing, signal computation, memory bus integration |
+| `solve.ts` | Best-of-N solver: budget+escalation gates → dedup → context assembly → parallel fanout (cap 4) → verify → feedback repair → degenerate gate → judge. Per-lineage token tracking + signature history. |
+| `evolve.ts` | Evolutionary optimizer: budget+escalation gates → context assembly → parallel mutations per generation → fitness → degenerate gate → elites. Per-lineage token tracking. |
+| `orchestrate.ts` | Full playbook driver: walks SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE via orchestrator state machine. Human gates for SPEC/TEST_AUTHOR/REVIEW. |
+| `git-helpers.ts` | Shared git utilities: `commitOrNoop` (guarded add+commit), `getRootBranch` (dynamic master/main/trunk/develop detection) |
+| `dedup.ts` | Plan deduplication with token-overlap heuristic (>65% → duplicate). Runs pre-fanout in solve. |
 | `gates.ts` | Multi-phase gate pipeline: lint → build → test (optional held-out tests at merge gate) |
 | `judge.ts` | Multi-candidate judge: correctness, clarity, efficiency, maintainability scoring |
 | `convergence.ts` | Convergence detection: staleness, improvement threshold, early stopping |
-| `gitevo-integration.ts` | Bridge to gitevo memory bus: write failures, elites, and insights for cross-session learning |
-| `prompts.ts` | Prompt templates: strategy, repair, mutation, judge, feedback-action (extracted from agent.ts) |
-| `feedback.ts` | Structured diagnostic compiler: parses TS/ESLint/Biome/Python/Rust/Go/Jest output, attaches 20-line context windows, token-budget capping |
-| `degenerate.ts` | Goodhart-resistance detectors: hardcoded test outputs, deleted assertions, broadened catches, type-ignore density, disabled lint, commented-out code, empty tests, TODO bombs |
-| `context.ts` | Deterministic 7-layer context curator: GOAL→STRATEGY→TARGETS→DEPS→CONSTRAINTS→ATTEMPTS→FAILURES. SHA-256 cache. Fact sheet distiller. |
-| `escalation.ts` | 5-rung escalation ladder: retry → resample → re-decompose → stronger-model → human. Trigger signals + per-rung budgets. |
-| `budget.ts` | Per-stage token/time budgets. Warnings at 50/80/95/100%. Primary metric: cost per verified graph edge. |
-| `orchestrator.ts` | Deterministic stage state machine: SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE. Per-stage entry/exit gates. Playbook loader. |
+| `gitevo-integration.ts` | Bridge to gitevo memory bus: write failures, elites, and insights for cross-session learning. Threads cwd through all gitevo operations. |
+| `prompts.ts` | Prompt templates: strategy, repair, mutation, judge, feedback-action. Accepts CuratedContext for 7-layer context assembly. |
+| `feedback.ts` | Structured diagnostic compiler: parses TS/ESLint/Biome/Python/Rust/Go/Jest output, attaches 20-line context windows, token-budget capping. Wired into repair loop. |
+| `degenerate.ts` | Goodhart-resistance detectors: hardcoded test outputs, deleted assertions, broadened catches, type-ignore density, disabled lint, commented-out code, empty tests, TODO bombs. Wired into winner selection. |
+| `context.ts` | Deterministic 7-layer context curator: GOAL→STRATEGY→TARGETS→DEPS→CONSTRAINTS→ATTEMPTS→FAILURES. SHA-256 cache. Fact sheet distiller. Wired into prompt assembly. |
+| `escalation.ts` | 5-rung escalation ladder: continue → resample → re-decompose → stronger-model → human. Trigger signals + per-rung budgets. Wired into solve/evolve repair loops. |
+| `budget.ts` | Per-stage token/time budgets. Warnings at 50/80/95/100%. Primary metric: cost per verified graph edge. Wired into solve/evolve + orchestrator. |
+| `orchestrator.ts` | Deterministic stage state machine: SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE. Per-stage entry/exit gates. Playbook loader. Wired as top-level `orchestrate` tool. |
 
 ### Solve flow
-1. Optional gates (lint_cmd → build_cmd → test_cmd) — fail fast before fanout
-2. Spawn N parallel `claude -p` instances, each with different strategy prompt
-3. Detect silent failures: no-output (proxy/API issue) and timed-out lineages → skip to diagnostics
-4. Verify each result against `verify_cmd`
-5. Failed candidates get up to 3 repair iterations with failure feedback
-6. Stuck detection: same failure after repair → kill lineage, mark in diagnostics
-7. Multi-candidate judge scores winners on correctness, clarity, efficiency, maintainability
-8. Returns first passing patch + verification report + judge verdict
-9. All lineages fail → escalation report with per-lineage diagnostics (strategy, exit codes, output samples, repair counts, failure status)
+1. Auto-dispatch: `strategy: "auto"` inspects verify_cmd for scalar fitness → routes to evolve; `"best-of-n"` → solve; `"evolve"` → evolve
+2. Budget + escalation state initialized (budget_tokens honored)
+3. Pre-fanout dedup: strategy descriptions deduplicated via token-overlap heuristic
+4. Context assembly: 7-layer CuratedContext per strategy (GOAL→STRATEGY→TARGETS→DEPS→CONSTRAINTS→ATTEMPTS→FAILURES) with SHA-256 cache
+5. Optional gates (lint_cmd → build_cmd → test_cmd) — fail fast before fanout
+6. Phase 1 (serial): spawn N git branches via gitevo
+7. Phase 2 (parallel, cap 4): checkout + spawnClaude (prompt via stdin), per-lineage token tracking
+8. Phase 3 (serial per lineage): commitOrNoop, capture real diff (git diff root...branch), verify against verify_cmd
+9. Failed candidates: structured feedback via compileFeedback → repair loop with escalation (retry→resample→re-decompose→stronger-model→human, replacing hardcoded MAX_REPAIRS=3)
+10. Stuck/oscillating detection via SHA-256 per-lineage signature history
+11. Degenerate gate: reject candidates hardcoding outputs, deleting assertions, etc. after passing verify_cmd
+12. Multi-candidate judge scores winners on correctness, clarity, efficiency, maintainability
+13. Returns first passing patch + verification report + judge verdict + budget summary
+14. All lineages fail → escalation report with per-lineage diagnostics + degenerate rejections
 
 ### Evolve flow
-1. Optional gates (lint_cmd → build_cmd → test_cmd) before baseline measurement
-2. Measure baseline fitness via `fitness_cmd`
-3. Read target files (glob patterns)
-4. Each generation: spawn population_size mutations, measure fitness, select elites
-5. Apply best patch between generations (cumulative improvement)
-6. Optional mutation_cmd for mutation testing (Phase 2)
-7. Convergence detection: early stop on staleness or below improvement threshold
-8. Final verification with best patch applied
+1. Auto-dispatch: strategy: "auto" inspects verify_cmd for scalar fitness → routes here; "evolve" → here directly
+2. Budget + escalation state initialized (budget_tokens honored)
+3. Optional gates (lint_cmd → build_cmd → test_cmd) before baseline measurement
+4. Measure baseline fitness via `fitness_cmd`
+5. Context assembly: CuratedContext with goal + target files + constraints
+6. Read target files (glob patterns, filtered by allowed_files)
+7. Each generation: spawn population_size mutations (parallel, cap 4), measure fitness, degenerate gate, select elites
+8. Apply best patch between generations (cumulative improvement)
+9. Budget warnings at 50/80/95/100%; generation loop breaks on budget exhaustion
+10. Optional mutation_cmd for mutation testing (HARDEN stage in orchestrator)
+11. Convergence detection: early stop on staleness or below improvement threshold
+12. Final verification with best patch applied + budget summary
 
 ### Important: evolution accumulation
 Between generations, the best patch found so far is applied so mutations build on the best current state, not the baseline. Without this, each generation starts from scratch.

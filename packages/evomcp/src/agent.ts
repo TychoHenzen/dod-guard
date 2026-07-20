@@ -13,6 +13,7 @@
  */
 
 import { execSync, spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -26,21 +27,22 @@ const BACKENDS_JSON_PATH = path.join(os.homedir(), ".claude", "backends.json");
 
 // ── API key resolution ────────────────────────────────────────────────
 
-let _cachedBackendKey: string | null | undefined;
+let _cachedBackendKey: string | undefined;
 
 /**
  * Extract the API key from ~/.claude/backends.json for the default backend.
  * Mirrors the approach CustomClaude.ps1 uses: reads backends.json, finds the
  * default backend, returns its `apiKey` field.
  *
- * Result is cached after first read (backends.json rarely changes at runtime).
+ * Only caches successful resolutions — if backends.json is missing or has no
+ * key, the next call re-probes. This allows late-created backends.json to be
+ * picked up without a restart.
  */
 export function getBackendApiKey(): string | null {
   if (_cachedBackendKey !== undefined) return _cachedBackendKey;
 
   try {
     if (!fs.existsSync(BACKENDS_JSON_PATH)) {
-      _cachedBackendKey = null;
       return null;
     }
     const raw = fs.readFileSync(BACKENDS_JSON_PATH, "utf-8");
@@ -50,18 +52,15 @@ export function getBackendApiKey(): string | null {
     };
     const defaultName = cfg.default;
     if (!(defaultName && cfg.backends)) {
-      _cachedBackendKey = null;
       return null;
     }
     const backend = cfg.backends[defaultName];
     if (!backend?.apiKey) {
-      _cachedBackendKey = null;
       return null;
     }
     _cachedBackendKey = backend.apiKey;
     return backend.apiKey;
   } catch {
-    _cachedBackendKey = null;
     return null;
   }
 }
@@ -141,6 +140,10 @@ export interface ProxyCostSnapshot {
 /**
  * Snapshot the proxy's cumulative cost counters.
  * Returns null if the proxy is not reachable or /_proxy/cost is unavailable.
+ *
+ * NOTE: This reads a global cumulative counter shared by ALL processes
+ * using the proxy. Per-call attribution is NOT available from the proxy
+ * API. Use proxyTokenDelta() for per-lineage approximation.
  */
 export async function getProxyCost(proxyUrl?: string): Promise<ProxyCostSnapshot | null> {
   const url = `${proxyUrl ?? PROXY_URL}/_proxy/cost`;
@@ -165,6 +168,22 @@ export async function getProxyCost(proxyUrl?: string): Promise<ProxyCostSnapshot
   } catch {
     return null;
   }
+}
+
+/**
+ * Compute approximate token delta from a previous proxy cost snapshot.
+ * Returns -1 if costBefore is null (proxy unreachable) or fetch fails.
+ *
+ * CAVEAT: The proxy counter is a global cumulative counter shared by all
+ * consumers. The delta is approximate — other processes hitting the proxy
+ * at the same time contribute to it. Per-call attribution is not available.
+ */
+export async function proxyTokenDelta(costBefore: ProxyCostSnapshot | null): Promise<number> {
+  if (!costBefore) return -1;
+  const costAfter = await getProxyCost();
+  if (!costAfter) return -1;
+  const d = costAfter.total_tokens - costBefore.total_tokens;
+  return d > 0 ? d : 0;
 }
 
 // ── Proxy health check ────────────────────────────────────────────────
@@ -246,6 +265,9 @@ export async function spawnClaude(prompt: string, opts: SpawnOptions & AgentEnv)
   const t0 = Date.now();
   const useProxy = opts.useProxy !== false;
   const apiKey = resolveApiKey(opts.apiKey);
+  if (!apiKey) {
+    throw new Error("No API key found. Set DEEPSEEK_API_KEY or configure backends.json");
+  }
   const model = opts.model || "deepseek-v4-pro[1m]";
   const proxyUrl = opts.proxyUrl ?? PROXY_URL;
   const timeoutMs = opts.timeoutMs ?? 300_000; // 5 min default
@@ -263,7 +285,7 @@ export async function spawnClaude(prompt: string, opts: SpawnOptions & AgentEnv)
     ...opts.env,
   };
 
-  const args = ["-p", prompt];
+  const args = ["-p"];
 
   return new Promise((resolve) => {
     let stdout = "";
@@ -289,8 +311,12 @@ export async function spawnClaude(prompt: string, opts: SpawnOptions & AgentEnv)
     const child = spawn("claude", args, {
       cwd: opts.cwd,
       env,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["pipe", "pipe", "pipe"],
     });
+
+    child.stdin?.setDefaultEncoding("utf-8");
+    child.stdin?.write(prompt);
+    child.stdin?.end();
 
     const timer = setTimeout(() => {
       if (!settled) {
@@ -413,22 +439,68 @@ export function toVerdict(r: { output: string; exitCode: number; durationMs: num
   };
 }
 
-export function hashFailure(output: string): string {
-  const cleaned = output
-    .replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?/g, "<TIME>")
+/**
+ * Hash a failure signature for stuck/oscillating/noProgress detection.
+ * Uses SHA-256 over the full normalized output for collision resistance.
+ *
+ * Normalization strips volatile data: timestamps, line numbers, hex addresses,
+ * durations, temp paths, and (optionally) the repo root path.
+ */
+export function hashFailure(output: string, cwd?: string): string {
+  let normalized = output
+    .replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?/g, "<TIME>")
     .replace(/:\d+:\d+/g, ":<LINE>:<COL>")
     .replace(/0x[0-9a-fA-F]+/g, "<HEX>")
-    .replace(/\/[^\s]+\/[^\s:]+:\d+/g, "<PATH>:<LINE>")
+    .replace(/\/[^\s]+\/[^\s:]+(:\d+)?/g, "<PATH>")
     .replace(/\d+\.\d+ms/g, "<DURATION>ms")
-    .slice(0, 500);
+    // Strip common temp paths (Unix /tmp, Windows %TEMP%)
+    .replace(/[/\\]tmp[/\\][^\s]*/g, "<TEMP>")
+    .replace(/[/\\]Temp[/\\][^\s]*/g, "<TEMP>");
 
-  let hash = 0;
-  for (let i = 0; i < cleaned.length; i++) {
-    const char = cleaned.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
+  if (cwd) {
+    // Normalize the repo root to handle both / and \ separators
+    const escaped = cwd.replace(/[/\\]/g, "[/\\\\]");
+    normalized = normalized.replace(new RegExp(escaped, "g"), "<CWD>");
   }
-  return Math.abs(hash).toString(16);
+
+  return createHash("sha256").update(normalized, "utf-8").digest("hex");
+}
+
+/**
+ * Compute failure signals from a per-lineage signature history.
+ *
+ * - stuck: same hash in all of the last K attempts (default K=3)
+ * - oscillating: A→B→A pattern (hash at N matches hash at N-2, but not hash at N-1)
+ * - noProgress: all hashes in the last K attempts are unique but verification keeps failing
+ *
+ * Returns all-false for histories with fewer than 2 entries.
+ */
+export function computeFailureSignals(
+  history: string[],
+  k = 3,
+): { stuck: boolean; oscillating: boolean; noProgress: boolean } {
+  if (history.length < 2) {
+    return { stuck: false, oscillating: false, noProgress: false };
+  }
+
+  const recent = history.slice(-k);
+
+  // Stuck: same hash in all of the last K attempts
+  const stuck = recent.length >= k && recent.every((h) => h === recent[0]);
+
+  // Oscillating: A→B→A (hash at N matches hash at N-2, but not hash at N-1)
+  let oscillating = false;
+  if (history.length >= 3) {
+    oscillating =
+      history[history.length - 1] === history[history.length - 3] &&
+      history[history.length - 1] !== history[history.length - 2];
+  }
+
+  // NoProgress: all hashes in the last K attempts are unique but verification keeps failing
+  const recentUnique = new Set(recent);
+  const noProgress = recent.length >= k && recentUnique.size === recent.length;
+
+  return { stuck, oscillating, noProgress };
 }
 
 // ── Memory bus integration ────────────────────────────────────────────
@@ -477,11 +549,11 @@ export async function recordFailureSignature(
   scope: string,
   content: string,
   branch: string,
-  _cwd: string,
+  cwd: string,
 ): Promise<void> {
   try {
     const { writeMessage } = await import("../../gitevo/dist/memory.js");
-    const dedupKey = hashFailure(content);
+    const dedupKey = hashFailure(content, cwd);
     writeMessage("FAILURE_SIGNATURE", content.slice(0, 1000), {
       scope,
       branch,

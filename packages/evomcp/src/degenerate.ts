@@ -54,6 +54,21 @@ const MIN_DIFF_LENGTH_FOR_DENSITY = 20; // lines — skip analysis on tiny diffs
 // ── Public API ─────────────────────────────────────────────────────────
 
 /**
+ * Threshold check: should a candidate be rejected based on its degenerate report?
+ *
+ * Rejects on:
+ *   - Any `severity === "block"` finding (via `report.clean === false`)
+ *   - 2+ findings of any severity
+ *
+ * Does NOT reject on a single low-severity (warn) finding.
+ */
+export function isDegenerateReject(report: DegenerateReport): boolean {
+  if (!report.clean) return true; // block-level findings → reject
+  if (report.findings.length >= 2) return true; // 2+ findings of any severity → reject
+  return false;
+}
+
+/**
  * Run all degenerate-detection checks on a diff.
  *
  * @param diff - Unified diff text (git diff output).

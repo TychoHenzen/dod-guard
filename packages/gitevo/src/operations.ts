@@ -66,10 +66,10 @@ function gitOrNull(args: string[], cwd?: string): string | null {
   }
 }
 
-function getRepo(): { cwd: string; rootBranch: string } {
+function getRepo(cwdOverride?: string): { cwd: string; rootBranch: string } {
   let toplevel: string;
   try {
-    toplevel = git(["rev-parse", "--show-toplevel"]);
+    toplevel = git(["rev-parse", "--show-toplevel"], cwdOverride);
   } catch {
     throw new EvoError("Not a git repository. Run 'git init' first.");
   }
@@ -331,8 +331,8 @@ export function evo_init(): string {
  * Tag HEAD as evo-{name} with description. Refuses if working tree has
  * modified tracked files.
  */
-export function evo_checkpoint(name: string, description: string): string {
-  const { cwd } = getRepo();
+export function evo_checkpoint(name: string, description: string, cwdOverride?: string): string {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
 
   // Auto-stash if dirty — create a WIP commit so the checkpoint tag captures
@@ -461,8 +461,8 @@ function lessonHash(content: string, branch: string, timestamp: string): string 
  * Auto-stashes dirty tracked changes before spawning, then pops them on the new branch.
  * If stash pop fails (merge conflict), the stash is left in place with a warning.
  */
-export function evo_spawn(checkpoint_name: string, new_branch: string, force?: boolean): string {
-  const { cwd } = getRepo();
+export function evo_spawn(checkpoint_name: string, new_branch: string, force?: boolean, cwdOverride?: string): string {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
 
   const tagName = `evo-${checkpoint_name}`;
@@ -532,8 +532,8 @@ export function evo_spawn(checkpoint_name: string, new_branch: string, force?: b
 /**
  * List all evo-* tags with descriptions, newest first.
  */
-export function evo_checkpoints(): string {
-  const { cwd } = getRepo();
+export function evo_checkpoints(cwdOverride?: string): string {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
 
   const tags = tagsWithPrefix("evo-", cwd);
@@ -558,8 +558,8 @@ export function evo_checkpoints(): string {
 /**
  * List all attempt branches (non-root, non-default).
  */
-export function evo_branches(): string {
-  const { cwd, rootBranch } = getRepo();
+export function evo_branches(cwdOverride?: string): string {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
 
   const defaultNames = new Set(["master", "main", "trunk"]);
@@ -578,8 +578,8 @@ export function evo_branches(): string {
  * to that checkpoint tag. Otherwise reverts to parent commit (git reset --hard HEAD~1).
  * Optionally records reason as a lesson. Refuses if dirty tree.
  */
-export function evo_abandon(checkpoint?: string, reason?: string, force?: boolean): string {
-  const { cwd, rootBranch } = getRepo();
+export function evo_abandon(checkpoint?: string, reason?: string, force?: boolean, cwdOverride?: string): string {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
 
   // Auto-stash if dirty
@@ -668,8 +668,8 @@ export function evo_abandon(checkpoint?: string, reason?: string, force?: boolea
 /**
  * Return git diff between two checkpoint tags.
  */
-export function evo_diff(checkpoint_a: string, checkpoint_b: string): string {
-  const { cwd } = getRepo();
+export function evo_diff(checkpoint_a: string, checkpoint_b: string, cwdOverride?: string): string {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
 
   const tagA = `evo-${checkpoint_a}`;
@@ -689,8 +689,8 @@ export function evo_diff(checkpoint_a: string, checkpoint_b: string): string {
  * Return overview: active branch, checkpoint count, lesson count,
  * dead branches, adopted state.
  */
-export function evo_summary(): string {
-  const { cwd } = getRepo();
+export function evo_summary(cwdOverride?: string): string {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
 
   const active = currentBranch(cwd);
@@ -725,8 +725,8 @@ export function evo_summary(): string {
 /**
  * Merge winning branch into root branch, tag as evo-adopted.
  */
-export function evo_adopt(branch: string): string {
-  const { cwd, rootBranch } = getRepo();
+export function evo_adopt(branch: string, cwdOverride?: string): string {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
 
   if (isDirty(cwd)) {
@@ -791,8 +791,8 @@ export function evo_adopt(branch: string): string {
  *
  * Deletes all evo-* tags, removes all side branches, removes .evo/ directory.
  */
-export function evo_finish(): string {
-  const { cwd, rootBranch } = getRepo();
+export function evo_finish(cwdOverride?: string): string {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
 
   const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");

@@ -271,7 +271,8 @@ function updateCostPerEdge(state: BudgetState): void {
 }
 
 function consumptionBar(fraction: number): string {
-  const filled = Math.round(fraction * 10);
+  const clamped = Math.min(fraction, 1.0);
+  const filled = Math.round(clamped * 10);
   const empty = 10 - filled;
   return `[${"█".repeat(filled)}${"░".repeat(empty)}]`;
 }

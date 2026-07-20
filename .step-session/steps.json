@@ -1,17 +1,21 @@
 {
-  "goal": "Fix all 11 issues in packages/gitevo per docs/fix-plan.md",
-  "cwd": "C:\Users\siriu\mcp-servers\dod-guard",
+  "goal": "Wire evomcp's 7 half-built modules into the executed path + fix 7 correctness bugs",
+  "cwd": "C:/Users/siriu/mcp-servers/dod-guard",
   "steps": [
-    {"id": "S01", "title": "Use git toplevel as canonical cwd", "files": ["packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"},
-    {"id": "S02", "title": "Thread cwd into SQLite memory bus", "files": ["packages/gitevo/src/memory.ts", "packages/gitevo/src/operations.ts"], "deps": ["S01"], "status": "pending"},
-    {"id": "S03", "title": "Fix re-init data loss (migrate before clear, don't clear migrated data)", "files": ["packages/gitevo/src/operations.ts", "packages/gitevo/src/memory.ts"], "deps": ["S02"], "status": "pending"},
-    {"id": "S04", "title": "SQLite as single lesson store, drop JSONL dual-write", "files": ["packages/gitevo/src/operations.ts", "packages/gitevo/src/memory.ts"], "deps": ["S03"], "status": "pending"},
-    {"id": "S05", "title": "Checkpoints capture WIP via commit", "files": ["packages/gitevo/src/operations.ts"], "deps": ["S02"], "status": "pending"},
-    {"id": "S06", "title": "Abandon reverts to spawn checkpoint, not HEAD~1", "files": ["packages/gitevo/src/operations.ts", "packages/gitevo/src/memory.ts"], "deps": ["S05"], "status": "pending"},
-    {"id": "S07", "title": "Handle merge conflicts in evo_adopt/evo_finish", "files": ["packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"},
-    {"id": "S08", "title": "Close SQLite handle before rmSync (Windows)", "files": ["packages/gitevo/src/memory.ts", "packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"},
-    {"id": "S09", "title": "Idempotent exports + upserted branch status", "files": ["packages/gitevo/src/operations.ts", "packages/gitevo/src/memory.ts"], "deps": [], "status": "pending"},
-    {"id": "S10", "title": "Configurable extensions/layout for pre-flight checks", "files": ["packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"},
-    {"id": "S11", "title": "Version drift + minor cleanups", "files": ["packages/gitevo/src/index.ts", "packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"}
+    {"id":"A1","title":"Fix spec.cwd split-brain","deps":[],"status":"pending"},
+    {"id":"A2","title":"Guard solve commit + dynamic root branch","deps":[],"status":"pending"},
+    {"id":"A3","title":"Make fanout parallel","deps":["A2"],"status":"pending"},
+    {"id":"A4","title":"Pipe prompt via stdin","deps":[],"status":"pending"},
+    {"id":"A5","title":"Fix returned patch","deps":["A2"],"status":"pending"},
+    {"id":"A6","title":"Delete scaffolding + key-resolution","deps":[],"status":"pending"},
+    {"id":"A7","title":"Scope cost tracking","deps":[],"status":"pending"},
+    {"id":"B1","title":"Wire context.ts","deps":[],"status":"pending"},
+    {"id":"B2","title":"Wire dedup.ts","deps":[],"status":"pending"},
+    {"id":"B3","title":"Wire feedback.ts","deps":[],"status":"pending"},
+    {"id":"B4","title":"Wire degenerate.ts","deps":["A5"],"status":"pending"},
+    {"id":"B5","title":"Strengthen failure hashing","deps":[],"status":"pending"},
+    {"id":"B6","title":"Wire escalation+budget","deps":["A7","B5"],"status":"pending"},
+    {"id":"B7","title":"Wire orchestrator (CAPSTONE)","deps":["B1","B2","B3","B4","B5","B6"],"status":"pending"},
+    {"id":"B8","title":"Honor remaining params","deps":["B7"],"status":"pending"}
   ]
 }

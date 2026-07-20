@@ -49,6 +49,14 @@ export interface Plan {
 
 // ── Candidate types ──────────────────────────────────────────────────
 
+export interface DegenerateSignal {
+  type: string;
+  severity: string;
+  message: string;
+  file: string;
+  line: number;
+}
+
 export interface Candidate {
   /** Plan this candidate implements. */
   plan_id: string;
@@ -59,9 +67,11 @@ export interface Candidate {
   /** Verification result (if verify_cmd was run). */
   verdict?: Verdict;
   /** Lineage status. */
-  status: "pending" | "verifying" | "passed" | "failed" | "stuck";
+  status: "pending" | "verifying" | "passed" | "failed" | "stuck" | "degenerate";
   /** Failure signature for stuck detection (hash of error output). */
   failure_signature?: string;
+  /** Degenerate signals detected in this candidate's diff (Goodhart-resistance). */
+  degenerate_signals?: DegenerateSignal[];
 }
 
 export interface Verdict {
@@ -88,6 +98,8 @@ export interface SolveResult {
   escalation?: EscalationReport;
   /** Judge verdict from multi-gate evaluation (Phase 1). */
   judge_verdict?: JudgeVerdict;
+  /** Candidates rejected by degenerate detection. */
+  degenerate_rejections?: string[];
   /** Statistics for the run. */
   stats: RunStats;
 }
@@ -107,6 +119,17 @@ export interface EscalationReport {
   lineage_diagnostics?: LineageDiagnostic[];
 }
 
+export interface LineageSignatureHistory {
+  /** Per-attempt SHA-256 hashes in chronological order (initial + each repair). */
+  signatures: string[];
+  /** Whether the lineage is stuck (same hash in last K attempts). */
+  stuck: boolean;
+  /** Whether the lineage is oscillating (A→B→A pattern detected). */
+  oscillating: boolean;
+  /** Whether all hashes in last K attempts are unique but verification keeps failing. */
+  noProgress: boolean;
+}
+
 export interface LineageDiagnostic {
   lineage_id: string;
   strategy: string;
@@ -122,6 +145,12 @@ export interface LineageDiagnostic {
   verify_output_sample?: string;
   repair_attempts: number;
   final_status: "passed" | "failed" | "stuck" | "no_output" | "timed_out";
+  /** Approximate tokens consumed by this lineage (proxy global counter delta). Global counter includes all proxy consumers, so this is approximate. */
+  lineage_tokens?: number;
+  /** Signature history for escalation signal computation. */
+  signature_history?: LineageSignatureHistory;
+  /** Why this lineage failed (stuck/oscillating/noProgress/unknown). */
+  failure_mode?: "stuck" | "oscillating" | "noProgress" | "unknown";
 }
 
 export interface RunStats {

@@ -10,6 +10,7 @@ let execSyncThrows = false;
 let execSyncError: any = { status: 1, stderr: "cmd failed" };
 const spawnExitCode = 0;
 let spawnThrows = false;
+const spawnCallArgs: any[][] = [];
 
 mock.module("node:child_process", {
   namedExports: {
@@ -18,8 +19,14 @@ mock.module("node:child_process", {
       return execSyncOutput;
     }),
     spawn: mock.fn((_cmd: string, _args: string[], _opts?: any) => {
+      spawnCallArgs.push([_cmd, _args, _opts]);
       const listeners: Record<string, (...args: any[]) => void> = {};
       const child: any = {
+        stdin: {
+          write: mock.fn(() => true),
+          end: mock.fn(() => {}),
+          setDefaultEncoding: mock.fn(() => {}),
+        },
         stdout: {
           on: (_e: string, fn: any) => {
             listeners.stdoutData = fn;
@@ -127,6 +134,21 @@ describe("getBackendApiKey — JSON parse error", () => {
   });
 });
 
+describe("getBackendApiKey — re-probes after null", () => {
+  it("picks up late-created backends.json", async () => {
+    fsExistsSyncReturn = false; // no file yet
+    const m = await importFresh();
+
+    assert.equal(m.getBackendApiKey(), null); // first call: null
+
+    // Now the file appears
+    fsExistsSyncReturn = true;
+    fsReadFileReturn = JSON.stringify({ default: "ds", backends: { ds: { apiKey: "sk-late" } } });
+
+    assert.equal(m.getBackendApiKey(), "sk-late"); // re-probes and finds it
+  });
+});
+
 describe("resolveApiKey — empty fallback", () => {
   it("returns empty when nothing configured", async () => {
     fsExistsSyncReturn = false;
@@ -164,6 +186,73 @@ describe("agent — pure functions", () => {
     it("normalizes hex", () => assert.equal(mod.hashFailure("0x7f8a x"), mod.hashFailure("0xdead x")));
     it("normalizes durations", () => assert.equal(mod.hashFailure("150.5ms x"), mod.hashFailure("9999.9ms x")));
     it("different errors differ", () => assert.notEqual(mod.hashFailure("TypeError"), mod.hashFailure("RefErr")));
+    it("two distinct long failures don't collide", () => {
+      const longA = "Error: Connection refused\n  at Socket._onTimeout (node:net:1234:56)\n  at /home/user/project/src/db.ts:42:10\n  at connect (/home/user/project/src/db.ts:100:20)\n  [cause: 0x7f8a9b0c] 150.2ms\n".repeat(100);
+      const longB = "Error: Timeout exceeded\n  at Client.request (node:http:789:12)\n  at /home/user/project/src/api.ts:30:5\n  at fetchData (/home/user/project/src/api.ts:80:15)\n  [cause: 0xdeadbeef] 9999.9ms\n".repeat(100);
+      assert.notEqual(mod.hashFailure(longA), mod.hashFailure(longB));
+    });
+    it("normalizes temp paths", () =>
+      assert.equal(mod.hashFailure("/tmp/abc123/file.ts: err"), mod.hashFailure("/tmp/xyz789/file.ts: err")));
+  });
+
+  describe("computeFailureSignals", () => {
+    it("all-false for single entry", () => {
+      const s = mod.computeFailureSignals(["abc"]);
+      assert.equal(s.stuck, false);
+      assert.equal(s.oscillating, false);
+      assert.equal(s.noProgress, false);
+    });
+    it("all-false for empty history", () => {
+      const s = mod.computeFailureSignals([]);
+      assert.equal(s.stuck, false);
+      assert.equal(s.oscillating, false);
+      assert.equal(s.noProgress, false);
+    });
+    it("all-false for two different entries", () => {
+      const s = mod.computeFailureSignals(["a", "b"]);
+      assert.equal(s.stuck, false);
+      assert.equal(s.oscillating, false);
+      assert.equal(s.noProgress, false);
+    });
+    it("K-repeat flagged stuck", () => {
+      // K=3 same consecutive hashes → stuck
+      const s = mod.computeFailureSignals(["a", "a", "a"]);
+      assert.equal(s.stuck, true);
+    });
+    it("K=3 not enough entries does not flag stuck", () => {
+      // Only 2 entries, K=3 → not stuck
+      const s = mod.computeFailureSignals(["a", "a"]);
+      assert.equal(s.stuck, false);
+    });
+    it("A→B→A sequence flagged oscillating", () => {
+      const s = mod.computeFailureSignals(["a", "b", "a"]);
+      assert.equal(s.oscillating, true);
+    });
+    it("A→B→C not oscillating", () => {
+      const s = mod.computeFailureSignals(["a", "b", "c"]);
+      assert.equal(s.oscillating, false);
+    });
+    it("noProgress when all recent unique", () => {
+      // K=3, last 3 all unique → noProgress
+      const s = mod.computeFailureSignals(["a", "b", "c", "d"]);
+      assert.equal(s.noProgress, true);
+    });
+    it("noProgress false when repeat exists", () => {
+      const s = mod.computeFailureSignals(["a", "b", "a"]);
+      assert.equal(s.noProgress, false);
+    });
+    it("larger K value works", () => {
+      const s = mod.computeFailureSignals(["x", "y", "z", "w"], 4);
+      assert.equal(s.stuck, false);
+      assert.equal(s.noProgress, true);
+    });
+    it("stuck overrides oscillating", () => {
+      // [a, a, a] — also satisfies A→B→A with a→a→a but stuck takes priority
+      const s = mod.computeFailureSignals(["a", "a", "a"]);
+      assert.equal(s.stuck, true);
+      // oscillating is false because the last two entries must differ for oscillating
+      assert.equal(s.oscillating, false);
+    });
   });
 
   describe("extractScore", () => {
@@ -193,9 +282,11 @@ describe("agent — pure functions", () => {
 
   describe("repairPrompt", () => {
     it("task+failure+attempt", () => {
-      const p = mod.repairPrompt("Fix", "fail", 2);
+      const diags = [{ file: "test.ts", line: 1, severity: "error" as const, message: "type error", context: "" }];
+      const p = mod.repairPrompt("Fix", diags, 2);
       assert.ok(p.includes("Fix"));
-      assert.ok(p.includes("fail"));
+      assert.ok(p.includes("type error"));
+      assert.ok(p.includes("error"));
       assert.ok(p.includes("attempt #2"));
     });
   });
@@ -289,6 +380,31 @@ describe("agent — pure functions", () => {
       process.env.DEEPSEEK_API_KEY = "sk";
       const r = await mod.spawnClaude("p", { cwd: process.cwd(), model: "h" });
       assert.equal(r.exitCode, 0);
+    });
+    it("oversized prompt >32K chars", async () => {
+      spawnThrows = false;
+      spawnCallArgs.length = 0;
+      process.env.DEEPSEEK_API_KEY = "sk";
+      const bigPrompt = "x".repeat(40000);
+      const r = await mod.spawnClaude(bigPrompt, { cwd: process.cwd() });
+      assert.equal(r.exitCode, 0);
+      // Verify spawn args no longer contain the prompt text
+      assert.equal(spawnCallArgs.length, 1, "spawn was called once");
+      const args = spawnCallArgs[0][1];
+      assert.ok(Array.isArray(args));
+      assert.equal(args[0], "-p");
+      assert.equal(args.includes(bigPrompt), false, "prompt should not be in argv");
+    });
+    it("throws when no API key found", async () => {
+      const saved = process.env.DEEPSEEK_API_KEY;
+      delete process.env.DEEPSEEK_API_KEY;
+      fsExistsSyncReturn = false;
+      const m = await importFresh();
+      await assert.rejects(
+        m.spawnClaude("prompt", { cwd: process.cwd() }),
+        /No API key found/,
+      );
+      process.env.DEEPSEEK_API_KEY = saved;
     });
   });
 

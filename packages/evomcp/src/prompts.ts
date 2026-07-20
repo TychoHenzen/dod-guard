@@ -6,6 +6,15 @@
  * (task, context, history) → prompt string.
  */
 
+import type { CuratedContext } from "./context.js";
+import type { Diagnostic } from "./types.js";
+
+function resolveCtx(context?: CuratedContext | string): string | undefined {
+  if (context === undefined) return undefined;
+  if (typeof context === "string") return context;
+  return context.assembled;
+}
+
 // ── Best-of-N strategy prompts ────────────────────────────────────────
 
 const STRATEGIES = [
@@ -30,7 +39,7 @@ const STRATEGY_LABELS = [
   "elegant",
 ];
 
-export { STRATEGY_LABELS };
+export { STRATEGIES, STRATEGY_LABELS };
 
 /**
  * Generate N diverse strategy prompts for best-of-N sampling.
@@ -38,13 +47,19 @@ export { STRATEGY_LABELS };
  * Each prompt combines: task description + strategy directive + optional
  * context and failure memory. Strategies cycle if N > available strategies.
  */
-export function strategyPrompts(task: string, n: number, context?: string, failureContext?: string): string[] {
+export function strategyPrompts(
+  task: string,
+  n: number,
+  context?: CuratedContext | string,
+  failureContext?: string,
+): string[] {
+  const ctxStr = resolveCtx(context);
   const prompts: string[] = [];
 
   for (let i = 0; i < n; i++) {
     const strategy = STRATEGIES[i % STRATEGIES.length];
     const failureBlock = failureContext ? `\n\n## Failures to Avoid\n${failureContext}` : "";
-    const contextBlock = context ? `\n\n## Context\n${context}` : "";
+    const contextBlock = ctxStr ? `\n\n## Context\n${ctxStr}` : "";
     prompts.push(
       `## Task\n${task}\n\n## Strategy\n${strategy}${failureBlock}${contextBlock}\n\nImplement the changes needed. Use tools to read files, make edits, and verify your work. Commit when done.`,
     );
@@ -56,26 +71,47 @@ export function strategyPrompts(task: string, n: number, context?: string, failu
 // ── Repair prompt ─────────────────────────────────────────────────────
 
 /**
- * Build a repair prompt with structured failure feedback.
+ * Build a repair prompt with structured diagnostic feedback.
  *
- * Includes the original task, the failure output (truncated to 3K chars),
- * and the repair attempt number. Emphasis on targeted fixes, not rewrites.
+ * Takes a compiled FeedbackReport (Diagnostic[] from compileFeedback) and
+ * formats it as severity-ordered, context-rich feedback. Uses token-efficient
+ * structured format instead of raw output dumps.
+ * Falls back cleanly for empty or unparseable diagnostics.
  */
-export function repairPrompt(task: string, failureOutput: string, attemptNum: number, context?: string): string {
-  const contextBlock = context ? `\n\n## Context\n${context}` : "";
+export function repairPrompt(
+  task: string,
+  diagnostics: Diagnostic[],
+  attemptNum: number,
+  context?: CuratedContext | string,
+): string {
+  const ctxStr = resolveCtx(context);
+  const contextBlock = ctxStr ? `\n\n## Context\n${ctxStr}` : "";
+
+  const diagBlock =
+    diagnostics.length > 0
+      ? diagnostics
+          .slice(0, 10)
+          .map((d) => {
+            const loc = d.file ? `${d.file}:${d.line}` : "(unknown)";
+            const ctxBlock = d.context
+              ? `\n  \`\`\`\n${d.context}\n  \`\`\``
+              : "";
+            return `- **${d.severity}** ${loc} — ${d.message.slice(0, 200)}${ctxBlock}`;
+          })
+          .join("\n")
+      : "  (no structured diagnostics available)";
+
   return [
     `## Task`,
     task,
     "",
     "## Previous attempt FAILED",
-    "Your previous implementation failed verification. Here is the output:",
+    `This is repair attempt #${attemptNum}. The following issues were detected:`,
     "",
-    "```",
-    failureOutput.slice(0, 3000),
-    "```",
+    diagBlock,
     "",
     "## Instructions",
-    `This is repair attempt #${attemptNum}. Fix the specific issues shown above.`,
+    "Fix the specific issues shown above. Errors first, then warnings.",
     "Read the relevant files, understand what went wrong, and make targeted fixes.",
     "Do NOT rewrite everything — fix only what's broken.",
     contextBlock,
@@ -96,8 +132,9 @@ export function mutationPrompt(
   currentCode: string,
   fitnessScore: number,
   elites: { code: string; score: number }[],
-  context?: string,
+  context?: CuratedContext | string,
 ): string {
+  const ctxStr = resolveCtx(context);
   const eliteBlock =
     elites.length > 0
       ? [
@@ -107,7 +144,7 @@ export function mutationPrompt(
         ].join("\n")
       : "";
 
-  const contextBlock = context ? `\n\n## Context\n${context}` : "";
+  const contextBlock = ctxStr ? `\n\n## Context\n${ctxStr}` : "";
 
   return [
     `## Goal`,
@@ -197,7 +234,7 @@ export function feedbackActionPrompt(
   task: string,
   diagnostics: { file: string; line: number; severity: string; message: string; context: string }[],
 ): string {
-  if (diagnostics.length === 0) return repairPrompt(task, "No diagnostics available.", 1);
+  if (diagnostics.length === 0) return repairPrompt(task, [], 1);
 
   const diagBlock = diagnostics
     .slice(0, 10)

@@ -16,9 +16,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { apiKeySource, checkProxyHealth } from "./agent.js";
+import { apiKeySource, checkProxyHealth, extractScore, runCommand } from "./agent.js";
 import { evolve } from "./evolve.js";
-import { solve } from "./solve.js";
+import { orchestrateSolve } from "./orchestrate.js";
+import { solve, detectScalarFitness } from "./solve.js";
+import type { EvolveSpec } from "./types.js";
 
 const server = new McpServer({
   name: "evomcp",
@@ -99,10 +101,38 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
     spec: TaskSpecSchema.describe("Task specification"),
   },
   async ({ spec }) => {
-    const result = await solve(spec, (msg) => {
-      // Progress is logged to stderr so it doesn't interfere with MCP protocol
-      process.stderr.write(`[evomcp] ${msg}\n`);
-    });
+    const onProgress = (msg: string) => process.stderr.write(`[evomcp] ${msg}\n`);
+
+    // ── Strategy dispatch ──────────────────────────────────────────────
+    const shouldEvolve =
+      spec.strategy === "evolve" ||
+      (spec.strategy === "auto" && detectScalarFitness(spec.verify_cmd, spec.cwd));
+
+    if (shouldEvolve) {
+      const evolveSpec: EvolveSpec = {
+        goal: spec.goal,
+        fitness_cmd: spec.verify_cmd,
+        cwd: spec.cwd,
+        target_files: spec.allowed_files ?? [],
+        budget_tokens: spec.budget_tokens,
+        context: spec.context,
+        model: spec.model,
+        api_key: spec.api_key,
+        api_base: spec.api_base,
+        build_cmd: spec.build_cmd,
+        test_cmd: spec.test_cmd,
+        lint_cmd: spec.lint_cmd,
+        generations: 5,
+        population_size: 6,
+      };
+      onProgress?.(`Strategy '${spec.strategy}' routed to evolve (scalar fitness detected)`);
+      const result = await evolve(evolveSpec, onProgress);
+      return {
+        content: [{ type: "text" as const, text: formatEvolveResult(result) }],
+      };
+    }
+
+    const result = await solve(spec, onProgress);
 
     return {
       content: [
@@ -148,6 +178,59 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
   },
 );
 
+// ── Orchestrate spec schema ────────────────────────────────────────────
+
+const OrchestrateSpecSchema = TaskSpecSchema.extend({
+  playbook: z
+    .enum(["bugfix", "feature", "refactor", "test-harden", "reconcile", "review"])
+    .optional()
+    .default("bugfix")
+    .describe("Playbook type — selects the stage sequence"),
+  mutation_cmd: z
+    .string()
+    .optional()
+    .describe("Mutation testing command (e.g. 'npx stryker run'). Runs after implementation passes."),
+});
+
+// ── orchestrate tool ──────────────────────────────────────────────────
+
+server.tool(
+  "orchestrate",
+  `Drive the full solve lifecycle through SPEC -> TEST_AUTHOR -> IMPLEMENT -> HARDEN -> REVIEW -> MERGE.
+
+The orchestrate tool wraps the existing "solve" tool as the IMPLEMENT stage,
+adding gates for specification validation, test readiness, test hardening,
+human review, and merge verification.
+
+Stages:
+- SPEC: Requirements gate (human confirmation)
+- TEST_AUTHOR: Test readiness gate (human confirmation)
+- IMPLEMENT: Runs solve() with the provided spec
+- HARDEN: Mutation testing (if mutation_cmd provided) or human gate
+- REVIEW: Human review gate
+- MERGE: Held-out test execution
+
+Each stage enforces entry gates: cannot skip spec, cannot implement without
+red tests, cannot harden without passing implementation, etc.`,
+  {
+    spec: OrchestrateSpecSchema.describe("Orchestration specification"),
+  },
+  async ({ spec }) => {
+    const result = await orchestrateSolve(spec as any, (msg: string) => {
+      process.stderr.write(`[evomcp] ${msg}\n`);
+    });
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: formatOrchestrateResult(result),
+        },
+      ],
+    };
+  },
+);
+
 // ── status tool ─────────────────────────────────────────────────────
 
 server.tool("status", "Check if the deepclaude proxy is running and ready.", {}, async () => {
@@ -180,39 +263,7 @@ server.tool("status", "Check if the deepclaude proxy is running and ready.", {},
     ],
   };
 });
-
-// ── hello tool ───────────────────────────────────────────────────────
-
-server.tool(
-  "hello",
-  "Say hello world with a defensive greeting. Returns a greeting message for the given name.",
-  {
-    name: z.string().optional().describe("Name to greet. Defaults to 'World' if omitted."),
-  },
-  async ({ name }) => {
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: formatHello(name),
-        },
-      ],
-    };
-  },
-);
-
 // ── Formatting ─────────────────────────────────────────────────────────
-
-function formatHello(raw?: string): string {
-  // Defensive: sanitize and validate input
-  const sanitized = (raw ?? "").trim().replace(/[^\w\s'-]/g, "");
-  const name = sanitized.length > 0 ? sanitized : "World";
-
-  // Defensive: max length guard against abuse
-  const displayName = name.length > 100 ? `${name.slice(0, 100)}...` : name;
-
-  return `Hello, ${displayName}!`;
-}
 
 function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
   if (result.outcome === "pass") {
@@ -232,7 +283,9 @@ function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
       "### Stats",
       `- Plans: ${result.stats.plans_sampled}`,
       `- Candidates: ${result.stats.candidates_generated}`,
-      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A"}`,
+      result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
+      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
+      result.stats.tokens_consumed >= 0 ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers" : "",
       `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
       `- Model: ${result.stats.model}`,
     ].join("\n");
@@ -282,7 +335,9 @@ function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
     "### Stats",
     `- Plans: ${result.stats.plans_sampled}`,
     `- Candidates: ${result.stats.candidates_generated}`,
-    `- Tokens: ${result.stats.tokens_consumed}`,
+    result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
+    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
+    result.stats.tokens_consumed >= 0 ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers" : "",
     `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
     `- Model: ${result.stats.model}`,
     "",
@@ -321,7 +376,8 @@ function formatEvolveResult(result: Awaited<ReturnType<typeof evolve>>): string 
     "",
     "### Stats",
     `- Candidates: ${result.stats.candidates_generated}`,
-    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A"}`,
+    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
+    result.stats.tokens_consumed >= 0 ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers" : "",
     `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
     `- Model: ${result.stats.model}`,
   ].join("\n");
@@ -330,6 +386,30 @@ function formatEvolveResult(result: Awaited<ReturnType<typeof evolve>>): string 
 import { fileURLToPath } from "node:url";
 
 const _filename = fileURLToPath(import.meta.url);
+
+// ── Formatting ─────────────────────────────────────────────────────────
+
+function formatOrchestrateResult(result: Awaited<ReturnType<typeof orchestrateSolve>>): string {
+  return [
+    `## Orchestrate: ${result.outcome.toUpperCase()}`,
+    "",
+    result.summary,
+    "",
+    ...(result.solveResult && result.solveResult.outcome === "pass"
+      ? [
+          "### Solve Patch",
+          "```",
+          result.solveResult.patch?.slice(0, 2000) ?? "(no patch)",
+          "```",
+          "",
+          "### Verification",
+          "```",
+          result.solveResult.verification_report?.slice(0, 1000) ?? "(no report)",
+          "```",
+        ]
+      : []),
+  ].join("\n");
+}
 
 // ── Start (only when run directly, not when imported by tests) ──────────
 
