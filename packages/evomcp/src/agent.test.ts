@@ -292,19 +292,6 @@ describe("agent — pure functions", () => {
     });
   });
 
-  describe("spawnClaudeN", () => {
-    it("parallel", async () => {
-      spawnThrows = false;
-      process.env.DEEPSEEK_API_KEY = "sk";
-      assert.equal((await mod.spawnClaudeN(["a", "b"], { cwd: process.cwd() })).length, 2);
-    });
-    it("rejection", async () => {
-      spawnThrows = true;
-      process.env.DEEPSEEK_API_KEY = "sk";
-      assert.equal((await mod.spawnClaudeN(["a"], { cwd: process.cwd() }))[0].exitCode, -1);
-    });
-  });
-
   describe("ensureProxy", () => {
     it("healthy", async () => {
       process.env.DEEPSEEK_API_KEY = "sk";

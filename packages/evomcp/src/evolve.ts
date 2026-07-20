@@ -114,8 +114,6 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
   if (targetContents.length === 0) {
     throw new Error(`No target files found matching: ${spec.target_files.join(", ")}`);
   }
-  const _initialCode = targetContents.map((t) => `=== ${t.path} ===\n${t.content}`).join("\n\n");
-
   // ── Phase 2: Evolutionary loop (gitevo-aware) ──────────────────────
 
   let bestScore = baselineScore;

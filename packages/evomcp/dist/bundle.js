@@ -21960,6 +21960,145 @@ import { execSync, spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+
+// src/prompts.ts
+var STRATEGIES = [
+  "Implement the simplest possible solution that works. Minimal changes, maximum clarity.",
+  "Implement a robust solution with comprehensive error handling, edge cases, and validation.",
+  "Implement a performant solution \u2014 optimize for speed and efficiency over simplicity.",
+  "Implement a modular solution \u2014 extract helpers, use clean abstractions, make it testable.",
+  "Implement a defensive solution \u2014 validate inputs, handle all failure modes gracefully.",
+  "Implement a functional-style solution \u2014 pure functions, immutable data, composable operations.",
+  "Implement a pragmatic solution \u2014 get it working, handle the common case, defer complexity.",
+  "Implement an elegant solution \u2014 concise, readable, idiomatic code that's a pleasure to maintain."
+];
+function strategyPrompts(task, n, context, failureContext) {
+  const prompts = [];
+  for (let i = 0; i < n; i++) {
+    const strategy = STRATEGIES[i % STRATEGIES.length];
+    const failureBlock = failureContext ? `
+
+## Failures to Avoid
+${failureContext}` : "";
+    const contextBlock = context ? `
+
+## Context
+${context}` : "";
+    prompts.push(
+      `## Task
+${task}
+
+## Strategy
+${strategy}${failureBlock}${contextBlock}
+
+Implement the changes needed. Use tools to read files, make edits, and verify your work. Commit when done.`
+    );
+  }
+  return prompts;
+}
+function repairPrompt(task, failureOutput, attemptNum, context) {
+  const contextBlock = context ? `
+
+## Context
+${context}` : "";
+  return [
+    `## Task`,
+    task,
+    "",
+    "## Previous attempt FAILED",
+    "Your previous implementation failed verification. Here is the output:",
+    "",
+    "```",
+    failureOutput.slice(0, 3e3),
+    "```",
+    "",
+    "## Instructions",
+    `This is repair attempt #${attemptNum}. Fix the specific issues shown above.`,
+    "Read the relevant files, understand what went wrong, and make targeted fixes.",
+    "Do NOT rewrite everything \u2014 fix only what's broken.",
+    contextBlock
+  ].join("\n");
+}
+function mutationPrompt(goal, currentCode, fitnessScore, elites, context) {
+  const eliteBlock = elites.length > 0 ? [
+    "",
+    "## Elite mutations (higher score = better)",
+    ...elites.map((e, i) => `### Elite #${i + 1} (score=${e.score.toFixed(2)})
+\`\`\`
+${e.code}
+\`\`\``)
+  ].join("\n") : "";
+  const contextBlock = context ? `
+
+## Context
+${context}` : "";
+  return [
+    `## Goal`,
+    goal,
+    "",
+    `## Current code (fitness = ${fitnessScore.toFixed(2)})`,
+    "```",
+    currentCode,
+    "```",
+    eliteBlock,
+    "",
+    "## Instructions",
+    "Mutate this code to improve its fitness score.",
+    "Be creative \u2014 try different algorithms, data structures, caching, early exits.",
+    "Make targeted changes, not rewrites.",
+    contextBlock
+  ].join("\n");
+}
+function buildJudgePrompt(branches) {
+  const branchSections = branches.map((b, i) => {
+    const diff = b.diff.length > 3e3 ? `${b.diff.slice(0, 3e3)}
+... [truncated]` : b.diff;
+    const scoreLine = b.score !== void 0 ? `
+Fitness score: ${b.score.toFixed(4)}` : "";
+    const reportLine = b.verificationReport ? `
+Verification: ${b.verificationReport.slice(0, 500)}` : "";
+    return `## Branch ${i + 1}: ${b.name}${scoreLine}${reportLine}
+
+Diff:
+\`\`\`diff
+${diff}
+\`\`\``;
+  }).join("\n\n");
+  return [
+    "You are an expert code reviewer acting as a judge. Evaluate the following candidate solutions and select the best one.",
+    "",
+    branchSections,
+    "",
+    "## Rubric",
+    "",
+    "Rate each branch on four dimensions (1-10 scale, 10 = best):",
+    "",
+    "| Dimension       | Weight | Description |",
+    "|-----------------|--------|-------------|",
+    "| correctness     | 0.4    | Does it solve the problem correctly? No bugs, edge cases handled. |",
+    "| clarity         | 0.2    | Is the code readable, well-structured, and easy to understand? |",
+    "| efficiency      | 0.2    | Is it performant? Appropriate algorithms, no wasted work. |",
+    "| maintainability | 0.2    | Is it modular, testable, and easy to modify? |",
+    "",
+    "Composite score = correctness x 0.4 + clarity x 0.2 + efficiency x 0.2 + maintainability x 0.2",
+    "",
+    "## Output Format",
+    "",
+    "Respond with ONLY a valid JSON object \u2014 no markdown fences, no extra text:",
+    "",
+    "{",
+    '  "winner_branch": "<branch name>",',
+    '  "scores": {',
+    '    "<branch name>": { "correctness": 7, "clarity": 8, "efficiency": 6, "maintainability": 7 }',
+    "  },",
+    '  "rationale": "Brief explanation of why this branch won."',
+    "}",
+    "",
+    "Be honest and critical. Consider trade-offs carefully. The rationale should be concise but specific."
+  ].join("\n");
+}
+
+// src/agent.ts
 var PROXY_URL = "http://127.0.0.1:3200";
 var DEEPSEEK_ANTHROPIC_ENDPOINT = "https://api.deepseek.com/anthropic";
 var BACKENDS_JSON_PATH = path.join(os.homedir(), ".claude", "backends.json");
@@ -22213,81 +22352,6 @@ function hashFailure(output) {
     hash = hash & hash;
   }
   return Math.abs(hash).toString(16);
-}
-function strategyPrompts(task, n, context, failureContext) {
-  const strategies = [
-    "Implement the simplest possible solution that works. Minimal changes, maximum clarity.",
-    "Implement a robust solution with comprehensive error handling, edge cases, and validation.",
-    "Implement a performant solution \u2014 optimize for speed and efficiency over simplicity.",
-    "Implement a modular solution \u2014 extract helpers, use clean abstractions, make it testable.",
-    "Implement a defensive solution \u2014 validate inputs, handle all failure modes gracefully.",
-    "Implement a functional-style solution \u2014 pure functions, immutable data, composable operations.",
-    "Implement a pragmatic solution \u2014 get it working, handle the common case, defer complexity.",
-    "Implement an elegant solution \u2014 concise, readable, idiomatic code that's a pleasure to maintain."
-  ];
-  const prompts = [];
-  for (let i = 0; i < n; i++) {
-    const strategy = strategies[i % strategies.length];
-    const failureBlock = failureContext ? `
-
-## Failures to Avoid
-${failureContext}` : "";
-    const contextBlock = context ? `
-
-Context:
-${context}` : "";
-    prompts.push(
-      `## Task
-${task}
-
-## Strategy
-${strategy}${failureBlock}${contextBlock}
-
-Implement the changes needed. Use tools to read files, make edits, and verify your work. Commit when done.`
-    );
-  }
-  return prompts;
-}
-function repairPrompt(task, failureOutput, attemptNum, context) {
-  const contextBlock = context ? `
-
-Context:
-${context}` : "";
-  return `## Task
-${task}
-
-## Previous attempt FAILED
-Your previous implementation failed verification. Here is the output:
-
-\`\`\`
-${failureOutput.slice(0, 3e3)}
-\`\`\`
-
-## Instructions
-This is repair attempt #${attemptNum}. Fix the specific issues shown above. Read the relevant files, understand what went wrong, and make targeted fixes. Do NOT rewrite everything \u2014 fix only what's broken.${contextBlock}`;
-}
-function mutationPrompt(goal, currentCode, fitnessScore, elites, context) {
-  const eliteBlock = elites.length > 0 ? `
-## Elite mutations (higher score = better)
-${elites.map((e, i) => `### Elite #${i + 1} (score=${e.score.toFixed(2)})
-\`\`\`
-${e.code}
-\`\`\``).join("\n\n")}` : "";
-  const contextBlock = context ? `
-
-Context:
-${context}` : "";
-  return `## Goal
-${goal}
-
-## Current code (fitness = ${fitnessScore.toFixed(2)})
-\`\`\`
-${currentCode}
-\`\`\`
-${eliteBlock}
-
-## Instructions
-Mutate this code to improve its fitness score. Be creative \u2014 try different algorithms, data structures, caching, early exits. Make targeted changes, not rewrites.${contextBlock}`;
 }
 
 // src/evolve.ts
@@ -22638,113 +22702,6 @@ function evo_adopt(branch) {
   return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
 }
 
-// src/gitevo-integration.ts
-async function wrapGitevo(fn, args, label) {
-  try {
-    const result = fn(...args);
-    console.error(`evomcp[gitevo]: ${label} succeeded \u2014 ${result.slice(0, 80)}`);
-    return result;
-  } catch (err) {
-    const message = err instanceof EvoError ? err.message : String(err);
-    console.error(`evomcp[gitevo]: ${label} failed \u2014 ${message}`);
-    throw new Error(`gitevo ${label}: ${message}`);
-  }
-}
-async function checkpointGeneration(gen, description, _cwd) {
-  await wrapGitevo(
-    evo_checkpoint,
-    [`evolve-gen${gen}`, description],
-    `checkpoint gen ${gen}`
-  );
-}
-async function spawnCandidate(checkpointName, branchName, _cwd) {
-  await wrapGitevo(
-    evo_spawn,
-    [checkpointName, branchName, false],
-    `spawn '${branchName}' from '${checkpointName}'`
-  );
-}
-async function adoptWinner(branchName, _cwd) {
-  await wrapGitevo(
-    evo_adopt,
-    [branchName],
-    `adopt '${branchName}'`
-  );
-}
-async function abandonLoser(_branchName, reason, _cwd) {
-  await wrapGitevo(
-    evo_abandon,
-    [void 0, reason, false],
-    `abandon (reason: ${reason.slice(0, 60)})`
-  );
-}
-
-// src/gates.ts
-import { execSync as execSync2 } from "node:child_process";
-var GateRunner = class {
-  config;
-  timeoutMs;
-  constructor(config2, timeoutMs = 12e4) {
-    this.config = config2;
-    this.timeoutMs = timeoutMs;
-  }
-  /**
-   * Run all configured gates in order: lint → build → test → verify.
-   * Returns results for gates that were actually run — skipped if no cmd
-   * configured. Short-circuits on the first non-zero exit.
-   */
-  async runAll(cwd) {
-    const ordered = [
-      { name: "lint", cmd: this.config.lint_cmd },
-      { name: "build", cmd: this.config.build_cmd },
-      { name: "test", cmd: this.config.test_cmd },
-      { name: "verify", cmd: this.config.verify_cmd }
-    ];
-    const results = [];
-    for (const gate of ordered) {
-      if (!gate.cmd) continue;
-      const result = this.execGate(gate.name, gate.cmd, cwd);
-      results.push(result);
-      if (!result.passed) break;
-    }
-    return results;
-  }
-  /**
-   * Execute a single gate command via execSync.
-   * Mirrors the runCommand pattern from agent.ts.
-   */
-  execGate(name, cmd, cwd) {
-    const t0 = Date.now();
-    try {
-      execSync2(cmd, {
-        cwd,
-        encoding: "utf-8",
-        timeout: this.timeoutMs,
-        stdio: "pipe",
-        maxBuffer: 10 * 1024 * 1024
-      });
-      return {
-        gate: name,
-        passed: true,
-        diagnostics: "",
-        elapsed_ms: Date.now() - t0
-      };
-    } catch (err) {
-      const e = err;
-      const stdout = e.stdout ? String(e.stdout) : "";
-      const stderr = e.stderr ? String(e.stderr) : "";
-      const combined = `${stdout}
-${stderr}`.trim();
-      return {
-        gate: name,
-        passed: false,
-        diagnostics: combined.slice(0, 1e4),
-        elapsed_ms: Date.now() - t0
-      };
-    }
-  }
-};
-
 // src/convergence.ts
 var DEFAULT_CONVERGENCE_THRESHOLD = 0.95;
 var DEFAULT_PATIENCE = 10;
@@ -22883,12 +22840,103 @@ function checkConvergence(history, scores, opts) {
   };
 }
 
+// src/gates.ts
+import { execSync as execSync2 } from "node:child_process";
+var GateRunner = class {
+  config;
+  timeoutMs;
+  constructor(config2, timeoutMs = 12e4) {
+    this.config = config2;
+    this.timeoutMs = timeoutMs;
+  }
+  /**
+   * Run all configured gates in order: lint → build → test → verify.
+   * Returns results for gates that were actually run — skipped if no cmd
+   * configured. Short-circuits on the first non-zero exit.
+   */
+  async runAll(cwd) {
+    const ordered = [
+      { name: "lint", cmd: this.config.lint_cmd },
+      { name: "build", cmd: this.config.build_cmd },
+      { name: "test", cmd: this.config.test_cmd },
+      { name: "verify", cmd: this.config.verify_cmd }
+    ];
+    const results = [];
+    for (const gate of ordered) {
+      if (!gate.cmd) continue;
+      const result = this.execGate(gate.name, gate.cmd, cwd);
+      results.push(result);
+      if (!result.passed) break;
+    }
+    return results;
+  }
+  /**
+   * Execute a single gate command via execSync.
+   * Mirrors the runCommand pattern from agent.ts.
+   */
+  execGate(name, cmd, cwd) {
+    const t0 = Date.now();
+    try {
+      execSync2(cmd, {
+        cwd,
+        encoding: "utf-8",
+        timeout: this.timeoutMs,
+        stdio: "pipe",
+        maxBuffer: 10 * 1024 * 1024
+      });
+      return {
+        gate: name,
+        passed: true,
+        diagnostics: "",
+        elapsed_ms: Date.now() - t0
+      };
+    } catch (err) {
+      const e = err;
+      const stdout = e.stdout ? String(e.stdout) : "";
+      const stderr = e.stderr ? String(e.stderr) : "";
+      const combined = `${stdout}
+${stderr}`.trim();
+      return {
+        gate: name,
+        passed: false,
+        diagnostics: combined.slice(0, 1e4),
+        elapsed_ms: Date.now() - t0
+      };
+    }
+  }
+};
+
+// src/gitevo-integration.ts
+async function wrapGitevo(fn, args, label) {
+  try {
+    const result = fn(...args);
+    console.error(`evomcp[gitevo]: ${label} succeeded \u2014 ${result.slice(0, 80)}`);
+    return result;
+  } catch (err) {
+    const message = err instanceof EvoError ? err.message : String(err);
+    console.error(`evomcp[gitevo]: ${label} failed \u2014 ${message}`);
+    throw new Error(`gitevo ${label}: ${message}`);
+  }
+}
+async function checkpointGeneration(gen, description, _cwd) {
+  await wrapGitevo(evo_checkpoint, [`evolve-gen${gen}`, description], `checkpoint gen ${gen}`);
+}
+async function spawnCandidate(checkpointName, branchName, _cwd) {
+  await wrapGitevo(evo_spawn, [checkpointName, branchName, false], `spawn '${branchName}' from '${checkpointName}'`);
+}
+async function adoptWinner(branchName, _cwd) {
+  await wrapGitevo(evo_adopt, [branchName], `adopt '${branchName}'`);
+}
+async function abandonLoser(_branchName, reason, _cwd) {
+  await wrapGitevo(evo_abandon, [void 0, reason, false], `abandon (reason: ${reason.slice(0, 60)})`);
+}
+
 // src/evolve.ts
 var DEFAULT_GENERATIONS = 5;
 var DEFAULT_POPULATION = 6;
 var DEFAULT_TIMEOUT_MS = 18e4;
 async function runGates(spec, cwd, onProgress) {
-  if (!spec.build_cmd && !spec.test_cmd && !spec.lint_cmd) {
+  if (!(spec.build_cmd || spec.test_cmd || spec.lint_cmd)) {
     return { passed: true, results: [] };
   }
   const gateRunner = new GateRunner({
@@ -22948,8 +22996,6 @@ Output: ${baselineResult.output.slice(0, 500)}`
   if (targetContents.length === 0) {
     throw new Error(`No target files found matching: ${spec.target_files.join(", ")}`);
   }
-  const _initialCode = targetContents.map((t) => `=== ${t.path} ===
-${t.content}`).join("\n\n");
   let bestScore = baselineScore;
   let bestBranch = null;
   const fitnessHistory = [];
@@ -23038,7 +23084,9 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
         if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
           const { passed, results: gateResults } = await runGates(spec, spec.cwd, onProgress);
           if (!passed) {
-            onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}, GATES FAILED (${gateResults.filter((r) => !r.passed).map((r) => r.gate).join(", ")}) -- skipping`);
+            onProgress?.(
+              `  [${i + 1}] score=${score.toFixed(2)}, GATES FAILED (${gateResults.filter((r) => !r.passed).map((r) => r.gate).join(", ")}) -- skipping`
+            );
             try {
               await abandonLoser(branchName, "gates failed", spec.cwd);
             } catch {
@@ -23060,7 +23108,11 @@ ${t.content}`).join("\n\n");
           if (elites.length > 5) elites.length = 5;
         } else {
           try {
-            await abandonLoser(branchName, `score ${score.toFixed(2)} not better than best ${bestScore.toFixed(2)}`, spec.cwd);
+            await abandonLoser(
+              branchName,
+              `score ${score.toFixed(2)} not better than best ${bestScore.toFixed(2)}`,
+              spec.cwd
+            );
           } catch {
           }
         }
@@ -23144,7 +23196,10 @@ Adopting winner: ${bestBranch}...`);
   if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
     onProgress?.("\nFinal gate verification...");
     const { passed, results } = await runGates(spec, spec.cwd, onProgress);
-    finalGateReport = results.map((r) => `${r.gate}: ${r.passed ? "PASS" : "FAIL"} (${r.elapsed_ms}ms)${!r.passed && r.diagnostics ? "\n  " + r.diagnostics.slice(0, 300) : ""}`).join("\n");
+    finalGateReport = results.map(
+      (r) => `${r.gate}: ${r.passed ? "PASS" : "FAIL"} (${r.elapsed_ms}ms)${!r.passed && r.diagnostics ? `
+  ${r.diagnostics.slice(0, 300)}` : ""}`
+    ).join("\n");
     if (!passed) {
       onProgress?.("WARNING: best patch does not pass all gates");
     }
@@ -23225,53 +23280,8 @@ var DIMENSION_WEIGHTS = {
   efficiency: 0.2,
   maintainability: 0.2
 };
-function buildJudgePrompt(branches) {
-  const branchSections = branches.map((b, i) => {
-    const diff = b.diff.length > 3e3 ? b.diff.slice(0, 3e3) + "\n... [truncated]" : b.diff;
-    const scoreLine = b.score !== void 0 ? `
-Fitness score: ${b.score.toFixed(4)}` : "";
-    const reportLine = b.verificationReport ? `
-Verification: ${b.verificationReport.slice(0, 500)}` : "";
-    return `## Branch ${i + 1}: ${b.name}${scoreLine}${reportLine}
-
-Diff:
-\`\`\`diff
-${diff}
-\`\`\``;
-  }).join("\n\n");
-  return `You are an expert code reviewer acting as a judge. Evaluate the following candidate solutions and select the best one.
-
-${branchSections}
-
-## Rubric
-
-Rate each branch on four dimensions (1-10 scale, 10 = best):
-
-| Dimension       | Weight | Description |
-|-----------------|--------|-------------|
-| correctness     | 0.4    | Does it solve the problem correctly? No bugs, edge cases handled. |
-| clarity         | 0.2    | Is the code readable, well-structured, and easy to understand? |
-| efficiency      | 0.2    | Is it performant? Appropriate algorithms, no wasted work. |
-| maintainability | 0.2    | Is it modular, testable, and easy to modify? |
-
-Composite score = correctness x 0.4 + clarity x 0.2 + efficiency x 0.2 + maintainability x 0.2
-
-## Output Format
-
-Respond with ONLY a valid JSON object \u2014 no markdown fences, no extra text:
-
-{
-  "winner_branch": "<branch name>",
-  "scores": {
-    "<branch name>": { "correctness": 7, "clarity": 8, "efficiency": 6, "maintainability": 7 }
-  },
-  "rationale": "Brief explanation of why this branch won."
-}
-
-Be honest and critical. Consider trade-offs carefully. The rationales should be concise but specific.`;
-}
 function parseJudgeOutput(output) {
-  let trimmed = output.trim();
+  const trimmed = output.trim();
   try {
     const parsed = JSON.parse(trimmed);
     if (isValidVerdict(parsed)) return parsed;
@@ -23316,15 +23326,15 @@ function extractJsonBlock(text) {
   if (start === -1) return null;
   let depth = 0;
   let inString = false;
-  let escape2 = false;
+  let escaped = false;
   for (let i = start; i < text.length; i++) {
     const ch = text[i];
-    if (escape2) {
-      escape2 = false;
+    if (escaped) {
+      escaped = false;
       continue;
     }
     if (ch === "\\" && inString) {
-      escape2 = true;
+      escaped = true;
       continue;
     }
     if (ch === '"') {
@@ -23344,26 +23354,23 @@ function extractJsonBlock(text) {
 function parseVerdictViaRegex(output) {
   const branchScores = {};
   const branchPattern = /([\w./-]+):\s*correctness[=:]\s*(\d+(?:\.\d+)?)[,\s]+clarity[=:]\s*(\d+(?:\.\d+)?)[,\s]+efficiency[=:]\s*(\d+(?:\.\d+)?)[,\s]+maintainability[=:]\s*(\d+(?:\.\d+)?)/gi;
-  let match;
-  while ((match = branchPattern.exec(output)) !== null) {
+  let match = branchPattern.exec(output);
+  while (match !== null) {
     branchScores[match[1]] = {
       correctness: Number.parseFloat(match[2]),
       clarity: Number.parseFloat(match[3]),
       efficiency: Number.parseFloat(match[4]),
       maintainability: Number.parseFloat(match[5])
     };
+    match = branchPattern.exec(output);
   }
   if (Object.keys(branchScores).length === 0) return null;
-  const winnerMatch = output.match(
-    /(?:winner|best|winning)\s*(?:branch|is|:)\s*["']?([\w./-]+)["']?/i
-  );
+  const winnerMatch = output.match(/(?:winner|best|winning)\s*(?:branch|is|:)\s*["']?([\w./-]+)["']?/i);
   let winnerBranch = winnerMatch?.[1] ?? "";
-  if (!winnerBranch || !branchScores[winnerBranch]) {
+  if (!(winnerBranch && branchScores[winnerBranch])) {
     winnerBranch = pickBestByComposite(branchScores) ?? "";
   }
-  const rationaleMatch = output.match(
-    /(?:rationale|reason|explanation)[:\s]\s*(.+?)(?:\n\n|\n#|$)/is
-  );
+  const rationaleMatch = output.match(/(?:rationale|reason|explanation)[:\s]\s*(.+?)(?:\n\n|\n#|$)/is);
   const rationale = rationaleMatch?.[1]?.trim() ?? "";
   return {
     winner_branch: winnerBranch,
@@ -23441,7 +23448,7 @@ function fallbackComposite(branches) {
 }
 function pickBestByComposite(scores) {
   let bestBranch = null;
-  let bestComposite = -Infinity;
+  let bestComposite = Number.NEGATIVE_INFINITY;
   for (const [branch, dims] of Object.entries(scores)) {
     const composite = dims.correctness * DIMENSION_WEIGHTS.correctness + dims.clarity * DIMENSION_WEIGHTS.clarity + dims.efficiency * DIMENSION_WEIGHTS.efficiency + dims.maintainability * DIMENSION_WEIGHTS.maintainability;
     if (composite > bestComposite) {
@@ -23546,7 +23553,7 @@ async function solve(spec, onProgress) {
     onProgress?.(`  [${i + 1}] spawning branch '${branchName}' (${stratLabel})...`);
     try {
       await spawnCandidate("solve", branchName, spec.cwd);
-    } catch (err) {
+    } catch (_err) {
       onProgress?.(`  [${i + 1}] branch spawn failed \u2014 skipping`);
       diagnostics.push({
         lineage_id: `strategy-${i}`,
@@ -23806,7 +23813,7 @@ ${repairResult.output.slice(0, 500)}`;
 import { fileURLToPath } from "node:url";
 var server = new McpServer({
   name: "evomcp",
-  version: "0.1.3"
+  version: "0.1.12"
 });
 var TaskSpecSchema = external_exports.object({
   goal: external_exports.string().describe("Natural-language description of what to build/fix/optimize"),

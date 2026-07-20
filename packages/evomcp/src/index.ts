@@ -22,7 +22,7 @@ import { solve } from "./solve.js";
 
 const server = new McpServer({
   name: "evomcp",
-  version: "0.1.3",
+  version: "0.1.12",
 });
 
 // ── Shared schemas ──────────────────────────────────────────────────

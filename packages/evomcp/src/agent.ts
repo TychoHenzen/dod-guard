@@ -350,23 +350,6 @@ export async function spawnClaude(prompt: string, opts: SpawnOptions & AgentEnv)
   });
 }
 
-/**
- * Spawn N claude -p instances in parallel with different prompts.
- * Returns results in order.
- */
-export async function spawnClaudeN(prompts: string[], opts: SpawnOptions & AgentEnv): Promise<AgentResult[]> {
-  const results = await Promise.allSettled(prompts.map((prompt) => spawnClaude(prompt, opts)));
-
-  return results.map((r) => {
-    if (r.status === "fulfilled") return r.value;
-    return {
-      output: `Promise rejected: ${String(r.reason)}`,
-      exitCode: -1,
-      durationMs: 0,
-      timedOut: false,
-    };
-  });
-}
 // ── Helpers ───────────────────────────────────────────────────────────
 
 /**
