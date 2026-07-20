@@ -1,6 +1,6 @@
 {
   "name": "dod-guard",
-  "description": "Anti-cheat Definition of Done verification with locked proofs. Ships 6 skills: /interview (requirements), /quality-upgrade (test+source quality loop), /test-verification, /test-fixer, /ratchet (unified workflow), and /clean-house (aggressive duplicate/obsolete code cleanup).",
+  "description": "Anti-cheat Definition of Done verification with locked proofs. Ships 7 skills: /interview, /quality-upgrade, /test-verification, /test-fixer, /ratchet, /clean-house, and /step-by-step (multi-step sequential execution with specialized agents).",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"

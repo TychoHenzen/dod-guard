@@ -167,7 +167,7 @@ When adding a new predicate type, check whether it needs a runnable command or i
 
 ## Bundled Skills
 
-The plugin ships six skills in `skills/`:
+The plugin ships seven skills in `skills/`:
 
 | Skill | File | Purpose |
 |-------|------|---------|
@@ -177,10 +177,13 @@ The plugin ships six skills in `skills/`:
 | `test-fixer` | `skills/test-fixer/SKILL.md` | Apply targeted fixes from test-verification findings |
 | `ratchet` | `skills/ratchet/SKILL.md` | Unified ratcheting workflow combining dod-guard + gitevo + evomcp + obsidian-rag + code-review-graph |
 | `clean-house` | `skills/clean-house/SKILL.md` | Hunt down duplicate/obsolete implementations via git archaeology and aggressively remove dead code |
+| `step-by-step` | `skills/step-by-step/SKILL.md` | Execute multi-step plans by dispatching ONE fresh subagent per atomic step. Ships 2 specialized agents (step-implementer, step-fixer). |
 
 **Skill dependency chain**: `quality-upgrade` orchestrates `test-verification` and `test-fixer`. `test-fixer` requires `test-verification` manifest. `ratchet` orchestrates `interview` (requirements), `quality-upgrade`/`test-verification` (quality baseline), and delegates to gitevo/evomcp/obsidian-rag for branching/cascade/memory.
 
 **Skill references**: Skills reference each other via `Skill("name", ...)` using bare names. The plugin namespace (`dod-guard:`) is auto-prefixed by Claude Code at install time.
+
+**Skill agents**: `step-by-step` ships its own agents in `skills/step-by-step/agents/`. These are referenced by bare name (`step-implementer`, `step-fixer`) — the plugin namespace is auto-prefixed at install time. See each agent's `.md` for its prompt and role.
 
 **Test-verification assets**: `skills/test-verification/assets/dashboard.html` (HTML dashboard template) and `skills/test-verification/references/scoring-rubric.md` (scoring formulas). Referenced via relative paths from the SKILL.md.
 

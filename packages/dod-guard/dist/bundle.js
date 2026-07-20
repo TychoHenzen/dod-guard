@@ -5,13 +5,7 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
-  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
-}) : x)(function(x) {
-  if (typeof require !== "undefined") return require.apply(this, arguments);
-  throw Error('Dynamic require of "' + x + '" is not supported');
-});
-var __commonJS = (cb, mod) => function __require2() {
+var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 var __export = (target, all) => {
@@ -21816,7 +21810,7 @@ import { promisify } from "node:util";
 var CMD_TRUNCATION = 80;
 
 // src/assertions.ts
-import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import { existsSync as existsSync2, readdirSync as readdirSync2, readFileSync as readFileSync2 } from "node:fs";
 import * as path2 from "node:path";
 var PY_TRIVIAL = [
   // assert True / assert False / assert None
@@ -21893,8 +21887,7 @@ function extractTestFilesFromCommand(command, cwd) {
       const pat = path2.basename(resolved);
       if (existsSync2(dir) && pat.includes("*")) {
         try {
-          const { readdirSync: readdirSync3 } = __require("node:fs");
-          const entries = readdirSync3(dir);
+          const entries = readdirSync2(dir);
           const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
           for (const entry of entries) {
             if (regex.test(entry)) {
@@ -21972,7 +21965,7 @@ async function resolveManual(node, confirm, label = "Manual verification") {
 }
 
 // src/observability.ts
-import { existsSync as existsSync3, readFileSync as readFileSync3 } from "node:fs";
+import { existsSync as existsSync3, readdirSync as readdirSync3, readFileSync as readFileSync3, statSync as statSync2 } from "node:fs";
 import * as path3 from "node:path";
 function detectLanguage2(file) {
   const ext = path3.extname(file).toLowerCase();
@@ -22350,14 +22343,13 @@ function extractSourceFilesFromCommand2(command, cwd) {
         const pat = path3.basename(resolved);
         if (existsSync3(dir) && pat.includes("*")) {
           try {
-            const { readdirSync: readdirSync3 } = __require("node:fs");
             const entries = readdirSync3(dir);
             const _regex2 = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
             for (const entry of entries) {
               const full = path3.join(dir, entry);
               if (isInSkipDir2(full)) continue;
               if (!existsSync3(full)) continue;
-              const stat = __require("node:fs").statSync(full);
+              const stat = statSync2(full);
               if (stat.isFile() && isSourceFile2(full)) {
                 files.push(full);
               }
@@ -23354,10 +23346,11 @@ function carryForwardDrafts(nodes, parentPath, targetPath, out) {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    const isUnderTarget = currentPath === targetPath || currentPath.startsWith(`${targetPath}.`);
     if (node.children && node.children.length > 0) {
-      if (targetPath.startsWith(currentPath)) continue;
+      if (isUnderTarget) continue;
       carryForwardDrafts(node.children, currentPath, targetPath, out);
-    } else if (node.refinement === "draft" && !targetPath.startsWith(currentPath)) {
+    } else if (node.refinement === "draft" && !isUnderTarget) {
       out.push({
         node_path: currentPath,
         id: node.id,
@@ -23717,7 +23710,8 @@ function updateDocFromCheckResult(doc, result) {
   for (const leafResult of result.leaves) {
     const node = findNodeByPath(doc.roots, leafResult.node_path);
     if (!node) continue;
-    if (result.scoped && leafResult.node_path !== result.ran_node_path && !leafResult.node_path.startsWith(result.ran_node_path ?? ""))
+    const ranPath = result.ran_node_path;
+    if (result.scoped && ranPath != null && leafResult.node_path !== ranPath && !leafResult.node_path.startsWith(`${ranPath}.`))
       continue;
     if (leafResult.status !== "draft") {
       node.last_status = leafResult.status;
@@ -23735,7 +23729,7 @@ function updateDocFromCheckResult(doc, result) {
 
 // src/command-check.ts
 import { execFile } from "node:child_process";
-import { existsSync as existsSync4, readdirSync as readdirSync2, readFileSync as readFileSync4 } from "node:fs";
+import { existsSync as existsSync4, readdirSync as readdirSync4, readFileSync as readFileSync4 } from "node:fs";
 import * as path5 from "node:path";
 import { promisify as promisify2 } from "node:util";
 var execFileAsync = promisify2(execFile);
@@ -23955,7 +23949,7 @@ function expandGlobsInCommand(command, cwd) {
       try {
         const parentDir = path5.resolve(cwd, prefix);
         if (!existsSync4(parentDir)) continue;
-        const entries = readdirSync2(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
+        const entries = readdirSync4(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
         if (entries.length > 0) {
           const replacement = entries.map((e) => `${prefix}${sep3}${e}${sep3}`).join(" ");
           expanded = expanded.split(fullMatch).join(replacement);
@@ -24616,6 +24610,109 @@ function findInChildren(nodes, proofId) {
   }
   return null;
 }
+function findNodeById(roots, id) {
+  function search(nodes, parentPath) {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+      if (node.id === id) return { node, path: currentPath };
+      if (node.children) {
+        const found = search(node.children, currentPath);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  return search(roots, "");
+}
+function countAllNodes(nodes) {
+  let count = 0;
+  for (const node of nodes) {
+    count++;
+    if (node.children) count += countAllNodes(node.children);
+  }
+  return count;
+}
+function formatTree(roots, opts) {
+  const lines = [];
+  let displayRoots = roots;
+  let scopeLabel = "";
+  if (opts?.scopeId) {
+    const found = findNodeById(roots, opts.scopeId);
+    if (!found) return `ERROR: node not found by id "${opts.scopeId}".`;
+    displayRoots = found.node.children ? found.node.children : [found.node];
+    scopeLabel = ` (scoped to ${found.node.title} [${found.node.id}] @ ${found.path})`;
+  } else if (opts?.scopePath) {
+    const node = findNodeByPath(roots, opts.scopePath);
+    if (!node) return `ERROR: node not found at path "${opts.scopePath}".`;
+    displayRoots = node.children ? node.children : [node];
+    scopeLabel = ` (scoped to ${node.title} @ ${opts.scopePath})`;
+  }
+  const totalNodes = countAllNodes(roots);
+  const draftCount = countAllDrafts(roots);
+  const concreteCount = countAllConcrete(roots);
+  if (opts?.title) lines.push(`${opts.title}${opts.id ? ` (${opts.id})` : ""}`);
+  lines.push(`${totalNodes} nodes: ${concreteCount} concrete, ${draftCount} draft${scopeLabel}`);
+  lines.push("");
+  function render(nodes, parentPath, depth) {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+      const indent = "  ".repeat(depth);
+      if (node.children && node.children.length > 0) {
+        const hasDrafts = hasDraftNodes(node.children);
+        const allPass = allGroupLeavesPass(node.children);
+        let groupMark = "";
+        if (allPass && !hasDrafts && node.children.length > 0) groupMark = " \u2713";
+        else if (hasDrafts) groupMark = " ~";
+        lines.push(`${indent}${currentPath} [${node.id}] GROUP: "${node.title}"${groupMark}`);
+        render(node.children, currentPath, depth + 1);
+      } else if (node.refinement === "concrete") {
+        const status = node.last_status ?? "pending";
+        const cat = node.category ? ` | ${node.category}` : "";
+        const adv = node.advisory ? " [advisory]" : "";
+        lines.push(`${indent}${currentPath} [${node.id}] PROOF: "${node.title}" (${status}${cat}${adv})`);
+      } else {
+        const intent = node.intent ? ` \u2014 ${node.intent.slice(0, 80)}${node.intent.length > 80 ? "..." : ""}` : "";
+        lines.push(`${indent}${currentPath} [${node.id}] DRAFT: "${node.title}"${intent}`);
+      }
+    }
+  }
+  render(displayRoots, opts?.scopeId || opts?.scopePath ? "" : "", 0);
+  return lines.join("\n");
+}
+function countAllDrafts(nodes) {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      count += countAllDrafts(node.children);
+    } else if (node.refinement === "draft") {
+      count++;
+    }
+  }
+  return count;
+}
+function countAllConcrete(nodes) {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      count += countAllConcrete(node.children);
+    } else if (node.refinement === "concrete") {
+      count++;
+    }
+  }
+  return count;
+}
+function allGroupLeavesPass(nodes) {
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      if (!allGroupLeavesPass(node.children)) return false;
+    } else if (node.refinement === "concrete") {
+      if (node.last_status !== "pass" && node.last_status !== "skipped") return false;
+    }
+  }
+  return true;
+}
 function formatMissingTools(missing) {
   const lines = [
     `ERROR: ${missing.length} proof command(s) invoke tool(s) not available on this OS (${currentOs}).`,
@@ -24736,11 +24833,31 @@ function collectBaselineProofs(node) {
 
 // src/tools/dod-add-node.ts
 async function handleDodAddNode(params) {
-  const { dod_id, parent_path, title, refinement, intent, command, predicate, description, category, advisory } = params;
+  const {
+    dod_id,
+    parent_path,
+    parent_id: parentId,
+    title,
+    refinement,
+    intent,
+    command,
+    predicate,
+    description,
+    category,
+    advisory
+  } = params;
   const doc = await load(dod_id);
   if (!doc) throw new Error("ERROR: DoD not found.");
+  let resolvedParentPath = parent_path;
   let parent = null;
-  if (parent_path) {
+  if (parentId) {
+    const found = findNodeById(doc.roots, parentId);
+    if (!found) throw new Error(`ERROR: parent node not found by id "${parentId}".`);
+    parent = found.node;
+    resolvedParentPath = found.path;
+    if (!parent.children)
+      throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children. Add to a task group.`);
+  } else if (parent_path) {
     parent = findNodeByPath(doc.roots, parent_path);
     if (!parent) throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
     if (!parent.children)
@@ -24784,7 +24901,7 @@ async function handleDodAddNode(params) {
   } else {
     doc.roots.push(node);
   }
-  const fullPath = parent_path ? `${parent_path}.children.${(parent?.children?.length ?? 0) - 1}` : `${doc.roots.length - 1}`;
+  const fullPath = resolvedParentPath ? `${resolvedParentPath}.children.${(parent?.children?.length ?? 0) - 1}` : `${doc.roots.length - 1}`;
   doc.amendments.push({
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     node_path: fullPath,
@@ -24994,10 +25111,30 @@ async function handleDodCreate(params) {
 
 // src/tools/dod-refine.ts
 async function handleDodRefine(params) {
-  const { dod_id, node_path: nodePath, mode, command, predicate, description, category, advisory, children } = params;
+  const {
+    dod_id,
+    node_path: nodePath,
+    node_id: nodeId,
+    mode,
+    command,
+    predicate,
+    description,
+    category,
+    advisory,
+    children
+  } = params;
   const doc = await load(dod_id);
   if (!doc) return "ERROR: DoD not found.";
-  const node = findNodeByPath(doc.roots, nodePath);
+  let resolvedPath = nodePath;
+  let node = null;
+  if (nodeId) {
+    const found = findNodeById(doc.roots, nodeId);
+    if (!found) return `ERROR: node not found by id "${nodeId}".`;
+    node = found.node;
+    resolvedPath = found.path;
+  } else {
+    node = findNodeByPath(doc.roots, nodePath);
+  }
   if (!node) return `ERROR: node not found at path "${nodePath}".`;
   if (node.refinement !== "draft") return `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.`;
   if (node.children && node.children.length > 0)
@@ -25029,7 +25166,7 @@ async function handleDodRefine(params) {
     node.last_status = "pending";
     doc.amendments.push({
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      node_path: nodePath,
+      node_path: resolvedPath,
       action: "refined",
       old_value: { refinement: "draft", intent: oldIntent },
       new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
@@ -25065,7 +25202,7 @@ async function handleDodRefine(params) {
     delete node.category;
     doc.amendments.push({
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      node_path: nodePath,
+      node_path: resolvedPath,
       action: "refined",
       old_value: { refinement: "draft", intent: oldIntent },
       new_value: { refinement: "concrete", children: childNodes },
@@ -25209,7 +25346,7 @@ ${instructions}`,
 }
 server.tool(
   "dod_check",
-  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Manual/review proofs are NEVER auto-prompted \u2014 call dod_verify on that proof_id when verification is relevant.",
+  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Use `dod_tree` to discover current node paths before scoping. Manual/review proofs are NEVER auto-prompted \u2014 call dod_verify on that proof_id when verification is relevant.",
   {
     dod_id: external_exports.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: external_exports.string().optional().describe("Markdown file path \u2014 resolves to DoD by path if no ID given"),
@@ -25269,6 +25406,7 @@ server.tool(
   {
     dod_id: external_exports.string().describe("DoD ID"),
     node_path: external_exports.string().describe("Dot-separated path to the draft leaf, e.g. '0.children.1'"),
+    node_id: external_exports.string().optional().describe("Stable node ID (alternative to node_path \u2014 survives tree mutations)"),
     mode: external_exports.enum(["concretize", "subdivide"]).default("concretize").describe("'concretize' (default): supply proof command/predicate. 'subdivide': split into child draft nodes."),
     // concretize mode params
     command: external_exports.string().optional().describe("(concretize) The shell command to run for verification"),
@@ -25295,6 +25433,7 @@ server.tool(
   {
     dod_id: external_exports.string().describe("DoD ID"),
     parent_path: external_exports.string().describe("Dot-separated path to parent task group, or empty string to add at root level"),
+    parent_id: external_exports.string().optional().describe("Stable node ID of parent (alternative to parent_path \u2014 survives tree mutations)"),
     title: external_exports.string(),
     refinement: external_exports.enum(["draft", "concrete"]).default("draft"),
     intent: external_exports.string().optional(),
@@ -25318,12 +25457,20 @@ server.tool(
   "Remove a TaskNode and all its descendants from the DoD tree.",
   {
     dod_id: external_exports.string().describe("DoD ID"),
-    node_path: external_exports.string().describe("Dot-separated path to the node to remove")
+    node_path: external_exports.string().describe("Dot-separated path to the node to remove"),
+    node_id: external_exports.string().optional().describe("Stable node ID (alternative to node_path \u2014 survives tree mutations)")
   },
-  async ({ dod_id, node_path: nodePath }) => {
+  async ({ dod_id, node_path: nodePath, node_id: nodeId }) => {
     const doc = await load(dod_id);
     if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
-    const parts = nodePath.split(".");
+    const resolvedPath = nodeId ? (() => {
+      const found = findNodeById(doc.roots, nodeId);
+      if (!found) return null;
+      return found.path;
+    })() : nodePath;
+    if (resolvedPath === null)
+      return { content: [{ type: "text", text: `ERROR: node not found by id "${nodeId}".` }] };
+    const parts = resolvedPath.split(".");
     const lastPart = parts[parts.length - 1];
     if (lastPart === "children")
       return { content: [{ type: "text", text: "ERROR: path must target a node, not 'children'." }] };
@@ -25341,7 +25488,7 @@ server.tool(
       const removed2 = doc.roots.splice(childIdx, 1)[0];
       doc.amendments.push({
         timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        node_path: nodePath,
+        node_path: resolvedPath,
         action: "removed",
         old_value: { title: removed2.title, refinement: removed2.refinement },
         reason: `Removed node: ${removed2.title}`
@@ -25376,7 +25523,7 @@ server.tool(
     const removed = parent.children.splice(childIdx, 1)[0];
     doc.amendments.push({
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      node_path: nodePath,
+      node_path: resolvedPath,
       action: "removed",
       old_value: { title: removed.title, refinement: removed.refinement },
       reason: `Removed node: ${removed.title}`
@@ -25487,6 +25634,27 @@ server.tool(
   }
 );
 server.tool(
+  "dod_tree",
+  "Display the full TaskNode tree with stable IDs, current paths, titles, and statuses. Read-only structural dump \u2014 no proof execution. Use to discover node paths without running dod_check. Accepts optional dod_id/path to select the DoD, and optional node_id/node_path to scope the view to a subtree.",
+  {
+    dod_id: external_exports.string().optional().describe("DoD ID"),
+    path: external_exports.string().optional().describe("Markdown file path \u2014 resolves to DoD by path if no ID given"),
+    node_id: external_exports.string().optional().describe("Scope tree view to this node's subtree (by stable ID)"),
+    node_path: external_exports.string().optional().describe("Scope tree view to this node's subtree (by path)")
+  },
+  async ({ dod_id, path: mdPath, node_id: scopeId, node_path: scopePath }) => {
+    const doc = dod_id ? await load(dod_id) : mdPath ? await findByPath(mdPath) : null;
+    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found. Provide dod_id or path." }] };
+    const text = formatTree(doc.roots, {
+      title: doc.title,
+      id: doc.id,
+      scopeId,
+      scopePath
+    });
+    return { content: [{ type: "text", text }] };
+  }
+);
+server.tool(
   "dod_amend",
   "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
   {
@@ -25494,15 +25662,37 @@ server.tool(
     node_path: external_exports.string().describe(
       "Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata"
     ),
+    node_id: external_exports.string().optional().describe(
+      "Stable node ID (alternative to node_path \u2014 survives tree mutations). Incompatible with '*' and '__meta__'."
+    ),
     new_command: external_exports.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: external_exports.string().optional(),
     new_skip_reasons: external_exports.record(external_exports.string()).optional().describe("(__meta__ only) Replace DoD skip_reasons map"),
     reason: external_exports.string().describe("Why this amendment is needed \u2014 logged permanently")
   },
-  async ({ dod_id, node_path: nodePath, new_command, new_predicate, new_description, new_skip_reasons, reason }) => {
+  async ({
+    dod_id,
+    node_path: nodePath,
+    node_id: nodeId,
+    new_command,
+    new_predicate,
+    new_description,
+    new_skip_reasons,
+    reason
+  }) => {
     const doc = await load(dod_id);
     if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
+    if (nodeId && (nodePath === "__meta__" || nodePath === "*")) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `ERROR: node_id is incompatible with node_path="${nodePath}". Use one or the other.`
+          }
+        ]
+      };
+    }
     if (nodePath === "__meta__") {
       if (new_skip_reasons === void 0) {
         return {
@@ -25611,7 +25801,16 @@ Run dod_check to re-verify.`
         ]
       };
     }
-    const node = findNodeByPath(doc.roots, nodePath);
+    let resolvedPath = nodePath;
+    let node = null;
+    if (nodeId) {
+      const found = findNodeById(doc.roots, nodeId);
+      if (!found) return { content: [{ type: "text", text: `ERROR: node not found by id "${nodeId}".` }] };
+      node = found.node;
+      resolvedPath = found.path;
+    } else {
+      node = findNodeByPath(doc.roots, nodePath);
+    }
     if (!node) return { content: [{ type: "text", text: `ERROR: node not found at path "${nodePath}".` }] };
     if (node.refinement !== "concrete") {
       return {
@@ -25647,7 +25846,7 @@ Run dod_check to re-verify.`
     node.last_status = "pending";
     doc.amendments.push({
       timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      node_path: nodePath,
+      node_path: resolvedPath,
       action: "modified",
       old_value: oldSnapshot,
       new_value: {
