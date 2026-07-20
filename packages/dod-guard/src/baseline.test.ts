@@ -18,6 +18,7 @@ const ALL_SKIPPED: Record<string, string> = {
   complexity: "no algorithmic code",
   coverage: "no new testable surface",
   duplication: "no shared logic",
+  manual: "no UI or human-verifiable behavior",
 };
 
 /** All mandatory + all optional categories present, no skip_reasons needed. */
@@ -37,6 +38,7 @@ function completeSteps(): BaselineStepInput[] {
       "duplication",
     ),
     step("Wire it up", "integration_wiring", "integration_behavioral"),
+    { title: "Human check", proofs: [{ category: "manual", predicate: { type: "manual" } }] },
   ];
 }
 
@@ -56,7 +58,7 @@ test("a complete DoD has no errors and no warnings", () => {
 test("a minimal DoD with all skip_reasons has no errors, only skip_reason warnings", () => {
   const r = validateBaseline("general", minimalSteps(), ALL_SKIPPED);
   assert.deepEqual(r.errors, [], "minimal DoD with all reasons skipped should have no errors");
-  assert.equal(r.warnings.length, 9, "all 9 optional categories skipped → 9 warnings");
+  assert.equal(r.warnings.length, 10, "all 10 skipped categories → 10 warnings");
   assert.ok(
     r.warnings.every((w) => /skip_reason/.test(w)),
     "all warnings should mention skip_reason",
@@ -104,12 +106,12 @@ test("hard mandatory categories NOT skippable via skip_reasons", () => {
 
 // ── Optional: absent + no skip_reason → ERROR ─────────────────────────────
 
-test("all optional categories absent + no skip_reasons → 9 hard errors", () => {
+test("all optional categories absent + no skip_reasons → 10 hard errors", () => {
   const r = validateBaseline("general", minimalSteps()); // NO skip_reasons
   assert.equal(
     r.errors.length,
-    9,
-    "tdd + mutation + streamline + observability + brevity + 4 regression cats = 9 errors",
+    10,
+    "tdd + mutation + streamline + observability + brevity + 4 regression cats + manual = 10 errors",
   );
 });
 
@@ -124,6 +126,7 @@ test("one optional missing (tdd) while others skipped → single error", () => {
     complexity: "ok",
     coverage: "ok",
     duplication: "ok",
+    manual: "ok",
     // tdd deliberately omitted
   };
   const r = validateBaseline("general", steps, reasons);
@@ -160,6 +163,7 @@ test("one regression category missing while others skipped → single error", ()
 test("all optional categories with skip_reasons → all warnings, no errors", () => {
   const r = validateBaseline("general", minimalSteps(), ALL_SKIPPED);
   assert.deepEqual(r.errors, [], "all skipped should produce no errors");
+  assert.equal(r.warnings.length, 10, "10 skipped categories → 10 warnings");
   assert.ok(
     r.warnings.every((w) => /skip_reason/.test(w)),
     "every warning should mention skip_reason",
@@ -297,6 +301,104 @@ test("TDD skip_reason for bug type adapts message", () => {
   );
 });
 
+// ── Manual/review proof requirement ──────────────────────────────────────────
+
+test("general type without manual/review and no skip_reason → error", () => {
+  const steps: BaselineStepInput[] = [
+    step("Logic", "test"),
+    step("Wire", "integration_wiring", "integration_behavioral"),
+  ];
+  const { manual: _m, ...reasons } = ALL_SKIPPED;
+  const r = validateBaseline("general", steps, reasons);
+  assert.ok(
+    r.errors.some((e) => /manual|review/.test(e)),
+    "should require manual/review proof",
+  );
+});
+
+test("general type with manual proof present → no error", () => {
+  const steps: BaselineStepInput[] = [
+    step("Logic", "test"),
+    step("Wire", "integration_wiring", "integration_behavioral"),
+    { title: "Review", proofs: [{ category: "manual", predicate: { type: "manual" } }] },
+  ];
+  const r = validateBaseline("general", steps, ALL_SKIPPED);
+  assert.ok(!r.errors.some((e) => /manual|review/.test(e)), "manual proof present → no error");
+});
+
+test("general type with review proof present → no error", () => {
+  const steps: BaselineStepInput[] = [
+    step("Logic", "test"),
+    step("Wire", "integration_wiring", "integration_behavioral"),
+    { title: "Code review", proofs: [{ category: "manual", predicate: { type: "review" } }] },
+  ];
+  const r = validateBaseline("general", steps, ALL_SKIPPED);
+  assert.ok(!r.errors.some((e) => /manual|review/.test(e)), "review proof present → no error");
+});
+
+test("general type without manual/review but with skip_reason → warning, no error", () => {
+  const steps: BaselineStepInput[] = [
+    step("Logic", "test"),
+    step("Wire", "integration_wiring", "integration_behavioral"),
+  ];
+  const r = validateBaseline("general", steps, {
+    ...ALL_SKIPPED,
+    manual: "no human-verifiable behavior",
+  });
+  assert.ok(!r.errors.some((e) => /manual|review/.test(e)), "skip_reason for manual → no error");
+  assert.ok(
+    r.warnings.some((w) => /manual/.test(w)),
+    "should warn about skipped manual",
+  );
+});
+
+test("minimal type not affected by manual/review requirement", () => {
+  const steps: BaselineStepInput[] = [step("Something", "lint")];
+  const r = validateBaseline("minimal", steps);
+  assert.ok(!r.errors.some((e) => /manual|review/.test(e)), "minimal type should not require manual/review");
+});
+
+test("bug type without manual/review and no skip_reason → error", () => {
+  const steps: BaselineStepInput[] = [
+    step("Logic", "test"),
+    step("Wire", "integration_wiring", "integration_behavioral"),
+  ];
+  const { manual: _m, ...reasons } = ALL_SKIPPED;
+  const r = validateBaseline("bug", steps, reasons);
+  assert.ok(
+    r.errors.some((e) => /manual|review/.test(e)),
+    "bug type should require manual/review",
+  );
+});
+
+test("baselineLockError for general type without manual/review → non-null", () => {
+  const steps: BaselineStepInput[] = [
+    step("Logic", "test"),
+    step("Wire", "integration_wiring", "integration_behavioral"),
+  ];
+  const { manual: _m, ...reasons } = ALL_SKIPPED;
+  const err = baselineLockError("general", steps, reasons);
+  assert.ok(err, "should return lock error");
+  assert.match(err as string, /manual|review/, "error should mention manual/review");
+});
+
+test("baselineLockError for general type with manual proof → null", () => {
+  const steps: BaselineStepInput[] = [
+    step("Logic", "test"),
+    step("Wire", "integration_wiring", "integration_behavioral"),
+    { title: "Human check", proofs: [{ category: "manual", predicate: { type: "manual" } }] },
+  ];
+  assert.equal(baselineLockError("general", steps, ALL_SKIPPED), null, "should pass lock with manual proof");
+});
+
+test("baselineLockError for general type with skip_reason for manual → null", () => {
+  const steps: BaselineStepInput[] = [
+    step("Logic", "test"),
+    step("Wire", "integration_wiring", "integration_behavioral"),
+  ];
+  assert.equal(baselineLockError("general", steps, { ...ALL_SKIPPED, manual: "no UI to verify" }), null);
+});
+
 // ── Edge cases ──────────────────────────────────────────────────────────────
 
 test("empty steps array returns only baseline errors", () => {
@@ -318,8 +420,8 @@ test("null/undefined skipReasons handled gracefully", () => {
   const r = validateBaseline("general", minimalSteps(), undefined);
   assert.equal(
     r.errors.length,
-    9,
-    "undefined skipReasons should be treated as absent, producing 9 errors for missing optional categories",
+    10,
+    "undefined skipReasons should be treated as absent, producing 10 errors for missing optional categories",
   );
 });
 
@@ -352,7 +454,7 @@ test("unrecognized skipReasons keys do not cause errors", () => {
 
 test("bug type coverage: all optional categories absent errors apply to bug type", () => {
   const r = validateBaseline("bug", minimalSteps()); // NO skip_reasons
-  assert.equal(r.errors.length, 9, "bug type also enforces all 9 optional categories");
+  assert.equal(r.errors.length, 10, "bug type also enforces all 9 optional + manual/review categories");
 });
 
 // ── minimal type (F2 / #21) ────────────────────────────────────────────────

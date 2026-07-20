@@ -1,40 +1,17 @@
 import { exec } from "node:child_process";
-import { createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { CMD_TRUNCATION } from "./constants.js";
-import { executeProof } from "./evaluate-proof.js";
-import type { CheckResult, DodDocument, LeafResult, TaskNode } from "./types.js";
+import { executeProof, type ProofExecutionOptions } from "./evaluate-proof.js";
+import { computeProofFingerprint, flattenConcreteLeaves } from "./fingerprint.js";
+import type { Snapshot } from "./snapshot.js";
+import { createSnapshot, destroySnapshot } from "./snapshot.js";
+import type { Amendment, CheckResult, DodDocument, LeafResult, Predicate, TaskNode } from "./types.js";
 
 const execAsync = promisify(exec);
 
 const TIMEOUT_MS = 120_000;
 
 // ── Tree utilities
-
-/** Per-node helper: apply the flatten logic to a single node. */
-function flattenLeaf(node: TaskNode, index: number, parentPath?: string): { node: TaskNode; node_path: string }[] {
-  const currentPath = parentPath ? `${parentPath}.children.${index}` : `${index}`;
-  if (node.children && node.children.length > 0) {
-    return flattenConcreteLeaves(node.children, currentPath);
-  }
-  if (node.refinement === "concrete") {
-    return [{ node, node_path: currentPath }];
-  }
-  return [];
-}
-
-/**
- * Walk the TaskNode tree depth-first, collecting every concrete leaf
- * (refinement === "concrete", no children) with its dot-separated path.
- * Draft leaves and task groups are excluded.
- */
-export function flattenConcreteLeaves(nodes: TaskNode[], parentPath?: string): { node: TaskNode; node_path: string }[] {
-  const results: { node: TaskNode; node_path: string }[] = [];
-  for (let i = 0; i < nodes.length; i++) {
-    results.push(...flattenLeaf(nodes[i], i, parentPath));
-  }
-  return results;
-}
 
 /** Per-node helper: check if a single node is draft or has draft descendants. */
 function nodeDraftOrDescendant(node: TaskNode): boolean {
@@ -108,27 +85,6 @@ export function countDraftNodes(nodes: TaskNode[]): number {
 // ── Re-export parseSurvivors from evaluate-proof ──────────────────────────
 export { parseSurvivors } from "./evaluate-proof.js";
 
-// ── Proof-set fingerprint ─────────────────────────────────────────────
-
-/**
- * Proof-set fingerprint for tamper detection. Hashes every concrete leaf's
- * command|type|value (+ advisory and lower_is_better when present).
- * Draft nodes excluded — nothing to hash. Grows as leaves are refined.
- */
-export function computeProofFingerprint(roots: TaskNode[]): string {
-  const leaves = flattenConcreteLeaves(roots);
-  if (leaves.length === 0) return "";
-  const data = leaves
-    .map(({ node }) => {
-      let line = `${node.command}|${node.predicate?.type}|${node.predicate?.value ?? ""}`;
-      if (node.predicate?.lower_is_better !== undefined) line += `|lib:${node.predicate?.lower_is_better}`;
-      if (node.advisory !== undefined) line += `|adv:${node.advisory}`;
-      return line;
-    })
-    .join("\n");
-  return createHash("sha256").update(data).digest("hex").slice(0, 12);
-}
-
 // ── Command execution ─────────────────────────────────────────────────
 
 async function runCommand(
@@ -193,7 +149,7 @@ async function runCommand(
   }
 }
 
-// â”€â”€
+// ----
 
 // ── Carry-forward (scoped runs) ───────────────────────────────────────
 
@@ -308,20 +264,23 @@ async function executeInScopeLeaves(
   cwd: string,
   execFn: typeof runCommand,
   leafResults: LeafResult[],
-): Promise<{ anyRealFail: boolean; anyUnverified: boolean; manualUnverified: number }> {
+  proofOptions?: ProofExecutionOptions,
+): Promise<{ anyRealFail: boolean; anyUnverified: boolean; anyBaselineCaptured: boolean; manualUnverified: number }> {
   let anyRealFail = false;
   let anyUnverified = false;
+  let anyBaselineCaptured = false;
   let manualUnverified = 0;
   for (const { node, node_path } of inScope) {
-    const result = await executeProof(node, cwd, execFn);
+    const result = await executeProof(node, cwd, execFn, proofOptions);
     result.node_path = node_path;
     leafResults.push(result);
     if (result.status === "fail" && !node.advisory) anyRealFail = true;
     if (result.status === "skipped" && !node.advisory) anyUnverified = true;
+    if (result.status === "baseline_captured") anyBaselineCaptured = true;
     const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
     if (result.status === "skipped" && isManualOrReview) manualUnverified++;
   }
-  return { anyRealFail, anyUnverified, manualUnverified };
+  return { anyRealFail, anyUnverified, anyBaselineCaptured, manualUnverified };
 }
 
 /** Build amendment-count map from amendment history. */
@@ -344,6 +303,157 @@ function collectAmendmentCounts(
   return amendmentCounts;
 }
 
+/**
+ * Compare old vs new predicate fields to detect strength-reducing changes.
+ * Strength-reducing = loosening thresholds, widening tolerances, removing checks.
+ * Returns an array of human-readable descriptions of what was weakened.
+ */
+export function detectStrengthReduction(
+  oldPredicate: Predicate | undefined,
+  newPredicate: Predicate | undefined,
+): string[] {
+  const weakenings: string[] = [];
+  if (!(oldPredicate && newPredicate)) return weakenings;
+
+  // max_function_lines INCREASED
+  if (
+    oldPredicate.max_function_lines !== undefined &&
+    newPredicate.max_function_lines !== undefined &&
+    newPredicate.max_function_lines > oldPredicate.max_function_lines
+  ) {
+    weakenings.push(
+      `max_function_lines increased from ${oldPredicate.max_function_lines} to ${newPredicate.max_function_lines}`,
+    );
+  }
+
+  // max_file_lines INCREASED
+  if (
+    oldPredicate.max_file_lines !== undefined &&
+    newPredicate.max_file_lines !== undefined &&
+    newPredicate.max_file_lines > oldPredicate.max_file_lines
+  ) {
+    weakenings.push(`max_file_lines increased from ${oldPredicate.max_file_lines} to ${newPredicate.max_file_lines}`);
+  }
+
+  // max_line_length INCREASED
+  if (
+    oldPredicate.max_line_length !== undefined &&
+    newPredicate.max_line_length !== undefined &&
+    newPredicate.max_line_length > oldPredicate.max_line_length
+  ) {
+    weakenings.push(
+      `max_line_length increased from ${oldPredicate.max_line_length} to ${newPredicate.max_line_length}`,
+    );
+  }
+
+  // max_complexity INCREASED
+  if (
+    oldPredicate.max_complexity !== undefined &&
+    newPredicate.max_complexity !== undefined &&
+    newPredicate.max_complexity > oldPredicate.max_complexity
+  ) {
+    weakenings.push(`max_complexity increased from ${oldPredicate.max_complexity} to ${newPredicate.max_complexity}`);
+  }
+
+  // min_replacement_ratio DECREASED
+  if (
+    oldPredicate.min_replacement_ratio !== undefined &&
+    newPredicate.min_replacement_ratio !== undefined &&
+    newPredicate.min_replacement_ratio < oldPredicate.min_replacement_ratio
+  ) {
+    weakenings.push(
+      `min_replacement_ratio decreased from ${oldPredicate.min_replacement_ratio} to ${newPredicate.min_replacement_ratio}`,
+    );
+  }
+
+  // timeout_ms INCREASED (more time = easier to pass)
+  if (
+    oldPredicate.timeout_ms !== undefined &&
+    newPredicate.timeout_ms !== undefined &&
+    newPredicate.timeout_ms > oldPredicate.timeout_ms
+  ) {
+    weakenings.push(`timeout_ms increased from ${oldPredicate.timeout_ms} to ${newPredicate.timeout_ms}`);
+  }
+
+  // extract REMOVED (was present, now absent)
+  if (oldPredicate.extract !== undefined && newPredicate.extract === undefined) {
+    weakenings.push("extract pattern removed");
+  }
+
+  // lower_is_better changed from false to true (flips comparison direction)
+  if (oldPredicate.lower_is_better === false && newPredicate.lower_is_better === true) {
+    weakenings.push("lower_is_better changed from false to true (flips comparison direction)");
+  }
+
+  // value on exit_code changed from 0 to non-zero
+  if (
+    oldPredicate.type === "exit_code" &&
+    newPredicate.type === "exit_code" &&
+    oldPredicate.value === 0 &&
+    newPredicate.value !== undefined &&
+    newPredicate.value !== 0
+  ) {
+    weakenings.push(`exit_code value changed from 0 to ${String(newPredicate.value)}`);
+  }
+
+  // value on output_contains / output_matches shortened or removed
+  if (
+    (oldPredicate.type === "output_contains" || oldPredicate.type === "output_matches") &&
+    oldPredicate.type === newPredicate.type
+  ) {
+    if (typeof oldPredicate.value === "string" && typeof newPredicate.value === "string") {
+      if (newPredicate.value.length < oldPredicate.value.length) {
+        weakenings.push(
+          `${oldPredicate.type} value shortened (length ${oldPredicate.value.length} → ${newPredicate.value.length})`,
+        );
+      }
+    }
+    if (oldPredicate.value !== undefined && newPredicate.value === undefined) {
+      weakenings.push(`${oldPredicate.type} value removed`);
+    }
+  }
+
+  return weakenings;
+}
+
+/**
+ * Count how many times a specific node path has been amended/modified.
+ * Excludes "added" and "removed" actions (those are structural, not tuning).
+ */
+export function countNodeAmendments(amendments: Amendment[], nodePath: string): number {
+  return amendments.filter((a) => a.node_path === nodePath && (a.action === "modified" || a.action === "refined"))
+    .length;
+}
+
+/**
+ * Gate check before applying an amendment. Returns null when the amendment
+ * is allowed, or an error message string when it must be rejected.
+ *
+ * Two conditions can block the amendment:
+ * 1. Strength-reducing changes detected (requires justification regardless of count).
+ * 2. Amendment count >= 3 (requires justification for excessive tuning).
+ */
+export function checkAmendGate(
+  amendments: Amendment[],
+  resolvedPath: string,
+  oldPredicate: Predicate | undefined,
+  newPredicate: Predicate | undefined,
+  amendJustification?: string,
+): string | null {
+  const amendCount = countNodeAmendments(amendments, resolvedPath);
+  const weakenings = newPredicate ? detectStrengthReduction(oldPredicate, newPredicate) : [];
+
+  if (!amendJustification && weakenings.length > 0) {
+    return `Strength-reducing changes detected: ${weakenings.join("; ")}. Provide amend_justification explaining why this weakening is necessary.`;
+  }
+
+  if (amendCount >= 3 && !amendJustification) {
+    return `This node has been amended ${amendCount} times. Provide amend_justification explaining why further amendments are needed.`;
+  }
+
+  return null;
+}
+
 // ── Main entry point ──────────────────────────────────────────────────
 
 export interface CheckOptions {
@@ -364,15 +474,69 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
 
   carryForwardOutOfScopeLeaves(targetPath, outOfScope, doc.roots, leafResults);
 
-  const { anyRealFail, anyUnverified, manualUnverified } = await executeInScopeLeaves(
-    inScope,
-    cwd,
-    opts?.execFn ?? runCommand,
-    leafResults,
-  );
+  // ── VCS state capture & snapshot (full checks only) ────────────
+  let checkedCommit: string | undefined;
+  let checkedDirty: boolean | undefined;
+  let isGitRepo: boolean | undefined;
+  let snapshot: Snapshot | undefined;
+  let snapshotFallbackNote: string | undefined;
 
   if (!targetPath) {
-    addDraftLeafResults(doc.roots, "", leafResults);
+    try {
+      const { stdout: commitOut } = await execAsync("git rev-parse HEAD", { cwd });
+      checkedCommit = commitOut.trim();
+      isGitRepo = true;
+      const { stdout: statusOut } = await execAsync("git status --porcelain", { cwd });
+      checkedDirty = statusOut.trim().length > 0;
+    } catch {
+      isGitRepo = false;
+    }
+
+    // Create snapshot for isolated proof execution (skip when dirty + allow_dirty_pass)
+    if (checkedCommit && !(checkedDirty && doc.allow_dirty_pass)) {
+      try {
+        snapshot = await createSnapshot(cwd, checkedCommit);
+      } catch {
+        snapshotFallbackNote = "could not create isolated snapshot — proofs ran in-place against live tree";
+      }
+    }
+  }
+
+  const effectiveCwd = snapshot?.cwd ?? cwd;
+  let anyRealFail = false;
+  let anyUnverified = false;
+  let anyBaselineCaptured = false;
+  let manualUnverified = 0;
+
+  try {
+    const proofOpts: ProofExecutionOptions = {
+      baseCommit: checkedCommit,
+      skipReasons: doc.skip_reasons,
+    };
+    const result = await executeInScopeLeaves(
+      inScope,
+      effectiveCwd,
+      opts?.execFn ?? runCommand,
+      leafResults,
+      proofOpts,
+    );
+    anyRealFail = result.anyRealFail;
+    anyUnverified = result.anyUnverified;
+    anyBaselineCaptured = result.anyBaselineCaptured;
+    manualUnverified = result.manualUnverified;
+
+    if (!targetPath) {
+      addDraftLeafResults(doc.roots, "", leafResults);
+    }
+  } finally {
+    if (snapshot) {
+      await destroySnapshot(snapshot);
+    }
+  }
+
+  // Track fallback note for guidance lines
+  if (!targetPath && checkedDirty && doc.allow_dirty_pass && !snapshotFallbackNote) {
+    snapshotFallbackNote = "dirty tree — proofs ran in-place against uncommitted state";
   }
 
   const amendmentCounts = collectAmendmentCounts(doc.amendments, doc.roots);
@@ -394,7 +558,7 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
   const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
 
   // Overall verdict
-  const overall: CheckResult["overall"] = tampered
+  let overall: CheckResult["overall"] = tampered
     ? "fail"
     : targetPath
       ? "incomplete"
@@ -402,9 +566,16 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
         ? "incomplete"
         : anyRealFail
           ? "fail"
-          : anyUnverified
+          : anyBaselineCaptured
             ? "incomplete"
-            : "pass";
+            : anyUnverified
+              ? "incomplete"
+              : "pass";
+
+  // Downgrade PASS when tree is dirty (strict mode)
+  if (overall === "pass" && checkedDirty && !doc.allow_dirty_pass) {
+    overall = "pass_dirty";
+  }
 
   const concreteTotal = leafResults.filter((r) => r.status !== "draft").length;
   const passCount = leafResults.filter((r) => r.status === "pass").length;
@@ -415,6 +586,10 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
 
   // Build guidance lines
   const guidance: string[] = [];
+
+  if (snapshotFallbackNote) {
+    guidance.push(snapshotFallbackNote);
+  }
 
   if (blockedByManuals) {
     guidance.push(
@@ -460,6 +635,9 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
     summary_mode: opts?.summary === true ? true : undefined,
     ...(targetPath ? { scoped: true, ran_node_path: targetPath } : {}),
     ...(tampered ? { tampered: true } : {}),
+    checked_commit: checkedCommit,
+    checked_dirty: checkedDirty,
+    is_git_repo: isGitRepo,
   };
 }
 

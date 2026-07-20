@@ -3,8 +3,9 @@
  */
 
 import { writeMarkdown } from "../author.js";
-import { computeProofFingerprint, findNodeByPath, isExecutablePredicate } from "../checker.js";
+import { findNodeByPath, isExecutablePredicate } from "../checker.js";
 import { findMissingTools } from "../command-check.js";
+import { computeProofFingerprint } from "../fingerprint.js";
 import * as store from "../store.js";
 import { findNodeById, formatMissingTools } from "../tree-utils.js";
 import type { Predicate, ProofCategory, TaskNode } from "../types.js";

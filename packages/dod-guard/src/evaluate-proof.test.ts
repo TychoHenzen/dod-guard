@@ -1,7 +1,7 @@
 import * as assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ExecFn, RunResult } from "./evaluate-proof.js";
-import { executeProof, parseSurvivors } from "./evaluate-proof.js";
+import { executeProof, parseSurvivors, resolveAnalysisTargets } from "./evaluate-proof.js";
 import type { TaskNode } from "./types.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -221,27 +221,26 @@ describe("executeProof - mutation", () => {
 // ── executeProof — regression ───────────────────────────────────────────
 
 describe("executeProof - regression", () => {
-  it("captures baseline on first run and passes", async () => {
+  it("captures baseline on first run and returns baseline_captured", async () => {
     const node = concreteNode({ predicate: { type: "regression" } });
     const result = await executeProof(node, CWD, fakeExec(0, "metric: 100 ms"));
-    assert.equal(result.status, "pass");
+    assert.equal(result.status, "baseline_captured");
     assert.equal(node.baseline_value, 100);
     assert.ok(node.baseline_captured_at);
     assert.match(result.error ?? "", /N0=100/);
   });
 
-  it("rejects GREEN without prior RED baseline re-capture (seen_failing guard)", async () => {
-    // Regression baseline_captured_at is set — this is NOT seen_failing.
+  it("captures baseline on first run with exit 0", async () => {
     // The regression handler doesn't check seen_failing; it just captures
     // baseline on first run. This test verifies that baseline capture works
-    // even with exit 0 on first run (the "first run" is the baseline).
+    // even with exit 0 on first run.
     const node = concreteNode({ predicate: { type: "regression" } });
     const result = await executeProof(node, CWD, fakeExec(0, "42"));
-    assert.equal(result.status, "pass");
+    assert.equal(result.status, "baseline_captured");
     assert.equal(node.baseline_value, 42);
   });
 
-  it("passes on subsequent run when metric stays within tolerance (lower_is_better)", async () => {
+  it("returns pass on subsequent run when metric stays within tolerance (lower_is_better)", async () => {
     const node = concreteNode({
       predicate: { type: "regression", value: 0.1, lower_is_better: true },
     });
@@ -308,13 +307,25 @@ describe("executeProof - regression", () => {
     assert.match(result.error ?? "", /no metric/);
   });
 
-  it("uses extract regex to find the metric", async () => {
+  it("uses extract regex to find the metric (first run → baseline_captured)", async () => {
     const node = concreteNode({
       predicate: { type: "regression", extract: "coverage:\\s*([\\d.]+)%" },
     });
     const result = await executeProof(node, CWD, fakeExec(0, "coverage: 87.5% of lines, total: 200"));
-    assert.equal(result.status, "pass");
+    assert.equal(result.status, "baseline_captured");
     assert.equal(node.baseline_value, 87.5);
+  });
+
+  it("returns pass on subsequent run after baseline was captured", async () => {
+    const node = concreteNode({ predicate: { type: "regression", value: 0.1, lower_is_better: true } });
+    // First run — captures baseline
+    const r1 = await executeProof(node, CWD, fakeExec(0, "metric: 100 ms"));
+    assert.equal(r1.status, "baseline_captured");
+    assert.equal(node.baseline_value, 100);
+
+    // Second run — within 10% tolerance, passes
+    const r2 = await executeProof(node, CWD, fakeExec(0, "105 ms"));
+    assert.equal(r2.status, "pass");
   });
 });
 
@@ -557,5 +568,84 @@ describe("executeProof - edge cases", () => {
     // exit 1 → NOT 1 is false → fail
     const result = await executeProof(node, CWD, fakeExec(1, ""));
     assert.equal(result.status, "fail");
+  });
+});
+
+// ── resolveAnalysisTargets ────────────────────────────────────────────────
+
+describe("resolveAnalysisTargets", () => {
+  it("returns targets unchanged when no baseCommit (not a git repo)", async () => {
+    const result = await resolveAnalysisTargets("npx biome check src/foo.ts", CWD, undefined);
+    assert.equal(result.error, undefined);
+    assert.ok(result.targets.length > 0);
+  });
+
+  it("returns targets unchanged when changedFiles is empty (first commit / snapshot)", async () => {
+    const result = await resolveAnalysisTargets("npx biome check src/foo.ts", CWD, "HEAD", undefined, []);
+    assert.equal(result.error, undefined);
+    assert.ok(result.targets.length > 0);
+  });
+
+  it("returns error when target does not overlap changed files", async () => {
+    const result = await resolveAnalysisTargets("npx biome check src/foo.ts", CWD, "HEAD", undefined, [
+      "src/bar.ts",
+      "src/baz.ts",
+    ]);
+    assert.ok(result.error);
+    assert.match(result.error ?? "", /analyzer target does not overlap changed files/);
+    assert.match(result.error ?? "", /src\/foo\.ts/);
+  });
+
+  it("passes when target is in changed files list (exact path)", async () => {
+    const result = await resolveAnalysisTargets("npx biome check src/foo.ts", CWD, "HEAD", undefined, [
+      "src/foo.ts",
+      "src/bar.ts",
+    ]);
+    assert.equal(result.error, undefined);
+    assert.equal(result.targets.length, 1);
+    assert.equal(result.targets[0], "src/foo.ts");
+  });
+
+  it("passes when target basename matches changed file (different prefix)", async () => {
+    const result = await resolveAnalysisTargets("npx biome check foo.ts", CWD, "HEAD", undefined, ["src/foo.ts"]);
+    assert.equal(result.error, undefined);
+  });
+
+  it("uses targetsOverride and skips intersection check", async () => {
+    const result = await resolveAnalysisTargets(
+      "npx biome check src/foo.ts",
+      CWD,
+      "HEAD",
+      ["src/bar.ts"],
+      ["src/bar.ts"],
+    );
+    assert.equal(result.error, undefined);
+    assert.deepEqual(result.targets, ["src/bar.ts"]);
+  });
+
+  it("ignores changed files passed and returns override targets", async () => {
+    const result = await resolveAnalysisTargets(
+      "npx biome check src/foo.ts",
+      CWD,
+      "HEAD",
+      ["src/override.ts"],
+      ["src/bar.ts"], // This doesn't matter — override takes priority
+    );
+    assert.deepEqual(result.targets, ["src/override.ts"]);
+  });
+
+  it("returns error on multiple targets none overlapping", async () => {
+    const result = await resolveAnalysisTargets("npx biome check src/a.ts src/b.ts", CWD, "HEAD", undefined, [
+      "src/c.ts",
+    ]);
+    assert.ok(result.error);
+    assert.match(result.error ?? "", /analyzer target does not overlap/);
+  });
+
+  it("matches prefix-containing path (target is subpath of changed)", async () => {
+    const result = await resolveAnalysisTargets("npx biome check src/foo.ts", CWD, "HEAD", undefined, [
+      "some/prefix/src/foo.ts",
+    ]);
+    assert.equal(result.error, undefined);
   });
 });

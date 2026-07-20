@@ -3,8 +3,9 @@
  */
 import { writeMarkdown } from "../author.js";
 import { baselineLockError } from "../baseline.js";
-import { computeProofFingerprint, countDraftNodes, findNodeByPath, isExecutablePredicate } from "../checker.js";
-import { findMissingTools, isPlaceholderCommand } from "../command-check.js";
+import { countDraftNodes, findNodeByPath, isExecutablePredicate } from "../checker.js";
+import { findMissingTools, isPlaceholderCommand, validatePositiveEvidence } from "../command-check.js";
+import { computeProofFingerprint } from "../fingerprint.js";
 import * as store from "../store.js";
 import { extractBaselineSteps, findNodeById, formatMissingTools } from "../tree-utils.js";
 export async function handleDodRefine(params) {
@@ -44,6 +45,11 @@ export async function handleDodRefine(params) {
             if (missing.length > 0) {
                 return formatMissingTools(missing);
             }
+            // Positive evidence gate: behavioral categories must reference changed files,
+            // use a tdd predicate, or have a skip_reason.
+            const evidenceErr = await validatePositiveEvidence(command, category, doc.cwd, pred.type, doc.skip_reasons?.[category]);
+            if (evidenceErr)
+                return evidenceErr;
         }
         node.refinement = "concrete";
         node.command = command;

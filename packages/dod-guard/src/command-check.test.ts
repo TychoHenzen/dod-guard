@@ -9,6 +9,7 @@ import {
   isPlaceholderCommand,
   suggestionFor,
   usesNodeEvalRequire,
+  validatePositiveEvidence,
 } from "./command-check.js";
 
 test("extracts a simple command", () => {
@@ -261,4 +262,123 @@ test("expandGlobsInCommand expands EVERY occurrence of a repeated dir glob (Wind
   const r = expandGlobsInCommand(cmd, process.cwd());
   assert.ok(r.expanded_count > 0, "at least one dist subdir should resolve");
   assert.ok(!r.expanded.includes("dist/*/"), "no unexpanded glob token should remain");
+});
+
+// ── validatePositiveEvidence (S05) ───────────────────────────────────────────
+
+test("validatePositiveEvidence: behavioral category with echo PASS (no evidence) → REJECTED", async () => {
+  const err = await validatePositiveEvidence("echo PASS", "test", process.cwd(), "exit_code", undefined, []);
+  assert.ok(err !== null, "should return error for no-op command with no changed files");
+  assert.ok(err?.startsWith("No positive evidence:"), "error should explain what's missing");
+});
+
+test("validatePositiveEvidence: behavioral category with changed-file reference → ACCEPTED", async () => {
+  const err = await validatePositiveEvidence(
+    "node --test dist/foo.test.js",
+    "test",
+    process.cwd(),
+    "exit_code",
+    undefined,
+    ["src/foo.ts", "dist/foo.test.js"],
+  );
+  assert.equal(err, null, "command referencing a changed file should pass");
+});
+
+test("validatePositiveEvidence: behavioral category with tdd predicate → ACCEPTED", async () => {
+  const err = await validatePositiveEvidence(
+    "node --test dist/foo.test.js",
+    "test",
+    process.cwd(),
+    "tdd",
+    undefined,
+    [],
+  );
+  assert.equal(err, null, "tdd predicate should pass even with no changed files");
+});
+
+test("validatePositiveEvidence: behavioral category with skip_reason → ACCEPTED", async () => {
+  const err = await validatePositiveEvidence(
+    "echo PASS",
+    "integration_behavioral",
+    process.cwd(),
+    "exit_code",
+    "Verified manually in separate review session",
+    [],
+  );
+  assert.equal(err, null, "skip_reason should pass even with no-op command and no changed files");
+});
+
+test("validatePositiveEvidence: non-behavioral categories return null (unaffected)", async () => {
+  for (const cat of [
+    "lint",
+    "format",
+    "structure",
+    "mutation",
+    "coverage",
+    "performance",
+    "tdd",
+    "manual",
+    "other",
+  ] as const) {
+    const err = await validatePositiveEvidence("echo PASS", cat, process.cwd(), "exit_code", undefined, []);
+    assert.equal(err, null, `${cat} should not require positive evidence`);
+  }
+});
+
+test("validatePositiveEvidence: integration_wiring with no evidence → REJECTED", async () => {
+  const err = await validatePositiveEvidence(
+    "echo ok",
+    "integration_wiring",
+    process.cwd(),
+    "exit_code",
+    undefined,
+    [],
+  );
+  assert.ok(err !== null, "integration_wiring also requires evidence");
+});
+
+test("validatePositiveEvidence: basename match of changed file → ACCEPTED", async () => {
+  // Command references dist/foo.test.js but changed file is at a different path
+  // with the same basename
+  const err = await validatePositiveEvidence(
+    "node --test dist/foo.spec.js",
+    "test",
+    process.cwd(),
+    "exit_code",
+    undefined,
+    ["src/foo.spec.js"],
+  );
+  assert.equal(err, null, "basename match of changed file should pass");
+});
+
+test("validatePositiveEvidence: non-matching command with changed files available → REJECTED", async () => {
+  const err = await validatePositiveEvidence("npx biome check", "test", process.cwd(), "exit_code", undefined, [
+    "src/foo.ts",
+  ]);
+  assert.ok(err !== null, "command that doesn't reference any changed file should fail");
+});
+
+test("validatePositiveEvidence: command substring matches changed file path → ACCEPTED", async () => {
+  // The command includes the exact path of a changed file
+  const err = await validatePositiveEvidence(
+    'findstr /C:"export" src/bar.ts',
+    "integration_behavioral",
+    process.cwd(),
+    "exit_code",
+    undefined,
+    ["src/bar.ts"],
+  );
+  assert.equal(err, null, "command containing exact changed file path should pass");
+});
+
+test("validatePositiveEvidence: empty changed files list with no tdd/skip → REJECTED", async () => {
+  const err = await validatePositiveEvidence(
+    "node --test dist/foo.test.js",
+    "test",
+    process.cwd(),
+    "exit_code",
+    undefined,
+    [],
+  );
+  assert.ok(err !== null, "empty changed files list should fail");
 });

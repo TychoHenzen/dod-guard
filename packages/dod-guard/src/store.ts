@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { computeProofFingerprint } from "./fingerprint.js";
 import type { DodDocument, TaskNode } from "./types.js";
 
 function getStoreDir(): string {
@@ -147,22 +148,8 @@ export async function migrateDoc(doc: DodDocument & { steps?: LegacyStep[]; lock
   delete (doc as any).steps;
   delete (doc as any).locked;
 
-  // Compute fingerprint from new roots inline (avoids circular dependency on checker.js)
-  const leafLines: string[] = [];
-  function walk(nodes: TaskNode[]) {
-    for (const n of nodes) {
-      if (n.children) walk(n.children);
-      else if (n.refinement === "concrete" && n.command) {
-        leafLines.push(`${n.command}|${n.predicate?.type ?? ""}|${n.predicate?.value ?? ""}|${n.advisory ?? false}`);
-      }
-    }
-  }
-  walk(doc.roots);
-  if (leafLines.length > 0) {
-    const hash = crypto.createHash("sha256");
-    for (const line of leafLines.sort()) hash.update(line);
-    doc.proof_fingerprint = hash.digest("hex");
-  }
+  // Compute fingerprint using canonical implementation
+  doc.proof_fingerprint = computeProofFingerprint(doc.roots);
 
   await save(doc);
   return true;

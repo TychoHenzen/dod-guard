@@ -1078,3 +1078,81 @@ describe("hManual edge cases", () => {
     assert.equal(result.status, "pass");
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════════
+// analysis target overlap via executeProof options
+// ══════════════════════════════════════════════════════════════════════════
+
+describe("analysis-target overlap via executeProof options", () => {
+  beforeEachReset();
+
+  it("assertions predicate with skipReason skips overlap check and proceeds to analysis", async () => {
+    analyseAssertionsMock.mock.mockImplementation(() => ({
+      total: 5,
+      trivial: 1,
+      nonTrivial: 4,
+      files: ["test/foo.test.ts"],
+      perFile: [{ file: "test/foo.test.ts", total: 5, trivial: 1 }],
+    }));
+    const node = concreteNode({
+      predicate: { type: "assertions", value: 3 },
+      category: "test",
+    });
+    const result = await executeProof(node, CWD, fakeExec(0, ""), {
+      skipReasons: { test: "tests not applicable" },
+    });
+    assert.equal(result.status, "pass");
+    assert.match(result.error ?? "", /assertions:/);
+  });
+
+  it("observability predicate with skipReason skips overlap check", async () => {
+    analyseObservabilityMock.mock.mockImplementation(() => obsReport());
+    const node = concreteNode({
+      predicate: { type: "observability", value: 4 },
+      category: "observability",
+    });
+    const result = await executeProof(node, CWD, fakeExec(0, ""), {
+      skipReasons: { observability: "not applicable" },
+    });
+    assert.equal(result.status, "pass");
+    assert.match(result.error ?? "", /observability:/);
+  });
+
+  it("brevity predicate with no baseCommit (not a git repo) proceeds normally", async () => {
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([]));
+    const node = concreteNode({
+      predicate: { type: "brevity", value: 0 },
+      category: "brevity",
+    });
+    const result = await executeProof(node, CWD, fakeExec(0, ""), {
+      baseCommit: undefined,
+    });
+    assert.equal(result.status, "pass");
+    assert.match(result.error ?? "", /brevity:/);
+  });
+
+  it("non-static-analysis predicate (lint) is unaffected by options", async () => {
+    const node = concreteNode({
+      predicate: { type: "exit_code", value: 0 },
+      command: "exit 0",
+    });
+    const result = await executeProof(node, CWD, fakeExec(0, ""), {
+      baseCommit: "HEAD",
+      skipReasons: { lint: "n/a" },
+    });
+    assert.equal(result.status, "pass");
+  });
+
+  it("brevity decomposed handler with skipReason skips overlap check", async () => {
+    analyseBrevityMock.mock.mockImplementation(() => brevityReport([]));
+    const node = concreteNode({
+      predicate: { type: "line_length", value: 0 },
+      category: "brevity",
+    });
+    const result = await executeProof(node, CWD, fakeExec(0, ""), {
+      skipReasons: { brevity: "not applicable" },
+    });
+    assert.equal(result.status, "pass");
+    assert.match(result.error ?? "", /line_length:/);
+  });
+});

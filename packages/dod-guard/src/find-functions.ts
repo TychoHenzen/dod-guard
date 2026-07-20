@@ -1,5 +1,3 @@
-console.debug("find-functions: module loaded", { pid: process.pid });
-
 // ── Function detection + cohesion analysis for brevity.ts ─────────────────
 
 export interface FunctionRange {

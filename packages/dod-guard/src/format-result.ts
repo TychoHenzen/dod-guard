@@ -1,7 +1,7 @@
 import type { CheckResult } from "./types.js";
 
 export function formatCheckResult(result: CheckResult): string {
-  console.debug("format-result: formatCheckResult", { overall: result.overall });
+  if (process.env.DOD_DEBUG) console.debug("format-result: formatCheckResult", { overall: result.overall });
   const l: string[] = [];
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
   l.push("");
@@ -61,16 +61,19 @@ export function formatCheckResult(result: CheckResult): string {
     const failCount = leaves.filter((p) => p.status === "fail").length;
     const skipCount = leaves.filter((p) => p.status === "skipped").length;
     const draftCount = leaves.filter((p) => p.status === "draft").length;
+    const baselineCount = leaves.filter((p) => p.status === "baseline_captured").length;
     const hasFail = failCount > 0;
     const hasDraft = draftCount > 0;
-    const icon = hasFail ? "❌" : hasDraft ? "📝" : "✅";
-    const status = hasFail ? "FAIL" : hasDraft ? "INCOMPLETE" : "PASS";
+    const hasBaseline = baselineCount > 0;
+    const icon = hasFail ? "❌" : hasBaseline ? "📊" : hasDraft ? "📝" : "✅";
+    const status = hasFail ? "FAIL" : hasBaseline ? "INCOMPLETE" : hasDraft ? "INCOMPLETE" : "PASS";
     const rootTitle = leaves[0]?.title ?? `Root ${rootIdx}`;
     const countStr = [
       passCount > 0 ? `${passCount} pass` : "",
       failCount > 0 ? `${failCount} fail` : "",
       skipCount > 0 ? `${skipCount} skipped` : "",
       draftCount > 0 ? `${draftCount} draft` : "",
+      baselineCount > 0 ? `${baselineCount} baseline` : "",
     ]
       .filter(Boolean)
       .join(", ");
@@ -94,6 +97,10 @@ export function formatCheckResult(result: CheckResult): string {
         }
       } else if (leaf.status === "skipped") {
         l.push(`${indent}⏳ \`${leaf.command}\` — not verified this run${leaf.output ? `: ${leaf.output}` : ""}`);
+      } else if (leaf.status === "baseline_captured") {
+        l.push(
+          `${indent}📊 \`${leaf.command}\` — baseline captured (N0=${leaf.error?.match(/N0=([\d.]+)/)?.[1] ?? "?"}). Re-run to compare.`,
+        );
       } else {
         const isManual = leaf.command === "manual";
         if (isManual) {
@@ -119,6 +126,15 @@ export function formatCheckResult(result: CheckResult): string {
   l.push(`**Summary:** ${result.summary}`);
   l.push(`**Timestamp:** ${result.timestamp}`);
   l.push(`**Proof fingerprint:** \`${result.proof_fingerprint}\``);
+
+  if (result.is_git_repo !== undefined) {
+    if (result.is_git_repo && result.checked_commit) {
+      const dirtyTag = result.checked_dirty ? " (DIRTY)" : " (clean)";
+      l.push(`**Git state:** \`${result.checked_commit.slice(0, 12)}\`${dirtyTag}`);
+    } else if (!result.is_git_repo) {
+      l.push(`**Git state:** not a git repository`);
+    }
+  }
 
   return l.join("\n");
 }

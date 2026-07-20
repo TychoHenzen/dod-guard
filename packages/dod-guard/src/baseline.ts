@@ -197,7 +197,7 @@ export function validateBaseline(
   steps: BaselineStepInput[],
   skipReasons?: Record<string, string>,
 ): BaselineReport {
-  console.debug("baseline: validateBaseline", { type, stepCount: steps.length });
+  if (process.env.DOD_DEBUG) console.debug("baseline: validateBaseline", { type, stepCount: steps.length });
   const present = collectPresent(steps);
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -208,6 +208,24 @@ export function validateBaseline(
     const optResult = checkOptional(present, skipReasons);
     errors.push(...optResult.errors);
     warnings.push(...optResult.warnings);
+
+    // Manual/review proof requirement: at least one concrete leaf must have a
+    // manual or review predicate, or provide a skip_reason for "manual".
+    const hasManualReview = steps.some((s) =>
+      s.proofs.some((p) => p.predicate.type === "manual" || p.predicate.type === "review"),
+    );
+    if (!hasManualReview) {
+      const reason = skipReasons?.manual;
+      if (reason) {
+        warnings.push(
+          `⚠ "manual" omitted (skip_reason: "${reason}"). At least one manual or review proof is expected for ${type} DoDs.`,
+        );
+      } else {
+        errors.push(
+          `At least one manual or review proof is required for type "${type}". Add a manual/review proof or provide a skip_reason.`,
+        );
+      }
+    }
   }
 
   warnings.push(...checkStrengthOnly(steps));

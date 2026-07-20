@@ -3,15 +3,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { formatCheckResult, updateDocFromCheckResult, writeMarkdown } from "./author.js";
-import {
-  checkDocument,
-  computeProofFingerprint,
-  countDraftNodes,
-  findNodeByPath,
-  flattenConcreteLeaves,
-  isExecutablePredicate,
-} from "./checker.js";
-import { findMissingTools, isPlaceholderCommand } from "./command-check.js";
+import { checkAmendGate, checkDocument, countDraftNodes, findNodeByPath, isExecutablePredicate } from "./checker.js";
+import { findMissingTools, isPlaceholderCommand, validatePositiveEvidence } from "./command-check.js";
+import { computeProofFingerprint, flattenConcreteLeaves } from "./fingerprint.js";
 import { type Confirmer, type ManualAnswer, resolveManual } from "./manual.js";
 import { playJingle } from "./notify.js";
 import { parseMarkdown } from "./parser.js";
@@ -89,6 +83,11 @@ function manualInstructions(node: TaskNode): string {
       "",
       "Run `/code-review` (fresh context) against the current diff vs the DoD requirements.",
       "Confirm PASS only if it reports no gaps affecting correctness or the stated requirements.",
+      "",
+      "After running the review, you MUST provide:",
+      "1. review_verdict: Paste the full review output/verdict text.",
+      "2. reviewer: Your name or identifier.",
+      "A bare 'yes' without concrete attestation will be rejected.",
     );
   } else {
     lines.push("", "Confirm PASS only after you have personally verified this works as described.");
@@ -112,25 +111,40 @@ function buildConfirmer(): Confirmer {
     const caps = server.server.getClientCapabilities();
     if (caps?.elicitation) {
       try {
+        const baseProperties: Record<string, any> = {
+          result: {
+            type: "string",
+            enum: ["pass", "fail"],
+            enumNames: ["Verified works as expected", "Not verified does not work"],
+            description: "Did the manual verification pass?",
+          },
+          note: {
+            type: "string",
+            maxLength: 500,
+            description: "Optional note about what you observed",
+          },
+        };
+        const requiredFields: string[] = ["result"];
+
+        if (isReview) {
+          baseProperties.review_verdict = {
+            type: "string",
+            description: "Paste the review output/verdict text",
+          };
+          baseProperties.reviewer = {
+            type: "string",
+            description: "Who performed the review (name or identifier)",
+          };
+          requiredFields.push("review_verdict", "reviewer");
+        }
+
         const result = await server.server.elicitInput(
           {
             message: `${promptLabel}:\n\n${instructions}`,
             requestedSchema: {
               type: "object",
-              properties: {
-                result: {
-                  type: "string",
-                  enum: ["pass", "fail"],
-                  enumNames: ["Verified works as expected", "Not verified does not work"],
-                  description: "Did the manual verification pass?",
-                },
-                note: {
-                  type: "string",
-                  maxLength: 500,
-                  description: "Optional note about what you observed",
-                },
-              },
-              required: ["result"],
+              properties: baseProperties,
+              required: requiredFields,
             },
           },
           { timeout: ELICITATION_MAX_WAIT_MS },
@@ -139,7 +153,16 @@ function buildConfirmer(): Confirmer {
         if (result.action === "accept") {
           const passed = result.content?.result === "pass";
           const note = typeof result.content?.note === "string" ? result.content.note : undefined;
-          return { answer: passed ? "pass" : "fail", note, channel: "elicitation" };
+          const reviewVerdict =
+            typeof result.content?.review_verdict === "string" ? result.content.review_verdict : undefined;
+          const reviewer = typeof result.content?.reviewer === "string" ? result.content.reviewer : undefined;
+          return {
+            answer: passed ? "pass" : "fail",
+            note,
+            channel: "elicitation",
+            review_verdict: reviewVerdict,
+            reviewer,
+          };
         }
         return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
       } catch (err: unknown) {
@@ -151,6 +174,39 @@ function buildConfirmer(): Confirmer {
     }
 
     return { answer: "fail", note: "no verification channel available on this host", channel: "elicitation" };
+  };
+}
+
+// ── Import gate helper ──────────────────────────────────────────────
+
+/**
+ * Check whether an imported DoD needs human confirmation before execution.
+ * Returns a gate info object when the doc is imported and unconfirmed,
+ * or { blocked: false } when execution can proceed freely.
+ */
+export function buildImportGateInfo(doc: DodDocument):
+  | {
+      blocked: true;
+      executableCount: number;
+      commandList: { title: string; command: string; description: string }[];
+    }
+  | { blocked: false } {
+  if (!doc.import_source || doc.execution_confirmed !== false) {
+    return { blocked: false };
+  }
+
+  const executableLeaves = flattenConcreteLeaves(doc.roots).filter(
+    ({ node }) => node.command && node.predicate && isExecutablePredicate(node.predicate.type),
+  );
+
+  return {
+    blocked: true,
+    executableCount: executableLeaves.length,
+    commandList: executableLeaves.map(({ node }) => ({
+      title: node.title,
+      command: node.command ?? "",
+      description: node.description ?? "",
+    })),
   };
 }
 
@@ -175,8 +231,14 @@ server.tool(
       .describe(
         "Collapse unchanged draft nodes into a single count line. Use for large DoDs where drafts dominate the output.",
       ),
+    confirm_import: z
+      .boolean()
+      .optional()
+      .describe(
+        "For imported DoDs: confirm that proof commands are safe to execute. Sets execution_confirmed=true and proceeds.",
+      ),
   },
-  async ({ dod_id, path: mdPath, cwd_override, nodePath, summary }) => {
+  async ({ dod_id, path: mdPath, cwd_override, nodePath, summary, confirm_import }) => {
     let doc: DodDocument | null = null;
     if (dod_id) doc = await store.load(dod_id);
     else if (mdPath) doc = await store.findByPath(mdPath);
@@ -201,6 +263,39 @@ server.tool(
           },
         ],
       };
+    }
+
+    // ── Import gate: block execution for unconfirmed imported DoDs ──
+    const gateInfo = buildImportGateInfo(doc);
+    if (gateInfo.blocked && !confirm_import) {
+      const cmdLines = gateInfo.commandList.map(
+        (c, i) => `${i + 1}. "${c.title}"\n   Command: \`${c.command}\`\n   Description: ${c.description}`,
+      );
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: [
+              "## Import Gate: Execution Not Confirmed",
+              "",
+              `This DoD was imported from "${doc.import_source}" and has NOT been confirmed for execution.`,
+              `${gateInfo.executableCount} executable proof(s) would be run:`,
+              "",
+              ...cmdLines,
+              "",
+              "Review the commands above. To confirm and proceed, re-run dod_check with confirm_import:true.",
+              "Once confirmed, subsequent checks will execute normally.",
+            ].join("\n"),
+          },
+        ],
+      };
+    }
+
+    if (confirm_import && doc.import_source) {
+      doc.execution_confirmed = true;
+      await store.save(doc);
+      await writeMarkdown(doc);
     }
 
     const result = await checkDocument(doc, cwd_override, { nodePath, summary });
@@ -439,6 +534,20 @@ server.tool(
     const label = node.predicate.type === "review" ? "Code review" : "Manual verification";
     const resolution = await resolveManual(node, buildConfirmer(), label);
 
+    // Review attestation validation: verdict text and reviewer required
+    if (node.predicate.type === "review") {
+      if (!(node.manual_result?.review_verdict && node.manual_result?.reviewer)) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "ERROR: Review attestation required — provide the review verdict text and reviewer identity. Verification not recorded.",
+            },
+          ],
+        };
+      }
+    }
+
     node.last_status = resolution.status;
     node.last_output = resolution.output;
     node.last_checked = new Date().toISOString();
@@ -559,6 +668,12 @@ server.tool(
     new_description: z.string().optional(),
     new_skip_reasons: z.record(z.string()).optional().describe("(__meta__ only) Replace DoD skip_reasons map"),
     reason: z.string().describe("Why this amendment is needed — logged permanently"),
+    amend_justification: z
+      .string()
+      .optional()
+      .describe(
+        "Required when this node has been amended 3+ times, or when the change weakens a proof threshold (e.g. increasing limits, removing checks). Explains why further loosening is necessary.",
+      ),
   },
   async ({
     dod_id,
@@ -569,6 +684,7 @@ server.tool(
     new_description,
     new_skip_reasons,
     reason,
+    amend_justification,
   }) => {
     const doc = await store.load(dod_id);
     if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
@@ -646,9 +762,44 @@ server.tool(
         if (missing.length > 0) {
           return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
         }
+
+        // Positive evidence gate for behavioral categories in bulk amend.
+        // Check if any leaf has a behavioral category — the same new_command
+        // must provide evidence for each such leaf.
+        const effectivePredicate = new_predicate ? new_predicate.type : undefined;
+        for (const { node: leaf } of leaves) {
+          const cat = leaf.category;
+          if (!cat) continue;
+          const evidenceErr = await validatePositiveEvidence(
+            new_command,
+            cat,
+            doc.cwd,
+            effectivePredicate,
+            doc.skip_reasons?.[cat],
+          );
+          if (evidenceErr) return { content: [{ type: "text" as const, text: evidenceErr }] };
+        }
       }
 
       let amendedCount = 0;
+
+      // Amend gate check for bulk: check each leaf and collect gate failures
+      const gateFailures: string[] = [];
+      for (const { node, node_path: leafPath } of leaves) {
+        const gateErr = checkAmendGate(doc.amendments, leafPath, node.predicate, new_predicate, amend_justification);
+        if (gateErr) gateFailures.push(`${leafPath} ("${node.title}"): ${gateErr}`);
+      }
+      if (gateFailures.length > 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `ERROR: Bulk amend gate blocked for ${gateFailures.length} leaf/leaves:\n${gateFailures.join("\n")}`,
+            },
+          ],
+        };
+      }
+
       for (const { node, node_path: leafPath } of leaves) {
         const oldSnap = {
           command: node.command,
@@ -671,6 +822,7 @@ server.tool(
             description: node.description,
           },
           reason,
+          justification: amend_justification,
         });
         amendedCount++;
       }
@@ -745,6 +897,24 @@ server.tool(
       if (missing.length > 0) {
         return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
       }
+
+      // Positive evidence gate for behavioral categories
+      if (node.category) {
+        const evidenceErr = await validatePositiveEvidence(
+          effectiveCommand,
+          node.category,
+          doc.cwd,
+          effectivePredicate.type,
+          doc.skip_reasons?.[node.category],
+        );
+        if (evidenceErr) return { content: [{ type: "text" as const, text: evidenceErr }] };
+      }
+    }
+
+    // Amend gate: reject excessive tuning or strength reduction without justification
+    const gateError = checkAmendGate(doc.amendments, resolvedPath, node.predicate, new_predicate, amend_justification);
+    if (gateError) {
+      return { content: [{ type: "text" as const, text: `ERROR: ${gateError}` }] };
     }
 
     const oldSnapshot = {
@@ -769,6 +939,7 @@ server.tool(
         description: node.description,
       },
       reason,
+      justification: amend_justification,
     });
 
     doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
@@ -850,7 +1021,7 @@ server.tool("dod_list", "List all tracked DoD documents with their last check st
 
 server.tool(
   "dod_import",
-  "Import an existing DoD markdown file into canonical MCP storage. Parses hierarchical tree structure, infers predicates, and stores them.",
+  "Import an existing DoD markdown file into canonical MCP storage. Parses hierarchical tree structure from author.ts output format (<!--p:...--> metadata) or hand-written markdown (leaves become drafts).",
   {
     path: z.string().describe("Absolute path to the existing DoD markdown file"),
     cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
@@ -878,6 +1049,10 @@ server.tool(
       const id = store.generateId();
       const fingerprint = computeProofFingerprint(parsed.roots);
 
+      const executableConcrete = flattenConcreteLeaves(parsed.roots).filter(
+        ({ node }) => node.command && node.predicate && isExecutablePredicate(node.predicate.type),
+      );
+
       const doc: DodDocument = {
         id,
         title: parsed.title,
@@ -886,6 +1061,8 @@ server.tool(
         cwd: resolvedCwd,
         markdown_path: path.resolve(mdPath),
         created_at: new Date().toISOString(),
+        import_source: path.resolve(mdPath),
+        execution_confirmed: false,
         sections: parsed.sections,
         roots: parsed.roots,
         proof_fingerprint: fingerprint || undefined,
@@ -896,6 +1073,13 @@ server.tool(
 
       const concreteCount = flattenConcreteLeaves(parsed.roots).length;
       const draftCount = countDraftNodes(parsed.roots);
+
+      const explicitPredicateMsg =
+        concreteCount > 0 && draftCount > 0
+          ? `${concreteCount} proof(s) imported with explicit predicates, ${draftCount} imported as drafts (predicates could not be determined — use dod_refine to concretize them).`
+          : concreteCount > 0
+            ? `${concreteCount} proof(s) imported with explicit predicates from author.ts metadata.`
+            : `${draftCount} node(s) imported as drafts (no explicit predicate metadata — use dod_refine to concretize them).`;
 
       return {
         content: [
@@ -911,8 +1095,15 @@ server.tool(
               `Draft nodes: ${draftCount}`,
               `Cwd: ${resolvedCwd}`,
               "",
-              "Use dod_check to run verification.",
-            ].join("\n"),
+              explicitPredicateMsg,
+              "",
+              executableConcrete.length > 0
+                ? `Imported DoD has ${executableConcrete.length} executable proof(s). Commands have NOT been reviewed for safety.`
+                : "",
+              "Run dod_check with confirm_import:true to confirm execution, or review the command list first.",
+            ]
+              .filter(Boolean)
+              .join("\n"),
           },
         ],
       };

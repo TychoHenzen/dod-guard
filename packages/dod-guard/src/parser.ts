@@ -1,100 +1,30 @@
 import { promises as fs } from "node:fs";
 import type { DodSections, Predicate, TaskNode } from "./types.js";
 
-// ── Predicate inference ───────────────────────────────────────────────────
+// ── Predicate metadata (round-trip via HTML comments) ────────────────────
 
-/** Extract the first quoted string ("...") from a text blurb. Returns null if none. */
-function extractQuoted(text: string): string | null {
-  const m = text.match(/"([^"]+)"/);
-  return m ? m[1] : null;
-}
-
-/** Extract an exit code number from a description string. */
-function extractExitCode(text: string, pattern: RegExp): number | null {
-  const m = text.match(pattern);
-  return m ? Number.parseInt(m[1], 10) : null;
-}
-
-const INFERENCE_RULES: Array<{ test: (s: string) => boolean; infer: (s: string, t: string) => Predicate }> = [
-  {
-    test: (l) => l.includes("tdd") || l.includes("must fail first") || l.includes("red before green"),
-    infer: (l) => ({ type: "tdd", value: extractExitCode(l, /exit\s*(?:code\s*)?(\d+)/) ?? 0 }),
-  },
-  {
-    test: (l) => l.includes("no match"),
-    infer: () => ({ type: "exit_code", value: 1 }),
-  },
-  {
-    test: (l) => ["not contain", "must not contain", "no warning", "no error"].some((k) => l.includes(k)),
-    infer: (_, t) => {
-      const q = extractQuoted(t);
-      return q ? { type: "output_not_contains", value: q } : { type: "exit_code", value: 0 };
-    },
-  },
-  {
-    test: (l) => l.includes("not match") || l.includes("must not match"),
-    infer: (_, t) => {
-      const q = extractQuoted(t);
-      return q ? { type: "output_not_matches", value: q } : { type: "exit_code", value: 0 };
-    },
-  },
-  {
-    test: (l) => l.includes("matches") || l.includes("must match"),
-    infer: (_, t) => {
-      const q = extractQuoted(t);
-      return q ? { type: "output_matches", value: q } : { type: "exit_code", value: 0 };
-    },
-  },
-  {
-    test: (l) => l.includes("contains") || l.includes("must contain"),
-    infer: (_, t) => {
-      const q = extractQuoted(t);
-      return q ? { type: "output_contains", value: q } : { type: "exit_code", value: 0 };
-    },
-  },
-  {
-    test: (l) => ["must not exit", "exit code must not be", "non-zero exit"].some((k) => l.includes(k)),
-    infer: (l) => ({ type: "exit_code_not", value: extractExitCode(l, /exit\s*(?:\S+\s+)?(\d+)/) ?? 0 }),
-  },
-];
-
-const CATEGORY_PATTERNS: Array<[string[], Predicate["type"]]> = [
-  [["mutation", "mutants"], "mutation"],
-  [["regression", "baseline"], "regression"],
-  [["assertion count", "at least", "non-trivial"], "assertions"],
-  [["streamline", "leftover", "old code"], "streamline"],
-  [["observability", "log statements", "logging"], "observability"],
-  [["brevity", "code quality", "static analysis"], "brevity"],
-];
-
-function inferPredicate(description: string): Predicate {
-  const lower = description.toLowerCase();
-
-  for (const rule of INFERENCE_RULES) {
-    if (rule.test(lower)) return rule.infer(lower, description);
-  }
-
-  // exit_code with explicit number
-  const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
-  if (exitMatch) return { type: "exit_code", value: Number.parseInt(exitMatch[1], 10) };
-
-  // manual/review
-  if (lower.startsWith("manual")) return { type: "manual" };
-  if (lower.startsWith("review") || lower.includes("review —") || lower.includes("review:")) return { type: "review" };
-
-  // keyword categories
-  for (const [keywords, type] of CATEGORY_PATTERNS) {
-    if (keywords.some((k) => lower.includes(k))) {
-      const countMatch = type === "assertions" ? lower.match(/at least (\d+)/) : null;
-      const value = countMatch ? Number.parseInt(countMatch[1], 10) : 0;
-      return { type, value };
+/** Extract explicit predicate metadata from an HTML comment in the proof line. */
+function extractPredicateMetadata(line: string): { predicate: Predicate | null; cleanLine: string } {
+  const metaMatch = line.match(/<!--p:(.+?)-->/);
+  if (metaMatch) {
+    try {
+      const predicate = JSON.parse(metaMatch[1]) as Predicate;
+      const cleanLine = line.replace(/<!--p:.+?-->/, "").trimEnd();
+      return { predicate, cleanLine };
+    } catch {
+      // Malformed JSON — treat as no metadata
     }
   }
-
-  return { type: "exit_code", value: 0 };
+  return { predicate: null, cleanLine: line };
 }
 
 // ── Line parsing ──────────────────────────────────────────────────────────
+
+function markerToStatus(marker: string): TaskNode["last_status"] {
+  if (marker === "x") return "pass";
+  if (marker === "~") return "skipped";
+  return "pending";
+}
 
 function parseLeafLine(line: string): TaskNode | null {
   const trimmed = line.trim();
@@ -111,45 +41,58 @@ function parseLeafLine(line: string): TaskNode | null {
     };
   }
 
-  // TDD proof
-  const tddMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof\s*\(TDD\s+[^)]+\):\s*`([^`]+)`\s*→\s*(.+)$/);
-  if (tddMatch) {
+  // Extract optional explicit predicate metadata from author.ts output.
+  // Without this HTML comment, proof lines are parsed as draft leaves.
+  const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
+
+  // Any proof format with a backticked command (generic pattern handles
+  // "Proof:", "Proof (TDD ...):", "Proof (brevity ...):", etc.)
+  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*→\s*(.+)$/);
+  if (proofMatch) {
+    const desc = proofMatch[3].trim();
+    if (metaPredicate) {
+      return {
+        id: "",
+        title: desc,
+        refinement: "concrete",
+        command: proofMatch[2].trim(),
+        predicate: metaPredicate,
+        description: desc,
+        last_status: markerToStatus(proofMatch[1]),
+      };
+    }
+    // No explicit metadata → import as draft
     return {
       id: "",
-      title: tddMatch[3].trim(),
-      refinement: "concrete",
-      command: tddMatch[2].trim(),
-      predicate: { type: "tdd", value: 0 },
-      description: tddMatch[3].trim(),
-      last_status: tddMatch[1] === "x" ? "pass" : tddMatch[1] === "~" ? "skipped" : "pending",
+      title: desc,
+      refinement: "draft",
+      intent: desc,
+      last_status: "draft",
     };
   }
 
-  // Concrete command proof
-  const cmdMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*`([^`]+)`\s*→\s*(.+)$/);
-  if (cmdMatch) {
-    return {
-      id: "",
-      title: cmdMatch[3].trim(),
-      refinement: "concrete",
-      command: cmdMatch[2].trim(),
-      predicate: inferPredicate(cmdMatch[3]),
-      description: cmdMatch[3].trim(),
-      last_status: cmdMatch[1] === "x" ? "pass" : cmdMatch[1] === "~" ? "skipped" : "pending",
-    };
-  }
-
-  // Manual proof
-  const manualMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
+  // Manual proof (no backtick command, just "Manual — description")
+  const manualMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
   if (manualMatch) {
+    const desc = manualMatch[2].trim();
+    if (metaPredicate) {
+      return {
+        id: "",
+        title: desc,
+        refinement: "concrete",
+        command: "manual",
+        predicate: metaPredicate,
+        description: desc,
+        last_status: markerToStatus(manualMatch[1]),
+      };
+    }
+    // No explicit metadata → import as draft
     return {
       id: "",
-      title: manualMatch[2].trim(),
-      refinement: "concrete",
-      command: "manual",
-      predicate: { type: "manual" },
-      description: manualMatch[2].trim(),
-      last_status: manualMatch[1] === "x" ? "pass" : manualMatch[1] === "~" ? "skipped" : "pending",
+      title: desc,
+      refinement: "draft",
+      intent: desc,
+      last_status: "draft",
     };
   }
 
@@ -284,7 +227,7 @@ function parseDodTree(lines: string[], startIdx: number): TaskNode[] {
 // ── Main parser ───────────────────────────────────────────────────────────
 
 function parseContent(content: string): ParsedDod {
-  console.debug("parser: parseContent", { length: content.length });
+  if (process.env.DOD_DEBUG) console.debug("parser: parseContent", { length: content.length });
   const lines = content.split("\n");
 
   let title = "",

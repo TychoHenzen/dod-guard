@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { promisify } from "node:util";
+import type { ProofCategory } from "./types.js";
 
 const execFileAsync = promisify(execFile);
 const isWindows = process.platform === "win32";
@@ -409,6 +410,79 @@ export function isPlaceholderCommand(command: string): boolean {
   const cmd = command.trim();
   if (!cmd) return false;
   return PLACEHOLDER_PATTERNS.some((re) => re.test(cmd));
+}
+
+// ── Positive-evidence gate for behavioral categories ─────────────────────────
+
+/**
+ * Behavioral proof categories that require positive evidence (changed-file
+ * reference, tdd predicate, or skip_reason) to prevent always-pass no-ops
+ * from being accepted at refine/amend time.
+ */
+const BEHAVIORAL_CATEGORIES: ReadonlySet<ProofCategory> = new Set([
+  "test",
+  "integration_behavioral",
+  "integration_wiring",
+]);
+
+/**
+ * For behavioral proof categories, require the command to demonstrate
+ * positive evidence: either it references files changed in the working tree,
+ * or the predicate is `tdd` (RED→GREEN transition), or an explicit
+ * skip_reason exists on the DoD for this category.
+ *
+ * Returns null if the command passes validation, or an error string.
+ *
+ * @param changedFilesOverride — for testing: inject a changed-files list
+ *   instead of reading from git.
+ */
+export async function validatePositiveEvidence(
+  command: string,
+  category: ProofCategory,
+  cwd: string,
+  predicateType?: string,
+  skipReason?: string,
+  changedFilesOverride?: string[],
+): Promise<string | null> {
+  if (!BEHAVIORAL_CATEGORIES.has(category)) return null;
+
+  // tdd predicate is positive evidence (RED→GREEN transition proves behavioral correctness)
+  if (predicateType === "tdd") return null;
+
+  // skip_reason is positive evidence (author consciously opted out with justification)
+  if (skipReason) return null;
+
+  // Check if command references changed files in the working tree
+  const changedFiles = changedFilesOverride ?? (await getChangedFiles(cwd));
+  for (const file of changedFiles) {
+    if (command.includes(file)) return null;
+  }
+
+  // Also check by basename match: extract path-like tokens from the command
+  // and see if any basename matches a changed file basename.
+  const cmdTokens = command.split(/\s+/).filter((t) => /[./\\]/.test(t) && t.length > 2);
+  for (const token of cmdTokens) {
+    const tokenBasename = path.basename(token.replace(/\\/g, "/"));
+    if (!tokenBasename || tokenBasename.length <= 2) continue;
+    for (const file of changedFiles) {
+      if (path.posix.basename(file) === tokenBasename) return null;
+    }
+  }
+
+  return `No positive evidence: command must reference changed files, use a tdd predicate, or provide a skip_reason for category '${category}'.`;
+}
+
+async function getChangedFiles(cwd: string): Promise<string[]> {
+  try {
+    const { stdout } = await execFileAsync("git", ["diff", "--name-only", "HEAD"], {
+      cwd,
+      timeout: 5000,
+      windowsHide: true,
+    });
+    return stdout.trim().split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 // ── ESM `node -e "require(...)"` detection ───────────────────────────────────

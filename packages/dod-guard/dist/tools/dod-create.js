@@ -4,7 +4,8 @@
 import * as path from "node:path";
 import { writeMarkdown } from "../author.js";
 import { baselineLockError, validateBaseline } from "../baseline.js";
-import { computeProofFingerprint, countDraftNodes, flattenConcreteLeaves } from "../checker.js";
+import { countDraftNodes } from "../checker.js";
+import { computeProofFingerprint, flattenConcreteLeaves } from "../fingerprint.js";
 import * as store from "../store.js";
 import { buildTaskNodes, checkCommandsForOs, extractBaselineSteps, resetNodeIdCounter } from "../tree-utils.js";
 export async function handleDodCreate(params) {
@@ -36,6 +37,7 @@ export async function handleDodCreate(params) {
         cwd: resolvedCwd,
         markdown_path: path.resolve(markdown_path),
         created_at: new Date().toISOString(),
+        execution_confirmed: true,
         skip_reasons: skip_reasons,
         sections,
         roots,

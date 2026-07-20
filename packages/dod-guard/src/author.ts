@@ -78,67 +78,65 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
   // Concrete leaf
   const mark = proofMark(node.last_status);
 
+  let proofLine: string;
+
   if (node.predicate?.type === "manual") {
     const mr = node.manual_result;
     const state = mr
       ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_`
       : " _(awaiting human verification)_";
-    lines.push(`${indent}- ${mark} Proof: Manual — ${node.description}${state}`);
+    proofLine = `${indent}- ${mark} Proof: Manual — ${node.description}${state}`;
   } else if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? (node.last_status === "pass" ? "🟢 GREEN" : "🔴 RED") : "⬜ AWAITING RED";
-    lines.push(`${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` → ${node.description}`);
+    proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` → ${node.description}`;
   } else if (node.predicate?.type === "brevity") {
     const max = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (brevity ≤${max} violations): \`${node.command}\` → ${node.description}`);
+    proofLine = `${indent}- ${mark} Proof (brevity ≤${max} violations): \`${node.command}\` → ${node.description}`;
   } else if (node.predicate?.type === "line_length") {
     const maxChars = node.predicate.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength;
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (line_length ≤${maxChars} chars, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
-    );
+    proofLine = `${indent}- ${mark} Proof (line_length ≤${maxChars} chars, max ${maxV} violations): \`${node.command}\` → ${node.description}`;
   } else if (node.predicate?.type === "function_size") {
     const maxLines = node.predicate.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines;
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (function_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
-    );
+    proofLine = `${indent}- ${mark} Proof (function_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`;
   } else if (node.predicate?.type === "file_size") {
     const maxLines = node.predicate.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines;
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (file_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
-    );
+    proofLine = `${indent}- ${mark} Proof (file_size ≤${maxLines} lines, max ${maxV} violations): \`${node.command}\` → ${node.description}`;
   } else if (node.predicate?.type === "cohesion") {
     const maxCC = node.predicate.max_complexity ?? 5;
     const guards = node.predicate.require_guard_clauses ?? true;
     const suggest = node.predicate.suggest_guard_clauses ?? true;
     const flags = [guards ? "guard" : "", suggest ? "suggest" : ""].filter(Boolean).join("+");
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (cohesion CC≤${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
-    );
+    proofLine = `${indent}- ${mark} Proof (cohesion CC≤${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` → ${node.description}`;
   } else if (node.predicate?.type === "replacement_ratio") {
     const minRatio = node.predicate.min_replacement_ratio ?? 0.2;
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (replacement_ratio ≥${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` → ${node.description}`,
-    );
+    proofLine = `${indent}- ${mark} Proof (replacement_ratio ≥${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` → ${node.description}`;
   } else if (node.predicate?.type === "regression") {
     const lib = node.predicate.lower_is_better ?? true;
     const tol = node.predicate.value ?? 0;
     const dir = lib ? "≤baseline" : "≥baseline";
-    lines.push(
-      `${indent}- ${mark} Proof (regression ${dir}, tolerance ${tol}): \`${node.command}\` → ${node.description}`,
-    );
+    proofLine = `${indent}- ${mark} Proof (regression ${dir}, tolerance ${tol}): \`${node.command}\` → ${node.description}`;
   } else {
-    lines.push(`${indent}- ${mark} Proof: \`${node.command}\` → ${node.description}`);
+    proofLine = `${indent}- ${mark} Proof: \`${node.command}\` → ${node.description}`;
   }
+
+  // Append predicate metadata for lossless round-trip parsing.
+  // This HTML comment is parsed by parser.ts; markdown without it is parsed as draft.
+  if (node.predicate) {
+    proofLine += ` <!--p:${JSON.stringify(node.predicate)}-->`;
+  }
+
+  lines.push(proofLine);
 }
 
 // ── Main render ───────────────────────────────────────────────────────
 
 export function renderMarkdown(doc: DodDocument): string {
-  console.debug("author: renderMarkdown", { id: doc.id });
+  if (process.env.DOD_DEBUG) console.debug("author: renderMarkdown", { id: doc.id });
   const l: string[] = [];
 
   l.push(`# ${doc.title} — Requirements Spec`);

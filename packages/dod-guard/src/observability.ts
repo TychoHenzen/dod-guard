@@ -629,7 +629,8 @@ function scanFile(
  * Returns null when no source files can be identified.
  */
 export function analyseObservability(command: string, cwd: string): ObservabilityReport | null {
-  console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
+  if (process.env.DOD_DEBUG)
+    console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
   // Try to find files from both command tokens and (later) command output
   const files = extractSourceFilesFromCommand(command, cwd);
 
@@ -657,7 +658,7 @@ export function analyseObservability(command: string, cwd: string): Observabilit
     // Skip self-analysis: observability module's own source contains regex `catch`
     // patterns that produce false-positive unlogged error handler detections.
     if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
-      console.debug("observability: skipping self-analysis of", file);
+      if (process.env.DOD_DEBUG) console.debug("observability: skipping self-analysis of", file);
       continue;
     }
     const result = scanFile(file, cwd);
@@ -702,7 +703,7 @@ export function analyseObservabilityFromOutput(commandOutput: string, cwd: strin
     // Skip self-analysis: observability module's own source contains regex `catch`
     // patterns that produce false-positive unlogged error handler detections.
     if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
-      console.debug("observability: skipping self-analysis of", file);
+      if (process.env.DOD_DEBUG) console.debug("observability: skipping self-analysis of", file);
       continue;
     }
     const result = scanFile(file, cwd);

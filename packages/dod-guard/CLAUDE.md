@@ -41,7 +41,7 @@ What gets evaluated about a proof command's output:
 | `tdd` | Test must fail first (RED), then pass (GREEN). Bakes in assertion quality check. |
 | `manual` / `review` | Out-of-band human verification via MCP elicitation |
 | `mutation` | Parse surviving mutants from Stryker/mutmut/cargo-mutants output |
-| `regression` | Capture baseline metric, compare subsequent runs with tolerance |
+| `regression` | Capture baseline metric, compare subsequent runs with tolerance. First run returns `baseline_captured` status (not `pass`). |
 | `assertions` | Static analysis: count non-trivial assertions in test files |
 | `streamline` | Grep for old symbol references — prove old code was removed |
 | `observability` | Static analysis: log statement count, error handler coverage, anti-patterns |
@@ -50,12 +50,14 @@ What gets evaluated about a proof command's output:
 ### Proof execution flow (checker.ts)
 
 `checkDocument()` is the main entry point:
-1. Flatten concrete leaves via `flattenConcreteLeaves()` (skips drafts, recurses into groups)
-2. For each leaf: `executeProof()` → runs command via `exec()` with timeout from `predicate.timeout_ms` (default 120s). Slow tools like Stryker use 600s.
-3. Manual/review proofs check `manual_result` cache (fingerprint-match = reuse without re-prompting)
-4. TDD proofs track `seen_failing` state across runs (must fail before passing)
-5. `computeProofFingerprint()` hashes all concrete leaves → compared against stored hash for tamper detection
-6. Computes derived signals: `manual_unverified` count, `amendment_warnings` (nodes amended >2×), `blocked_by_manuals` (all automated pass but manuals unverified), scoped-check suggestion (>5 concrete proofs)
+1. **(Full checks only)** Capture VCS state: `git rev-parse HEAD` → `checked_commit`, `git status --porcelain` → `checked_dirty`. Dirty tree downgrades PASS to `PASS_DIRTY` unless `allow_dirty_pass` is set.
+2. **(Full checks only)** Create ephemeral git worktree snapshot of `checked_commit` via `createSnapshot()` (snapshot.ts). All proof commands run inside the snapshot to prevent cross-proof tree pollution. Guaranteed cleanup in `finally`.
+3. Flatten concrete leaves via `flattenConcreteLeaves()` (skips drafts, recurses into groups)
+4. For each leaf: `executeProof()` → runs command via `exec()` with timeout from `predicate.timeout_ms` (default 120s). Slow tools like Stryker use 600s.
+5. Manual/review proofs check `manual_result` cache (fingerprint-match = reuse without re-prompting). Review predicates require `review_verdict` + `reviewer` attestation.
+6. TDD proofs track `seen_failing` state across runs (must fail before passing)
+7. `computeProofFingerprint()` (fingerprint.ts) hashes all concrete leaves → compared against stored hash for tamper detection
+8. Computes derived signals: `manual_unverified` count, `amendment_warnings`, `blocked_by_manuals`, `baseline_captured` leaves → INCOMPLETE, scoped-check suggestion
 
 ### MCP tools (index.ts)
 
@@ -65,11 +67,11 @@ What gets evaluated about a proof command's output:
 | `dod_check` | Run all (or scoped) proofs, produce pass/fail/incomplete verdict. Pass `summary: true` to collapse unchanged drafts into a count line. |
 | `dod_refine` | Turn a draft leaf into concrete (supply command + predicate + description) |
 | `dod_add_node` / `dod_remove_node` | Add/remove nodes anywhere in the tree |
-| `dod_amend` | Modify a concrete proof with audit trail. `node_path='*'` bulk-amends all concrete leaves. `node_path='__meta__'` updates DoD-level skip_reasons. Blocks machine→out-of-band (manual/review) conversion. |
-| `dod_verify` | MCP elicitation for one manual/review proof (must be called explicitly) |
+| `dod_amend` | Modify a concrete proof with audit trail. `node_path='*'` bulk-amends all concrete leaves. `node_path='__meta__'` updates DoD-level skip_reasons. Blocks machine→out-of-band (manual/review) conversion. Requires `amend_justification` after 3 amends to same node or for any strength-reducing change (threshold loosening, extract removal). |
+| `dod_verify` | MCP elicitation for one manual/review proof (must be called explicitly). Review proofs require `review_verdict` + `reviewer` attestation payload. |
 | `dod_status` | Read cached check result without re-running |
 | `dod_list` | List all tracked DoDs with status |
-| `dod_import` | Parse existing markdown DoD into canonical storage |
+| `dod_import` | Parse existing markdown DoD into canonical storage. Uses explicit `<!--p:JSON-->` metadata from author.ts for lossless round-trip; proofs without metadata become draft leaves requiring `dod_refine`. Sets `execution_confirmed: false` — first `dod_check` returns command list without executing until `confirm_import: true` is passed. |
 | `dod_tree` | Read-only structural dump — path, ID, title, status per node. No proof execution. Scopable via `node_id` or `node_path`. |
 
 All mutation tools (`dod_refine`, `dod_amend`, `dod_add_node`, `dod_remove_node`) accept optional `node_id` as alternative to `node_path`/`parent_path`. Node IDs are stable UUIDs — they survive tree mutations (adds, removes, subdivisions) that shift positional paths. Use `dod_tree` to discover current paths and IDs.
@@ -80,7 +82,7 @@ All mutation tools (`dod_refine`, `dod_amend`, `dod_add_node`, `dod_remove_node`
 
 ### Tamper detection
 
-Every mutation (create, refine, amend, add/remove node) recomputes `doc.proof_fingerprint` — SHA256 of all concrete leaf `command|type|value` lines. `dod_check` compares the stored fingerprint against the live tree. Mismatch = TAMPER DETECTED, overall forced to FAIL.
+Every mutation (create, refine, amend, add/remove node) recomputes `doc.proof_fingerprint` via `computeProofFingerprint()` (fingerprint.ts) — full SHA-256 of all strength-bearing fields from every concrete leaf, sorted by node ID for deterministic ordering: `command`, `predicate.type`, `predicate.value`, `timeout_ms`, `extract`, `category`, `min_replacement_ratio`, `max_function_lines`, `max_file_lines`, `max_line_length`, `max_complexity`, `baseline_value`, plus conditional `lower_is_better` and `advisory`. `dod_check` compares the stored fingerprint against the live tree. Mismatch = TAMPER DETECTED, overall forced to FAIL.
 
 ### Baseline enforcement (baseline.ts)
 
@@ -91,6 +93,7 @@ Company baseline from `standards/dod-baselines.md` is machine-enforced. `validat
 - **`type: "general"`**: Full enforcement — hard mandatory + all optional-requiring-justification + all regression categories.
 
 **Hard mandatory** for `bug` and `general`: `integration_wiring`, `integration_behavioral`, `test`
+**Manual/review requirement** (S10, 2026-07-20): `type: "general"` and `type: "bug"` require at least one `manual` or `review` proof, or a `skip_reason["manual"]`. Enforced at lock gate.
 **Optional requiring justification** (absent + no skip_reason → hard error): `tdd`, `mutation`, `streamline`, `observability`
 **Regression categories** (same escalation): `performance`, `complexity`, `coverage`, `duplication`
 
@@ -106,32 +109,34 @@ If mandatory categories are missing (and not covered by `skip_reasons`), the ope
 
 | File | Role |
 |------|------|
-| `index.ts` | MCP server: tool registration, Zod schemas, input→TaskNode tree construction |
-| `types.ts` | All types: `TaskNode`, `DodDocument`, `Predicate`, `CheckResult`, `LeafResult`, `ProofCategory` |
-| `checker.ts` | Proof execution engine: flatten leaves, run commands, evaluate predicates, tamper detection |
-| `author.ts` | Markdown rendering: `renderMarkdown()` → `<claude_instructions>`, `<definition_of_done>`, XML-tagged sections |
-| `parser.ts` | Reverse: parse existing DoD markdown → `DodDocument`. Handles indentation-based tree structure. |
+| `index.ts` | MCP server: tool registration, Zod schemas, input→TaskNode tree construction, import gate, amend gate |
+| `types.ts` | All types: `TaskNode`, `DodDocument`, `Predicate`, `CheckResult`, `LeafResult`, `ProofCategory`, `ManualResult` |
+| `checker.ts` | Proof execution engine: VCS capture, snapshot wiring, leaf execution, predicate evaluation, tamper detection, amendment gate helpers (`detectStrengthReduction`, `checkAmendGate`) |
+| `fingerprint.ts` | Canonical fingerprint: `computeProofFingerprint()` (full SHA-256, all strength fields, deterministic ordering) + `flattenConcreteLeaves()` |
+| `snapshot.ts` | Ephemeral git worktree isolation: `createSnapshot()` (git worktree add → fallback git archive), `destroySnapshot()` (guaranteed cleanup) |
+| `author.ts` | Markdown rendering: `renderMarkdown()` → `<claude_instructions>`, `<definition_of_done>`, XML-tagged sections. Emits `<!--p:JSON-->` metadata for lossless round-trip. |
+| `parser.ts` | Reverse: parse DoD markdown → `DodDocument`. Uses explicit `<!--p:JSON-->` metadata; proofs without metadata → draft leaves. |
 | `store.ts` | JSON file persistence in `~/.claude/dod-store/{uuid}.json` |
 | `tree-utils.ts` | Tree utilities: ID-based path resolution (`findNodeById`), tree display (`formatTree`), node counting (`countAllNodes`), node ID generation (`nextNodeId`), tree construction (`buildTaskNodes`), OS command validation |
-| `manual.ts` | Human verification: fingerprint caching, `resolveManual()` with confirmer callback |
+| `manual.ts` | Human verification: fingerprint caching, `resolveManual()` with confirmer callback. Review predicates require `review_verdict` + `reviewer` attestation. |
 | `assertions.ts` | Static analysis: scan test files for trivial assertions (constant-on-constant, always-passing) |
 | `observability.ts` | Static analysis: scan source files for log statements, error handler coverage, anti-patterns (empty catch, swallowed errors, bare static logs) |
 | `brevity.ts` | Static analysis: scan source files for line/function/file length, cohesion (mixed selection+iteration), replacement ratio |
 | `regression.ts` | Extract metric number from regression command output (last number or regex capture) |
 | `baseline.ts` | Baseline category enforcement with two-tier (hard error / warn-with-skip_reason) |
 | `notify.ts` | Jingle (PowerShell beep arpeggio) for manual verification attention chime |
-| `command-check.ts` | Validate proof commands: OS tool availability, glob expansion (`expandGlobsInCommand()`), mutating flag detection (`detectMutatingFlags()`), placeholder no-op detection (`isPlaceholderCommand()`), ESM `node -e require()` detection (`usesNodeEvalRequire()` + `isEsmPackage()`) |
-| `evaluate-proof.ts` | Predicate-specific analysis: builders (`buildLineLenFail`, etc.) and handlers (`hAssertions`, `hObservability`, `hBrevity`, `hManual`) that evaluate complex predicates (assertions/observability/brevity/regression/mutation) against analysis reports |
+| `command-check.ts` | Validate proof commands: OS tool availability, glob expansion (`expandGlobsInCommand()`), mutating flag detection (`detectMutatingFlags()`), placeholder no-op detection (`isPlaceholderCommand()`), ESM `node -e require()` detection (`usesNodeEvalRequire()` + `isEsmPackage()`), positive-evidence gate (`validatePositiveEvidence()` — behavioral categories must reference changed files, use tdd, or have skip_reason) |
+| `evaluate-proof.ts` | Predicate-specific analysis: builders (`buildLineLenFail`, etc.) and handlers (`hAssertions`, `hObservability`, `hBrevity`, `hRegress`, `hManual`) that evaluate complex predicates against analysis reports. `resolveAnalysisTargets()` intersects command-referenced files with `git diff --name-only` to prevent targeting unchanged files. |
 
 ### Predicate evaluation in checkDocument()
 
 After `executeProof()` runs the command:
 - **mutation**: parse survivors, pass iff ≤ max allowed
-- **regression**: capture baseline on first run, compare subsequent runs with tolerance
+- **regression**: first run captures baseline → returns `baseline_captured` (not `pass`). Subsequent runs compare against stored `baseline_value` (now in fingerprint — store edits → TAMPER).
 - **streamline**: grep for old symbols, count matches, pass iff ≤ max allowed
-- **assertions**: run command, then static-analyze test files — pass iff ≥ min non-trivial assertions
-- **observability**: run command, then static-analyze source files — pass iff log counts + error handler coverage + zero anti-patterns
-- **brevity**: run command, then static-analyze source files — pass iff violations ≤ max allowed
+- **assertions**: run command, then static-analyze test files — pass iff ≥ min non-trivial assertions. Targets resolved via `resolveAnalysisTargets()` (must overlap with `git diff` changed files, or skip_reason).
+- **observability**: run command, then static-analyze source files — pass iff log counts + error handler coverage + zero anti-patterns. Targets resolved via `resolveAnalysisTargets()`.
+- **brevity**: run command, then static-analyze source files — pass iff violations ≤ max allowed. Targets resolved via `resolveAnalysisTargets()`.
 - **tdd**: reject GREEN without prior RED; on GREEN, also check assertion quality
 - **basic predicates** (exit_code, output_contains, etc.): evaluate directly against exit code + combined output
 
@@ -154,10 +159,31 @@ Additional command validation at `dod_create`/`dod_refine` time:
 - **Mutating flag detection**: `detectMutatingFlags()` scans for 12 patterns that dirty the working tree (`--write`, `--fix`, `tsc` without `--noEmit`, `git add/commit`, `npm install`, etc.) and warns with check-only alternatives.
 - **Placeholder detection**: `isPlaceholderCommand()` flags no-ops (`node -e "process.exit(0)"`, `echo ok`, `true`, `exit 0`, `exit /b 0`, `cmd /c exit 0`, `rem`, `:`) that always pass and verify nothing. Warns at both `dod_refine` (concretize) and `dod_amend`.
 - **ESM `require()` detection**: `usesNodeEvalRequire()` flags `node -e "require(...)"` when the nearest `package.json` (`isEsmPackage()`) declares `"type": "module"` — those throw `ERR_REQUIRE_ESM`. Warns with OS-native / `--input-type` alternatives (friction S2).
+- **Positive-evidence gate** (`validatePositiveEvidence()`, S05): for behavioral categories (`test`, `integration_behavioral`, `integration_wiring`), the command must reference files changed in git diff, or use a `tdd` predicate, or have a `skip_reason`. Enforced as HARD GATE at `dod_refine`/`dod_amend` — rejects concretization without evidence. `isPlaceholderCommand()` remains as secondary advisory warning.
 
 ### Adding a new predicate type — execution gate
 
 When adding a new predicate type, check whether it needs a runnable command or is out-of-band (human-verified). Update `isExecutablePredicate()` in checker.ts — this single function gates OS tool validation across `dod_create`, `dod_refine`, `dod_add_node`, `dod_amend`, and `extractExecutableCommands`. Never inline `pred.type !== "manual"` checks — use the helper so both manual and review are covered.
+
+### VCS binding (S03, 2026-07-20)
+
+Full `dod_check` captures `git rev-parse HEAD` → `checked_commit` and `git status --porcelain` → `checked_dirty` on `CheckResult`. Dirty tree downgrades a would-be PASS to `PASS_DIRTY` unless `doc.allow_dirty_pass` is set. Non-git directories skip gracefully (`is_git_repo: false`). Scoped runs skip VCS capture.
+
+### Snapshot isolation (S04, 2026-07-20)
+
+Full `dod_check` creates an ephemeral git worktree of `checked_commit` via `createSnapshot()` (snapshot.ts). All proof commands run with `cwd` set to the snapshot — proofs can't dirty each other or the real tree. Guaranteed cleanup in `finally` block. Falls back from `git worktree add` to `git archive | tar -x`. Skipped for dirty trees with `allow_dirty_pass` set.
+
+### Import gate (S09, 2026-07-20)
+
+`dod_import` sets `execution_confirmed: false` on imported docs. First `dod_check` returns the command list without executing, instructing the user to review and pass `confirm_import: true`. Author-created docs (`dod_create`) set `execution_confirmed: true` unconditionally.
+
+### Amendment gates (S08, 2026-07-20)
+
+`dod_amend` requires `amend_justification` after 3 amends to the same node. Strength-reducing changes (threshold loosening, extract removal, `lower_is_better` flip, etc.) always require justification via `detectStrengthReduction()` + `checkAmendGate()`. Justifications are recorded in the amendment audit trail.
+
+### Debug logging policy (S12, 2026-07-20)
+
+Production `console.debug` calls are gated behind `process.env.DOD_DEBUG`. Top-level module-load side effects (`console.debug("module loaded")`) are removed entirely — they fire on every import. Set `DOD_DEBUG=1` for troubleshooting.
 
 ## Lessons
 

@@ -1,7 +1,4 @@
-// Module-level log annotation for observability rubric compliance (zero-log penalty avoidance).
-// This file contains only type definitions — no runtime code. Types are inert at runtime.
-// Including a single debug statement ensures the zero-log penalty (-3) does not apply.
-console.debug("types: module loaded", { pid: process.pid });
+// This file contains only type definitions — types are inert at runtime.
 
 export interface Predicate {
   type:
@@ -128,10 +125,14 @@ export interface ManualResult {
   confirmed_at: string;
   channel: "elicitation" | "messagebox";
   proof_fingerprint: string;
+  /** `review` predicate only: pasted review output/verdict text. */
+  review_verdict?: string;
+  /** `review` predicate only: who performed the review (name or identifier). */
+  reviewer?: string;
 }
 
 export type ProofRefinement = "draft" | "concrete";
-export type ProofStatus = "draft" | "pending" | "pass" | "fail" | "skipped";
+export type ProofStatus = "draft" | "pending" | "pass" | "fail" | "skipped" | "baseline_captured";
 
 /**
  * Uniform recursive node type replacing the old Step/Proof split.
@@ -160,6 +161,8 @@ export interface TaskNode {
   description?: string;
   category?: ProofCategory;
   advisory?: boolean;
+  /** Number of times this node has been amended (derived from audit trail at check time). */
+  amend_count?: number;
   // Runtime state:
   last_status: ProofStatus;
   last_output?: string;
@@ -169,6 +172,7 @@ export interface TaskNode {
   manual_result?: ManualResult;
   baseline_value?: number;
   baseline_captured_at?: string;
+  baseline_commit?: string;
 }
 
 export interface Amendment {
@@ -179,6 +183,8 @@ export interface Amendment {
   old_value?: Partial<TaskNode>;
   new_value?: Partial<TaskNode>;
   reason: string;
+  /** Required when amend_count >= 3 or strength-reducing changes detected. */
+  justification?: string;
 }
 
 export interface DodDocument {
@@ -189,6 +195,10 @@ export interface DodDocument {
   cwd: string;
   markdown_path: string;
   created_at: string;
+  /** Path the doc was imported from (undefined for author-created DoDs). */
+  import_source?: string;
+  /** Human has confirmed imported commands are safe to execute (default false for imports, true for author-created). */
+  execution_confirmed?: boolean;
   /**
    * Record of why optional baseline categories were deliberately omitted.
    * Keys are ProofCategory values (e.g. "mutation", "streamline"), values are
@@ -199,6 +209,8 @@ export interface DodDocument {
   skip_reasons?: Record<string, string>;
   /** Work type, selects the applicable company baseline. */
   type?: "bug" | "general" | "minimal";
+  /** When true, a full check with dirty working tree can still PASS (default false = strict). */
+  allow_dirty_pass?: boolean;
   sections: DodSections;
   /** Root-level task nodes — the top of the decomposition tree. */
   roots: TaskNode[];
@@ -212,7 +224,7 @@ export interface DodDocument {
   amendments: Amendment[];
   last_check?: {
     timestamp: string;
-    overall: "pass" | "fail" | "incomplete";
+    overall: "pass" | "fail" | "incomplete" | "pass_dirty";
     summary: string;
   };
 }
@@ -229,11 +241,12 @@ export interface DodSections {
 export interface CheckResult {
   /**
    * "incomplete" is reserved for scoped runs AND runs with draft nodes present.
-   * Only a full (unscoped) run with zero drafts yields "pass"/"fail".
+   * Only a full (unscoped) run with zero drafts yields "pass"/"fail"/"pass_dirty".
+   * "pass_dirty" = all proofs pass but the working tree has uncommitted changes.
    * "draft" status on individual leaves never blocks pass — only the presence of
    * unevaluated draft nodes does (via draft_count > 0).
    */
-  overall: "pass" | "fail" | "incomplete";
+  overall: "pass" | "fail" | "incomplete" | "pass_dirty";
   leaves: LeafResult[];
   summary: string;
   timestamp: string;
@@ -259,6 +272,12 @@ export interface CheckResult {
   blocked_by_manuals: boolean;
   /** When true: format output in summary mode (collapse unchanged drafts). */
   summary_mode?: boolean;
+  /** Git commit hash at check time (full checks only). */
+  checked_commit?: string;
+  /** True when git status --porcelain was non-empty at check time. */
+  checked_dirty?: boolean;
+  /** False when cwd is not inside a git repository. */
+  is_git_repo?: boolean;
 }
 
 export interface LeafResult {
@@ -267,7 +286,7 @@ export interface LeafResult {
   id: string;
   title: string;
   description: string;
-  status: "pass" | "fail" | "skipped" | "draft";
+  status: "pass" | "fail" | "skipped" | "draft" | "baseline_captured";
   command: string;
   output?: string;
   error?: string;

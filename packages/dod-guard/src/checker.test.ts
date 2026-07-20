@@ -1,19 +1,21 @@
 import * as assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 import {
+  checkAmendGate,
   checkDocument,
-  computeProofFingerprint,
   countDraftNodes,
+  countNodeAmendments,
+  detectStrengthReduction,
   extractExecutableCommands,
   findNodeByPath,
-  flattenConcreteLeaves,
   hasDraftNodes,
   isExecutablePredicate,
   parseSurvivors,
 } from "./checker.js";
+import { computeProofFingerprint, flattenConcreteLeaves } from "./fingerprint.js";
 import { perProofFingerprint } from "./manual.js";
 import { countAllNodes, findNodeById, formatTree } from "./tree-utils.js";
-import type { DodDocument, TaskNode } from "./types.js";
+import type { DodDocument, Predicate, TaskNode } from "./types.js";
 
 // ── Test helpers ─────────────────────────────────────────────────────
 
@@ -288,7 +290,7 @@ describe("computeProofFingerprint", () => {
 
   it("hashes concrete leaves", () => {
     const fp = computeProofFingerprint([concLeaf(nid(), "a", "echo x", "t")]);
-    assert.equal(fp.length, 12, "fingerprint should be a 12-char hex string (sha256 slice)");
+    assert.equal(fp.length, 64, "fingerprint should be a 64-char hex string (full sha256)");
   });
 
   it("changes when command changes", () => {
@@ -326,7 +328,7 @@ describe("checkDocument drafts", () => {
   });
 
   it("pass when all concrete and no drafts", async () => {
-    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")]);
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")], { allow_dirty_pass: true });
     const res = await checkDocument(doc);
     assert.equal(res.overall, "pass", "all concrete should pass");
   });
@@ -341,7 +343,7 @@ describe("checkDocument drafts", () => {
       children: [concLeaf(nid(), "a", "exit 0", "ok"), concLeaf(nid(), "b", "exit 0", "ok too")],
       last_status: "draft",
     };
-    const doc = makeDoc([group]);
+    const doc = makeDoc([group], { allow_dirty_pass: true });
     const res = await checkDocument(doc);
     assert.equal(res.draft_count, 0, "task group with concrete children should have zero drafts");
     assert.equal(res.overall, "pass", "should pass with no drafts and all concrete");
@@ -460,10 +462,13 @@ describe("checkDocument advisory", () => {
   const { nid } = scope();
 
   it("advisory fail does not block", async () => {
-    const doc = makeDoc([
-      concLeaf(nid(), "a", "exit 0", "ok"),
-      concLeaf(nid(), "adv", "exit 1", "warn", { type: "exit_code", value: 0 }, { advisory: true }),
-    ]);
+    const doc = makeDoc(
+      [
+        concLeaf(nid(), "a", "exit 0", "ok"),
+        concLeaf(nid(), "adv", "exit 1", "warn", { type: "exit_code", value: 0 }, { advisory: true }),
+      ],
+      { allow_dirty_pass: true },
+    );
     assert.equal((await checkDocument(doc)).overall, "pass", "advisory failure should not block overall pass");
   });
 
@@ -645,10 +650,28 @@ describe("checkDocument predicate types", () => {
 
   // ── success paths ─────────────────────────────────────────────────
 
-  it("regression captures baseline metric and passes on same value", async () => {
+  it("regression captures baseline on first run (baseline_captured)", async () => {
     const doc = makeDoc([concLeaf(nid(), "r", "echo 42", "regression 42", { type: "regression", value: 0 })]);
     const res = await checkDocument(doc, undefined, { execFn: fakeExec("42") });
-    assert.equal(res.leaves[0].status, "pass", "regression should pass on first run (baseline captured)");
+    assert.equal(res.leaves[0].status, "baseline_captured", "first regression run captures baseline");
+  });
+
+  it("regression with baseline_captured yields INCOMPLETE overall", async () => {
+    const doc = makeDoc([concLeaf(nid(), "r", "echo 42", "regression 42", { type: "regression", value: 0 })]);
+    const res = await checkDocument(doc, undefined, { execFn: fakeExec("42") });
+    assert.equal(res.overall, "incomplete", "dod_check with only baseline_captured leaf should be INCOMPLETE");
+  });
+
+  it("regression second run passes when metric within tolerance", async () => {
+    const doc = makeDoc([concLeaf(nid(), "r", "echo 42", "regression 42", { type: "regression", value: 0 })], {
+      allow_dirty_pass: true,
+    });
+    // Pre-set baseline to simulate second run
+    doc.roots[0].baseline_value = 42;
+    doc.roots[0].baseline_captured_at = "2024-01-01T00:00:00Z";
+    const res = await checkDocument(doc, undefined, { execFn: fakeExec("42") });
+    assert.equal(res.leaves[0].status, "pass", "second run should PASS when equal to baseline");
+    assert.equal(res.overall, "pass", "full dod_check with passing regression should PASS");
   });
 
   it("mutation passes when survivors ≤ allowed value", async () => {
@@ -680,7 +703,7 @@ describe("checkDocument tamper detection", () => {
   });
 
   it("passes when fingerprint matches", async () => {
-    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")]);
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")], { allow_dirty_pass: true });
     doc.proof_fingerprint = computeProofFingerprint(doc.roots);
     const res = await checkDocument(doc);
     assert.equal(res.overall, "pass", "non-tampered document should pass");
@@ -688,10 +711,184 @@ describe("checkDocument tamper detection", () => {
   });
 
   it("passes tamper check when no fingerprint stored", async () => {
-    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")]);
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")], { allow_dirty_pass: true });
     const res = await checkDocument(doc);
     assert.equal(res.overall, "pass", "no stored fingerprint should not be flagged as tampered");
     assert.equal(res.tampered, undefined, "tampered flag should be absent");
+  });
+
+  // ── Strength-bearing field tamper tests ────────────────────────────
+
+  it("detects tamper when max_function_lines mutated", async () => {
+    const n = concLeaf(nid(), "a", "exit 0", "max func lines", {
+      type: "exit_code",
+      value: 0,
+      max_function_lines: 30,
+    });
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    (n.predicate as Predicate).max_function_lines = 99;
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to max_function_lines should flag tamper");
+  });
+
+  it("detects tamper when max_file_lines mutated", async () => {
+    const n = concLeaf(nid(), "a", "exit 0", "max file lines", {
+      type: "exit_code",
+      value: 0,
+      max_file_lines: 300,
+    });
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    (n.predicate as Predicate).max_file_lines = 500;
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to max_file_lines should flag tamper");
+  });
+
+  it("detects tamper when max_line_length mutated", async () => {
+    const n = concLeaf(nid(), "a", "exit 0", "max line length", {
+      type: "exit_code",
+      value: 0,
+      max_line_length: 120,
+    });
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    (n.predicate as Predicate).max_line_length = 200;
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to max_line_length should flag tamper");
+  });
+
+  it("detects tamper when max_complexity mutated", async () => {
+    const n = concLeaf(nid(), "a", "exit 0", "max complexity", {
+      type: "exit_code",
+      value: 0,
+      max_complexity: 5,
+    });
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    (n.predicate as Predicate).max_complexity = 20;
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to max_complexity should flag tamper");
+  });
+
+  it("detects tamper when extract mutated", async () => {
+    const n = concLeaf(nid(), "a", "exit 0", "extract test", {
+      type: "regression",
+      value: 0,
+      extract: "(\\d+)",
+    });
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    (n.predicate as Predicate).extract = "(\\w+)";
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to extract should flag tamper");
+  });
+
+  it("detects tamper when baseline_value mutated", async () => {
+    const n = concLeaf(
+      nid(),
+      "a",
+      "exit 0",
+      "baseline test",
+      {
+        type: "regression",
+        value: 0,
+      },
+      { baseline_value: 42 },
+    );
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    n.baseline_value = 99;
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to baseline_value should flag tamper");
+  });
+
+  it("detects tamper when timeout_ms mutated", async () => {
+    const n = concLeaf(nid(), "a", "exit 0", "timeout test", {
+      type: "exit_code",
+      value: 0,
+      timeout_ms: 60000,
+    });
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    (n.predicate as Predicate).timeout_ms = 120000;
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to timeout_ms should flag tamper");
+  });
+
+  it("detects tamper when category mutated", async () => {
+    const n = concLeaf(
+      nid(),
+      "a",
+      "exit 0",
+      "category test",
+      {
+        type: "exit_code",
+        value: 0,
+      },
+      { category: "test" },
+    );
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    n.category = "lint";
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to category should flag tamper");
+  });
+
+  it("detects tamper when min_replacement_ratio mutated", async () => {
+    const n = concLeaf(nid(), "a", "exit 0", "replacement ratio", {
+      type: "replacement_ratio",
+      min_replacement_ratio: 0.2,
+    });
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    (n.predicate as Predicate).min_replacement_ratio = 0.5;
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to min_replacement_ratio should flag tamper");
+  });
+
+  it("detects tamper when lower_is_better mutated", async () => {
+    const n = concLeaf(nid(), "a", "exit 0", "lower is better", {
+      type: "regression",
+      value: 0,
+      lower_is_better: true,
+    });
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    (n.predicate as Predicate).lower_is_better = false;
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to lower_is_better should flag tamper");
+  });
+
+  it("detects tamper when advisory flag toggled", async () => {
+    const n = concLeaf(
+      nid(),
+      "a",
+      "exit 0",
+      "advisory test",
+      {
+        type: "exit_code",
+        value: 0,
+      },
+      { advisory: true },
+    );
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    n.advisory = false;
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "toggle of advisory should flag tamper");
+  });
+
+  it("detects tamper when command mutated", async () => {
+    const n = concLeaf(nid(), "a", "echo original", "cmd test", {
+      type: "exit_code",
+      value: 0,
+    });
+    const doc = makeDoc([n]);
+    doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+    n.command = "echo tampered";
+    const res = await checkDocument(doc);
+    assert.equal(res.tampered, true, "change to command should flag tamper");
   });
 });
 
@@ -814,7 +1011,7 @@ describe("checkDocument derived signals", () => {
   });
 
   it("scoped-check suggestion: does not fire for <= 5 concrete leaves", async () => {
-    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")]);
+    const doc = makeDoc([concLeaf(nid(), "a", "exit 0", "ok")], { allow_dirty_pass: true });
     const res = await checkDocument(doc);
     assert.equal(res.overall, "pass", "single leaf should pass");
     // No scoped flag — not a scoped run
@@ -1300,5 +1497,252 @@ describe("countAllNodes", () => {
       },
     ];
     assert.equal(countAllNodes(roots), 2);
+  });
+});
+
+// ── detectStrengthReduction ────────────────────────────────────────────
+
+describe("detectStrengthReduction", () => {
+  it("returns empty when both predicates are undefined", () => {
+    assert.deepEqual(detectStrengthReduction(undefined, undefined), []);
+  });
+
+  it("returns empty when new predicate is undefined", () => {
+    const oldPred: Predicate = { type: "function_size", max_function_lines: 30 };
+    assert.deepEqual(detectStrengthReduction(oldPred, undefined), []);
+  });
+
+  it("returns empty when old predicate is undefined", () => {
+    const newPred: Predicate = { type: "function_size", max_function_lines: 40 };
+    assert.deepEqual(detectStrengthReduction(undefined, newPred), []);
+  });
+
+  it("detects max_function_lines increase", () => {
+    const oldPred: Predicate = { type: "function_size", max_function_lines: 30 };
+    const newPred: Predicate = { type: "function_size", max_function_lines: 40 };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /max_function_lines increased from 30 to 40/);
+  });
+
+  it("detects max_file_lines increase", () => {
+    const oldPred: Predicate = { type: "file_size", max_file_lines: 200 };
+    const newPred: Predicate = { type: "file_size", max_file_lines: 300 };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /max_file_lines increased from 200 to 300/);
+  });
+
+  it("detects max_line_length increase", () => {
+    const oldPred: Predicate = { type: "line_length", max_line_length: 100 };
+    const newPred: Predicate = { type: "line_length", max_line_length: 120 };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /max_line_length increased from 100 to 120/);
+  });
+
+  it("detects max_complexity increase", () => {
+    const oldPred: Predicate = { type: "cohesion", max_complexity: 5 };
+    const newPred: Predicate = { type: "cohesion", max_complexity: 10 };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /max_complexity increased from 5 to 10/);
+  });
+
+  it("detects min_replacement_ratio decrease", () => {
+    const oldPred: Predicate = { type: "replacement_ratio", min_replacement_ratio: 0.3 };
+    const newPred: Predicate = { type: "replacement_ratio", min_replacement_ratio: 0.1 };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /min_replacement_ratio decreased from 0.3 to 0.1/);
+  });
+
+  it("detects timeout_ms increase", () => {
+    const oldPred: Predicate = { type: "exit_code", timeout_ms: 120_000 };
+    const newPred: Predicate = { type: "exit_code", timeout_ms: 300_000 };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /timeout_ms increased from 120000 to 300000/);
+  });
+
+  it("detects extract removal", () => {
+    const oldPred: Predicate = { type: "regression", extract: "score: (\\d+)" };
+    const newPred: Predicate = { type: "regression" };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /extract pattern removed/);
+  });
+
+  it("detects lower_is_better flip from false to true", () => {
+    const oldPred: Predicate = { type: "regression", lower_is_better: false };
+    const newPred: Predicate = { type: "regression", lower_is_better: true };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /lower_is_better changed from false to true/);
+  });
+
+  it("detects exit_code value changed from 0 to non-zero", () => {
+    const oldPred: Predicate = { type: "exit_code", value: 0 };
+    const newPred: Predicate = { type: "exit_code", value: 1 };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /exit_code value changed from 0 to 1/);
+  });
+
+  it("detects output_contains value shortened", () => {
+    const oldPred: Predicate = { type: "output_contains", value: "long expected text" };
+    const newPred: Predicate = { type: "output_contains", value: "short" };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /output_contains value shortened/);
+  });
+
+  it("detects output_matches value removed", () => {
+    const oldPred: Predicate = { type: "output_matches", value: "pattern" };
+    const newPred: Predicate = { type: "output_matches" };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 1);
+    assert.match(result[0], /output_matches value removed/);
+  });
+
+  it("no false positive for non-strength-reducing changes", () => {
+    const oldPred: Predicate = { type: "exit_code", value: 0 };
+    const newPred: Predicate = { type: "exit_code", value: 0 };
+    assert.deepEqual(detectStrengthReduction(oldPred, newPred), []);
+  });
+
+  it("no false positive when threshold is tightened", () => {
+    const oldPred: Predicate = { type: "function_size", max_function_lines: 40 };
+    const newPred: Predicate = { type: "function_size", max_function_lines: 30 };
+    assert.deepEqual(detectStrengthReduction(oldPred, newPred), []);
+  });
+
+  it("no false positive for unchanged predicates", () => {
+    const oldPred: Predicate = { type: "exit_code", value: 0, timeout_ms: 120_000 };
+    const newPred: Predicate = { type: "exit_code", value: 0, timeout_ms: 120_000 };
+    assert.deepEqual(detectStrengthReduction(oldPred, newPred), []);
+  });
+
+  it("detects multiple weakenings at once", () => {
+    const oldPred: Predicate = {
+      type: "brevity",
+      max_function_lines: 30,
+      max_file_lines: 200,
+      max_complexity: 5,
+    };
+    const newPred: Predicate = {
+      type: "brevity",
+      max_function_lines: 50,
+      max_file_lines: 400,
+      max_complexity: 10,
+    };
+    const result = detectStrengthReduction(oldPred, newPred);
+    assert.equal(result.length, 3);
+  });
+});
+
+// ── countNodeAmendments ────────────────────────────────────────────────
+
+describe("countNodeAmendments", () => {
+  it("returns 0 when no amendments exist", () => {
+    assert.equal(countNodeAmendments([], "0"), 0);
+  });
+
+  it("counts modified actions for matching path", () => {
+    const amendments = [
+      { timestamp: "T1", node_path: "0", action: "modified" as const, reason: "R1" },
+      { timestamp: "T2", node_path: "0", action: "modified" as const, reason: "R2" },
+      { timestamp: "T3", node_path: "0.children.1", action: "modified" as const, reason: "R3" },
+    ];
+    assert.equal(countNodeAmendments(amendments, "0"), 2);
+  });
+
+  it("excludes added and removed actions", () => {
+    const amendments = [
+      { timestamp: "T1", node_path: "0", action: "added" as const, reason: "R1" },
+      { timestamp: "T2", node_path: "0", action: "modified" as const, reason: "R2" },
+      { timestamp: "T3", node_path: "0", action: "removed" as const, reason: "R3" },
+    ];
+    assert.equal(countNodeAmendments(amendments, "0"), 1);
+  });
+
+  it("counts refined actions too", () => {
+    const amendments = [
+      { timestamp: "T1", node_path: "0", action: "refined" as const, reason: "R1" },
+      { timestamp: "T2", node_path: "0", action: "modified" as const, reason: "R2" },
+    ];
+    assert.equal(countNodeAmendments(amendments, "0"), 2);
+  });
+
+  it("returns 0 for path with no matching amendments", () => {
+    const amendments = [{ timestamp: "T1", node_path: "0.children.1", action: "modified" as const, reason: "R1" }];
+    assert.equal(countNodeAmendments(amendments, "0"), 0);
+  });
+});
+
+// ── checkAmendGate ─────────────────────────────────────────────────────
+
+describe("checkAmendGate", () => {
+  it("returns null (allowed) for 1st amend without justification", () => {
+    const amendments = [{ timestamp: "T1", node_path: "0", action: "modified" as const, reason: "R1" }];
+    const result = checkAmendGate(amendments, "0", undefined, undefined);
+    assert.equal(result, null);
+  });
+
+  it("returns null (allowed) for 2nd amend without justification", () => {
+    const amendments = [
+      { timestamp: "T1", node_path: "0", action: "modified" as const, reason: "R1" },
+      { timestamp: "T2", node_path: "0", action: "modified" as const, reason: "R2" },
+    ];
+    const result = checkAmendGate(amendments, "0", undefined, undefined);
+    assert.equal(result, null);
+  });
+
+  it("blocks 4th amend without justification (count >= 3)", () => {
+    const amendments = [
+      { timestamp: "T1", node_path: "0", action: "modified" as const, reason: "R1" },
+      { timestamp: "T2", node_path: "0", action: "modified" as const, reason: "R2" },
+      { timestamp: "T3", node_path: "0", action: "modified" as const, reason: "R3" },
+    ];
+    const result = checkAmendGate(amendments, "0", undefined, undefined);
+    assert.notEqual(result, null);
+    assert.match(result as string, /amend_justification/);
+  });
+
+  it("allows 4th amend with justification", () => {
+    const amendments = [
+      { timestamp: "T1", node_path: "0", action: "modified" as const, reason: "R1" },
+      { timestamp: "T2", node_path: "0", action: "modified" as const, reason: "R2" },
+      { timestamp: "T3", node_path: "0", action: "modified" as const, reason: "R3" },
+    ];
+    const result = checkAmendGate(amendments, "0", undefined, undefined, "Needed because requirements changed");
+    assert.equal(result, null);
+  });
+
+  it("blocks strength-reducing amend (max_function_lines increased) without justification", () => {
+    const oldPred: Predicate = { type: "function_size", max_function_lines: 30 };
+    const newPred: Predicate = { type: "function_size", max_function_lines: 40 };
+    const result = checkAmendGate([], "0", oldPred, newPred);
+    assert.notEqual(result, null);
+    assert.match(result as string, /strength-reducing/i);
+  });
+
+  it("allows strength-reducing amend with justification", () => {
+    const oldPred: Predicate = { type: "function_size", max_function_lines: 30 };
+    const newPred: Predicate = { type: "function_size", max_function_lines: 40 };
+    const result = checkAmendGate([], "0", oldPred, newPred, "Project guideline changed from 30 to 40 lines");
+    assert.equal(result, null);
+  });
+
+  it("allows non-strength-reducing amend (command fix) without justification", () => {
+    const oldPred: Predicate = { type: "exit_code", value: 0 };
+    const newPred: Predicate = { type: "exit_code", value: 0 };
+    const result = checkAmendGate([], "0", oldPred, newPred);
+    assert.equal(result, null);
+  });
+
+  it("allows description-only amend without justification", () => {
+    const result = checkAmendGate([], "0", undefined, undefined);
+    assert.equal(result, null);
   });
 });

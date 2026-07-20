@@ -1,5 +1,5 @@
-console.debug("evaluate-proof: module loaded", { pid: process.pid });
-
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import type { AssertionReport } from "./assertions.js";
 import { analyseAssertions } from "./assertions.js";
 import type { BrevityOpts, BrevityReport, BrevityViolation } from "./brevity.js";
@@ -9,6 +9,102 @@ import type { ObservabilityReport } from "./observability.js";
 import { analyseObservability, analyseObservabilityFromOutput } from "./observability.js";
 import { extractNumber } from "./regression.js";
 import type { LeafResult, Predicate, TaskNode } from "./types.js";
+
+const execFileAsync = promisify(execFile);
+
+// ── Changed-file intersection helpers for static-analysis predicates ──────
+
+/**
+ * Extract path-like tokens from a command string. These are tokens that
+ * contain path separators or dots — the same tokens the analysis modules
+ * use to discover target files.
+ */
+function extractPathsFromCommand(command: string): string[] {
+  const tokens = command.split(/\s+/);
+  const files: string[] = [];
+  for (const token of tokens) {
+    if (token.startsWith("-")) continue;
+    if (token.includes("/") || token.includes("\\") || token.includes(".")) {
+      files.push(token);
+    }
+  }
+  return [...new Set(files)];
+}
+
+async function getGitChangedFiles(cwd: string, baseCommit: string): Promise<string[]> {
+  try {
+    const { stdout } = await execFileAsync("git", ["diff", "--name-only", baseCommit], {
+      cwd,
+      timeout: 5000,
+      windowsHide: true,
+    });
+    return stdout.trim().split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Resolve which files the analyzer should target.
+ * Intersects files extracted from the command with files changed
+ * in the working tree (git diff --name-only against base commit).
+ *
+ * If intersection is empty → analyzer targets files that didn't change → fail.
+ * skip_reason or explicit targets override.
+ *
+ * @param changedFilesOverride — for testing: inject a changed-files list
+ *   instead of reading from git.
+ */
+export async function resolveAnalysisTargets(
+  command: string,
+  cwd: string,
+  baseCommit: string | undefined,
+  targetsOverride?: string[],
+  changedFilesOverride?: string[],
+): Promise<{ targets: string[]; error?: string }> {
+  if (targetsOverride && targetsOverride.length > 0) {
+    return { targets: targetsOverride };
+  }
+
+  // No base commit (not a git repo, first commit) → skip check
+  if (!baseCommit) {
+    return { targets: extractPathsFromCommand(command) };
+  }
+
+  const changedFiles = changedFilesOverride ?? (await getGitChangedFiles(cwd, baseCommit));
+
+  // Empty diff (snapshot, no changes, first commit) → treat all as changed → skip check
+  if (changedFiles.length === 0) {
+    return { targets: extractPathsFromCommand(command) };
+  }
+
+  const targets = extractPathsFromCommand(command);
+  if (targets.length === 0) {
+    // No explicit file paths in command — analysis happens via output parsing
+    // Can't validate — allow
+    return { targets };
+  }
+
+  // Check overlap with changed files (path overlap or containment)
+  const overlapping = targets.filter((t) => {
+    const normT = t.replace(/\\/g, "/");
+    return changedFiles.some((cf) => {
+      const normCf = cf.replace(/\\/g, "/");
+      return normT === normCf || normCf.endsWith(`/${normT}`) || normT.endsWith(`/${normCf}`);
+    });
+  });
+
+  if (overlapping.length === 0) {
+    return { targets, error: `analyzer target does not overlap changed files. Target(s): ${targets.join(", ")}` };
+  }
+
+  return { targets: overlapping };
+}
+
+export interface ProofExecutionOptions {
+  baseCommit?: string;
+  skipReasons?: Record<string, string>;
+}
 
 function parseStryker(o: string): number | null {
   const lines = o.split(/\r?\n/);
@@ -156,9 +252,9 @@ async function hRegress(n: TaskNode, r: RunResult, b: Record<string, unknown>): 
     n.baseline_value = m;
     n.baseline_captured_at = new Date().toISOString();
     return mk(b, {
-      status: "pass",
+      status: "baseline_captured",
       output: r.combined,
-      error: `regression: N0=${m}. Re-run.`,
+      error: `regression: baseline captured N0=${m}. Re-run to compare.`,
       exit_code: r.exitCode,
       duration_ms: r.duration,
     });
@@ -212,8 +308,25 @@ async function hAssert(
   b: Record<string, unknown>,
   cmd: string,
   cwd: string,
+  baseCommit?: string,
+  skipReason?: string,
 ): Promise<LeafResult> {
   const min = (n.predicate?.value as number) ?? 1;
+
+  // Validate analysis targets overlap with changed files
+  if (!skipReason) {
+    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
+    if (targetCheck.error) {
+      return mk(b, {
+        status: "fail",
+        output: r.combined,
+        error: targetCheck.error,
+        exit_code: r.exitCode,
+        duration_ms: r.duration,
+      });
+    }
+  }
+
   const report = analyseAssertions(cmd, cwd);
   if (!report)
     return mk(b, {
@@ -246,8 +359,25 @@ async function hObs(
   b: Record<string, unknown>,
   cmd: string,
   cwd: string,
+  baseCommit?: string,
+  skipReason?: string,
 ): Promise<LeafResult> {
   const min = (n.predicate?.value as number) ?? 1;
+
+  // Validate analysis targets overlap with changed files
+  if (!skipReason) {
+    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
+    if (targetCheck.error) {
+      return mk(b, {
+        status: "fail",
+        output: r.combined,
+        error: targetCheck.error,
+        exit_code: r.exitCode,
+        duration_ms: r.duration,
+      });
+    }
+  }
+
   let report = analyseObservability(cmd, cwd);
   if (!report) report = analyseObservabilityFromOutput(r.combined, cwd);
   if (!report)
@@ -286,6 +416,8 @@ async function hBrev(
   b: Record<string, unknown>,
   cmd: string,
   cwd: string,
+  baseCommit?: string,
+  skipReason?: string,
 ): Promise<LeafResult> {
   const max = (n.predicate?.value as number) ?? 0;
   if (!n.predicate)
@@ -296,6 +428,21 @@ async function hBrev(
       exit_code: r.exitCode,
       duration_ms: r.duration,
     });
+
+  // Validate analysis targets overlap with changed files
+  if (!skipReason) {
+    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
+    if (targetCheck.error) {
+      return mk(b, {
+        status: "fail",
+        output: r.combined,
+        error: targetCheck.error,
+        exit_code: r.exitCode,
+        duration_ms: r.duration,
+      });
+    }
+  }
+
   const p = n.predicate;
   const opts: BrevityOpts = {
     maxLineLength: p.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
@@ -471,6 +618,8 @@ async function hBrevity(
   cmd: string,
   cwd: string,
   config: BrevityHandlerConfig,
+  baseCommit?: string,
+  skipReason?: string,
 ): Promise<LeafResult> {
   const max = (n.predicate?.value as number) ?? 0;
   if (!n.predicate)
@@ -481,6 +630,21 @@ async function hBrevity(
       exit_code: r.exitCode,
       duration_ms: r.duration,
     });
+
+  // Validate analysis targets overlap with changed files
+  if (!skipReason) {
+    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
+    if (targetCheck.error) {
+      return mk(b, {
+        status: "fail",
+        output: r.combined,
+        error: targetCheck.error,
+        exit_code: r.exitCode,
+        duration_ms: r.duration,
+      });
+    }
+  }
+
   const opts: BrevityOpts = { ...DEFAULT_BREVITY_OPTS, ...config.optsOverride(n.predicate) };
 
   let report = analyseBrevity(cmd, cwd, opts);
@@ -596,10 +760,19 @@ async function hTdd(
     duration_ms: r.duration,
   });
 }
-export async function executeProof(node: TaskNode, cwd: string, execFn: ExecFn): Promise<LeafResult> {
+export async function executeProof(
+  node: TaskNode,
+  cwd: string,
+  execFn: ExecFn,
+  options?: ProofExecutionOptions,
+): Promise<LeafResult> {
   const isOutOfBand = node.predicate?.type === "manual" || node.predicate?.type === "review";
   const cmd = node.command || "";
   const base = { node_path: "", id: node.id, title: node.title, description: node.description ?? "", command: cmd };
+
+  // Compute skip reason for this node's category (from DoD-level skip_reasons)
+  const skipReason = node.category && options?.skipReasons ? options.skipReasons[node.category] : undefined;
+  const baseCommit = options?.baseCommit;
 
   // Manual/review proofs are verified by humans — allow empty commands.
   if (isOutOfBand) return hManual(node, base);
@@ -624,19 +797,19 @@ export async function executeProof(node: TaskNode, cwd: string, execFn: ExecFn):
     case "streamline":
       return hStream(node, run, base);
     case "assertions":
-      return hAssert(node, run, base, cmd, cwd);
+      return hAssert(node, run, base, cmd, cwd, baseCommit, skipReason);
     case "observability":
-      return hObs(node, run, base, cmd, cwd);
+      return hObs(node, run, base, cmd, cwd, baseCommit, skipReason);
     case "brevity":
-      return hBrev(node, run, base, cmd, cwd);
+      return hBrev(node, run, base, cmd, cwd, baseCommit, skipReason);
     case "line_length":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_LINE_LENGTH);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_LINE_LENGTH, baseCommit, skipReason);
     case "function_size":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_FUNCTION_SIZE);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_FUNCTION_SIZE, baseCommit, skipReason);
     case "file_size":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_FILE_SIZE);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_FILE_SIZE, baseCommit, skipReason);
     case "cohesion":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_COHESION);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_COHESION, baseCommit, skipReason);
     case "replacement_ratio":
       return hReplacementRatio(node, run, base, cmd, cwd);
     case "tdd":

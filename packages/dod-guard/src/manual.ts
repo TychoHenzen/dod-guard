@@ -5,6 +5,8 @@ export interface ManualAnswer {
   answer: "pass" | "fail";
   note?: string;
   channel: "elicitation" | "messagebox";
+  review_verdict?: string;
+  reviewer?: string;
 }
 
 /**
@@ -25,8 +27,6 @@ export interface ManualResolution {
  * Includes the human-facing instruction (`description`) and `command` so that
  * editing what is being verified invalidates any cached confirmation.
  */
-console.debug("manual: module loaded", { pid: process.pid });
-
 export function perProofFingerprint(node: TaskNode): string {
   const data = [
     node.command ?? "",
@@ -71,6 +71,8 @@ export async function resolveManual(
     confirmed_at: new Date().toISOString(),
     channel: answer.channel,
     proof_fingerprint: fingerprint,
+    review_verdict: answer.review_verdict,
+    reviewer: answer.reviewer,
   };
 
   return {

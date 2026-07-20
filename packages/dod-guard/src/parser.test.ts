@@ -85,15 +85,15 @@ test("sections absent when not in markdown", () => {
   assert.equal(parsed.sections.decisions, undefined, "decisions should be absent");
 });
 
-// ── Single concrete proof ─────────────────────────────────────────────────
+// ── Metadata-parsed concrete proof (round-trip from author.ts) ──────────
 
-test("parses a single concrete proof leaf", () => {
+test("parses a single concrete proof leaf from author.ts metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`npm test\` → tests pass with exit 0
+- [ ] Proof: \`npm test\` → tests pass with exit 0 <!--p:{"type":"exit_code","value":0}-->
 `;
   const parsed = p(md);
   assert.equal(parsed.roots.length, 1, "should have one root");
@@ -101,23 +101,26 @@ test("parses a single concrete proof leaf", () => {
   assert.equal(parsed.roots[0].command, "npm test", "should extract command");
   assert.equal(parsed.roots[0].description, "tests pass with exit 0", "should extract description");
   assert.equal(parsed.roots[0].last_status, "pending", "unchecked proof should be pending");
+  assert.equal(parsed.roots[0].predicate?.type, "exit_code", "predicate type from metadata");
+  assert.equal(parsed.roots[0].predicate?.value, 0, "predicate value from metadata");
 });
 
-test("parses a passed concrete proof (checkmark)", () => {
+test("parses a passed concrete proof (checkmark) from author.ts metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [x] Proof: \`exit 0\` → all checks pass
+- [x] Proof: \`exit 0\` → all checks pass <!--p:{"type":"exit_code","value":0}-->
 `;
   const parsed = p(md);
   assert.equal(parsed.roots[0].last_status, "pass", "checked proof should be pass");
+  assert.equal(parsed.roots[0].refinement, "concrete", "should be concrete");
 });
 
-// ── Predicate inference ───────────────────────────────────────────────────
+// ── Hand-written markdown → draft fallback ──────────────────────────────
 
-test("infers exit_code predicate from description", () => {
+test("hand-written proof without metadata becomes draft", () => {
   const md = `# Test
 **Goal:** test
 
@@ -126,49 +129,26 @@ test("infers exit_code predicate from description", () => {
 - [ ] Proof: \`node app.js\` → exit 1 on error
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "exit_code", "should infer exit_code");
-  assert.equal((parsed.roots[0] as any).predicate.value, 1, "should extract exit code 1");
+  assert.equal(parsed.roots.length, 1, "should have one root");
+  assert.equal(parsed.roots[0].refinement, "draft", "no metadata → draft");
+  assert.equal(parsed.roots[0].intent, "exit 1 on error", "description becomes intent");
+  assert.equal(parsed.roots[0].last_status, "draft", "status is draft");
 });
 
-test("infers output_contains predicate from description", () => {
+test("hand-written TDD proof without metadata becomes draft", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`npm test\` → must contain "PASS"
+- [ ] Proof (TDD 🟢 GREEN): \`pytest\` → red-before-green verified
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "output_contains", "should infer output_contains");
-  assert.equal((parsed.roots[0] as any).predicate.value, "PASS", "should extract quoted string");
+  assert.equal(parsed.roots[0].refinement, "draft", "TDD without metadata → draft");
+  assert.equal(parsed.roots[0].intent, "red-before-green verified", "description becomes intent");
 });
 
-test("infers output_not_contains predicate from description", () => {
-  const md = `# Test
-**Goal:** test
-
-## Definition of Done
-
-- [ ] Proof: \`npm test\` → must not contain "FAIL"
-`;
-  const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "output_not_contains", "should infer output_not_contains");
-  assert.equal((parsed.roots[0] as any).predicate.value, "FAIL", "should extract quoted string");
-});
-
-test("infers TDD predicate from description", () => {
-  const md = `# Test
-**Goal:** test
-
-## Definition of Done
-
-- [ ] Proof: \`pytest\` → TDD: tests must fail first then pass
-`;
-  const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "tdd", "should infer tdd");
-});
-
-test("infers manual predicate from description", () => {
+test("hand-written manual proof without metadata becomes draft", () => {
   const md = `# Test
 **Goal:** test
 
@@ -177,133 +157,251 @@ test("infers manual predicate from description", () => {
 - [ ] Proof: Manual — human must verify deployment
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "manual", "should infer manual");
-  assert.equal(parsed.roots[0].command, "manual", "command should be 'manual'");
+  assert.equal(parsed.roots[0].refinement, "draft", "manual without metadata → draft");
+  assert.equal(parsed.roots[0].intent, "human must verify deployment", "description becomes intent");
 });
 
-test("infers output_matches predicate from description", () => {
+test("hand-written skipped proof without metadata becomes draft", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`npm run check\` → output matches "\\d+ tests passed"
+- [~] Proof: \`manual\` → Manual — human must verify
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "output_matches", "should infer output_matches");
-  assert.equal((parsed.roots[0] as any).predicate.value, "\\d+ tests passed", "should extract regex pattern");
+  assert.equal(parsed.roots[0].refinement, "draft", "skipped without metadata → draft");
+  assert.equal(parsed.roots[0].last_status, "draft", "status is draft");
 });
 
-test("infers output_not_matches predicate from description", () => {
+// ── Author.ts round-trip: basic predicates ─────────────────────────────
+
+test("round-trips exit_code predicate from metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`npm run lint\` → must not match "ERROR"
+- [ ] Proof: \`node app.js\` → exit 1 on error <!--p:{"type":"exit_code","value":1}-->
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "output_not_matches", "should infer output_not_matches");
-  assert.equal((parsed.roots[0] as any).predicate.value, "ERROR", "should extract forbidden pattern");
+  assert.equal(parsed.roots[0].predicate?.type, "exit_code");
+  assert.equal(parsed.roots[0].predicate?.value, 1);
 });
 
-test("infers exit_code_not predicate from description", () => {
+test("round-trips output_contains predicate from metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`node app.js\` → must not exit 1
+- [ ] Proof: \`npm test\` → must contain "PASS" <!--p:{"type":"output_contains","value":"PASS"}-->
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "exit_code_not", "should infer exit_code_not");
-  assert.equal((parsed.roots[0] as any).predicate.value, 1, "should extract forbidden exit code");
+  assert.equal(parsed.roots[0].predicate?.type, "output_contains");
+  assert.equal(parsed.roots[0].predicate?.value, "PASS");
 });
 
-test("infers review predicate from description", () => {
+test("round-trips output_not_contains predicate from metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`code review\` → review — peer must approve changes
+- [ ] Proof: \`npm test\` → must not contain "FAIL" <!--p:{"type":"output_not_contains","value":"FAIL"}-->
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "review", "should infer review");
-  assert.equal(parsed.roots[0].command, "code review", "should extract review command");
+  assert.equal(parsed.roots[0].predicate?.type, "output_not_contains");
+  assert.equal(parsed.roots[0].predicate?.value, "FAIL");
 });
 
-test("infers mutation predicate from description", () => {
+test("round-trips output_matches predicate from metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`cargo mutants\` → mutation testing with 0 survivors
+- [ ] Proof: \`npm run check\` → matches pattern <!--p:{"type":"output_matches","value":"\\\\d+ tests passed"}-->
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "mutation", "should infer mutation");
+  assert.equal(parsed.roots[0].predicate?.type, "output_matches");
+  assert.equal(parsed.roots[0].predicate?.value, "\\d+ tests passed");
 });
 
-test("infers regression predicate from description", () => {
+test("round-trips output_not_matches predicate from metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`npm run bench\` → regression baseline check
+- [ ] Proof: \`npm run lint\` → no ERROR <!--p:{"type":"output_not_matches","value":"ERROR"}-->
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "regression", "should infer regression");
+  assert.equal(parsed.roots[0].predicate?.type, "output_not_matches");
+  assert.equal(parsed.roots[0].predicate?.value, "ERROR");
 });
 
-test("infers assertions predicate from description", () => {
+test("round-trips exit_code_not predicate from metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`npm test\` → at least 5 non-trivial assertions
+- [ ] Proof: \`node app.js\` → must not exit 1 <!--p:{"type":"exit_code_not","value":"1"}-->
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "assertions", "should infer assertions");
-  assert.equal((parsed.roots[0] as any).predicate.value, 5, "should extract assertion count");
+  assert.equal(parsed.roots[0].predicate?.type, "exit_code_not");
+  assert.equal(parsed.roots[0].predicate?.value, "1");
 });
 
-test("infers streamline predicate from description", () => {
+// ── Author.ts round-trip: TDD and manual predicates ───────────────────
+
+test("round-trips TDD predicate from metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`grep -r oldFn src/\` → streamline — no old code left
+- [x] Proof (TDD 🟢 GREEN): \`pytest\` → red-before-green verified <!--p:{"type":"tdd","value":0}-->
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "streamline", "should infer streamline");
+  assert.equal(parsed.roots[0].predicate?.type, "tdd");
+  assert.equal(parsed.roots[0].refinement, "concrete");
+  assert.equal(parsed.roots[0].last_status, "pass");
 });
 
-test("infers observability predicate from description", () => {
+test("round-trips manual predicate from metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`node check-logs.js\` → observability — log statements in all handlers
+- [ ] Proof: Manual — human verify <!--p:{"type":"manual"}-->
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "observability", "should infer observability");
+  assert.equal(parsed.roots[0].predicate?.type, "manual");
+  assert.equal(parsed.roots[0].refinement, "concrete");
+  assert.equal(parsed.roots[0].command, "manual");
 });
 
-test("infers brevity predicate from description", () => {
+// ── Author.ts round-trip: special predicates ──────────────────────────
+
+test("round-trips mutation predicate from metadata", () => {
   const md = `# Test
 **Goal:** test
 
 ## Definition of Done
 
-- [ ] Proof: \`node analyze.js\` → brevity — code quality static analysis
+- [ ] Proof: \`cargo mutants\` → mutation testing <!--p:{"type":"mutation","value":0}-->
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "brevity", "should infer brevity");
+  assert.equal(parsed.roots[0].predicate?.type, "mutation");
+  assert.equal(parsed.roots[0].refinement, "concrete");
+});
+
+test("round-trips regression predicate from metadata", () => {
+  const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`npm run bench\` → regression check <!--p:{"type":"regression","value":0}-->
+`;
+  const parsed = p(md);
+  assert.equal(parsed.roots[0].predicate?.type, "regression");
+});
+
+test("round-trips assertions predicate from metadata", () => {
+  const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`npm test\` → at least 5 assertions <!--p:{"type":"assertions","value":5}-->
+`;
+  const parsed = p(md);
+  assert.equal(parsed.roots[0].predicate?.type, "assertions");
+  assert.equal(parsed.roots[0].predicate?.value, 5);
+});
+
+test("round-trips streamline predicate from metadata", () => {
+  const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`grep -r oldFn src/\` → no old code <!--p:{"type":"streamline","value":0}-->
+`;
+  const parsed = p(md);
+  assert.equal(parsed.roots[0].predicate?.type, "streamline");
+});
+
+test("round-trips observability predicate from metadata", () => {
+  const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`node check-logs.js\` → log coverage <!--p:{"type":"observability","value":0}-->
+`;
+  const parsed = p(md);
+  assert.equal(parsed.roots[0].predicate?.type, "observability");
+});
+
+test("round-trips brevity predicate from metadata", () => {
+  const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`node analyze.js\` → code quality <!--p:{"type":"brevity","value":0}-->
+`;
+  const parsed = p(md);
+  assert.equal(parsed.roots[0].predicate?.type, "brevity");
+});
+
+test("round-trips review predicate from metadata", () => {
+  const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`code review\` → peer must approve <!--p:{"type":"review"}-->
+`;
+  const parsed = p(md);
+  assert.equal(parsed.roots[0].predicate?.type, "review");
+});
+
+test("round-trips brevity with complex predicate options from metadata", () => {
+  const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`npx biome check\` → code quality static analysis <!--p:{"type":"brevity","value":0,"max_line_length":100,"max_function_lines":20,"max_file_lines":200,"max_complexity":4,"require_guard_clauses":false,"suggest_guard_clauses":false}-->
+`;
+  const parsed = p(md);
+  assert.equal(parsed.roots[0].predicate?.type, "brevity");
+  assert.equal(parsed.roots[0].predicate?.max_line_length, 100);
+  assert.equal(parsed.roots[0].predicate?.max_function_lines, 20);
+  assert.equal(parsed.roots[0].predicate?.max_file_lines, 200);
+  assert.equal(parsed.roots[0].predicate?.max_complexity, 4);
+  assert.equal(parsed.roots[0].predicate?.require_guard_clauses, false);
+  assert.equal(parsed.roots[0].predicate?.suggest_guard_clauses, false);
+});
+
+test("round-trips regression with optional fields from metadata", () => {
+  const md = `# Test
+**Goal:** test
+
+## Definition of Done
+
+- [ ] Proof: \`npm run bench\` → perf regression <!--p:{"type":"regression","value":0,"lower_is_better":false,"extract":"score: (\\\\d+)"}-->
+`;
+  const parsed = p(md);
+  assert.equal(parsed.roots[0].predicate?.type, "regression");
+  assert.equal(parsed.roots[0].predicate?.lower_is_better, false);
+  assert.equal(parsed.roots[0].predicate?.extract, "score: (\\d+)");
 });
 
 test("parses draft leaf nodes", () => {
@@ -323,7 +421,7 @@ test("parses draft leaf nodes", () => {
 
 // ── Hierarchical tree parsing ─────────────────────────────────────────────
 
-test("parses nested task groups with leaves", () => {
+test("parses nested task groups with leaves (draft fallback)", () => {
   const md = `# Test
 **Goal:** test
 
@@ -351,7 +449,8 @@ test("parses nested task groups with leaves", () => {
   assert.equal(backend.title, "Backend", "first group should be Backend");
   assert.ok(backend.children, "Backend should have children");
   assert.equal(backend.children.length, 2, "Backend should have 2 leaves");
-  assert.equal(backend.children[0].command, "npm test", "first leaf should be npm test");
+  assert.equal(backend.children[0].refinement, "draft", "no metadata → draft");
+  assert.equal(backend.children[0].intent, "backend tests pass", "description becomes intent");
 
   const frontend = root.children[1];
   assert.ok(frontend, "Frontend should exist");
@@ -360,7 +459,7 @@ test("parses nested task groups with leaves", () => {
   assert.equal(frontend.children.length, 1, "Frontend should have 1 leaf");
 });
 
-test("parses 3-level deep nesting", () => {
+test("parses 3-level deep nesting (draft fallback)", () => {
   const md = `# Test
 **Goal:** test
 
@@ -388,10 +487,11 @@ test("parses 3-level deep nesting", () => {
   assert.ok(l2.children, "L2 should have children");
   const leaf = l2.children[0];
   assert.ok(leaf, "leaf should exist");
-  assert.equal(leaf.command, "npm test -- jwt", "leaf should have correct command");
+  assert.equal(leaf.refinement, "draft", "no metadata → draft");
+  assert.equal(leaf.intent, "jwt tests pass", "description becomes intent");
 });
 
-test("parses multiple root-level task groups", () => {
+test("parses multiple root-level task groups (draft fallback)", () => {
   const md = `# Test
 **Goal:** test
 
@@ -411,7 +511,8 @@ test("parses multiple root-level task groups", () => {
   assert.equal(parsed.roots[1].title, "Test", "second root should be Test");
   const buildChildren = parsed.roots[0].children;
   assert.ok(buildChildren, "Build should have children");
-  assert.equal(buildChildren[0].command, "tsc", "Build should have tsc leaf");
+  assert.equal(buildChildren[0].refinement, "draft", "no metadata → draft");
+  assert.equal(buildChildren[0].intent, "type check passes", "description becomes intent");
 });
 
 // ── Edge cases ────────────────────────────────────────────────────────────
@@ -431,7 +532,7 @@ No risks.
   assert.ok(parsed.sections.open_risks?.includes("No risks"), "should still parse sections after DoD");
 });
 
-test("skips non-DoD sections before DoD heading", () => {
+test("skips non-DoD sections before DoD heading (draft fallback)", () => {
   const md = `# Test
 **Goal:** test
 
@@ -443,10 +544,11 @@ Some text here.
 `;
   const parsed = p(md);
   assert.equal(parsed.roots.length, 1, "should find proof after DoD heading");
-  assert.equal(parsed.roots[0].command, "exit 0", "should parse command correctly");
+  assert.equal(parsed.roots[0].refinement, "draft", "no metadata → draft");
+  assert.equal(parsed.roots[0].intent, "should pass", "description becomes intent");
 });
 
-test("TDD proof with state marker parses correctly", () => {
+test("TDD proof without metadata becomes draft", () => {
   const md = `# Test
 **Goal:** test
 
@@ -455,11 +557,12 @@ test("TDD proof with state marker parses correctly", () => {
 - [x] Proof (TDD GREEN): \`pytest\` → red-before-green verified
 `;
   const parsed = p(md);
-  assert.equal((parsed.roots[0] as any).predicate.type, "tdd", "should be TDD");
-  assert.equal(parsed.roots[0].last_status, "pass", "should be pass from checkmark");
+  assert.equal(parsed.roots[0].refinement, "draft", "TDD without metadata → draft");
+  assert.equal(parsed.roots[0].intent, "red-before-green verified", "description becomes intent");
+  assert.equal(parsed.roots[0].last_status, "draft", "draft status");
 });
 
-test("skipped proof with tilde marker", () => {
+test("proof without metadata becomes draft regardless of marker", () => {
   const md = `# Test
 **Goal:** test
 
@@ -468,7 +571,8 @@ test("skipped proof with tilde marker", () => {
 - [~] Proof: \`manual\` → Manual — human must verify
 `;
   const parsed = p(md);
-  assert.equal(parsed.roots[0].last_status, "skipped", "should be skipped from tilde");
+  assert.equal(parsed.roots[0].refinement, "draft", "skipped without metadata → draft");
+  assert.equal(parsed.roots[0].last_status, "draft", "draft status");
 });
 
 // ── Error-path tests (use parseMarkdown for real file I/O) ────────────────
@@ -500,7 +604,8 @@ test("parseMarkdown parses real file on disk (end-to-end)", async () => {
     writeFileSync(filePath, md, "utf-8");
     const parsed = await parseMarkdown(filePath);
     assert.equal(parsed.roots.length, 1, "should have one root from disk file");
-    assert.equal(parsed.roots[0].last_status, "pass", "checkmark should be parsed as pass");
+    assert.equal(parsed.roots[0].refinement, "draft", "no metadata → draft");
+    assert.equal(parsed.roots[0].intent, "disk parse works", "description becomes intent");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

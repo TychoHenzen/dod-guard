@@ -1,21 +1,54 @@
 {
-  "goal": "Wire evomcp's 7 half-built modules into the executed path + fix 7 correctness bugs",
-  "cwd": "C:/Users/siriu/mcp-servers/dod-guard",
+  "goal": "Work through packages/dod-guard/docs/fix-plan.md â€” close anti-cheat holes in dod-guard",
+  "cwd": "C:\Users\siriu\mcp-servers\dod-guard",
   "steps": [
-    {"id":"A1","title":"Fix spec.cwd split-brain","deps":[],"status":"pending"},
-    {"id":"A2","title":"Guard solve commit + dynamic root branch","deps":[],"status":"pending"},
-    {"id":"A3","title":"Make fanout parallel","deps":["A2"],"status":"pending"},
-    {"id":"A4","title":"Pipe prompt via stdin","deps":[],"status":"pending"},
-    {"id":"A5","title":"Fix returned patch","deps":["A2"],"status":"pending"},
-    {"id":"A6","title":"Delete scaffolding + key-resolution","deps":[],"status":"pending"},
-    {"id":"A7","title":"Scope cost tracking","deps":[],"status":"pending"},
-    {"id":"B1","title":"Wire context.ts","deps":[],"status":"pending"},
-    {"id":"B2","title":"Wire dedup.ts","deps":[],"status":"pending"},
-    {"id":"B3","title":"Wire feedback.ts","deps":[],"status":"pending"},
-    {"id":"B4","title":"Wire degenerate.ts","deps":["A5"],"status":"pending"},
-    {"id":"B5","title":"Strengthen failure hashing","deps":[],"status":"pending"},
-    {"id":"B6","title":"Wire escalation+budget","deps":["A7","B5"],"status":"pending"},
-    {"id":"B7","title":"Wire orchestrator (CAPSTONE)","deps":["B1","B2","B3","B4","B5","B6"],"status":"pending"},
-    {"id":"B8","title":"Honor remaining params","deps":["B7"],"status":"pending"}
+    {
+      "id": "S12", "title": "Strip debug litter and fix mojibake", "status": "pending",
+      "deps": []
+    },
+    {
+      "id": "S01", "title": "Unify three fingerprint implementations into one", "status": "pending",
+      "deps": []
+    },
+    {
+      "id": "S02", "title": "Add regression tests proving store-side tamper detection", "status": "pending",
+      "deps": ["S01"]
+    },
+    {
+      "id": "S03", "title": "Bind full dod_check to captured VCS state", "status": "pending",
+      "deps": []
+    },
+    {
+      "id": "S04", "title": "Run proofs against frozen snapshot", "status": "pending",
+      "deps": ["S03"]
+    },
+    {
+      "id": "S05", "title": "Replace placeholder blocklist with positive-evidence requirements", "status": "pending",
+      "deps": []
+    },
+    {
+      "id": "S06", "title": "Static analyzers target changed files not command string", "status": "pending",
+      "deps": ["S03"]
+    },
+    {
+      "id": "S07", "title": "Protect the regression baseline", "status": "pending",
+      "deps": ["S01"]
+    },
+    {
+      "id": "S08", "title": "Turn amendment warnings into gates", "status": "pending",
+      "deps": []
+    },
+    {
+      "id": "S09", "title": "Gate first execution of imported DoDs", "status": "pending",
+      "deps": []
+    },
+    {
+      "id": "S10", "title": "Give manual/review predicates real teeth", "status": "pending",
+      "deps": []
+    },
+    {
+      "id": "S11", "title": "Remove markdownâ†’predicate inference feedback into canonical store", "status": "pending",
+      "deps": []
+    }
   ]
 }
