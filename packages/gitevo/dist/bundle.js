@@ -2237,8 +2237,8 @@ var require_resolve = __commonJS({
       }
       return count;
     }
-    function getFullPath(resolver, id = "", normalize) {
-      if (normalize !== false)
+    function getFullPath(resolver, id = "", normalize2) {
+      if (normalize2 !== false)
         id = normalizeId(id);
       const p = resolver.parse(id);
       return _getFullPath(resolver, p);
@@ -3634,7 +3634,7 @@ var require_fast_uri = __commonJS({
     "use strict";
     var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, escapePreservingEscapes, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
-    function normalize(uri, options) {
+    function normalize2(uri, options) {
       if (typeof uri === "string") {
         uri = /** @type {T} */
         normalizeString(uri, options);
@@ -3901,7 +3901,7 @@ var require_fast_uri = __commonJS({
     }
     var fastUri = {
       SCHEMES,
-      normalize,
+      normalize: normalize2,
       resolve,
       resolveComponent,
       equal,
@@ -21875,11 +21875,6 @@ var StdioServerTransport = class {
   }
 };
 
-// src/operations.ts
-import { spawnSync } from "node:child_process";
-import * as fs2 from "node:fs";
-import * as path2 from "node:path";
-
 // src/memory.ts
 var import_better_sqlite3 = __toESM(require_lib(), 1);
 import * as fs from "node:fs";
@@ -21914,18 +21909,26 @@ var SCHEMA_SQL = `
   );
 `;
 function getMemoryDb(cwd) {
-  const resolvedCwd = cwd ?? process.cwd();
+  const resolvedCwd = path.normalize(cwd ?? process.cwd());
   const cached2 = dbCache.get(resolvedCwd);
   if (cached2) return cached2;
   const evoDir = path.join(resolvedCwd, ".evo");
   fs.mkdirSync(evoDir, { recursive: true });
   const dbPath = path.join(evoDir, "memory.db");
   const db = new import_better_sqlite3.default(dbPath);
-  db.pragma("journal_mode = WAL");
+  db.pragma("journal_mode = DELETE");
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA_SQL);
   dbCache.set(resolvedCwd, db);
   return db;
+}
+function closeMemoryDb(cwd) {
+  const resolvedCwd = path.normalize(cwd ?? process.cwd());
+  const db = dbCache.get(resolvedCwd);
+  if (db) {
+    db.close();
+    dbCache.delete(resolvedCwd);
+  }
 }
 function writeMessage(type, content, opts) {
   const db = getMemoryDb();
@@ -21990,14 +21993,13 @@ function recordBranch(name, status, spawnedFrom, score) {
   ).run(name, status, spawnedFrom ?? null, score ?? null, timestamp);
 }
 function migrateLessons(cwd) {
-  const resolvedCwd = cwd ?? process.cwd();
+  const resolvedCwd = path.normalize(cwd ?? process.cwd());
   const lessonsFile = path.join(resolvedCwd, ".evo", "lessons.jsonl");
   if (!fs.existsSync(lessonsFile)) {
     return 0;
   }
   const content = fs.readFileSync(lessonsFile, "utf-8").trim();
   if (!content) {
-    fs.renameSync(lessonsFile, `${lessonsFile}.migrated`);
     return 0;
   }
   const lines = content.split("\n").filter((l) => l.trim());
@@ -22013,14 +22015,7 @@ function migrateLessons(cwd) {
       try {
         const entry = JSON.parse(line);
         const metadata = JSON.stringify({ migratedFrom: "lessons.jsonl", originalTimestamp: entry.timestamp ?? null });
-        insert.run(
-          "INSIGHT",
-          "gitevo-lessons",
-          entry.content ?? "",
-          metadata,
-          entry.branch ?? "",
-          timestamp
-        );
+        insert.run("INSIGHT", "gitevo-lessons", entry.content ?? "", metadata, entry.branch ?? "", timestamp);
         count++;
       } catch {
       }
@@ -22032,6 +22027,9 @@ function migrateLessons(cwd) {
 }
 
 // src/operations.ts
+import { spawnSync } from "node:child_process";
+import * as fs2 from "node:fs";
+import * as path2 from "node:path";
 var EvoError = class extends Error {
   constructor(message) {
     super(message);
@@ -22062,21 +22060,21 @@ function gitOrNull(args, cwd) {
   }
 }
 function getRepo() {
-  const cwd = process.cwd();
+  let toplevel;
   try {
-    git(["rev-parse", "--show-toplevel"], cwd);
+    toplevel = git(["rev-parse", "--show-toplevel"]);
   } catch {
     throw new EvoError("Not a git repository. Run 'git init' first.");
   }
   let rootBranch = "main";
-  const heads = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
+  const heads = git(["branch", "--format=%(refname:short)"], toplevel).split("\n");
   for (const name of ["main", "master", "trunk"]) {
     if (heads.includes(name)) {
       rootBranch = name;
       break;
     }
   }
-  return { cwd, rootBranch };
+  return { cwd: toplevel, rootBranch };
 }
 function currentBranch(cwd) {
   return git(["branch", "--show-current"], cwd);
@@ -22190,7 +22188,16 @@ function evo_init() {
   const { cwd } = getRepo();
   const paths = evoPaths(cwd);
   fs2.mkdirSync(paths.evoDir, { recursive: true });
+  try {
+    migrateLessons(cwd);
+  } catch {
+  }
   fs2.writeFileSync(paths.lessonsFile, "", "utf-8");
+  try {
+    const db = getMemoryDb(cwd);
+    db.prepare("DELETE FROM messages").run();
+  } catch {
+  }
   const gitignore = path2.join(cwd, ".gitignore");
   const evoEntry = ".evo/\n";
   if (fs2.existsSync(gitignore)) {
@@ -22206,14 +22213,6 @@ function evo_init() {
   } catch {
   }
   git(["tag", "-a", "evo-root", "-m", "GitEvo root checkpoint"], cwd);
-  try {
-    migrateLessons(cwd);
-  } catch {
-  }
-  try {
-    getMemoryDb(cwd);
-  } catch {
-  }
   return "GitEvo initialized. Root checkpoint tagged as evo-root.";
 }
 function evo_checkpoint(name, description) {
@@ -22547,6 +22546,7 @@ function evo_finish() {
     } catch {
     }
   }
+  closeMemoryDb(cwd);
   const paths = evoPaths(cwd);
   if (fs2.existsSync(paths.evoDir)) {
     fs2.rmSync(paths.evoDir, { recursive: true, force: true });
@@ -22715,14 +22715,9 @@ server.tool(
     content: [{ type: "text", text: wrap(formatMemoryQuery)(type, scope, limit ?? 50) }]
   })
 );
-server.tool(
-  "evo_memory_stats",
-  "Get memory bus statistics: total messages, counts by type.",
-  {},
-  async () => ({
-    content: [{ type: "text", text: wrap(formatMemoryStats)() }]
-  })
-);
+server.tool("evo_memory_stats", "Get memory bus statistics: total messages, counts by type.", {}, async () => ({
+  content: [{ type: "text", text: wrap(formatMemoryStats)() }]
+}));
 var _filename = fileURLToPath(import.meta.url);
 async function main() {
   const transport = new StdioServerTransport();

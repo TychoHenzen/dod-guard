@@ -94,7 +94,11 @@ const SCHEMA_SQL = `
  * Cached — singleton per cwd.
  */
 export function getMemoryDb(cwd?: string): Database {
-  const resolvedCwd = cwd ?? process.cwd();
+  // Normalize to OS-native path — git rev-parse --show-toplevel returns
+  // POSIX-style paths (e.g. /c/Users/...) on Windows, while process.cwd()
+  // returns native (C:\Users\...). Without normalization, cache key mismatch
+  // opens two separate connections to the same file → EBUSY on close.
+  const resolvedCwd = path.normalize(cwd ?? process.cwd());
   const cached = dbCache.get(resolvedCwd);
   if (cached) return cached;
 
@@ -104,12 +108,27 @@ export function getMemoryDb(cwd?: string): Database {
   const dbPath = path.join(evoDir, "memory.db");
   const db = new DatabaseConstructor(dbPath);
 
-  db.pragma("journal_mode = WAL");
+  db.pragma("journal_mode = DELETE");
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA_SQL);
 
   dbCache.set(resolvedCwd, db);
   return db;
+}
+
+/**
+ * Close the cached database handle and evict it from the cache.
+ *
+ * Must be called before removing .evo/ on Windows — an open handle
+ * blocks rmSync with EBUSY.
+ */
+export function closeMemoryDb(cwd?: string): void {
+  const resolvedCwd = path.normalize(cwd ?? process.cwd());
+  const db = dbCache.get(resolvedCwd);
+  if (db) {
+    db.close();
+    dbCache.delete(resolvedCwd);
+  }
 }
 
 // ── Message operations ───────────────────────────────────────────────────
@@ -238,7 +257,7 @@ export function recordBranch(name: string, status: string, spawnedFrom?: string,
  * Idempotent: returns 0 if lessons.jsonl doesn't exist.
  */
 export function migrateLessons(cwd?: string): number {
-  const resolvedCwd = cwd ?? process.cwd();
+  const resolvedCwd = path.normalize(cwd ?? process.cwd());
   const lessonsFile = path.join(resolvedCwd, ".evo", "lessons.jsonl");
 
   if (!fs.existsSync(lessonsFile)) {
@@ -247,8 +266,7 @@ export function migrateLessons(cwd?: string): number {
 
   const content = fs.readFileSync(lessonsFile, "utf-8").trim();
   if (!content) {
-    // Rename empty file so we don't re-process it
-    fs.renameSync(lessonsFile, `${lessonsFile}.migrated`);
+    // Empty file — nothing to migrate. Don't rename; callers may still need it.
     return 0;
   }
 

@@ -14,7 +14,7 @@
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { getMemoryDb, migrateLessons, queryMessages, recordBranch, recordCheckpoint, writeMessage } from "./memory.js";
+import { closeMemoryDb, getMemoryDb, migrateLessons, queryMessages, recordBranch, recordCheckpoint, writeMessage } from "./memory.js";
 
 // ── Error types ───────────────────────────────────────────────────────
 
@@ -56,23 +56,23 @@ function gitOrNull(args: string[], cwd?: string): string | null {
 }
 
 function getRepo(): { cwd: string; rootBranch: string } {
-  const cwd = process.cwd();
+  let toplevel: string;
   try {
-    git(["rev-parse", "--show-toplevel"], cwd);
+    toplevel = git(["rev-parse", "--show-toplevel"]);
   } catch {
     throw new EvoError("Not a git repository. Run 'git init' first.");
   }
 
   // Detect root branch
   let rootBranch = "main";
-  const heads = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
+  const heads = git(["branch", "--format=%(refname:short)"], toplevel).split("\n");
   for (const name of ["main", "master", "trunk"]) {
     if (heads.includes(name)) {
       rootBranch = name;
       break;
     }
   }
-  return { cwd, rootBranch };
+  return { cwd: toplevel, rootBranch };
 }
 
 function currentBranch(cwd: string): string {
@@ -239,8 +239,19 @@ export function evo_init(): string {
   // Create .evo/ directory
   fs.mkdirSync(paths.evoDir, { recursive: true });
 
-  // Clear/create lessons.jsonl
+  // Migrate existing lessons BEFORE clearing (prevents data loss on re-init)
+  try {
+    migrateLessons(cwd);
+  } catch {}
+
+  // Clear/create lessons.jsonl (AFTER migration)
   fs.writeFileSync(paths.lessonsFile, "", "utf-8");
+
+  // Clear SQLite messages on re-init so evo_lessons sees clean state
+  try {
+    const db = getMemoryDb(cwd);
+    db.prepare("DELETE FROM messages").run();
+  } catch {}
 
   // Ensure .evo/ is gitignored
   const gitignore = path.join(cwd, ".gitignore");
@@ -261,14 +272,6 @@ export function evo_init(): string {
     /* tag didn't exist */
   }
   git(["tag", "-a", "evo-root", "-m", "GitEvo root checkpoint"], cwd);
-
-  // Migrate existing lessons into SQLite memory bus
-  try {
-    migrateLessons(cwd);
-  } catch {}
-  try {
-    getMemoryDb(cwd);
-  } catch {}
 
   return "GitEvo initialized. Root checkpoint tagged as evo-root.";
 }
@@ -754,6 +757,9 @@ export function evo_finish(): string {
       git(["branch", "-D", branch], cwd);
     } catch {}
   }
+
+  // Close SQLite handle before removing .evo/ (Windows: open handle blocks unlink)
+  closeMemoryDb(cwd);
 
   // Remove .evo/ directory
   const paths = evoPaths(cwd);

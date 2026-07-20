@@ -96,6 +96,19 @@ describe("evo_init", () => {
     assert.strictEqual(content, "", "lessons.jsonl should be cleared on re-run");
   });
 
+  it("creates .evo/ at git root even when CWD is a subdirectory", () => {
+    const repoRoot = dir;
+    const subdir = path.join(repoRoot, "packages", "foo");
+    fs.mkdirSync(subdir, { recursive: true });
+    process.chdir(subdir);
+
+    evo_init();
+
+    // .evo/ should be at repo root, not in the nested cwd
+    assert.ok(fs.existsSync(path.join(repoRoot, ".evo")), ".evo/ should be at repo root");
+    assert.ok(!fs.existsSync(path.join(subdir, ".evo")), ".evo/ should NOT be in subdirectory");
+  });
+
   it("fails outside git repo", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "gitevo-nogit-"));
     const orig = process.cwd();
