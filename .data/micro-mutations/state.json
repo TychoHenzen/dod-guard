@@ -69,7 +69,7 @@
       "dirty": false
     },
     "packages/dod-guard/src/checker.ts": {
-      "last_tested": "2026-07-18",
+      "last_tested": "2026-07-20",
       "last_result": {
         "total": 0,
         "caught": 0,
@@ -80,7 +80,7 @@
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/checker.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
       "lines": 446,
-      "error_count": 4,
+      "error_count": 5,
       "recent_commits": 11,
       "fingerprint": "6289e671303c1ff8868507b301d00d36a0e333a6ca4911e59b70b91456fba20a",
       "dirty": true
@@ -154,7 +154,7 @@
       "dirty": true
     },
     "packages/dod-guard/src/index.ts": {
-      "last_tested": "2026-07-19",
+      "last_tested": "2026-07-20",
       "last_result": {
         "total": 0,
         "caught": 0,
@@ -165,7 +165,7 @@
         "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
       },
       "lines": 956,
-      "error_count": 8,
+      "error_count": 9,
       "recent_commits": 22,
       "fingerprint": "9a2c95705a747f21b973dda9612648d169d07dbfb0ccde5ea61510b7eeee3524",
       "dirty": true
@@ -579,18 +579,18 @@
       "dirty": true
     },
     "packages/obsidian-rag/src/vault.ts": {
-      "last_tested": "2026-07-12",
+      "last_tested": "2026-07-20",
       "last_result": {
-        "total": 160,
-        "caught": 84,
-        "missed": 65,
-        "timeout": 2,
-        "unviable": 9,
-        "status": "ok",
-        "error": null
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/vault.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/vault.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
       "lines": 185,
-      "error_count": 1,
+      "error_count": 2,
       "recent_commits": 12,
       "fingerprint": "c2f04ed6bb692695c2f335c348e8991b4b5b10203697984d4927e848cfdcebc7",
       "dirty": true
@@ -602,9 +602,9 @@
     "missed": 5380,
     "timeout": 65,
     "unviable": 4103,
-    "error": 39,
-    "runs": 83,
-    "files_tested": 83
+    "error": 42,
+    "runs": 86,
+    "files_tested": 86
   },
   "runs": [
     {
@@ -1767,6 +1767,48 @@
         "unviable": 0,
         "status": "error",
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/store.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/store.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
+      }
+    },
+    {
+      "date": "2026-07-20",
+      "commit": "c526372c9ed6601cc757380c3f2f29a4587c3702",
+      "file": "packages/dod-guard/src/index.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
+      }
+    },
+    {
+      "date": "2026-07-20",
+      "commit": "c526372c9ed6601cc757380c3f2f29a4587c3702",
+      "file": "packages/dod-guard/src/checker.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/checker.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
+      }
+    },
+    {
+      "date": "2026-07-20",
+      "commit": "c526372c9ed6601cc757380c3f2f29a4587c3702",
+      "file": "packages/obsidian-rag/src/vault.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/vault.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/vault.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       }
     }
   ]
