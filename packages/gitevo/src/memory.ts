@@ -288,9 +288,9 @@ export function recordBranch(name: string, status: string, spawnedFrom?: string,
  */
 export function getBranchSpawnPoint(branchName: string, cwd?: string): string | null {
   const db = getMemoryDb(cwd);
-  const row = db
-    .prepare("SELECT spawned_from FROM branches WHERE name = ? ORDER BY id DESC LIMIT 1")
-    .get(branchName) as { spawned_from: string | null } | undefined;
+  const row = db.prepare("SELECT spawned_from FROM branches WHERE name = ? ORDER BY id DESC LIMIT 1").get(branchName) as
+    | { spawned_from: string | null }
+    | undefined;
   return row?.spawned_from ?? null;
 }
 
