@@ -24,23 +24,15 @@ mock.module("./agent.js", {
       exitCode: verifyExitCode,
       durationMs: 10,
     })),
-    spawnClaude: mock.fn(async (_p: string, _o: any) => ({
-      output: "spawn output",
-      exitCode: spawnClaudeExit,
-      durationMs: 100,
-      timedOut: spawnClaudeTimedOut,
-    })),
-    spawnClaudeN: mock.fn(async (_prompts: string[], _o: any) =>
-      _prompts.map(() => {
-        if (spawnClaudeEmptyOutput) return { output: "", exitCode: 0, durationMs: 100, timedOut: false };
-        return {
-          output: "strategy output",
-          exitCode: spawnClaudeExit,
-          durationMs: 100,
-          timedOut: spawnClaudeTimedOut,
-        };
-      }),
-    ),
+    spawnClaude: mock.fn(async (_p: string, _o: any) => {
+      if (spawnClaudeEmptyOutput) return { output: "", exitCode: 0, durationMs: 100, timedOut: false };
+      return {
+        output: "spawn output",
+        exitCode: spawnClaudeExit,
+        durationMs: 100,
+        timedOut: spawnClaudeTimedOut,
+      };
+    }),
     strategyPrompts: mock.fn((_task: string, n: number) => Array.from({ length: n }, (_, i) => `strategy-${i}`)),
     toVerdict: mock.fn((r: any) => ({
       passed: r.exitCode === 0,
@@ -69,6 +61,47 @@ mock.module("./agent.js", {
 mock.module("node:child_process", {
   namedExports: {
     execSync: mock.fn((_cmd: string, _opts?: any) => Buffer.from("mock git diff output")),
+  },
+});
+
+// ── Mock cross-package imports ──────────────────────────────────────────
+
+mock.module("../../gitevo/dist/operations.js", {
+  namedExports: {
+    evo_checkpoint: mock.fn(async (_name: string, _desc: string) => ({})),
+  },
+});
+
+mock.module("./gitevo-integration.js", {
+  namedExports: {
+    spawnCandidate: mock.fn(async () => {}),
+    adoptWinner: mock.fn(async () => {}),
+    abandonLoser: mock.fn(async () => {}),
+  },
+});
+
+mock.module("./gates.js", {
+  namedExports: {
+    GateRunner: class {
+      async run(cmds: Record<string, string>) {
+        return Object.entries(cmds).map(([gate]) => ({
+          gate,
+          passed: true,
+          diagnostics: "ok",
+          elapsed_ms: 0,
+        }));
+      }
+    },
+  },
+});
+
+mock.module("./judge.js", {
+  namedExports: {
+    compareBranches: mock.fn(async (_branches: any[], _task: string) => ({
+      winner_branch: "branch-0",
+      scores: {},
+      rationale: "mock verdict",
+    })),
   },
 });
 
@@ -166,7 +199,7 @@ describe("solve", () => {
     const calls: string[] = [];
 
     await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() }, (msg: string) => calls.push(msg));
-    assert.ok(calls.some((c) => c.includes("Spawning")));
+    assert.ok(calls.some((c) => c.includes("Testing") || c.includes("spawning branch")));
     assert.ok(calls.some((c) => c.includes("completed") || c.includes("Verifying") || c.includes("PASSED")));
   });
 

@@ -53,6 +53,52 @@ mock.module("node:child_process", {
   },
 });
 
+// ── Mock cross-package imports ──────────────────────────────────────────
+
+mock.module("../../gitevo/dist/operations.js", {
+  namedExports: {
+    evo_checkpoint: mock.fn(async (_name: string, _desc: string) => ({})),
+  },
+});
+
+mock.module("./gitevo-integration.js", {
+  namedExports: {
+    checkpointGeneration: mock.fn(async () => {}),
+    spawnCandidate: mock.fn(async () => {}),
+    adoptWinner: mock.fn(async () => {}),
+    abandonLoser: mock.fn(async () => {}),
+  },
+});
+
+mock.module("./gates.js", {
+  namedExports: {
+    GateRunner: class {
+      async run(cmds: Record<string, string>): Promise<import("./types.js").GateResult[]> {
+        return Object.entries(cmds).map(([gate]) => ({
+          gate,
+          passed: true,
+          diagnostics: "ok",
+          elapsed_ms: 0,
+        }));
+      }
+    },
+  },
+});
+
+mock.module("./convergence.js", {
+  namedExports: {
+    checkConvergence: mock.fn((_history: any[], _opts?: any) => ({
+      converged: false,
+      stagnated: false,
+      oscillating: false,
+      convergence: { converged: false, similarity: 0, threshold: 0.1, reason: "" },
+      stagnation: { stagnated: false, generations_without_improvement: 0, patience: 3, best_in_window: 0, overall_best: 0, reason: "" },
+      oscillation: { oscillating: false, pattern: "none" as const, amplitude: 0, reason: "" },
+      recommendation: "continue" as const,
+    })),
+  },
+});
+
 // ── matchSimple ───────────────────────────────────────────────────────────
 
 describe("matchSimple", () => {
@@ -338,7 +384,7 @@ describe("evolve", () => {
       generations: 2,
       population_size: 2,
     });
-    assert.ok(r.best_patch.includes("mock patch diff") || r.best_patch.includes("improved"));
+    assert.ok(r.best_patch.includes("evolve-gen"), `expected branch name in best_patch, got: ${r.best_patch}`);
     assert.ok(r.best_score < 50);
   });
 
@@ -353,6 +399,6 @@ describe("evolve", () => {
       generations: 1,
       population_size: 2,
     });
-    assert.ok(r.best_patch !== "(no improvement over baseline)");
+    assert.ok(r.best_patch !== "(no improvement over baseline)", `got: ${r.best_patch}`);
   });
 });
