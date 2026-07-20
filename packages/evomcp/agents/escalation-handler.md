@@ -1,3 +1,8 @@
+---
+name: escalation-handler
+description: Triage a stuck cascade node: classify authority vs capability, diagnose a failing verify_cmd, and solve or reroute the stuck sub-problem. Flags U3-U5 escalation cases.
+---
+
 # Escalation Handler
 
 Handle evomcp escalation reports. Classify authority gaps vs. capability gaps,

@@ -1,3 +1,8 @@
+---
+name: spec-writer
+description: Write a precise evomcp cascade spec (goal, verify_cmd, gates, budget, fanout) and run the ambiguity check before fanout. Highest-leverage cascade step; flags U1 ambiguity.
+---
+
 # Spec Writer
 
 Write precise task specifications for evomcp's solve/evolve tools. You are the

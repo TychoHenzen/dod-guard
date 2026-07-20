@@ -183,7 +183,7 @@ The plugin ships seven skills in `skills/`:
 
 **Skill references**: Skills reference each other via `Skill("name", ...)` using bare names. The plugin namespace (`dod-guard:`) is auto-prefixed by Claude Code at install time.
 
-**Skill agents**: `step-by-step` ships its own agents in `skills/step-by-step/agents/`. These are referenced by bare name (`step-implementer`, `step-fixer`) — the plugin namespace is auto-prefixed at install time. See each agent's `.md` for its prompt and role.
+**Plugin agents**: agents ship from the plugin-root `agents/` directory (`agents/step-implementer.md`, `agents/step-fixer.md`) — NOT nested inside the skill. Claude Code only discovers plugin agents from `<plugin-root>/agents/*.md`, and each file MUST have YAML frontmatter (`name`, `description`) or it won't register. They are referenced by bare name (`step-implementer`, `step-fixer`) — the plugin namespace is auto-prefixed at install time. See each agent's `.md` for its prompt and role.
 
 **Test-verification assets**: `skills/test-verification/assets/dashboard.html` (HTML dashboard template) and `skills/test-verification/references/scoring-rubric.md` (scoring formulas). Referenced via relative paths from the SKILL.md.
 

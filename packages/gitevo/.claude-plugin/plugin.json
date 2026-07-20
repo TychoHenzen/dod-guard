@@ -4,5 +4,19 @@
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap-deps.js\"",
+            "timeout": 65,
+            "statusMessage": "gitevo: checking dependencies..."
+          }
+        ]
+      }
+    ]
   }
 }

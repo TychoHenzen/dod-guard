@@ -1,6 +1,6 @@
 {
   "name": "evomcp",
-  "version": "0.1.13",
+  "version": "0.2.0",
   "description": "Evolutionary MCP server — cheap-model fanout (best-of-N + repair chains) and scalar-fitness evolution, gated by dod-guard verification. Keeps token-burning out of the agent's main context.",
   "type": "module",
   "main": "dist/bundle.js",
@@ -10,6 +10,7 @@
   "files": [
     "dist/bundle.js",
     "agents/",
+    "scripts/",
     "skills/",
     ".claude-plugin/plugin.json",
     ".mcp.json"
@@ -44,7 +45,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "gitevo": "*",
+    "better-sqlite3": "^11.0.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {

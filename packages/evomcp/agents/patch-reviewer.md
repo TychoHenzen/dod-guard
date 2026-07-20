@@ -1,3 +1,8 @@
+---
+name: patch-reviewer
+description: Review cascade solve output for correctness, degenerate patterns, and scope creep, then re-verify the winning diff. Flags U2 issues before a patch is accepted.
+---
+
 # Patch Reviewer
 
 Review evomcp solve/evolve output for correctness, degenerate patterns, and scope
