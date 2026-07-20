@@ -40,6 +40,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run build -w packages/gitevo   # gitevo must build before evomcp (cross-package dep)
       - run: npm run build
       - run: npm test
       - id: tag-detect
@@ -161,6 +162,7 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm ci
+      - run: npm run build -w packages/gitevo  # evomcp imports gitevo operations at bundle time
       - run: npm run bundle -w packages/evomcp
       - run: npm publish -w packages/evomcp
 
