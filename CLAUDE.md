@@ -147,6 +147,7 @@ This is a private project. Remove old code paths outright — no deprecation war
 
 - **evomcp → dod-guard**: `verify_cmd` and `fitness_cmd` parameters often use dod-guard commands (e.g. `dod_check --node-path=0.children.1`)
 - **gitevo → obsidian-rag**: `evo_export_lessons` outputs memory_save-compatible JSON for persistence
+- **evomcp → gitevo**: `gitevo-integration.ts` reads gitevo's SQLite memory bus (`.evo/memory.db`) to seed strategy prompts with past failures, elite solutions, and insights
 - **obsidian-rag**: Used by the session-start hook for memory injection across all packages
 - **code-review-graph**: Used for impact analysis during reviews — graph must be built before review tools work
 

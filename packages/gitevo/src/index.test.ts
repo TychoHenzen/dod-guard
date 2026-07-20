@@ -67,7 +67,7 @@ describe("gitevo index", () => {
   });
 
   describe("tool registration", () => {
-    it("registers 13 tools", () => assert.equal(registeredTools.length, 13));
+    it("registers 15 tools", () => assert.equal(registeredTools.length, 15));
 
     it("evo_init no params", () => {
       const t = registeredTools.find((t) => t.name === "evo_init");

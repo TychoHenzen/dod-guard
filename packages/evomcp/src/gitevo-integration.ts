@@ -1,0 +1,147 @@
+/**
+ * gitevo integration helpers for evomcp's evolutionary loop.
+ *
+ * Wraps gitevo's git operations (checkpoint, spawn, adopt, abandon, learn)
+ * so evomcp can manage evolutionary branches without direct knowledge of
+ * gitevo's internals or error types.
+ *
+ * All failures are logged via console.error and re-thrown as plain Error.
+ */
+
+import {
+  evo_checkpoint,
+  evo_spawn,
+  evo_adopt,
+  evo_abandon,
+  evo_learn,
+  EvoError,
+} from "../../gitevo/dist/operations.js";
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Safely wrap a gitevo call: catch EvoError, log, re-throw as plain Error.
+ * Returns the result string on success.
+ */
+async function wrapGitevo<T extends (...args: any[]) => string>(
+  fn: T,
+  args: Parameters<T>,
+  label: string,
+): Promise<string> {
+  try {
+    const result = fn(...args);
+    console.error(`evomcp[gitevo]: ${label} succeeded — ${result.slice(0, 80)}`);
+    return result;
+  } catch (err) {
+    const message = err instanceof EvoError ? err.message : String(err);
+    console.error(`evomcp[gitevo]: ${label} failed — ${message}`);
+    throw new Error(`gitevo ${label}: ${message}`);
+  }
+}
+
+// ── Public API ──────────────────────────────────────────────────────────
+
+/**
+ * Tag HEAD as an evolution-generation checkpoint.
+ *
+ * Calls evo_checkpoint(\`evolve-gen${gen}\`, description). If the working
+ * tree has dirty tracked files, gitevo auto-stashes before tagging and
+ * pops after.
+ */
+export async function checkpointGeneration(
+  gen: number,
+  description: string,
+  _cwd: string,
+): Promise<void> {
+  await wrapGitevo(
+    evo_checkpoint,
+    [`evolve-gen${gen}`, description],
+    `checkpoint gen ${gen}`,
+  );
+}
+
+/**
+ * Create and checkout a new branch from an existing checkpoint.
+ *
+ * Calls evo_spawn(checkpointName, branchName, false) — force=false keeps
+ * safety checks enabled (prevents data loss from untracked source files,
+ * stale dist artifacts, or files that would be deleted by the checkout).
+ */
+export async function spawnCandidate(
+  checkpointName: string,
+  branchName: string,
+  _cwd: string,
+): Promise<void> {
+  await wrapGitevo(
+    evo_spawn,
+    [checkpointName, branchName, false],
+    `spawn '${branchName}' from '${checkpointName}'`,
+  );
+}
+
+/**
+ * Merge a winning candidate branch into the root branch.
+ *
+ * Calls evo_adopt(branchName), which checks out root, merges the feature
+ * branch, and tags the merge as evo-adopted. Throws if the tree is dirty.
+ */
+export async function adoptWinner(
+  branchName: string,
+  _cwd: string,
+): Promise<void> {
+  await wrapGitevo(
+    evo_adopt,
+    [branchName],
+    `adopt '${branchName}'`,
+  );
+}
+
+/**
+ * Abandon the current branch as a dead end.
+ *
+ * Calls evo_abandon(undefined, reason, false):
+ *  - No checkpoint target → reverts to parent commit (HEAD~1)
+ *  - Records the reason as a gitevo lesson for cross-lineage memory
+ *  - Tags the branch as evo-dead-{branch} after reverting
+ *  - force=false keeps safety checks enabled
+ */
+export async function abandonLoser(
+  _branchName: string,
+  reason: string,
+  _cwd: string,
+): Promise<void> {
+  // Note: evo_abandon operates on the *current* branch, not a named one.
+  // The branchName parameter is ignored because gitevo determines it
+  // from process.cwd() internally.
+  await wrapGitevo(
+    evo_abandon,
+    [undefined, reason, false],
+    `abandon (reason: ${reason.slice(0, 60)})`,
+  );
+}
+
+/**
+ * Record a lesson for cross-lineage learning.
+ *
+ * Calls evo_learn(content), which appends a JSONL entry to
+ * .evo/lessons.jsonl with timestamp and current branch info.
+ */
+export async function learnFromFailure(
+  content: string,
+  _cwd: string,
+): Promise<void> {
+  await wrapGitevo(
+    evo_learn,
+    [content],
+    `learn: ${content.slice(0, 60)}`,
+  );
+}
+
+/**
+ * Return the full git tag name gitevo uses for a given checkpoint.
+ *
+ * gitevo convention: evo-{name}
+ */
+export function getCheckpointTag(checkpointName: string): string {
+  return `evo-${checkpointName}`;
+}

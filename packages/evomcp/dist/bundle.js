@@ -5,7 +5,16 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __commonJS = (cb, mod) => function __require() {
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined") return require.apply(this, arguments);
+  throw Error('Dynamic require of "' + x + '" is not supported');
+});
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __commonJS = (cb, mod) => function __require2() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 var __export = (target, all) => {
@@ -3225,8 +3234,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path3) {
-      let input = path3;
+    function removeDotSegments(path5) {
+      let input = path5;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3478,8 +3487,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path3, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path3 && path3 !== "/" ? path3 : void 0;
+        const [path5, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path5 && path5 !== "/" ? path5 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3644,49 +3653,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative2, options, skipNormalization) {
+    function resolveComponent(base, relative3, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative2 = parse3(serialize(relative2, options), options);
+        relative3 = parse3(serialize(relative3, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative2.scheme) {
-        target.scheme = relative2.scheme;
-        target.userinfo = relative2.userinfo;
-        target.host = relative2.host;
-        target.port = relative2.port;
-        target.path = removeDotSegments(relative2.path || "");
-        target.query = relative2.query;
+      if (!options.tolerant && relative3.scheme) {
+        target.scheme = relative3.scheme;
+        target.userinfo = relative3.userinfo;
+        target.host = relative3.host;
+        target.port = relative3.port;
+        target.path = removeDotSegments(relative3.path || "");
+        target.query = relative3.query;
       } else {
-        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
-          target.userinfo = relative2.userinfo;
-          target.host = relative2.host;
-          target.port = relative2.port;
-          target.path = removeDotSegments(relative2.path || "");
-          target.query = relative2.query;
+        if (relative3.userinfo !== void 0 || relative3.host !== void 0 || relative3.port !== void 0) {
+          target.userinfo = relative3.userinfo;
+          target.host = relative3.host;
+          target.port = relative3.port;
+          target.path = removeDotSegments(relative3.path || "");
+          target.query = relative3.query;
         } else {
-          if (!relative2.path) {
+          if (!relative3.path) {
             target.path = base.path;
-            if (relative2.query !== void 0) {
-              target.query = relative2.query;
+            if (relative3.query !== void 0) {
+              target.query = relative3.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative2.path[0] === "/") {
-              target.path = removeDotSegments(relative2.path);
+            if (relative3.path[0] === "/") {
+              target.path = removeDotSegments(relative3.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative2.path;
+                target.path = "/" + relative3.path;
               } else if (!base.path) {
-                target.path = relative2.path;
+                target.path = relative3.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative3.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative2.query;
+            target.query = relative3.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3694,7 +3703,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative2.fragment;
+      target.fragment = relative3.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -6872,16 +6881,865 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs3, exportName) {
+    function addFormats(ajv, list, fs5, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs3[f]);
+        ajv.addFormat(f, fs5[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = formatsPlugin;
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/util.js
+var require_util2 = __commonJS({
+  "../../node_modules/better-sqlite3/lib/util.js"(exports) {
+    "use strict";
+    exports.getBooleanOption = (options, key) => {
+      let value = false;
+      if (key in options && typeof (value = options[key]) !== "boolean") {
+        throw new TypeError(`Expected the "${key}" option to be a boolean`);
+      }
+      return value;
+    };
+    exports.cppdb = /* @__PURE__ */ Symbol();
+    exports.inspect = /* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom");
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/sqlite-error.js
+var require_sqlite_error = __commonJS({
+  "../../node_modules/better-sqlite3/lib/sqlite-error.js"(exports, module) {
+    "use strict";
+    var descriptor = { value: "SqliteError", writable: true, enumerable: false, configurable: true };
+    function SqliteError(message, code) {
+      if (new.target !== SqliteError) {
+        return new SqliteError(message, code);
+      }
+      if (typeof code !== "string") {
+        throw new TypeError("Expected second argument to be a string");
+      }
+      Error.call(this, message);
+      descriptor.value = "" + message;
+      Object.defineProperty(this, "message", descriptor);
+      Error.captureStackTrace(this, SqliteError);
+      this.code = code;
+    }
+    Object.setPrototypeOf(SqliteError, Error);
+    Object.setPrototypeOf(SqliteError.prototype, Error.prototype);
+    Object.defineProperty(SqliteError.prototype, "name", descriptor);
+    module.exports = SqliteError;
+  }
+});
+
+// ../../node_modules/file-uri-to-path/index.js
+var require_file_uri_to_path = __commonJS({
+  "../../node_modules/file-uri-to-path/index.js"(exports, module) {
+    var sep = __require("path").sep || "/";
+    module.exports = fileUriToPath;
+    function fileUriToPath(uri) {
+      if ("string" != typeof uri || uri.length <= 7 || "file://" != uri.substring(0, 7)) {
+        throw new TypeError("must pass in a file:// URI to convert to a file path");
+      }
+      var rest = decodeURI(uri.substring(7));
+      var firstSlash = rest.indexOf("/");
+      var host = rest.substring(0, firstSlash);
+      var path5 = rest.substring(firstSlash + 1);
+      if ("localhost" == host) host = "";
+      if (host) {
+        host = sep + sep + host;
+      }
+      path5 = path5.replace(/^(.+)\|/, "$1:");
+      if (sep == "\\") {
+        path5 = path5.replace(/\//g, "\\");
+      }
+      if (/^.+\:/.test(path5)) {
+      } else {
+        path5 = sep + path5;
+      }
+      return host + path5;
+    }
+  }
+});
+
+// ../../node_modules/bindings/bindings.js
+var require_bindings = __commonJS({
+  "../../node_modules/bindings/bindings.js"(exports, module) {
+    var fs5 = __require("fs");
+    var path5 = __require("path");
+    var fileURLToPath2 = require_file_uri_to_path();
+    var join5 = path5.join;
+    var dirname2 = path5.dirname;
+    var exists = fs5.accessSync && function(path6) {
+      try {
+        fs5.accessSync(path6);
+      } catch (e) {
+        return false;
+      }
+      return true;
+    } || fs5.existsSync || path5.existsSync;
+    var defaults = {
+      arrow: process.env.NODE_BINDINGS_ARROW || " \u2192 ",
+      compiled: process.env.NODE_BINDINGS_COMPILED_DIR || "compiled",
+      platform: process.platform,
+      arch: process.arch,
+      nodePreGyp: "node-v" + process.versions.modules + "-" + process.platform + "-" + process.arch,
+      version: process.versions.node,
+      bindings: "bindings.node",
+      try: [
+        // node-gyp's linked version in the "build" dir
+        ["module_root", "build", "bindings"],
+        // node-waf and gyp_addon (a.k.a node-gyp)
+        ["module_root", "build", "Debug", "bindings"],
+        ["module_root", "build", "Release", "bindings"],
+        // Debug files, for development (legacy behavior, remove for node v0.9)
+        ["module_root", "out", "Debug", "bindings"],
+        ["module_root", "Debug", "bindings"],
+        // Release files, but manually compiled (legacy behavior, remove for node v0.9)
+        ["module_root", "out", "Release", "bindings"],
+        ["module_root", "Release", "bindings"],
+        // Legacy from node-waf, node <= 0.4.x
+        ["module_root", "build", "default", "bindings"],
+        // Production "Release" buildtype binary (meh...)
+        ["module_root", "compiled", "version", "platform", "arch", "bindings"],
+        // node-qbs builds
+        ["module_root", "addon-build", "release", "install-root", "bindings"],
+        ["module_root", "addon-build", "debug", "install-root", "bindings"],
+        ["module_root", "addon-build", "default", "install-root", "bindings"],
+        // node-pre-gyp path ./lib/binding/{node_abi}-{platform}-{arch}
+        ["module_root", "lib", "binding", "nodePreGyp", "bindings"]
+      ]
+    };
+    function bindings(opts) {
+      if (typeof opts == "string") {
+        opts = { bindings: opts };
+      } else if (!opts) {
+        opts = {};
+      }
+      Object.keys(defaults).map(function(i2) {
+        if (!(i2 in opts)) opts[i2] = defaults[i2];
+      });
+      if (!opts.module_root) {
+        opts.module_root = exports.getRoot(exports.getFileName());
+      }
+      if (path5.extname(opts.bindings) != ".node") {
+        opts.bindings += ".node";
+      }
+      var requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : __require;
+      var tries = [], i = 0, l = opts.try.length, n, b, err;
+      for (; i < l; i++) {
+        n = join5.apply(
+          null,
+          opts.try[i].map(function(p) {
+            return opts[p] || p;
+          })
+        );
+        tries.push(n);
+        try {
+          b = opts.path ? requireFunc.resolve(n) : requireFunc(n);
+          if (!opts.path) {
+            b.path = n;
+          }
+          return b;
+        } catch (e) {
+          if (e.code !== "MODULE_NOT_FOUND" && e.code !== "QUALIFIED_PATH_RESOLUTION_FAILED" && !/not find/i.test(e.message)) {
+            throw e;
+          }
+        }
+      }
+      err = new Error(
+        "Could not locate the bindings file. Tried:\n" + tries.map(function(a) {
+          return opts.arrow + a;
+        }).join("\n")
+      );
+      err.tries = tries;
+      throw err;
+    }
+    module.exports = exports = bindings;
+    exports.getFileName = function getFileName(calling_file) {
+      var origPST = Error.prepareStackTrace, origSTL = Error.stackTraceLimit, dummy = {}, fileName;
+      Error.stackTraceLimit = 10;
+      Error.prepareStackTrace = function(e, st) {
+        for (var i = 0, l = st.length; i < l; i++) {
+          fileName = st[i].getFileName();
+          if (fileName !== __filename) {
+            if (calling_file) {
+              if (fileName !== calling_file) {
+                return;
+              }
+            } else {
+              return;
+            }
+          }
+        }
+      };
+      Error.captureStackTrace(dummy);
+      dummy.stack;
+      Error.prepareStackTrace = origPST;
+      Error.stackTraceLimit = origSTL;
+      var fileSchema = "file://";
+      if (fileName.indexOf(fileSchema) === 0) {
+        fileName = fileURLToPath2(fileName);
+      }
+      return fileName;
+    };
+    exports.getRoot = function getRoot(file) {
+      var dir = dirname2(file), prev;
+      while (true) {
+        if (dir === ".") {
+          dir = process.cwd();
+        }
+        if (exists(join5(dir, "package.json")) || exists(join5(dir, "node_modules"))) {
+          return dir;
+        }
+        if (prev === dir) {
+          throw new Error(
+            'Could not find module root given file: "' + file + '". Do you have a `package.json` file? '
+          );
+        }
+        prev = dir;
+        dir = join5(dir, "..");
+      }
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/wrappers.js
+var require_wrappers = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/wrappers.js"(exports) {
+    "use strict";
+    var { cppdb } = require_util2();
+    exports.prepare = function prepare(sql) {
+      return this[cppdb].prepare(sql, this, false);
+    };
+    exports.exec = function exec(sql) {
+      this[cppdb].exec(sql);
+      return this;
+    };
+    exports.close = function close() {
+      this[cppdb].close();
+      return this;
+    };
+    exports.loadExtension = function loadExtension(...args) {
+      this[cppdb].loadExtension(...args);
+      return this;
+    };
+    exports.defaultSafeIntegers = function defaultSafeIntegers(...args) {
+      this[cppdb].defaultSafeIntegers(...args);
+      return this;
+    };
+    exports.unsafeMode = function unsafeMode(...args) {
+      this[cppdb].unsafeMode(...args);
+      return this;
+    };
+    exports.getters = {
+      name: {
+        get: function name() {
+          return this[cppdb].name;
+        },
+        enumerable: true
+      },
+      open: {
+        get: function open() {
+          return this[cppdb].open;
+        },
+        enumerable: true
+      },
+      inTransaction: {
+        get: function inTransaction() {
+          return this[cppdb].inTransaction;
+        },
+        enumerable: true
+      },
+      readonly: {
+        get: function readonly2() {
+          return this[cppdb].readonly;
+        },
+        enumerable: true
+      },
+      memory: {
+        get: function memory() {
+          return this[cppdb].memory;
+        },
+        enumerable: true
+      }
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/transaction.js
+var require_transaction = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/transaction.js"(exports, module) {
+    "use strict";
+    var { cppdb } = require_util2();
+    var controllers = /* @__PURE__ */ new WeakMap();
+    module.exports = function transaction(fn) {
+      if (typeof fn !== "function") throw new TypeError("Expected first argument to be a function");
+      const db = this[cppdb];
+      const controller = getController(db, this);
+      const { apply } = Function.prototype;
+      const properties = {
+        default: { value: wrapTransaction(apply, fn, db, controller.default) },
+        deferred: { value: wrapTransaction(apply, fn, db, controller.deferred) },
+        immediate: { value: wrapTransaction(apply, fn, db, controller.immediate) },
+        exclusive: { value: wrapTransaction(apply, fn, db, controller.exclusive) },
+        database: { value: this, enumerable: true }
+      };
+      Object.defineProperties(properties.default.value, properties);
+      Object.defineProperties(properties.deferred.value, properties);
+      Object.defineProperties(properties.immediate.value, properties);
+      Object.defineProperties(properties.exclusive.value, properties);
+      return properties.default.value;
+    };
+    var getController = (db, self) => {
+      let controller = controllers.get(db);
+      if (!controller) {
+        const shared = {
+          commit: db.prepare("COMMIT", self, false),
+          rollback: db.prepare("ROLLBACK", self, false),
+          savepoint: db.prepare("SAVEPOINT `	_bs3.	`", self, false),
+          release: db.prepare("RELEASE `	_bs3.	`", self, false),
+          rollbackTo: db.prepare("ROLLBACK TO `	_bs3.	`", self, false)
+        };
+        controllers.set(db, controller = {
+          default: Object.assign({ begin: db.prepare("BEGIN", self, false) }, shared),
+          deferred: Object.assign({ begin: db.prepare("BEGIN DEFERRED", self, false) }, shared),
+          immediate: Object.assign({ begin: db.prepare("BEGIN IMMEDIATE", self, false) }, shared),
+          exclusive: Object.assign({ begin: db.prepare("BEGIN EXCLUSIVE", self, false) }, shared)
+        });
+      }
+      return controller;
+    };
+    var wrapTransaction = (apply, fn, db, { begin, commit, rollback, savepoint, release, rollbackTo }) => function sqliteTransaction() {
+      let before, after, undo;
+      if (db.inTransaction) {
+        before = savepoint;
+        after = release;
+        undo = rollbackTo;
+      } else {
+        before = begin;
+        after = commit;
+        undo = rollback;
+      }
+      before.run();
+      try {
+        const result = apply.call(fn, this, arguments);
+        if (result && typeof result.then === "function") {
+          throw new TypeError("Transaction function cannot return a promise");
+        }
+        after.run();
+        return result;
+      } catch (ex) {
+        if (db.inTransaction) {
+          undo.run();
+          if (undo !== rollback) after.run();
+        }
+        throw ex;
+      }
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/pragma.js
+var require_pragma = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/pragma.js"(exports, module) {
+    "use strict";
+    var { getBooleanOption, cppdb } = require_util2();
+    module.exports = function pragma(source, options) {
+      if (options == null) options = {};
+      if (typeof source !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof options !== "object") throw new TypeError("Expected second argument to be an options object");
+      const simple = getBooleanOption(options, "simple");
+      const stmt = this[cppdb].prepare(`PRAGMA ${source}`, this, true);
+      return simple ? stmt.pluck().get() : stmt.all();
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/backup.js
+var require_backup = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/backup.js"(exports, module) {
+    "use strict";
+    var fs5 = __require("fs");
+    var path5 = __require("path");
+    var { promisify } = __require("util");
+    var { cppdb } = require_util2();
+    var fsAccess = promisify(fs5.access);
+    module.exports = async function backup(filename, options) {
+      if (options == null) options = {};
+      if (typeof filename !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof options !== "object") throw new TypeError("Expected second argument to be an options object");
+      filename = filename.trim();
+      const attachedName = "attached" in options ? options.attached : "main";
+      const handler = "progress" in options ? options.progress : null;
+      if (!filename) throw new TypeError("Backup filename cannot be an empty string");
+      if (filename === ":memory:") throw new TypeError('Invalid backup filename ":memory:"');
+      if (typeof attachedName !== "string") throw new TypeError('Expected the "attached" option to be a string');
+      if (!attachedName) throw new TypeError('The "attached" option cannot be an empty string');
+      if (handler != null && typeof handler !== "function") throw new TypeError('Expected the "progress" option to be a function');
+      await fsAccess(path5.dirname(filename)).catch(() => {
+        throw new TypeError("Cannot save backup because the directory does not exist");
+      });
+      const isNewFile = await fsAccess(filename).then(() => false, () => true);
+      return runBackup(this[cppdb].backup(this, attachedName, filename, isNewFile), handler || null);
+    };
+    var runBackup = (backup, handler) => {
+      let rate = 0;
+      let useDefault = true;
+      return new Promise((resolve2, reject) => {
+        setImmediate(function step() {
+          try {
+            const progress = backup.transfer(rate);
+            if (!progress.remainingPages) {
+              backup.close();
+              resolve2(progress);
+              return;
+            }
+            if (useDefault) {
+              useDefault = false;
+              rate = 100;
+            }
+            if (handler) {
+              const ret = handler(progress);
+              if (ret !== void 0) {
+                if (typeof ret === "number" && ret === ret) rate = Math.max(0, Math.min(2147483647, Math.round(ret)));
+                else throw new TypeError("Expected progress callback to return a number or undefined");
+              }
+            }
+            setImmediate(step);
+          } catch (err) {
+            backup.close();
+            reject(err);
+          }
+        });
+      });
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/serialize.js
+var require_serialize = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/serialize.js"(exports, module) {
+    "use strict";
+    var { cppdb } = require_util2();
+    module.exports = function serialize(options) {
+      if (options == null) options = {};
+      if (typeof options !== "object") throw new TypeError("Expected first argument to be an options object");
+      const attachedName = "attached" in options ? options.attached : "main";
+      if (typeof attachedName !== "string") throw new TypeError('Expected the "attached" option to be a string');
+      if (!attachedName) throw new TypeError('The "attached" option cannot be an empty string');
+      return this[cppdb].serialize(attachedName);
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/function.js
+var require_function = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/function.js"(exports, module) {
+    "use strict";
+    var { getBooleanOption, cppdb } = require_util2();
+    module.exports = function defineFunction(name, options, fn) {
+      if (options == null) options = {};
+      if (typeof options === "function") {
+        fn = options;
+        options = {};
+      }
+      if (typeof name !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof fn !== "function") throw new TypeError("Expected last argument to be a function");
+      if (typeof options !== "object") throw new TypeError("Expected second argument to be an options object");
+      if (!name) throw new TypeError("User-defined function name cannot be an empty string");
+      const safeIntegers = "safeIntegers" in options ? +getBooleanOption(options, "safeIntegers") : 2;
+      const deterministic = getBooleanOption(options, "deterministic");
+      const directOnly = getBooleanOption(options, "directOnly");
+      const varargs = getBooleanOption(options, "varargs");
+      let argCount = -1;
+      if (!varargs) {
+        argCount = fn.length;
+        if (!Number.isInteger(argCount) || argCount < 0) throw new TypeError("Expected function.length to be a positive integer");
+        if (argCount > 100) throw new RangeError("User-defined functions cannot have more than 100 arguments");
+      }
+      this[cppdb].function(fn, name, argCount, safeIntegers, deterministic, directOnly);
+      return this;
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/aggregate.js
+var require_aggregate = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/aggregate.js"(exports, module) {
+    "use strict";
+    var { getBooleanOption, cppdb } = require_util2();
+    module.exports = function defineAggregate(name, options) {
+      if (typeof name !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof options !== "object" || options === null) throw new TypeError("Expected second argument to be an options object");
+      if (!name) throw new TypeError("User-defined function name cannot be an empty string");
+      const start = "start" in options ? options.start : null;
+      const step = getFunctionOption(options, "step", true);
+      const inverse = getFunctionOption(options, "inverse", false);
+      const result = getFunctionOption(options, "result", false);
+      const safeIntegers = "safeIntegers" in options ? +getBooleanOption(options, "safeIntegers") : 2;
+      const deterministic = getBooleanOption(options, "deterministic");
+      const directOnly = getBooleanOption(options, "directOnly");
+      const varargs = getBooleanOption(options, "varargs");
+      let argCount = -1;
+      if (!varargs) {
+        argCount = Math.max(getLength(step), inverse ? getLength(inverse) : 0);
+        if (argCount > 0) argCount -= 1;
+        if (argCount > 100) throw new RangeError("User-defined functions cannot have more than 100 arguments");
+      }
+      this[cppdb].aggregate(start, step, inverse, result, name, argCount, safeIntegers, deterministic, directOnly);
+      return this;
+    };
+    var getFunctionOption = (options, key, required2) => {
+      const value = key in options ? options[key] : null;
+      if (typeof value === "function") return value;
+      if (value != null) throw new TypeError(`Expected the "${key}" option to be a function`);
+      if (required2) throw new TypeError(`Missing required option "${key}"`);
+      return null;
+    };
+    var getLength = ({ length }) => {
+      if (Number.isInteger(length) && length >= 0) return length;
+      throw new TypeError("Expected function.length to be a positive integer");
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/table.js
+var require_table = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/table.js"(exports, module) {
+    "use strict";
+    var { cppdb } = require_util2();
+    module.exports = function defineTable(name, factory) {
+      if (typeof name !== "string") throw new TypeError("Expected first argument to be a string");
+      if (!name) throw new TypeError("Virtual table module name cannot be an empty string");
+      let eponymous = false;
+      if (typeof factory === "object" && factory !== null) {
+        eponymous = true;
+        factory = defer(parseTableDefinition(factory, "used", name));
+      } else {
+        if (typeof factory !== "function") throw new TypeError("Expected second argument to be a function or a table definition object");
+        factory = wrapFactory(factory);
+      }
+      this[cppdb].table(factory, name, eponymous);
+      return this;
+    };
+    function wrapFactory(factory) {
+      return function virtualTableFactory(moduleName, databaseName, tableName, ...args) {
+        const thisObject = {
+          module: moduleName,
+          database: databaseName,
+          table: tableName
+        };
+        const def = apply.call(factory, thisObject, args);
+        if (typeof def !== "object" || def === null) {
+          throw new TypeError(`Virtual table module "${moduleName}" did not return a table definition object`);
+        }
+        return parseTableDefinition(def, "returned", moduleName);
+      };
+    }
+    function parseTableDefinition(def, verb, moduleName) {
+      if (!hasOwnProperty.call(def, "rows")) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition without a "rows" property`);
+      }
+      if (!hasOwnProperty.call(def, "columns")) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition without a "columns" property`);
+      }
+      const rows = def.rows;
+      if (typeof rows !== "function" || Object.getPrototypeOf(rows) !== GeneratorFunctionPrototype) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "rows" property (should be a generator function)`);
+      }
+      let columns = def.columns;
+      if (!Array.isArray(columns) || !(columns = [...columns]).every((x) => typeof x === "string")) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "columns" property (should be an array of strings)`);
+      }
+      if (columns.length !== new Set(columns).size) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with duplicate column names`);
+      }
+      if (!columns.length) {
+        throw new RangeError(`Virtual table module "${moduleName}" ${verb} a table definition with zero columns`);
+      }
+      let parameters;
+      if (hasOwnProperty.call(def, "parameters")) {
+        parameters = def.parameters;
+        if (!Array.isArray(parameters) || !(parameters = [...parameters]).every((x) => typeof x === "string")) {
+          throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "parameters" property (should be an array of strings)`);
+        }
+      } else {
+        parameters = inferParameters(rows);
+      }
+      if (parameters.length !== new Set(parameters).size) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with duplicate parameter names`);
+      }
+      if (parameters.length > 32) {
+        throw new RangeError(`Virtual table module "${moduleName}" ${verb} a table definition with more than the maximum number of 32 parameters`);
+      }
+      for (const parameter of parameters) {
+        if (columns.includes(parameter)) {
+          throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with column "${parameter}" which was ambiguously defined as both a column and parameter`);
+        }
+      }
+      let safeIntegers = 2;
+      if (hasOwnProperty.call(def, "safeIntegers")) {
+        const bool = def.safeIntegers;
+        if (typeof bool !== "boolean") {
+          throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "safeIntegers" property (should be a boolean)`);
+        }
+        safeIntegers = +bool;
+      }
+      let directOnly = false;
+      if (hasOwnProperty.call(def, "directOnly")) {
+        directOnly = def.directOnly;
+        if (typeof directOnly !== "boolean") {
+          throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "directOnly" property (should be a boolean)`);
+        }
+      }
+      const columnDefinitions = [
+        ...parameters.map(identifier).map((str) => `${str} HIDDEN`),
+        ...columns.map(identifier)
+      ];
+      return [
+        `CREATE TABLE x(${columnDefinitions.join(", ")});`,
+        wrapGenerator(rows, new Map(columns.map((x, i) => [x, parameters.length + i])), moduleName),
+        parameters,
+        safeIntegers,
+        directOnly
+      ];
+    }
+    function wrapGenerator(generator, columnMap, moduleName) {
+      return function* virtualTable(...args) {
+        const output = args.map((x) => Buffer.isBuffer(x) ? Buffer.from(x) : x);
+        for (let i = 0; i < columnMap.size; ++i) {
+          output.push(null);
+        }
+        for (const row of generator(...args)) {
+          if (Array.isArray(row)) {
+            extractRowArray(row, output, columnMap.size, moduleName);
+            yield output;
+          } else if (typeof row === "object" && row !== null) {
+            extractRowObject(row, output, columnMap, moduleName);
+            yield output;
+          } else {
+            throw new TypeError(`Virtual table module "${moduleName}" yielded something that isn't a valid row object`);
+          }
+        }
+      };
+    }
+    function extractRowArray(row, output, columnCount, moduleName) {
+      if (row.length !== columnCount) {
+        throw new TypeError(`Virtual table module "${moduleName}" yielded a row with an incorrect number of columns`);
+      }
+      const offset = output.length - columnCount;
+      for (let i = 0; i < columnCount; ++i) {
+        output[i + offset] = row[i];
+      }
+    }
+    function extractRowObject(row, output, columnMap, moduleName) {
+      let count = 0;
+      for (const key of Object.keys(row)) {
+        const index = columnMap.get(key);
+        if (index === void 0) {
+          throw new TypeError(`Virtual table module "${moduleName}" yielded a row with an undeclared column "${key}"`);
+        }
+        output[index] = row[key];
+        count += 1;
+      }
+      if (count !== columnMap.size) {
+        throw new TypeError(`Virtual table module "${moduleName}" yielded a row with missing columns`);
+      }
+    }
+    function inferParameters({ length }) {
+      if (!Number.isInteger(length) || length < 0) {
+        throw new TypeError("Expected function.length to be a positive integer");
+      }
+      const params = [];
+      for (let i = 0; i < length; ++i) {
+        params.push(`$${i + 1}`);
+      }
+      return params;
+    }
+    var { hasOwnProperty } = Object.prototype;
+    var { apply } = Function.prototype;
+    var GeneratorFunctionPrototype = Object.getPrototypeOf(function* () {
+    });
+    var identifier = (str) => `"${str.replace(/"/g, '""')}"`;
+    var defer = (x) => () => x;
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/inspect.js
+var require_inspect = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/inspect.js"(exports, module) {
+    "use strict";
+    var DatabaseInspection = function Database() {
+    };
+    module.exports = function inspect(depth, opts) {
+      return Object.assign(new DatabaseInspection(), this);
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/database.js
+var require_database = __commonJS({
+  "../../node_modules/better-sqlite3/lib/database.js"(exports, module) {
+    "use strict";
+    var fs5 = __require("fs");
+    var path5 = __require("path");
+    var util2 = require_util2();
+    var SqliteError = require_sqlite_error();
+    var DEFAULT_ADDON;
+    function Database(filenameGiven, options) {
+      if (new.target == null) {
+        return new Database(filenameGiven, options);
+      }
+      let buffer;
+      if (Buffer.isBuffer(filenameGiven)) {
+        buffer = filenameGiven;
+        filenameGiven = ":memory:";
+      }
+      if (filenameGiven == null) filenameGiven = "";
+      if (options == null) options = {};
+      if (typeof filenameGiven !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof options !== "object") throw new TypeError("Expected second argument to be an options object");
+      if ("readOnly" in options) throw new TypeError('Misspelled option "readOnly" should be "readonly"');
+      if ("memory" in options) throw new TypeError('Option "memory" was removed in v7.0.0 (use ":memory:" filename instead)');
+      const filename = filenameGiven.trim();
+      const anonymous = filename === "" || filename === ":memory:";
+      const readonly2 = util2.getBooleanOption(options, "readonly");
+      const fileMustExist = util2.getBooleanOption(options, "fileMustExist");
+      const timeout = "timeout" in options ? options.timeout : 5e3;
+      const verbose = "verbose" in options ? options.verbose : null;
+      const nativeBinding = "nativeBinding" in options ? options.nativeBinding : null;
+      if (readonly2 && anonymous && !buffer) throw new TypeError("In-memory/temporary databases cannot be readonly");
+      if (!Number.isInteger(timeout) || timeout < 0) throw new TypeError('Expected the "timeout" option to be a positive integer');
+      if (timeout > 2147483647) throw new RangeError('Option "timeout" cannot be greater than 2147483647');
+      if (verbose != null && typeof verbose !== "function") throw new TypeError('Expected the "verbose" option to be a function');
+      if (nativeBinding != null && typeof nativeBinding !== "string" && typeof nativeBinding !== "object") throw new TypeError('Expected the "nativeBinding" option to be a string or addon object');
+      let addon;
+      if (nativeBinding == null) {
+        addon = DEFAULT_ADDON || (DEFAULT_ADDON = require_bindings()("better_sqlite3.node"));
+      } else if (typeof nativeBinding === "string") {
+        const requireFunc = typeof __non_webpack_require__ === "function" ? __non_webpack_require__ : __require;
+        addon = requireFunc(path5.resolve(nativeBinding).replace(/(\.node)?$/, ".node"));
+      } else {
+        addon = nativeBinding;
+      }
+      if (!addon.isInitialized) {
+        addon.setErrorConstructor(SqliteError);
+        addon.isInitialized = true;
+      }
+      if (!anonymous && !fs5.existsSync(path5.dirname(filename))) {
+        throw new TypeError("Cannot open database because the directory does not exist");
+      }
+      Object.defineProperties(this, {
+        [util2.cppdb]: { value: new addon.Database(filename, filenameGiven, anonymous, readonly2, fileMustExist, timeout, verbose || null, buffer || null) },
+        ...wrappers.getters
+      });
+    }
+    var wrappers = require_wrappers();
+    Database.prototype.prepare = wrappers.prepare;
+    Database.prototype.transaction = require_transaction();
+    Database.prototype.pragma = require_pragma();
+    Database.prototype.backup = require_backup();
+    Database.prototype.serialize = require_serialize();
+    Database.prototype.function = require_function();
+    Database.prototype.aggregate = require_aggregate();
+    Database.prototype.table = require_table();
+    Database.prototype.loadExtension = wrappers.loadExtension;
+    Database.prototype.exec = wrappers.exec;
+    Database.prototype.close = wrappers.close;
+    Database.prototype.defaultSafeIntegers = wrappers.defaultSafeIntegers;
+    Database.prototype.unsafeMode = wrappers.unsafeMode;
+    Database.prototype[util2.inspect] = require_inspect();
+    module.exports = Database;
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/index.js
+var require_lib = __commonJS({
+  "../../node_modules/better-sqlite3/lib/index.js"(exports, module) {
+    "use strict";
+    module.exports = require_database();
+    module.exports.SqliteError = require_sqlite_error();
+  }
+});
+
+// ../gitevo/dist/memory.js
+import * as fs2 from "node:fs";
+import * as path2 from "node:path";
+function getMemoryDb(cwd) {
+  const resolvedCwd = cwd ?? process.cwd();
+  const cached2 = dbCache.get(resolvedCwd);
+  if (cached2)
+    return cached2;
+  const evoDir = path2.join(resolvedCwd, ".evo");
+  fs2.mkdirSync(evoDir, { recursive: true });
+  const dbPath = path2.join(evoDir, "memory.db");
+  const db = new import_better_sqlite3.default(dbPath);
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+  db.exec(SCHEMA_SQL);
+  dbCache.set(resolvedCwd, db);
+  return db;
+}
+function writeMessage(type, content, opts) {
+  const db = getMemoryDb();
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  const scope = opts?.scope ?? "";
+  const metadata = JSON.stringify(opts?.metadata ?? {});
+  const branch = opts?.branch ?? "";
+  const result = db.prepare(`INSERT INTO messages (type, scope, content, metadata, branch, timestamp)
+       VALUES (?, ?, ?, ?, ?, ?)`).run(type, scope, content, metadata, branch, timestamp);
+  return Number(result.lastInsertRowid);
+}
+function recordCheckpoint(tag, branch, description) {
+  const db = getMemoryDb();
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  db.prepare(`INSERT OR REPLACE INTO checkpoints (tag, branch, description, timestamp)
+     VALUES (?, ?, ?, ?)`).run(tag, branch, description ?? "", timestamp);
+}
+function recordBranch(name, status, spawnedFrom, score) {
+  const db = getMemoryDb();
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  db.prepare(`INSERT INTO branches (name, status, spawned_from, score, timestamp)
+     VALUES (?, ?, ?, ?, ?)`).run(name, status, spawnedFrom ?? null, score ?? null, timestamp);
+}
+var import_better_sqlite3, dbCache, SCHEMA_SQL;
+var init_memory = __esm({
+  "../gitevo/dist/memory.js"() {
+    "use strict";
+    import_better_sqlite3 = __toESM(require_lib(), 1);
+    dbCache = /* @__PURE__ */ new Map();
+    SCHEMA_SQL = `
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    scope TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL,
+    metadata TEXT NOT NULL DEFAULT '{}',
+    branch TEXT NOT NULL DEFAULT '',
+    timestamp TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS checkpoints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tag TEXT NOT NULL UNIQUE,
+    branch TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    timestamp TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS branches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    spawned_from TEXT,
+    score REAL,
+    timestamp TEXT NOT NULL
+  );
+`;
   }
 });
 
@@ -7363,8 +8221,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path3, errorMaps, issueData } = params;
-  const fullPath = [...path3, ...issueData.path || []];
+  const { data, path: path5, errorMaps, issueData } = params;
+  const fullPath = [...path5, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7480,11 +8338,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path3, key) {
+  constructor(parent, value, path5, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path3;
+    this._path = path5;
     this._key = key;
   }
   get path() {
@@ -11121,10 +11979,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path3) {
-  if (!path3)
+function getElementAtPath(obj, path5) {
+  if (!path5)
     return obj;
-  return path3.reduce((acc, key) => acc?.[key], obj);
+  return path5.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11444,11 +12302,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path3, issues) {
+function prefixIssues(path5, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path3);
+    iss.path.unshift(path5);
     return iss;
   });
 }
@@ -21307,18 +22165,6 @@ ${stderr}` : ""),
     });
   });
 }
-async function spawnClaudeN(prompts, opts) {
-  const results = await Promise.allSettled(prompts.map((prompt) => spawnClaude(prompt, opts)));
-  return results.map((r) => {
-    if (r.status === "fulfilled") return r.value;
-    return {
-      output: `Promise rejected: ${String(r.reason)}`,
-      exitCode: -1,
-      durationMs: 0,
-      timedOut: false
-    };
-  });
-}
 function runCommand(cmd, cwd, timeoutMs = 12e4) {
   const t0 = Date.now();
   try {
@@ -21368,7 +22214,7 @@ function hashFailure(output) {
   }
   return Math.abs(hash).toString(16);
 }
-function strategyPrompts(task, n, context) {
+function strategyPrompts(task, n, context, failureContext) {
   const strategies = [
     "Implement the simplest possible solution that works. Minimal changes, maximum clarity.",
     "Implement a robust solution with comprehensive error handling, edge cases, and validation.",
@@ -21382,6 +22228,10 @@ function strategyPrompts(task, n, context) {
   const prompts = [];
   for (let i = 0; i < n; i++) {
     const strategy = strategies[i % strategies.length];
+    const failureBlock = failureContext ? `
+
+## Failures to Avoid
+${failureContext}` : "";
     const contextBlock = context ? `
 
 Context:
@@ -21391,7 +22241,7 @@ ${context}` : "";
 ${task}
 
 ## Strategy
-${strategy}${contextBlock}
+${strategy}${failureBlock}${contextBlock}
 
 Implement the changes needed. Use tools to read files, make edits, and verify your work. Commit when done.`
     );
@@ -21441,13 +22291,624 @@ Mutate this code to improve its fitness score. Be creative \u2014 try different 
 }
 
 // src/evolve.ts
+import { execSync as execSync3 } from "node:child_process";
+import * as fs4 from "node:fs";
+import * as path4 from "node:path";
+
+// ../gitevo/dist/operations.js
+init_memory();
+import { spawnSync } from "node:child_process";
+import * as fs3 from "node:fs";
+import * as path3 from "node:path";
+var EvoError = class extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "EvoError";
+  }
+};
+function git(args, cwd) {
+  const result = spawnSync("git", args, {
+    cwd,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 3e4
+  });
+  if (result.error) {
+    throw new EvoError(result.error.message);
+  }
+  if (result.status !== 0) {
+    const errMsg = (result.stderr || "").trim() || (result.stdout || "").trim();
+    throw new EvoError(errMsg);
+  }
+  return (result.stdout || "").trim();
+}
+function gitOrNull(args, cwd) {
+  try {
+    return git(args, cwd);
+  } catch {
+    return null;
+  }
+}
+function getRepo() {
+  const cwd = process.cwd();
+  try {
+    git(["rev-parse", "--show-toplevel"], cwd);
+  } catch {
+    throw new EvoError("Not a git repository. Run 'git init' first.");
+  }
+  let rootBranch = "main";
+  const heads = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
+  for (const name of ["main", "master", "trunk"]) {
+    if (heads.includes(name)) {
+      rootBranch = name;
+      break;
+    }
+  }
+  return { cwd, rootBranch };
+}
+function currentBranch(cwd) {
+  return git(["branch", "--show-current"], cwd);
+}
+function isDirty2(cwd) {
+  const status = git(["status", "--porcelain"], cwd);
+  const lines = status.split("\n").filter((l) => l.trim() && !l.startsWith("??"));
+  return lines.length > 0;
+}
+function filesRemovedByCheckout(targetRef, cwd) {
+  try {
+    git(["rev-parse", "--verify", targetRef], cwd);
+  } catch {
+    throw new EvoError(`target ref '${targetRef}' does not exist`);
+  }
+  const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
+  return diff.split("\n").filter(Boolean);
+}
+function untrackedSourceFiles(cwd) {
+  const status = git(["status", "--porcelain"], cwd);
+  return status.split("\n").filter((l) => l.startsWith("??")).map((l) => l.slice(3).trim()).filter((f) => /\.(ts|js|mjs|json|md|yml|yaml)$/.test(f));
+}
+function staleDistFiles(cwd) {
+  const stale = [];
+  function scan(dir) {
+    if (!fs3.existsSync(dir))
+      return;
+    for (const entry of fs3.readdirSync(dir, { withFileTypes: true })) {
+      const full = path3.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules")
+          continue;
+        scan(full);
+      } else if (entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+        const tsFile = full.replace(/\.js$/, ".ts");
+        if (!fs3.existsSync(tsFile)) {
+          stale.push(path3.relative(cwd, full));
+        }
+      }
+    }
+  }
+  const pkgsDir = path3.join(cwd, "packages");
+  if (fs3.existsSync(pkgsDir)) {
+    for (const pkg of fs3.readdirSync(pkgsDir, { withFileTypes: true })) {
+      if (pkg.isDirectory()) {
+        scan(path3.join(pkgsDir, pkg.name, "dist"));
+      }
+    }
+  }
+  scan(path3.join(cwd, "dist"));
+  return stale;
+}
+function preflightCheckoutSafety(targetRef, cwd) {
+  const warnings = [];
+  const untracked = untrackedSourceFiles(cwd);
+  if (untracked.length > 0) {
+    warnings.push(`Untracked source files (would persist but risk loss if directory removed):
+${untracked.map((f) => `  \u2022 ${f}`).join("\n")}`);
+  }
+  const removed = filesRemovedByCheckout(targetRef, cwd);
+  const sourceRemoved = removed.filter((f) => /\.ts$/.test(f) && !f.includes("dist/"));
+  if (sourceRemoved.length > 0) {
+    warnings.push(`Source files in HEAD NOT in '${targetRef}' \u2014 WILL BE DELETED by checkout:
+${sourceRemoved.map((f) => `  \u2022 ${f}`).join("\n")}
+Commit or stash these before spawning.`);
+  }
+  const stale = staleDistFiles(cwd);
+  if (stale.length > 0) {
+    warnings.push(`Stale dist/*.js without matching .ts source:
+${stale.map((f) => `  \u2022 ${f}`).join("\n")}
+These will survive checkout \u2014 clean with 'npm run clean && npm run build'.`);
+  }
+  if (warnings.length === 0)
+    return null;
+  return warnings.join("\n\n");
+}
+function tagsWithPrefix(prefix, cwd) {
+  const output = gitOrNull(["tag", "-l", `${prefix}*`], cwd) || "";
+  if (!output)
+    return [];
+  return output.split("\n").filter(Boolean);
+}
+function hasTag(tag, cwd) {
+  return tagsWithPrefix(tag, cwd).includes(tag);
+}
+function evoPaths(cwd) {
+  const evoDir = path3.join(cwd, ".evo");
+  return {
+    evoDir,
+    lessonsFile: path3.join(evoDir, "lessons.jsonl")
+  };
+}
+function requireInit(cwd) {
+  const paths = evoPaths(cwd);
+  if (!fs3.existsSync(paths.evoDir)) {
+    throw new EvoError("GitEvo not initialized. Run evo_init first.");
+  }
+  return paths;
+}
+function evo_checkpoint(name, description) {
+  const { cwd } = getRepo();
+  requireInit(cwd);
+  let stashed = false;
+  if (isDirty2(cwd)) {
+    git(["stash", "push", "-m", `gitevo: auto-stash before checkpoint '${name}'`], cwd);
+    stashed = true;
+  }
+  const tagName = `evo-${name}`;
+  try {
+    git(["tag", "-d", tagName], cwd);
+  } catch {
+  }
+  git(["tag", "-a", tagName, "-m", description], cwd);
+  if (stashed) {
+    try {
+      git(["stash", "pop"], cwd);
+    } catch {
+      return `Checkpoint '${name}' created, but auto-stash could not be reapplied \u2014 your changes are in the stash.`;
+    }
+  }
+  try {
+    const branch = currentBranch(cwd);
+    recordCheckpoint(tagName, branch, description);
+  } catch {
+  }
+  return `Checkpoint '${name}' created.`;
+}
+function evo_learn(content, repoOverride) {
+  const repo = repoOverride ?? getRepo();
+  const { cwd } = repo;
+  requireInit(cwd);
+  const branch = currentBranch(cwd);
+  const lesson = {
+    content,
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    branch
+  };
+  const paths = evoPaths(cwd);
+  fs3.appendFileSync(paths.lessonsFile, `${JSON.stringify(lesson)}
+`, "utf-8");
+  try {
+    writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } });
+  } catch {
+  }
+  return `Lesson recorded on branch '${branch}'.`;
+}
+function evo_spawn(checkpoint_name, new_branch, force) {
+  const { cwd } = getRepo();
+  requireInit(cwd);
+  const tagName = `evo-${checkpoint_name}`;
+  if (!hasTag(tagName, cwd)) {
+    const available = tagsWithPrefix("evo-", cwd).join(", ");
+    throw new EvoError(`Checkpoint '${checkpoint_name}' not found. Available: ${available || "none"}. Run evo_checkpoints to list.`);
+  }
+  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
+  if (branches.includes(new_branch)) {
+    throw new EvoError(`Branch '${new_branch}' already exists.`);
+  }
+  const wasDirty = isDirty2(cwd);
+  let stashed = false;
+  if (wasDirty) {
+    git(["stash", "push", "-m", "gitevo: auto-stash before spawn"], cwd);
+    stashed = true;
+  }
+  const safetyWarnings = preflightCheckoutSafety(tagName, cwd);
+  if (safetyWarnings && !force) {
+    if (stashed) {
+      try {
+        git(["stash", "pop"], cwd);
+      } catch {
+      }
+    }
+    throw new EvoError(`SAFETY CHECK FAILED \u2014 checkout to '${tagName}' would lose data:
+
+${safetyWarnings}
+
+Pass force=true to proceed anyway (you accept the risk of data loss).`);
+  }
+  git(["checkout", "-b", new_branch, tagName], cwd);
+  if (stashed) {
+    try {
+      git(["stash", "pop"], cwd);
+    } catch {
+      return `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'. Auto-stash could not be reapplied \u2014 your changes are in the stash. Run git stash pop manually.`;
+    }
+  }
+  try {
+    recordBranch(new_branch, "active", `evo-${checkpoint_name}`);
+  } catch {
+  }
+  const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
+  if (force && safetyWarnings) {
+    return `${spawnMsg}
+
+\u26A0\uFE0F FORCED \u2014 safety checks bypassed:
+
+${safetyWarnings}`;
+  }
+  return spawnMsg;
+}
+function evo_abandon(checkpoint, reason, force) {
+  const { cwd, rootBranch } = getRepo();
+  requireInit(cwd);
+  let stashed = false;
+  if (isDirty2(cwd)) {
+    git(["stash", "push", "-m", "gitevo: auto-stash before abandon"], cwd);
+    stashed = true;
+  }
+  const branchName = currentBranch(cwd);
+  let targetRef;
+  let targetDesc;
+  if (checkpoint) {
+    const tagName = `evo-${checkpoint}`;
+    if (!hasTag(tagName, cwd)) {
+      if (stashed) {
+        try {
+          git(["stash", "pop"], cwd);
+        } catch {
+        }
+      }
+      throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
+    }
+    targetRef = tagName;
+    targetDesc = `checkpoint '${checkpoint}'`;
+  } else {
+    targetRef = "HEAD~1";
+    targetDesc = "parent commit";
+  }
+  const safetyWarnings = preflightCheckoutSafety(targetRef, cwd);
+  if (safetyWarnings && !force) {
+    if (stashed) {
+      try {
+        git(["stash", "pop"], cwd);
+      } catch {
+      }
+    }
+    throw new EvoError(`SAFETY CHECK FAILED \u2014 reset to '${targetRef}' would lose data:
+
+${safetyWarnings}
+
+Pass force=true to proceed anyway (you accept the risk of data loss).`);
+  }
+  try {
+    recordBranch(branchName, "dead");
+  } catch {
+  }
+  git(["reset", "--hard", targetRef], cwd);
+  const deadTag = `evo-dead-${branchName}`;
+  try {
+    git(["tag", "-d", deadTag], cwd);
+  } catch {
+  }
+  git(["tag", "-a", deadTag, "-m", `Abandoned branch '${branchName}'`], cwd);
+  if (reason) {
+    evo_learn(`[ABANDON] ${reason}`, { cwd, rootBranch });
+  }
+  const abandonMsg = `Branch '${branchName}' abandoned. Reverted to ${targetDesc}.${stashed ? " Auto-stashed dirty changes \u2014 run git stash pop to recover." : ""}`;
+  if (force && safetyWarnings) {
+    return `${abandonMsg}
+
+\u26A0\uFE0F FORCED \u2014 safety checks bypassed:
+
+${safetyWarnings}`;
+  }
+  return abandonMsg;
+}
+function evo_adopt(branch) {
+  const { cwd, rootBranch } = getRepo();
+  requireInit(cwd);
+  if (isDirty2(cwd)) {
+    throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
+  }
+  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
+  if (!branches.includes(branch)) {
+    throw new EvoError(`Branch '${branch}' not found.`);
+  }
+  const originalBranch = currentBranch(cwd);
+  if (originalBranch !== rootBranch) {
+    git(["checkout", rootBranch], cwd);
+  }
+  git(["merge", branch, "--no-edit"], cwd);
+  try {
+    git(["tag", "-d", "evo-adopted"], cwd);
+  } catch {
+  }
+  git(["tag", "-a", "evo-adopted", "-m", `Adopted branch '${branch}' into ${rootBranch}`], cwd);
+  try {
+    recordBranch(branch, "adopted");
+  } catch {
+  }
+  return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
+}
+
+// src/gitevo-integration.ts
+async function wrapGitevo(fn, args, label) {
+  try {
+    const result = fn(...args);
+    console.error(`evomcp[gitevo]: ${label} succeeded \u2014 ${result.slice(0, 80)}`);
+    return result;
+  } catch (err) {
+    const message = err instanceof EvoError ? err.message : String(err);
+    console.error(`evomcp[gitevo]: ${label} failed \u2014 ${message}`);
+    throw new Error(`gitevo ${label}: ${message}`);
+  }
+}
+async function checkpointGeneration(gen, description, _cwd) {
+  await wrapGitevo(
+    evo_checkpoint,
+    [`evolve-gen${gen}`, description],
+    `checkpoint gen ${gen}`
+  );
+}
+async function spawnCandidate(checkpointName, branchName, _cwd) {
+  await wrapGitevo(
+    evo_spawn,
+    [checkpointName, branchName, false],
+    `spawn '${branchName}' from '${checkpointName}'`
+  );
+}
+async function adoptWinner(branchName, _cwd) {
+  await wrapGitevo(
+    evo_adopt,
+    [branchName],
+    `adopt '${branchName}'`
+  );
+}
+async function abandonLoser(_branchName, reason, _cwd) {
+  await wrapGitevo(
+    evo_abandon,
+    [void 0, reason, false],
+    `abandon (reason: ${reason.slice(0, 60)})`
+  );
+}
+
+// src/gates.ts
 import { execSync as execSync2 } from "node:child_process";
-import * as fs2 from "node:fs";
-import * as os2 from "node:os";
-import * as path2 from "node:path";
+var GateRunner = class {
+  config;
+  timeoutMs;
+  constructor(config2, timeoutMs = 12e4) {
+    this.config = config2;
+    this.timeoutMs = timeoutMs;
+  }
+  /**
+   * Run all configured gates in order: lint → build → test → verify.
+   * Returns results for gates that were actually run — skipped if no cmd
+   * configured. Short-circuits on the first non-zero exit.
+   */
+  async runAll(cwd) {
+    const ordered = [
+      { name: "lint", cmd: this.config.lint_cmd },
+      { name: "build", cmd: this.config.build_cmd },
+      { name: "test", cmd: this.config.test_cmd },
+      { name: "verify", cmd: this.config.verify_cmd }
+    ];
+    const results = [];
+    for (const gate of ordered) {
+      if (!gate.cmd) continue;
+      const result = this.execGate(gate.name, gate.cmd, cwd);
+      results.push(result);
+      if (!result.passed) break;
+    }
+    return results;
+  }
+  /**
+   * Execute a single gate command via execSync.
+   * Mirrors the runCommand pattern from agent.ts.
+   */
+  execGate(name, cmd, cwd) {
+    const t0 = Date.now();
+    try {
+      execSync2(cmd, {
+        cwd,
+        encoding: "utf-8",
+        timeout: this.timeoutMs,
+        stdio: "pipe",
+        maxBuffer: 10 * 1024 * 1024
+      });
+      return {
+        gate: name,
+        passed: true,
+        diagnostics: "",
+        elapsed_ms: Date.now() - t0
+      };
+    } catch (err) {
+      const e = err;
+      const stdout = e.stdout ? String(e.stdout) : "";
+      const stderr = e.stderr ? String(e.stderr) : "";
+      const combined = `${stdout}
+${stderr}`.trim();
+      return {
+        gate: name,
+        passed: false,
+        diagnostics: combined.slice(0, 1e4),
+        elapsed_ms: Date.now() - t0
+      };
+    }
+  }
+};
+
+// src/convergence.ts
+var DEFAULT_CONVERGENCE_THRESHOLD = 0.95;
+var DEFAULT_PATIENCE = 10;
+function calcMean(values) {
+  if (values.length === 0) return 0;
+  let sum = 0;
+  for (let i = 0; i < values.length; i++) {
+    sum += values[i];
+  }
+  return sum / values.length;
+}
+function calcStdev(values, mean) {
+  if (values.length === 0) return 0;
+  let sumSqDiff = 0;
+  for (let i = 0; i < values.length; i++) {
+    const diff = values[i] - mean;
+    sumSqDiff += diff * diff;
+  }
+  return Math.sqrt(sumSqDiff / values.length);
+}
+function detectConvergence(scores, threshold = DEFAULT_CONVERGENCE_THRESHOLD) {
+  if (scores.length === 0) {
+    return {
+      converged: false,
+      similarity: 1,
+      threshold,
+      reason: "No scores to evaluate"
+    };
+  }
+  const mean = calcMean(scores);
+  let similarity;
+  if (mean === 0) {
+    similarity = 1;
+  } else {
+    const sd = calcStdev(scores, mean);
+    similarity = Math.max(0, Math.min(1, 1 - sd / Math.abs(mean)));
+  }
+  const converged = similarity >= threshold;
+  return {
+    converged,
+    similarity,
+    threshold,
+    reason: converged ? `Scores converged (similarity ${similarity.toFixed(3)} >= threshold ${threshold})` : `Scores still diverse (similarity ${similarity.toFixed(3)} < threshold ${threshold})`
+  };
+}
+function detectStagnation(history, patience = DEFAULT_PATIENCE) {
+  if (history.length === 0) {
+    return {
+      stagnated: false,
+      generations_without_improvement: 0,
+      patience,
+      best_in_window: 0,
+      overall_best: 0,
+      reason: "No history available"
+    };
+  }
+  let overallBest = history[0].best_score;
+  let bestIndex = 0;
+  for (let i = 1; i < history.length; i++) {
+    if (history[i].best_score > overallBest) {
+      overallBest = history[i].best_score;
+      bestIndex = i;
+    }
+  }
+  const generationsWithoutImprovement = history.length - 1 - bestIndex;
+  const stagnated = generationsWithoutImprovement >= patience;
+  return {
+    stagnated,
+    generations_without_improvement: generationsWithoutImprovement,
+    patience,
+    best_in_window: history[history.length - 1].best_score,
+    overall_best: overallBest,
+    reason: stagnated ? `Stagnated: no improvement for ${generationsWithoutImprovement} generations (patience: ${patience})` : `Still improving: ${generationsWithoutImprovement} generations since last improvement (patience: ${patience})`
+  };
+}
+function detectOscillation(history) {
+  if (history.length < 4) {
+    return {
+      oscillating: false,
+      pattern: "none",
+      amplitude: 0,
+      reason: "Insufficient history for oscillation detection (need >= 4 points)"
+    };
+  }
+  const window = history.slice(-5);
+  const scores = window.map((h) => h.best_score);
+  const deltas = [];
+  for (let i = 1; i < scores.length; i++) {
+    deltas.push(scores[i] - scores[i - 1]);
+  }
+  let oscillating = deltas.length >= 3;
+  for (let i = 1; i < deltas.length && oscillating; i++) {
+    if (deltas[i - 1] * deltas[i] >= 0) {
+      oscillating = false;
+    }
+  }
+  let amplitude = 0;
+  if (history.length > 0) {
+    let min = history[0].best_score;
+    let max = history[0].best_score;
+    for (let i = 1; i < history.length; i++) {
+      if (history[i].best_score < min) min = history[i].best_score;
+      if (history[i].best_score > max) max = history[i].best_score;
+    }
+    amplitude = max - min;
+  }
+  return {
+    oscillating,
+    pattern: oscillating ? "up-down" : "none",
+    amplitude,
+    reason: oscillating ? `Oscillation detected: scores alternate up-down pattern (amplitude: ${amplitude.toFixed(2)})` : "No oscillation pattern detected"
+  };
+}
+function checkConvergence(history, scores, opts) {
+  const threshold = opts?.convergenceThreshold ?? DEFAULT_CONVERGENCE_THRESHOLD;
+  const patience = opts?.patience ?? DEFAULT_PATIENCE;
+  const convergence = detectConvergence(scores, threshold);
+  const stagnation = detectStagnation(history, patience);
+  const oscillation = detectOscillation(history);
+  let recommendation;
+  if (oscillation.oscillating) {
+    recommendation = "escalate";
+  } else if (convergence.converged || stagnation.stagnated) {
+    recommendation = "stop";
+  } else {
+    recommendation = "continue";
+  }
+  return {
+    converged: convergence.converged,
+    stagnated: stagnation.stagnated,
+    oscillating: oscillation.oscillating,
+    convergence,
+    stagnation,
+    oscillation,
+    recommendation
+  };
+}
+
+// src/evolve.ts
 var DEFAULT_GENERATIONS = 5;
 var DEFAULT_POPULATION = 6;
 var DEFAULT_TIMEOUT_MS = 18e4;
+async function runGates(spec, cwd, onProgress) {
+  if (!spec.build_cmd && !spec.test_cmd && !spec.lint_cmd) {
+    return { passed: true, results: [] };
+  }
+  const gateRunner = new GateRunner({
+    build_cmd: spec.build_cmd,
+    test_cmd: spec.test_cmd,
+    lint_cmd: spec.lint_cmd
+  });
+  const results = await gateRunner.runAll(cwd);
+  const allPassed = results.every((r) => r.passed);
+  for (const r of results) {
+    if (r.passed) {
+      onProgress?.(`    gate ${r.gate}: PASSED (${r.elapsed_ms}ms)`);
+    } else {
+      const diag = r.diagnostics.slice(0, 200);
+      onProgress?.(`    gate ${r.gate}: FAILED (${r.elapsed_ms}ms)
+      ${diag.replace(/\n/g, "\n      ")}`);
+    }
+  }
+  return { passed: allPassed, results };
+}
 async function evolve(spec, onProgress) {
   const startTime = Date.now();
   const stats = {
@@ -21476,6 +22937,12 @@ Output: ${baselineResult.output.slice(0, 500)}`
     );
   }
   onProgress?.(`Baseline fitness: ${baselineScore.toFixed(2)}`);
+  {
+    const { passed } = await runGates(spec, spec.cwd, onProgress);
+    if (!passed) {
+      onProgress?.("WARNING: baseline code fails gates -- check config or fix baseline first");
+    }
+  }
   const costBefore = proxyReady ? await getProxyCost() : null;
   const targetContents = readTargetFiles(spec.cwd, spec.target_files);
   if (targetContents.length === 0) {
@@ -21484,12 +22951,26 @@ Output: ${baselineResult.output.slice(0, 500)}`
   const _initialCode = targetContents.map((t) => `=== ${t.path} ===
 ${t.content}`).join("\n\n");
   let bestScore = baselineScore;
-  let bestPatch = null;
+  let bestBranch = null;
   const fitnessHistory = [];
   const elites = [];
+  const earlyExit = {};
+  try {
+    evo_checkpoint("evolve-baseline", "baseline before evolution");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    onProgress?.(`Baseline checkpoint note: ${msg}`);
+  }
+  let rootBranch;
+  try {
+    rootBranch = execSync3("git rev-parse --abbrev-ref HEAD", { cwd: spec.cwd, timeout: 5e3 }).toString().trim();
+  } catch {
+    rootBranch = "master";
+  }
   for (let gen = 0; gen < generations; gen++) {
     onProgress?.(`
 Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
+    await checkpointGeneration(gen, `Generation ${gen + 1} checkpoint`, spec.cwd);
     const prompts = [];
     for (let i = 0; i < populationSize; i++) {
       const targetFile = targetContents[i % targetContents.length];
@@ -21503,51 +22984,105 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
       );
       prompts.push(prompt);
     }
-    onProgress?.(`  Spawning ${populationSize} mutations...`);
-    const results = await Promise.all(
-      prompts.map(
-        (p, i) => spawnClaude(p, {
-          cwd: spec.cwd,
-          model: spec.model,
-          apiKey: spec.api_key,
-          useProxy: proxyReady,
-          timeoutMs: DEFAULT_TIMEOUT_MS
-        }).catch((err) => {
-          onProgress?.(`  Mutation ${i} failed: ${String(err)}`);
-          return { output: "", exitCode: -1, durationMs: 0, timedOut: false };
-        })
-      )
-    );
-    stats.candidates_generated += results.length;
+    onProgress?.(`  Evaluating ${populationSize} candidates (sequential)...`);
     const genScores = [];
-    for (let i = 0; i < results.length; i++) {
-      const r = results[i];
-      if (r.timedOut || r.exitCode !== 0) continue;
-      saveState(spec.cwd);
+    for (let i = 0; i < populationSize; i++) {
+      const branchName = `evolve-gen${gen}-candidate${i}`;
+      try {
+        await spawnCandidate(`evolve-gen${gen}`, branchName, spec.cwd);
+      } catch (err) {
+        onProgress?.(`  [${i + 1}] spawn failed: ${String(err).slice(0, 80)}`);
+        continue;
+      }
+      const result = await spawnClaude(prompts[i], {
+        cwd: spec.cwd,
+        model: spec.model,
+        apiKey: spec.api_key,
+        useProxy: proxyReady,
+        timeoutMs: DEFAULT_TIMEOUT_MS
+      }).catch((err) => {
+        onProgress?.(`  [${i + 1}] claude failed: ${String(err)}`);
+        return { output: "", exitCode: -1, durationMs: 0, timedOut: false };
+      });
+      stats.candidates_generated++;
+      if (result.timedOut || result.exitCode !== 0) {
+        onProgress?.(`  [${i + 1}] claude -p failed (exit=${result.exitCode}${result.timedOut ? ", timed out" : ""})`);
+        try {
+          await abandonLoser(branchName, `claude -p failed (exit=${result.exitCode})`, spec.cwd);
+        } catch {
+        }
+        continue;
+      }
+      try {
+        execSync3("git add -A", { cwd: spec.cwd, timeout: 1e4 });
+        execSync3(`git commit -m "evolve gen${gen} candidate${i}"`, { cwd: spec.cwd, timeout: 1e4 });
+      } catch {
+        onProgress?.(`  [${i + 1}] no changes produced by claude -p`);
+        try {
+          await abandonLoser(branchName, "no changes produced", spec.cwd);
+        } catch {
+        }
+        continue;
+      }
       try {
         const fitnessResult = runCommand(spec.fitness_cmd, spec.cwd);
         const score = extractScore(fitnessResult.output);
-        if (score !== null) {
-          genScores.push(score);
-          onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
-          const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
-          if (isBetter) {
-            bestScore = score;
-            bestPatch = captureState(spec.cwd, spec.target_files);
-            onProgress?.(`    \u2192 NEW BEST: ${score.toFixed(2)}`);
-            elites.push({ code: fitnessResult.output.slice(0, 2e3), score });
-            elites.sort((a, b) => higherIsBetter ? b.score - a.score : a.score - b.score);
-            if (elites.length > 5) elites.length = 5;
+        if (score === null) {
+          onProgress?.(`  [${i + 1}] no numeric score in fitness output`);
+          try {
+            await abandonLoser(branchName, "no numeric score", spec.cwd);
+          } catch {
+          }
+          continue;
+        }
+        if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
+          const { passed, results: gateResults } = await runGates(spec, spec.cwd, onProgress);
+          if (!passed) {
+            onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}, GATES FAILED (${gateResults.filter((r) => !r.passed).map((r) => r.gate).join(", ")}) -- skipping`);
+            try {
+              await abandonLoser(branchName, "gates failed", spec.cwd);
+            } catch {
+            }
+            continue;
+          }
+        }
+        genScores.push(score);
+        onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
+        const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
+        if (isBetter) {
+          bestScore = score;
+          bestBranch = branchName;
+          onProgress?.(`    -> NEW BEST: ${score.toFixed(2)}`);
+          const eliteCode = readTargetFiles(spec.cwd, spec.target_files).map((t) => `=== ${t.path} ===
+${t.content}`).join("\n\n");
+          elites.push({ code: eliteCode.slice(0, 2e3), score });
+          elites.sort((a, b) => higherIsBetter ? b.score - a.score : a.score - b.score);
+          if (elites.length > 5) elites.length = 5;
+        } else {
+          try {
+            await abandonLoser(branchName, `score ${score.toFixed(2)} not better than best ${bestScore.toFixed(2)}`, spec.cwd);
+          } catch {
           }
         }
       } catch (err) {
         onProgress?.(`  [${i + 1}] error: ${String(err).slice(0, 80)}`);
-      } finally {
-        restoreState(spec.cwd);
+        try {
+          await abandonLoser(branchName, `error: ${String(err).slice(0, 60)}`, spec.cwd);
+        } catch {
+        }
       }
     }
-    if (bestPatch) {
-      applyPatch(bestPatch, spec.cwd);
+    if (bestBranch) {
+      try {
+        execSync3(`git checkout ${bestBranch}`, { cwd: spec.cwd, timeout: 1e4 });
+      } catch (err) {
+        onProgress?.(`  Warning: could not checkout best branch: ${String(err).slice(0, 60)}`);
+      }
+    } else {
+      try {
+        execSync3(`git checkout ${rootBranch}`, { cwd: spec.cwd, timeout: 1e4 });
+      } catch {
+      }
     }
     if (genScores.length > 0) {
       const meanScore = genScores.reduce((a, b) => a + b, 0) / genScores.length;
@@ -21563,12 +23098,56 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
         best_score: bestScore,
         mean_score: bestScore
       });
-      onProgress?.(`  Gen ${gen + 1}: no valid scores \u2014 keeping best=${bestScore.toFixed(2)}`);
+      onProgress?.(`  Gen ${gen + 1}: no valid scores -- keeping best=${bestScore.toFixed(2)}`);
+    }
+    const convHistory = fitnessHistory.map((h) => ({
+      generation: h.generation,
+      best_score: h.best_score
+    }));
+    const report = checkConvergence(convHistory, genScores);
+    if (report.recommendation !== "continue") {
+      if (report.converged) {
+        earlyExit.converged = true;
+        earlyExit.convergence_reason = report.convergence.reason;
+        onProgress?.(`
+  CONVERGED: ${report.convergence.reason}`);
+      }
+      if (report.stagnated) {
+        earlyExit.stagnated = true;
+        earlyExit.stagnation_reason = report.stagnation.reason;
+        onProgress?.(`
+  STAGNATED: ${report.stagnation.reason}`);
+      }
+      if (report.oscillating) {
+        earlyExit.stagnated = true;
+        earlyExit.stagnation_reason = report.oscillation.reason;
+        onProgress?.(`
+  OSCILLATING: ${report.oscillation.reason}`);
+      }
+      break;
     }
   }
-  onProgress?.("\nApplying best patch for final verification...");
-  if (bestPatch) {
-    applyPatch(bestPatch, spec.cwd);
+  if (bestBranch) {
+    onProgress?.(`
+Adopting winner: ${bestBranch}...`);
+    try {
+      await adoptWinner(bestBranch, spec.cwd);
+    } catch (err) {
+      onProgress?.(`  Adoption failed: ${String(err).slice(0, 100)}`);
+      try {
+        execSync3(`git checkout ${bestBranch} -- .`, { cwd: spec.cwd, timeout: 1e4 });
+      } catch {
+      }
+    }
+  }
+  let finalGateReport = "";
+  if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
+    onProgress?.("\nFinal gate verification...");
+    const { passed, results } = await runGates(spec, spec.cwd, onProgress);
+    finalGateReport = results.map((r) => `${r.gate}: ${r.passed ? "PASS" : "FAIL"} (${r.elapsed_ms}ms)${!r.passed && r.diagnostics ? "\n  " + r.diagnostics.slice(0, 300) : ""}`).join("\n");
+    if (!passed) {
+      onProgress?.("WARNING: best patch does not pass all gates");
+    }
   }
   const finalResult = runCommand(spec.fitness_cmd, spec.cwd);
   const finalScore = extractScore(finalResult.output) ?? bestScore;
@@ -21578,7 +23157,8 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
     if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
   }
   return {
-    best_patch: bestPatch || "(no improvement over baseline)",
+    ...earlyExit,
+    best_patch: bestBranch || "(no improvement over baseline)",
     best_score: finalScore,
     baseline_score: baselineScore,
     fitness_history: fitnessHistory,
@@ -21589,7 +23169,9 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
       "",
       fitnessHistory.map((h) => `Gen ${h.generation}: best=${h.best_score.toFixed(2)} mean=${h.mean_score.toFixed(2)}`).join("\n"),
       "",
-      finalResult.output.slice(0, 2e3)
+      finalResult.output.slice(0, 2e3),
+      "",
+      finalGateReport
     ].join("\n"),
     stats
   };
@@ -21597,23 +23179,23 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
 function readTargetFiles(cwd, patterns) {
   const files = [];
   for (const pattern of patterns) {
-    const fullPath = path2.resolve(cwd, pattern);
-    if (fs2.existsSync(fullPath) && fs2.statSync(fullPath).isFile()) {
-      files.push({ path: pattern, content: fs2.readFileSync(fullPath, "utf-8") });
+    const fullPath = path4.resolve(cwd, pattern);
+    if (fs4.existsSync(fullPath) && fs4.statSync(fullPath).isFile()) {
+      files.push({ path: pattern, content: fs4.readFileSync(fullPath, "utf-8") });
       continue;
     }
     try {
-      const dir = path2.dirname(fullPath);
-      const basename2 = path2.basename(fullPath);
-      if (fs2.existsSync(dir)) {
-        const entries = fs2.readdirSync(dir);
+      const dir = path4.dirname(fullPath);
+      const basename2 = path4.basename(fullPath);
+      if (fs4.existsSync(dir)) {
+        const entries = fs4.readdirSync(dir);
         for (const entry of entries) {
           if (matchSimple(entry, basename2)) {
-            const filePath = path2.join(dir, entry);
-            if (fs2.statSync(filePath).isFile()) {
+            const filePath = path4.join(dir, entry);
+            if (fs4.statSync(filePath).isFile()) {
               files.push({
-                path: path2.relative(cwd, filePath),
-                content: fs2.readFileSync(filePath, "utf-8")
+                path: path4.relative(cwd, filePath),
+                content: fs4.readFileSync(filePath, "utf-8")
               });
             }
           }
@@ -21627,72 +23209,286 @@ function readTargetFiles(cwd, patterns) {
   return files;
 }
 function matchSimple(name, pattern) {
-  const regex = new RegExp(`^${pattern.replace(/\./g, "\\.").replace(/\*/g, ".*")}$`);
+  const regex = new RegExp(
+    `^${pattern.replace(/[.+?^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`
+  );
   return regex.test(name);
-}
-function saveState(cwd) {
-  try {
-    execSync2(`git stash push --include-untracked -m "evomcp-backup"`, { cwd, timeout: 1e4 });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (!msg.includes("No local changes")) {
-      console.error("evolve: saveState failed", { cwd, err: msg });
-    }
-  }
-}
-function restoreState(cwd) {
-  try {
-    execSync2(`git checkout .`, { cwd, timeout: 1e4 });
-    execSync2(`git clean -fd`, { cwd, timeout: 1e4 });
-    try {
-      execSync2(`git stash pop`, { cwd, timeout: 1e4 });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (!(msg.includes("No stash") || msg.includes("not a git repository"))) {
-        console.error("evolve: stash pop failed", { cwd, err: msg });
-      }
-    }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error("evolve: restoreState failed", { cwd, err: msg });
-  }
-}
-function captureState(cwd, targetFiles) {
-  try {
-    const diff = execSync2(`git diff -- ${targetFiles.join(" ")}`, { cwd, encoding: "utf-8", timeout: 1e4 });
-    return diff || null;
-  } catch {
-    return null;
-  }
-}
-function applyPatch(patch, cwd) {
-  if (!patch) return;
-  const patchFile = path2.join(os2.tmpdir(), `evomcp-best-${Date.now()}.patch`);
-  try {
-    fs2.writeFileSync(patchFile, patch, "utf-8");
-    execSync2(`git apply "${patchFile}"`, { cwd, timeout: 3e4 });
-  } catch {
-  } finally {
-    try {
-      fs2.unlinkSync(patchFile);
-    } catch {
-    }
-  }
 }
 
 // src/solve.ts
-import { execSync as execSync3 } from "node:child_process";
+import { execSync as execSync4 } from "node:child_process";
+
+// src/judge.ts
+var DIMENSION_WEIGHTS = {
+  correctness: 0.4,
+  clarity: 0.2,
+  efficiency: 0.2,
+  maintainability: 0.2
+};
+function buildJudgePrompt(branches) {
+  const branchSections = branches.map((b, i) => {
+    const diff = b.diff.length > 3e3 ? b.diff.slice(0, 3e3) + "\n... [truncated]" : b.diff;
+    const scoreLine = b.score !== void 0 ? `
+Fitness score: ${b.score.toFixed(4)}` : "";
+    const reportLine = b.verificationReport ? `
+Verification: ${b.verificationReport.slice(0, 500)}` : "";
+    return `## Branch ${i + 1}: ${b.name}${scoreLine}${reportLine}
+
+Diff:
+\`\`\`diff
+${diff}
+\`\`\``;
+  }).join("\n\n");
+  return `You are an expert code reviewer acting as a judge. Evaluate the following candidate solutions and select the best one.
+
+${branchSections}
+
+## Rubric
+
+Rate each branch on four dimensions (1-10 scale, 10 = best):
+
+| Dimension       | Weight | Description |
+|-----------------|--------|-------------|
+| correctness     | 0.4    | Does it solve the problem correctly? No bugs, edge cases handled. |
+| clarity         | 0.2    | Is the code readable, well-structured, and easy to understand? |
+| efficiency      | 0.2    | Is it performant? Appropriate algorithms, no wasted work. |
+| maintainability | 0.2    | Is it modular, testable, and easy to modify? |
+
+Composite score = correctness x 0.4 + clarity x 0.2 + efficiency x 0.2 + maintainability x 0.2
+
+## Output Format
+
+Respond with ONLY a valid JSON object \u2014 no markdown fences, no extra text:
+
+{
+  "winner_branch": "<branch name>",
+  "scores": {
+    "<branch name>": { "correctness": 7, "clarity": 8, "efficiency": 6, "maintainability": 7 }
+  },
+  "rationale": "Brief explanation of why this branch won."
+}
+
+Be honest and critical. Consider trade-offs carefully. The rationales should be concise but specific.`;
+}
+function parseJudgeOutput(output) {
+  let trimmed = output.trim();
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (isValidVerdict(parsed)) return parsed;
+  } catch {
+  }
+  const cleaned = output.replace(/```(?:json)?\s*/gi, "").replace(/\s*```/g, "").trim();
+  if (cleaned !== trimmed) {
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (isValidVerdict(parsed)) return parsed;
+    } catch {
+    }
+  }
+  const jsonBlock = extractJsonBlock(cleaned);
+  if (jsonBlock) {
+    try {
+      const parsed = JSON.parse(jsonBlock);
+      if (isValidVerdict(parsed)) return parsed;
+    } catch {
+    }
+  }
+  return parseVerdictViaRegex(output);
+}
+function isValidVerdict(raw) {
+  if (typeof raw !== "object" || raw === null) return false;
+  const v = raw;
+  if (typeof v.winner_branch !== "string") return false;
+  if (typeof v.scores !== "object" || v.scores === null) return false;
+  if (typeof v.rationale !== "string") return false;
+  for (const dims of Object.values(v.scores)) {
+    if (typeof dims !== "object" || dims === null) return false;
+    const d = dims;
+    if (typeof d.correctness !== "number") return false;
+    if (typeof d.clarity !== "number") return false;
+    if (typeof d.efficiency !== "number") return false;
+    if (typeof d.maintainability !== "number") return false;
+  }
+  return true;
+}
+function extractJsonBlock(text) {
+  const start = text.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escape2 = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (escape2) {
+      escape2 = false;
+      continue;
+    }
+    if (ch === "\\" && inString) {
+      escape2 = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (!inString) {
+      if (ch === "{") depth++;
+      if (ch === "}") depth--;
+    }
+    if (depth === 0) {
+      return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+function parseVerdictViaRegex(output) {
+  const branchScores = {};
+  const branchPattern = /([\w./-]+):\s*correctness[=:]\s*(\d+(?:\.\d+)?)[,\s]+clarity[=:]\s*(\d+(?:\.\d+)?)[,\s]+efficiency[=:]\s*(\d+(?:\.\d+)?)[,\s]+maintainability[=:]\s*(\d+(?:\.\d+)?)/gi;
+  let match;
+  while ((match = branchPattern.exec(output)) !== null) {
+    branchScores[match[1]] = {
+      correctness: Number.parseFloat(match[2]),
+      clarity: Number.parseFloat(match[3]),
+      efficiency: Number.parseFloat(match[4]),
+      maintainability: Number.parseFloat(match[5])
+    };
+  }
+  if (Object.keys(branchScores).length === 0) return null;
+  const winnerMatch = output.match(
+    /(?:winner|best|winning)\s*(?:branch|is|:)\s*["']?([\w./-]+)["']?/i
+  );
+  let winnerBranch = winnerMatch?.[1] ?? "";
+  if (!winnerBranch || !branchScores[winnerBranch]) {
+    winnerBranch = pickBestByComposite(branchScores) ?? "";
+  }
+  const rationaleMatch = output.match(
+    /(?:rationale|reason|explanation)[:\s]\s*(.+?)(?:\n\n|\n#|$)/is
+  );
+  const rationale = rationaleMatch?.[1]?.trim() ?? "";
+  return {
+    winner_branch: winnerBranch,
+    scores: branchScores,
+    rationale
+  };
+}
+async function compareBranches(branches, opts) {
+  if (branches.length < 2) {
+    return {
+      verdict: null,
+      winner: branches[0]?.name ?? null,
+      fallback: false
+    };
+  }
+  const proxyReady = await ensureProxy();
+  if (!proxyReady) {
+    return fallbackComposite(branches);
+  }
+  const prompt = buildJudgePrompt(branches);
+  const agentOpts = {
+    cwd: opts.cwd,
+    model: opts.model,
+    apiKey: opts.apiKey,
+    useProxy: opts.useProxy !== false,
+    timeoutMs: 12e4
+  };
+  let result;
+  try {
+    result = await spawnClaude(prompt, agentOpts);
+  } catch {
+    return fallbackComposite(branches);
+  }
+  if (result.exitCode !== 0 || result.timedOut) {
+    return fallbackComposite(branches);
+  }
+  const verdict = parseJudgeOutput(result.output);
+  if (!verdict) {
+    return fallbackComposite(branches);
+  }
+  if (!verdict.scores[verdict.winner_branch]) {
+    const bestWinner = pickBestByComposite(verdict.scores);
+    if (bestWinner) {
+      verdict.winner_branch = bestWinner;
+    }
+  }
+  return {
+    verdict,
+    winner: verdict.winner_branch,
+    fallback: false
+  };
+}
+function fallbackComposite(branches) {
+  const scored = branches.filter((b) => b.score !== void 0);
+  if (scored.length === 0) {
+    return {
+      verdict: null,
+      winner: branches[0]?.name ?? null,
+      fallback: true
+    };
+  }
+  scored.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const winner = scored[0];
+  const scores = {};
+  for (const b of branches) {
+    const s = b.score ?? 0;
+    scores[b.name] = { correctness: s, clarity: s, efficiency: s, maintainability: s };
+  }
+  const verdict = {
+    winner_branch: winner.name,
+    scores,
+    rationale: "Fallback: LLM judge unavailable; selected by highest fitness/verification score."
+  };
+  return { verdict, winner: winner.name, fallback: true };
+}
+function pickBestByComposite(scores) {
+  let bestBranch = null;
+  let bestComposite = -Infinity;
+  for (const [branch, dims] of Object.entries(scores)) {
+    const composite = dims.correctness * DIMENSION_WEIGHTS.correctness + dims.clarity * DIMENSION_WEIGHTS.clarity + dims.efficiency * DIMENSION_WEIGHTS.efficiency + dims.maintainability * DIMENSION_WEIGHTS.maintainability;
+    if (composite > bestComposite) {
+      bestComposite = composite;
+      bestBranch = branch;
+    }
+  }
+  return bestBranch;
+}
+
+// src/solve.ts
 var MAX_REPAIRS = 3;
 var DEFAULT_N = 5;
 var DEFAULT_TIMEOUT_MS2 = 3e5;
 var REPAIR_TIMEOUT_MS = 18e4;
 function captureDiff(cwd) {
   try {
-    const diff = execSync3("git diff", { cwd, encoding: "utf-8", timeout: 1e4 });
+    const diff = execSync4("git diff HEAD", { cwd, encoding: "utf-8", timeout: 1e4 });
     return diff || null;
   } catch {
     return null;
   }
+}
+async function runVerification(spec, cwd) {
+  if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
+    const gateRunner = new GateRunner({
+      build_cmd: spec.build_cmd,
+      test_cmd: spec.test_cmd,
+      lint_cmd: spec.lint_cmd,
+      verify_cmd: spec.verify_cmd
+    });
+    const gateResults = await gateRunner.runAll(cwd);
+    const allPassed = gateResults.every((r) => r.passed);
+    const output = gateResults.filter((r) => !r.passed).map((r) => `=== FAILED: ${r.gate} ===
+${r.diagnostics}`).join("\n\n");
+    return {
+      verdict: {
+        passed: allPassed,
+        exit_code: allPassed ? 0 : 1,
+        output,
+        duration_ms: gateResults.reduce((s, r) => s + r.elapsed_ms, 0)
+      },
+      gateResults
+    };
+  }
+  const raw = runCommand(spec.verify_cmd, cwd);
+  return { verdict: toVerdict(raw) };
 }
 async function solve(spec, onProgress) {
   const startTime = Date.now();
@@ -21712,17 +23508,26 @@ async function solve(spec, onProgress) {
   const costBefore = proxyReady ? await getProxyCost() : null;
   stats.plans_sampled = numParallel;
   stats.plans_deduped = numParallel;
+  onProgress?.("Creating solve checkpoint...");
+  try {
+    evo_checkpoint("solve", "solve attempt checkpoint");
+  } catch (err) {
+    onProgress?.(`Failed to create solve checkpoint: ${err} \u2014 aborting`);
+    return {
+      outcome: "escalate",
+      escalation: {
+        failure_signature: "checkpoint_failed",
+        lineages_attempted: 0,
+        lineage_diagnostics: [],
+        summary: `Failed to create gitevo checkpoint: ${err}`
+      },
+      stats
+    };
+  }
   const strategies = strategyPrompts(spec.goal, numParallel, spec.context);
-  onProgress?.(`Spawning ${numParallel} parallel claude -p instances with diverse strategies...`);
-  const results = await spawnClaudeN(strategies, {
-    cwd: spec.cwd,
-    model: spec.model,
-    apiKey: spec.api_key,
-    useProxy: proxyReady,
-    timeoutMs: DEFAULT_TIMEOUT_MS2
-  });
-  onProgress?.(`All ${numParallel} instances completed. Verifying...`);
+  onProgress?.(`Testing ${numParallel} strategies sequentially on git branches...`);
   const candidates = [];
+  const passingBranches = [];
   const failureSignatures = /* @__PURE__ */ new Set();
   const diagnostics = [];
   const STRATEGY_LABELS = [
@@ -21735,12 +23540,37 @@ async function solve(spec, onProgress) {
     "pragmatic",
     "elegant"
   ];
-  for (let i = 0; i < results.length; i++) {
-    const r = results[i];
+  STRATEGY_LOOP: for (let i = 0; i < strategies.length; i++) {
+    const branchName = `solve-strategy-${i}`;
     const stratLabel = STRATEGY_LABELS[i % STRATEGY_LABELS.length];
+    onProgress?.(`  [${i + 1}] spawning branch '${branchName}' (${stratLabel})...`);
+    try {
+      await spawnCandidate("solve", branchName, spec.cwd);
+    } catch (err) {
+      onProgress?.(`  [${i + 1}] branch spawn failed \u2014 skipping`);
+      diagnostics.push({
+        lineage_id: `strategy-${i}`,
+        strategy: stratLabel,
+        timed_out: false,
+        claude_exit_code: -1,
+        claude_no_output: true,
+        claude_output_sample: "",
+        repair_attempts: 0,
+        final_status: "failed"
+      });
+      continue;
+    }
+    onProgress?.(`  [${i + 1}] running strategy: ${stratLabel}...`);
+    const r = await spawnClaude(strategies[i], {
+      cwd: spec.cwd,
+      model: spec.model,
+      apiKey: spec.api_key,
+      useProxy: proxyReady,
+      timeoutMs: DEFAULT_TIMEOUT_MS2
+    });
     const hasOutput = r.output.trim().length > 0;
     if (r.timedOut) {
-      onProgress?.(`  [${i + 1}] timed out \u2014 skipping`);
+      onProgress?.(`  [${i + 1}] timed out \u2014 abandoning`);
       diagnostics.push({
         lineage_id: `strategy-${i}`,
         strategy: stratLabel,
@@ -21751,10 +23581,12 @@ async function solve(spec, onProgress) {
         repair_attempts: 0,
         final_status: "timed_out"
       });
+      await abandonLoser(branchName, `timed out`, spec.cwd).catch(() => {
+      });
       continue;
     }
     if (!hasOutput) {
-      onProgress?.(`  [${i + 1}] no output from claude -p (exit ${r.exitCode}) \u2014 skipping`);
+      onProgress?.(`  [${i + 1}] no output from claude -p (exit ${r.exitCode}) \u2014 abandoning`);
       diagnostics.push({
         lineage_id: `strategy-${i}`,
         strategy: stratLabel,
@@ -21765,35 +23597,41 @@ async function solve(spec, onProgress) {
         repair_attempts: 0,
         final_status: "no_output"
       });
+      await abandonLoser(branchName, `no output from claude -p`, spec.cwd).catch(() => {
+      });
       continue;
     }
+    execSync4("git add -A", { cwd: spec.cwd });
+    execSync4(`git commit -m "solve strategy ${i}"`, { cwd: spec.cwd });
     const candidate = {
       plan_id: `strategy-${i}`,
-      patch: `claude -p output (${r.exitCode}):
-${r.output.slice(0, 500)}`,
+      patch: r.output.slice(0, 500),
       repair_count: 0,
       status: "verifying"
     };
     candidates.push(candidate);
     stats.candidates_generated++;
-    const rawVerdict = runCommand(spec.verify_cmd, spec.cwd);
-    const verdict = toVerdict(rawVerdict);
+    const { verdict, gateResults } = await runVerification(spec, spec.cwd);
     candidate.verdict = verdict;
+    if (gateResults) candidate.gateResults = gateResults;
     if (verdict.exit_code === 0) {
       candidate.status = "passed";
-      onProgress?.(`  [${i + 1}] PASSED in ${r.durationMs}ms!`);
-      stats.duration_ms = Date.now() - startTime;
-      if (costBefore) {
-        const costAfter = await getProxyCost();
-        if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
-      }
-      return {
-        outcome: "pass",
-        patch: captureDiff(spec.cwd) ?? `claude -p output (${r.exitCode}):
-${r.output.slice(0, 500)}`,
-        verification_report: verdict.output,
-        stats
-      };
+      const branchDiff = (() => {
+        try {
+          return execSync4("git diff evo-solve HEAD", { cwd: spec.cwd, encoding: "utf-8", timeout: 1e4 }) || "";
+        } catch {
+          return "";
+        }
+      })();
+      passingBranches.push({
+        name: branchName,
+        diff: branchDiff,
+        score: 1,
+        verificationReport: verdict.output
+      });
+      onProgress?.(`  [${i + 1}] PASSED in ${r.durationMs}ms! (collecting, ${passingBranches.length} so far)`);
+      execSync4("git checkout master || git checkout main", { cwd: spec.cwd, stdio: "ignore" });
+      continue;
     }
     candidate.status = "failed";
     candidate.failure_signature = hashFailure(verdict.output);
@@ -21812,38 +23650,32 @@ ${r.output.slice(0, 500)}`,
       repair_attempts: 0,
       final_status: "failed"
     });
-  }
-  const repairable = candidates.filter((c) => c.status === "failed" && c.verdict).sort((a, b) => {
-    const aCode = a.verdict?.exit_code ?? 1;
-    const bCode = b.verdict?.exit_code ?? 1;
-    if (aCode !== bCode) return aCode - bCode;
-    return (b.verdict?.output?.length ?? 0) - (a.verdict?.output?.length ?? 0);
-  }).slice(0, Math.max(2, Math.ceil(numParallel / 2)));
-  for (const candidate of repairable) {
     for (let repair = 1; repair <= MAX_REPAIRS; repair++) {
-      onProgress?.(`  Repair attempt ${repair}/${MAX_REPAIRS} for ${candidate.plan_id}...`);
+      onProgress?.(`    Repair attempt ${repair}/${MAX_REPAIRS} for ${candidate.plan_id}...`);
       const diag = diagnostics.find((d) => d.lineage_id === candidate.plan_id);
       if (diag) diag.repair_attempts = repair;
       const prompt = repairPrompt(spec.goal, candidate.verdict?.output ?? "", repair, spec.context);
-      const result = await spawnClaude(prompt, {
+      const repairResult = await spawnClaude(prompt, {
         cwd: spec.cwd,
         model: spec.model,
         apiKey: spec.api_key,
         useProxy: proxyReady,
         timeoutMs: REPAIR_TIMEOUT_MS
       });
-      if (result.timedOut) {
-        onProgress?.(`    \u2192 timed out`);
+      if (repairResult.timedOut) {
+        onProgress?.(`      \u2192 timed out`);
         if (diag) diag.final_status = "timed_out";
         break;
       }
+      execSync4("git add -A", { cwd: spec.cwd });
+      execSync4(`git commit -m "solve strategy ${i} repair ${repair}"`, { cwd: spec.cwd });
       stats.candidates_generated++;
-      const rawRepairVerdict = runCommand(spec.verify_cmd, spec.cwd);
-      const repairVerdict = toVerdict(rawRepairVerdict);
+      const { verdict: repairVerdict, gateResults: repairGateResults } = await runVerification(spec, spec.cwd);
       candidate.verdict = repairVerdict;
+      if (repairGateResults) candidate.gateResults = repairGateResults;
       candidate.repair_count = repair;
-      candidate.patch = `repair #${repair} output (${result.exitCode}):
-${result.output.slice(0, 500)}`;
+      candidate.patch = `repair #${repair} output (${repairResult.exitCode}):
+${repairResult.output.slice(0, 500)}`;
       if (repairVerdict.exit_code === 0) {
         candidate.status = "passed";
         if (diag) {
@@ -21851,23 +23683,26 @@ ${result.output.slice(0, 500)}`;
           diag.verify_exit_code = 0;
           diag.verify_output_sample = repairVerdict.output.slice(0, 300);
         }
-        onProgress?.(`  \u2192 REPAIR ${repair} PASSED!`);
-        stats.duration_ms = Date.now() - startTime;
-        if (costBefore) {
-          const costAfter = await getProxyCost();
-          if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
-        }
-        return {
-          outcome: "pass",
-          patch: captureDiff(spec.cwd) ?? `repair #${repair} output (${result.exitCode}):
-${result.output.slice(0, 500)}`,
-          verification_report: repairVerdict.output,
-          stats
-        };
+        const branchDiff = (() => {
+          try {
+            return execSync4("git diff evo-solve HEAD", { cwd: spec.cwd, encoding: "utf-8", timeout: 1e4 }) || "";
+          } catch {
+            return "";
+          }
+        })();
+        passingBranches.push({
+          name: branchName,
+          diff: branchDiff,
+          score: 1,
+          verificationReport: repairVerdict.output
+        });
+        onProgress?.(`      \u2192 REPAIR ${repair} PASSED! (collecting, ${passingBranches.length} so far)`);
+        execSync4("git checkout master || git checkout main", { cwd: spec.cwd, stdio: "ignore" });
+        continue STRATEGY_LOOP;
       }
       const sig = hashFailure(repairVerdict.output);
       if (candidate.failure_signature && sig === candidate.failure_signature) {
-        onProgress?.(`    \u2192 stuck (same failure after repair ${repair})`);
+        onProgress?.(`      \u2192 stuck (same failure after repair ${repair})`);
         if (diag) {
           diag.final_status = "stuck";
           diag.verify_exit_code = repairVerdict.exit_code;
@@ -21877,39 +23712,92 @@ ${result.output.slice(0, 500)}`,
       }
       candidate.failure_signature = sig;
       failureSignatures.add(sig);
-      onProgress?.(`    \u2192 still failing: ${repairVerdict.output.slice(0, 100)}`);
+      onProgress?.(`      \u2192 still failing: ${repairVerdict.output.slice(0, 100)}`);
     }
+    onProgress?.(`  [${i + 1}] abandoning '${branchName}'`);
+    await abandonLoser(branchName, `strategy ${i}: all ${MAX_REPAIRS} repairs failed`, spec.cwd).catch(() => {
+    });
   }
-  const sigCounts = /* @__PURE__ */ new Map();
-  for (const c of candidates) {
-    if (c.failure_signature) {
-      sigCounts.set(c.failure_signature, (sigCounts.get(c.failure_signature) ?? 0) + 1);
-    }
-  }
-  const dominantSig = [...sigCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-  const bestCandidate = candidates.filter((c) => c.verdict).sort((a, b) => (a.verdict?.exit_code ?? 1) - (b.verdict?.exit_code ?? 1))[0];
-  const escalation = {
-    failure_signature: dominantSig?.[0] ?? "unknown",
-    best_partial_patch: bestCandidate?.patch,
-    best_output: bestCandidate?.verdict?.output?.slice(0, 2e3),
-    lineages_attempted: numParallel,
-    lineage_diagnostics: diagnostics,
-    summary: [
-      `${numParallel} strategies attempted, ${stats.candidates_generated} candidates generated.`,
-      `Best exit code: ${bestCandidate?.verdict?.exit_code ?? "N/A"}`,
-      dominantSig ? `${dominantSig[1]} lineages hit same failure pattern.` : "No common failure pattern.",
-      "Escalate to Claude: solve the specific failing assertion directly."
-    ].join(" ")
-  };
   stats.duration_ms = Date.now() - startTime;
   if (costBefore) {
     const costAfter = await getProxyCost();
     if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
   }
-  onProgress?.(`Escalating: ${escalation.summary}`);
+  if (passingBranches.length === 0) {
+    const sigCounts = /* @__PURE__ */ new Map();
+    for (const c of candidates) {
+      if (c.failure_signature) {
+        sigCounts.set(c.failure_signature, (sigCounts.get(c.failure_signature) ?? 0) + 1);
+      }
+    }
+    const dominantSig = [...sigCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+    const bestCandidate = candidates.filter((c) => c.verdict).sort((a, b) => (a.verdict?.exit_code ?? 1) - (b.verdict?.exit_code ?? 1))[0];
+    const escalation = {
+      failure_signature: dominantSig?.[0] ?? "unknown",
+      best_partial_patch: bestCandidate?.patch,
+      best_output: bestCandidate?.verdict?.output?.slice(0, 2e3),
+      lineages_attempted: numParallel,
+      lineage_diagnostics: diagnostics,
+      summary: [
+        `${numParallel} strategies attempted, ${stats.candidates_generated} candidates generated.`,
+        `Best exit code: ${bestCandidate?.verdict?.exit_code ?? "N/A"}`,
+        dominantSig ? `${dominantSig[1]} lineages hit same failure pattern.` : "No common failure pattern.",
+        "Escalate to Claude: solve the specific failing assertion directly."
+      ].join(" ")
+    };
+    onProgress?.(`Escalating: ${escalation.summary}`);
+    return {
+      outcome: "escalate",
+      escalation,
+      stats
+    };
+  }
+  if (passingBranches.length === 1) {
+    const winner2 = passingBranches[0].name;
+    onProgress?.(`Single passing candidate '${winner2}' \u2014 adopting directly`);
+    await adoptWinner(winner2, spec.cwd);
+    return {
+      outcome: "pass",
+      patch: captureDiff(spec.cwd) ?? passingBranches[0].diff,
+      verification_report: passingBranches[0].verificationReport,
+      stats
+    };
+  }
+  onProgress?.(`${passingBranches.length} candidates passed \u2014 running LLM judge...`);
+  const judgeResult = await compareBranches(passingBranches, {
+    cwd: spec.cwd,
+    model: spec.model,
+    apiKey: spec.api_key,
+    useProxy: proxyReady
+  });
+  const winner = judgeResult.winner;
+  if (!winner) {
+    onProgress?.("Judge returned no winner \u2014 adopting first passing candidate");
+    const first = passingBranches[0];
+    await adoptWinner(first.name, spec.cwd);
+    return {
+      outcome: "pass",
+      patch: captureDiff(spec.cwd) ?? first.diff,
+      verification_report: first.verificationReport,
+      stats
+    };
+  }
+  for (const pb of passingBranches) {
+    if (pb.name !== winner) {
+      execSync4(`git checkout ${pb.name}`, { cwd: spec.cwd, stdio: "ignore" });
+      await abandonLoser(pb.name, `judge selected ${winner}`, spec.cwd).catch(() => {
+      });
+    }
+  }
+  execSync4("git checkout master || git checkout main", { cwd: spec.cwd, stdio: "ignore" });
+  await adoptWinner(winner, spec.cwd);
+  const winningBranch = passingBranches.find((pb) => pb.name === winner);
+  onProgress?.(`Winner: '${winner}'${judgeResult.fallback ? " (fallback scoring)" : " (LLM judge)"}`);
   return {
-    outcome: "escalate",
-    escalation,
+    outcome: "pass",
+    patch: captureDiff(spec.cwd) ?? winningBranch?.diff ?? "",
+    verification_report: winningBranch?.verificationReport,
+    judge_verdict: judgeResult.verdict ?? void 0,
     stats
   };
 }
@@ -21928,10 +23816,16 @@ var TaskSpecSchema = external_exports.object({
   cwd: external_exports.string().describe("Working directory for running verify_cmd (absolute path)"),
   budget_tokens: external_exports.number().optional().describe("Maximum DeepSeek API tokens to spend (default ~100k)"),
   fanout: external_exports.number().optional().describe("Number of parallel claude -p instances (default 5, max 16)"),
+  allowed_files: external_exports.array(external_exports.string()).optional().describe("Files the solver is allowed to modify (glob patterns)"),
+  api_base: external_exports.string().optional().describe("Base URL override for DeepSeek-compatible API"),
   strategy: external_exports.enum(["auto", "best-of-n", "evolve"]).optional().default("auto").describe("Strategy hint. 'auto' inspects verify_cmd for scalar output \u2192 evolve, else best-of-n"),
   context: external_exports.string().optional().describe("Relevant context: file snippets, existing test output, constraints"),
   model: external_exports.string().optional().describe("Model override (default: deepseek-v4-pro[1m])"),
-  api_key: external_exports.string().optional().describe("DeepSeek API key. Falls back to DEEPSEEK_API_KEY env var")
+  api_key: external_exports.string().optional().describe("DeepSeek API key. Falls back to DEEPSEEK_API_KEY env var"),
+  build_cmd: external_exports.string().optional().describe("Build command (e.g. 'npm run build'). Runs as gate before verify."),
+  test_cmd: external_exports.string().optional().describe("Test command (e.g. 'npm test'). Runs as gate before verify."),
+  lint_cmd: external_exports.string().optional().describe("Lint command (e.g. 'npx biome check'). Runs as first gate."),
+  held_out_tests: external_exports.string().optional().describe("Glob pattern for tests hidden from implementer. Run only at merge gate.")
 });
 var EvolveSpecSchema = external_exports.object({
   goal: external_exports.string().describe("What to optimize (natural language)"),
@@ -21944,7 +23838,11 @@ var EvolveSpecSchema = external_exports.object({
   higher_is_better: external_exports.boolean().optional().default(false).describe("If true, higher fitness score is better"),
   context: external_exports.string().optional().describe("Context for the mutator"),
   model: external_exports.string().optional().describe("Model override"),
-  api_key: external_exports.string().optional().describe("DeepSeek API key")
+  api_key: external_exports.string().optional().describe("DeepSeek API key"),
+  build_cmd: external_exports.string().optional().describe("Build command. Runs as gate during fitness evaluation."),
+  test_cmd: external_exports.string().optional().describe("Test command. Runs as gate during fitness evaluation."),
+  lint_cmd: external_exports.string().optional().describe("Lint command. Runs as first gate during fitness evaluation."),
+  mutation_cmd: external_exports.string().optional().describe("Mutation testing command (e.g. 'npx stryker run').")
 });
 server.tool(
   "solve",

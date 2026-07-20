@@ -5,7 +5,13 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __commonJS = (cb, mod) => function __require() {
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined") return require.apply(this, arguments);
+  throw Error('Dynamic require of "' + x + '" is not supported');
+});
+var __commonJS = (cb, mod) => function __require2() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 var __export = (target, all) => {
@@ -3225,8 +3231,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path2) {
-      let input = path2;
+    function removeDotSegments(path3) {
+      let input = path3;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3478,8 +3484,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path2, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path2 && path2 !== "/" ? path2 : void 0;
+        const [path3, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path3 && path3 !== "/" ? path3 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -6872,16 +6878,788 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs2, exportName) {
+    function addFormats(ajv, list, fs3, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs2[f]);
+        ajv.addFormat(f, fs3[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = formatsPlugin;
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/util.js
+var require_util2 = __commonJS({
+  "../../node_modules/better-sqlite3/lib/util.js"(exports) {
+    "use strict";
+    exports.getBooleanOption = (options, key) => {
+      let value = false;
+      if (key in options && typeof (value = options[key]) !== "boolean") {
+        throw new TypeError(`Expected the "${key}" option to be a boolean`);
+      }
+      return value;
+    };
+    exports.cppdb = /* @__PURE__ */ Symbol();
+    exports.inspect = /* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom");
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/sqlite-error.js
+var require_sqlite_error = __commonJS({
+  "../../node_modules/better-sqlite3/lib/sqlite-error.js"(exports, module) {
+    "use strict";
+    var descriptor = { value: "SqliteError", writable: true, enumerable: false, configurable: true };
+    function SqliteError(message, code) {
+      if (new.target !== SqliteError) {
+        return new SqliteError(message, code);
+      }
+      if (typeof code !== "string") {
+        throw new TypeError("Expected second argument to be a string");
+      }
+      Error.call(this, message);
+      descriptor.value = "" + message;
+      Object.defineProperty(this, "message", descriptor);
+      Error.captureStackTrace(this, SqliteError);
+      this.code = code;
+    }
+    Object.setPrototypeOf(SqliteError, Error);
+    Object.setPrototypeOf(SqliteError.prototype, Error.prototype);
+    Object.defineProperty(SqliteError.prototype, "name", descriptor);
+    module.exports = SqliteError;
+  }
+});
+
+// ../../node_modules/file-uri-to-path/index.js
+var require_file_uri_to_path = __commonJS({
+  "../../node_modules/file-uri-to-path/index.js"(exports, module) {
+    var sep = __require("path").sep || "/";
+    module.exports = fileUriToPath;
+    function fileUriToPath(uri) {
+      if ("string" != typeof uri || uri.length <= 7 || "file://" != uri.substring(0, 7)) {
+        throw new TypeError("must pass in a file:// URI to convert to a file path");
+      }
+      var rest = decodeURI(uri.substring(7));
+      var firstSlash = rest.indexOf("/");
+      var host = rest.substring(0, firstSlash);
+      var path3 = rest.substring(firstSlash + 1);
+      if ("localhost" == host) host = "";
+      if (host) {
+        host = sep + sep + host;
+      }
+      path3 = path3.replace(/^(.+)\|/, "$1:");
+      if (sep == "\\") {
+        path3 = path3.replace(/\//g, "\\");
+      }
+      if (/^.+\:/.test(path3)) {
+      } else {
+        path3 = sep + path3;
+      }
+      return host + path3;
+    }
+  }
+});
+
+// ../../node_modules/bindings/bindings.js
+var require_bindings = __commonJS({
+  "../../node_modules/bindings/bindings.js"(exports, module) {
+    var fs3 = __require("fs");
+    var path3 = __require("path");
+    var fileURLToPath2 = require_file_uri_to_path();
+    var join3 = path3.join;
+    var dirname = path3.dirname;
+    var exists = fs3.accessSync && function(path4) {
+      try {
+        fs3.accessSync(path4);
+      } catch (e) {
+        return false;
+      }
+      return true;
+    } || fs3.existsSync || path3.existsSync;
+    var defaults = {
+      arrow: process.env.NODE_BINDINGS_ARROW || " \u2192 ",
+      compiled: process.env.NODE_BINDINGS_COMPILED_DIR || "compiled",
+      platform: process.platform,
+      arch: process.arch,
+      nodePreGyp: "node-v" + process.versions.modules + "-" + process.platform + "-" + process.arch,
+      version: process.versions.node,
+      bindings: "bindings.node",
+      try: [
+        // node-gyp's linked version in the "build" dir
+        ["module_root", "build", "bindings"],
+        // node-waf and gyp_addon (a.k.a node-gyp)
+        ["module_root", "build", "Debug", "bindings"],
+        ["module_root", "build", "Release", "bindings"],
+        // Debug files, for development (legacy behavior, remove for node v0.9)
+        ["module_root", "out", "Debug", "bindings"],
+        ["module_root", "Debug", "bindings"],
+        // Release files, but manually compiled (legacy behavior, remove for node v0.9)
+        ["module_root", "out", "Release", "bindings"],
+        ["module_root", "Release", "bindings"],
+        // Legacy from node-waf, node <= 0.4.x
+        ["module_root", "build", "default", "bindings"],
+        // Production "Release" buildtype binary (meh...)
+        ["module_root", "compiled", "version", "platform", "arch", "bindings"],
+        // node-qbs builds
+        ["module_root", "addon-build", "release", "install-root", "bindings"],
+        ["module_root", "addon-build", "debug", "install-root", "bindings"],
+        ["module_root", "addon-build", "default", "install-root", "bindings"],
+        // node-pre-gyp path ./lib/binding/{node_abi}-{platform}-{arch}
+        ["module_root", "lib", "binding", "nodePreGyp", "bindings"]
+      ]
+    };
+    function bindings(opts) {
+      if (typeof opts == "string") {
+        opts = { bindings: opts };
+      } else if (!opts) {
+        opts = {};
+      }
+      Object.keys(defaults).map(function(i2) {
+        if (!(i2 in opts)) opts[i2] = defaults[i2];
+      });
+      if (!opts.module_root) {
+        opts.module_root = exports.getRoot(exports.getFileName());
+      }
+      if (path3.extname(opts.bindings) != ".node") {
+        opts.bindings += ".node";
+      }
+      var requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : __require;
+      var tries = [], i = 0, l = opts.try.length, n, b, err;
+      for (; i < l; i++) {
+        n = join3.apply(
+          null,
+          opts.try[i].map(function(p) {
+            return opts[p] || p;
+          })
+        );
+        tries.push(n);
+        try {
+          b = opts.path ? requireFunc.resolve(n) : requireFunc(n);
+          if (!opts.path) {
+            b.path = n;
+          }
+          return b;
+        } catch (e) {
+          if (e.code !== "MODULE_NOT_FOUND" && e.code !== "QUALIFIED_PATH_RESOLUTION_FAILED" && !/not find/i.test(e.message)) {
+            throw e;
+          }
+        }
+      }
+      err = new Error(
+        "Could not locate the bindings file. Tried:\n" + tries.map(function(a) {
+          return opts.arrow + a;
+        }).join("\n")
+      );
+      err.tries = tries;
+      throw err;
+    }
+    module.exports = exports = bindings;
+    exports.getFileName = function getFileName(calling_file) {
+      var origPST = Error.prepareStackTrace, origSTL = Error.stackTraceLimit, dummy = {}, fileName;
+      Error.stackTraceLimit = 10;
+      Error.prepareStackTrace = function(e, st) {
+        for (var i = 0, l = st.length; i < l; i++) {
+          fileName = st[i].getFileName();
+          if (fileName !== __filename) {
+            if (calling_file) {
+              if (fileName !== calling_file) {
+                return;
+              }
+            } else {
+              return;
+            }
+          }
+        }
+      };
+      Error.captureStackTrace(dummy);
+      dummy.stack;
+      Error.prepareStackTrace = origPST;
+      Error.stackTraceLimit = origSTL;
+      var fileSchema = "file://";
+      if (fileName.indexOf(fileSchema) === 0) {
+        fileName = fileURLToPath2(fileName);
+      }
+      return fileName;
+    };
+    exports.getRoot = function getRoot(file) {
+      var dir = dirname(file), prev;
+      while (true) {
+        if (dir === ".") {
+          dir = process.cwd();
+        }
+        if (exists(join3(dir, "package.json")) || exists(join3(dir, "node_modules"))) {
+          return dir;
+        }
+        if (prev === dir) {
+          throw new Error(
+            'Could not find module root given file: "' + file + '". Do you have a `package.json` file? '
+          );
+        }
+        prev = dir;
+        dir = join3(dir, "..");
+      }
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/wrappers.js
+var require_wrappers = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/wrappers.js"(exports) {
+    "use strict";
+    var { cppdb } = require_util2();
+    exports.prepare = function prepare(sql) {
+      return this[cppdb].prepare(sql, this, false);
+    };
+    exports.exec = function exec(sql) {
+      this[cppdb].exec(sql);
+      return this;
+    };
+    exports.close = function close() {
+      this[cppdb].close();
+      return this;
+    };
+    exports.loadExtension = function loadExtension(...args) {
+      this[cppdb].loadExtension(...args);
+      return this;
+    };
+    exports.defaultSafeIntegers = function defaultSafeIntegers(...args) {
+      this[cppdb].defaultSafeIntegers(...args);
+      return this;
+    };
+    exports.unsafeMode = function unsafeMode(...args) {
+      this[cppdb].unsafeMode(...args);
+      return this;
+    };
+    exports.getters = {
+      name: {
+        get: function name() {
+          return this[cppdb].name;
+        },
+        enumerable: true
+      },
+      open: {
+        get: function open() {
+          return this[cppdb].open;
+        },
+        enumerable: true
+      },
+      inTransaction: {
+        get: function inTransaction() {
+          return this[cppdb].inTransaction;
+        },
+        enumerable: true
+      },
+      readonly: {
+        get: function readonly2() {
+          return this[cppdb].readonly;
+        },
+        enumerable: true
+      },
+      memory: {
+        get: function memory() {
+          return this[cppdb].memory;
+        },
+        enumerable: true
+      }
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/transaction.js
+var require_transaction = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/transaction.js"(exports, module) {
+    "use strict";
+    var { cppdb } = require_util2();
+    var controllers = /* @__PURE__ */ new WeakMap();
+    module.exports = function transaction(fn) {
+      if (typeof fn !== "function") throw new TypeError("Expected first argument to be a function");
+      const db = this[cppdb];
+      const controller = getController(db, this);
+      const { apply } = Function.prototype;
+      const properties = {
+        default: { value: wrapTransaction(apply, fn, db, controller.default) },
+        deferred: { value: wrapTransaction(apply, fn, db, controller.deferred) },
+        immediate: { value: wrapTransaction(apply, fn, db, controller.immediate) },
+        exclusive: { value: wrapTransaction(apply, fn, db, controller.exclusive) },
+        database: { value: this, enumerable: true }
+      };
+      Object.defineProperties(properties.default.value, properties);
+      Object.defineProperties(properties.deferred.value, properties);
+      Object.defineProperties(properties.immediate.value, properties);
+      Object.defineProperties(properties.exclusive.value, properties);
+      return properties.default.value;
+    };
+    var getController = (db, self) => {
+      let controller = controllers.get(db);
+      if (!controller) {
+        const shared = {
+          commit: db.prepare("COMMIT", self, false),
+          rollback: db.prepare("ROLLBACK", self, false),
+          savepoint: db.prepare("SAVEPOINT `	_bs3.	`", self, false),
+          release: db.prepare("RELEASE `	_bs3.	`", self, false),
+          rollbackTo: db.prepare("ROLLBACK TO `	_bs3.	`", self, false)
+        };
+        controllers.set(db, controller = {
+          default: Object.assign({ begin: db.prepare("BEGIN", self, false) }, shared),
+          deferred: Object.assign({ begin: db.prepare("BEGIN DEFERRED", self, false) }, shared),
+          immediate: Object.assign({ begin: db.prepare("BEGIN IMMEDIATE", self, false) }, shared),
+          exclusive: Object.assign({ begin: db.prepare("BEGIN EXCLUSIVE", self, false) }, shared)
+        });
+      }
+      return controller;
+    };
+    var wrapTransaction = (apply, fn, db, { begin, commit, rollback, savepoint, release, rollbackTo }) => function sqliteTransaction() {
+      let before, after, undo;
+      if (db.inTransaction) {
+        before = savepoint;
+        after = release;
+        undo = rollbackTo;
+      } else {
+        before = begin;
+        after = commit;
+        undo = rollback;
+      }
+      before.run();
+      try {
+        const result = apply.call(fn, this, arguments);
+        if (result && typeof result.then === "function") {
+          throw new TypeError("Transaction function cannot return a promise");
+        }
+        after.run();
+        return result;
+      } catch (ex) {
+        if (db.inTransaction) {
+          undo.run();
+          if (undo !== rollback) after.run();
+        }
+        throw ex;
+      }
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/pragma.js
+var require_pragma = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/pragma.js"(exports, module) {
+    "use strict";
+    var { getBooleanOption, cppdb } = require_util2();
+    module.exports = function pragma(source, options) {
+      if (options == null) options = {};
+      if (typeof source !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof options !== "object") throw new TypeError("Expected second argument to be an options object");
+      const simple = getBooleanOption(options, "simple");
+      const stmt = this[cppdb].prepare(`PRAGMA ${source}`, this, true);
+      return simple ? stmt.pluck().get() : stmt.all();
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/backup.js
+var require_backup = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/backup.js"(exports, module) {
+    "use strict";
+    var fs3 = __require("fs");
+    var path3 = __require("path");
+    var { promisify } = __require("util");
+    var { cppdb } = require_util2();
+    var fsAccess = promisify(fs3.access);
+    module.exports = async function backup(filename, options) {
+      if (options == null) options = {};
+      if (typeof filename !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof options !== "object") throw new TypeError("Expected second argument to be an options object");
+      filename = filename.trim();
+      const attachedName = "attached" in options ? options.attached : "main";
+      const handler = "progress" in options ? options.progress : null;
+      if (!filename) throw new TypeError("Backup filename cannot be an empty string");
+      if (filename === ":memory:") throw new TypeError('Invalid backup filename ":memory:"');
+      if (typeof attachedName !== "string") throw new TypeError('Expected the "attached" option to be a string');
+      if (!attachedName) throw new TypeError('The "attached" option cannot be an empty string');
+      if (handler != null && typeof handler !== "function") throw new TypeError('Expected the "progress" option to be a function');
+      await fsAccess(path3.dirname(filename)).catch(() => {
+        throw new TypeError("Cannot save backup because the directory does not exist");
+      });
+      const isNewFile = await fsAccess(filename).then(() => false, () => true);
+      return runBackup(this[cppdb].backup(this, attachedName, filename, isNewFile), handler || null);
+    };
+    var runBackup = (backup, handler) => {
+      let rate = 0;
+      let useDefault = true;
+      return new Promise((resolve, reject) => {
+        setImmediate(function step() {
+          try {
+            const progress = backup.transfer(rate);
+            if (!progress.remainingPages) {
+              backup.close();
+              resolve(progress);
+              return;
+            }
+            if (useDefault) {
+              useDefault = false;
+              rate = 100;
+            }
+            if (handler) {
+              const ret = handler(progress);
+              if (ret !== void 0) {
+                if (typeof ret === "number" && ret === ret) rate = Math.max(0, Math.min(2147483647, Math.round(ret)));
+                else throw new TypeError("Expected progress callback to return a number or undefined");
+              }
+            }
+            setImmediate(step);
+          } catch (err) {
+            backup.close();
+            reject(err);
+          }
+        });
+      });
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/serialize.js
+var require_serialize = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/serialize.js"(exports, module) {
+    "use strict";
+    var { cppdb } = require_util2();
+    module.exports = function serialize(options) {
+      if (options == null) options = {};
+      if (typeof options !== "object") throw new TypeError("Expected first argument to be an options object");
+      const attachedName = "attached" in options ? options.attached : "main";
+      if (typeof attachedName !== "string") throw new TypeError('Expected the "attached" option to be a string');
+      if (!attachedName) throw new TypeError('The "attached" option cannot be an empty string');
+      return this[cppdb].serialize(attachedName);
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/function.js
+var require_function = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/function.js"(exports, module) {
+    "use strict";
+    var { getBooleanOption, cppdb } = require_util2();
+    module.exports = function defineFunction(name, options, fn) {
+      if (options == null) options = {};
+      if (typeof options === "function") {
+        fn = options;
+        options = {};
+      }
+      if (typeof name !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof fn !== "function") throw new TypeError("Expected last argument to be a function");
+      if (typeof options !== "object") throw new TypeError("Expected second argument to be an options object");
+      if (!name) throw new TypeError("User-defined function name cannot be an empty string");
+      const safeIntegers = "safeIntegers" in options ? +getBooleanOption(options, "safeIntegers") : 2;
+      const deterministic = getBooleanOption(options, "deterministic");
+      const directOnly = getBooleanOption(options, "directOnly");
+      const varargs = getBooleanOption(options, "varargs");
+      let argCount = -1;
+      if (!varargs) {
+        argCount = fn.length;
+        if (!Number.isInteger(argCount) || argCount < 0) throw new TypeError("Expected function.length to be a positive integer");
+        if (argCount > 100) throw new RangeError("User-defined functions cannot have more than 100 arguments");
+      }
+      this[cppdb].function(fn, name, argCount, safeIntegers, deterministic, directOnly);
+      return this;
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/aggregate.js
+var require_aggregate = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/aggregate.js"(exports, module) {
+    "use strict";
+    var { getBooleanOption, cppdb } = require_util2();
+    module.exports = function defineAggregate(name, options) {
+      if (typeof name !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof options !== "object" || options === null) throw new TypeError("Expected second argument to be an options object");
+      if (!name) throw new TypeError("User-defined function name cannot be an empty string");
+      const start = "start" in options ? options.start : null;
+      const step = getFunctionOption(options, "step", true);
+      const inverse = getFunctionOption(options, "inverse", false);
+      const result = getFunctionOption(options, "result", false);
+      const safeIntegers = "safeIntegers" in options ? +getBooleanOption(options, "safeIntegers") : 2;
+      const deterministic = getBooleanOption(options, "deterministic");
+      const directOnly = getBooleanOption(options, "directOnly");
+      const varargs = getBooleanOption(options, "varargs");
+      let argCount = -1;
+      if (!varargs) {
+        argCount = Math.max(getLength(step), inverse ? getLength(inverse) : 0);
+        if (argCount > 0) argCount -= 1;
+        if (argCount > 100) throw new RangeError("User-defined functions cannot have more than 100 arguments");
+      }
+      this[cppdb].aggregate(start, step, inverse, result, name, argCount, safeIntegers, deterministic, directOnly);
+      return this;
+    };
+    var getFunctionOption = (options, key, required2) => {
+      const value = key in options ? options[key] : null;
+      if (typeof value === "function") return value;
+      if (value != null) throw new TypeError(`Expected the "${key}" option to be a function`);
+      if (required2) throw new TypeError(`Missing required option "${key}"`);
+      return null;
+    };
+    var getLength = ({ length }) => {
+      if (Number.isInteger(length) && length >= 0) return length;
+      throw new TypeError("Expected function.length to be a positive integer");
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/table.js
+var require_table = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/table.js"(exports, module) {
+    "use strict";
+    var { cppdb } = require_util2();
+    module.exports = function defineTable(name, factory) {
+      if (typeof name !== "string") throw new TypeError("Expected first argument to be a string");
+      if (!name) throw new TypeError("Virtual table module name cannot be an empty string");
+      let eponymous = false;
+      if (typeof factory === "object" && factory !== null) {
+        eponymous = true;
+        factory = defer(parseTableDefinition(factory, "used", name));
+      } else {
+        if (typeof factory !== "function") throw new TypeError("Expected second argument to be a function or a table definition object");
+        factory = wrapFactory(factory);
+      }
+      this[cppdb].table(factory, name, eponymous);
+      return this;
+    };
+    function wrapFactory(factory) {
+      return function virtualTableFactory(moduleName, databaseName, tableName, ...args) {
+        const thisObject = {
+          module: moduleName,
+          database: databaseName,
+          table: tableName
+        };
+        const def = apply.call(factory, thisObject, args);
+        if (typeof def !== "object" || def === null) {
+          throw new TypeError(`Virtual table module "${moduleName}" did not return a table definition object`);
+        }
+        return parseTableDefinition(def, "returned", moduleName);
+      };
+    }
+    function parseTableDefinition(def, verb, moduleName) {
+      if (!hasOwnProperty.call(def, "rows")) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition without a "rows" property`);
+      }
+      if (!hasOwnProperty.call(def, "columns")) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition without a "columns" property`);
+      }
+      const rows = def.rows;
+      if (typeof rows !== "function" || Object.getPrototypeOf(rows) !== GeneratorFunctionPrototype) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "rows" property (should be a generator function)`);
+      }
+      let columns = def.columns;
+      if (!Array.isArray(columns) || !(columns = [...columns]).every((x) => typeof x === "string")) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "columns" property (should be an array of strings)`);
+      }
+      if (columns.length !== new Set(columns).size) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with duplicate column names`);
+      }
+      if (!columns.length) {
+        throw new RangeError(`Virtual table module "${moduleName}" ${verb} a table definition with zero columns`);
+      }
+      let parameters;
+      if (hasOwnProperty.call(def, "parameters")) {
+        parameters = def.parameters;
+        if (!Array.isArray(parameters) || !(parameters = [...parameters]).every((x) => typeof x === "string")) {
+          throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "parameters" property (should be an array of strings)`);
+        }
+      } else {
+        parameters = inferParameters(rows);
+      }
+      if (parameters.length !== new Set(parameters).size) {
+        throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with duplicate parameter names`);
+      }
+      if (parameters.length > 32) {
+        throw new RangeError(`Virtual table module "${moduleName}" ${verb} a table definition with more than the maximum number of 32 parameters`);
+      }
+      for (const parameter of parameters) {
+        if (columns.includes(parameter)) {
+          throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with column "${parameter}" which was ambiguously defined as both a column and parameter`);
+        }
+      }
+      let safeIntegers = 2;
+      if (hasOwnProperty.call(def, "safeIntegers")) {
+        const bool = def.safeIntegers;
+        if (typeof bool !== "boolean") {
+          throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "safeIntegers" property (should be a boolean)`);
+        }
+        safeIntegers = +bool;
+      }
+      let directOnly = false;
+      if (hasOwnProperty.call(def, "directOnly")) {
+        directOnly = def.directOnly;
+        if (typeof directOnly !== "boolean") {
+          throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "directOnly" property (should be a boolean)`);
+        }
+      }
+      const columnDefinitions = [
+        ...parameters.map(identifier).map((str) => `${str} HIDDEN`),
+        ...columns.map(identifier)
+      ];
+      return [
+        `CREATE TABLE x(${columnDefinitions.join(", ")});`,
+        wrapGenerator(rows, new Map(columns.map((x, i) => [x, parameters.length + i])), moduleName),
+        parameters,
+        safeIntegers,
+        directOnly
+      ];
+    }
+    function wrapGenerator(generator, columnMap, moduleName) {
+      return function* virtualTable(...args) {
+        const output = args.map((x) => Buffer.isBuffer(x) ? Buffer.from(x) : x);
+        for (let i = 0; i < columnMap.size; ++i) {
+          output.push(null);
+        }
+        for (const row of generator(...args)) {
+          if (Array.isArray(row)) {
+            extractRowArray(row, output, columnMap.size, moduleName);
+            yield output;
+          } else if (typeof row === "object" && row !== null) {
+            extractRowObject(row, output, columnMap, moduleName);
+            yield output;
+          } else {
+            throw new TypeError(`Virtual table module "${moduleName}" yielded something that isn't a valid row object`);
+          }
+        }
+      };
+    }
+    function extractRowArray(row, output, columnCount, moduleName) {
+      if (row.length !== columnCount) {
+        throw new TypeError(`Virtual table module "${moduleName}" yielded a row with an incorrect number of columns`);
+      }
+      const offset = output.length - columnCount;
+      for (let i = 0; i < columnCount; ++i) {
+        output[i + offset] = row[i];
+      }
+    }
+    function extractRowObject(row, output, columnMap, moduleName) {
+      let count = 0;
+      for (const key of Object.keys(row)) {
+        const index = columnMap.get(key);
+        if (index === void 0) {
+          throw new TypeError(`Virtual table module "${moduleName}" yielded a row with an undeclared column "${key}"`);
+        }
+        output[index] = row[key];
+        count += 1;
+      }
+      if (count !== columnMap.size) {
+        throw new TypeError(`Virtual table module "${moduleName}" yielded a row with missing columns`);
+      }
+    }
+    function inferParameters({ length }) {
+      if (!Number.isInteger(length) || length < 0) {
+        throw new TypeError("Expected function.length to be a positive integer");
+      }
+      const params = [];
+      for (let i = 0; i < length; ++i) {
+        params.push(`$${i + 1}`);
+      }
+      return params;
+    }
+    var { hasOwnProperty } = Object.prototype;
+    var { apply } = Function.prototype;
+    var GeneratorFunctionPrototype = Object.getPrototypeOf(function* () {
+    });
+    var identifier = (str) => `"${str.replace(/"/g, '""')}"`;
+    var defer = (x) => () => x;
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/methods/inspect.js
+var require_inspect = __commonJS({
+  "../../node_modules/better-sqlite3/lib/methods/inspect.js"(exports, module) {
+    "use strict";
+    var DatabaseInspection = function Database() {
+    };
+    module.exports = function inspect(depth, opts) {
+      return Object.assign(new DatabaseInspection(), this);
+    };
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/database.js
+var require_database = __commonJS({
+  "../../node_modules/better-sqlite3/lib/database.js"(exports, module) {
+    "use strict";
+    var fs3 = __require("fs");
+    var path3 = __require("path");
+    var util2 = require_util2();
+    var SqliteError = require_sqlite_error();
+    var DEFAULT_ADDON;
+    function Database(filenameGiven, options) {
+      if (new.target == null) {
+        return new Database(filenameGiven, options);
+      }
+      let buffer;
+      if (Buffer.isBuffer(filenameGiven)) {
+        buffer = filenameGiven;
+        filenameGiven = ":memory:";
+      }
+      if (filenameGiven == null) filenameGiven = "";
+      if (options == null) options = {};
+      if (typeof filenameGiven !== "string") throw new TypeError("Expected first argument to be a string");
+      if (typeof options !== "object") throw new TypeError("Expected second argument to be an options object");
+      if ("readOnly" in options) throw new TypeError('Misspelled option "readOnly" should be "readonly"');
+      if ("memory" in options) throw new TypeError('Option "memory" was removed in v7.0.0 (use ":memory:" filename instead)');
+      const filename = filenameGiven.trim();
+      const anonymous = filename === "" || filename === ":memory:";
+      const readonly2 = util2.getBooleanOption(options, "readonly");
+      const fileMustExist = util2.getBooleanOption(options, "fileMustExist");
+      const timeout = "timeout" in options ? options.timeout : 5e3;
+      const verbose = "verbose" in options ? options.verbose : null;
+      const nativeBinding = "nativeBinding" in options ? options.nativeBinding : null;
+      if (readonly2 && anonymous && !buffer) throw new TypeError("In-memory/temporary databases cannot be readonly");
+      if (!Number.isInteger(timeout) || timeout < 0) throw new TypeError('Expected the "timeout" option to be a positive integer');
+      if (timeout > 2147483647) throw new RangeError('Option "timeout" cannot be greater than 2147483647');
+      if (verbose != null && typeof verbose !== "function") throw new TypeError('Expected the "verbose" option to be a function');
+      if (nativeBinding != null && typeof nativeBinding !== "string" && typeof nativeBinding !== "object") throw new TypeError('Expected the "nativeBinding" option to be a string or addon object');
+      let addon;
+      if (nativeBinding == null) {
+        addon = DEFAULT_ADDON || (DEFAULT_ADDON = require_bindings()("better_sqlite3.node"));
+      } else if (typeof nativeBinding === "string") {
+        const requireFunc = typeof __non_webpack_require__ === "function" ? __non_webpack_require__ : __require;
+        addon = requireFunc(path3.resolve(nativeBinding).replace(/(\.node)?$/, ".node"));
+      } else {
+        addon = nativeBinding;
+      }
+      if (!addon.isInitialized) {
+        addon.setErrorConstructor(SqliteError);
+        addon.isInitialized = true;
+      }
+      if (!anonymous && !fs3.existsSync(path3.dirname(filename))) {
+        throw new TypeError("Cannot open database because the directory does not exist");
+      }
+      Object.defineProperties(this, {
+        [util2.cppdb]: { value: new addon.Database(filename, filenameGiven, anonymous, readonly2, fileMustExist, timeout, verbose || null, buffer || null) },
+        ...wrappers.getters
+      });
+    }
+    var wrappers = require_wrappers();
+    Database.prototype.prepare = wrappers.prepare;
+    Database.prototype.transaction = require_transaction();
+    Database.prototype.pragma = require_pragma();
+    Database.prototype.backup = require_backup();
+    Database.prototype.serialize = require_serialize();
+    Database.prototype.function = require_function();
+    Database.prototype.aggregate = require_aggregate();
+    Database.prototype.table = require_table();
+    Database.prototype.loadExtension = wrappers.loadExtension;
+    Database.prototype.exec = wrappers.exec;
+    Database.prototype.close = wrappers.close;
+    Database.prototype.defaultSafeIntegers = wrappers.defaultSafeIntegers;
+    Database.prototype.unsafeMode = wrappers.unsafeMode;
+    Database.prototype[util2.inspect] = require_inspect();
+    module.exports = Database;
+  }
+});
+
+// ../../node_modules/better-sqlite3/lib/index.js
+var require_lib = __commonJS({
+  "../../node_modules/better-sqlite3/lib/index.js"(exports, module) {
+    "use strict";
+    module.exports = require_database();
+    module.exports.SqliteError = require_sqlite_error();
   }
 });
 
@@ -7363,8 +8141,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path2, errorMaps, issueData } = params;
-  const fullPath = [...path2, ...issueData.path || []];
+  const { data, path: path3, errorMaps, issueData } = params;
+  const fullPath = [...path3, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7480,11 +8258,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path2, key) {
+  constructor(parent, value, path3, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path2;
+    this._path = path3;
     this._key = key;
   }
   get path() {
@@ -11121,10 +11899,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path2) {
-  if (!path2)
+function getElementAtPath(obj, path3) {
+  if (!path3)
     return obj;
-  return path2.reduce((acc, key) => acc?.[key], obj);
+  return path3.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11444,11 +12222,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path2, issues) {
+function prefixIssues(path3, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path2);
+    iss.path.unshift(path3);
     return iss;
   });
 }
@@ -21099,8 +21877,161 @@ var StdioServerTransport = class {
 
 // src/operations.ts
 import { spawnSync } from "node:child_process";
+import * as fs2 from "node:fs";
+import * as path2 from "node:path";
+
+// src/memory.ts
+var import_better_sqlite3 = __toESM(require_lib(), 1);
 import * as fs from "node:fs";
 import * as path from "node:path";
+var dbCache = /* @__PURE__ */ new Map();
+var SCHEMA_SQL = `
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    scope TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL,
+    metadata TEXT NOT NULL DEFAULT '{}',
+    branch TEXT NOT NULL DEFAULT '',
+    timestamp TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS checkpoints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tag TEXT NOT NULL UNIQUE,
+    branch TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    timestamp TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS branches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    spawned_from TEXT,
+    score REAL,
+    timestamp TEXT NOT NULL
+  );
+`;
+function getMemoryDb(cwd) {
+  const resolvedCwd = cwd ?? process.cwd();
+  const cached2 = dbCache.get(resolvedCwd);
+  if (cached2) return cached2;
+  const evoDir = path.join(resolvedCwd, ".evo");
+  fs.mkdirSync(evoDir, { recursive: true });
+  const dbPath = path.join(evoDir, "memory.db");
+  const db = new import_better_sqlite3.default(dbPath);
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+  db.exec(SCHEMA_SQL);
+  dbCache.set(resolvedCwd, db);
+  return db;
+}
+function writeMessage(type, content, opts) {
+  const db = getMemoryDb();
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  const scope = opts?.scope ?? "";
+  const metadata = JSON.stringify(opts?.metadata ?? {});
+  const branch = opts?.branch ?? "";
+  const result = db.prepare(
+    `INSERT INTO messages (type, scope, content, metadata, branch, timestamp)
+       VALUES (?, ?, ?, ?, ?, ?)`
+  ).run(type, scope, content, metadata, branch, timestamp);
+  return Number(result.lastInsertRowid);
+}
+function queryMessages(opts) {
+  const db = getMemoryDb();
+  const conditions = [];
+  const params = [];
+  const limit = opts.limit ?? 50;
+  if (opts.type) {
+    conditions.push("type = ?");
+    params.push(opts.type);
+  }
+  if (opts.scope) {
+    conditions.push("scope = ?");
+    params.push(opts.scope);
+  }
+  if (opts.since) {
+    conditions.push("timestamp >= ?");
+    params.push(opts.since);
+  }
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const sql = `SELECT * FROM messages ${where} ORDER BY timestamp DESC LIMIT ?`;
+  params.push(limit);
+  const rows = db.prepare(sql).all(...params);
+  return rows.map(rowToMessage);
+}
+function rowToMessage(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    scope: row.scope,
+    content: row.content,
+    metadata: JSON.parse(row.metadata || "{}"),
+    branch: row.branch,
+    timestamp: row.timestamp
+  };
+}
+function recordCheckpoint(tag, branch, description) {
+  const db = getMemoryDb();
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  db.prepare(
+    `INSERT OR REPLACE INTO checkpoints (tag, branch, description, timestamp)
+     VALUES (?, ?, ?, ?)`
+  ).run(tag, branch, description ?? "", timestamp);
+}
+function recordBranch(name, status, spawnedFrom, score) {
+  const db = getMemoryDb();
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  db.prepare(
+    `INSERT INTO branches (name, status, spawned_from, score, timestamp)
+     VALUES (?, ?, ?, ?, ?)`
+  ).run(name, status, spawnedFrom ?? null, score ?? null, timestamp);
+}
+function migrateLessons(cwd) {
+  const resolvedCwd = cwd ?? process.cwd();
+  const lessonsFile = path.join(resolvedCwd, ".evo", "lessons.jsonl");
+  if (!fs.existsSync(lessonsFile)) {
+    return 0;
+  }
+  const content = fs.readFileSync(lessonsFile, "utf-8").trim();
+  if (!content) {
+    fs.renameSync(lessonsFile, `${lessonsFile}.migrated`);
+    return 0;
+  }
+  const lines = content.split("\n").filter((l) => l.trim());
+  const db = getMemoryDb(resolvedCwd);
+  const insert = db.prepare(
+    `INSERT INTO messages (type, scope, content, metadata, branch, timestamp)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  );
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  let count = 0;
+  const tx = db.transaction(() => {
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line);
+        const metadata = JSON.stringify({ migratedFrom: "lessons.jsonl", originalTimestamp: entry.timestamp ?? null });
+        insert.run(
+          "INSIGHT",
+          "gitevo-lessons",
+          entry.content ?? "",
+          metadata,
+          entry.branch ?? "",
+          timestamp
+        );
+        count++;
+      } catch {
+      }
+    }
+    fs.renameSync(lessonsFile, `${lessonsFile}.migrated`);
+  });
+  tx();
+  return count;
+}
+
+// src/operations.ts
 var EvoError = class extends Error {
   constructor(message) {
     super(message);
@@ -21157,11 +22088,12 @@ function isDirty2(cwd) {
 }
 function filesRemovedByCheckout(targetRef, cwd) {
   try {
-    const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
-    return diff.split("\n").filter(Boolean);
+    git(["rev-parse", "--verify", targetRef], cwd);
   } catch {
-    return [];
+    throw new EvoError(`target ref '${targetRef}' does not exist`);
   }
+  const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
+  return diff.split("\n").filter(Boolean);
 }
 function untrackedSourceFiles(cwd) {
   const status = git(["status", "--porcelain"], cwd);
@@ -21170,29 +22102,29 @@ function untrackedSourceFiles(cwd) {
 function staleDistFiles(cwd) {
   const stale = [];
   function scan(dir) {
-    if (!fs.existsSync(dir)) return;
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
+    if (!fs2.existsSync(dir)) return;
+    for (const entry of fs2.readdirSync(dir, { withFileTypes: true })) {
+      const full = path2.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (entry.name === "node_modules") continue;
         scan(full);
       } else if (entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
         const tsFile = full.replace(/\.js$/, ".ts");
-        if (!fs.existsSync(tsFile)) {
-          stale.push(path.relative(cwd, full));
+        if (!fs2.existsSync(tsFile)) {
+          stale.push(path2.relative(cwd, full));
         }
       }
     }
   }
-  const pkgsDir = path.join(cwd, "packages");
-  if (fs.existsSync(pkgsDir)) {
-    for (const pkg of fs.readdirSync(pkgsDir, { withFileTypes: true })) {
+  const pkgsDir = path2.join(cwd, "packages");
+  if (fs2.existsSync(pkgsDir)) {
+    for (const pkg of fs2.readdirSync(pkgsDir, { withFileTypes: true })) {
       if (pkg.isDirectory()) {
-        scan(path.join(pkgsDir, pkg.name, "dist"));
+        scan(path2.join(pkgsDir, pkg.name, "dist"));
       }
     }
   }
-  scan(path.join(cwd, "dist"));
+  scan(path2.join(cwd, "dist"));
   return stale;
 }
 function preflightCheckoutSafety(targetRef, cwd) {
@@ -21241,15 +22173,15 @@ function getTagMessage(tag, cwd) {
   }
 }
 function evoPaths(cwd) {
-  const evoDir = path.join(cwd, ".evo");
+  const evoDir = path2.join(cwd, ".evo");
   return {
     evoDir,
-    lessonsFile: path.join(evoDir, "lessons.jsonl")
+    lessonsFile: path2.join(evoDir, "lessons.jsonl")
   };
 }
 function requireInit(cwd) {
   const paths = evoPaths(cwd);
-  if (!fs.existsSync(paths.evoDir)) {
+  if (!fs2.existsSync(paths.evoDir)) {
     throw new EvoError("GitEvo not initialized. Run evo_init first.");
   }
   return paths;
@@ -21257,23 +22189,31 @@ function requireInit(cwd) {
 function evo_init() {
   const { cwd } = getRepo();
   const paths = evoPaths(cwd);
-  fs.mkdirSync(paths.evoDir, { recursive: true });
-  fs.writeFileSync(paths.lessonsFile, "", "utf-8");
-  const gitignore = path.join(cwd, ".gitignore");
+  fs2.mkdirSync(paths.evoDir, { recursive: true });
+  fs2.writeFileSync(paths.lessonsFile, "", "utf-8");
+  const gitignore = path2.join(cwd, ".gitignore");
   const evoEntry = ".evo/\n";
-  if (fs.existsSync(gitignore)) {
-    const content = fs.readFileSync(gitignore, "utf-8");
+  if (fs2.existsSync(gitignore)) {
+    const content = fs2.readFileSync(gitignore, "utf-8");
     if (!content.includes(".evo/")) {
-      fs.appendFileSync(gitignore, evoEntry);
+      fs2.appendFileSync(gitignore, evoEntry);
     }
   } else {
-    fs.writeFileSync(gitignore, evoEntry);
+    fs2.writeFileSync(gitignore, evoEntry);
   }
   try {
     git(["tag", "-d", "evo-root"], cwd);
   } catch {
   }
   git(["tag", "-a", "evo-root", "-m", "GitEvo root checkpoint"], cwd);
+  try {
+    migrateLessons(cwd);
+  } catch {
+  }
+  try {
+    getMemoryDb(cwd);
+  } catch {
+  }
   return "GitEvo initialized. Root checkpoint tagged as evo-root.";
 }
 function evo_checkpoint(name, description) {
@@ -21297,10 +22237,16 @@ function evo_checkpoint(name, description) {
       return `Checkpoint '${name}' created, but auto-stash could not be reapplied \u2014 your changes are in the stash.`;
     }
   }
+  try {
+    const branch = currentBranch(cwd);
+    recordCheckpoint(tagName, branch, description);
+  } catch {
+  }
   return `Checkpoint '${name}' created.`;
 }
-function evo_learn(content) {
-  const { cwd } = getRepo();
+function evo_learn(content, repoOverride) {
+  const repo = repoOverride ?? getRepo();
+  const { cwd } = repo;
   requireInit(cwd);
   const branch = currentBranch(cwd);
   const lesson = {
@@ -21309,17 +22255,31 @@ function evo_learn(content) {
     branch
   };
   const paths = evoPaths(cwd);
-  fs.appendFileSync(paths.lessonsFile, `${JSON.stringify(lesson)}
+  fs2.appendFileSync(paths.lessonsFile, `${JSON.stringify(lesson)}
 `, "utf-8");
+  try {
+    writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } });
+  } catch {
+  }
   return `Lesson recorded on branch '${branch}'.`;
 }
 function evo_lessons() {
   const { cwd } = getRepo();
   const paths = requireInit(cwd);
-  if (!fs.existsSync(paths.lessonsFile)) {
+  const memoryDbPath = path2.join(cwd, ".evo", "memory.db");
+  if (fs2.existsSync(memoryDbPath)) {
+    try {
+      const results = queryMessages({ type: "INSIGHT", limit: 100 });
+      if (results.length > 0) {
+        return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.branch}): ${m.content}`).join("\n");
+      }
+    } catch {
+    }
+  }
+  if (!fs2.existsSync(paths.lessonsFile)) {
     return "No lessons recorded.";
   }
-  const content = fs.readFileSync(paths.lessonsFile, "utf-8").trim();
+  const content = fs2.readFileSync(paths.lessonsFile, "utf-8").trim();
   if (!content) return "No lessons recorded.";
   const lessons = content.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l)).reverse();
   return lessons.map((l, i) => `[${i + 1}] ${l.timestamp} (${l.branch}): ${l.content}`).join("\n");
@@ -21327,10 +22287,10 @@ function evo_lessons() {
 function evo_export_lessons() {
   const { cwd } = getRepo();
   const paths = requireInit(cwd);
-  if (!fs.existsSync(paths.lessonsFile)) {
+  if (!fs2.existsSync(paths.lessonsFile)) {
     return JSON.stringify([]);
   }
-  const content = fs.readFileSync(paths.lessonsFile, "utf-8").trim();
+  const content = fs2.readFileSync(paths.lessonsFile, "utf-8").trim();
   if (!content) return JSON.stringify([]);
   const lessons = content.split("\n").filter((l) => l.trim()).map((l) => {
     const parsed = JSON.parse(l);
@@ -21396,6 +22356,10 @@ Pass force=true to proceed anyway (you accept the risk of data loss).`
       return `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'. Auto-stash could not be reapplied \u2014 your changes are in the stash. Run git stash pop manually.`;
     }
   }
+  try {
+    recordBranch(new_branch, "active", `evo-${checkpoint_name}`);
+  } catch {
+  }
   const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
   if (force && safetyWarnings) {
     return `${spawnMsg}
@@ -21430,7 +22394,7 @@ function evo_branches() {
   ${attempts.sort().join("\n  ")}`;
 }
 function evo_abandon(checkpoint, reason, force) {
-  const { cwd } = getRepo();
+  const { cwd, rootBranch } = getRepo();
   requireInit(cwd);
   let stashed = false;
   if (isDirty2(cwd)) {
@@ -21473,15 +22437,19 @@ ${safetyWarnings}
 Pass force=true to proceed anyway (you accept the risk of data loss).`
     );
   }
+  try {
+    recordBranch(branchName, "dead");
+  } catch {
+  }
+  git(["reset", "--hard", targetRef], cwd);
   const deadTag = `evo-dead-${branchName}`;
   try {
     git(["tag", "-d", deadTag], cwd);
   } catch {
   }
   git(["tag", "-a", deadTag, "-m", `Abandoned branch '${branchName}'`], cwd);
-  git(["reset", "--hard", targetRef], cwd);
   if (reason) {
-    evo_learn(`[ABANDON] ${reason}`);
+    evo_learn(`[ABANDON] ${reason}`, { cwd, rootBranch });
   }
   const abandonMsg = `Branch '${branchName}' abandoned. Reverted to ${targetDesc}.${stashed ? " Auto-stashed dirty changes \u2014 run git stash pop to recover." : ""}`;
   if (force && safetyWarnings) {
@@ -21514,8 +22482,8 @@ function evo_summary() {
   const checkpoints = allTags.filter((t) => !t.startsWith("evo-dead-") && t !== "evo-adopted");
   const paths = evoPaths(cwd);
   let lessonCount = 0;
-  if (fs.existsSync(paths.lessonsFile)) {
-    const content = fs.readFileSync(paths.lessonsFile, "utf-8").trim();
+  if (fs2.existsSync(paths.lessonsFile)) {
+    const content = fs2.readFileSync(paths.lessonsFile, "utf-8").trim();
     if (content) {
       lessonCount = content.split("\n").filter((l) => l.trim()).length;
     }
@@ -21550,6 +22518,10 @@ function evo_adopt(branch) {
   } catch {
   }
   git(["tag", "-a", "evo-adopted", "-m", `Adopted branch '${branch}' into ${rootBranch}`], cwd);
+  try {
+    recordBranch(branch, "adopted");
+  } catch {
+  }
   return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
 }
 function evo_finish() {
@@ -21576,8 +22548,8 @@ function evo_finish() {
     }
   }
   const paths = evoPaths(cwd);
-  if (fs.existsSync(paths.evoDir)) {
-    fs.rmSync(paths.evoDir, { recursive: true, force: true });
+  if (fs2.existsSync(paths.evoDir)) {
+    fs2.rmSync(paths.evoDir, { recursive: true, force: true });
   }
   return `Evolution complete. All artifacts cleaned. Root branch: ${rootBranch}.`;
 }
@@ -21711,6 +22683,44 @@ server.tool(
   {},
   async () => ({
     content: [{ type: "text", text: wrap(evo_finish)() }]
+  })
+);
+function formatMemoryQuery(type, scope, limit) {
+  const results = queryMessages({ type, scope, limit });
+  if (results.length === 0) return "No messages found.";
+  return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.type}, ${m.branch}): ${m.content}`).join("\n");
+}
+function formatMemoryStats() {
+  const db = getMemoryDb();
+  const total = db.prepare("SELECT COUNT(*) as count FROM messages").get().count;
+  const byType = db.prepare("SELECT type, COUNT(*) as count FROM messages GROUP BY type ORDER BY count DESC").all();
+  const lines = [`Total messages: ${total}`];
+  if (byType.length > 0) {
+    lines.push("By type:");
+    for (const row of byType) {
+      lines.push(`  ${row.type}: ${row.count}`);
+    }
+  }
+  return lines.join("\n");
+}
+server.tool(
+  "evo_memory_query",
+  "Query the SQLite memory bus. Filter by type (e.g. INSIGHT, FAILURE_SIGNATURE, ELITE_SOLUTION), scope, and limit.",
+  {
+    type: external_exports.string().optional().describe("Message type filter"),
+    scope: external_exports.string().optional().describe("Scope filter"),
+    limit: external_exports.number().optional().default(50).describe("Max results")
+  },
+  async ({ type, scope, limit }) => ({
+    content: [{ type: "text", text: wrap(formatMemoryQuery)(type, scope, limit ?? 50) }]
+  })
+);
+server.tool(
+  "evo_memory_stats",
+  "Get memory bus statistics: total messages, counts by type.",
+  {},
+  async () => ({
+    content: [{ type: "text", text: wrap(formatMemoryStats)() }]
   })
 );
 var _filename = fileURLToPath(import.meta.url);

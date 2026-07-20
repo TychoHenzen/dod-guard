@@ -26,6 +26,14 @@ export interface TaskSpec {
   api_key?: string;
   /** Base URL override for DeepSeek-compatible API. */
   api_base?: string;
+  /** Shell command for build step (runs before verify_cmd). */
+  build_cmd?: string;
+  /** Shell command for test step (runs before verify_cmd). */
+  test_cmd?: string;
+  /** Shell command for lint step (runs before verify_cmd). */
+  lint_cmd?: string;
+  /** Glob pattern for held-out test files (not revealed to solver). */
+  held_out_tests?: string;
 }
 
 // ── Plan types ───────────────────────────────────────────────────────
@@ -78,6 +86,8 @@ export interface SolveResult {
   verification_report?: string;
   /** Escalation context — what Claude needs to solve the stuck sub-problem. */
   escalation?: EscalationReport;
+  /** Judge verdict from multi-gate evaluation (Phase 1). */
+  judge_verdict?: JudgeVerdict;
   /** Statistics for the run. */
   stats: RunStats;
 }
@@ -129,6 +139,37 @@ export interface RunStats {
   model: string;
 }
 
+// ── Gate, Oracle, Judge types ─────────────────────────────────────────
+
+export interface GateResult {
+  gate: string;
+  passed: boolean;
+  diagnostics: string;
+  elapsed_ms: number;
+}
+
+export interface Diagnostic {
+  file: string;
+  line: number;
+  severity: "error" | "warning" | "info";
+  message: string;
+  context: string;
+}
+
+export interface OracleResult {
+  pass: boolean;
+  score: number;
+  diagnostics: Diagnostic[];
+  elapsed_ms: number;
+  oracle_type: string;
+}
+
+export interface JudgeVerdict {
+  winner_branch: string;
+  scores: Record<string, { correctness: number; clarity: number; efficiency: number; maintainability: number }>;
+  rationale: string;
+}
+
 // ── Evolve types ─────────────────────────────────────────────────────
 
 export interface EvolveSpec {
@@ -156,6 +197,14 @@ export interface EvolveSpec {
   api_key?: string;
   /** API base override. */
   api_base?: string;
+  /** Shell command for build step (runs before fitness_cmd). */
+  build_cmd?: string;
+  /** Shell command for test step (runs before fitness_cmd). */
+  test_cmd?: string;
+  /** Shell command for lint step (runs before fitness_cmd). */
+  lint_cmd?: string;
+  /** Shell command for mutation testing (Phase 2). */
+  mutation_cmd?: string;
 }
 
 export interface EvolveResult {
@@ -171,6 +220,14 @@ export interface EvolveResult {
   verification_report: string;
   /** Statistics. */
   stats: RunStats;
+  /** Whether evolution converged on an optimum. */
+  converged?: boolean;
+  /** Reason for convergence (e.g. "no improvement for 3 generations"). */
+  convergence_reason?: string;
+  /** Whether evolution stagnated (all candidates stuck). */
+  stagnated?: boolean;
+  /** Reason for stagnation (e.g. "population diversity collapsed"). */
+  stagnation_reason?: string;
 }
 
 // ── Internal: lineage tracking ───────────────────────────────────────

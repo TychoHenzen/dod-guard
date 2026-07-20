@@ -27,6 +27,7 @@ import {
   evo_spawn,
   evo_summary,
 } from "./operations.js";
+import { getMemoryDb, queryMessages } from "./memory.js";
 
 const server = new McpServer({
   name: "gitevo",
@@ -189,6 +190,53 @@ server.tool(
   {},
   async () => ({
     content: [{ type: "text" as const, text: wrap(evo_finish)() }],
+  }),
+);
+
+// ── Memory bus tools ─────────────────────────────────────────────────
+
+function formatMemoryQuery(type?: string, scope?: string, limit?: number): string {
+  const results = queryMessages({ type, scope, limit });
+  if (results.length === 0) return "No messages found.";
+  return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.type}, ${m.branch}): ${m.content}`).join("\n");
+}
+
+function formatMemoryStats(): string {
+  const db = getMemoryDb();
+  const total = (db.prepare("SELECT COUNT(*) as count FROM messages").get() as { count: number }).count;
+  const byType = db.prepare("SELECT type, COUNT(*) as count FROM messages GROUP BY type ORDER BY count DESC").all() as {
+    type: string;
+    count: number;
+  }[];
+  const lines: string[] = [`Total messages: ${total}`];
+  if (byType.length > 0) {
+    lines.push("By type:");
+    for (const row of byType) {
+      lines.push(`  ${row.type}: ${row.count}`);
+    }
+  }
+  return lines.join("\n");
+}
+
+server.tool(
+  "evo_memory_query",
+  "Query the SQLite memory bus. Filter by type (e.g. INSIGHT, FAILURE_SIGNATURE, ELITE_SOLUTION), scope, and limit.",
+  {
+    type: z.string().optional().describe("Message type filter"),
+    scope: z.string().optional().describe("Scope filter"),
+    limit: z.number().optional().default(50).describe("Max results"),
+  },
+  async ({ type, scope, limit }) => ({
+    content: [{ type: "text" as const, text: wrap(formatMemoryQuery)(type, scope, limit ?? 50) }],
+  }),
+);
+
+server.tool(
+  "evo_memory_stats",
+  "Get memory bus statistics: total messages, counts by type.",
+  {},
+  async () => ({
+    content: [{ type: "text" as const, text: wrap(formatMemoryStats)() }],
   }),
 );
 

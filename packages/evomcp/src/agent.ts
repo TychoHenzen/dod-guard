@@ -448,13 +448,69 @@ export function hashFailure(output: string): string {
   return Math.abs(hash).toString(16);
 }
 
+// ── Memory bus integration ────────────────────────────────────────────
+
+/**
+ * Query the gitevo memory bus for recent FAILURE_SIGNATURE messages
+ * matching the given scope. Returns a compact bullet list body, or
+ * empty string if no failures / bus unavailable.
+ *
+ * The caller (e.g. strategyPrompts) wraps this in a heading block.
+ * Capped at 3 most recent failures. Memory bus failures NEVER crash
+ * the caller — errors are logged and empty string returned.
+ */
+export async function injectFailureMemory(_task: string, scope: string, _cwd: string): Promise<string> {
+  try {
+    const { getRecentFailures } = await import("../../gitevo/dist/memory.js");
+    const failures = getRecentFailures(scope, 3);
+    if (failures.length === 0) return "";
+    return failures.map((f: any, i: number) => `- ${(f as any).content.slice(0, 300)}`).join("\n");
+  } catch (err) {
+    console.error("evomcp: injectFailureMemory failed:", err);
+    return "";
+  }
+}
+
+/**
+ * Record an ELITE_SOLUTION message to the memory bus for cross-lineage
+ * learning. Fire-and-forget — errors logged, never thrown.
+ */
+export async function recordEliteSolution(scope: string, content: string, branch: string, _cwd: string): Promise<void> {
+  try {
+    const { writeMessage } = await import("../../gitevo/dist/memory.js");
+    writeMessage("ELITE_SOLUTION", content, { scope, branch });
+  } catch (err) {
+    console.error("evomcp: recordEliteSolution failed:", err);
+  }
+}
+
+/**
+ * Record a FAILURE_SIGNATURE message to the memory bus for stuck
+ * detection and cross-run learning. Uses hashFailure() for a
+ * normalized dedup key stored in metadata.
+ * Fire-and-forget — errors logged, never thrown.
+ */
+export async function recordFailureSignature(scope: string, content: string, branch: string, _cwd: string): Promise<void> {
+  try {
+    const { writeMessage } = await import("../../gitevo/dist/memory.js");
+    const dedupKey = hashFailure(content);
+    writeMessage("FAILURE_SIGNATURE", content.slice(0, 1000), {
+      scope,
+      branch,
+      metadata: { dedupKey },
+    });
+  } catch (err) {
+    console.error("evomcp: recordFailureSignature failed:", err);
+  }
+}
+
 // ── Prompt templates ──────────────────────────────────────────────────
 
 /**
  * Build a diverse-strategy prompt for best-of-N sampling.
  * Each variant gets a different system prompt to force diversity.
  */
-export function strategyPrompts(task: string, n: number, context?: string): string[] {
+export function strategyPrompts(task: string, n: number, context?: string, failureContext?: string): string[] {
   const strategies = [
     "Implement the simplest possible solution that works. Minimal changes, maximum clarity.",
     "Implement a robust solution with comprehensive error handling, edge cases, and validation.",
@@ -469,9 +525,10 @@ export function strategyPrompts(task: string, n: number, context?: string): stri
   const prompts: string[] = [];
   for (let i = 0; i < n; i++) {
     const strategy = strategies[i % strategies.length];
+    const failureBlock = failureContext ? `\n\n## Failures to Avoid\n${failureContext}` : "";
     const contextBlock = context ? `\n\nContext:\n${context}` : "";
     prompts.push(
-      `## Task\n${task}\n\n## Strategy\n${strategy}${contextBlock}\n\nImplement the changes needed. Use tools to read files, make edits, and verify your work. Commit when done.`,
+      `## Task\n${task}\n\n## Strategy\n${strategy}${failureBlock}${contextBlock}\n\nImplement the changes needed. Use tools to read files, make edits, and verify your work. Commit when done.`,
     );
   }
   return prompts;

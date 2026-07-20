@@ -14,6 +14,7 @@
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { getMemoryDb, migrateLessons, queryMessages, recordBranch, recordCheckpoint, writeMessage } from "./memory.js";
 
 // ── Error types ───────────────────────────────────────────────────────
 
@@ -261,6 +262,10 @@ export function evo_init(): string {
   }
   git(["tag", "-a", "evo-root", "-m", "GitEvo root checkpoint"], cwd);
 
+  // Migrate existing lessons into SQLite memory bus
+  try { migrateLessons(cwd); } catch {}
+  try { getMemoryDb(cwd); } catch {}
+
   return "GitEvo initialized. Root checkpoint tagged as evo-root.";
 }
 
@@ -296,6 +301,11 @@ export function evo_checkpoint(name: string, description: string): string {
     }
   }
 
+  try {
+    const branch = currentBranch(cwd);
+    recordCheckpoint(tagName, branch, description);
+  } catch { /* memory failure shouldn't break git tag */ }
+
   return `Checkpoint '${name}' created.`;
 }
 
@@ -317,6 +327,11 @@ export function evo_learn(content: string, repoOverride?: { cwd: string; rootBra
   const paths = evoPaths(cwd);
   fs.appendFileSync(paths.lessonsFile, `${JSON.stringify(lesson)}\n`, "utf-8");
 
+  // Also write to SQLite memory bus
+  try {
+    writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } });
+  } catch { /* memory failure shouldn't break JSONL */ }
+
   return `Lesson recorded on branch '${branch}'.`;
 }
 
@@ -328,6 +343,18 @@ export function evo_lessons(): string {
   const { cwd } = getRepo();
   const paths = requireInit(cwd);
 
+  // Try SQLite memory bus first
+  const memoryDbPath = path.join(cwd, ".evo", "memory.db");
+  if (fs.existsSync(memoryDbPath)) {
+    try {
+      const results = queryMessages({ type: "INSIGHT", limit: 100 });
+      if (results.length > 0) {
+        return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.branch}): ${m.content}`).join("\n");
+      }
+    } catch { /* fall through to JSONL */ }
+  }
+
+  // Fall back to JSONL
   if (!fs.existsSync(paths.lessonsFile)) {
     return "No lessons recorded.";
   }
@@ -451,6 +478,10 @@ export function evo_spawn(checkpoint_name: string, new_branch: string, force?: b
     }
   }
 
+  try {
+    recordBranch(new_branch, "active", `evo-${checkpoint_name}`);
+  } catch { /* memory failure shouldn't break git ops */ }
+
   const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
   if (force && safetyWarnings) {
     return `${spawnMsg}\n\n⚠️ FORCED — safety checks bypassed:\n\n${safetyWarnings}`;
@@ -548,6 +579,11 @@ export function evo_abandon(checkpoint?: string, reason?: string, force?: boolea
         `Pass force=true to proceed anyway (you accept the risk of data loss).`,
     );
   }
+
+  // Record branch death in memory bus before revert
+  try {
+    recordBranch(branchName, "dead");
+  } catch { /* silent */ }
 
   // Hard reset to target FIRST — only tag dead after success
   git(["reset", "--hard", targetRef], cwd);
@@ -661,6 +697,10 @@ export function evo_adopt(branch: string): string {
     git(["tag", "-d", "evo-adopted"], cwd);
   } catch {}
   git(["tag", "-a", "evo-adopted", "-m", `Adopted branch '${branch}' into ${rootBranch}`], cwd);
+
+  try {
+    recordBranch(branch, "adopted");
+  } catch { /* silent */ }
 
   return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
 }

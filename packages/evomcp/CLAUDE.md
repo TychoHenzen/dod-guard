@@ -29,27 +29,36 @@ DeepSeek has an `/anthropic` endpoint that speaks the Anthropic Messages API. By
 | File | Role |
 |------|------|
 | `index.ts` | MCP server entry: tool registration, Zod schemas, formatting |
-| `types.ts` | All TypeScript types/interfaces |
-| `agent.ts` | Spawn `claude -p` subprocesses, proxy health, prompt templates |
-| `solve.ts` | Best-of-N solver: fanout → verify → repair → escalate |
-| `evolve.ts` | Evolutionary optimizer: baseline → generations → elites → final |
+| `types.ts` | All TypeScript types/interfaces (includes GateResult, Diagnostic, OracleResult, JudgeVerdict) |
+| `agent.ts` | Spawn `claude -p` subprocesses, proxy health, prompt templates, memory bus integration |
+| `solve.ts` | Best-of-N solver: fanout → gates → verify → repair → escalate → judge |
+| `evolve.ts` | Evolutionary optimizer: baseline → generations → elites → final. Build/test/lint/mutation gates. |
 | `dedup.ts` | Plan deduplication with token-overlap heuristic |
+| `gates.ts` | Multi-phase gate pipeline: lint → build → test (optional held-out tests at merge gate) |
+| `judge.ts` | Multi-candidate judge: correctness, clarity, efficiency, maintainability scoring |
+| `convergence.ts` | Convergence detection: staleness, improvement threshold, early stopping |
+| `gitevo-integration.ts` | Bridge to gitevo memory bus: write failures, elites, and insights for cross-session learning |
 
 ### Solve flow
-1. Spawn N parallel `claude -p` instances, each with different strategy prompt
-2. Detect silent failures: no-output (proxy/API issue) and timed-out lineages → skip to diagnostics
-3. Verify each result against `verify_cmd`
-4. Failed candidates get up to 3 repair iterations with failure feedback
-5. Stuck detection: same failure after repair → kill lineage, mark in diagnostics
-6. Returns first passing patch + verification report
-7. All lineages fail → escalation report with per-lineage diagnostics (strategy, exit codes, output samples, repair counts, failure status)
+1. Optional gates (lint_cmd → build_cmd → test_cmd) — fail fast before fanout
+2. Spawn N parallel `claude -p` instances, each with different strategy prompt
+3. Detect silent failures: no-output (proxy/API issue) and timed-out lineages → skip to diagnostics
+4. Verify each result against `verify_cmd`
+5. Failed candidates get up to 3 repair iterations with failure feedback
+6. Stuck detection: same failure after repair → kill lineage, mark in diagnostics
+7. Multi-candidate judge scores winners on correctness, clarity, efficiency, maintainability
+8. Returns first passing patch + verification report + judge verdict
+9. All lineages fail → escalation report with per-lineage diagnostics (strategy, exit codes, output samples, repair counts, failure status)
 
 ### Evolve flow
-1. Measure baseline fitness via `fitness_cmd`
-2. Read target files (glob patterns)
-3. Each generation: spawn population_size mutations, measure fitness, select elites
-4. Apply best patch between generations (cumulative improvement)
-5. Final verification with best patch applied
+1. Optional gates (lint_cmd → build_cmd → test_cmd) before baseline measurement
+2. Measure baseline fitness via `fitness_cmd`
+3. Read target files (glob patterns)
+4. Each generation: spawn population_size mutations, measure fitness, select elites
+5. Apply best patch between generations (cumulative improvement)
+6. Optional mutation_cmd for mutation testing (Phase 2)
+7. Convergence detection: early stop on staleness or below improvement threshold
+8. Final verification with best patch applied
 
 ### Important: evolution accumulation
 Between generations, the best patch found so far is applied so mutations build on the best current state, not the baseline. Without this, each generation starts from scratch.

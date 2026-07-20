@@ -37,6 +37,8 @@ const TaskSpecSchema = z.object({
   cwd: z.string().describe("Working directory for running verify_cmd (absolute path)"),
   budget_tokens: z.number().optional().describe("Maximum DeepSeek API tokens to spend (default ~100k)"),
   fanout: z.number().optional().describe("Number of parallel claude -p instances (default 5, max 16)"),
+  allowed_files: z.array(z.string()).optional().describe("Files the solver is allowed to modify (glob patterns)"),
+  api_base: z.string().optional().describe("Base URL override for DeepSeek-compatible API"),
   strategy: z
     .enum(["auto", "best-of-n", "evolve"])
     .optional()
@@ -45,6 +47,10 @@ const TaskSpecSchema = z.object({
   context: z.string().optional().describe("Relevant context: file snippets, existing test output, constraints"),
   model: z.string().optional().describe("Model override (default: deepseek-v4-pro[1m])"),
   api_key: z.string().optional().describe("DeepSeek API key. Falls back to DEEPSEEK_API_KEY env var"),
+  build_cmd: z.string().optional().describe("Build command (e.g. 'npm run build'). Runs as gate before verify."),
+  test_cmd: z.string().optional().describe("Test command (e.g. 'npm test'). Runs as gate before verify."),
+  lint_cmd: z.string().optional().describe("Lint command (e.g. 'npx biome check'). Runs as first gate."),
+  held_out_tests: z.string().optional().describe("Glob pattern for tests hidden from implementer. Run only at merge gate."),
 });
 
 const EvolveSpecSchema = z.object({
@@ -61,6 +67,10 @@ const EvolveSpecSchema = z.object({
   context: z.string().optional().describe("Context for the mutator"),
   model: z.string().optional().describe("Model override"),
   api_key: z.string().optional().describe("DeepSeek API key"),
+  build_cmd: z.string().optional().describe("Build command. Runs as gate during fitness evaluation."),
+  test_cmd: z.string().optional().describe("Test command. Runs as gate during fitness evaluation."),
+  lint_cmd: z.string().optional().describe("Lint command. Runs as first gate during fitness evaluation."),
+  mutation_cmd: z.string().optional().describe("Mutation testing command (e.g. 'npx stryker run')."),
 });
 
 // ── solve tool ──────────────────────────────────────────────────────

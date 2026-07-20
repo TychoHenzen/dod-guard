@@ -1,6 +1,6 @@
 {
   "name": "gitevo",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Evolutionary git branching for LLM agents — checkpoint, spawn, learn, abandon, adopt, finish. Ported from Python GitEvoMCP to TypeScript.",
   "type": "module",
   "main": "dist/bundle.js",
@@ -44,9 +44,11 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "better-sqlite3": "^11.0.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
     "@types/node": "^22.0.0",
     "c8": "^11.0.0",
     "esbuild": "^0.28.0",
