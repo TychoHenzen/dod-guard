@@ -60,7 +60,11 @@ export async function checkpointGeneration(gen: number, description: string, cwd
  * stale dist artifacts, or files that would be deleted by the checkout).
  */
 export async function spawnCandidate(checkpointName: string, branchName: string, cwd: string): Promise<void> {
-  await wrapGitevo(evo_spawn, [checkpointName, branchName, false, cwd], `spawn '${branchName}' from '${checkpointName}'`);
+  await wrapGitevo(
+    evo_spawn,
+    [checkpointName, branchName, false, cwd],
+    `spawn '${branchName}' from '${checkpointName}'`,
+  );
 }
 
 /**
@@ -82,7 +86,7 @@ export async function adoptWinner(branchName: string, cwd: string): Promise<void
  *  - Tags the branch as evo-dead-{branch} after reverting
  *  - force=false keeps safety checks enabled
  */
-export async function abandonLoser(branchName: string, reason: string, cwd: string): Promise<void> {
+export async function abandonLoser(_branchName: string, reason: string, cwd: string): Promise<void> {
   await wrapGitevo(evo_abandon, [undefined, reason, false, cwd], `abandon (reason: ${reason.slice(0, 60)})`);
 }
 
@@ -93,7 +97,7 @@ export async function abandonLoser(branchName: string, reason: string, cwd: stri
  * JSONL entry to .evo/lessons.jsonl with timestamp and current branch info.
  */
 export async function learnFromFailure(content: string, cwd: string): Promise<void> {
-  await wrapGitevo(evo_learn, [content, { cwd, rootBranch: 'main' }], `learn: ${content.slice(0, 60)}`);
+  await wrapGitevo(evo_learn, [content, { cwd, rootBranch: "main" }], `learn: ${content.slice(0, 60)}`);
 }
 
 /**

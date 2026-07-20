@@ -477,6 +477,9 @@ describe("evolve", () => {
     assert.ok(r.fitness_history.length < 3, `expected fewer than 3 generations, got ${r.fitness_history.length}`);
     assert.equal(r.best_score, 100);
     // Budget summary in progress
-    assert.ok(calls.some((c) => c.includes("Budget")), "budget warning emitted");
+    assert.ok(
+      calls.some((c) => c.includes("Budget")),
+      "budget warning emitted",
+    );
   });
 });

@@ -25,19 +25,18 @@ mock.module("./agent.js", {
       const stuck = recent.length >= k && recent.every((h) => h === recent[0]);
       let oscillating = false;
       if (history.length >= 3) {
-        oscillating = history[history.length - 1] === history[history.length - 3]
-          && history[history.length - 1] !== history[history.length - 2];
+        oscillating =
+          history[history.length - 1] === history[history.length - 3] &&
+          history[history.length - 1] !== history[history.length - 2];
       }
       const recentUnique = new Set(recent);
       const noProgress = recent.length >= k && recentUnique.size === recent.length;
       return { stuck, oscillating, noProgress };
     }),
-    repairPrompt: mock.fn(
-      (task: string, diagnostics: any[], attempt: number) => {
-        repairPromptCalls.push([task, diagnostics, attempt]);
-        return `repair|${task}|${attempt}|diags=${diagnostics.length}`;
-      },
-    ),
+    repairPrompt: mock.fn((task: string, diagnostics: any[], attempt: number) => {
+      repairPromptCalls.push([task, diagnostics, attempt]);
+      return `repair|${task}|${attempt}|diags=${diagnostics.length}`;
+    }),
     runCommand: mock.fn((_cmd: string, _cwd: string) => ({
       output: verifyOutput,
       exitCode: verifyExitCode,
@@ -353,8 +352,8 @@ describe("solve", () => {
     proxyReady = true;
     const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() });
     assert.equal(result.outcome, "escalate");
-    assert.ok(result.escalation?.lineage_diagnostics, "expected lineage diagnostics");
-    const diags = result.escalation!.lineage_diagnostics!;
+    const diags = result.escalation?.lineage_diagnostics;
+    assert.ok(diags, "expected lineage diagnostics");
     // Each lineage should have lineage_tokens set
     const allHaveTokens = diags.every((d: any) => d.lineage_tokens === 1500);
     assert.ok(allHaveTokens, "expected every lineage to report 1500 tokens");
@@ -413,7 +412,7 @@ describe("solve", () => {
     // All 5 candidates pass verify but are degenerate → no passing branches → escalate
     assert.equal(result.outcome, "escalate");
     assert.ok(result.degenerate_rejections, "expected degenerate_rejections");
-    assert.equal(result.degenerate_rejections!.length, 5, "all 5 candidates should be rejected as degenerate");
+    assert.equal(result.degenerate_rejections?.length, 5, "all 5 candidates should be rejected as degenerate");
   });
 
   it("skips degenerate detection for empty diff", async () => {
@@ -440,8 +439,14 @@ describe("solve", () => {
     // Budget exhausted after first lineage (1500 > 1000) → escalate
     assert.equal(result.outcome, "escalate");
     // Check for budget summary in progress output
-    assert.ok(calls.some((c) => c.includes("Budget Summary")), "budget summary emitted");
-    assert.ok(calls.some((c) => c.includes("BUDGET EXHAUSTED")), "budget exhaustion warning in summary");
+    assert.ok(
+      calls.some((c) => c.includes("Budget Summary")),
+      "budget summary emitted",
+    );
+    assert.ok(
+      calls.some((c) => c.includes("BUDGET EXHAUSTED")),
+      "budget exhaustion warning in summary",
+    );
   });
 
   // ── Lineage escalation through ladder ─────────────────────────────────
@@ -453,19 +458,21 @@ describe("solve", () => {
     // With all-false signals and proxy disabled, each lineage escalates
     // via max attempts: 3 at retry + 5 at resample = 8 repairs before re-decompose stop
     const calls: string[] = [];
-    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() }, (msg: string) => calls.push(msg));
+    const result = await solve({ goal: "fix", verify_cmd: "test", cwd: process.cwd() }, (msg: string) =>
+      calls.push(msg),
+    );
 
     assert.equal(result.outcome, "escalate");
     // At least one lineage should have run repairs (escalation triggered)
-    const anyRepairs = result.escalation!.lineage_diagnostics!.some((d: any) => d.repair_attempts! > 0);
+    const anyRepairs = result.escalation?.lineage_diagnostics?.some((d: any) => (d.repair_attempts ?? 0) > 0);
     assert.ok(anyRepairs, "at least one lineage attempted repairs");
     // Each lineage advanced through retry + resample before stopping at re-decompose
     // → max repair_attempts for any lineage should be >= 3 (retry max)
-    const maxRepairs = Math.max(...result.escalation!.lineage_diagnostics!.map((d: any) => d.repair_attempts ?? 0));
+    const ld = result.escalation?.lineage_diagnostics ?? [];
+    const maxRepairs = Math.max(...ld.map((d: any) => d.repair_attempts ?? 0));
     assert.ok(maxRepairs >= 3, `expected at least 3 repairs per lineage (retry rung), got ${maxRepairs}`);
   });
 });
-
 
 // â”€â”€ detectScalarFitness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -644,7 +651,7 @@ describe("allowed_files enforcement", () => {
     assert.equal(result.outcome, "escalate", "should escalate when all candidates touch disallowed files");
     assert.ok(result.degenerate_rejections, "expected degenerate_rejections");
     assert.ok(
-      result.degenerate_rejections!.some((r: string) => r.includes("allowed_files")),
+      result.degenerate_rejections?.some((r: string) => r.includes("allowed_files")),
       "rejection should mention allowed_files",
     );
   });

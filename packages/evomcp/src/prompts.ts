@@ -93,9 +93,7 @@ export function repairPrompt(
           .slice(0, 10)
           .map((d) => {
             const loc = d.file ? `${d.file}:${d.line}` : "(unknown)";
-            const ctxBlock = d.context
-              ? `\n  \`\`\`\n${d.context}\n  \`\`\``
-              : "";
+            const ctxBlock = d.context ? `\n  \`\`\`\n${d.context}\n  \`\`\`` : "";
             return `- **${d.severity}** ${loc} — ${d.message.slice(0, 200)}${ctxBlock}`;
           })
           .join("\n")

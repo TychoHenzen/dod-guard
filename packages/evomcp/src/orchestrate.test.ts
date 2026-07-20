@@ -259,9 +259,18 @@ describe("orchestrate", () => {
       (msg: string) => calls.push(msg),
     );
 
-    assert.ok(calls.some((c) => c.includes("Specification")), "should mention spec stage");
-    assert.ok(calls.some((c) => c.includes("Implementation")), "should mention implement stage");
-    assert.ok(calls.some((c) => c.includes("Merge")), "should mention merge stage");
+    assert.ok(
+      calls.some((c) => c.includes("Specification")),
+      "should mention spec stage",
+    );
+    assert.ok(
+      calls.some((c) => c.includes("Implementation")),
+      "should mention implement stage",
+    );
+    assert.ok(
+      calls.some((c) => c.includes("Merge")),
+      "should mention merge stage",
+    );
   });
 
   // ── Gate enforcement via orchestrator flags ─────────────────────────

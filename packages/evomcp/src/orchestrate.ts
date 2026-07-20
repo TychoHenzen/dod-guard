@@ -6,21 +6,21 @@
  * This module provides the stage bodies that do the actual work.
  */
 
+import { runCommand } from "./agent.js";
 import {
-  type OrchestratorState,
-  type PlaybookStage,
   advanceStage,
   buildTriggerSignals,
   completeStage,
   createOrchestrator,
   failStage,
+  type OrchestratorState,
   orchestratorSummary,
-  shouldContinue,
+  type PlaybookStage,
   STAGE_LABELS,
+  shouldContinue,
 } from "./orchestrator.js";
 import { solve } from "./solve.js";
 import type { SolveResult, TaskSpec } from "./types.js";
-import { runCommand } from "./agent.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -119,9 +119,7 @@ export async function orchestrateSolve(
       // ── IMPLEMENT: call solve() ───────────────────────────────────
       case "implement": {
         onProgress?.("Running implementation stage (solve)...");
-        const solveResult: SolveResult = await solve(spec, (msg: string) =>
-          onProgress?.(`  [solve] ${msg}`),
-        );
+        const solveResult: SolveResult = await solve(spec, (msg: string) => onProgress?.(`  [solve] ${msg}`));
         state.solveResult = solveResult;
         stageTokens = solveResult.stats.tokens_consumed > 0 ? solveResult.stats.tokens_consumed : 0;
 

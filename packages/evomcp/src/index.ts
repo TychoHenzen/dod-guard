@@ -16,10 +16,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { apiKeySource, checkProxyHealth, extractScore, runCommand } from "./agent.js";
+import { apiKeySource, checkProxyHealth } from "./agent.js";
 import { evolve } from "./evolve.js";
 import { orchestrateSolve } from "./orchestrate.js";
-import { solve, detectScalarFitness } from "./solve.js";
+import { detectScalarFitness, solve } from "./solve.js";
 import type { EvolveSpec } from "./types.js";
 
 const server = new McpServer({
@@ -105,8 +105,7 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
 
     // ── Strategy dispatch ──────────────────────────────────────────────
     const shouldEvolve =
-      spec.strategy === "evolve" ||
-      (spec.strategy === "auto" && detectScalarFitness(spec.verify_cmd, spec.cwd));
+      spec.strategy === "evolve" || (spec.strategy === "auto" && detectScalarFitness(spec.verify_cmd, spec.cwd));
 
     if (shouldEvolve) {
       const evolveSpec: EvolveSpec = {
@@ -285,7 +284,9 @@ function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
       `- Candidates: ${result.stats.candidates_generated}`,
       result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
       `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-      result.stats.tokens_consumed >= 0 ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers" : "",
+      result.stats.tokens_consumed >= 0
+        ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers"
+        : "",
       `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
       `- Model: ${result.stats.model}`,
     ].join("\n");
@@ -337,7 +338,9 @@ function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
     `- Candidates: ${result.stats.candidates_generated}`,
     result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
     `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-    result.stats.tokens_consumed >= 0 ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers" : "",
+    result.stats.tokens_consumed >= 0
+      ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers"
+      : "",
     `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
     `- Model: ${result.stats.model}`,
     "",
@@ -377,7 +380,9 @@ function formatEvolveResult(result: Awaited<ReturnType<typeof evolve>>): string 
     "### Stats",
     `- Candidates: ${result.stats.candidates_generated}`,
     `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-    result.stats.tokens_consumed >= 0 ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers" : "",
+    result.stats.tokens_consumed >= 0
+      ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers"
+      : "",
     `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
     `- Model: ${result.stats.model}`,
   ].join("\n");

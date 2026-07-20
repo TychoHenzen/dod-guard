@@ -32,26 +32,33 @@ import {
   strategyPrompts,
   toVerdict,
 } from "./agent.js";
-import { compileFeedback } from "./feedback.js";
-import { detectDegenerate, isDegenerateReject } from "./degenerate.js";
+import { budgetSummary, createBudgetState, recordAttempt } from "./budget.js";
 import {
-  assembleContext,
   type AttemptSummary,
+  assembleContext,
   type ContextLayers,
-  type CuratedContext,
   type FailureSignature,
   generateFactSheet,
   type TargetFileContent,
 } from "./context.js";
 import { deduplicatePlans } from "./dedup.js";
+import { detectDegenerate, isDegenerateReject } from "./degenerate.js";
+import {
+  createEscalationState,
+  type EscalationDecision,
+  type EscalationState,
+  evaluateEscalation,
+  recordFailure,
+  type TriggerSignals,
+} from "./escalation.js";
+import { compileFeedback } from "./feedback.js";
 import { GateRunner } from "./gates.js";
 import { commitOrNoop, getRootBranch } from "./git-helpers.js";
 import { abandonLoser, adoptWinner, spawnCandidate } from "./gitevo-integration.js";
 import { type BranchInfo, compareBranches } from "./judge.js";
 import { STRATEGIES, STRATEGY_LABELS } from "./prompts.js";
 import type { Candidate, EscalationReport, LineageDiagnostic, Plan, RunStats, SolveResult, TaskSpec } from "./types.js";
-import { createBudgetState, type BudgetState, recordAttempt, budgetSummary } from "./budget.js";
-import { createEscalationState, type EscalationState, type EscalationDecision, evaluateEscalation, recordFailure, type TriggerSignals } from "./escalation.js";
+
 const DEFAULT_N = 5;
 const DEFAULT_TIMEOUT_MS = 300_000; // 5 min per claude -p instance
 const REPAIR_TIMEOUT_MS = 180_000; // 3 min for repairs
@@ -69,7 +76,8 @@ async function mapConcurrent<T, R>(
   const queue = items.map((_, i) => i);
   const worker = async () => {
     while (queue.length > 0) {
-      const idx = queue.shift()!;
+      const idx = queue.shift();
+      if (idx === undefined) return;
       results[idx] = await fn(items[idx], idx);
     }
   };
@@ -155,7 +163,7 @@ export function matchGlob(filePath: string, pattern: string): boolean {
       i++;
     } else if (/[.+^${}()|\\]/.test(ch)) {
       // Escape regex special chars
-      regex += "\\" + ch;
+      regex += `\\${ch}`;
       i++;
     } else {
       regex += ch;
@@ -164,7 +172,7 @@ export function matchGlob(filePath: string, pattern: string): boolean {
   }
 
   try {
-    return new RegExp("^" + regex + "$").test(filePath);
+    return new RegExp(`^${regex}$`).test(filePath);
   } catch {
     return false;
   }
@@ -178,8 +186,7 @@ export function filesMatchGlob(diff: string, patterns: string[]): string[] {
   if (!patterns || patterns.length === 0) return [];
   const filePaths: string[] = [];
   const diffRe = /^diff --git a\/(.+?) b\/(.+?)$/gm;
-  let match: RegExpExecArray | null;
-  while ((match = diffRe.exec(diff)) !== null) {
+  for (const match of diff.matchAll(diffRe)) {
     const bPath = match[2];
     if (bPath && !filePaths.includes(bPath)) filePaths.push(bPath);
   }
@@ -202,7 +209,7 @@ function findFilesMatchingGlob(rootDir: string, pattern: string): string[] {
     // Recursive walk from root
     const prefix = pattern.split("/**")[0];
     const baseDir = path.resolve(rootDir, prefix);
-    const suffix = pattern.slice(prefix.length + 3); // after /**
+    const _suffix = pattern.slice(prefix.length + 3); // after /**
     if (fs.existsSync(baseDir) && fs.statSync(baseDir).isDirectory()) {
       walkDir(baseDir, (filePath) => {
         const rel = path.relative(rootDir, filePath).replace(/\\/g, "/");
@@ -375,16 +382,16 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
   const baseLayers: ContextLayers = {
     goal: goalWithCtx,
     targetFiles: targetContents.length > 0 ? targetContents : undefined,
-    constraints: factSheet
-      ? { lintRules: "", conventions: factSheet, typeConfig: "" }
-      : undefined,
+    constraints: factSheet ? { lintRules: "", conventions: factSheet, typeConfig: "" } : undefined,
   };
   const baseCuratedContext = assembleContext(baseLayers);
 
   // ── Phase 2: Branch spawn (serial) ─────────────────────────────────
 
   const strategies = strategyPrompts(spec.goal, dedupedPlans.length, baseCuratedContext);
-  onProgress?.(`Spawning ${strategies.length} git branches (${stats.plans_sampled} plans sampled, ${stats.plans_deduped} after dedup)...`);
+  onProgress?.(
+    `Spawning ${strategies.length} git branches (${stats.plans_sampled} plans sampled, ${stats.plans_deduped} after dedup)...`,
+  );
 
   const candidates: Candidate[] = [];
   const passingBranches: BranchInfo[] = [];
@@ -583,12 +590,8 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
         const violating = filesMatchGlob(branchDiff, spec.allowed_files);
         if (violating.length > 0) {
           candidate.status = "degenerate";
-          degenerateRejections.push(
-            `${branchName}: touches files outside allowed_files: ${violating.join(", ")}`,
-          );
-          onProgress?.(
-            `  [${i + 1}] PASSED verify but touches files outside allowed_files: ${violating.join(", ")}`,
-          );
+          degenerateRejections.push(`${branchName}: touches files outside allowed_files: ${violating.join(", ")}`);
+          onProgress?.(`  [${i + 1}] PASSED verify but touches files outside allowed_files: ${violating.join(", ")}`);
           execSync(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
           await recordTokenDelta();
           continue;
@@ -628,12 +631,14 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
     });
 
     // ── Track attempts for curated context across repairs ──
-    const repairAttempts: AttemptSummary[] = [{
-      strategy: stratLabel,
-      outcome: "failed",
-      summary: (candidate.verdict?.output ?? "").slice(0, 500),
-      failureSignature: candidate.failure_signature,
-    }];
+    const repairAttempts: AttemptSummary[] = [
+      {
+        strategy: stratLabel,
+        outcome: "failed",
+        summary: (candidate.verdict?.output ?? "").slice(0, 500),
+        failureSignature: candidate.failure_signature,
+      },
+    ];
 
     // Initialize per-lineage signature history for stuck/oscillating/noProgress detection
     const sigHistory: string[] = [];
@@ -657,9 +662,12 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
       if (diag) diag.repair_attempts = repair;
 
       // Build context with growing prior attempts + failure signatures
-      const failureSigs: FailureSignature[] = repairAttempts
-        .filter((a) => a.failureSignature)
-        .map((a) => ({ hash: a.failureSignature!, description: a.summary.slice(0, 200), count: 1 }));
+      const failureSigs: FailureSignature[] = [];
+      for (const a of repairAttempts) {
+        if (a.failureSignature) {
+          failureSigs.push({ hash: a.failureSignature, description: a.summary.slice(0, 200), count: 1 });
+        }
+      }
       const repairLayers: ContextLayers = {
         ...baseLayers,
         priorAttempts: repairAttempts.length > 0 ? repairAttempts : undefined,
@@ -717,7 +725,9 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
             line: f.line,
           }));
           degenerateRejections.push(`${branchName}: ${degenerateReport.summary}`);
-          onProgress?.(`      -> REPAIR ${repair} PASSED verify but REJECTED by degenerate detection: ${degenerateReport.summary}`);
+          onProgress?.(
+            `      -> REPAIR ${repair} PASSED verify but REJECTED by degenerate detection: ${degenerateReport.summary}`,
+          );
           execSync(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
           await recordTokenDelta();
           // eslint-disable-next-line no-labels
@@ -729,12 +739,8 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
           const violating = filesMatchGlob(branchDiff, spec.allowed_files);
           if (violating.length > 0) {
             candidate.status = "degenerate";
-            degenerateRejections.push(
-              `${branchName}: touches files outside allowed_files: ${violating.join(", ")}`,
-            );
-            onProgress?.(
-              `      -> REPAIR ${repair} touches files outside allowed_files: ${violating.join(", ")}`,
-            );
+            degenerateRejections.push(`${branchName}: touches files outside allowed_files: ${violating.join(", ")}`);
+            onProgress?.(`      -> REPAIR ${repair} touches files outside allowed_files: ${violating.join(", ")}`);
             execSync(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
             await recordTokenDelta();
             break;
@@ -821,7 +827,7 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
       if (escDecision.action === "escalate" && escDecision.nextRung === "stronger-model") {
         // Stronger model requested -- try if a more capable model is configured
         const currentModel = spec.model ?? "";
-        if (!currentModel.includes("sonnet") && !currentModel.includes("opus")) {
+        if (!(currentModel.includes("sonnet") || currentModel.includes("opus"))) {
           onProgress?.(`      Stronger model requested but no alternative configured -- aborting lineage`);
         }
         // Fall through to abandon

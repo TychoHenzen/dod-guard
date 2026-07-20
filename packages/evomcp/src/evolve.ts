@@ -30,21 +30,16 @@ import {
   runCommand,
   spawnClaude,
 } from "./agent.js";
-import {
-  assembleContext,
-  type ContextLayers,
-  generateFactSheet,
-  makeTargetFiles,
-} from "./context.js";
-import { detectDegenerate, isDegenerateReject } from "./degenerate.js";
+import { budgetSummary, createBudgetState, recordAttempt } from "./budget.js";
+import { assembleContext, type ContextLayers, generateFactSheet, makeTargetFiles } from "./context.js";
 import type { FitnessHistoryPoint } from "./convergence.js";
 import { checkConvergence } from "./convergence.js";
+import { detectDegenerate, isDegenerateReject } from "./degenerate.js";
+import { createEscalationState } from "./escalation.js";
 import { GateRunner } from "./gates.js";
 import { commitOrNoop, getRootBranch } from "./git-helpers.js";
 import { abandonLoser, adoptWinner, checkpointGeneration, spawnCandidate } from "./gitevo-integration.js";
 import type { EvolveResult, EvolveSpec, GateResult, RunStats } from "./types.js";
-import { createBudgetState, type BudgetState, recordAttempt, budgetSummary } from "./budget.js";
-import { createEscalationState, type EscalationState } from "./escalation.js";
 
 const DEFAULT_GENERATIONS = 5;
 const DEFAULT_POPULATION = 6;
@@ -62,7 +57,8 @@ async function mapConcurrent<T, R>(
   const queue = items.map((_, i) => i);
   const worker = async () => {
     while (queue.length > 0) {
-      const idx = queue.shift()!;
+      const idx = queue.shift();
+      if (idx === undefined) return;
       results[idx] = await fn(items[idx], idx);
     }
   };
@@ -127,8 +123,8 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
   });
   const emittedBudgetWarnings = new Set<string>();
 
-  // Escalation state (created for completeness; actively used in solve's repair loop)
-  const evolveEscState = createEscalationState();
+  // Escalation state (created for completeness; may be wired in a follow-up)
+  createEscalationState();
 
   const proxyReady = await ensureProxy();
   if (!proxyReady) {
@@ -172,9 +168,7 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
   const evolveLayers: ContextLayers = {
     goal: goalWithCtx,
     targetFiles: makeTargetFiles(targetContents),
-    constraints: factSheet
-      ? { lintRules: "", conventions: factSheet, typeConfig: "" }
-      : undefined,
+    constraints: factSheet ? { lintRules: "", conventions: factSheet, typeConfig: "" } : undefined,
   };
   const evolveCtx = assembleContext(evolveLayers);
 
@@ -367,9 +361,12 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
           onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
 
           // ── Degenerate detection ──────────────────────────────────
-          const branchDiff = execSync(`git diff ${rootBranch}...${branchName}`, {
-            cwd: spec.cwd, encoding: "utf-8", timeout: 10_000,
-          }).toString() || "";
+          const branchDiff =
+            execSync(`git diff ${rootBranch}...${branchName}`, {
+              cwd: spec.cwd,
+              encoding: "utf-8",
+              timeout: 10_000,
+            }).toString() || "";
           const degenerateReport = detectDegenerate(branchDiff);
           if (isDegenerateReject(degenerateReport)) {
             onProgress?.(`    -> DEGENERATE: ${degenerateReport.summary}`);

@@ -187,8 +187,14 @@ describe("agent — pure functions", () => {
     it("normalizes durations", () => assert.equal(mod.hashFailure("150.5ms x"), mod.hashFailure("9999.9ms x")));
     it("different errors differ", () => assert.notEqual(mod.hashFailure("TypeError"), mod.hashFailure("RefErr")));
     it("two distinct long failures don't collide", () => {
-      const longA = "Error: Connection refused\n  at Socket._onTimeout (node:net:1234:56)\n  at /home/user/project/src/db.ts:42:10\n  at connect (/home/user/project/src/db.ts:100:20)\n  [cause: 0x7f8a9b0c] 150.2ms\n".repeat(100);
-      const longB = "Error: Timeout exceeded\n  at Client.request (node:http:789:12)\n  at /home/user/project/src/api.ts:30:5\n  at fetchData (/home/user/project/src/api.ts:80:15)\n  [cause: 0xdeadbeef] 9999.9ms\n".repeat(100);
+      const longA =
+        "Error: Connection refused\n  at Socket._onTimeout (node:net:1234:56)\n  at /home/user/project/src/db.ts:42:10\n  at connect (/home/user/project/src/db.ts:100:20)\n  [cause: 0x7f8a9b0c] 150.2ms\n".repeat(
+          100,
+        );
+      const longB =
+        "Error: Timeout exceeded\n  at Client.request (node:http:789:12)\n  at /home/user/project/src/api.ts:30:5\n  at fetchData (/home/user/project/src/api.ts:80:15)\n  [cause: 0xdeadbeef] 9999.9ms\n".repeat(
+          100,
+        );
       assert.notEqual(mod.hashFailure(longA), mod.hashFailure(longB));
     });
     it("normalizes temp paths", () =>
@@ -400,10 +406,7 @@ describe("agent — pure functions", () => {
       delete process.env.DEEPSEEK_API_KEY;
       fsExistsSyncReturn = false;
       const m = await importFresh();
-      await assert.rejects(
-        m.spawnClaude("prompt", { cwd: process.cwd() }),
-        /No API key found/,
-      );
+      await assert.rejects(m.spawnClaude("prompt", { cwd: process.cwd() }), /No API key found/);
       process.env.DEEPSEEK_API_KEY = saved;
     });
   });
