@@ -26,7 +26,9 @@ import {
   evo_lessons,
   evo_spawn,
   evo_summary,
+  loadConfig,
 } from "./operations.js";
+import { getMemoryDb } from "./memory.js";
 
 // ── Test helpers ──────────────────────────────────────────────────────
 
@@ -96,6 +98,17 @@ describe("evo_init", () => {
     assert.strictEqual(content, "", "lessons.jsonl should be cleared on re-run");
   });
 
+  it("re-run preserves previously learned lessons in SQLite", () => {
+    evo_init();
+    evo_learn("lesson that should survive re-init");
+    evo_init();
+    const output = evo_lessons();
+    assert.ok(
+      output.includes("lesson that should survive re-init"),
+      `lesson should still be queryable after re-init: ${output}`,
+    );
+  });
+
   it("creates .evo/ at git root even when CWD is a subdirectory", () => {
     const repoRoot = dir;
     const subdir = path.join(repoRoot, "packages", "foo");
@@ -159,6 +172,28 @@ describe("evo_checkpoint", () => {
     // Clean up for other tests
     git(["checkout", "."], dir);
   });
+
+  it("WIP checkpoint captures uncommitted edits for later spawn", () => {
+    // Create a file with uncommitted edits
+    fs.writeFileSync(path.join(dir, "wip-file.txt"), "uncommitted work");
+    evo_checkpoint("wip-test", "checkpoint with WIP");
+
+    // Spawn from the WIP checkpoint onto a new branch
+    evo_spawn("wip-test", "wip-branch");
+
+    // The spawned branch should have the uncommitted content
+    const spawnedContent = fs.readFileSync(path.join(dir, "wip-file.txt"), "utf-8");
+    assert.strictEqual(spawnedContent, "uncommitted work");
+
+    // The original branch still has the dirty state
+    const branch = git(["branch", "--show-current"], dir);
+    assert.strictEqual(branch, "wip-branch");
+
+    // Clean up
+    git(["checkout", "master"], dir);
+    git(["branch", "-D", "wip-branch"], dir);
+    try { fs.unlinkSync(path.join(dir, "wip-file.txt")); } catch {}
+  });
 });
 
 // ── Lessons ───────────────────────────────────────────────────────────
@@ -178,23 +213,18 @@ describe("evo_learn and evo_lessons", () => {
 
   it("appends lesson with timestamp and branch", () => {
     evo_learn("this is a lesson");
-    const lessonsFile = path.join(dir, ".evo", "lessons.jsonl");
-    const content = fs.readFileSync(lessonsFile, "utf-8");
-    assert.ok(content);
-    const lines = content.trim().split("\n");
-    assert.strictEqual(lines.length, 1);
-    const lesson = JSON.parse(lines[0]);
-    assert.strictEqual(lesson.content, "this is a lesson");
-    assert.ok(lesson.timestamp);
-    assert.ok(lesson.branch);
+    const output = evo_lessons();
+    assert.ok(output.includes("this is a lesson"), `should contain lesson: ${output}`);
+    assert.ok(/master|main/.test(output), `should contain branch name: ${output}`);
+    assert.ok(/\[\d+\]/.test(output), `should be numbered: ${output}`);
   });
 
   it("appends multiple lessons", () => {
     evo_learn("lesson one");
     evo_learn("lesson two");
-    const lessonsFile = path.join(dir, ".evo", "lessons.jsonl");
-    const lines = fs.readFileSync(lessonsFile, "utf-8").trim().split("\n");
-    assert.strictEqual(lines.length, 3); // +1 from previous test
+    const output = evo_lessons();
+    assert.ok(output.includes("lesson one"), `should contain lesson one: ${output}`);
+    assert.ok(output.includes("lesson two"), `should contain lesson two: ${output}`);
   });
 
   it("lists lessons newest first", () => {
@@ -208,10 +238,30 @@ describe("evo_learn and evo_lessons", () => {
     assert.ok(newerIdx < olderIdx, `newest should come first, got: ${output}`);
   });
 
-  it("returns empty message when no lessons", () => {
-    evo_init(); // clears lessons
+  it("lessons persist across multiple re-inits", () => {
+    // Lessons in SQLite survive even after re-init clears JSONL (S03 fix)
+    evo_init();
     const output = evo_lessons();
-    assert.strictEqual(output, "No lessons recorded.");
+    assert.ok(output.includes("older"), "previously learned lessons should survive re-init");
+    assert.ok(output.includes("newer"), "previously learned lessons should survive re-init");
+  });
+
+  it("writes memory.db at repo root when CWD is a nested subdirectory", () => {
+    const repoRoot = dir;
+    const subdir = path.join(repoRoot, "packages", "deep", "nested");
+    fs.mkdirSync(subdir, { recursive: true });
+    process.chdir(subdir);
+
+    evo_init();
+    evo_learn("lesson from deep subdirectory");
+
+    // memory.db should be at repo root, not in the nested cwd
+    assert.ok(fs.existsSync(path.join(repoRoot, ".evo", "memory.db")), "memory.db should be at repo root");
+    assert.ok(!fs.existsSync(path.join(subdir, ".evo")), ".evo/ should NOT be in subdirectory");
+
+    // The lesson should be queryable (via evo_lessons, which reads from SQLite)
+    const output = evo_lessons();
+    assert.ok(output.includes("lesson from deep subdirectory"), `lesson not found: ${output}`);
   });
 });
 
@@ -253,9 +303,26 @@ describe("evo_export_lessons", () => {
   });
 
   it("returns empty array when no lessons", () => {
-    evo_init(); // clears
-    const json = evo_export_lessons();
-    assert.strictEqual(json, "[]");
+    const { dir: emptyDir, origCwd: emptyOrigCwd } = setupRepo();
+    try {
+      process.chdir(emptyDir);
+      evo_init();
+      const json = evo_export_lessons();
+      assert.strictEqual(json, "[]");
+    } finally {
+      teardownRepo(emptyDir, emptyOrigCwd);
+    }
+  });
+
+  it("produces same IDs on re-export (idempotent)", () => {
+    const json1 = evo_export_lessons();
+    const json2 = evo_export_lessons();
+    const arr1 = JSON.parse(json1);
+    const arr2 = JSON.parse(json2);
+    assert.strictEqual(arr1.length, arr2.length);
+    for (let i = 0; i < arr1.length; i++) {
+      assert.strictEqual(arr1[i].id, arr2[i].id, `id mismatch at index ${i}`);
+    }
   });
 });
 
@@ -342,6 +409,15 @@ describe("evo_checkpoints and evo_branches", () => {
     // feature-a branch exists but may be listed. This test checks the "no attempt" path.
     // Already covered by the above test.
   });
+
+  it("sorts checkpoints by timestamp (newest first)", () => {
+    // v1 and v2 were created in order, so v2 should come first
+    const output = evo_checkpoints();
+    const v1Idx = output.indexOf("evo-v1:");
+    const v2Idx = output.indexOf("evo-v2:");
+    assert.ok(v1Idx >= 0 && v2Idx >= 0, "both checkpoints should appear");
+    assert.ok(v2Idx < v1Idx, `newest (v2) should come before oldest (v1), got idx v2=${v2Idx}, v1=${v1Idx}`);
+  });
 });
 
 // ── Abandon ───────────────────────────────────────────────────────────
@@ -407,6 +483,39 @@ describe("evo_abandon", () => {
     evo_abandon(undefined, "giving up on this approach");
     const output = evo_lessons();
     assert.ok(output.includes("giving up on this approach"), `lesson not recorded: ${output}`);
+  });
+
+  it("defaults to spawn checkpoint when no arg given (not HEAD~1)", () => {
+    // Create a checkpoint to spawn from
+    evo_checkpoint("spawn-origin", "origin for spawn test");
+    const spawnBranch = "test-spawn-abandon-default";
+    evo_spawn("spawn-origin", spawnBranch);
+
+    // Make 3 commits on spawned branch
+    fs.writeFileSync(path.join(dir, "file2.txt"), "commit 1");
+    git(["add", "file2.txt"], dir);
+    git(["commit", "-m", "commit 1"], dir);
+
+    fs.writeFileSync(path.join(dir, "file3.txt"), "commit 2");
+    git(["add", "file3.txt"], dir);
+    git(["commit", "-m", "commit 2"], dir);
+
+    fs.writeFileSync(path.join(dir, "file4.txt"), "commit 3");
+    git(["add", "file4.txt"], dir);
+    git(["commit", "-m", "commit 3"], dir);
+
+    // Abandon without args — should revert to spawn checkpoint
+    const result = evo_abandon();
+    assert.ok(result.includes("spawn checkpoint"), `should mention spawn checkpoint, got: ${result}`);
+
+    // Verify: only the original file (from checkpoint) exists
+    assert.ok(fs.existsSync(path.join(dir, "file.txt")), "file.txt should exist (from checkpoint)");
+    assert.ok(!fs.existsSync(path.join(dir, "file2.txt")), "file2.txt should not exist (reverted)");
+    assert.ok(!fs.existsSync(path.join(dir, "file3.txt")), "file3.txt should not exist (reverted)");
+    assert.ok(!fs.existsSync(path.join(dir, "file4.txt")), "file4.txt should not exist (reverted)");
+
+    // Switch back to root branch for subsequent tests
+    git(["checkout", "master"], dir);
   });
 });
 
@@ -492,6 +601,87 @@ describe("evo_adopt and evo_finish", () => {
   });
 });
 
+// ── Merge conflict handling ──────────────────────────────────────────
+
+describe("evo_adopt merge conflict", () => {
+  let dir = "";
+  let origCwd = "";
+
+  before(() => {
+    const s = setupRepo();
+    dir = s.dir;
+    origCwd = s.origCwd;
+    evo_init();
+    evo_checkpoint("conflict-base", "base for conflict test");
+    evo_spawn("conflict-base", "conflicting-branch");
+    fs.writeFileSync(path.join(dir, "conflict.txt"), "feature version");
+    git(["add", "conflict.txt"], dir);
+    git(["commit", "-m", "feature conflict"], dir);
+    git(["checkout", "master"], dir);
+    fs.writeFileSync(path.join(dir, "conflict.txt"), "master version");
+    git(["add", "conflict.txt"], dir);
+    git(["commit", "-m", "master conflict"], dir);
+  });
+
+  after(() => teardownRepo(dir, origCwd));
+
+  it("adopt aborts on merge conflict and cleans up MERGING state", () => {
+    let caught: any;
+    try {
+      evo_adopt("conflicting-branch");
+    } catch (e) {
+      caught = e;
+    }
+    assert.ok(caught instanceof EvoError, `should throw EvoError, got: ${caught}`);
+    assert.ok(
+      caught.message.includes("merge conflict"),
+      `should mention merge conflict: ${caught.message}`,
+    );
+    assert.ok(
+      caught.message.includes("conflict.txt"),
+      `should list conflicted file: ${caught.message}`,
+    );
+
+    // Verify no MERGING state — subsequent git commands should work
+    const branch = git(["branch", "--show-current"], dir);
+    assert.strictEqual(branch, "master", "should be on master after abort");
+    // Filter untracked files (like .gitignore created by evo_init)
+    const status = git(["status", "--porcelain"], dir);
+    const trackedChanges = status.split("\n").filter((l) => l.trim() && !l.startsWith("??"));
+    assert.ok(
+      trackedChanges.length === 0,
+      `working tree should have no tracked changes after abort, got: ${status}`,
+    );
+  });
+
+  it("finish surfaces internal adopt failure", () => {
+    // Switch to the conflicting branch so finish tries adopt internally
+    git(["checkout", "conflicting-branch"], dir);
+
+    let caught: any;
+    try {
+      evo_finish();
+    } catch (e) {
+      caught = e;
+    }
+    assert.ok(caught instanceof EvoError, `should throw EvoError, got: ${caught}`);
+    assert.ok(
+      caught.message.includes("Finish failed"),
+      `should mention finish failure: ${caught.message}`,
+    );
+    assert.ok(
+      caught.message.includes("adopt failed"),
+      `should mention adopt failure: ${caught.message}`,
+    );
+
+    // Clean up MERGING state if any
+    try { git(["merge", "--abort"], dir); } catch {}
+
+    // .evo/ should still exist (finish didn't proceed to cleanup)
+    assert.ok(fs.existsSync(path.join(dir, ".evo")), ".evo/ should exist after failed finish");
+  });
+});
+
 // ── Full integration flow ─────────────────────────────────────────────
 
 describe("integration: full evolution flow", () => {
@@ -564,6 +754,150 @@ describe("integration: full evolution flow", () => {
       assert.ok(!tags.includes("evo-"), `evo- tags remaining: ${tags}`);
       const branches = git(["branch"], dir);
       assert.ok(!branches.includes("experiment-1"), `side branch remaining: ${branches}`);
+    } finally {
+      teardownRepo(dir, origCwd);
+    }
+  });
+});
+
+// ── Branch upsert ────────────────────────────────────────────────────
+
+describe("branch upsert", () => {
+  let dir = "";
+  let origCwd = "";
+
+  before(() => {
+    const s = setupRepo();
+    dir = s.dir;
+    origCwd = s.origCwd;
+    evo_init();
+    evo_checkpoint("base", "base checkpoint");
+  });
+
+  after(() => teardownRepo(dir, origCwd));
+
+  it("spawn -> abandon -> adopt produces one row with final status", () => {
+    evo_spawn("base", "upsert-branch");
+
+    // Do work that adopt can merge
+    fs.writeFileSync(path.join(dir, "upsert-work.txt"), "work");
+    git(["add", "upsert-work.txt"], dir);
+    git(["commit", "-m", "work on upsert-branch"], dir);
+
+    // Abandon back to base checkpoint
+    evo_abandon("base", "test upsert");
+
+    // Only one row, status = dead
+    let db = getMemoryDb(dir);
+    let rows = db.prepare("SELECT name, status FROM branches WHERE name = ?").all("upsert-branch") as { name: string; status: string }[];
+    assert.strictEqual(rows.length, 1, "should have exactly one row per branch name");
+    assert.strictEqual(rows[0].status, "dead");
+
+    // Adopt the branch
+    git(["checkout", "master"], dir);
+    evo_adopt("upsert-branch");
+
+    // Still only one row, status = adopted
+    db = getMemoryDb(dir);
+    rows = db.prepare("SELECT name, status FROM branches WHERE name = ?").all("upsert-branch") as { name: string; status: string }[];
+    assert.strictEqual(rows.length, 1, "should still have exactly one row after adopt");
+    assert.strictEqual(rows[0].status, "adopted");
+  });
+});
+
+// ── EvoConfig ──────────────────────────────────────────────────────────────
+
+describe("EvoConfig", () => {
+  it("loadConfig returns defaults when no config file exists", () => {
+    const { dir, origCwd } = setupRepo();
+    try {
+      process.chdir(dir);
+      const cfg = loadConfig(dir);
+      assert.ok(cfg.sourceExtensions.includes(".ts"));
+      assert.ok(cfg.buildLayouts.includes("dist/"));
+      assert.strictEqual(cfg.skipStaleCheck, false);
+    } finally {
+      teardownRepo(dir, origCwd);
+    }
+  });
+
+  it("loadConfig merges user config with defaults", () => {
+    const { dir, origCwd } = setupRepo();
+    try {
+      process.chdir(dir);
+      fs.mkdirSync(path.join(dir, ".evo"), { recursive: true });
+      fs.writeFileSync(
+        path.join(dir, ".evo", "config.json"),
+        JSON.stringify({ buildLayouts: ["out/"], skipStaleCheck: true }),
+      );
+      const cfg = loadConfig(dir);
+      // sourceExtensions should come from defaults
+      assert.ok(cfg.sourceExtensions.includes(".ts"));
+      // buildLayouts should be overridden
+      assert.deepStrictEqual(cfg.buildLayouts, ["out/"]);
+      // skipStaleCheck should be overridden
+      assert.strictEqual(cfg.skipStaleCheck, true);
+    } finally {
+      teardownRepo(dir, origCwd);
+    }
+  });
+
+  it("loadConfig handles custom sourceExtensions", () => {
+    const { dir, origCwd } = setupRepo();
+    try {
+      process.chdir(dir);
+      fs.mkdirSync(path.join(dir, ".evo"), { recursive: true });
+      fs.writeFileSync(
+        path.join(dir, ".evo", "config.json"),
+        JSON.stringify({ sourceExtensions: [".js", ".json"] }),
+      );
+      const cfg = loadConfig(dir);
+      assert.deepStrictEqual(cfg.sourceExtensions, [".js", ".json"]);
+      // buildLayouts should still be defaults
+      assert.deepStrictEqual(cfg.buildLayouts, ["packages/*/dist/", "dist/"]);
+    } finally {
+      teardownRepo(dir, origCwd);
+    }
+  });
+
+  it("loadConfig returns defaults on invalid JSON", () => {
+    const { dir, origCwd } = setupRepo();
+    try {
+      process.chdir(dir);
+      fs.mkdirSync(path.join(dir, ".evo"), { recursive: true });
+      fs.writeFileSync(path.join(dir, ".evo", "config.json"), "not valid json");
+      const cfg = loadConfig(dir);
+      assert.ok(cfg.sourceExtensions.includes(".ts"));
+      assert.strictEqual(cfg.skipStaleCheck, false);
+    } finally {
+      teardownRepo(dir, origCwd);
+    }
+  });
+
+  it("JS-only repo doesn't flag .test.js as stale", () => {
+    const { dir, origCwd } = setupRepo();
+    try {
+      process.chdir(dir);
+      evo_init();
+
+      // Write JS-only config — no .ts in sourceExtensions
+      fs.writeFileSync(
+        path.join(dir, ".evo", "config.json"),
+        JSON.stringify({
+          sourceExtensions: [".js", ".json"],
+          buildLayouts: ["dist/"],
+          skipStaleCheck: false,
+        }),
+      );
+
+      // Create dist/ with a .test.js file (no matching .test.ts)
+      fs.mkdirSync(path.join(dir, "dist"), { recursive: true });
+      fs.writeFileSync(path.join(dir, "dist", "utils.test.js"), "module.exports = {};");
+
+      // Create checkpoint and spawn — should NOT fail due to stale .test.js
+      evo_checkpoint("v1", "first checkpoint");
+      const result = evo_spawn("v1", "js-only-branch");
+      assert.ok(result.startsWith("Spawned"), `spawn should succeed, got: ${result}`);
     } finally {
       teardownRepo(dir, origCwd);
     }

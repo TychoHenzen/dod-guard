@@ -2989,7 +2989,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3016,7 +3016,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3647,7 +3647,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve(baseURI, relativeURI, options2) {
+    function resolve2(baseURI, relativeURI, options2) {
       const schemelessOptions = options2 ? Object.assign({ scheme: "null" }, options2) : { scheme: "null" };
       const resolved = resolveComponent(parse4(baseURI, schemelessOptions), parse4(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
@@ -3905,7 +3905,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -6931,7 +6931,7 @@ async function ensureObsidianRunning() {
   throw new Error("Obsidian app did not start within 30s. Is it installed?");
 }
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve2) => setTimeout(resolve2, ms));
 }
 async function runObsidian(args, timeout = 15e3) {
   return execFileP(OBSIDIAN_CMD, args, { timeout, windowsHide: true });
@@ -10321,11 +10321,11 @@ var require_excerpt = __commonJS({
       if (typeof opts.excerpt === "function") {
         return opts.excerpt(file, opts);
       }
-      const sep = file.data.excerpt_separator || opts.excerpt_separator;
-      if (sep == null && (opts.excerpt === false || opts.excerpt == null)) {
+      const sep2 = file.data.excerpt_separator || opts.excerpt_separator;
+      if (sep2 == null && (opts.excerpt === false || opts.excerpt == null)) {
         return file;
       }
-      const delimiter = typeof opts.excerpt === "string" ? opts.excerpt : sep || opts.delimiters[0];
+      const delimiter = typeof opts.excerpt === "string" ? opts.excerpt : sep2 || opts.delimiters[0];
       const idx = file.content.indexOf(delimiter);
       if (idx !== -1) {
         file.excerpt = file.content.slice(0, idx);
@@ -10517,7 +10517,16 @@ __export(vault_exports, {
 });
 import { existsSync as existsSync2 } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, join as join2, relative } from "node:path";
+import { basename, dirname, join as join2, relative, resolve, sep } from "node:path";
+function resolveContained(baseDir, relPath) {
+  const fullPath = join2(baseDir, relPath);
+  const resolvedBase = resolve(baseDir);
+  const resolvedFull = resolve(fullPath);
+  if (!resolvedFull.startsWith(resolvedBase + sep) && resolvedFull !== resolvedBase) {
+    throw new Error(`Path traversal denied: "${relPath}" escapes vault root "${baseDir}"`);
+  }
+  return fullPath;
+}
 async function walkVault(vaultPath) {
   const files = [];
   const dirs = [vaultPath];
@@ -10533,27 +10542,27 @@ async function walkVault(vaultPath) {
           dirs.push(full);
         }
       } else if (e.isFile() && e.name.endsWith(".md")) {
-        files.push(relative(vaultPath, full));
+        files.push(relative(vaultPath, full).replace(/\\/g, "/"));
       }
     }
   }
   return files;
 }
 async function readNote(vaultPath, notePath) {
-  const fullPath = join2(vaultPath, notePath);
+  const fullPath = resolveContained(vaultPath, notePath);
   const raw = await readFile(fullPath, "utf-8");
   const { data: frontmatter, content } = (0, import_gray_matter.default)(raw);
   const meta = extractMeta(notePath, frontmatter, content);
   return { ...meta, content, raw };
 }
 async function readNoteMeta(vaultPath, notePath) {
-  const fullPath = join2(vaultPath, notePath);
+  const fullPath = resolveContained(vaultPath, notePath);
   const raw = await readFile(fullPath, "utf-8");
   const { data: frontmatter, content } = (0, import_gray_matter.default)(raw);
   return extractMeta(notePath, frontmatter, content);
 }
 async function writeNote(vaultPath, notePath, frontmatter, content) {
-  const fullPath = join2(vaultPath, notePath);
+  const fullPath = resolveContained(vaultPath, notePath);
   const dir = dirname(fullPath);
   if (!existsSync2(dir)) await mkdir(dir, { recursive: true });
   const fmStr = import_gray_matter.default.stringify(content.trim(), frontmatter);
@@ -10698,6 +10707,22 @@ function chunkMarkdown(notePath, content) {
 ${text}`;
     } else {
       currentChunk += (currentChunk ? "\n\n" : "") + text;
+    }
+    while (currentChunk.length > MAX_CHUNK_CHARS) {
+      const splitPoint = currentChunk.lastIndexOf(". ", MAX_CHUNK_CHARS);
+      const cut = splitPoint > MAX_CHUNK_CHARS / 2 ? splitPoint + 1 : MAX_CHUNK_CHARS;
+      chunks.push({
+        id: `${notePath}#${chunkIndex}`,
+        notePath,
+        heading: currentHeading,
+        content: currentChunk.slice(0, cut).trim()
+      });
+      chunkIndex++;
+      const remainder = currentChunk.slice(cut).trim();
+      const overlapEnd = currentChunk.slice(0, cut).slice(-CHUNK_OVERLAP_CHARS);
+      currentChunk = `${overlapEnd}
+
+${remainder}`;
     }
     currentHeading = displayHeading;
   }
@@ -23016,7 +23041,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
         options2?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -23033,7 +23058,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options2) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options2 ?? {};
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -23111,7 +23136,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve(parseResult.data);
+            resolve2(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -23372,12 +23397,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve, interval);
+      const timeoutId = setTimeout(resolve2, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -24477,7 +24502,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -25126,12 +25151,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve) => {
+    return new Promise((resolve2) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve();
+        resolve2();
       } else {
-        this._stdout.once("drain", resolve);
+        this._stdout.once("drain", resolve2);
       }
     });
   }
@@ -25173,6 +25198,15 @@ Install error: ${installErr.message}`
     }
     throw err;
   }
+}
+var FTS_BOOLEAN_OPERATORS = /\b(AND|OR|NOT|NEAR)\b/gi;
+function sanitizeQuery(raw) {
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) return '""';
+  let sanitized = trimmed.replace(/"/g, '""');
+  sanitized = sanitized.replace(FTS_BOOLEAN_OPERATORS, '"$1"');
+  sanitized = sanitized.replace(/(?:^|\s)\*(?=\S)/g, " ");
+  return sanitized;
 }
 var Store = class {
   _db = null;
@@ -25265,6 +25299,11 @@ var Store = class {
         embedded_chunks INTEGER DEFAULT 0,
         last_indexed TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS config (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      );
     `);
     const cols = d.pragma("table_info(notes)");
     if (!cols.some((c) => c.name === "content")) {
@@ -25284,6 +25323,20 @@ var Store = class {
     const row = this.db.prepare("SELECT * FROM vaults WHERE name = ?").get(name);
     if (!row) return null;
     return { name: row.name, path: row.path, noteCount: row.note_count ?? 0, folderCount: row.folder_count ?? 0 };
+  }
+  /** Find a vault by its path. */
+  getVaultByPath(path) {
+    const row = this.db.prepare("SELECT * FROM vaults WHERE path = ?").get(path);
+    if (!row) return null;
+    return { name: row.name, path: row.path, noteCount: row.note_count ?? 0, folderCount: row.folder_count ?? 0 };
+  }
+  // ── Config ────────────────────────────────────────────────────────
+  getLastVaultPath() {
+    const row = this.db.prepare("SELECT value FROM config WHERE key = ?").get("last_selected_vault");
+    return row?.value ?? null;
+  }
+  setLastVaultPath(path) {
+    this.db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)").run("last_selected_vault", path);
   }
   // ── Notes ────────────────────────────────────────────────────────
   upsertNote(vaultName, meta, content, contentHash) {
@@ -25320,6 +25373,7 @@ var Store = class {
     };
   }
   searchNotesFTS(vaultName, query, limit = 20) {
+    const sanitized = sanitizeQuery(query);
     const rows = this.db.prepare(`
       SELECT n.path, n.title, snippet(notes_fts, 1, '<mark>', '</mark>', '...', 32) as snippet, rank
       FROM notes_fts f
@@ -25327,7 +25381,7 @@ var Store = class {
       WHERE notes_fts MATCH ? AND n.vault_name = ?
       ORDER BY rank
       LIMIT ?
-    `).all(query, vaultName, limit);
+    `).all(sanitized, vaultName, limit);
     return rows.map((r) => ({
       path: r.path,
       title: r.title,
@@ -25338,7 +25392,8 @@ var Store = class {
   listNotes(vaultName, directory) {
     let rows;
     if (directory) {
-      rows = this.db.prepare("SELECT path, title, tags FROM notes WHERE vault_name = ? AND path LIKE ? ORDER BY path").all(vaultName, `${directory}%`);
+      const pattern = directory.endsWith("/") ? `${directory}%` : `${directory}/%`;
+      rows = this.db.prepare("SELECT path, title, tags FROM notes WHERE vault_name = ? AND path LIKE ? ORDER BY path").all(vaultName, pattern);
     } else {
       rows = this.db.prepare("SELECT path, title, tags FROM notes WHERE vault_name = ? ORDER BY path").all(vaultName);
     }
@@ -25498,6 +25553,7 @@ CLI status: ${cliOk ? "\u2705 available" : "\u274C not found"}`
           }
         }
         store2.setVault(vault);
+        store2.setLastVaultPath(vault.path);
         setSelectedVault(vault);
         resolveSelect?.();
         const _idxMsg = await indexVault2(vault.path, vault.name, store2);
@@ -25514,7 +25570,10 @@ Indexed: ${status.indexedNotes} notes, ${status.totalChunks} chunks`
         };
       } catch (err) {
         rejectSelect?.(err);
-        throw err;
+        return {
+          content: [{ type: "text", text: `Failed to select vault: ${err.message}` }],
+          isError: true
+        };
       }
     }
   );
@@ -25724,11 +25783,26 @@ ${lines.join("\n")}` }] };
       description: external_exports.string().describe("One-line summary"),
       content: external_exports.string().describe("Memory body content (markdown)"),
       type: external_exports.enum(["user", "feedback", "project", "reference"]).default("reference").describe("Memory type"),
-      metadata: external_exports.record(external_exports.unknown()).optional().describe("Additional metadata key-value pairs")
+      metadata: external_exports.record(external_exports.unknown()).optional().describe("Additional metadata key-value pairs"),
+      overwrite: external_exports.boolean().default(true).describe("If false, refuse to overwrite an existing memory with the same id")
     },
-    async ({ id, title, description, content, type, metadata }) => {
+    async ({ id, title, description, content, type, metadata, overwrite }) => {
       const vault = await waitForVault2();
       const { writeMemory: writeMemory2 } = await Promise.resolve().then(() => (init_vault(), vault_exports));
+      const typeDir = type || "reference";
+      const targetPath = join3(vault.path, "Claude-Memories", typeDir, `${id}.md`);
+      const alreadyExists = existsSync3(targetPath);
+      if (alreadyExists && !overwrite) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Memory '${id}' already exists and overwrite is disabled. Set overwrite: true to overwrite.`
+            }
+          ],
+          isError: true
+        };
+      }
       const entry = {
         id,
         title,
@@ -25738,6 +25812,16 @@ ${lines.join("\n")}` }] };
         metadata: metadata || {}
       };
       const notePath = await writeMemory2(vault.path, entry);
+      if (alreadyExists) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Memory '${id}' already exists and will be overwritten. Set overwrite: false to prevent this.`
+            }
+          ]
+        };
+      }
       return { content: [{ type: "text", text: `\u2705 Memory saved: **${title}** \u2192 \`${notePath}\`` }] };
     }
   );
@@ -25899,6 +25983,33 @@ function vaultGuard() {
 }
 async function waitForVault() {
   if (selectedVault) return selectedVault;
+  if (!selectedVault) {
+    const lastPath = store.getLastVaultPath();
+    if (lastPath) {
+      const vault = store.getVaultByPath(lastPath);
+      if (vault && existsSync4(vault.path) && existsSync4(join4(vault.path, ".obsidian"))) {
+        selectedVault = vault;
+        return selectedVault;
+      }
+    }
+  }
+  if (!selectedVault) {
+    try {
+      const { listVaults: listVaults2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
+      const vaults = await listVaults2();
+      if (vaults.length > 0) {
+        const claudeVault = vaults.find((v) => v.name.toLowerCase() === "claude");
+        const vault = claudeVault ?? vaults[0];
+        store.setVault(vault);
+        store.setLastVaultPath(vault.path);
+        selectedVault = vault;
+        const { indexVault: indexVault2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
+        await indexVault2(vault.path, vault.name, store);
+        return selectedVault;
+      }
+    } catch {
+    }
+  }
   if (_selectPromise) {
     try {
       await _selectPromise;
@@ -25976,7 +26087,7 @@ async function main() {
     async (uri) => {
       const vault = await waitForVault().catch(() => null);
       if (!vault) return { contents: [{ text: "No vault selected.", uri: uri.href, mimeType: "text/plain" }] };
-      const notePath = decodeURIComponent(uri.pathname.split("/notes/")[1] || "");
+      const notePath = decodeURIComponent(uri.pathname.replace(/^\/notes\//, ""));
       try {
         const note = await readNote(vault.path, notePath);
         return { contents: [{ text: note.raw, uri: uri.href, mimeType: "text/markdown" }] };

@@ -12,11 +12,14 @@
  */
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
   closeMemoryDb,
-  getMemoryDb,
+  countMessages,
+  getBranchSpawnPoint,
+  getCheckpointTimestamps,
   migrateLessons,
   queryMessages,
   recordBranch,
@@ -109,18 +112,26 @@ function filesRemovedByCheckout(targetRef: string, cwd: string): string[] {
 }
 
 /** Untracked source files at risk of being clobbered by checkout. */
-function untrackedSourceFiles(cwd: string): string[] {
+function untrackedSourceFiles(cwd: string, config?: EvoConfig): string[] {
+  const cfg = config ?? loadConfig(cwd);
+  const escapedExts = cfg.sourceExtensions.map((e) => e.replace(/\./g, "\\."));
+  const extPattern = new RegExp(`(${escapedExts.join("|")})$`);
   const status = git(["status", "--porcelain"], cwd);
   return status
     .split("\n")
     .filter((l) => l.startsWith("??"))
     .map((l) => l.slice(3).trim())
-    .filter((f) => /\.(ts|js|mjs|json|md|yml|yaml)$/.test(f));
+    .filter((f) => extPattern.test(f));
 }
 
-/** dist/*.js files with no matching .ts source — stale compilation artifacts. */
-function staleDistFiles(cwd: string): string[] {
+/** Stale dist/*.js files with no matching .ts source — compilation artifacts. */
+function staleDistFiles(cwd: string, config?: EvoConfig): string[] {
+  const cfg = config ?? loadConfig(cwd);
+  if (cfg.skipStaleCheck) return [];
+
+  const hasTs = cfg.sourceExtensions.includes(".ts");
   const stale: string[] = [];
+
   function scan(dir: string): void {
     if (!fs.existsSync(dir)) return;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -129,6 +140,9 @@ function staleDistFiles(cwd: string): string[] {
         if (entry.name === "node_modules") continue;
         scan(full);
       } else if (entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+        // Skip .test.js in JS-only repos — hand-written .test.js is normal there
+        if (entry.name.endsWith(".test.js") && !hasTs) continue;
+
         // Check if matching .ts source exists
         const tsFile = full.replace(/\.js$/, ".ts");
         if (!fs.existsSync(tsFile)) {
@@ -137,17 +151,27 @@ function staleDistFiles(cwd: string): string[] {
       }
     }
   }
-  // Scan monorepo packages/*/dist/ directories
-  const pkgsDir = path.join(cwd, "packages");
-  if (fs.existsSync(pkgsDir)) {
-    for (const pkg of fs.readdirSync(pkgsDir, { withFileTypes: true })) {
-      if (pkg.isDirectory()) {
-        scan(path.join(pkgsDir, pkg.name, "dist"));
+
+  // Use config.buildLayouts for scanning
+  for (const layout of cfg.buildLayouts) {
+    const normalized = layout.replace(/\//g, path.sep).replace(/[/\\]$/, "");
+    if (normalized.includes("*")) {
+      const starIdx = normalized.indexOf("*");
+      const beforeStar = normalized.slice(0, starIdx);
+      const afterStar = normalized.slice(starIdx + 1);
+      const parentDir = path.join(cwd, beforeStar);
+      if (fs.existsSync(parentDir)) {
+        for (const entry of fs.readdirSync(parentDir, { withFileTypes: true })) {
+          if (entry.isDirectory()) {
+            scan(path.join(parentDir, entry.name, afterStar));
+          }
+        }
       }
+    } else {
+      scan(path.join(cwd, normalized));
     }
   }
-  // Also scan root dist/ if it exists
-  scan(path.join(cwd, "dist"));
+
   return stale;
 }
 
@@ -160,10 +184,11 @@ function staleDistFiles(cwd: string): string[] {
  *
  * Returns null if safe, or a diagnostic message string if risks found.
  */
-function preflightCheckoutSafety(targetRef: string, cwd: string): string | null {
+function preflightCheckoutSafety(targetRef: string, cwd: string, config?: EvoConfig): string | null {
+  const cfg = config ?? loadConfig(cwd);
   const warnings: string[] = [];
 
-  const untracked = untrackedSourceFiles(cwd);
+  const untracked = untrackedSourceFiles(cwd, cfg);
   if (untracked.length > 0) {
     warnings.push(
       `Untracked source files (would persist but risk loss if directory removed):\n${untracked.map((f) => `  • ${f}`).join("\n")}`,
@@ -178,7 +203,7 @@ function preflightCheckoutSafety(targetRef: string, cwd: string): string | null 
     );
   }
 
-  const stale = staleDistFiles(cwd);
+  const stale = staleDistFiles(cwd, cfg);
   if (stale.length > 0) {
     warnings.push(
       `Stale dist/*.js without matching .ts source:\n${stale.map((f) => `  • ${f}`).join("\n")}\nThese will survive checkout — clean with 'npm run clean && npm run build'.`,
@@ -232,6 +257,30 @@ function requireInit(cwd: string): EvoPaths {
   return paths;
 }
 
+// ── EvoConfig ──────────────────────────────────────────────────────────
+
+export interface EvoConfig {
+  sourceExtensions: string[];
+  buildLayouts: string[];
+  skipStaleCheck: boolean;
+}
+
+export function loadConfig(cwd: string): EvoConfig {
+  const configPath = path.join(cwd, ".evo", "config.json");
+  const defaults: EvoConfig = {
+    sourceExtensions: [".ts", ".js", ".mjs", ".json", ".md", ".yml", ".yaml"],
+    buildLayouts: ["packages/*/dist/", "dist/"],
+    skipStaleCheck: false,
+  };
+  if (!fs.existsSync(configPath)) return defaults;
+  try {
+    const user = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    return { ...defaults, ...user };
+  } catch {
+    return defaults;
+  }
+}
+
 // ── Operations ────────────────────────────────────────────────────────
 
 /**
@@ -254,12 +303,6 @@ export function evo_init(): string {
 
   // Clear/create lessons.jsonl (AFTER migration)
   fs.writeFileSync(paths.lessonsFile, "", "utf-8");
-
-  // Clear SQLite messages on re-init so evo_lessons sees clean state
-  try {
-    const db = getMemoryDb(cwd);
-    db.prepare("DELETE FROM messages").run();
-  } catch {}
 
   // Ensure .evo/ is gitignored
   const gitignore = path.join(cwd, ".gitignore");
@@ -292,10 +335,14 @@ export function evo_checkpoint(name: string, description: string): string {
   const { cwd } = getRepo();
   requireInit(cwd);
 
-  // Auto-stash if dirty
+  // Auto-stash if dirty — create a WIP commit so the checkpoint tag captures
+  // uncommitted work, then soft-reset to restore the dirty working tree.
   let stashed = false;
   if (isDirty(cwd)) {
     git(["stash", "push", "-m", `gitevo: auto-stash before checkpoint '${name}'`], cwd);
+    git(["stash", "apply"], cwd);
+    git(["add", "-A"], cwd);
+    git(["commit", "-m", `gitevo: WIP checkpoint '${name}'`], cwd);
     stashed = true;
   }
 
@@ -307,18 +354,20 @@ export function evo_checkpoint(name: string, description: string): string {
   }
   git(["tag", "-a", tagName, "-m", description], cwd);
 
-  // Pop stash after tagging
+  // Undo the WIP commit and restore exact dirty working tree state
   if (stashed) {
     try {
-      git(["stash", "pop"], cwd);
+      git(["reset", "--soft", "HEAD~1"], cwd);
+      git(["reset", "HEAD", "."], cwd);
+      git(["stash", "drop"], cwd);
     } catch {
-      return `Checkpoint '${name}' created, but auto-stash could not be reapplied — your changes are in the stash.`;
+      return `Checkpoint '${name}' created, but the WIP commit could not be cleanly undone — your changes are in the stash. Run 'git stash pop' to recover them.`;
     }
   }
 
   try {
     const branch = currentBranch(cwd);
-    recordCheckpoint(tagName, branch, description);
+    recordCheckpoint(tagName, branch, description, cwd);
   } catch {
     /* memory failure shouldn't break git tag */
   }
@@ -327,7 +376,7 @@ export function evo_checkpoint(name: string, description: string): string {
 }
 
 /**
- * Append a lesson to .evo/lessons.jsonl with timestamp and branch.
+ * Append a lesson to the SQLite memory bus with timestamp and branch.
  */
 export function evo_learn(content: string, repoOverride?: { cwd: string; rootBranch: string }): string {
   const repo = repoOverride ?? getRepo();
@@ -335,61 +384,29 @@ export function evo_learn(content: string, repoOverride?: { cwd: string; rootBra
   requireInit(cwd);
 
   const branch = currentBranch(cwd);
-  const lesson = {
-    content,
-    timestamp: new Date().toISOString(),
-    branch,
-  };
-
-  const paths = evoPaths(cwd);
-  fs.appendFileSync(paths.lessonsFile, `${JSON.stringify(lesson)}\n`, "utf-8");
-
-  // Also write to SQLite memory bus
-  try {
-    writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } });
-  } catch {
-    /* memory failure shouldn't break JSONL */
-  }
+  writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } }, cwd);
 
   return `Lesson recorded on branch '${branch}'.`;
 }
 
 /**
- * Return all lessons from .evo/lessons.jsonl, newest first.
+ * Return all lessons from the SQLite memory bus, newest first.
  * Output format: numbered list with timestamp, branch, content.
  */
 export function evo_lessons(): string {
   const { cwd } = getRepo();
-  const paths = requireInit(cwd);
+  requireInit(cwd);
 
-  // Try SQLite memory bus first
-  const memoryDbPath = path.join(cwd, ".evo", "memory.db");
-  if (fs.existsSync(memoryDbPath)) {
-    try {
-      const results = queryMessages({ type: "INSIGHT", limit: 100 });
-      if (results.length > 0) {
-        return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.branch}): ${m.content}`).join("\n");
-      }
-    } catch {
-      /* fall through to JSONL */
+  try {
+    const results = queryMessages({ type: "INSIGHT", limit: 100 }, cwd);
+    if (results.length > 0) {
+      return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.branch}): ${m.content}`).join("\n");
     }
+  } catch {
+    /* fall through */
   }
 
-  // Fall back to JSONL
-  if (!fs.existsSync(paths.lessonsFile)) {
-    return "No lessons recorded.";
-  }
-
-  const content = fs.readFileSync(paths.lessonsFile, "utf-8").trim();
-  if (!content) return "No lessons recorded.";
-
-  const lessons = content
-    .split("\n")
-    .filter((l) => l.trim())
-    .map((l) => JSON.parse(l))
-    .reverse(); // newest first
-
-  return lessons.map((l, i) => `[${i + 1}] ${l.timestamp} (${l.branch}): ${l.content}`).join("\n");
+  return "No lessons recorded.";
 }
 
 /**
@@ -398,36 +415,31 @@ export function evo_lessons(): string {
  */
 export function evo_export_lessons(): string {
   const { cwd } = getRepo();
-  const paths = requireInit(cwd);
+  requireInit(cwd);
 
-  if (!fs.existsSync(paths.lessonsFile)) {
+  try {
+    const results = queryMessages({ type: "INSIGHT", limit: 100 }, cwd);
+    if (results.length === 0) {
+      return JSON.stringify([]);
+    }
+
+    const lessons = results.map((m) => ({
+      id: `gitevo-${lessonHash(m.content, m.branch, m.timestamp)}`,
+      title: m.content.slice(0, 80),
+      description: `GitEvo lesson from branch '${m.branch}'`,
+      content: m.content,
+      type: "feedback",
+      metadata: {
+        source: "gitevo",
+        branch: m.branch,
+        timestamp: m.timestamp,
+      },
+    }));
+
+    return JSON.stringify(lessons, null, 2);
+  } catch {
     return JSON.stringify([]);
   }
-
-  const content = fs.readFileSync(paths.lessonsFile, "utf-8").trim();
-  if (!content) return JSON.stringify([]);
-
-  const lessons = content
-    .split("\n")
-    .filter((l) => l.trim())
-    .map((l) => {
-      const parsed = JSON.parse(l);
-      return {
-        id: `gitevo-${slugify(parsed.content.slice(0, 40))}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        title: parsed.content.slice(0, 80),
-        description: `GitEvo lesson from branch '${parsed.branch}'`,
-        content: parsed.content,
-        type: "feedback",
-        metadata: {
-          source: "gitevo",
-          branch: parsed.branch,
-          timestamp: parsed.timestamp,
-        },
-      };
-    })
-    .reverse();
-
-  return JSON.stringify(lessons, null, 2);
 }
 
 function slugify(text: string): string {
@@ -437,6 +449,11 @@ function slugify(text: string): string {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .slice(0, 50);
+}
+
+function lessonHash(content: string, branch: string, timestamp: string): string {
+  const input = `${content}|${branch}|${timestamp}`;
+  return createHash("sha256").update(input).digest("hex").slice(0, 12);
 }
 
 /**
@@ -500,7 +517,7 @@ export function evo_spawn(checkpoint_name: string, new_branch: string, force?: b
   }
 
   try {
-    recordBranch(new_branch, "active", `evo-${checkpoint_name}`);
+    recordBranch(new_branch, "active", `evo-${checkpoint_name}`, undefined, cwd);
   } catch {
     /* memory failure shouldn't break git ops */
   }
@@ -522,8 +539,13 @@ export function evo_checkpoints(): string {
   const tags = tagsWithPrefix("evo-", cwd);
   if (tags.length === 0) return "No checkpoints found.";
 
-  // Sort by tag name descending (roughly newest first for sequential names)
-  tags.sort().reverse();
+  // Sort by checkpoint timestamp (newest first), falling back to tag name for tags not in SQLite
+  const timestampMap = getCheckpointTimestamps(cwd);
+  tags.sort((a, b) => {
+    const ta = timestampMap.get(a) ?? "";
+    const tb = timestampMap.get(b) ?? "";
+    return tb.localeCompare(ta) || b.localeCompare(a);
+  });
 
   const lines = tags.map((t) => {
     const desc = getTagMessage(t, cwd);
@@ -562,6 +584,7 @@ export function evo_abandon(checkpoint?: string, reason?: string, force?: boolea
 
   // Auto-stash if dirty
   let stashed = false;
+  let stashPopWarning = "";
   if (isDirty(cwd)) {
     git(["stash", "push", "-m", "gitevo: auto-stash before abandon"], cwd);
     stashed = true;
@@ -578,15 +601,23 @@ export function evo_abandon(checkpoint?: string, reason?: string, force?: boolea
       if (stashed) {
         try {
           git(["stash", "pop"], cwd);
-        } catch {}
+        } catch {
+          stashPopWarning = " Could not restore auto-stashed changes — they remain in the stash.";
+        }
       }
-      throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
+      throw new EvoError(`Checkpoint '${checkpoint}' not found.${stashPopWarning}`);
     }
     targetRef = tagName;
     targetDesc = `checkpoint '${checkpoint}'`;
   } else {
-    targetRef = "HEAD~1";
-    targetDesc = "parent commit";
+    const spawnPoint = getBranchSpawnPoint(branchName, cwd);
+    if (spawnPoint) {
+      targetRef = spawnPoint;
+      targetDesc = `spawn checkpoint '${spawnPoint}'`;
+    } else {
+      targetRef = "HEAD~1";
+      targetDesc = "parent commit";
+    }
   }
 
   // Pre-flight safety: detect files at risk before hard reset
@@ -595,17 +626,19 @@ export function evo_abandon(checkpoint?: string, reason?: string, force?: boolea
     if (stashed) {
       try {
         git(["stash", "pop"], cwd);
-      } catch {}
+      } catch {
+        stashPopWarning = " Could not restore auto-stashed changes — they remain in the stash.";
+      }
     }
     throw new EvoError(
       `SAFETY CHECK FAILED — reset to '${targetRef}' would lose data:\n\n${safetyWarnings}\n\n` +
-        `Pass force=true to proceed anyway (you accept the risk of data loss).`,
+        `Pass force=true to proceed anyway (you accept the risk of data loss).${stashPopWarning}`,
     );
   }
 
   // Record branch death in memory bus before revert
   try {
-    recordBranch(branchName, "dead");
+    recordBranch(branchName, "dead", undefined, undefined, cwd);
   } catch {
     /* silent */
   }
@@ -666,14 +699,12 @@ export function evo_summary(): string {
   const allTags = tagsWithPrefix("evo-", cwd);
   const checkpoints = allTags.filter((t) => !t.startsWith("evo-dead-") && t !== "evo-adopted");
 
-  // Count lessons
-  const paths = evoPaths(cwd);
+  // Count lessons from SQLite
   let lessonCount = 0;
-  if (fs.existsSync(paths.lessonsFile)) {
-    const content = fs.readFileSync(paths.lessonsFile, "utf-8").trim();
-    if (content) {
-      lessonCount = content.split("\n").filter((l) => l.trim()).length;
-    }
+  try {
+    lessonCount = countMessages("INSIGHT", cwd);
+  } catch {
+    lessonCount = 0;
   }
 
   // Dead branches
@@ -714,8 +745,31 @@ export function evo_adopt(branch: string): string {
     git(["checkout", rootBranch], cwd);
   }
 
-  // Merge the feature branch
-  git(["merge", branch, "--no-edit"], cwd);
+  // Merge the feature branch — catch merge conflicts gracefully
+  try {
+    git(["merge", branch, "--no-edit"], cwd);
+  } catch (err) {
+    // Detect conflicted files before abort
+    let conflictFiles: string[] = [];
+    try {
+      const output = gitOrNull(["diff", "--name-only", "--diff-filter=U"], cwd);
+      if (output) conflictFiles = output.split("\n").filter(Boolean);
+    } catch {
+      /* best-effort */
+    }
+
+    // Abort merge to clean up MERGING state
+    try {
+      git(["merge", "--abort"], cwd);
+    } catch {
+      /* best-effort */
+    }
+
+    const fileList = conflictFiles.length > 0 ? `: ${conflictFiles.join(", ")}` : "";
+    throw new EvoError(
+      `adopt failed: merge conflicts${fileList}; resolve manually or abandon the branch`,
+    );
+  }
 
   // Tag as adopted
   try {
@@ -724,7 +778,7 @@ export function evo_adopt(branch: string): string {
   git(["tag", "-a", "evo-adopted", "-m", `Adopted branch '${branch}' into ${rootBranch}`], cwd);
 
   try {
-    recordBranch(branch, "adopted");
+    recordBranch(branch, "adopted", undefined, undefined, cwd);
   } catch {
     /* silent */
   }
@@ -746,7 +800,13 @@ export function evo_finish(): string {
 
   // If not on root, merge current into root
   if (current !== rootBranch) {
-    evo_adopt(current);
+    try {
+      evo_adopt(current);
+    } catch (err) {
+      throw new EvoError(
+        `Finish failed: internal adopt failed — ${(err as Error).message}`,
+      );
+    }
   }
 
   // Delete all evo-* tags

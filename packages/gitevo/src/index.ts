@@ -1,13 +1,17 @@
 /**
  * GitEvo MCP Server — evolutionary git branching for LLM agents.
  *
- * 13 tools:
+ * 15 tools:
  *   init, checkpoint, learn, lessons, export_lessons, spawn,
- *   checkpoints, branches, abandon, diff, summary, adopt, finish
+ *   checkpoints, branches, abandon, diff, summary, adopt, finish,
+ *   memory_query, memory_stats
  *
  * export_lessons outputs memory-ready JSON for obsidian-rag import.
  */
 
+import { readFileSync } from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -29,9 +33,12 @@ import {
   evo_summary,
 } from "./operations.js";
 
+const _dirname = path.dirname(fileURLToPath(import.meta.url));
+const _pkg = JSON.parse(readFileSync(path.join(_dirname, "..", "package.json"), "utf-8"));
+
 const server = new McpServer({
   name: "gitevo",
-  version: "0.1.3",
+  version: _pkg.version,
 });
 
 export function wrap(fn: (...args: any[]) => string): (...args: any[]) => string {
@@ -234,8 +241,6 @@ server.tool(
 server.tool("evo_memory_stats", "Get memory bus statistics: total messages, counts by type.", {}, async () => ({
   content: [{ type: "text" as const, text: wrap(formatMemoryStats)() }],
 }));
-
-import { fileURLToPath } from "node:url";
 
 const _filename = fileURLToPath(import.meta.url);
 

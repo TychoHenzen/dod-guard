@@ -5,6 +5,7 @@ import { EvoError } from "./operations.js";
 // ── Mock MCP SDK to cover server.tool registration ────────────────────────
 
 const registeredTools: { name: string; schema: any; desc: string }[] = [];
+let mockServerOpts: any;
 
 const mockTool = mock.fn((name: string, desc: string, schema: any, _handler?: any) => {
   registeredTools.push({ name, schema: schema ?? {}, desc });
@@ -12,7 +13,8 @@ const mockTool = mock.fn((name: string, desc: string, schema: any, _handler?: an
 
 const mockConnect = mock.fn(async () => {});
 
-function MockMcpServer(this: any, _opts: any) {
+function MockMcpServer(this: any, opts: any) {
+  mockServerOpts = opts;
   this.tool = mockTool;
   this.connect = mockConnect;
   return this;
@@ -68,6 +70,11 @@ describe("gitevo index", () => {
 
   describe("tool registration", () => {
     it("registers 15 tools", () => assert.equal(registeredTools.length, 15));
+
+    it("reads version from package.json", () => {
+      assert.ok(mockServerOpts, "McpServer should be constructed with opts");
+      assert.match(mockServerOpts.version, /^\d+\.\d+\.\d+$/);
+    });
 
     it("evo_init no params", () => {
       const t = registeredTools.find((t) => t.name === "evo_init");

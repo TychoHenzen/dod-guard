@@ -1,0 +1,17 @@
+{
+  "goal": "Fix all 11 issues in packages/gitevo per docs/fix-plan.md",
+  "cwd": "C:\Users\siriu\mcp-servers\dod-guard",
+  "steps": [
+    {"id": "S01", "title": "Use git toplevel as canonical cwd", "files": ["packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"},
+    {"id": "S02", "title": "Thread cwd into SQLite memory bus", "files": ["packages/gitevo/src/memory.ts", "packages/gitevo/src/operations.ts"], "deps": ["S01"], "status": "pending"},
+    {"id": "S03", "title": "Fix re-init data loss (migrate before clear, don't clear migrated data)", "files": ["packages/gitevo/src/operations.ts", "packages/gitevo/src/memory.ts"], "deps": ["S02"], "status": "pending"},
+    {"id": "S04", "title": "SQLite as single lesson store, drop JSONL dual-write", "files": ["packages/gitevo/src/operations.ts", "packages/gitevo/src/memory.ts"], "deps": ["S03"], "status": "pending"},
+    {"id": "S05", "title": "Checkpoints capture WIP via commit", "files": ["packages/gitevo/src/operations.ts"], "deps": ["S02"], "status": "pending"},
+    {"id": "S06", "title": "Abandon reverts to spawn checkpoint, not HEAD~1", "files": ["packages/gitevo/src/operations.ts", "packages/gitevo/src/memory.ts"], "deps": ["S05"], "status": "pending"},
+    {"id": "S07", "title": "Handle merge conflicts in evo_adopt/evo_finish", "files": ["packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"},
+    {"id": "S08", "title": "Close SQLite handle before rmSync (Windows)", "files": ["packages/gitevo/src/memory.ts", "packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"},
+    {"id": "S09", "title": "Idempotent exports + upserted branch status", "files": ["packages/gitevo/src/operations.ts", "packages/gitevo/src/memory.ts"], "deps": [], "status": "pending"},
+    {"id": "S10", "title": "Configurable extensions/layout for pre-flight checks", "files": ["packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"},
+    {"id": "S11", "title": "Version drift + minor cleanups", "files": ["packages/gitevo/src/index.ts", "packages/gitevo/src/operations.ts"], "deps": [], "status": "pending"}
+  ]
+}

@@ -112,6 +112,13 @@ export function getMemoryDb(cwd?: string): Database {
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA_SQL);
 
+  // Migration: add unique index on branches.name for upsert support
+  try {
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_branches_name ON branches(name)");
+  } catch {
+    // Older SQLite doesn't support IF NOT EXISTS for indexes — already present
+  }
+
   dbCache.set(resolvedCwd, db);
   return db;
 }
@@ -141,8 +148,8 @@ export function closeMemoryDb(cwd?: string): void {
  * @param opts  Optional: scope, metadata (JSON-serialised), branch
  * @returns  The auto-generated row id
  */
-export function writeMessage(type: string, content: string, opts?: WriteOptions): number {
-  const db = getMemoryDb();
+export function writeMessage(type: string, content: string, opts?: WriteOptions, cwd?: string): number {
+  const db = getMemoryDb(cwd);
   const timestamp = new Date().toISOString();
   const scope = opts?.scope ?? "";
   const metadata = JSON.stringify(opts?.metadata ?? {});
@@ -163,8 +170,8 @@ export function writeMessage(type: string, content: string, opts?: WriteOptions)
  *
  * Ordered by timestamp DESC. Default limit 50.
  */
-export function queryMessages(opts: QueryOptions): Message[] {
-  const db = getMemoryDb();
+export function queryMessages(opts: QueryOptions, cwd?: string): Message[] {
+  const db = getMemoryDb(cwd);
   const conditions: string[] = [];
   const params: unknown[] = [];
   const limit = opts.limit ?? 50;
@@ -204,17 +211,30 @@ function rowToMessage(row: MessageRow): Message {
 }
 
 /**
+ * Count messages, optionally filtered by type.
+ */
+export function countMessages(type?: string, cwd?: string): number {
+  const db = getMemoryDb(cwd);
+  if (type) {
+    const row = db.prepare("SELECT COUNT(*) as count FROM messages WHERE type = ?").get(type) as { count: number };
+    return row.count;
+  }
+  const row = db.prepare("SELECT COUNT(*) as count FROM messages").get() as { count: number };
+  return row.count;
+}
+
+/**
  * Convenience: get recent FAILURE_SIGNATURE messages for a scope.
  */
-export function getRecentFailures(scope: string, limit?: number): Message[] {
-  return queryMessages({ type: "FAILURE_SIGNATURE", scope, limit });
+export function getRecentFailures(scope: string, limit?: number, cwd?: string): Message[] {
+  return queryMessages({ type: "FAILURE_SIGNATURE", scope, limit }, cwd);
 }
 
 /**
  * Convenience: get recent ELITE_SOLUTION messages for a scope.
  */
-export function getEliteSolutions(scope: string, limit?: number): Message[] {
-  return queryMessages({ type: "ELITE_SOLUTION", scope, limit });
+export function getEliteSolutions(scope: string, limit?: number, cwd?: string): Message[] {
+  return queryMessages({ type: "ELITE_SOLUTION", scope, limit }, cwd);
 }
 
 // ── Checkpoint operations ────────────────────────────────────────────────
@@ -222,8 +242,8 @@ export function getEliteSolutions(scope: string, limit?: number): Message[] {
 /**
  * Record a checkpoint. Upserts — if the tag already exists, it is replaced.
  */
-export function recordCheckpoint(tag: string, branch: string, description?: string): void {
-  const db = getMemoryDb();
+export function recordCheckpoint(tag: string, branch: string, description?: string, cwd?: string): void {
+  const db = getMemoryDb(cwd);
   const timestamp = new Date().toISOString();
   db.prepare(
     `INSERT OR REPLACE INTO checkpoints (tag, branch, description, timestamp)
@@ -231,18 +251,47 @@ export function recordCheckpoint(tag: string, branch: string, description?: stri
   ).run(tag, branch, description ?? "", timestamp);
 }
 
+/**
+ * Read all checkpoint timestamps from the checkpoints table.
+ * Returns a Map<tag, ISO timestamp> for chronological sorting.
+ */
+export function getCheckpointTimestamps(cwd?: string): Map<string, string> {
+  const db = getMemoryDb(cwd);
+  const rows = db.prepare("SELECT tag, timestamp FROM checkpoints").all() as { tag: string; timestamp: string }[];
+  return new Map(rows.map((r) => [r.tag, r.timestamp]));
+}
+
 // ── Branch operations ─────────────────────────────────────────────────────
 
 /**
  * Record a branch entry.
  */
-export function recordBranch(name: string, status: string, spawnedFrom?: string, score?: number): void {
-  const db = getMemoryDb();
+export function recordBranch(name: string, status: string, spawnedFrom?: string, score?: number, cwd?: string): void {
+  const db = getMemoryDb(cwd);
   const timestamp = new Date().toISOString();
   db.prepare(
     `INSERT INTO branches (name, status, spawned_from, score, timestamp)
-     VALUES (?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(name) DO UPDATE SET
+       status = excluded.status,
+       spawned_from = COALESCE(excluded.spawned_from, branches.spawned_from),
+       score = COALESCE(excluded.score, branches.score),
+       timestamp = excluded.timestamp`,
   ).run(name, status, spawnedFrom ?? null, score ?? null, timestamp);
+}
+
+/**
+ * Look up a branch's spawn point checkpoint tag from the branches table.
+ *
+ * Returns the full tag name (e.g. "evo-initial") or null if the branch
+ * has no spawn record.
+ */
+export function getBranchSpawnPoint(branchName: string, cwd?: string): string | null {
+  const db = getMemoryDb(cwd);
+  const row = db
+    .prepare("SELECT spawned_from FROM branches WHERE name = ? ORDER BY id DESC LIMIT 1")
+    .get(branchName) as { spawned_from: string | null } | undefined;
+  return row?.spawned_from ?? null;
 }
 
 // ── Migration ─────────────────────────────────────────────────────────────

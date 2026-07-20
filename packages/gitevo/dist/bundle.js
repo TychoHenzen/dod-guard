@@ -3226,8 +3226,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path3) {
-      let input = path3;
+    function removeDotSegments(path4) {
+      let input = path4;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3479,8 +3479,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path3, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path3 && path3 !== "/" ? path3 : void 0;
+        const [path4, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path4 && path4 !== "/" ? path4 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -6886,6 +6886,11 @@ var require_dist = __commonJS({
   }
 });
 
+// src/index.ts
+import { readFileSync as readFileSync3 } from "node:fs";
+import * as path3 from "node:path";
+import { fileURLToPath } from "node:url";
+
 // ../../node_modules/zod/v3/external.js
 var external_exports = {};
 __export(external_exports, {
@@ -7364,8 +7369,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path3, errorMaps, issueData } = params;
-  const fullPath = [...path3, ...issueData.path || []];
+  const { data, path: path4, errorMaps, issueData } = params;
+  const fullPath = [...path4, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7481,11 +7486,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path3, key) {
+  constructor(parent, value, path4, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path3;
+    this._path = path4;
     this._key = key;
   }
   get path() {
@@ -11122,10 +11127,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path3) {
-  if (!path3)
+function getElementAtPath(obj, path4) {
+  if (!path4)
     return obj;
-  return path3.reduce((acc, key) => acc?.[key], obj);
+  return path4.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11445,11 +11450,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path3, issues) {
+function prefixIssues(path4, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path3);
+    iss.path.unshift(path4);
     return iss;
   });
 }
@@ -21142,6 +21147,10 @@ function getMemoryDb(cwd) {
   db.pragma("journal_mode = DELETE");
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA_SQL);
+  try {
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_branches_name ON branches(name)");
+  } catch {
+  }
   dbCache.set(resolvedCwd, db);
   return db;
 }
@@ -21153,8 +21162,8 @@ function closeMemoryDb(cwd) {
     dbCache.delete(resolvedCwd);
   }
 }
-function writeMessage(type, content, opts) {
-  const db = getMemoryDb();
+function writeMessage(type, content, opts, cwd) {
+  const db = getMemoryDb(cwd);
   const timestamp = (/* @__PURE__ */ new Date()).toISOString();
   const scope = opts?.scope ?? "";
   const metadata = JSON.stringify(opts?.metadata ?? {});
@@ -21165,8 +21174,8 @@ function writeMessage(type, content, opts) {
   ).run(type, scope, content, metadata, branch, timestamp);
   return Number(result.lastInsertRowid);
 }
-function queryMessages(opts) {
-  const db = getMemoryDb();
+function queryMessages(opts, cwd) {
+  const db = getMemoryDb(cwd);
   const conditions = [];
   const params = [];
   const limit = opts.limit ?? 50;
@@ -21199,21 +21208,45 @@ function rowToMessage(row) {
     timestamp: row.timestamp
   };
 }
-function recordCheckpoint(tag, branch, description) {
-  const db = getMemoryDb();
+function countMessages(type, cwd) {
+  const db = getMemoryDb(cwd);
+  if (type) {
+    const row2 = db.prepare("SELECT COUNT(*) as count FROM messages WHERE type = ?").get(type);
+    return row2.count;
+  }
+  const row = db.prepare("SELECT COUNT(*) as count FROM messages").get();
+  return row.count;
+}
+function recordCheckpoint(tag, branch, description, cwd) {
+  const db = getMemoryDb(cwd);
   const timestamp = (/* @__PURE__ */ new Date()).toISOString();
   db.prepare(
     `INSERT OR REPLACE INTO checkpoints (tag, branch, description, timestamp)
      VALUES (?, ?, ?, ?)`
   ).run(tag, branch, description ?? "", timestamp);
 }
-function recordBranch(name, status, spawnedFrom, score) {
-  const db = getMemoryDb();
+function getCheckpointTimestamps(cwd) {
+  const db = getMemoryDb(cwd);
+  const rows = db.prepare("SELECT tag, timestamp FROM checkpoints").all();
+  return new Map(rows.map((r) => [r.tag, r.timestamp]));
+}
+function recordBranch(name, status, spawnedFrom, score, cwd) {
+  const db = getMemoryDb(cwd);
   const timestamp = (/* @__PURE__ */ new Date()).toISOString();
   db.prepare(
     `INSERT INTO branches (name, status, spawned_from, score, timestamp)
-     VALUES (?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(name) DO UPDATE SET
+       status = excluded.status,
+       spawned_from = COALESCE(excluded.spawned_from, branches.spawned_from),
+       score = COALESCE(excluded.score, branches.score),
+       timestamp = excluded.timestamp`
   ).run(name, status, spawnedFrom ?? null, score ?? null, timestamp);
+}
+function getBranchSpawnPoint(branchName, cwd) {
+  const db = getMemoryDb(cwd);
+  const row = db.prepare("SELECT spawned_from FROM branches WHERE name = ? ORDER BY id DESC LIMIT 1").get(branchName);
+  return row?.spawned_from ?? null;
 }
 function migrateLessons(cwd) {
   const resolvedCwd = path.normalize(cwd ?? process.cwd());
@@ -21251,6 +21284,7 @@ function migrateLessons(cwd) {
 
 // src/operations.ts
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import * as fs2 from "node:fs";
 import * as path2 from "node:path";
 var EvoError = class extends Error {
@@ -21316,11 +21350,17 @@ function filesRemovedByCheckout(targetRef, cwd) {
   const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
   return diff.split("\n").filter(Boolean);
 }
-function untrackedSourceFiles(cwd) {
+function untrackedSourceFiles(cwd, config2) {
+  const cfg = config2 ?? loadConfig(cwd);
+  const escapedExts = cfg.sourceExtensions.map((e) => e.replace(/\./g, "\\."));
+  const extPattern = new RegExp(`(${escapedExts.join("|")})$`);
   const status = git(["status", "--porcelain"], cwd);
-  return status.split("\n").filter((l) => l.startsWith("??")).map((l) => l.slice(3).trim()).filter((f) => /\.(ts|js|mjs|json|md|yml|yaml)$/.test(f));
+  return status.split("\n").filter((l) => l.startsWith("??")).map((l) => l.slice(3).trim()).filter((f) => extPattern.test(f));
 }
-function staleDistFiles(cwd) {
+function staleDistFiles(cwd, config2) {
+  const cfg = config2 ?? loadConfig(cwd);
+  if (cfg.skipStaleCheck) return [];
+  const hasTs = cfg.sourceExtensions.includes(".ts");
   const stale = [];
   function scan(dir) {
     if (!fs2.existsSync(dir)) return;
@@ -21330,6 +21370,7 @@ function staleDistFiles(cwd) {
         if (entry.name === "node_modules") continue;
         scan(full);
       } else if (entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+        if (entry.name.endsWith(".test.js") && !hasTs) continue;
         const tsFile = full.replace(/\.js$/, ".ts");
         if (!fs2.existsSync(tsFile)) {
           stale.push(path2.relative(cwd, full));
@@ -21337,20 +21378,30 @@ function staleDistFiles(cwd) {
       }
     }
   }
-  const pkgsDir = path2.join(cwd, "packages");
-  if (fs2.existsSync(pkgsDir)) {
-    for (const pkg of fs2.readdirSync(pkgsDir, { withFileTypes: true })) {
-      if (pkg.isDirectory()) {
-        scan(path2.join(pkgsDir, pkg.name, "dist"));
+  for (const layout of cfg.buildLayouts) {
+    const normalized = layout.replace(/\//g, path2.sep).replace(/[/\\]$/, "");
+    if (normalized.includes("*")) {
+      const starIdx = normalized.indexOf("*");
+      const beforeStar = normalized.slice(0, starIdx);
+      const afterStar = normalized.slice(starIdx + 1);
+      const parentDir = path2.join(cwd, beforeStar);
+      if (fs2.existsSync(parentDir)) {
+        for (const entry of fs2.readdirSync(parentDir, { withFileTypes: true })) {
+          if (entry.isDirectory()) {
+            scan(path2.join(parentDir, entry.name, afterStar));
+          }
+        }
       }
+    } else {
+      scan(path2.join(cwd, normalized));
     }
   }
-  scan(path2.join(cwd, "dist"));
   return stale;
 }
-function preflightCheckoutSafety(targetRef, cwd) {
+function preflightCheckoutSafety(targetRef, cwd, config2) {
+  const cfg = config2 ?? loadConfig(cwd);
   const warnings = [];
-  const untracked = untrackedSourceFiles(cwd);
+  const untracked = untrackedSourceFiles(cwd, cfg);
   if (untracked.length > 0) {
     warnings.push(
       `Untracked source files (would persist but risk loss if directory removed):
@@ -21366,7 +21417,7 @@ ${sourceRemoved.map((f) => `  \u2022 ${f}`).join("\n")}
 Commit or stash these before spawning.`
     );
   }
-  const stale = staleDistFiles(cwd);
+  const stale = staleDistFiles(cwd, cfg);
   if (stale.length > 0) {
     warnings.push(
       `Stale dist/*.js without matching .ts source:
@@ -21407,6 +21458,21 @@ function requireInit(cwd) {
   }
   return paths;
 }
+function loadConfig(cwd) {
+  const configPath = path2.join(cwd, ".evo", "config.json");
+  const defaults = {
+    sourceExtensions: [".ts", ".js", ".mjs", ".json", ".md", ".yml", ".yaml"],
+    buildLayouts: ["packages/*/dist/", "dist/"],
+    skipStaleCheck: false
+  };
+  if (!fs2.existsSync(configPath)) return defaults;
+  try {
+    const user = JSON.parse(fs2.readFileSync(configPath, "utf-8"));
+    return { ...defaults, ...user };
+  } catch {
+    return defaults;
+  }
+}
 function evo_init() {
   const { cwd } = getRepo();
   const paths = evoPaths(cwd);
@@ -21416,11 +21482,6 @@ function evo_init() {
   } catch {
   }
   fs2.writeFileSync(paths.lessonsFile, "", "utf-8");
-  try {
-    const db = getMemoryDb(cwd);
-    db.prepare("DELETE FROM messages").run();
-  } catch {
-  }
   const gitignore = path2.join(cwd, ".gitignore");
   const evoEntry = ".evo/\n";
   if (fs2.existsSync(gitignore)) {
@@ -21444,6 +21505,9 @@ function evo_checkpoint(name, description) {
   let stashed = false;
   if (isDirty2(cwd)) {
     git(["stash", "push", "-m", `gitevo: auto-stash before checkpoint '${name}'`], cwd);
+    git(["stash", "apply"], cwd);
+    git(["add", "-A"], cwd);
+    git(["commit", "-m", `gitevo: WIP checkpoint '${name}'`], cwd);
     stashed = true;
   }
   const tagName = `evo-${name}`;
@@ -21454,14 +21518,16 @@ function evo_checkpoint(name, description) {
   git(["tag", "-a", tagName, "-m", description], cwd);
   if (stashed) {
     try {
-      git(["stash", "pop"], cwd);
+      git(["reset", "--soft", "HEAD~1"], cwd);
+      git(["reset", "HEAD", "."], cwd);
+      git(["stash", "drop"], cwd);
     } catch {
-      return `Checkpoint '${name}' created, but auto-stash could not be reapplied \u2014 your changes are in the stash.`;
+      return `Checkpoint '${name}' created, but the WIP commit could not be cleanly undone \u2014 your changes are in the stash. Run 'git stash pop' to recover them.`;
     }
   }
   try {
     const branch = currentBranch(cwd);
-    recordCheckpoint(tagName, branch, description);
+    recordCheckpoint(tagName, branch, description, cwd);
   } catch {
   }
   return `Checkpoint '${name}' created.`;
@@ -21471,68 +21537,49 @@ function evo_learn(content, repoOverride) {
   const { cwd } = repo;
   requireInit(cwd);
   const branch = currentBranch(cwd);
-  const lesson = {
-    content,
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    branch
-  };
-  const paths = evoPaths(cwd);
-  fs2.appendFileSync(paths.lessonsFile, `${JSON.stringify(lesson)}
-`, "utf-8");
-  try {
-    writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } });
-  } catch {
-  }
+  writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } }, cwd);
   return `Lesson recorded on branch '${branch}'.`;
 }
 function evo_lessons() {
   const { cwd } = getRepo();
-  const paths = requireInit(cwd);
-  const memoryDbPath = path2.join(cwd, ".evo", "memory.db");
-  if (fs2.existsSync(memoryDbPath)) {
-    try {
-      const results = queryMessages({ type: "INSIGHT", limit: 100 });
-      if (results.length > 0) {
-        return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.branch}): ${m.content}`).join("\n");
-      }
-    } catch {
+  requireInit(cwd);
+  try {
+    const results = queryMessages({ type: "INSIGHT", limit: 100 }, cwd);
+    if (results.length > 0) {
+      return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.branch}): ${m.content}`).join("\n");
     }
+  } catch {
   }
-  if (!fs2.existsSync(paths.lessonsFile)) {
-    return "No lessons recorded.";
-  }
-  const content = fs2.readFileSync(paths.lessonsFile, "utf-8").trim();
-  if (!content) return "No lessons recorded.";
-  const lessons = content.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l)).reverse();
-  return lessons.map((l, i) => `[${i + 1}] ${l.timestamp} (${l.branch}): ${l.content}`).join("\n");
+  return "No lessons recorded.";
 }
 function evo_export_lessons() {
   const { cwd } = getRepo();
-  const paths = requireInit(cwd);
-  if (!fs2.existsSync(paths.lessonsFile)) {
-    return JSON.stringify([]);
-  }
-  const content = fs2.readFileSync(paths.lessonsFile, "utf-8").trim();
-  if (!content) return JSON.stringify([]);
-  const lessons = content.split("\n").filter((l) => l.trim()).map((l) => {
-    const parsed = JSON.parse(l);
-    return {
-      id: `gitevo-${slugify(parsed.content.slice(0, 40))}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      title: parsed.content.slice(0, 80),
-      description: `GitEvo lesson from branch '${parsed.branch}'`,
-      content: parsed.content,
+  requireInit(cwd);
+  try {
+    const results = queryMessages({ type: "INSIGHT", limit: 100 }, cwd);
+    if (results.length === 0) {
+      return JSON.stringify([]);
+    }
+    const lessons = results.map((m) => ({
+      id: `gitevo-${lessonHash(m.content, m.branch, m.timestamp)}`,
+      title: m.content.slice(0, 80),
+      description: `GitEvo lesson from branch '${m.branch}'`,
+      content: m.content,
       type: "feedback",
       metadata: {
         source: "gitevo",
-        branch: parsed.branch,
-        timestamp: parsed.timestamp
+        branch: m.branch,
+        timestamp: m.timestamp
       }
-    };
-  }).reverse();
-  return JSON.stringify(lessons, null, 2);
+    }));
+    return JSON.stringify(lessons, null, 2);
+  } catch {
+    return JSON.stringify([]);
+  }
 }
-function slugify(text) {
-  return text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 50);
+function lessonHash(content, branch, timestamp) {
+  const input = `${content}|${branch}|${timestamp}`;
+  return createHash("sha256").update(input).digest("hex").slice(0, 12);
 }
 function evo_spawn(checkpoint_name, new_branch, force) {
   const { cwd } = getRepo();
@@ -21579,7 +21626,7 @@ Pass force=true to proceed anyway (you accept the risk of data loss).`
     }
   }
   try {
-    recordBranch(new_branch, "active", `evo-${checkpoint_name}`);
+    recordBranch(new_branch, "active", `evo-${checkpoint_name}`, void 0, cwd);
   } catch {
   }
   const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
@@ -21597,7 +21644,12 @@ function evo_checkpoints() {
   requireInit(cwd);
   const tags = tagsWithPrefix("evo-", cwd);
   if (tags.length === 0) return "No checkpoints found.";
-  tags.sort().reverse();
+  const timestampMap = getCheckpointTimestamps(cwd);
+  tags.sort((a, b) => {
+    const ta = timestampMap.get(a) ?? "";
+    const tb = timestampMap.get(b) ?? "";
+    return tb.localeCompare(ta) || b.localeCompare(a);
+  });
   const lines = tags.map((t) => {
     const desc = getTagMessage(t, cwd);
     return `  ${t}: ${desc}`;
@@ -21619,6 +21671,7 @@ function evo_abandon(checkpoint, reason, force) {
   const { cwd, rootBranch } = getRepo();
   requireInit(cwd);
   let stashed = false;
+  let stashPopWarning = "";
   if (isDirty2(cwd)) {
     git(["stash", "push", "-m", "gitevo: auto-stash before abandon"], cwd);
     stashed = true;
@@ -21633,15 +21686,22 @@ function evo_abandon(checkpoint, reason, force) {
         try {
           git(["stash", "pop"], cwd);
         } catch {
+          stashPopWarning = " Could not restore auto-stashed changes \u2014 they remain in the stash.";
         }
       }
-      throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
+      throw new EvoError(`Checkpoint '${checkpoint}' not found.${stashPopWarning}`);
     }
     targetRef = tagName;
     targetDesc = `checkpoint '${checkpoint}'`;
   } else {
-    targetRef = "HEAD~1";
-    targetDesc = "parent commit";
+    const spawnPoint = getBranchSpawnPoint(branchName, cwd);
+    if (spawnPoint) {
+      targetRef = spawnPoint;
+      targetDesc = `spawn checkpoint '${spawnPoint}'`;
+    } else {
+      targetRef = "HEAD~1";
+      targetDesc = "parent commit";
+    }
   }
   const safetyWarnings = preflightCheckoutSafety(targetRef, cwd);
   if (safetyWarnings && !force) {
@@ -21649,6 +21709,7 @@ function evo_abandon(checkpoint, reason, force) {
       try {
         git(["stash", "pop"], cwd);
       } catch {
+        stashPopWarning = " Could not restore auto-stashed changes \u2014 they remain in the stash.";
       }
     }
     throw new EvoError(
@@ -21656,11 +21717,11 @@ function evo_abandon(checkpoint, reason, force) {
 
 ${safetyWarnings}
 
-Pass force=true to proceed anyway (you accept the risk of data loss).`
+Pass force=true to proceed anyway (you accept the risk of data loss).${stashPopWarning}`
     );
   }
   try {
-    recordBranch(branchName, "dead");
+    recordBranch(branchName, "dead", void 0, void 0, cwd);
   } catch {
   }
   git(["reset", "--hard", targetRef], cwd);
@@ -21702,13 +21763,11 @@ function evo_summary() {
   const active = currentBranch(cwd);
   const allTags = tagsWithPrefix("evo-", cwd);
   const checkpoints = allTags.filter((t) => !t.startsWith("evo-dead-") && t !== "evo-adopted");
-  const paths = evoPaths(cwd);
   let lessonCount = 0;
-  if (fs2.existsSync(paths.lessonsFile)) {
-    const content = fs2.readFileSync(paths.lessonsFile, "utf-8").trim();
-    if (content) {
-      lessonCount = content.split("\n").filter((l) => l.trim()).length;
-    }
+  try {
+    lessonCount = countMessages("INSIGHT", cwd);
+  } catch {
+    lessonCount = 0;
   }
   const deadBranches = allTags.filter((t) => t.startsWith("evo-dead-")).map((t) => t.slice("evo-dead-".length));
   const adopted = hasTag("evo-adopted", cwd);
@@ -21734,14 +21793,31 @@ function evo_adopt(branch) {
   if (originalBranch !== rootBranch) {
     git(["checkout", rootBranch], cwd);
   }
-  git(["merge", branch, "--no-edit"], cwd);
+  try {
+    git(["merge", branch, "--no-edit"], cwd);
+  } catch (err) {
+    let conflictFiles = [];
+    try {
+      const output = gitOrNull(["diff", "--name-only", "--diff-filter=U"], cwd);
+      if (output) conflictFiles = output.split("\n").filter(Boolean);
+    } catch {
+    }
+    try {
+      git(["merge", "--abort"], cwd);
+    } catch {
+    }
+    const fileList = conflictFiles.length > 0 ? `: ${conflictFiles.join(", ")}` : "";
+    throw new EvoError(
+      `adopt failed: merge conflicts${fileList}; resolve manually or abandon the branch`
+    );
+  }
   try {
     git(["tag", "-d", "evo-adopted"], cwd);
   } catch {
   }
   git(["tag", "-a", "evo-adopted", "-m", `Adopted branch '${branch}' into ${rootBranch}`], cwd);
   try {
-    recordBranch(branch, "adopted");
+    recordBranch(branch, "adopted", void 0, void 0, cwd);
   } catch {
   }
   return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
@@ -21752,7 +21828,13 @@ function evo_finish() {
   const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
   const current = currentBranch(cwd);
   if (current !== rootBranch) {
-    evo_adopt(current);
+    try {
+      evo_adopt(current);
+    } catch (err) {
+      throw new EvoError(
+        `Finish failed: internal adopt failed \u2014 ${err.message}`
+      );
+    }
   }
   const allEvoTags = tagsWithPrefix("evo-", cwd);
   for (const tag of allEvoTags) {
@@ -21778,10 +21860,11 @@ function evo_finish() {
 }
 
 // src/index.ts
-import { fileURLToPath } from "node:url";
+var _dirname = path3.dirname(fileURLToPath(import.meta.url));
+var _pkg = JSON.parse(readFileSync3(path3.join(_dirname, "..", "package.json"), "utf-8"));
 var server = new McpServer({
   name: "gitevo",
-  version: "0.1.3"
+  version: _pkg.version
 });
 function wrap(fn) {
   return (...args) => {
