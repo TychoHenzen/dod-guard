@@ -8,7 +8,7 @@ await build({
   format: "esm",
   outfile: "dist/bundle.js",
   banner: { js: "#!/usr/bin/env node" },
-  external: [],
+  external: ["better-sqlite3"],
   minify: false,
   sourcemap: false,
 });
