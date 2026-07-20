@@ -145,7 +145,14 @@ describe("indexer", () => {
     });
     it("embeds chunks when embedder provided", async () => {
       walkResult.push("a.md");
-      readResults.set("a.md", { path: "a.md", title: "A", tags: [], links: [], content: "Content A", raw: "Content A" });
+      readResults.set("a.md", {
+        path: "a.md",
+        title: "A",
+        tags: [],
+        links: [],
+        content: "Content A",
+        raw: "Content A",
+      });
       existingPaths.add("a.md");
       IndexedPaths.push("a.md");
       const mockEmbedder = {
@@ -158,7 +165,14 @@ describe("indexer", () => {
     });
     it("skips embedding when embedder is null", async () => {
       walkResult.push("a.md");
-      readResults.set("a.md", { path: "a.md", title: "A", tags: [], links: [], content: "Content A", raw: "Content A" });
+      readResults.set("a.md", {
+        path: "a.md",
+        title: "A",
+        tags: [],
+        links: [],
+        content: "Content A",
+        raw: "Content A",
+      });
       existingPaths.add("a.md");
       IndexedPaths.push("a.md");
       await mod.indexVault("/v", "v1", mockStore, null);
@@ -166,7 +180,14 @@ describe("indexer", () => {
     });
     it("skips embedding when embedder is undefined (default)", async () => {
       walkResult.push("a.md");
-      readResults.set("a.md", { path: "a.md", title: "A", tags: [], links: [], content: "Content A", raw: "Content A" });
+      readResults.set("a.md", {
+        path: "a.md",
+        title: "A",
+        tags: [],
+        links: [],
+        content: "Content A",
+        raw: "Content A",
+      });
       existingPaths.add("a.md");
       IndexedPaths.push("a.md");
       await mod.indexVault("/v", "v1", mockStore);
@@ -175,7 +196,14 @@ describe("indexer", () => {
 
     it("deletes old chunks when note shrinks (deleteChunksForNote called before re-insert)", async () => {
       walkResult.push("long.md");
-      readResults.set("long.md", { path: "long.md", title: "Long", tags: [], links: [], content: "short", raw: "short" });
+      readResults.set("long.md", {
+        path: "long.md",
+        title: "Long",
+        tags: [],
+        links: [],
+        content: "short",
+        raw: "short",
+      });
       existingPaths.add("long.md");
       IndexedPaths.push("long.md");
       // Pre-populate with more chunks than new content would produce
@@ -270,8 +298,8 @@ describe("indexer", () => {
         title: "Embed",
         tags: [],
         links: [],
-        content: "Memory content to embed " + "x".repeat(200),
-        raw: "Memory content to embed " + "x".repeat(200),
+        content: `Memory content to embed ${"x".repeat(200)}`,
+        raw: `Memory content to embed ${"x".repeat(200)}`,
       });
 
       const mockEmbedder = {

@@ -239,7 +239,7 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         for (const n of allNotes) {
           if (n.path === path) continue;
           const fullNote = store.getNote(vault.name, n.path);
-          if (fullNote && fullNote.links.some((l) => targetPaths.includes(l))) {
+          if (fullNote?.links.some((l) => targetPaths.includes(l))) {
             backlinks.push(n.path);
           }
         }

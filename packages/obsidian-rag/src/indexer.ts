@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { embedChunks, type Embedder } from "./retriever.js";
+import { type Embedder, embedChunks } from "./retriever.js";
 import type { Store } from "./store.js";
 import type { Chunk } from "./types.js";
 import { readNote, walkVault } from "./vault.js";
@@ -130,7 +130,12 @@ export function hashContent(content: string): string {
 
 // ── Indexing pipeline ─────────────────────────────────────────────────
 
-export async function indexVault(vaultPath: string, vaultName: string, store: Store, embedder: Embedder | null = null): Promise<number> {
+export async function indexVault(
+  vaultPath: string,
+  vaultName: string,
+  store: Store,
+  embedder: Embedder | null = null,
+): Promise<number> {
   const files = await walkVault(vaultPath);
   store.setIndexMeta(vaultName, { totalNotes: files.length, indexing: true });
 
@@ -172,14 +177,14 @@ export async function indexVault(vaultPath: string, vaultName: string, store: St
 
   // Reconciliation: drop notes whose files no longer exist on disk
   const indexedPaths = store.listNotePaths(vaultName);
-  let deleted = 0;
+  let _deleted = 0;
   for (const notePath of indexedPaths) {
     const fullPath = join(vaultPath, notePath);
     if (!existsSync(fullPath)) {
       store.deleteChunksForNote(vaultName, notePath);
       store.deleteNote(vaultName, notePath);
       console.error(`obsidian-rag: reconciliation removed deleted note "${notePath}"`);
-      deleted++;
+      _deleted++;
     }
   }
 

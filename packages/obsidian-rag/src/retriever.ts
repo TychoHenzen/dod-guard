@@ -157,7 +157,7 @@ function cosineSimilarity(a: number[], b: number[] | Float32Array): number {
   if (a.length !== b.length) {
     throw new Error(
       `Embedding dimension mismatch: query has ${a.length} dims but stored embedding has ${b.length} dims. ` +
-      `The embedding model may have changed. Run reindex with embed:true to regenerate all embeddings.`
+        `The embedding model may have changed. Run reindex with embed:true to regenerate all embeddings.`,
     );
   }
   let dot = 0;

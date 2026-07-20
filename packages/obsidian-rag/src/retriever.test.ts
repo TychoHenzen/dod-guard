@@ -6,7 +6,7 @@ describe("cosineSimilarity", () => {
   function cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) {
       throw new Error(
-        `Embedding dimension mismatch: query has ${a.length} dims but stored embedding has ${b.length} dims.`
+        `Embedding dimension mismatch: query has ${a.length} dims but stored embedding has ${b.length} dims.`,
       );
     }
     let dot = 0,
@@ -31,10 +31,7 @@ describe("cosineSimilarity", () => {
   });
 
   it("different lengths throws descriptive error", () => {
-    assert.throws(
-      () => cosineSimilarity([1, 2], [1, 2, 3]),
-      /Embedding dimension mismatch/,
-    );
+    assert.throws(() => cosineSimilarity([1, 2], [1, 2, 3]), /Embedding dimension mismatch/);
   });
 
   it("opposite vectors have similarity -1", () => {
@@ -47,11 +44,25 @@ describe("semanticSearch fast-path", () => {
     const { semanticSearch } = await import("./retriever.js");
     let embedderCalled = false;
     const mockEmbedder = {
-      embed: async (_t: string) => { embedderCalled = true; return []; },
-      embedBatch: async (_t: string[]) => { embedderCalled = true; return []; },
+      embed: async (_t: string) => {
+        embedderCalled = true;
+        return [];
+      },
+      embedBatch: async (_t: string[]) => {
+        embedderCalled = true;
+        return [];
+      },
     };
     const mockStore = {
-      getIndexStatus: mock.fn((_vn: string) => ({ embeddedChunks: 0, totalChunks: 10, totalNotes: 5, indexedNotes: 5, lastIndexed: null, indexing: false, vault: null })),
+      getIndexStatus: mock.fn((_vn: string) => ({
+        embeddedChunks: 0,
+        totalChunks: 10,
+        totalNotes: 5,
+        indexedNotes: 5,
+        lastIndexed: null,
+        indexing: false,
+        vault: null,
+      })),
       getChunksWithEmbeddings: mock.fn((_vn: string) => []),
       getNote: mock.fn((_vn: string, _p: string) => null),
     };
@@ -70,12 +81,46 @@ describe("semanticSearch fast-path", () => {
     };
 
     const mockStore = {
-      getIndexStatus: mock.fn((_vn: string) => ({ embeddedChunks: 2, totalChunks: 2, totalNotes: 2, indexedNotes: 2, lastIndexed: null, indexing: false, vault: null })),
+      getIndexStatus: mock.fn((_vn: string) => ({
+        embeddedChunks: 2,
+        totalChunks: 2,
+        totalNotes: 2,
+        indexedNotes: 2,
+        lastIndexed: null,
+        indexing: false,
+        vault: null,
+      })),
       getChunksWithEmbeddings: mock.fn((_vn: string) => [
-        { id: "a.md#0", notePath: "a.md", vaultName: "vault", heading: "H1", content: "Similar", embedding: null, embeddingVector: new Float32Array([0.9, 0.1, 0, 0]) },
-        { id: "b.md#0", notePath: "b.md", vaultName: "vault", heading: "H2", content: "Different", embedding: null, embeddingVector: new Float32Array([0, 0, 0.9, 0.1]) },
+        {
+          id: "a.md#0",
+          notePath: "a.md",
+          vaultName: "vault",
+          heading: "H1",
+          content: "Similar",
+          embedding: null,
+          embeddingVector: new Float32Array([0.9, 0.1, 0, 0]),
+        },
+        {
+          id: "b.md#0",
+          notePath: "b.md",
+          vaultName: "vault",
+          heading: "H2",
+          content: "Different",
+          embedding: null,
+          embeddingVector: new Float32Array([0, 0, 0.9, 0.1]),
+        },
       ]),
-      getNote: mock.fn((_vn: string, p: string) => ({ path: p, title: p.replace(".md", ""), tags: [], links: [], backlinks: [], frontmatter: {}, created: "", modified: "", content: "" })),
+      getNote: mock.fn((_vn: string, p: string) => ({
+        path: p,
+        title: p.replace(".md", ""),
+        tags: [],
+        links: [],
+        backlinks: [],
+        frontmatter: {},
+        created: "",
+        modified: "",
+        content: "",
+      })),
     };
 
     const results = await semanticSearch(mockStore as any, "vault", "test", mockEmbedder, 10);
@@ -113,11 +158,19 @@ describe("embedAllChunks", () => {
       }),
       setEmbedding: mock.fn((_id: string, _emb: number[]) => {}),
       getIndexStatus: mock.fn((_vn: string) => {
-        const s = { embeddedChunks: 5 + batchIndex * 2, totalChunks: 10, vault: null, totalNotes: 5, indexedNotes: 5, lastIndexed: null, indexing: false };
+        const s = {
+          embeddedChunks: 5 + batchIndex * 2,
+          totalChunks: 10,
+          vault: null,
+          totalNotes: 5,
+          indexedNotes: 5,
+          lastIndexed: null,
+          indexing: false,
+        };
         statusCalls.push(s);
         return s;
       }),
-      setIndexMeta: mock.fn((_vn: string, data: any) => {}),
+      setIndexMeta: mock.fn((_vn: string, _data: any) => {}),
     };
 
     await embedAllChunks(mockStore as any, "vault", mockEmbedder, 2);
@@ -141,8 +194,16 @@ describe("embedAllChunks", () => {
     const mockStore = {
       getUnembeddedChunks: mock.fn((_vn: string, _limit: number) => []),
       setEmbedding: mock.fn((_id: string, _emb: number[]) => {}),
-      getIndexStatus: mock.fn((_vn: string) => ({ embeddedChunks: 0, totalChunks: 10, vault: null, totalNotes: 5, indexedNotes: 5, lastIndexed: null, indexing: false })),
-      setIndexMeta: mock.fn((_vn: string, data: any) => {}),
+      getIndexStatus: mock.fn((_vn: string) => ({
+        embeddedChunks: 0,
+        totalChunks: 10,
+        vault: null,
+        totalNotes: 5,
+        indexedNotes: 5,
+        lastIndexed: null,
+        indexing: false,
+      })),
+      setIndexMeta: mock.fn((_vn: string, _data: any) => {}),
     };
 
     await embedAllChunks(mockStore as any, "vault", mockEmbedder, 32);
@@ -157,12 +218,26 @@ describe("hybridSearch fast-path", () => {
     const { hybridSearch } = await import("./retriever.js");
     let embedderCalled = false;
     const mockEmbedder = {
-      embed: async (_t: string) => { embedderCalled = true; return []; },
-      embedBatch: async (_t: string[]) => { embedderCalled = true; return []; },
+      embed: async (_t: string) => {
+        embedderCalled = true;
+        return [];
+      },
+      embedBatch: async (_t: string[]) => {
+        embedderCalled = true;
+        return [];
+      },
     };
     const mockStore = {
-      getIndexStatus: mock.fn((_vn: string) => ({ embeddedChunks: 0, totalChunks: 10, totalNotes: 5, indexedNotes: 5, lastIndexed: null, indexing: false, vault: null })),
-      searchNotesFTS: mock.fn((_vn: string, q: string, _limit: number) => [
+      getIndexStatus: mock.fn((_vn: string) => ({
+        embeddedChunks: 0,
+        totalChunks: 10,
+        totalNotes: 5,
+        indexedNotes: 5,
+        lastIndexed: null,
+        indexing: false,
+        vault: null,
+      })),
+      searchNotesFTS: mock.fn((_vn: string, _q: string, _limit: number) => [
         { path: "note.md", title: "Note", snippet: "some keyword match", score: 0.5 },
       ]),
       getNote: mock.fn((_vn: string, _p: string) => null),
@@ -178,8 +253,16 @@ describe("hybridSearch fast-path", () => {
   it("returns keyword-only when embedder is null regardless of embeddedChunks", async () => {
     const { hybridSearch } = await import("./retriever.js");
     const mockStore = {
-      getIndexStatus: mock.fn((_vn: string) => ({ embeddedChunks: 50, totalChunks: 10, totalNotes: 5, indexedNotes: 5, lastIndexed: null, indexing: false, vault: null })),
-      searchNotesFTS: mock.fn((_vn: string, q: string, _limit: number) => [
+      getIndexStatus: mock.fn((_vn: string) => ({
+        embeddedChunks: 50,
+        totalChunks: 10,
+        totalNotes: 5,
+        indexedNotes: 5,
+        lastIndexed: null,
+        indexing: false,
+        vault: null,
+      })),
+      searchNotesFTS: mock.fn((_vn: string, _q: string, _limit: number) => [
         { path: "note.md", title: "Note", snippet: "match", score: 0.5 },
       ]),
       getNote: mock.fn((_vn: string, _p: string) => null),

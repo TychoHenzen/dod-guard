@@ -286,8 +286,10 @@ mock.module("./vault.js", {
 
 describe("create_note auto-indexing", () => {
   function setupHandlers() {
+    // biome-ignore lint/complexity/noBannedTypes: test mock — Function is intentional for generic MCP handler map
     const handlers = new Map<string, Function>();
     const mockServer = {
+      // biome-ignore lint/complexity/noBannedTypes: test mock
       tool: (_name: string, _d: string, _s: any, h: Function) => {
         handlers.set(_name, h);
       },
@@ -312,6 +314,7 @@ describe("create_note auto-indexing", () => {
       setSelectedVault: () => {},
     });
 
+    // biome-ignore lint/style/noNonNullAssertion: test — handler is set by registerTools above
     const handler = handlers.get("create_note")!;
     const result = await handler({
       path: "test-cli-success.md",
@@ -343,6 +346,7 @@ describe("create_note auto-indexing", () => {
       setSelectedVault: () => {},
     });
 
+    // biome-ignore lint/style/noNonNullAssertion: test — handler is set by registerTools above
     const handler = handlers.get("create_note")!;
     const result = await handler({
       path: "test-fs-fallback.md",
@@ -362,8 +366,10 @@ describe("create_note auto-indexing", () => {
 
 describe("reindex background embed", () => {
   function setupHandlers() {
+    // biome-ignore lint/complexity/noBannedTypes: test mock
     const handlers = new Map<string, Function>();
     const mockServer = {
+      // biome-ignore lint/complexity/noBannedTypes: test mock
       tool: (_name: string, _d: string, _s: any, h: Function) => {
         handlers.set(_name, h);
       },
@@ -389,6 +395,7 @@ describe("reindex background embed", () => {
       setSelectedVault: () => {},
     });
 
+    // biome-ignore lint/style/noNonNullAssertion: test — handler is set by registerTools above
     const handler = handlers.get("reindex")!;
     const result = await handler({ embed: true });
 
@@ -414,6 +421,7 @@ describe("reindex background embed", () => {
       setSelectedVault: () => {},
     });
 
+    // biome-ignore lint/style/noNonNullAssertion: test — handler is set by registerTools above
     const handler = handlers.get("reindex")!;
     const result = await handler({ embed: false });
 

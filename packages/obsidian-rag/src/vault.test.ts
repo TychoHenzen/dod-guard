@@ -29,6 +29,7 @@ mock.module("node:fs/promises", {
 });
 
 import { resolve } from "node:path";
+
 mock.module("node:fs", {
   namedExports: {
     existsSync: mock.fn((_p: string) => fsExistsSync),

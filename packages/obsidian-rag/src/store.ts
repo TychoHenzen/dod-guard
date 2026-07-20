@@ -43,9 +43,9 @@ function sanitizeQuery(raw: string): string {
   // Strip FTS5-special syntax characters that aren't useful as literal search text
   // FTS5 special: * " ( ) : ^ ~ - and keywords AND OR NOT NEAR
   let sanitized = trimmed
-    .replace(/[*():^~-]/g, " ")  // Strip bare FTS5 syntax chars
-    .replace(/"/g, '""')         // Escape double quotes (FTS5 phrase syntax)
-    .replace(/\s+/g, " ")        // Collapse whitespace
+    .replace(/[*():^~-]/g, " ") // Strip bare FTS5 syntax chars
+    .replace(/"/g, '""') // Escape double quotes (FTS5 phrase syntax)
+    .replace(/\s+/g, " ") // Collapse whitespace
     .trim();
 
   if (sanitized.length === 0) return '""';
@@ -186,9 +186,9 @@ export class Store {
     }
 
     // Migration: populate embedding_blob from existing JSON embeddings
-    const migrateRows = d.prepare(
-      "SELECT rowid, id, embedding FROM chunks WHERE embedding IS NOT NULL AND embedding_blob IS NULL",
-    ).all() as Array<{ rowid: number; id: string; embedding: string }>;
+    const migrateRows = d
+      .prepare("SELECT rowid, id, embedding FROM chunks WHERE embedding IS NOT NULL AND embedding_blob IS NULL")
+      .all() as Array<{ rowid: number; id: string; embedding: string }>;
     for (const row of migrateRows) {
       try {
         const arr = JSON.parse(row.embedding);
@@ -377,9 +377,7 @@ export class Store {
   }
 
   /** Return chunks with Float32Array embeddings from BLOB storage. No JSON.parse needed. */
-  getChunksWithEmbeddings(
-    vaultName: string,
-  ): Array<{
+  getChunksWithEmbeddings(vaultName: string): Array<{
     id: string;
     notePath: string;
     vaultName: string;
@@ -388,7 +386,9 @@ export class Store {
     embedding: string | null;
     embeddingVector: Float32Array;
   }> {
-    const rows = this.db.prepare("SELECT * FROM chunks WHERE vault_name = ? AND embedding_blob IS NOT NULL").all(vaultName) as any[];
+    const rows = this.db
+      .prepare("SELECT * FROM chunks WHERE vault_name = ? AND embedding_blob IS NOT NULL")
+      .all(vaultName) as any[];
     return rows.map((r: any) => ({
       id: r.id,
       notePath: r.note_path,
@@ -403,7 +403,11 @@ export class Store {
   setEmbedding(chunkId: string, embedding: number[]): void {
     const d = this.db;
     const blob = Buffer.from(new Float32Array(embedding).buffer);
-    d.prepare("UPDATE chunks SET embedding = ?, embedding_blob = ? WHERE id = ?").run(JSON.stringify(embedding), blob, chunkId);
+    d.prepare("UPDATE chunks SET embedding = ?, embedding_blob = ? WHERE id = ?").run(
+      JSON.stringify(embedding),
+      blob,
+      chunkId,
+    );
     d.prepare(`
       UPDATE index_meta SET embedded_chunks = (SELECT COUNT(*) FROM chunks WHERE embedding_blob IS NOT NULL)
       WHERE vault_name = (SELECT vault_name FROM chunks WHERE id = ?)
@@ -471,7 +475,9 @@ export class Store {
 
   /** List all note paths in the index for a vault. */
   listNotePaths(vaultName: string): string[] {
-    const rows = this.db.prepare("SELECT path FROM notes WHERE vault_name = ?").all(vaultName) as Array<{ path: string }>;
+    const rows = this.db.prepare("SELECT path FROM notes WHERE vault_name = ?").all(vaultName) as Array<{
+      path: string;
+    }>;
     return rows.map((r) => r.path);
   }
 
