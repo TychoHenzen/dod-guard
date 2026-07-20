@@ -464,7 +464,7 @@ export async function injectFailureMemory(_task: string, scope: string, _cwd: st
     const { getRecentFailures } = await import("../../gitevo/dist/memory.js");
     const failures = getRecentFailures(scope, 3);
     if (failures.length === 0) return "";
-    return failures.map((f: any, i: number) => `- ${(f as any).content.slice(0, 300)}`).join("\n");
+    return failures.map((f: any, _i: number) => `- ${(f as any).content.slice(0, 300)}`).join("\n");
   } catch (err) {
     console.error("evomcp: injectFailureMemory failed:", err);
     return "";
@@ -490,7 +490,12 @@ export async function recordEliteSolution(scope: string, content: string, branch
  * normalized dedup key stored in metadata.
  * Fire-and-forget — errors logged, never thrown.
  */
-export async function recordFailureSignature(scope: string, content: string, branch: string, _cwd: string): Promise<void> {
+export async function recordFailureSignature(
+  scope: string,
+  content: string,
+  branch: string,
+  _cwd: string,
+): Promise<void> {
   try {
     const { writeMessage } = await import("../../gitevo/dist/memory.js");
     const dedupKey = hashFailure(content);

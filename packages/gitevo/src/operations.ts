@@ -263,8 +263,12 @@ export function evo_init(): string {
   git(["tag", "-a", "evo-root", "-m", "GitEvo root checkpoint"], cwd);
 
   // Migrate existing lessons into SQLite memory bus
-  try { migrateLessons(cwd); } catch {}
-  try { getMemoryDb(cwd); } catch {}
+  try {
+    migrateLessons(cwd);
+  } catch {}
+  try {
+    getMemoryDb(cwd);
+  } catch {}
 
   return "GitEvo initialized. Root checkpoint tagged as evo-root.";
 }
@@ -304,7 +308,9 @@ export function evo_checkpoint(name: string, description: string): string {
   try {
     const branch = currentBranch(cwd);
     recordCheckpoint(tagName, branch, description);
-  } catch { /* memory failure shouldn't break git tag */ }
+  } catch {
+    /* memory failure shouldn't break git tag */
+  }
 
   return `Checkpoint '${name}' created.`;
 }
@@ -330,7 +336,9 @@ export function evo_learn(content: string, repoOverride?: { cwd: string; rootBra
   // Also write to SQLite memory bus
   try {
     writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } });
-  } catch { /* memory failure shouldn't break JSONL */ }
+  } catch {
+    /* memory failure shouldn't break JSONL */
+  }
 
   return `Lesson recorded on branch '${branch}'.`;
 }
@@ -351,7 +359,9 @@ export function evo_lessons(): string {
       if (results.length > 0) {
         return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.branch}): ${m.content}`).join("\n");
       }
-    } catch { /* fall through to JSONL */ }
+    } catch {
+      /* fall through to JSONL */
+    }
   }
 
   // Fall back to JSONL
@@ -480,7 +490,9 @@ export function evo_spawn(checkpoint_name: string, new_branch: string, force?: b
 
   try {
     recordBranch(new_branch, "active", `evo-${checkpoint_name}`);
-  } catch { /* memory failure shouldn't break git ops */ }
+  } catch {
+    /* memory failure shouldn't break git ops */
+  }
 
   const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
   if (force && safetyWarnings) {
@@ -583,7 +595,9 @@ export function evo_abandon(checkpoint?: string, reason?: string, force?: boolea
   // Record branch death in memory bus before revert
   try {
     recordBranch(branchName, "dead");
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
 
   // Hard reset to target FIRST — only tag dead after success
   git(["reset", "--hard", targetRef], cwd);
@@ -700,7 +714,9 @@ export function evo_adopt(branch: string): string {
 
   try {
     recordBranch(branch, "adopted");
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
 
   return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
 }

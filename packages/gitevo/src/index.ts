@@ -11,6 +11,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { getMemoryDb, queryMessages } from "./memory.js";
 import {
   EvoError,
   evo_abandon,
@@ -27,7 +28,6 @@ import {
   evo_spawn,
   evo_summary,
 } from "./operations.js";
-import { getMemoryDb, queryMessages } from "./memory.js";
 
 const server = new McpServer({
   name: "gitevo",
@@ -231,14 +231,9 @@ server.tool(
   }),
 );
 
-server.tool(
-  "evo_memory_stats",
-  "Get memory bus statistics: total messages, counts by type.",
-  {},
-  async () => ({
-    content: [{ type: "text" as const, text: wrap(formatMemoryStats)() }],
-  }),
-);
+server.tool("evo_memory_stats", "Get memory bus statistics: total messages, counts by type.", {}, async () => ({
+  content: [{ type: "text" as const, text: wrap(formatMemoryStats)() }],
+}));
 
 import { fileURLToPath } from "node:url";
 

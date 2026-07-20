@@ -50,7 +50,10 @@ const TaskSpecSchema = z.object({
   build_cmd: z.string().optional().describe("Build command (e.g. 'npm run build'). Runs as gate before verify."),
   test_cmd: z.string().optional().describe("Test command (e.g. 'npm test'). Runs as gate before verify."),
   lint_cmd: z.string().optional().describe("Lint command (e.g. 'npx biome check'). Runs as first gate."),
-  held_out_tests: z.string().optional().describe("Glob pattern for tests hidden from implementer. Run only at merge gate."),
+  held_out_tests: z
+    .string()
+    .optional()
+    .describe("Glob pattern for tests hidden from implementer. Run only at merge gate."),
 });
 
 const EvolveSpecSchema = z.object({

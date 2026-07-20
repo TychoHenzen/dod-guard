@@ -9,7 +9,7 @@
  */
 
 import { execSync } from "node:child_process";
-import type { GateResult, Diagnostic, OracleResult } from "./types.js";
+import type { Diagnostic, GateResult, OracleResult } from "./types.js";
 
 // ── Gate config ───────────────────────────────────────────────────────
 
@@ -118,7 +118,7 @@ export class GateRunner {
  * @returns Up to 50 parsed Diagnostic entries.
  */
 export function parseDiagnostics(output: string, _gateType: string): Diagnostic[] {
-  if (!output || !output.trim()) return [];
+  if (!output?.trim()) return [];
 
   const diagnostics: Diagnostic[] = [];
   const lines = output.split("\n");
@@ -130,8 +130,7 @@ export function parseDiagnostics(output: string, _gateType: string): Diagnostic[
     let match: RegExpExecArray | null;
 
     // TypeScript:   /path/file.ts(42,10): error TS2345: message
-    const tsRe =
-      /^(.+?)\((\d+),\d+\):\s+(error|warning)\s+TS\d+:\s+(.+)$/;
+    const tsRe = /^(.+?)\((\d+),\d+\):\s+(error|warning)\s+TS\d+:\s+(.+)$/;
     match = tsRe.exec(line);
     if (match) {
       diagnostics.push({
@@ -147,8 +146,7 @@ export function parseDiagnostics(output: string, _gateType: string): Diagnostic[
 
     // ESLint:       path/file.js:10:5: error "no-unused-vars"  message
     //               path/file.js:10:5: warning "no-console"  message
-    const eslintRe =
-      /^([^:]+):(\d+):(\d+):\s+(error|warning)\s+(.+)$/;
+    const eslintRe = /^([^:]+):(\d+):(\d+):\s+(error|warning)\s+(.+)$/;
     match = eslintRe.exec(line);
     if (match) {
       diagnostics.push({
@@ -164,8 +162,7 @@ export function parseDiagnostics(output: string, _gateType: string): Diagnostic[
 
     // Biome:        path/file.ts:10:5 error[noUnusedVariables] message
     //               path/file.ts:10:5 warning/lint/syntaxError message
-    const biomeRe =
-      /^([^:]+):(\d+):(\d+)\s+(error|warning|info)\s+(.+)$/;
+    const biomeRe = /^([^:]+):(\d+):(\d+)\s+(error|warning|info)\s+(.+)$/;
     match = biomeRe.exec(line);
     if (match) {
       diagnostics.push({
@@ -204,10 +201,7 @@ export function parseDiagnostics(output: string, _gateType: string): Diagnostic[
  * - `elapsed_ms`: sum of all gate durations.
  * - `oracle_type`: forwarded from the caller.
  */
-export function toOracleResult(
-  gateResults: GateResult[],
-  oracleType: string,
-): OracleResult {
+export function toOracleResult(gateResults: GateResult[], oracleType: string): OracleResult {
   const totalGates = gateResults.length;
   const passedGates = gateResults.filter((r) => r.passed).length;
 

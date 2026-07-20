@@ -9,12 +9,12 @@
  */
 
 import {
-  evo_checkpoint,
-  evo_spawn,
-  evo_adopt,
-  evo_abandon,
-  evo_learn,
   EvoError,
+  evo_abandon,
+  evo_adopt,
+  evo_checkpoint,
+  evo_learn,
+  evo_spawn,
 } from "../../gitevo/dist/operations.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -48,16 +48,8 @@ async function wrapGitevo<T extends (...args: any[]) => string>(
  * tree has dirty tracked files, gitevo auto-stashes before tagging and
  * pops after.
  */
-export async function checkpointGeneration(
-  gen: number,
-  description: string,
-  _cwd: string,
-): Promise<void> {
-  await wrapGitevo(
-    evo_checkpoint,
-    [`evolve-gen${gen}`, description],
-    `checkpoint gen ${gen}`,
-  );
+export async function checkpointGeneration(gen: number, description: string, _cwd: string): Promise<void> {
+  await wrapGitevo(evo_checkpoint, [`evolve-gen${gen}`, description], `checkpoint gen ${gen}`);
 }
 
 /**
@@ -67,16 +59,8 @@ export async function checkpointGeneration(
  * safety checks enabled (prevents data loss from untracked source files,
  * stale dist artifacts, or files that would be deleted by the checkout).
  */
-export async function spawnCandidate(
-  checkpointName: string,
-  branchName: string,
-  _cwd: string,
-): Promise<void> {
-  await wrapGitevo(
-    evo_spawn,
-    [checkpointName, branchName, false],
-    `spawn '${branchName}' from '${checkpointName}'`,
-  );
+export async function spawnCandidate(checkpointName: string, branchName: string, _cwd: string): Promise<void> {
+  await wrapGitevo(evo_spawn, [checkpointName, branchName, false], `spawn '${branchName}' from '${checkpointName}'`);
 }
 
 /**
@@ -85,15 +69,8 @@ export async function spawnCandidate(
  * Calls evo_adopt(branchName), which checks out root, merges the feature
  * branch, and tags the merge as evo-adopted. Throws if the tree is dirty.
  */
-export async function adoptWinner(
-  branchName: string,
-  _cwd: string,
-): Promise<void> {
-  await wrapGitevo(
-    evo_adopt,
-    [branchName],
-    `adopt '${branchName}'`,
-  );
+export async function adoptWinner(branchName: string, _cwd: string): Promise<void> {
+  await wrapGitevo(evo_adopt, [branchName], `adopt '${branchName}'`);
 }
 
 /**
@@ -105,19 +82,11 @@ export async function adoptWinner(
  *  - Tags the branch as evo-dead-{branch} after reverting
  *  - force=false keeps safety checks enabled
  */
-export async function abandonLoser(
-  _branchName: string,
-  reason: string,
-  _cwd: string,
-): Promise<void> {
+export async function abandonLoser(_branchName: string, reason: string, _cwd: string): Promise<void> {
   // Note: evo_abandon operates on the *current* branch, not a named one.
   // The branchName parameter is ignored because gitevo determines it
   // from process.cwd() internally.
-  await wrapGitevo(
-    evo_abandon,
-    [undefined, reason, false],
-    `abandon (reason: ${reason.slice(0, 60)})`,
-  );
+  await wrapGitevo(evo_abandon, [undefined, reason, false], `abandon (reason: ${reason.slice(0, 60)})`);
 }
 
 /**
@@ -126,15 +95,8 @@ export async function abandonLoser(
  * Calls evo_learn(content), which appends a JSONL entry to
  * .evo/lessons.jsonl with timestamp and current branch info.
  */
-export async function learnFromFailure(
-  content: string,
-  _cwd: string,
-): Promise<void> {
-  await wrapGitevo(
-    evo_learn,
-    [content],
-    `learn: ${content.slice(0, 60)}`,
-  );
+export async function learnFromFailure(content: string, _cwd: string): Promise<void> {
+  await wrapGitevo(evo_learn, [content], `learn: ${content.slice(0, 60)}`);
 }
 
 /**

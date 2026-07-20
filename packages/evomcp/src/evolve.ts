@@ -19,12 +19,12 @@
 import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { ensureProxy, extractScore, getProxyCost, mutationPrompt, runCommand, spawnClaude } from "./agent.js";
-import { checkpointGeneration, spawnCandidate, adoptWinner, abandonLoser } from "./gitevo-integration.js";
 import { evo_checkpoint } from "../../gitevo/dist/operations.js";
-import { GateRunner } from "./gates.js";
-import { checkConvergence } from "./convergence.js";
+import { ensureProxy, extractScore, getProxyCost, mutationPrompt, runCommand, spawnClaude } from "./agent.js";
 import type { FitnessHistoryPoint } from "./convergence.js";
+import { checkConvergence } from "./convergence.js";
+import { GateRunner } from "./gates.js";
+import { abandonLoser, adoptWinner, checkpointGeneration, spawnCandidate } from "./gitevo-integration.js";
 import type { EvolveResult, EvolveSpec, GateResult, RunStats } from "./types.js";
 
 const DEFAULT_GENERATIONS = 5;
@@ -35,8 +35,12 @@ const DEFAULT_TIMEOUT_MS = 180_000; // 3 min per mutation
  * Run gates when gate fields (build_cmd/test_cmd/lint_cmd) are configured.
  * Returns pass/fail + results. When no gate fields, trivially passes.
  */
-async function runGates(spec: EvolveSpec, cwd: string, onProgress?: (msg: string) => void): Promise<{ passed: boolean; results: GateResult[] }> {
-  if (!spec.build_cmd && !spec.test_cmd && !spec.lint_cmd) {
+async function runGates(
+  spec: EvolveSpec,
+  cwd: string,
+  onProgress?: (msg: string) => void,
+): Promise<{ passed: boolean; results: GateResult[] }> {
+  if (!(spec.build_cmd || spec.test_cmd || spec.lint_cmd)) {
     return { passed: true, results: [] };
   }
 
@@ -120,7 +124,12 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
   const elites: { code: string; score: number }[] = [];
 
   // Track early exit (convergence/stagnation/oscillation) for result
-  const earlyExit: { converged?: boolean; convergence_reason?: string; stagnated?: boolean; stagnation_reason?: string } = {};
+  const earlyExit: {
+    converged?: boolean;
+    convergence_reason?: string;
+    stagnated?: boolean;
+    stagnation_reason?: string;
+  } = {};
 
   // Create baseline checkpoint before evolution starts
   try {
@@ -225,7 +234,12 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
         if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
           const { passed, results: gateResults } = await runGates(spec, spec.cwd, onProgress);
           if (!passed) {
-            onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}, GATES FAILED (${gateResults.filter((r) => !r.passed).map((r) => r.gate).join(", ")}) -- skipping`);
+            onProgress?.(
+              `  [${i + 1}] score=${score.toFixed(2)}, GATES FAILED (${gateResults
+                .filter((r) => !r.passed)
+                .map((r) => r.gate)
+                .join(", ")}) -- skipping`,
+            );
             try {
               await abandonLoser(branchName, "gates failed", spec.cwd);
             } catch {}
@@ -252,7 +266,11 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
         } else {
           // g) Not better than current best -- abandon the branch
           try {
-            await abandonLoser(branchName, `score ${score.toFixed(2)} not better than best ${bestScore.toFixed(2)}`, spec.cwd);
+            await abandonLoser(
+              branchName,
+              `score ${score.toFixed(2)} not better than best ${bestScore.toFixed(2)}`,
+              spec.cwd,
+            );
           } catch {}
         }
       } catch (err) {
@@ -342,7 +360,10 @@ export async function evolve(spec: EvolveSpec, onProgress?: (msg: string) => voi
     onProgress?.("\nFinal gate verification...");
     const { passed, results } = await runGates(spec, spec.cwd, onProgress);
     finalGateReport = results
-      .map((r) => `${r.gate}: ${r.passed ? "PASS" : "FAIL"} (${r.elapsed_ms}ms)${!r.passed && r.diagnostics ? "\n  " + r.diagnostics.slice(0, 300) : ""}`)
+      .map(
+        (r) =>
+          `${r.gate}: ${r.passed ? "PASS" : "FAIL"} (${r.elapsed_ms}ms)${!r.passed && r.diagnostics ? `\n  ${r.diagnostics.slice(0, 300)}` : ""}`,
+      )
       .join("\n");
     if (!passed) {
       onProgress?.("WARNING: best patch does not pass all gates");

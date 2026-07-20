@@ -184,9 +184,7 @@ export function detectStagnation(
  * - Fewer than 4 history points: no oscillation possible
  * - Zero deltas break the alternating pattern
  */
-export function detectOscillation(
-  history: FitnessHistoryPoint[],
-): OscillationResult {
+export function detectOscillation(history: FitnessHistoryPoint[]): OscillationResult {
   if (history.length < 4) {
     return {
       oscillating: false,

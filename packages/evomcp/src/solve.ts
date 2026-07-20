@@ -14,6 +14,7 @@
  */
 
 import { execSync } from "node:child_process";
+import { evo_checkpoint } from "../../gitevo/dist/operations.js";
 import {
   ensureProxy,
   getProxyCost,
@@ -25,14 +26,9 @@ import {
   toVerdict,
 } from "./agent.js";
 import { GateRunner } from "./gates.js";
-import {
-  spawnCandidate,
-  adoptWinner,
-  abandonLoser,
-} from "./gitevo-integration.js";
-import { evo_checkpoint } from "../../gitevo/dist/operations.js";
-import type { Candidate, EscalationReport, GateResult, LineageDiagnostic, RunStats, SolveResult, TaskSpec } from "./types.js";
-import { compareBranches, type BranchInfo } from "./judge.js";
+import { abandonLoser, adoptWinner, spawnCandidate } from "./gitevo-integration.js";
+import { type BranchInfo, compareBranches } from "./judge.js";
+import type { Candidate, EscalationReport, LineageDiagnostic, RunStats, SolveResult, TaskSpec } from "./types.js";
 
 const MAX_REPAIRS = 3;
 const DEFAULT_N = 5;
@@ -153,7 +149,7 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
     onProgress?.(`  [${i + 1}] spawning branch '${branchName}' (${stratLabel})...`);
     try {
       await spawnCandidate("solve", branchName, spec.cwd);
-    } catch (err) {
+    } catch (_err) {
       onProgress?.(`  [${i + 1}] branch spawn failed — skipping`);
       diagnostics.push({
         lineage_id: `strategy-${i}`,
@@ -235,7 +231,9 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
       const branchDiff = (() => {
         try {
           return execSync("git diff evo-solve HEAD", { cwd: spec.cwd, encoding: "utf-8", timeout: 10_000 }) || "";
-        } catch { return ""; }
+        } catch {
+          return "";
+        }
       })();
       passingBranches.push({
         name: branchName,
@@ -313,7 +311,9 @@ export async function solve(spec: TaskSpec, onProgress?: (msg: string) => void):
         const branchDiff = (() => {
           try {
             return execSync("git diff evo-solve HEAD", { cwd: spec.cwd, encoding: "utf-8", timeout: 10_000 }) || "";
-          } catch { return ""; }
+          } catch {
+            return "";
+          }
         })();
         passingBranches.push({
           name: branchName,

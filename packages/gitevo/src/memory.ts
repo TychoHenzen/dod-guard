@@ -8,9 +8,9 @@
  * WAL mode enabled for concurrent access. Cached per working directory.
  */
 
-import DatabaseConstructor from "better-sqlite3";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import DatabaseConstructor from "better-sqlite3";
 
 type Database = DatabaseConstructor.Database;
 
@@ -122,11 +122,7 @@ export function getMemoryDb(cwd?: string): Database {
  * @param opts  Optional: scope, metadata (JSON-serialised), branch
  * @returns  The auto-generated row id
  */
-export function writeMessage(
-  type: string,
-  content: string,
-  opts?: WriteOptions,
-): number {
+export function writeMessage(type: string, content: string, opts?: WriteOptions): number {
   const db = getMemoryDb();
   const timestamp = new Date().toISOString();
   const scope = opts?.scope ?? "";
@@ -207,11 +203,7 @@ export function getEliteSolutions(scope: string, limit?: number): Message[] {
 /**
  * Record a checkpoint. Upserts — if the tag already exists, it is replaced.
  */
-export function recordCheckpoint(
-  tag: string,
-  branch: string,
-  description?: string,
-): void {
+export function recordCheckpoint(tag: string, branch: string, description?: string): void {
   const db = getMemoryDb();
   const timestamp = new Date().toISOString();
   db.prepare(
@@ -225,12 +217,7 @@ export function recordCheckpoint(
 /**
  * Record a branch entry.
  */
-export function recordBranch(
-  name: string,
-  status: string,
-  spawnedFrom?: string,
-  score?: number,
-): void {
+export function recordBranch(name: string, status: string, spawnedFrom?: string, score?: number): void {
   const db = getMemoryDb();
   const timestamp = new Date().toISOString();
   db.prepare(
@@ -279,14 +266,7 @@ export function migrateLessons(cwd?: string): number {
       try {
         const entry = JSON.parse(line);
         const metadata = JSON.stringify({ migratedFrom: "lessons.jsonl", originalTimestamp: entry.timestamp ?? null });
-        insert.run(
-          "INSIGHT",
-          "gitevo-lessons",
-          entry.content ?? "",
-          metadata,
-          entry.branch ?? "",
-          timestamp,
-        );
+        insert.run("INSIGHT", "gitevo-lessons", entry.content ?? "", metadata, entry.branch ?? "", timestamp);
         count++;
       } catch {
         // Skip malformed lines

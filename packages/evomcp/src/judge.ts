@@ -7,8 +7,8 @@
  * judge fails.
  */
 
+import type { AgentEnv, SpawnOptions } from "./agent.js";
 import { ensureProxy, spawnClaude } from "./agent.js";
-import type { SpawnOptions, AgentEnv } from "./agent.js";
 import type { JudgeVerdict } from "./types.js";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -65,12 +65,9 @@ const DIMENSION_WEIGHTS: Record<string, number> = {
 export function buildJudgePrompt(branches: BranchInfo[]): string {
   const branchSections = branches
     .map((b, i) => {
-      const diff =
-        b.diff.length > 3000 ? b.diff.slice(0, 3000) + "\n... [truncated]" : b.diff;
+      const diff = b.diff.length > 3000 ? `${b.diff.slice(0, 3000)}\n... [truncated]` : b.diff;
       const scoreLine = b.score !== undefined ? `\nFitness score: ${b.score.toFixed(4)}` : "";
-      const reportLine = b.verificationReport
-        ? `\nVerification: ${b.verificationReport.slice(0, 500)}`
-        : "";
+      const reportLine = b.verificationReport ? `\nVerification: ${b.verificationReport.slice(0, 500)}` : "";
       return `## Branch ${i + 1}: ${b.name}${scoreLine}${reportLine}\n\nDiff:\n\`\`\`diff\n${diff}\n\`\`\``;
     })
     .join("\n\n");
@@ -118,7 +115,7 @@ Be honest and critical. Consider trade-offs carefully. The rationales should be 
  */
 export function parseJudgeOutput(output: string): JudgeVerdict | null {
   // Attempt 1: raw JSON.parse
-  let trimmed = output.trim();
+  const trimmed = output.trim();
   try {
     const parsed = JSON.parse(trimmed);
     if (isValidVerdict(parsed)) return parsed as JudgeVerdict;
@@ -186,18 +183,18 @@ function extractJsonBlock(text: string): string | null {
 
   let depth = 0;
   let inString = false;
-  let escape = false;
+  let escaped = false;
 
   for (let i = start; i < text.length; i++) {
     const ch = text[i];
 
-    if (escape) {
-      escape = false;
+    if (escaped) {
+      escaped = false;
       continue;
     }
 
     if (ch === "\\" && inString) {
-      escape = true;
+      escaped = true;
       continue;
     }
 
@@ -234,33 +231,30 @@ function parseVerdictViaRegex(output: string): JudgeVerdict | null {
   const branchPattern =
     /([\w./-]+):\s*correctness[=:]\s*(\d+(?:\.\d+)?)[,\s]+clarity[=:]\s*(\d+(?:\.\d+)?)[,\s]+efficiency[=:]\s*(\d+(?:\.\d+)?)[,\s]+maintainability[=:]\s*(\d+(?:\.\d+)?)/gi;
 
-  let match: RegExpExecArray | null;
-  while ((match = branchPattern.exec(output)) !== null) {
+  let match = branchPattern.exec(output);
+  while (match !== null) {
     branchScores[match[1]] = {
       correctness: Number.parseFloat(match[2]),
       clarity: Number.parseFloat(match[3]),
       efficiency: Number.parseFloat(match[4]),
       maintainability: Number.parseFloat(match[5]),
     };
+    match = branchPattern.exec(output);
   }
 
   if (Object.keys(branchScores).length === 0) return null;
 
   // Find winner: look for explicit "winner:" / "best:" declaration
-  const winnerMatch = output.match(
-    /(?:winner|best|winning)\s*(?:branch|is|:)\s*["']?([\w./-]+)["']?/i,
-  );
+  const winnerMatch = output.match(/(?:winner|best|winning)\s*(?:branch|is|:)\s*["']?([\w./-]+)["']?/i);
   let winnerBranch = winnerMatch?.[1] ?? "";
 
-  if (!winnerBranch || !branchScores[winnerBranch]) {
+  if (!(winnerBranch && branchScores[winnerBranch])) {
     // Pick the branch with the highest composite (weighted) score
     winnerBranch = pickBestByComposite(branchScores) ?? "";
   }
 
   // Extract rationale: text after "rationale", "reason", or "explanation"
-  const rationaleMatch = output.match(
-    /(?:rationale|reason|explanation)[:\s]\s*(.+?)(?:\n\n|\n#|$)/is,
-  );
+  const rationaleMatch = output.match(/(?:rationale|reason|explanation)[:\s]\s*(.+?)(?:\n\n|\n#|$)/is);
   const rationale = rationaleMatch?.[1]?.trim() ?? "";
 
   return {
@@ -283,10 +277,7 @@ function parseVerdictViaRegex(output: string): JudgeVerdict | null {
  * @param opts     - Judge options (cwd, model, apiKey, useProxy).
  * @returns JudgeResult with verdict, winner, and fallback flag.
  */
-export async function compareBranches(
-  branches: BranchInfo[],
-  opts: JudgeOptions,
-): Promise<JudgeResult> {
+export async function compareBranches(branches: BranchInfo[], opts: JudgeOptions): Promise<JudgeResult> {
   // Single-branch or empty: no judging needed
   if (branches.length < 2) {
     return {
@@ -314,7 +305,7 @@ export async function compareBranches(
     timeoutMs: 120_000,
   };
 
-  let result;
+  let result: import("./agent.js").AgentResult;
   try {
     result = await spawnClaude(prompt, agentOpts);
   } catch {
@@ -368,10 +359,8 @@ function fallbackComposite(branches: BranchInfo[]): JudgeResult {
   const winner = scored[0];
 
   // Build a fallback verdict using the available scores
-  const scores: Record<
-    string,
-    { correctness: number; clarity: number; efficiency: number; maintainability: number }
-  > = {};
+  const scores: Record<string, { correctness: number; clarity: number; efficiency: number; maintainability: number }> =
+    {};
   for (const b of branches) {
     const s = b.score ?? 0;
     scores[b.name] = { correctness: s, clarity: s, efficiency: s, maintainability: s };
@@ -391,13 +380,10 @@ function fallbackComposite(branches: BranchInfo[]): JudgeResult {
  * parsed scores map.
  */
 function pickBestByComposite(
-  scores: Record<
-    string,
-    { correctness: number; clarity: number; efficiency: number; maintainability: number }
-  >,
+  scores: Record<string, { correctness: number; clarity: number; efficiency: number; maintainability: number }>,
 ): string | null {
   let bestBranch: string | null = null;
-  let bestComposite = -Infinity;
+  let bestComposite = Number.NEGATIVE_INFINITY;
 
   for (const [branch, dims] of Object.entries(scores)) {
     const composite =
