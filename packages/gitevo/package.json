@@ -1,6 +1,6 @@
 {
   "name": "gitevo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Evolutionary git branching for LLM agents — checkpoint, spawn, learn, abandon, adopt, finish. Ported from Python GitEvoMCP to TypeScript.",
   "type": "module",
   "main": "dist/bundle.js",

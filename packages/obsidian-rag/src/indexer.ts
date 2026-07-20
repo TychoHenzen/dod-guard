@@ -1,6 +1,9 @@
 // Markdown chunking and embedding pipeline
 
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { embedChunks, type Embedder } from "./retriever.js";
 import type { Store } from "./store.js";
 import type { Chunk } from "./types.js";
 import { readNote, walkVault } from "./vault.js";
@@ -127,7 +130,7 @@ export function hashContent(content: string): string {
 
 // ── Indexing pipeline ─────────────────────────────────────────────────
 
-export async function indexVault(vaultPath: string, vaultName: string, store: Store): Promise<number> {
+export async function indexVault(vaultPath: string, vaultName: string, store: Store, embedder: Embedder | null = null): Promise<number> {
   const files = await walkVault(vaultPath);
   store.setIndexMeta(vaultName, { totalNotes: files.length, indexing: true });
 
@@ -149,6 +152,9 @@ export async function indexVault(vaultPath: string, vaultName: string, store: St
       // Store note metadata + content in FTS
       store.upsertNote(vaultName, note, note.content, contentHash);
 
+      // Clear old chunks for this note (handles shrinking notes — e.g. 5 chunks now 2)
+      store.deleteChunksForNote(vaultName, file);
+
       // Chunk and store
       const chunks = chunkMarkdown(file, note.content);
       for (const chunk of chunks) {
@@ -164,6 +170,19 @@ export async function indexVault(vaultPath: string, vaultName: string, store: St
     }
   }
 
+  // Reconciliation: drop notes whose files no longer exist on disk
+  const indexedPaths = store.listNotePaths(vaultName);
+  let deleted = 0;
+  for (const notePath of indexedPaths) {
+    const fullPath = join(vaultPath, notePath);
+    if (!existsSync(fullPath)) {
+      store.deleteChunksForNote(vaultName, notePath);
+      store.deleteNote(vaultName, notePath);
+      console.error(`obsidian-rag: reconciliation removed deleted note "${notePath}"`);
+      deleted++;
+    }
+  }
+
   store.setIndexMeta(vaultName, {
     indexedNotes: indexed,
     totalNotes: files.length,
@@ -175,7 +194,68 @@ export async function indexVault(vaultPath: string, vaultName: string, store: St
     store.setIndexMeta(vaultName, { totalChunks });
   }
 
+  // Embed newly indexed chunks if embedder is available
+  if (embedder && totalChunks > 0) {
+    try {
+      let batchCount: number;
+      do {
+        batchCount = await embedChunks(store, vaultName, embedder);
+      } while (batchCount > 0);
+    } catch (err) {
+      console.error("obsidian-rag: embedding error during indexVault", {
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   return indexed;
+}
+
+// ── Single-note indexing ─────────────────────────────────────────────────
+
+export async function indexNote(
+  vaultPath: string,
+  vaultName: string,
+  notePath: string,
+  store: Store,
+  embedder: Embedder | null = null,
+): Promise<void> {
+  try {
+    const note = await readNote(vaultPath, notePath);
+    const contentHash = hashContent(note.content);
+
+    // Clear existing chunks for this note (handles content shrinking)
+    store.deleteChunksForNote(vaultName, notePath);
+
+    // Upsert note metadata + content in FTS
+    store.upsertNote(vaultName, note, note.content, contentHash);
+
+    // Chunk and store
+    const chunks = chunkMarkdown(notePath, note.content);
+    for (const chunk of chunks) {
+      store.upsertChunk(chunk, vaultName);
+    }
+
+    // Embed if embedder is available
+    if (embedder && chunks.length > 0) {
+      try {
+        let batchCount: number;
+        do {
+          batchCount = await embedChunks(store, vaultName, embedder);
+        } while (batchCount > 0);
+      } catch (err) {
+        console.error("obsidian-rag: embed error in indexNote", {
+          notePath,
+          err: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+  } catch (err) {
+    console.error("obsidian-rag: indexNote error", {
+      notePath: String(notePath),
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 // ── Full reindex ──────────────────────────────────────────────────────

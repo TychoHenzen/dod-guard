@@ -296,6 +296,12 @@ describe("Store — FTS5 query sanitization", () => {
       'Content with "quotes" and (parentheses) and asterisks* in text.',
       "h-san-2",
     );
+    store.upsertNote(
+      VAULT,
+      { path: "chars2.md", title: "More Chars", tags: ["chars"], ...blank },
+      "Config with auth:token and dash-separated-words and ^caret prefix.",
+      "h-san-3",
+    );
   });
 
   after(() => {
@@ -347,6 +353,54 @@ describe("Store — FTS5 query sanitization", () => {
   it("handles mixed normal words and operators", () => {
     const results = store.searchNotesFTS(VAULT, "base OR home", 10);
     assert.ok(Array.isArray(results));
+  });
+
+  it("strips bare open parenthesis without crashing", () => {
+    const results = store.searchNotesFTS(VAULT, "(", 10);
+    assert.ok(Array.isArray(results));
+  });
+
+  it("strips bare close parenthesis without crashing", () => {
+    const results = store.searchNotesFTS(VAULT, ")", 10);
+    assert.ok(Array.isArray(results));
+  });
+
+  it("strips colon operator without crashing", () => {
+    const results = store.searchNotesFTS(VAULT, "auth:token", 10);
+    assert.ok(Array.isArray(results));
+    assert.ok(results.length >= 1, "should find note with auth:token content");
+  });
+
+  it("strips leading asterisk wildcard without crashing", () => {
+    const results = store.searchNotesFTS(VAULT, "*separated", 10);
+    assert.ok(Array.isArray(results));
+    assert.ok(results.length >= 1, "should find note with separated words");
+  });
+
+  it("strips caret operator without crashing", () => {
+    const results = store.searchNotesFTS(VAULT, "^caret", 10);
+    assert.ok(Array.isArray(results));
+  });
+
+  it("strips tilde operator without crashing", () => {
+    const results = store.searchNotesFTS(VAULT, "~tilde", 10);
+    assert.ok(Array.isArray(results));
+  });
+
+  it("strips hyphen (FTS5 NOT operator) without crashing", () => {
+    const results = store.searchNotesFTS(VAULT, "-separated", 10);
+    assert.ok(Array.isArray(results));
+  });
+
+  it("searching with bare special chars only returns empty result, no crash", () => {
+    const results = store.searchNotesFTS(VAULT, "(*):^~-", 10);
+    assert.ok(Array.isArray(results));
+  });
+
+  it("empty query after sanitization returns empty array", () => {
+    // Query consisting only of characters that get stripped
+    const results = store.searchNotesFTS(VAULT, "(*):", 10);
+    assert.deepStrictEqual(results, []);
   });
 });
 
@@ -549,6 +603,34 @@ describe("Store — chunks", () => {
     assert.equal(unembedded.length, 1);
     assert.equal(unembedded[0].id, "notes/long.md#0");
   });
+
+  it("getChunksWithEmbeddings returns chunks with Float32Array from BLOB", () => {
+    store.clearChunks(VAULT);
+    store.upsertChunk(
+      { id: "notes/long.md#0", notePath: "notes/long.md", heading: "BLOB test", content: "Has BLOB embedding." },
+      VAULT,
+    );
+    store.setEmbedding("notes/long.md#0", [0.1, 0.2, 0.3, 0.4]);
+    const chunks = store.getChunksWithEmbeddings(VAULT);
+    assert.equal(chunks.length, 1);
+    assert.ok(chunks[0].embeddingVector instanceof Float32Array);
+    assert.equal(chunks[0].embeddingVector.length, 4);
+    assert.ok(Math.abs(chunks[0].embeddingVector[0] - 0.1) < 0.001);
+    assert.equal(chunks[0].notePath, "notes/long.md");
+  });
+
+  it("getChunksWithEmbeddings only returns chunks with BLOB (skips unembedded)", () => {
+    // Previous test left one embedded chunk; this adds one without embedding
+    store.upsertChunk(
+      { id: "notes/long.md#1", notePath: "notes/long.md", heading: "No BLOB", content: "No embedding." },
+      VAULT,
+    );
+    const chunks = store.getChunksWithEmbeddings(VAULT);
+    // Only the setEmbedding chunk, not the plain upsert
+    assert.equal(chunks.length, 1);
+    assert.equal(chunks[0].id, "notes/long.md#0");
+    assert.ok(chunks[0].embeddingVector instanceof Float32Array);
+  });
 });
 
 // ── Index metadata ─────────────────────────────────────────────────────
@@ -604,24 +686,24 @@ describe("Store — index metadata", () => {
   });
 });
 
-// ── Note cleanup ───────────────────────────────────────────────────────
+// ── Note deletion ──────────────────────────────────────────────────────
 
-describe("Store — note cleanup", () => {
-  const DB_DIR = freshDir("clean");
-  const VAULT = "cleanup-vault";
+describe("Store — note deletion", () => {
+  const DB_DIR = freshDir("note-del");
+  const VAULT = "note-del-vault";
   let store: Store;
+  const blank = {
+    links: [] as string[],
+    backlinks: [] as string[],
+    frontmatter: {} as Record<string, unknown>,
+    created: "",
+    modified: "",
+  };
 
   before(() => {
     mkdirSync(DB_DIR, { recursive: true });
     store = new Store({ dbDir: DB_DIR });
-    store.setVault({ name: VAULT, path: "/tmp/clean" });
-    const blank = {
-      links: [] as string[],
-      backlinks: [] as string[],
-      frontmatter: {} as Record<string, unknown>,
-      created: "",
-      modified: "",
-    };
+    store.setVault({ name: VAULT, path: "/tmp/notedel" });
     store.upsertNote(VAULT, { path: "a.md", title: "A", tags: [], ...blank }, "a", "h1");
     store.upsertNote(VAULT, { path: "b.md", title: "B", tags: [], ...blank }, "b", "h2");
   });
@@ -631,7 +713,49 @@ describe("Store — note cleanup", () => {
     if (existsSync(DB_DIR)) rmSync(DB_DIR, { recursive: true, force: true });
   });
 
+  it("listNotePaths returns all note paths for a vault", () => {
+    const paths = store.listNotePaths(VAULT);
+    assert.equal(paths.length, 2);
+    assert.ok(paths.includes("a.md"));
+    assert.ok(paths.includes("b.md"));
+  });
+
+  it("listNotePaths is empty for vault with no notes", () => {
+    store.setVault({ name: "empty", path: "/tmp/empty" });
+    assert.deepStrictEqual(store.listNotePaths("empty"), []);
+  });
+
+  it("deleteChunksForNote removes only chunks for the given note", () => {
+    store.upsertChunk({ id: "a.md#0", notePath: "a.md", heading: "H", content: "C" }, VAULT);
+    store.upsertChunk({ id: "b.md#0", notePath: "b.md", heading: "H", content: "C" }, VAULT);
+    store.deleteChunksForNote(VAULT, "a.md");
+    const remaining = store.getChunks(VAULT);
+    // Chunks use snake_case columns from SQLite (note_path), verify by id prefix
+    assert.equal(remaining.filter((c: any) => c.id.startsWith("a.md")).length, 0);
+    assert.equal(remaining.filter((c: any) => c.id.startsWith("b.md")).length, 1);
+    // cleanup
+    store.clearChunks(VAULT);
+  });
+
+  it("deleteNote removes the note from the index", () => {
+    store.deleteNote(VAULT, "a.md");
+    assert.equal(store.getNote(VAULT, "a.md"), null);
+    assert.notEqual(store.getNote(VAULT, "b.md"), null);
+    // restore
+    store.upsertNote(VAULT, { path: "a.md", title: "A", tags: [], ...blank }, "a", "h1");
+  });
+
+  it("deleteNote also cleans up through FTS trigger (search no longer finds it)", () => {
+    store.deleteNote(VAULT, "a.md");
+    const results = store.searchNotesFTS(VAULT, "h1", 10);
+    assert.equal(results.filter((r) => r.path === "a.md").length, 0, "deleted note should not appear in FTS search");
+    // restore
+    store.upsertNote(VAULT, { path: "a.md", title: "A", tags: [], ...blank }, "a", "h1");
+  });
+
   it("clears all notes for a vault", () => {
+    // Clear chunks first to avoid FK constraint from test setup
+    store.clearChunks(VAULT);
     store.clearNotes(VAULT);
     assert.deepStrictEqual(store.listNotes(VAULT), []);
     assert.equal(store.getNote(VAULT, "a.md"), null);

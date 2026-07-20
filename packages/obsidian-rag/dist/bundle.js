@@ -2989,7 +2989,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve2.call(this, root, ref);
+      let _sch = resolve.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3016,7 +3016,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve2(root, ref) {
+    function resolve(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3647,7 +3647,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve2(baseURI, relativeURI, options2) {
+    function resolve(baseURI, relativeURI, options2) {
       const schemelessOptions = options2 ? Object.assign({ scheme: "null" }, options2) : { scheme: "null" };
       const resolved = resolveComponent(parse4(baseURI, schemelessOptions), parse4(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
@@ -3905,7 +3905,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve2,
+      resolve,
       resolveComponent,
       equal,
       serialize,
@@ -6931,7 +6931,7 @@ async function ensureObsidianRunning() {
   throw new Error("Obsidian app did not start within 30s. Is it installed?");
 }
 function sleep(ms) {
-  return new Promise((resolve2) => setTimeout(resolve2, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 async function runObsidian(args, timeout = 15e3) {
   return execFileP(OBSIDIAN_CMD, args, { timeout, windowsHide: true });
@@ -7011,6 +7011,126 @@ var init_cli = __esm({
     "use strict";
     execFileP = promisify(execFile);
     OBSIDIAN_CMD = "obsidian";
+  }
+});
+
+// src/retriever.ts
+var retriever_exports = {};
+__export(retriever_exports, {
+  embedAllChunks: () => embedAllChunks,
+  embedChunks: () => embedChunks,
+  hybridSearch: () => hybridSearch,
+  keywordSearch: () => keywordSearch,
+  semanticSearch: () => semanticSearch
+});
+function keywordSearch(store2, vaultName, query, limit = 20) {
+  const rows = store2.searchNotesFTS(vaultName, query, limit);
+  return rows.map((r) => ({
+    notePath: r.path,
+    title: r.title,
+    heading: "",
+    snippet: stripMarks(r.snippet),
+    score: r.score,
+    matchType: "keyword"
+  }));
+}
+async function semanticSearch(store2, vaultName, query, embedder2, limit = 20) {
+  const status = store2.getIndexStatus(vaultName);
+  if (status.embeddedChunks === 0) return [];
+  const queryEmbedding = await embedder2.embed(query);
+  const chunks = store2.getChunksWithEmbeddings(vaultName);
+  if (chunks.length === 0) return [];
+  const scored = chunks.map((chunk) => {
+    const similarity = cosineSimilarity(queryEmbedding, chunk.embeddingVector);
+    return { chunk, similarity };
+  });
+  scored.sort((a, b) => b.similarity - a.similarity);
+  const top = scored.slice(0, limit);
+  const seen = /* @__PURE__ */ new Set();
+  const results = [];
+  for (const { chunk, similarity } of top) {
+    if (seen.has(chunk.notePath)) continue;
+    seen.add(chunk.notePath);
+    const note = store2.getNote(vaultName, chunk.notePath);
+    results.push({
+      notePath: chunk.notePath,
+      title: note?.title || chunk.notePath,
+      heading: chunk.heading,
+      snippet: chunk.content.slice(0, 300),
+      score: similarity,
+      matchType: "semantic"
+    });
+  }
+  return results;
+}
+async function hybridSearch(store2, vaultName, query, embedder2, limit = 20) {
+  const keywordResults = keywordSearch(store2, vaultName, query, limit * 2);
+  const status = store2.getIndexStatus(vaultName);
+  if (!embedder2 || status.embeddedChunks === 0) {
+    return keywordResults.slice(0, limit).map((r) => ({ ...r, matchType: "hybrid" }));
+  }
+  const semanticResults = await semanticSearch(store2, vaultName, query, embedder2, limit * 2);
+  const merged = /* @__PURE__ */ new Map();
+  for (const r of keywordResults) {
+    merged.set(r.notePath, { ...r, score: r.score * KEYWORD_WEIGHT, matchType: "hybrid" });
+  }
+  for (const r of semanticResults) {
+    const existing = merged.get(r.notePath);
+    if (existing) {
+      existing.score += r.score * SEMANTIC_WEIGHT;
+      existing.snippet = existing.snippet || r.snippet;
+    } else {
+      merged.set(r.notePath, { ...r, score: r.score * SEMANTIC_WEIGHT, matchType: "hybrid" });
+    }
+  }
+  return [...merged.values()].sort((a, b) => b.score - a.score).slice(0, limit);
+}
+async function embedChunks(store2, vaultName, embedder2, batchSize = 32) {
+  const unembedded = store2.getUnembeddedChunks(vaultName, batchSize);
+  if (unembedded.length === 0) return 0;
+  const texts = unembedded.map((c) => `${c.heading}
+
+${c.content}`);
+  const embeddings = await embedder2.embedBatch(texts);
+  for (let i = 0; i < unembedded.length; i++) {
+    store2.setEmbedding(unembedded[i].id, embeddings[i]);
+  }
+  return unembedded.length;
+}
+async function embedAllChunks(store2, vaultName, embedder2, batchSize = 32) {
+  let batchCount;
+  do {
+    batchCount = await embedChunks(store2, vaultName, embedder2, batchSize);
+    const status = store2.getIndexStatus(vaultName);
+    store2.setIndexMeta(vaultName, { embeddedChunks: status.embeddedChunks });
+  } while (batchCount > 0);
+}
+function cosineSimilarity(a, b) {
+  if (a.length !== b.length) {
+    throw new Error(
+      `Embedding dimension mismatch: query has ${a.length} dims but stored embedding has ${b.length} dims. The embedding model may have changed. Run reindex with embed:true to regenerate all embeddings.`
+    );
+  }
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
+}
+function stripMarks(snippet) {
+  return snippet.replace(/<\/?mark>/g, "");
+}
+var KEYWORD_WEIGHT, SEMANTIC_WEIGHT;
+var init_retriever = __esm({
+  "src/retriever.ts"() {
+    "use strict";
+    KEYWORD_WEIGHT = 0.4;
+    SEMANTIC_WEIGHT = 0.6;
   }
 });
 
@@ -10290,10 +10410,10 @@ var require_stringify = __commonJS({
       data = Object.assign({}, file.data, data);
       const open = opts.delimiters[0];
       const close = opts.delimiters[1];
-      const matter3 = engine.stringify(data, options2).trim();
+      const matter2 = engine.stringify(data, options2).trim();
       let buf = "";
-      if (matter3 !== "{}") {
-        buf = newline(open) + newline(matter3) + newline(close);
+      if (matter2 !== "{}") {
+        buf = newline(open) + newline(matter2) + newline(close);
       }
       if (typeof file.excerpt === "string" && file.excerpt !== "") {
         if (str2.indexOf(file.excerpt.trim()) === -1) {
@@ -10399,19 +10519,19 @@ var require_gray_matter = __commonJS({
     var toFile = require_to_file();
     var parse4 = require_parse();
     var utils = require_utils2();
-    function matter3(input, options2) {
+    function matter2(input, options2) {
       if (input === "") {
         return { data: {}, content: input, excerpt: "", orig: input };
       }
       let file = toFile(input);
-      const cached2 = matter3.cache[file.content];
+      const cached2 = matter2.cache[file.content];
       if (!options2) {
         if (cached2) {
           file = Object.assign({}, cached2);
           file.orig = cached2.orig;
           return file;
         }
-        matter3.cache[file.content] = file;
+        matter2.cache[file.content] = file;
       }
       return parseMatter(file, options2);
     }
@@ -10433,7 +10553,7 @@ var require_gray_matter = __commonJS({
       }
       str2 = str2.slice(openLen);
       const len = str2.length;
-      const language = matter3.language(str2, opts);
+      const language = matter2.language(str2, opts);
       if (language.name) {
         file.language = language.name;
         str2 = str2.slice(language.raw.length);
@@ -10468,24 +10588,24 @@ var require_gray_matter = __commonJS({
       }
       return file;
     }
-    matter3.engines = engines2;
-    matter3.stringify = function(file, data, options2) {
-      if (typeof file === "string") file = matter3(file, options2);
+    matter2.engines = engines2;
+    matter2.stringify = function(file, data, options2) {
+      if (typeof file === "string") file = matter2(file, options2);
       return stringify(file, data, options2);
     };
-    matter3.read = function(filepath, options2) {
+    matter2.read = function(filepath, options2) {
       const str2 = fs.readFileSync(filepath, "utf8");
-      const file = matter3(str2, options2);
+      const file = matter2(str2, options2);
       file.path = filepath;
       return file;
     };
-    matter3.test = function(str2, options2) {
+    matter2.test = function(str2, options2) {
       return utils.startsWith(str2, defaults(options2).delimiters[0]);
     };
-    matter3.language = function(str2, options2) {
+    matter2.language = function(str2, options2) {
       const opts = defaults(options2);
       const open = opts.delimiters[0];
-      if (matter3.test(str2)) {
+      if (matter2.test(str2)) {
         str2 = str2.slice(open.length);
       }
       const language = str2.slice(0, str2.search(/\r?\n/));
@@ -10494,11 +10614,11 @@ var require_gray_matter = __commonJS({
         name: language ? language.trim() : ""
       };
     };
-    matter3.cache = {};
-    matter3.clearCache = function() {
-      matter3.cache = {};
+    matter2.cache = {};
+    matter2.clearCache = function() {
+      matter2.cache = {};
     };
-    module2.exports = matter3;
+    module2.exports = matter2;
   }
 });
 
@@ -10515,13 +10635,13 @@ __export(vault_exports, {
   writeMemory: () => writeMemory,
   writeNote: () => writeNote
 });
-import { existsSync as existsSync2 } from "node:fs";
+import { existsSync as existsSync2, realpathSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, join as join2, relative, resolve, sep } from "node:path";
+import { basename, dirname, join as join2, relative, sep } from "node:path";
 function resolveContained(baseDir, relPath) {
   const fullPath = join2(baseDir, relPath);
-  const resolvedBase = resolve(baseDir);
-  const resolvedFull = resolve(fullPath);
+  const resolvedBase = realpathSync(baseDir);
+  const resolvedFull = realpathSync(fullPath);
   if (!resolvedFull.startsWith(resolvedBase + sep) && resolvedFull !== resolvedBase) {
     throw new Error(`Path traversal denied: "${relPath}" escapes vault root "${baseDir}"`);
   }
@@ -10680,10 +10800,13 @@ var indexer_exports = {};
 __export(indexer_exports, {
   chunkMarkdown: () => chunkMarkdown,
   hashContent: () => hashContent,
+  indexNote: () => indexNote,
   indexVault: () => indexVault,
   reindexVault: () => reindexVault
 });
 import { createHash } from "node:crypto";
+import { existsSync as existsSync3 } from "node:fs";
+import { join as join3 } from "node:path";
 function chunkMarkdown(notePath, content) {
   const chunks = [];
   const sections = splitByHeadings(content);
@@ -10776,7 +10899,7 @@ function splitByHeadings(content) {
 function hashContent(content) {
   return createHash("sha256").update(content).digest("hex").slice(0, 16);
 }
-async function indexVault(vaultPath, vaultName, store2) {
+async function indexVault(vaultPath, vaultName, store2, embedder2 = null) {
   const files = await walkVault(vaultPath);
   store2.setIndexMeta(vaultName, { totalNotes: files.length, indexing: true });
   let indexed = 0;
@@ -10791,6 +10914,7 @@ async function indexVault(vaultPath, vaultName, store2) {
         continue;
       }
       store2.upsertNote(vaultName, note, note.content, contentHash);
+      store2.deleteChunksForNote(vaultName, file);
       const chunks = chunkMarkdown(file, note.content);
       for (const chunk of chunks) {
         store2.upsertChunk(chunk, vaultName);
@@ -10804,6 +10928,17 @@ async function indexVault(vaultPath, vaultName, store2) {
       });
     }
   }
+  const indexedPaths = store2.listNotePaths(vaultName);
+  let deleted = 0;
+  for (const notePath of indexedPaths) {
+    const fullPath = join3(vaultPath, notePath);
+    if (!existsSync3(fullPath)) {
+      store2.deleteChunksForNote(vaultName, notePath);
+      store2.deleteNote(vaultName, notePath);
+      console.error(`obsidian-rag: reconciliation removed deleted note "${notePath}"`);
+      deleted++;
+    }
+  }
   store2.setIndexMeta(vaultName, {
     indexedNotes: indexed,
     totalNotes: files.length,
@@ -10813,7 +10948,49 @@ async function indexVault(vaultPath, vaultName, store2) {
   if (totalChunks > 0) {
     store2.setIndexMeta(vaultName, { totalChunks });
   }
+  if (embedder2 && totalChunks > 0) {
+    try {
+      let batchCount;
+      do {
+        batchCount = await embedChunks(store2, vaultName, embedder2);
+      } while (batchCount > 0);
+    } catch (err) {
+      console.error("obsidian-rag: embedding error during indexVault", {
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
   return indexed;
+}
+async function indexNote(vaultPath, vaultName, notePath, store2, embedder2 = null) {
+  try {
+    const note = await readNote(vaultPath, notePath);
+    const contentHash = hashContent(note.content);
+    store2.deleteChunksForNote(vaultName, notePath);
+    store2.upsertNote(vaultName, note, note.content, contentHash);
+    const chunks = chunkMarkdown(notePath, note.content);
+    for (const chunk of chunks) {
+      store2.upsertChunk(chunk, vaultName);
+    }
+    if (embedder2 && chunks.length > 0) {
+      try {
+        let batchCount;
+        do {
+          batchCount = await embedChunks(store2, vaultName, embedder2);
+        } while (batchCount > 0);
+      } catch (err) {
+        console.error("obsidian-rag: embed error in indexNote", {
+          notePath,
+          err: err instanceof Error ? err.message : String(err)
+        });
+      }
+    }
+  } catch (err) {
+    console.error("obsidian-rag: indexNote error", {
+      notePath: String(notePath),
+      err: err instanceof Error ? err.message : String(err)
+    });
+  }
 }
 async function reindexVault(vaultPath, vaultName, store2) {
   store2.clearChunks(vaultName);
@@ -10824,131 +11001,17 @@ var MAX_CHUNK_CHARS, CHUNK_OVERLAP_CHARS;
 var init_indexer = __esm({
   "src/indexer.ts"() {
     "use strict";
+    init_retriever();
     init_vault();
     MAX_CHUNK_CHARS = 800;
     CHUNK_OVERLAP_CHARS = 100;
   }
 });
 
-// src/retriever.ts
-var retriever_exports = {};
-__export(retriever_exports, {
-  embedChunks: () => embedChunks,
-  hybridSearch: () => hybridSearch,
-  keywordSearch: () => keywordSearch,
-  semanticSearch: () => semanticSearch
-});
-function keywordSearch(store2, vaultName, query, limit = 20) {
-  const rows = store2.searchNotesFTS(vaultName, query, limit);
-  return rows.map((r) => ({
-    notePath: r.path,
-    title: r.title,
-    heading: "",
-    snippet: stripMarks(r.snippet),
-    score: r.score,
-    matchType: "keyword"
-  }));
-}
-async function semanticSearch(store2, vaultName, query, embedder2, limit = 20) {
-  const queryEmbedding = await embedder2.embed(query);
-  const chunks = store2.getChunks(vaultName);
-  const withEmbeddings = chunks.filter((c) => c.embedding && c.embedding.length > 0);
-  if (withEmbeddings.length === 0) return [];
-  const scored = withEmbeddings.map((chunk) => {
-    let embedding = null;
-    if (typeof chunk.embedding === "string") {
-      try {
-        embedding = JSON.parse(chunk.embedding);
-      } catch {
-        return { chunk, similarity: 0 };
-      }
-    } else {
-      embedding = chunk.embedding;
-    }
-    if (!(embedding && Array.isArray(embedding))) {
-      return { chunk, similarity: 0 };
-    }
-    const similarity = cosineSimilarity(queryEmbedding, embedding);
-    return { chunk, similarity };
-  });
-  scored.sort((a, b) => b.similarity - a.similarity);
-  const top = scored.slice(0, limit);
-  const seen = /* @__PURE__ */ new Set();
-  const results = [];
-  for (const { chunk, similarity } of top) {
-    if (seen.has(chunk.notePath)) continue;
-    seen.add(chunk.notePath);
-    const note = store2.getNote(vaultName, chunk.notePath);
-    results.push({
-      notePath: chunk.notePath,
-      title: note?.title || chunk.notePath,
-      heading: chunk.heading,
-      snippet: chunk.content.slice(0, 300),
-      score: similarity,
-      matchType: "semantic"
-    });
-  }
-  return results;
-}
-async function hybridSearch(store2, vaultName, query, embedder2, limit = 20) {
-  const keywordResults = keywordSearch(store2, vaultName, query, limit * 2);
-  const semanticResults = embedder2 ? await semanticSearch(store2, vaultName, query, embedder2, limit * 2) : [];
-  const merged = /* @__PURE__ */ new Map();
-  for (const r of keywordResults) {
-    merged.set(r.notePath, { ...r, score: r.score * KEYWORD_WEIGHT, matchType: "hybrid" });
-  }
-  for (const r of semanticResults) {
-    const existing = merged.get(r.notePath);
-    if (existing) {
-      existing.score += r.score * SEMANTIC_WEIGHT;
-      existing.snippet = existing.snippet || r.snippet;
-    } else {
-      merged.set(r.notePath, { ...r, score: r.score * SEMANTIC_WEIGHT, matchType: "hybrid" });
-    }
-  }
-  return [...merged.values()].sort((a, b) => b.score - a.score).slice(0, limit);
-}
-async function embedChunks(store2, vaultName, embedder2, batchSize = 32) {
-  const unembedded = store2.getUnembeddedChunks(vaultName, batchSize);
-  if (unembedded.length === 0) return 0;
-  const texts = unembedded.map((c) => `${c.heading}
-
-${c.content}`);
-  const embeddings = await embedder2.embedBatch(texts);
-  for (let i = 0; i < unembedded.length; i++) {
-    store2.setEmbedding(unembedded[i].id, embeddings[i]);
-  }
-  return unembedded.length;
-}
-function cosineSimilarity(a, b) {
-  if (a.length !== b.length) return 0;
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  return denom === 0 ? 0 : dot / denom;
-}
-function stripMarks(snippet) {
-  return snippet.replace(/<\/?mark>/g, "");
-}
-var KEYWORD_WEIGHT, SEMANTIC_WEIGHT;
-var init_retriever = __esm({
-  "src/retriever.ts"() {
-    "use strict";
-    KEYWORD_WEIGHT = 0.4;
-    SEMANTIC_WEIGHT = 0.6;
-  }
-});
-
 // src/index.ts
-import { existsSync as existsSync4, readFileSync } from "node:fs";
+import { existsSync as existsSync5, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join as join4 } from "node:path";
+import { join as join5 } from "node:path";
 
 // ../../node_modules/zod/v3/external.js
 var external_exports = {};
@@ -23041,7 +23104,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
         options2?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -23058,7 +23121,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options2) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options2 ?? {};
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -23136,7 +23199,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve2(parseResult.data);
+            resolve(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -23397,12 +23460,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve2, interval);
+      const timeoutId = setTimeout(resolve, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -24502,7 +24565,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -25151,12 +25214,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve2) => {
+    return new Promise((resolve) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve2();
+        resolve();
       } else {
-        this._stdout.once("drain", resolve2);
+        this._stdout.once("drain", resolve);
       }
     });
   }
@@ -25177,24 +25240,13 @@ function loadBetterSqlite3() {
   } catch (err) {
     if (err.code === "MODULE_NOT_FOUND" || err.message?.includes("Cannot find")) {
       const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || process.cwd();
-      console.error(`[obsidian-rag] better-sqlite3 missing, installing in ${pluginRoot}...`);
-      try {
-        const { execSync } = req("child_process");
-        execSync("npm install --omit=dev --no-audit --no-fund", {
-          cwd: pluginRoot,
-          stdio: "pipe",
-          timeout: 6e4
-        });
-        console.error("[obsidian-rag] Dependencies installed, retrying...");
-        return req("better-sqlite3");
-      } catch (installErr) {
-        throw new Error(
-          `better-sqlite3 is required but could not be installed automatically.
-Run manually: cd "${pluginRoot}" && npm install --omit=dev
-Original error: ${err.message}
-Install error: ${installErr.message}`
-        );
-      }
+      throw new Error(
+        `better-sqlite3 is required but not installed.
+Install it manually:
+  cd "${pluginRoot}"
+  npm install --omit=dev
+Original error: ${err.message}`
+      );
     }
     throw err;
   }
@@ -25203,15 +25255,20 @@ var FTS_BOOLEAN_OPERATORS = /\b(AND|OR|NOT|NEAR)\b/gi;
 function sanitizeQuery(raw) {
   const trimmed = raw.trim();
   if (trimmed.length === 0) return '""';
-  let sanitized = trimmed.replace(/"/g, '""');
+  let sanitized = trimmed.replace(/[*():^~-]/g, " ").replace(/"/g, '""').replace(/\s+/g, " ").trim();
+  if (sanitized.length === 0) return '""';
   sanitized = sanitized.replace(FTS_BOOLEAN_OPERATORS, '"$1"');
-  sanitized = sanitized.replace(/(?:^|\s)\*(?=\S)/g, " ");
   return sanitized;
 }
 var Store = class {
   _db = null;
   _dbPath;
   _initRan = false;
+  _vecAvailable = false;
+  /** Whether sqlite-vec ANN extension is available. Always false if not loaded. */
+  isVecAvailable() {
+    return this._vecAvailable;
+  }
   constructor(config2) {
     if (!existsSync(config2.dbDir)) mkdirSync(config2.dbDir, { recursive: true });
     this._dbPath = join(config2.dbDir, DB_FILENAME);
@@ -25309,6 +25366,21 @@ var Store = class {
     if (!cols.some((c) => c.name === "content")) {
       d.exec("ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''");
     }
+    try {
+      d.exec("ALTER TABLE chunks ADD COLUMN embedding_blob BLOB");
+    } catch {
+    }
+    const migrateRows = d.prepare(
+      "SELECT rowid, id, embedding FROM chunks WHERE embedding IS NOT NULL AND embedding_blob IS NULL"
+    ).all();
+    for (const row of migrateRows) {
+      try {
+        const arr = JSON.parse(row.embedding);
+        const blob = Buffer.from(new Float32Array(arr).buffer);
+        d.prepare("UPDATE chunks SET embedding_blob = ? WHERE rowid = ?").run(blob, row.rowid);
+      } catch {
+      }
+    }
   }
   // ── Vault config ─────────────────────────────────────────────────
   setVault(vault) {
@@ -25348,7 +25420,7 @@ var Store = class {
       meta.path,
       vaultName,
       meta.title,
-      JSON.stringify(meta.tags),
+      meta.tags.join(" "),
       JSON.stringify(meta.links),
       JSON.stringify(meta.frontmatter),
       meta.created,
@@ -25363,7 +25435,7 @@ var Store = class {
     return {
       path: row.path,
       title: row.title,
-      tags: JSON.parse(row.tags || "[]"),
+      tags: row.tags ? row.tags.split(" ").filter(Boolean) : [],
       links: JSON.parse(row.links || "[]"),
       backlinks: [],
       frontmatter: JSON.parse(row.frontmatter || "{}"),
@@ -25374,20 +25446,37 @@ var Store = class {
   }
   searchNotesFTS(vaultName, query, limit = 20) {
     const sanitized = sanitizeQuery(query);
-    const rows = this.db.prepare(`
-      SELECT n.path, n.title, snippet(notes_fts, 1, '<mark>', '</mark>', '...', 32) as snippet, rank
-      FROM notes_fts f
-      JOIN notes n ON f.rowid = n.rowid
-      WHERE notes_fts MATCH ? AND n.vault_name = ?
-      ORDER BY rank
-      LIMIT ?
-    `).all(sanitized, vaultName, limit);
-    return rows.map((r) => ({
-      path: r.path,
-      title: r.title,
-      snippet: r.snippet || "",
-      score: Math.max(0, 1 / (1 + (r.rank || 0)))
-    }));
+    try {
+      const rows = this.db.prepare(`
+        SELECT n.path, n.title, snippet(notes_fts, 1, '<mark>', '</mark>', '...', 32) as snippet, rank
+        FROM notes_fts f
+        JOIN notes n ON f.rowid = n.rowid
+        WHERE notes_fts MATCH ? AND n.vault_name = ?
+        ORDER BY rank
+        LIMIT ?
+      `).all(sanitized, vaultName, limit);
+      return rows.map((r) => ({
+        path: r.path,
+        title: r.title,
+        snippet: r.snippet || "",
+        score: Math.max(0, 1 / (1 + (r.rank || 0)))
+      }));
+    } catch (err) {
+      console.error("obsidian-rag: FTS5 query error, falling back to LIKE", { query, err });
+      const likePattern = `%${query.replace(/[%_]/g, "\\$&")}%`;
+      const rows = this.db.prepare(`
+        SELECT n.path, n.title, n.content
+        FROM notes n
+        WHERE n.vault_name = ? AND (n.title LIKE ? ESCAPE '\\' OR n.content LIKE ? ESCAPE '\\')
+        LIMIT ?
+      `).all(vaultName, likePattern, likePattern, limit);
+      return rows.map((r) => ({
+        path: r.path,
+        title: r.title,
+        snippet: r.content ? r.content.slice(0, 200) : "",
+        score: 0.1
+      }));
+    }
   }
   listNotes(vaultName, directory) {
     let rows;
@@ -25397,13 +25486,14 @@ var Store = class {
     } else {
       rows = this.db.prepare("SELECT path, title, tags FROM notes WHERE vault_name = ? ORDER BY path").all(vaultName);
     }
-    return rows.map((r) => ({ path: r.path, title: r.title, tags: JSON.parse(r.tags || "[]") }));
+    return rows.map((r) => ({ path: r.path, title: r.title, tags: r.tags ? r.tags.split(" ").filter(Boolean) : [] }));
   }
   getTags(vaultName) {
     const rows = this.db.prepare("SELECT tags FROM notes WHERE vault_name = ?").all(vaultName);
     const counts = /* @__PURE__ */ new Map();
     for (const row of rows) {
-      for (const tag of JSON.parse(row.tags || "[]")) {
+      const tagList = row.tags ? row.tags.split(" ").filter(Boolean) : [];
+      for (const tag of tagList) {
         counts.set(tag, (counts.get(tag) || 0) + 1);
       }
     }
@@ -25411,29 +25501,45 @@ var Store = class {
   }
   // ── Chunks ───────────────────────────────────────────────────────
   upsertChunk(chunk, vaultName) {
+    const embeddingBlob = chunk.embedding ? Buffer.from(new Float32Array(chunk.embedding).buffer) : null;
     this.db.prepare(`
-      INSERT OR REPLACE INTO chunks (id, note_path, vault_name, heading, content, embedding)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO chunks (id, note_path, vault_name, heading, content, embedding, embedding_blob)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(
       chunk.id,
       chunk.notePath,
       vaultName,
       chunk.heading,
       chunk.content,
-      chunk.embedding ? JSON.stringify(chunk.embedding) : null
+      chunk.embedding ? JSON.stringify(chunk.embedding) : null,
+      embeddingBlob
     );
   }
   getUnembeddedChunks(vaultName, limit = 100) {
-    return this.db.prepare("SELECT * FROM chunks WHERE vault_name = ? AND embedding IS NULL LIMIT ?").all(vaultName, limit);
+    return this.db.prepare("SELECT * FROM chunks WHERE vault_name = ? AND embedding_blob IS NULL LIMIT ?").all(vaultName, limit);
   }
   getChunks(vaultName) {
     return this.db.prepare("SELECT * FROM chunks WHERE vault_name = ?").all(vaultName);
   }
+  /** Return chunks with Float32Array embeddings from BLOB storage. No JSON.parse needed. */
+  getChunksWithEmbeddings(vaultName) {
+    const rows = this.db.prepare("SELECT * FROM chunks WHERE vault_name = ? AND embedding_blob IS NOT NULL").all(vaultName);
+    return rows.map((r) => ({
+      id: r.id,
+      notePath: r.note_path,
+      vaultName: r.vault_name,
+      heading: r.heading,
+      content: r.content,
+      embedding: r.embedding,
+      embeddingVector: new Float32Array(new Uint8Array(r.embedding_blob).buffer)
+    }));
+  }
   setEmbedding(chunkId, embedding) {
     const d = this.db;
-    d.prepare("UPDATE chunks SET embedding = ? WHERE id = ?").run(JSON.stringify(embedding), chunkId);
+    const blob = Buffer.from(new Float32Array(embedding).buffer);
+    d.prepare("UPDATE chunks SET embedding = ?, embedding_blob = ? WHERE id = ?").run(JSON.stringify(embedding), blob, chunkId);
     d.prepare(`
-      UPDATE index_meta SET embedded_chunks = (SELECT COUNT(*) FROM chunks WHERE embedding IS NOT NULL)
+      UPDATE index_meta SET embedded_chunks = (SELECT COUNT(*) FROM chunks WHERE embedding_blob IS NOT NULL)
       WHERE vault_name = (SELECT vault_name FROM chunks WHERE id = ?)
     `).run(chunkId);
   }
@@ -25474,6 +25580,20 @@ var Store = class {
       ON CONFLICT(vault_name) DO UPDATE SET ${colNames.map((c) => `${c} = excluded.${c}`).join(", ")}
     `).run(...values);
   }
+  // ── Note deletion ───────────────────────────────────────────────
+  /** Delete all chunks for a specific note. Used before re-inserting to handle shrinking notes. */
+  deleteChunksForNote(vaultName, notePath) {
+    this.db.prepare("DELETE FROM chunks WHERE vault_name = ? AND note_path = ?").run(vaultName, notePath);
+  }
+  /** Delete a note (and its FTS entries via trigger) from the index. */
+  deleteNote(vaultName, path) {
+    this.db.prepare("DELETE FROM notes WHERE vault_name = ? AND path = ?").run(vaultName, path);
+  }
+  /** List all note paths in the index for a vault. */
+  listNotePaths(vaultName) {
+    const rows = this.db.prepare("SELECT path FROM notes WHERE vault_name = ?").all(vaultName);
+    return rows.map((r) => r.path);
+  }
   // ── Cleanup ──────────────────────────────────────────────────────
   close() {
     if (this._db) this._db.close();
@@ -25481,11 +25601,10 @@ var Store = class {
 };
 
 // src/tools.ts
-var import_gray_matter2 = __toESM(require_gray_matter(), 1);
-import { existsSync as existsSync3 } from "node:fs";
-import { basename as basename2, join as join3 } from "node:path";
+import { existsSync as existsSync4 } from "node:fs";
+import { basename as basename2, join as join4 } from "node:path";
 function registerTools(server, opts) {
-  const { getVault: _getVault, waitForVault: waitForVault2, getEmbedder: getEmbedder2, store: store2, setSelectPromise, setSelectedVault } = opts;
+  const { waitForVault: waitForVault2, getEmbedder: getEmbedder2, store: store2, setSelectPromise, setSelectedVault } = opts;
   server.tool("vault_list", "List all known Obsidian vaults. Requires Obsidian app running.", {}, async () => {
     const { listVaults: listVaults2, cliAvailable: cliAvailable2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
     const vaults = await listVaults2();
@@ -25533,13 +25652,13 @@ CLI status: ${cliOk ? "\u2705 available" : "\u274C not found"}`
         const { listVaults: listVaults2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
         const { indexVault: indexVault2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
         let vault;
-        if (existsSync3(name) && existsSync3(join3(name, ".obsidian"))) {
+        if (existsSync4(name) && existsSync4(join4(name, ".obsidian"))) {
           vault = { name: basename2(name), path: name };
         } else {
           const vaults = await listVaults2();
           const match = vaults.find((v) => v.name === name || v.path === name);
           if (!match) {
-            if (existsSync3(name)) {
+            if (existsSync4(name)) {
               vault = { name: basename2(name), path: name };
             } else {
               rejectSelect?.(new Error("No vault selected."));
@@ -25556,7 +25675,8 @@ CLI status: ${cliOk ? "\u2705 available" : "\u274C not found"}`
         store2.setLastVaultPath(vault.path);
         setSelectedVault(vault);
         resolveSelect?.();
-        const _idxMsg = await indexVault2(vault.path, vault.name, store2);
+        const emb = await getEmbedder2();
+        const _idxMsg = await indexVault2(vault.path, vault.name, store2, emb);
         const status = store2.getIndexStatus(vault.name);
         return {
           content: [
@@ -25607,7 +25727,8 @@ Indexed: ${status.indexedNotes} notes, ${status.totalChunks} chunks`
         const { semanticSearch: semanticSearch2 } = await Promise.resolve().then(() => (init_retriever(), retriever_exports));
         results = await semanticSearch2(store2, vault.name, query, emb, limit);
       } else {
-        const emb = await getEmbedder2();
+        const status = store2.getIndexStatus(vault.name);
+        const emb = status.embeddedChunks > 0 ? await getEmbedder2() : null;
         const { hybridSearch: hybridSearch2 } = await Promise.resolve().then(() => (init_retriever(), retriever_exports));
         results = await hybridSearch2(store2, vault.name, query, emb, limit);
       }
@@ -25630,9 +25751,10 @@ ${lines.join("\n\n")}` }] };
     async ({ path }) => {
       const vault = await waitForVault2();
       try {
-        const { cliReadNote: cliReadNote2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
-        const raw = await cliReadNote2(vault.name, path);
-        const { data: frontmatter, content } = (0, import_gray_matter2.default)(raw);
+        const { readNote: readNote2 } = await Promise.resolve().then(() => (init_vault(), vault_exports));
+        const note = await readNote2(vault.path, path);
+        const frontmatter = note.frontmatter;
+        const content = note.content;
         const lines = [
           `# ${frontmatter.title || path}`,
           `Path: \`${path}\``,
@@ -25641,8 +25763,12 @@ ${lines.join("\n\n")}` }] };
           content.trim()
         ];
         return { content: [{ type: "text", text: lines.join("\n") }] };
-      } catch {
-        return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("ENOENT") || msg.includes("not found")) {
+          return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
+        }
+        return { content: [{ type: "text", text: `Error reading note: ${msg}` }], isError: true };
       }
     }
   );
@@ -25652,28 +25778,14 @@ ${lines.join("\n\n")}` }] };
     { directory: external_exports.string().optional().describe("Subdirectory path within vault (optional)") },
     async ({ directory }) => {
       const vault = await waitForVault2();
-      try {
-        const { cliListFiles: cliListFiles2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
-        const files = await cliListFiles2(vault.name, directory);
-        if (files.length === 0) {
-          return { content: [{ type: "text", text: `No .md files found${directory ? ` in "${directory}"` : ""}.` }] };
-        }
-        const lines = files.map((f) => `- \`${f}\``);
-        return { content: [{ type: "text", text: `# Notes (${files.length})
-
-${lines.join("\n")}` }] };
-      } catch {
-        const notes = store2.listNotes(vault.name, directory);
-        if (notes.length === 0) {
-          return {
-            content: [{ type: "text", text: "No notes found. The vault may not be indexed yet \u2014 run reindex." }]
-          };
-        }
-        const lines = notes.map((n) => `- **${n.title}** \u2014 \`${n.path}\` ${n.tags.map((t) => `#${t}`).join(" ")}`);
-        return { content: [{ type: "text", text: `# Notes (${notes.length})
-
-${lines.join("\n")}` }] };
+      const notes = store2.listNotes(vault.name, directory);
+      if (notes.length === 0) {
+        return { content: [{ type: "text", text: `No notes found${directory ? ` in "${directory}"` : ""}.` }] };
       }
+      const lines = notes.map((n) => `- **${n.title}** \u2014 \`${n.path}\` ${n.tags.map((t) => `#${t}`).join(" ")}`);
+      return { content: [{ type: "text", text: `# Notes (${notes.length})
+
+${lines.join("\n")}` }] };
     }
   );
   server.tool(
@@ -25683,9 +25795,19 @@ ${lines.join("\n")}` }] };
     async ({ path }) => {
       const vault = await waitForVault2();
       try {
-        const { cliGetBacklinks: cliGetBacklinks2, cliGetLinks: cliGetLinks2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
-        const backlinks = await cliGetBacklinks2(vault.name, path);
-        const links = await cliGetLinks2(vault.name, path);
+        const { readNote: readNote2, extractWikilinks: extractWikilinks2 } = await Promise.resolve().then(() => (init_vault(), vault_exports));
+        const note = await readNote2(vault.path, path);
+        const links = extractWikilinks2(note.content);
+        const allNotes = store2.listNotes(vault.name);
+        const targetPaths = [path, path.replace(/\.md$/, ""), basename2(path, ".md")];
+        const backlinks = [];
+        for (const n of allNotes) {
+          if (n.path === path) continue;
+          const fullNote = store2.getNote(vault.name, n.path);
+          if (fullNote && fullNote.links.some((l) => targetPaths.includes(l))) {
+            backlinks.push(n.path);
+          }
+        }
         const fw = links.length ? links.map((l) => `- [[${l}]]`) : ["(no forward links)"];
         const bw = backlinks.length ? backlinks.map((l) => `- [[${l.replace(".md", "")}]]`) : ["(no backlinks)"];
         return {
@@ -25702,30 +25824,23 @@ ${bw.join("\n")}`
             }
           ]
         };
-      } catch {
-        return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("ENOENT") || msg.includes("not found")) {
+          return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
+        }
+        return { content: [{ type: "text", text: `Error reading links: ${msg}` }], isError: true };
       }
     }
   );
   server.tool("get_tags", "Get all tags used in the vault with note counts.", {}, async () => {
     const vault = await waitForVault2();
-    try {
-      const { cliGetTags: cliGetTags2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
-      const tags = await cliGetTags2(vault.name);
-      const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
-      const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
-      return { content: [{ type: "text", text: `# Tags (${sorted.length})
+    const tags = store2.getTags(vault.name);
+    const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
+    const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
+    return { content: [{ type: "text", text: `# Tags (${sorted.length})
 
 ${lines.join("\n")}` }] };
-    } catch {
-      const { aggregateTags: aggregateTags2 } = await Promise.resolve().then(() => (init_vault(), vault_exports));
-      const tags = await aggregateTags2(vault.path);
-      const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
-      const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
-      return { content: [{ type: "text", text: `# Tags (${sorted.length})
-
-${lines.join("\n")}` }] };
-    }
   });
   server.tool("index_status", "Check indexing status for the selected vault.", {}, async () => {
     const vault = await waitForVault2();
@@ -25756,12 +25871,11 @@ ${lines.join("\n")}` }] };
       if (doEmbed) {
         const emb = await getEmbedder2();
         if (emb) {
-          const { embedChunks: embedChunks2 } = await Promise.resolve().then(() => (init_retriever(), retriever_exports));
-          let batchCount;
-          do {
-            batchCount = await embedChunks2(store2, vault.name, emb);
-          } while (batchCount > 0);
-          embedMsg = ", embeddings updated";
+          const { embedAllChunks: embedAllChunks2 } = await Promise.resolve().then(() => (init_retriever(), retriever_exports));
+          embedAllChunks2(store2, vault.name, emb).catch((err) => {
+            console.error("obsidian-rag: background embed failed", { vault: vault.name, err });
+          });
+          embedMsg = ", embedding started in background \u2014 check index_status for progress";
         } else {
           embedMsg = " (embeddings skipped \u2014 @xenova/transformers not available)";
         }
@@ -25790,8 +25904,8 @@ ${lines.join("\n")}` }] };
       const vault = await waitForVault2();
       const { writeMemory: writeMemory2 } = await Promise.resolve().then(() => (init_vault(), vault_exports));
       const typeDir = type || "reference";
-      const targetPath = join3(vault.path, "Claude-Memories", typeDir, `${id}.md`);
-      const alreadyExists = existsSync3(targetPath);
+      const targetPath = join4(vault.path, "Claude-Memories", typeDir, `${id}.md`);
+      const alreadyExists = existsSync4(targetPath);
       if (alreadyExists && !overwrite) {
         return {
           content: [
@@ -25812,6 +25926,13 @@ ${lines.join("\n")}` }] };
         metadata: metadata || {}
       };
       const notePath = await writeMemory2(vault.path, entry);
+      try {
+        const { indexNote: indexNote2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
+        const emb = await getEmbedder2();
+        await indexNote2(vault.path, vault.name, notePath, store2, emb);
+      } catch (idxErr) {
+        console.error("obsidian-rag: memory_save indexNote error", idxErr);
+      }
       if (alreadyExists) {
         return {
           content: [
@@ -25834,32 +25955,35 @@ ${lines.join("\n")}` }] };
     },
     async ({ query, limit }) => {
       const vault = await waitForVault2();
-      const { readMemories: readMemories2 } = await Promise.resolve().then(() => (init_vault(), vault_exports));
-      const memories = await readMemories2(vault.path);
-      if (memories.length === 0) {
-        return { content: [{ type: "text", text: "No memories saved yet. Use memory_save to store memories." }] };
-      }
-      const queryLower = query.toLowerCase();
-      const scored = memories.map((m) => {
-        let score = 0;
-        if (m.title.toLowerCase().includes(queryLower)) score += 3;
-        if (m.description.toLowerCase().includes(queryLower)) score += 2;
-        for (const word of queryLower.split(/\s+/)) {
-          if (word.length < 3) continue;
-          if (m.content.toLowerCase().includes(word)) score += 1;
-          if (m.title.toLowerCase().includes(word)) score += 2;
+      const emb = await getEmbedder2();
+      let results;
+      if (emb) {
+        const status = store2.getIndexStatus(vault.name);
+        if (status.embeddedChunks > 0) {
+          const { hybridSearch: hybridSearch2 } = await Promise.resolve().then(() => (init_retriever(), retriever_exports));
+          results = await hybridSearch2(store2, vault.name, query, emb, limit * 3);
+        } else {
+          const { keywordSearch: keywordSearch2 } = await Promise.resolve().then(() => (init_retriever(), retriever_exports));
+          results = keywordSearch2(store2, vault.name, query, limit * 3);
         }
-        return { memory: m, score, snippet: m.content.length > 200 ? `${m.content.slice(0, 200)}...` : m.content };
-      });
-      const ranked = scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score).slice(0, limit);
-      if (ranked.length === 0) {
+      } else {
+        const { keywordSearch: keywordSearch2 } = await Promise.resolve().then(() => (init_retriever(), retriever_exports));
+        results = keywordSearch2(store2, vault.name, query, limit * 3);
+      }
+      const memoryResults = results.filter(
+        (r) => r.notePath.startsWith("Claude-Memories/") || r.notePath.includes("/Claude-Memories/")
+      );
+      const top = memoryResults.slice(0, limit);
+      if (top.length === 0) {
         return { content: [{ type: "text", text: `No matching memories for "${query}".` }] };
       }
-      const lines = ranked.map(
-        ({ memory, score, snippet }, i) => `${i + 1}. **${memory.title}** [${memory.type}] (score: ${score})
-   > ${snippet}
-   Path: \`${memory.path}\``
-      );
+      const lines = top.map((r, i) => {
+        const note = store2.getNote(vault.name, r.notePath);
+        const memType = note?.frontmatter?.type || "reference";
+        return `${i + 1}. **${r.title}** [${memType}] (score: ${(r.score * 100).toFixed(0)}%)
+   > ${r.snippet.slice(0, 200)}
+   Path: \`${r.notePath}\``;
+      });
       return { content: [{ type: "text", text: `# Memory Recall: "${query}"
 
 ${lines.join("\n\n")}` }] };
@@ -25934,6 +26058,13 @@ ${lines.join("\n\n")}` }] };
             );
           }
         }
+        try {
+          const emb = await getEmbedder2();
+          const { indexNote: indexNote2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
+          await indexNote2(vault.path, vault.name, path, store2, emb);
+        } catch (idxErr) {
+          console.error("obsidian-rag: create_note indexNote error", idxErr);
+        }
         return { content: [{ type: "text", text: `\u2705 ${append ? "Updated" : "Created"} note: \`${path}\`` }] };
       } catch {
         const { readNote: readNote2, writeNote: writeNote2 } = await Promise.resolve().then(() => (init_vault(), vault_exports));
@@ -25952,6 +26083,13 @@ ${content}`;
         if (tags) fm.tags = tags;
         fm.modified = (/* @__PURE__ */ new Date()).toISOString();
         await writeNote2(vault.path, path, fm, finalContent);
+        try {
+          const emb = await getEmbedder2();
+          const { indexNote: indexNote2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
+          await indexNote2(vault.path, vault.name, path, store2, emb);
+        } catch (idxErr) {
+          console.error("obsidian-rag: create_note indexNote error", idxErr);
+        }
         return { content: [{ type: "text", text: `\u2705 ${append ? "Updated" : "Created"} note: \`${path}\`` }] };
       }
     }
@@ -25961,10 +26099,10 @@ ${content}`;
 // src/index.ts
 init_vault();
 import { fileURLToPath } from "node:url";
-var DB_DIR = join4(homedir(), ".claude", "obsidian-rag");
+var DB_DIR = join5(homedir(), ".claude", "obsidian-rag");
 var store = new Store({ dbDir: DB_DIR });
 var pkgPath = new URL("../package.json", import.meta.url);
-if (!existsSync4(pkgPath)) pkgPath = new URL("./package.json", import.meta.url);
+if (!existsSync5(pkgPath)) pkgPath = new URL("./package.json", import.meta.url);
 var PKG = (() => {
   try {
     return JSON.parse(readFileSync(pkgPath, "utf-8"));
@@ -25983,31 +26121,12 @@ function vaultGuard() {
 }
 async function waitForVault() {
   if (selectedVault) return selectedVault;
-  if (!selectedVault) {
-    const lastPath = store.getLastVaultPath();
-    if (lastPath) {
-      const vault = store.getVaultByPath(lastPath);
-      if (vault && existsSync4(vault.path) && existsSync4(join4(vault.path, ".obsidian"))) {
-        selectedVault = vault;
-        return selectedVault;
-      }
-    }
-  }
-  if (!selectedVault) {
-    try {
-      const { listVaults: listVaults2 } = await Promise.resolve().then(() => (init_cli(), cli_exports));
-      const vaults = await listVaults2();
-      if (vaults.length > 0) {
-        const claudeVault = vaults.find((v) => v.name.toLowerCase() === "claude");
-        const vault = claudeVault ?? vaults[0];
-        store.setVault(vault);
-        store.setLastVaultPath(vault.path);
-        selectedVault = vault;
-        const { indexVault: indexVault2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
-        await indexVault2(vault.path, vault.name, store);
-        return selectedVault;
-      }
-    } catch {
+  const lastPath = store.getLastVaultPath();
+  if (lastPath) {
+    const vault = store.getVaultByPath(lastPath);
+    if (vault && existsSync5(vault.path) && existsSync5(join5(vault.path, ".obsidian"))) {
+      selectedVault = vault;
+      return selectedVault;
     }
   }
   if (_selectPromise) {
@@ -26016,17 +26135,6 @@ async function waitForVault() {
     } catch {
     }
     if (selectedVault) return selectedVault;
-  }
-  for (let i = 0; i < 50; i++) {
-    if (_selectPromise) {
-      try {
-        await _selectPromise;
-      } catch {
-      }
-      if (selectedVault) return selectedVault;
-    }
-    if (selectedVault) return selectedVault;
-    await new Promise((r) => setTimeout(r, 100));
   }
   throw new Error("No vault selected. Use vault_select first.");
 }
@@ -26041,9 +26149,15 @@ async function getEmbedder() {
         return Array.from(result.data);
       },
       async embedBatch(texts) {
-        const results = [];
-        for (const text of texts) results.push(await this.embed(text));
-        return results;
+        if (texts.length === 0) return [];
+        const result = await pipe2(texts, { pooling: "mean", normalize: true });
+        const dim = pipe2.model?.config?.dim || 384;
+        const data = result.data;
+        const embeddings = [];
+        for (let i = 0; i < texts.length; i++) {
+          embeddings.push(Array.from(data.slice(i * dim, (i + 1) * dim)));
+        }
+        return embeddings;
       }
     };
     return embedder;

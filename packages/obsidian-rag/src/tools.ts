@@ -5,7 +5,6 @@
 import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import matter from "gray-matter";
 import { z } from "zod";
 import type { Store } from "./store.js";
 import type { MemoryEntry, VaultInfo } from "./types.js";
@@ -28,7 +27,7 @@ interface RegisterOptions {
 }
 
 export function registerTools(server: McpServer, opts: RegisterOptions) {
-  const { getVault: _getVault, waitForVault, getEmbedder, store, setSelectPromise, setSelectedVault } = opts;
+  const { waitForVault, getEmbedder, store, setSelectPromise, setSelectedVault } = opts;
 
   // ── vault_list ────────────────────────────────────────────────────
   server.tool("vault_list", "List all known Obsidian vaults. Requires Obsidian app running.", {}, async () => {
@@ -105,7 +104,8 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         setSelectedVault(vault);
         resolveSelect?.();
 
-        const _idxMsg = await indexVault(vault.path, vault.name, store);
+        const emb = await getEmbedder();
+        const _idxMsg = await indexVault(vault.path, vault.name, store, emb);
         const status = store.getIndexStatus(vault.name);
         return {
           content: [
@@ -157,7 +157,8 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         const { semanticSearch } = await import("./retriever.js");
         results = await semanticSearch(store, vault.name, query, emb, limit);
       } else {
-        const emb = await getEmbedder();
+        const status = store.getIndexStatus(vault.name);
+        const emb = status.embeddedChunks > 0 ? await getEmbedder() : null;
         const { hybridSearch } = await import("./retriever.js");
         results = await hybridSearch(store, vault.name, query, emb, limit);
       }
@@ -181,19 +182,24 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
     async ({ path }) => {
       const vault = await waitForVault();
       try {
-        const { cliReadNote } = await import("./cli.js");
-        const raw = await cliReadNote(vault.name, path);
-        const { data: frontmatter, content } = matter(raw);
+        const { readNote } = await import("./vault.js");
+        const note = await readNote(vault.path, path);
+        const frontmatter = note.frontmatter;
+        const content = note.content;
         const lines = [
-          `# ${frontmatter.title || path}`,
+          `# ${(frontmatter.title as string) || path}`,
           `Path: \`${path}\``,
           `Tags: ${Array.isArray(frontmatter.tags) ? frontmatter.tags.map((t: string) => `#${String(t).replace(/^#/, "")}`).join(" ") : "(none)"}`,
           ``,
           content.trim(),
         ];
         return { content: [{ type: "text", text: lines.join("\n") }] };
-      } catch {
-        return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("ENOENT") || msg.includes("not found")) {
+          return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
+        }
+        return { content: [{ type: "text", text: `Error reading note: ${msg}` }], isError: true };
       }
     },
   );
@@ -205,24 +211,12 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
     { directory: z.string().optional().describe("Subdirectory path within vault (optional)") },
     async ({ directory }) => {
       const vault = await waitForVault();
-      try {
-        const { cliListFiles } = await import("./cli.js");
-        const files = await cliListFiles(vault.name, directory);
-        if (files.length === 0) {
-          return { content: [{ type: "text", text: `No .md files found${directory ? ` in "${directory}"` : ""}.` }] };
-        }
-        const lines = files.map((f) => `- \`${f}\``);
-        return { content: [{ type: "text", text: `# Notes (${files.length})\n\n${lines.join("\n")}` }] };
-      } catch {
-        const notes = store.listNotes(vault.name, directory);
-        if (notes.length === 0) {
-          return {
-            content: [{ type: "text", text: "No notes found. The vault may not be indexed yet — run reindex." }],
-          };
-        }
-        const lines = notes.map((n) => `- **${n.title}** — \`${n.path}\` ${n.tags.map((t) => `#${t}`).join(" ")}`);
-        return { content: [{ type: "text", text: `# Notes (${notes.length})\n\n${lines.join("\n")}` }] };
+      const notes = store.listNotes(vault.name, directory);
+      if (notes.length === 0) {
+        return { content: [{ type: "text", text: `No notes found${directory ? ` in "${directory}"` : ""}.` }] };
       }
+      const lines = notes.map((n) => `- **${n.title}** — \`${n.path}\` ${n.tags.map((t) => `#${t}`).join(" ")}`);
+      return { content: [{ type: "text", text: `# Notes (${notes.length})\n\n${lines.join("\n")}` }] };
     },
   );
 
@@ -234,9 +228,22 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
     async ({ path }) => {
       const vault = await waitForVault();
       try {
-        const { cliGetBacklinks, cliGetLinks } = await import("./cli.js");
-        const backlinks = await cliGetBacklinks(vault.name, path);
-        const links = await cliGetLinks(vault.name, path);
+        const { readNote, extractWikilinks } = await import("./vault.js");
+        const note = await readNote(vault.path, path);
+        const links = extractWikilinks(note.content);
+
+        // Find backlinks via store (all notes' links are indexed)
+        const allNotes = store.listNotes(vault.name);
+        const targetPaths = [path, path.replace(/\.md$/, ""), basename(path, ".md")];
+        const backlinks: string[] = [];
+        for (const n of allNotes) {
+          if (n.path === path) continue;
+          const fullNote = store.getNote(vault.name, n.path);
+          if (fullNote && fullNote.links.some((l) => targetPaths.includes(l))) {
+            backlinks.push(n.path);
+          }
+        }
+
         const fw = links.length ? links.map((l) => `- [[${l}]]`) : ["(no forward links)"];
         const bw = backlinks.length ? backlinks.map((l) => `- [[${l.replace(".md", "")}]]`) : ["(no backlinks)"];
         return {
@@ -247,8 +254,12 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
             },
           ],
         };
-      } catch {
-        return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("ENOENT") || msg.includes("not found")) {
+          return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
+        }
+        return { content: [{ type: "text", text: `Error reading links: ${msg}` }], isError: true };
       }
     },
   );
@@ -256,19 +267,10 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
   // ── get_tags ──────────────────────────────────────────────────────
   server.tool("get_tags", "Get all tags used in the vault with note counts.", {}, async () => {
     const vault = await waitForVault();
-    try {
-      const { cliGetTags } = await import("./cli.js");
-      const tags = await cliGetTags(vault.name);
-      const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
-      const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
-      return { content: [{ type: "text", text: `# Tags (${sorted.length})\n\n${lines.join("\n")}` }] };
-    } catch {
-      const { aggregateTags } = await import("./vault.js");
-      const tags = await aggregateTags(vault.path);
-      const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
-      const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
-      return { content: [{ type: "text", text: `# Tags (${sorted.length})\n\n${lines.join("\n")}` }] };
-    }
+    const tags = store.getTags(vault.name);
+    const sorted = [...tags.entries()].sort((a, b) => b[1] - a[1]);
+    const lines = sorted.map(([tag, count]) => `- #${tag} (${count})`);
+    return { content: [{ type: "text", text: `# Tags (${sorted.length})\n\n${lines.join("\n")}` }] };
   });
 
   // ── index_status ──────────────────────────────────────────────────
@@ -299,12 +301,12 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
       if (doEmbed) {
         const emb = await getEmbedder();
         if (emb) {
-          const { embedChunks } = await import("./retriever.js");
-          let batchCount: number;
-          do {
-            batchCount = await embedChunks(store, vault.name, emb);
-          } while (batchCount > 0);
-          embedMsg = ", embeddings updated";
+          const { embedAllChunks } = await import("./retriever.js");
+          // Start embedding asynchronously — don't await completion
+          embedAllChunks(store, vault.name, emb).catch((err) => {
+            console.error("obsidian-rag: background embed failed", { vault: vault.name, err });
+          });
+          embedMsg = ", embedding started in background — check index_status for progress";
         } else {
           embedMsg = " (embeddings skipped — @xenova/transformers not available)";
         }
@@ -367,6 +369,15 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
       };
       const notePath = await writeMemory(vault.path, entry);
 
+      // Index the saved memory so it's immediately searchable via memory_recall
+      try {
+        const { indexNote } = await import("./indexer.js");
+        const emb = await getEmbedder();
+        await indexNote(vault.path, vault.name, notePath, store, emb);
+      } catch (idxErr) {
+        console.error("obsidian-rag: memory_save indexNote error", idxErr);
+      }
+
       if (alreadyExists) {
         return {
           content: [
@@ -392,34 +403,40 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
     },
     async ({ query, limit }) => {
       const vault = await waitForVault();
-      const { readMemories } = await import("./vault.js");
-      const memories = await readMemories(vault.path);
-      if (memories.length === 0) {
-        return { content: [{ type: "text", text: "No memories saved yet. Use memory_save to store memories." }] };
-      }
-      const queryLower = query.toLowerCase();
-      const scored = memories.map((m) => {
-        let score = 0;
-        if (m.title.toLowerCase().includes(queryLower)) score += 3;
-        if (m.description.toLowerCase().includes(queryLower)) score += 2;
-        for (const word of queryLower.split(/\s+/)) {
-          if (word.length < 3) continue;
-          if (m.content.toLowerCase().includes(word)) score += 1;
-          if (m.title.toLowerCase().includes(word)) score += 2;
+
+      // Use the same search stack as search_notes, scoped to memories
+      const emb = await getEmbedder();
+      let results: import("./types.js").SearchResult[];
+
+      if (emb) {
+        const status = store.getIndexStatus(vault.name);
+        if (status.embeddedChunks > 0) {
+          const { hybridSearch } = await import("./retriever.js");
+          results = await hybridSearch(store, vault.name, query, emb, limit * 3);
+        } else {
+          const { keywordSearch } = await import("./retriever.js");
+          results = keywordSearch(store, vault.name, query, limit * 3);
         }
-        return { memory: m, score, snippet: m.content.length > 200 ? `${m.content.slice(0, 200)}...` : m.content };
-      });
-      const ranked = scored
-        .filter((s) => s.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, limit);
-      if (ranked.length === 0) {
+      } else {
+        const { keywordSearch } = await import("./retriever.js");
+        results = keywordSearch(store, vault.name, query, limit * 3);
+      }
+
+      // Filter to memory files only (Claude-Memories/ directory)
+      const memoryResults = results.filter(
+        (r) => r.notePath.startsWith("Claude-Memories/") || r.notePath.includes("/Claude-Memories/"),
+      );
+      const top = memoryResults.slice(0, limit);
+
+      if (top.length === 0) {
         return { content: [{ type: "text", text: `No matching memories for "${query}".` }] };
       }
-      const lines = ranked.map(
-        ({ memory, score, snippet }, i) =>
-          `${i + 1}. **${memory.title}** [${memory.type}] (score: ${score})\n   > ${snippet}\n   Path: \`${memory.path}\``,
-      );
+
+      const lines = top.map((r, i) => {
+        const note = store.getNote(vault.name, r.notePath);
+        const memType = note?.frontmatter?.type || "reference";
+        return `${i + 1}. **${r.title}** [${memType}] (score: ${(r.score * 100).toFixed(0)}%)\n   > ${r.snippet.slice(0, 200)}\n   Path: \`${r.notePath}\``;
+      });
       return { content: [{ type: "text", text: `# Memory Recall: "${query}"\n\n${lines.join("\n\n")}` }] };
     },
   );
@@ -492,6 +509,14 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
             );
           }
         }
+        // Index the note so it's immediately searchable
+        try {
+          const emb = await getEmbedder();
+          const { indexNote } = await import("./indexer.js");
+          await indexNote(vault.path, vault.name, path, store, emb);
+        } catch (idxErr) {
+          console.error("obsidian-rag: create_note indexNote error", idxErr);
+        }
         return { content: [{ type: "text", text: `✅ ${append ? "Updated" : "Created"} note: \`${path}\`` }] };
       } catch {
         const { readNote, writeNote } = await import("./vault.js");
@@ -509,6 +534,14 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         if (tags) fm.tags = tags;
         fm.modified = new Date().toISOString();
         await writeNote(vault.path, path, fm, finalContent);
+        // Index the note so it's immediately searchable
+        try {
+          const emb = await getEmbedder();
+          const { indexNote } = await import("./indexer.js");
+          await indexNote(vault.path, vault.name, path, store, emb);
+        } catch (idxErr) {
+          console.error("obsidian-rag: create_note indexNote error", idxErr);
+        }
         return { content: [{ type: "text", text: `✅ ${append ? "Updated" : "Created"} note: \`${path}\`` }] };
       }
     },

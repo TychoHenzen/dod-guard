@@ -2,9 +2,9 @@
 // Interactive tool calls use Obsidian CLI as source of truth.
 // Indexer (bulk) uses direct filesystem for performance — CLI would be too slow for 1000+ notes.
 
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, join, relative, sep } from "node:path";
 import matter from "gray-matter";
 import type { MemoryEntry, NoteContent, NoteMeta } from "./types.js";
 
@@ -13,10 +13,12 @@ import type { MemoryEntry, NoteContent, NoteMeta } from "./types.js";
 function resolveContained(baseDir: string, relPath: string): string {
   const fullPath = join(baseDir, relPath);
 
-  // Validate containment — resolve() handles ../ segments, symlinks, etc.
-  // Only used for the check; I/O uses the original join result.
-  const resolvedBase = resolve(baseDir);
-  const resolvedFull = resolve(fullPath);
+  // Validate containment — realpathSync resolves symlinks, so symlink
+  // escape attacks are caught. This confirms the real path is inside the
+  // vault root. If the path doesn't exist yet, realpathSync throws ENOENT
+  // and the file can't exist outside the vault anyway, so no traversal risk.
+  const resolvedBase = realpathSync(baseDir);
+  const resolvedFull = realpathSync(fullPath);
   if (!resolvedFull.startsWith(resolvedBase + sep) && resolvedFull !== resolvedBase) {
     throw new Error(`Path traversal denied: "${relPath}" escapes vault root "${baseDir}"`);
   }

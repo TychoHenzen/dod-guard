@@ -48,42 +48,21 @@ function vaultGuard(): VaultInfo {
   return selectedVault;
 }
 
-/** Await selection if in progress, then guard. Auto-selects last vault when none selected. */
+/** Await selection if in progress, then guard. Returns last vault path when available. */
 async function waitForVault(): Promise<VaultInfo> {
   if (selectedVault) return selectedVault;
 
-  // ── Auto-select from last vault ──
-  if (!selectedVault) {
-    const lastPath = store.getLastVaultPath();
-    if (lastPath) {
-      const vault = store.getVaultByPath(lastPath);
-      if (vault && existsSync(vault.path) && existsSync(join(vault.path, ".obsidian"))) {
-        selectedVault = vault;
-        return selectedVault;
-      }
+  // Try last vault path (simple, fast)
+  const lastPath = store.getLastVaultPath();
+  if (lastPath) {
+    const vault = store.getVaultByPath(lastPath);
+    if (vault && existsSync(vault.path) && existsSync(join(vault.path, ".obsidian"))) {
+      selectedVault = vault;
+      return selectedVault;
     }
   }
 
-  // ── Auto-select from vault list: prefer "claude", else first available ──
-  if (!selectedVault) {
-    try {
-      const { listVaults } = await import("./cli.js");
-      const vaults = await listVaults();
-      if (vaults.length > 0) {
-        const claudeVault = vaults.find((v) => v.name.toLowerCase() === "claude");
-        const vault = claudeVault ?? vaults[0];
-        store.setVault(vault);
-        store.setLastVaultPath(vault.path);
-        selectedVault = vault;
-        const { indexVault } = await import("./indexer.js");
-        await indexVault(vault.path, vault.name, store);
-        return selectedVault;
-      }
-    } catch {
-      // listVaults may fail if Obsidian not running — fall through to existing logic
-    }
-  }
-
+  // Await in-progress selection
   if (_selectPromise) {
     try {
       await _selectPromise;
@@ -92,19 +71,8 @@ async function waitForVault(): Promise<VaultInfo> {
     }
     if (selectedVault) return selectedVault;
   }
-  // Poll for up to 5s in case vault_select hasn't started yet (concurrent dispatch)
-  for (let i = 0; i < 50; i++) {
-    if (_selectPromise) {
-      try {
-        await _selectPromise;
-      } catch {
-        /* retry */
-      }
-      if (selectedVault) return selectedVault;
-    }
-    if (selectedVault) return selectedVault;
-    await new Promise((r) => setTimeout(r, 100));
-  }
+
+  // No vault — clear error, no auto-guessing
   throw new Error("No vault selected. Use vault_select first.");
 }
 
@@ -122,9 +90,16 @@ async function getEmbedder(): Promise<Embedder | null> {
         return Array.from(result.data as Float32Array);
       },
       async embedBatch(texts: string[]): Promise<number[][]> {
-        const results: number[][] = [];
-        for (const text of texts) results.push(await this.embed(text));
-        return results;
+        if (texts.length === 0) return [];
+        // Pass all texts at once — the pipeline handles batching internally
+        const result = await pipe(texts, { pooling: "mean", normalize: true });
+        const dim = (pipe as any).model?.config?.dim || 384;
+        const data = result.data as Float32Array;
+        const embeddings: number[][] = [];
+        for (let i = 0; i < texts.length; i++) {
+          embeddings.push(Array.from(data.slice(i * dim, (i + 1) * dim)));
+        }
+        return embeddings;
       },
     };
     return embedder;

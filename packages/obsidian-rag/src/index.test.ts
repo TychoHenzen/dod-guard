@@ -6,7 +6,7 @@ import assert from "node:assert";
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, mock } from "node:test";
 import { Store } from "./store.js";
 
 // ── Helpers: create a minimal fake vault for testing ────────────────────
@@ -83,9 +83,9 @@ describe("vaultGuard function pattern", () => {
   });
 });
 
-// ── waitForVault polling pattern ────────────────────────────────────────
+// ── waitForVault pattern ────────────────────────────────────────────────────
 
-describe("waitForVault polling pattern", () => {
+describe("waitForVault pattern", () => {
   it("returns immediately when vault already selected", async () => {
     const selectedVault = { name: "Test", path: "/test" };
     const _selectPromise: Promise<void> | null = null;
@@ -100,18 +100,6 @@ describe("waitForVault polling pattern", () => {
         }
         if (selectedVault) return selectedVault;
       }
-      for (let i = 0; i < 5; i++) {
-        if (_selectPromise) {
-          try {
-            await _selectPromise;
-          } catch {
-            /* */
-          }
-          if (selectedVault) return selectedVault;
-        }
-        if (selectedVault) return selectedVault;
-        await new Promise((r) => setTimeout(r, 10));
-      }
       throw new Error("No vault selected. Use vault_select first.");
     }
 
@@ -119,7 +107,22 @@ describe("waitForVault polling pattern", () => {
     assert.deepStrictEqual(result, selectedVault);
   });
 
-  it("throws after polling timeout when no vault selected", async () => {
+  it("restores vault from last vault path when vault not selected", async () => {
+    const selectedVault: { name: string; path: string } | null = null;
+    const lastVault = { name: "Last", path: "/last/path" };
+
+    async function waitForVault() {
+      if (selectedVault) return selectedVault;
+      // Simulate last vault path restoration
+      if (lastVault) return lastVault;
+      throw new Error("No vault selected. Use vault_select first.");
+    }
+
+    const result = await waitForVault();
+    assert.deepStrictEqual(result, lastVault);
+  });
+
+  it("throws immediately when no vault selected", async () => {
     const selectedVault = null;
     const _selectPromise: Promise<void> | null = null;
 
@@ -132,18 +135,6 @@ describe("waitForVault polling pattern", () => {
           /* */
         }
         if (selectedVault) return selectedVault;
-      }
-      for (let i = 0; i < 3; i++) {
-        if (_selectPromise) {
-          try {
-            await _selectPromise;
-          } catch {
-            /* */
-          }
-          if (selectedVault) return selectedVault;
-        }
-        if (selectedVault) return selectedVault;
-        await new Promise((r) => setTimeout(r, 5));
       }
       throw new Error("No vault selected. Use vault_select first.");
     }
@@ -165,18 +156,6 @@ describe("waitForVault polling pattern", () => {
         }
         if (selectedVault) return selectedVault;
       }
-      for (let i = 0; i < 10; i++) {
-        if (_selectPromise) {
-          try {
-            await _selectPromise;
-          } catch {
-            /* */
-          }
-          if (selectedVault) return selectedVault;
-        }
-        if (selectedVault) return selectedVault;
-        await new Promise((r) => setTimeout(r, 5));
-      }
       throw new Error("No vault selected. Use vault_select first.");
     }
 
@@ -192,8 +171,8 @@ describe("waitForVault polling pattern", () => {
     assert.deepStrictEqual(result, { name: "Concurrent", path: "/concurrent" });
   });
 
-  it("handles rejected selection promise and retries", async () => {
-    let selectedVault: { name: string; path: string } | null = null;
+  it("throws when selection promise rejects and no vault selected", async () => {
+    const selectedVault: { name: string; path: string } | null = null;
     let _selectPromise: Promise<void> | null = null;
 
     async function waitForVault() {
@@ -206,35 +185,241 @@ describe("waitForVault polling pattern", () => {
         }
         if (selectedVault) return selectedVault;
       }
-      for (let i = 0; i < 10; i++) {
-        if (_selectPromise) {
-          try {
-            await _selectPromise;
-          } catch {
-            /* */
-          }
-          if (selectedVault) return selectedVault;
-        }
-        if (selectedVault) return selectedVault;
-        await new Promise((r) => setTimeout(r, 5));
-      }
       throw new Error("No vault selected. Use vault_select first.");
     }
 
-    // First selection fails, then retry succeeds
-    _selectPromise = new Promise<void>((_, reject) => {
-      setTimeout(() => reject(new Error("First selection failed")), 10);
+    _selectPromise = Promise.reject(new Error("Selection failed"));
+
+    await assert.rejects(waitForVault(), /No vault selected/);
+  });
+
+  // ── Memory recall path filtering pattern ───────────────────────────────
+
+  describe("memory_recall path filtering", () => {
+    it("filters results to Claude-Memories/ path prefix", () => {
+      const results = [
+        { notePath: "Claude-Memories/reference/test.md", title: "Test", score: 0.9 },
+        { notePath: "notes/regular.md", title: "Regular", score: 0.8 },
+        { notePath: "Claude-Memories/user/feedback.md", title: "Feedback", score: 0.7 },
+      ];
+      const memoryResults = results.filter(
+        (r) => r.notePath.startsWith("Claude-Memories/") || r.notePath.includes("/Claude-Memories/"),
+      );
+      assert.equal(memoryResults.length, 2);
+      assert.equal(memoryResults[0].notePath, "Claude-Memories/reference/test.md");
+      assert.equal(memoryResults[1].notePath, "Claude-Memories/user/feedback.md");
     });
 
-    // Wait for first attempt to fail, then set up success
-    setTimeout(() => {
-      _selectPromise = new Promise<void>((resolve) => {
-        selectedVault = { name: "Fallback", path: "/fallback" };
-        resolve();
-      });
-    }, 30);
+    it("returns empty when no memories match", () => {
+      const results = [
+        { notePath: "notes/regular.md", title: "Regular", score: 0.8 },
+        { notePath: "notes/other.md", title: "Other", score: 0.5 },
+      ];
+      const memoryResults = results.filter(
+        (r) => r.notePath.startsWith("Claude-Memories/") || r.notePath.includes("/Claude-Memories/"),
+      );
+      assert.equal(memoryResults.length, 0);
+    });
 
-    const result = await waitForVault();
-    assert.deepStrictEqual(result, { name: "Fallback", path: "/fallback" });
+    it("handles nested Claude-Memories paths with deep subdirectories", () => {
+      const results = [
+        { notePath: "snippets/Claude-Memories/reference/deep.md", title: "Deep", score: 0.6 },
+        { notePath: "notes/plain.md", title: "Plain", score: 0.4 },
+      ];
+      const memoryResults = results.filter(
+        (r) => r.notePath.startsWith("Claude-Memories/") || r.notePath.includes("/Claude-Memories/"),
+      );
+      assert.equal(memoryResults.length, 1);
+      assert.equal(memoryResults[0].notePath, "snippets/Claude-Memories/reference/deep.md");
+    });
+  });
+});
+
+// ── Mock modules for create_note auto-indexing tests ──────────────────
+
+let cliShouldThrowForCreate = false;
+const indexNoteCalls: any[][] = [];
+const reindexVaultCalls: any[][] = [];
+const embedAllChunksCalls: any[][] = [];
+
+mock.module("./indexer.js", {
+  namedExports: {
+    indexNote: mock.fn(async (...args: any[]) => {
+      indexNoteCalls.push(args);
+    }),
+    reindexVault: mock.fn(async (_vp: string, _vn: string, _store: any) => {
+      reindexVaultCalls.push([_vp, _vn]);
+      return 3;
+    }),
+  },
+});
+
+mock.module("./retriever.js", {
+  namedExports: {
+    embedAllChunks: mock.fn(async (_store: any, _vn: string, _emb: any) => {
+      embedAllChunksCalls.push([_vn]);
+    }),
+  },
+});
+
+mock.module("./cli.js", {
+  namedExports: {
+    cliCreateNote: mock.fn(async () => {
+      if (cliShouldThrowForCreate) throw new Error("CLI not available");
+    }),
+    cliAppendNote: mock.fn(async () => {
+      if (cliShouldThrowForCreate) throw new Error("CLI not available");
+    }),
+  },
+});
+
+mock.module("./vault.js", {
+  namedExports: {
+    writeNote: mock.fn(async () => {}),
+    readNote: mock.fn(async () => {
+      throw new Error("not found");
+    }),
+  },
+});
+
+// ── create_note auto-indexing ───────────────────────────────────────────
+
+describe("create_note auto-indexing", () => {
+  function setupHandlers() {
+    const handlers = new Map<string, Function>();
+    const mockServer = {
+      tool: (_name: string, _d: string, _s: any, h: Function) => {
+        handlers.set(_name, h);
+      },
+    } as any;
+    return { handlers, mockServer };
+  }
+
+  it("calls indexNote after CLI success path", async () => {
+    indexNoteCalls.length = 0;
+    cliShouldThrowForCreate = false;
+
+    const { handlers, mockServer } = setupHandlers();
+    const store = new Store({ dbDir: testDbDir });
+    const vault = { name: "cli-test-vault", path: join(testDbDir, "cli-test-vault") };
+    const { registerTools } = await import("./tools.js");
+    registerTools(mockServer, {
+      getVault: () => vault,
+      waitForVault: async () => vault,
+      getEmbedder: async () => null,
+      store,
+      setSelectPromise: () => {},
+      setSelectedVault: () => {},
+    });
+
+    const handler = handlers.get("create_note")!;
+    const result = await handler({
+      path: "test-cli-success.md",
+      title: "CLI Test",
+      content: "CLI success path",
+      tags: [],
+      append: false,
+    });
+
+    assert.strictEqual(indexNoteCalls.length, 1);
+    assert.strictEqual(indexNoteCalls[0][2], "test-cli-success.md");
+    assert.ok(result.content[0].text.includes("Created note"));
+  });
+
+  it("calls indexNote after FS fallback path", async () => {
+    indexNoteCalls.length = 0;
+    cliShouldThrowForCreate = true;
+
+    const { handlers, mockServer } = setupHandlers();
+    const store = new Store({ dbDir: testDbDir });
+    const vault = { name: "fs-test-vault", path: join(testDbDir, "fs-test-vault") };
+    const { registerTools } = await import("./tools.js");
+    registerTools(mockServer, {
+      getVault: () => vault,
+      waitForVault: async () => vault,
+      getEmbedder: async () => null,
+      store,
+      setSelectPromise: () => {},
+      setSelectedVault: () => {},
+    });
+
+    const handler = handlers.get("create_note")!;
+    const result = await handler({
+      path: "test-fs-fallback.md",
+      title: "FS Test",
+      content: "FS fallback path",
+      tags: [],
+      append: false,
+    });
+
+    assert.strictEqual(indexNoteCalls.length, 1);
+    assert.strictEqual(indexNoteCalls[0][2], "test-fs-fallback.md");
+    assert.ok(result.content[0].text.includes("Created note"));
+  });
+});
+
+// ── reindex background embed ────────────────────────────────────────────
+
+describe("reindex background embed", () => {
+  function setupHandlers() {
+    const handlers = new Map<string, Function>();
+    const mockServer = {
+      tool: (_name: string, _d: string, _s: any, h: Function) => {
+        handlers.set(_name, h);
+      },
+    } as any;
+    return { handlers, mockServer };
+  }
+
+  it("returns immediately when embed:true — does not await embedAllChunks", async () => {
+    reindexVaultCalls.length = 0;
+    embedAllChunksCalls.length = 0;
+
+    const { handlers, mockServer } = setupHandlers();
+    const store = new Store({ dbDir: testDbDir });
+    const vault = { name: "reindex-test-vault", path: join(testDbDir, "reindex-test-vault") };
+    const fakeEmbedder = { embed: async (_t: string) => [0.1], embedBatch: async (_t: string[]) => [[0.1]] };
+    const { registerTools } = await import("./tools.js");
+    registerTools(mockServer, {
+      getVault: () => vault,
+      waitForVault: async () => vault,
+      getEmbedder: async () => fakeEmbedder,
+      store,
+      setSelectPromise: () => {},
+      setSelectedVault: () => {},
+    });
+
+    const handler = handlers.get("reindex")!;
+    const result = await handler({ embed: true });
+
+    assert.ok(result.content[0].text.includes("Reindexed 3 notes"));
+    assert.ok(result.content[0].text.includes("background"));
+    assert.strictEqual(reindexVaultCalls.length, 1);
+  });
+
+  it("skips background embed when embed:false", async () => {
+    reindexVaultCalls.length = 0;
+    embedAllChunksCalls.length = 0;
+
+    const { handlers, mockServer } = setupHandlers();
+    const store = new Store({ dbDir: testDbDir });
+    const vault = { name: "reindex-noembed-vault", path: join(testDbDir, "reindex-noembed-vault") };
+    const { registerTools } = await import("./tools.js");
+    registerTools(mockServer, {
+      getVault: () => vault,
+      waitForVault: async () => vault,
+      getEmbedder: async () => null,
+      store,
+      setSelectPromise: () => {},
+      setSelectedVault: () => {},
+    });
+
+    const handler = handlers.get("reindex")!;
+    const result = await handler({ embed: false });
+
+    assert.ok(result.content[0].text.includes("Reindexed 3 notes"));
+    assert.ok(!result.content[0].text.includes("background"));
+    assert.strictEqual(reindexVaultCalls.length, 1);
+    assert.strictEqual(embedAllChunksCalls.length, 0);
   });
 });

@@ -31,28 +31,19 @@ export async function semanticSearch(
   embedder: Embedder,
   limit = 20,
 ): Promise<SearchResult[]> {
-  const queryEmbedding = await embedder.embed(query);
-  const chunks = store.getChunks(vaultName);
-  const withEmbeddings = chunks.filter((c) => c.embedding && c.embedding.length > 0);
-  if (withEmbeddings.length === 0) return [];
+  // Fast-path: no embeddings available — skip model load
+  const status = store.getIndexStatus(vaultName);
+  if (status.embeddedChunks === 0) return [];
 
-  // Parse embeddings and compute cosine similarity
-  const scored = withEmbeddings.map((chunk) => {
-    let embedding: number[] | null = null;
-    if (typeof chunk.embedding === "string") {
-      try {
-        embedding = JSON.parse(chunk.embedding);
-      } catch {
-        // Corrupted embedding — skip this chunk
-        return { chunk, similarity: 0 };
-      }
-    } else {
-      embedding = chunk.embedding as number[] | null;
-    }
-    if (!(embedding && Array.isArray(embedding))) {
-      return { chunk, similarity: 0 };
-    }
-    const similarity = cosineSimilarity(queryEmbedding, embedding);
+  const queryEmbedding = await embedder.embed(query);
+
+  // Use BLOB path: direct Float32Array, no JSON.parse per chunk
+  const chunks = store.getChunksWithEmbeddings(vaultName);
+  if (chunks.length === 0) return [];
+
+  // Compute cosine similarity over Float32Arrays
+  const scored = chunks.map((chunk) => {
+    const similarity = cosineSimilarity(queryEmbedding, chunk.embeddingVector);
     return { chunk, similarity };
   });
 
@@ -93,7 +84,14 @@ export async function hybridSearch(
   limit = 20,
 ): Promise<SearchResult[]> {
   const keywordResults = keywordSearch(store, vaultName, query, limit * 2);
-  const semanticResults = embedder ? await semanticSearch(store, vaultName, query, embedder, limit * 2) : [];
+
+  // Fast-path: no embeddings available — keyword-only (avoids model load)
+  const status = store.getIndexStatus(vaultName);
+  if (!embedder || status.embeddedChunks === 0) {
+    return keywordResults.slice(0, limit).map((r) => ({ ...r, matchType: "hybrid" as const }));
+  }
+
+  const semanticResults = await semanticSearch(store, vaultName, query, embedder, limit * 2);
 
   // Merge scores
   const merged = new Map<string, SearchResult>();
@@ -117,6 +115,8 @@ export async function hybridSearch(
 
 // ── Embedding ─────────────────────────────────────────────────────────
 
+// ── Embedding pipeline (background) ────────────────────────────────────
+
 export async function embedChunks(
   store: Store,
   vaultName: string,
@@ -135,10 +135,31 @@ export async function embedChunks(
   return unembedded.length;
 }
 
+/** Embed all unembedded chunks in a loop with progress reporting. Designed for background use. */
+export async function embedAllChunks(
+  store: Store,
+  vaultName: string,
+  embedder: Embedder,
+  batchSize = 32,
+): Promise<void> {
+  let batchCount: number;
+  do {
+    batchCount = await embedChunks(store, vaultName, embedder, batchSize);
+    // Update progress in index_meta so index_status shows real-time progress
+    const status = store.getIndexStatus(vaultName);
+    store.setIndexMeta(vaultName, { embeddedChunks: status.embeddedChunks });
+  } while (batchCount > 0);
+}
+
 // ── Cosine similarity ─────────────────────────────────────────────────
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
+function cosineSimilarity(a: number[], b: number[] | Float32Array): number {
+  if (a.length !== b.length) {
+    throw new Error(
+      `Embedding dimension mismatch: query has ${a.length} dims but stored embedding has ${b.length} dims. ` +
+      `The embedding model may have changed. Run reindex with embed:true to regenerate all embeddings.`
+    );
+  }
   let dot = 0;
   let normA = 0;
   let normB = 0;
