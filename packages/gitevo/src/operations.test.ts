@@ -11,6 +11,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, describe, it } from "node:test";
+import { getMemoryDb } from "./memory.js";
 import {
   EvoError,
   evo_abandon,
@@ -28,7 +29,6 @@ import {
   evo_summary,
   loadConfig,
 } from "./operations.js";
-import { getMemoryDb } from "./memory.js";
 
 // ── Test helpers ──────────────────────────────────────────────────────
 
@@ -192,7 +192,9 @@ describe("evo_checkpoint", () => {
     // Clean up
     git(["checkout", "master"], dir);
     git(["branch", "-D", "wip-branch"], dir);
-    try { fs.unlinkSync(path.join(dir, "wip-file.txt")); } catch {}
+    try {
+      fs.unlinkSync(path.join(dir, "wip-file.txt"));
+    } catch {}
   });
 });
 
@@ -633,14 +635,8 @@ describe("evo_adopt merge conflict", () => {
       caught = e;
     }
     assert.ok(caught instanceof EvoError, `should throw EvoError, got: ${caught}`);
-    assert.ok(
-      caught.message.includes("merge conflict"),
-      `should mention merge conflict: ${caught.message}`,
-    );
-    assert.ok(
-      caught.message.includes("conflict.txt"),
-      `should list conflicted file: ${caught.message}`,
-    );
+    assert.ok(caught.message.includes("merge conflict"), `should mention merge conflict: ${caught.message}`);
+    assert.ok(caught.message.includes("conflict.txt"), `should list conflicted file: ${caught.message}`);
 
     // Verify no MERGING state — subsequent git commands should work
     const branch = git(["branch", "--show-current"], dir);
@@ -648,10 +644,7 @@ describe("evo_adopt merge conflict", () => {
     // Filter untracked files (like .gitignore created by evo_init)
     const status = git(["status", "--porcelain"], dir);
     const trackedChanges = status.split("\n").filter((l) => l.trim() && !l.startsWith("??"));
-    assert.ok(
-      trackedChanges.length === 0,
-      `working tree should have no tracked changes after abort, got: ${status}`,
-    );
+    assert.ok(trackedChanges.length === 0, `working tree should have no tracked changes after abort, got: ${status}`);
   });
 
   it("finish surfaces internal adopt failure", () => {
@@ -665,17 +658,13 @@ describe("evo_adopt merge conflict", () => {
       caught = e;
     }
     assert.ok(caught instanceof EvoError, `should throw EvoError, got: ${caught}`);
-    assert.ok(
-      caught.message.includes("Finish failed"),
-      `should mention finish failure: ${caught.message}`,
-    );
-    assert.ok(
-      caught.message.includes("adopt failed"),
-      `should mention adopt failure: ${caught.message}`,
-    );
+    assert.ok(caught.message.includes("Finish failed"), `should mention finish failure: ${caught.message}`);
+    assert.ok(caught.message.includes("adopt failed"), `should mention adopt failure: ${caught.message}`);
 
     // Clean up MERGING state if any
-    try { git(["merge", "--abort"], dir); } catch {}
+    try {
+      git(["merge", "--abort"], dir);
+    } catch {}
 
     // .evo/ should still exist (finish didn't proceed to cleanup)
     assert.ok(fs.existsSync(path.join(dir, ".evo")), ".evo/ should exist after failed finish");
@@ -789,7 +778,10 @@ describe("branch upsert", () => {
 
     // Only one row, status = dead
     let db = getMemoryDb(dir);
-    let rows = db.prepare("SELECT name, status FROM branches WHERE name = ?").all("upsert-branch") as { name: string; status: string }[];
+    let rows = db.prepare("SELECT name, status FROM branches WHERE name = ?").all("upsert-branch") as {
+      name: string;
+      status: string;
+    }[];
     assert.strictEqual(rows.length, 1, "should have exactly one row per branch name");
     assert.strictEqual(rows[0].status, "dead");
 
@@ -799,7 +791,10 @@ describe("branch upsert", () => {
 
     // Still only one row, status = adopted
     db = getMemoryDb(dir);
-    rows = db.prepare("SELECT name, status FROM branches WHERE name = ?").all("upsert-branch") as { name: string; status: string }[];
+    rows = db.prepare("SELECT name, status FROM branches WHERE name = ?").all("upsert-branch") as {
+      name: string;
+      status: string;
+    }[];
     assert.strictEqual(rows.length, 1, "should still have exactly one row after adopt");
     assert.strictEqual(rows[0].status, "adopted");
   });
@@ -847,10 +842,7 @@ describe("EvoConfig", () => {
     try {
       process.chdir(dir);
       fs.mkdirSync(path.join(dir, ".evo"), { recursive: true });
-      fs.writeFileSync(
-        path.join(dir, ".evo", "config.json"),
-        JSON.stringify({ sourceExtensions: [".js", ".json"] }),
-      );
+      fs.writeFileSync(path.join(dir, ".evo", "config.json"), JSON.stringify({ sourceExtensions: [".js", ".json"] }));
       const cfg = loadConfig(dir);
       assert.deepStrictEqual(cfg.sourceExtensions, [".js", ".json"]);
       // buildLayouts should still be defaults

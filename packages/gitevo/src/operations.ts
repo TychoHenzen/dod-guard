@@ -442,7 +442,7 @@ export function evo_export_lessons(): string {
   }
 }
 
-function slugify(text: string): string {
+function _slugify(text: string): string {
   return text
     .toLowerCase()
     .replace(/[^\w\s-]/g, "")
@@ -748,7 +748,7 @@ export function evo_adopt(branch: string): string {
   // Merge the feature branch — catch merge conflicts gracefully
   try {
     git(["merge", branch, "--no-edit"], cwd);
-  } catch (err) {
+  } catch (_err) {
     // Detect conflicted files before abort
     let conflictFiles: string[] = [];
     try {
@@ -766,9 +766,7 @@ export function evo_adopt(branch: string): string {
     }
 
     const fileList = conflictFiles.length > 0 ? `: ${conflictFiles.join(", ")}` : "";
-    throw new EvoError(
-      `adopt failed: merge conflicts${fileList}; resolve manually or abandon the branch`,
-    );
+    throw new EvoError(`adopt failed: merge conflicts${fileList}; resolve manually or abandon the branch`);
   }
 
   // Tag as adopted
@@ -803,9 +801,7 @@ export function evo_finish(): string {
     try {
       evo_adopt(current);
     } catch (err) {
-      throw new EvoError(
-        `Finish failed: internal adopt failed — ${(err as Error).message}`,
-      );
+      throw new EvoError(`Finish failed: internal adopt failed — ${(err as Error).message}`);
     }
   }
 
