@@ -21,7 +21,7 @@
     },
     {
       "name": "evomcp",
-      "description": "Evolutionary solver MCP — cheap-model fanout with best-of-N + repair chains and scalar-fitness evolution, gated by dod-guard verification. Spawns claude -p (DeepSeek) instances with diverse strategies, verifies, repairs, escalates stuck nodes.",
+      "description": "Evolutionary solver MCP — cheap-model fanout with best-of-N + repair chains and scalar-fitness evolution, gated by dod-guard verification. Spawns claude -p (DeepSeek) instances with diverse strategies, verifies, repairs, escalates stuck nodes. Ships /cascade skill with 3 agents.",
       "source": "./packages/evomcp",
       "category": "productivity"
     },

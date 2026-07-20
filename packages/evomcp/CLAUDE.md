@@ -79,3 +79,21 @@ Token overlap >65% → duplicate. Uses stopword filtering, Jaccard-like comparis
 - Mutation prompts include top 3 elites as examples
 - Judge prompts use 4-dimension weighted rubric (correctness 0.4, clarity 0.2, efficiency 0.2, maintainability 0.2)
 - Feedback-action prompts present structured diagnostics with severity-ordered fix instructions
+
+## Bundled Skills
+
+| Skill | File | Purpose |
+|-------|------|---------|
+| `cascade` | `skills/cascade/SKILL.md` | Cheap worker fanout with verified selection, escalating stuck sub-problems up a 4-rung ladder (worker repair → worker resample → host model → user). Worker-agnostic — backend model is deployment config, not skill concern. Ships 3 agents: spec-writer (spec + ambiguity check), patch-reviewer (degenerate detection + U2 flagging), escalation-handler (authority/capability classification + U3–U5 routing). |
+
+**Skill agents**: `cascade` ships its own agents in `skills/cascade/agents/`. These are referenced by bare name (`spec-writer`, `patch-reviewer`, `escalation-handler`) — the plugin namespace is auto-prefixed at install time. Each agent runs at a specific tier: spec-writer and escalation-handler at `host`, patch-reviewer at `host-light`. See each agent's `.md` for its prompt, tier, and U-point integration.
+
+**Escalation ladder** (skill-level, not code-level):
+- Rung 0: Worker repair loop (inside evomcp)
+- Rung 1: Worker resample (inside evomcp)
+- Rung 2: Host model (this session — solve only the stuck node)
+- Rung 3: User (AskUserQuestion — authority gaps, budget gates, hard stops)
+
+**U-points**: The skill defines 6 user decision points (U1–U6) with mandatory AskUserQuestion triggers. Agents reference these by number. See SKILL.md §User Decision Points for the full protocol.
+
+**When editing skills**: Skills are the canonical source — changes here ship to all plugin users. Skill behavior changes should be tested by invoking the skill against this repo's own test suite.
