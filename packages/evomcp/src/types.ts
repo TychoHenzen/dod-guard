@@ -153,7 +153,10 @@ export interface Diagnostic {
   line: number;
   severity: "error" | "warning" | "info";
   message: string;
+  /** 20-line source context around the diagnostic location. */
   context: string;
+  /** Oracle/gate type that produced this diagnostic. */
+  oracle_type?: string;
 }
 
 export interface OracleResult {

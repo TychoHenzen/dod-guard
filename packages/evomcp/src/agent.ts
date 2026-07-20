@@ -509,62 +509,10 @@ export async function recordFailureSignature(
   }
 }
 
-// ── Prompt templates ──────────────────────────────────────────────────
+// ── Prompt templates (re-exported from prompts.ts) ────────────────────
 
-/**
- * Build a diverse-strategy prompt for best-of-N sampling.
- * Each variant gets a different system prompt to force diversity.
- */
-export function strategyPrompts(task: string, n: number, context?: string, failureContext?: string): string[] {
-  const strategies = [
-    "Implement the simplest possible solution that works. Minimal changes, maximum clarity.",
-    "Implement a robust solution with comprehensive error handling, edge cases, and validation.",
-    "Implement a performant solution — optimize for speed and efficiency over simplicity.",
-    "Implement a modular solution — extract helpers, use clean abstractions, make it testable.",
-    "Implement a defensive solution — validate inputs, handle all failure modes gracefully.",
-    "Implement a functional-style solution — pure functions, immutable data, composable operations.",
-    "Implement a pragmatic solution — get it working, handle the common case, defer complexity.",
-    "Implement an elegant solution — concise, readable, idiomatic code that's a pleasure to maintain.",
-  ];
-
-  const prompts: string[] = [];
-  for (let i = 0; i < n; i++) {
-    const strategy = strategies[i % strategies.length];
-    const failureBlock = failureContext ? `\n\n## Failures to Avoid\n${failureContext}` : "";
-    const contextBlock = context ? `\n\nContext:\n${context}` : "";
-    prompts.push(
-      `## Task\n${task}\n\n## Strategy\n${strategy}${failureBlock}${contextBlock}\n\nImplement the changes needed. Use tools to read files, make edits, and verify your work. Commit when done.`,
-    );
-  }
-  return prompts;
-}
-
-/**
- * Build a repair prompt with failure feedback.
- */
-export function repairPrompt(task: string, failureOutput: string, attemptNum: number, context?: string): string {
-  const contextBlock = context ? `\n\nContext:\n${context}` : "";
-  return `## Task\n${task}\n\n## Previous attempt FAILED\nYour previous implementation failed verification. Here is the output:\n\n\`\`\`\n${failureOutput.slice(0, 3000)}\n\`\`\`\n\n## Instructions\nThis is repair attempt #${attemptNum}. Fix the specific issues shown above. Read the relevant files, understand what went wrong, and make targeted fixes. Do NOT rewrite everything — fix only what's broken.${contextBlock}`;
-}
-
-/**
- * Build an evolution mutation prompt.
- */
-export function mutationPrompt(
-  goal: string,
-  currentCode: string,
-  fitnessScore: number,
-  elites: { code: string; score: number }[],
-  context?: string,
-): string {
-  const eliteBlock =
-    elites.length > 0
-      ? `\n## Elite mutations (higher score = better)\n${elites
-          .map((e, i) => `### Elite #${i + 1} (score=${e.score.toFixed(2)})\n\`\`\`\n${e.code}\n\`\`\``)
-          .join("\n\n")}`
-      : "";
-
-  const contextBlock = context ? `\n\nContext:\n${context}` : "";
-
-  return `## Goal\n${goal}\n\n## Current code (fitness = ${fitnessScore.toFixed(2)})\n\`\`\`\n${currentCode}\n\`\`\`\n${eliteBlock}\n\n## Instructions\nMutate this code to improve its fitness score. Be creative — try different algorithms, data structures, caching, early exits. Make targeted changes, not rewrites.${contextBlock}`;
-}
+export {
+  mutationPrompt,
+  repairPrompt,
+  strategyPrompts,
+} from "./prompts.js";

@@ -30,7 +30,7 @@ DeepSeek has an `/anthropic` endpoint that speaks the Anthropic Messages API. By
 |------|------|
 | `index.ts` | MCP server entry: tool registration, Zod schemas, formatting |
 | `types.ts` | All TypeScript types/interfaces (includes GateResult, Diagnostic, OracleResult, JudgeVerdict) |
-| `agent.ts` | Spawn `claude -p` subprocesses, proxy health, prompt templates, memory bus integration |
+| `agent.ts` | Spawn `claude -p` subprocesses, proxy health, API key resolution, memory bus integration |
 | `solve.ts` | Best-of-N solver: fanout → gates → verify → repair → escalate → judge |
 | `evolve.ts` | Evolutionary optimizer: baseline → generations → elites → final. Build/test/lint/mutation gates. |
 | `dedup.ts` | Plan deduplication with token-overlap heuristic |
@@ -38,6 +38,13 @@ DeepSeek has an `/anthropic` endpoint that speaks the Anthropic Messages API. By
 | `judge.ts` | Multi-candidate judge: correctness, clarity, efficiency, maintainability scoring |
 | `convergence.ts` | Convergence detection: staleness, improvement threshold, early stopping |
 | `gitevo-integration.ts` | Bridge to gitevo memory bus: write failures, elites, and insights for cross-session learning |
+| `prompts.ts` | Prompt templates: strategy, repair, mutation, judge, feedback-action (extracted from agent.ts) |
+| `feedback.ts` | Structured diagnostic compiler: parses TS/ESLint/Biome/Python/Rust/Go/Jest output, attaches 20-line context windows, token-budget capping |
+| `degenerate.ts` | Goodhart-resistance detectors: hardcoded test outputs, deleted assertions, broadened catches, type-ignore density, disabled lint, commented-out code, empty tests, TODO bombs |
+| `context.ts` | Deterministic 7-layer context curator: GOAL→STRATEGY→TARGETS→DEPS→CONSTRAINTS→ATTEMPTS→FAILURES. SHA-256 cache. Fact sheet distiller. |
+| `escalation.ts` | 5-rung escalation ladder: retry → resample → re-decompose → stronger-model → human. Trigger signals + per-rung budgets. |
+| `budget.ts` | Per-stage token/time budgets. Warnings at 50/80/95/100%. Primary metric: cost per verified graph edge. |
+| `orchestrator.ts` | Deterministic stage state machine: SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE. Per-stage entry/exit gates. Playbook loader. |
 
 ### Solve flow
 1. Optional gates (lint_cmd → build_cmd → test_cmd) — fail fast before fanout
@@ -66,7 +73,9 @@ Between generations, the best patch found so far is applied so mutations build o
 ### Dedup strategy
 Token overlap >65% → duplicate. Uses stopword filtering, Jaccard-like comparison. No embeddings needed — cheap and good enough for plan diversity enforcement.
 
-### Prompt engineering
+### Prompt engineering (all in prompts.ts)
 - 8 diverse strategy templates for solve: simplest, robust, performant, modular, defensive, functional, pragmatic, elegant
 - Repair prompts include failure output (truncated to 3K chars)
 - Mutation prompts include top 3 elites as examples
+- Judge prompts use 4-dimension weighted rubric (correctness 0.4, clarity 0.2, efficiency 0.2, maintainability 0.2)
+- Feedback-action prompts present structured diagnostics with severity-ordered fix instructions

@@ -9,6 +9,7 @@
 
 import type { AgentEnv, SpawnOptions } from "./agent.js";
 import { ensureProxy, spawnClaude } from "./agent.js";
+import { buildJudgePrompt } from "./prompts.js";
 import type { JudgeVerdict } from "./types.js";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -52,57 +53,6 @@ const DIMENSION_WEIGHTS: Record<string, number> = {
   efficiency: 0.2,
   maintainability: 0.2,
 } as const;
-
-// ── Prompt builder ─────────────────────────────────────────────────────────
-
-/**
- * Build a structured prompt for the LLM judge.
- *
- * Includes each branch's diff (truncated to 3000 chars) and optional
- * fitness/verification score, a 4-dimension rubric with weights, and
- * strict JSON output format instructions.
- */
-export function buildJudgePrompt(branches: BranchInfo[]): string {
-  const branchSections = branches
-    .map((b, i) => {
-      const diff = b.diff.length > 3000 ? `${b.diff.slice(0, 3000)}\n... [truncated]` : b.diff;
-      const scoreLine = b.score !== undefined ? `\nFitness score: ${b.score.toFixed(4)}` : "";
-      const reportLine = b.verificationReport ? `\nVerification: ${b.verificationReport.slice(0, 500)}` : "";
-      return `## Branch ${i + 1}: ${b.name}${scoreLine}${reportLine}\n\nDiff:\n\`\`\`diff\n${diff}\n\`\`\``;
-    })
-    .join("\n\n");
-
-  return `You are an expert code reviewer acting as a judge. Evaluate the following candidate solutions and select the best one.
-
-${branchSections}
-
-## Rubric
-
-Rate each branch on four dimensions (1-10 scale, 10 = best):
-
-| Dimension       | Weight | Description |
-|-----------------|--------|-------------|
-| correctness     | 0.4    | Does it solve the problem correctly? No bugs, edge cases handled. |
-| clarity         | 0.2    | Is the code readable, well-structured, and easy to understand? |
-| efficiency      | 0.2    | Is it performant? Appropriate algorithms, no wasted work. |
-| maintainability | 0.2    | Is it modular, testable, and easy to modify? |
-
-Composite score = correctness x 0.4 + clarity x 0.2 + efficiency x 0.2 + maintainability x 0.2
-
-## Output Format
-
-Respond with ONLY a valid JSON object — no markdown fences, no extra text:
-
-{
-  "winner_branch": "<branch name>",
-  "scores": {
-    "<branch name>": { "correctness": 7, "clarity": 8, "efficiency": 6, "maintainability": 7 }
-  },
-  "rationale": "Brief explanation of why this branch won."
-}
-
-Be honest and critical. Consider trade-offs carefully. The rationales should be concise but specific.`;
-}
 
 // ── Output parser ──────────────────────────────────────────────────────────
 
