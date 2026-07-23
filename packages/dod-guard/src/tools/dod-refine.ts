@@ -3,12 +3,11 @@
  */
 
 import { writeMarkdown } from "../author.js";
-import { baselineLockError } from "../baseline.js";
 import { countDraftNodes, findNodeByPath, isExecutablePredicate } from "../checker.js";
-import { findMissingTools, isPlaceholderCommand, validatePositiveEvidence } from "../command-check.js";
+import { findMissingTools, isPlaceholderCommand } from "../command-check.js";
 import { computeProofFingerprint } from "../fingerprint.js";
 import * as store from "../store.js";
-import { extractBaselineSteps, findNodeById, formatMissingTools } from "../tree-utils.js";
+import { findNodeById, formatMissingTools } from "../tree-utils.js";
 import type { Predicate, ProofCategory, TaskNode } from "../types.js";
 
 interface RefineParams {
@@ -59,8 +58,6 @@ export async function handleDodRefine(params: RefineParams): Promise<string> {
     return `ERROR: node "${node.title}" is a task group with children — not a leaf. Refine its children instead.`;
 
   const oldIntent = node.intent;
-
-  // Collect placeholder warnings (function-scoped so msg construction can reference them)
   let placeholderWarn: string[] = [];
 
   if (mode === "concretize") {
@@ -74,17 +71,6 @@ export async function handleDodRefine(params: RefineParams): Promise<string> {
       if (missing.length > 0) {
         return formatMissingTools(missing);
       }
-
-      // Positive evidence gate: behavioral categories must reference changed files,
-      // use a tdd predicate, or have a skip_reason.
-      const evidenceErr = await validatePositiveEvidence(
-        command,
-        category as ProofCategory,
-        doc.cwd,
-        pred.type,
-        doc.skip_reasons?.[category as string],
-      );
-      if (evidenceErr) return evidenceErr;
     }
 
     node.refinement = "concrete";
@@ -93,11 +79,6 @@ export async function handleDodRefine(params: RefineParams): Promise<string> {
     node.description = description ?? "";
     if (category) node.category = category as ProofCategory;
     if (advisory !== undefined) node.advisory = advisory;
-    else if (pred.type === "regression") node.advisory = true;
-    // Coverage metrics default to higher-is-better
-    if (pred.type === "regression" && node.category === "coverage" && pred.lower_is_better === undefined) {
-      (node.predicate as Predicate).lower_is_better = false;
-    }
     node.intent = undefined;
     node.last_status = "pending";
 
@@ -110,14 +91,12 @@ export async function handleDodRefine(params: RefineParams): Promise<string> {
       reason: `Refined draft → concrete: ${description ?? ""}`,
     });
 
-    // Detect placeholder proofs that always pass (no real verification)
     placeholderWarn = isPlaceholderCommand(command ?? "")
       ? [
           "",
           "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
           "The proof will pass dod_check regardless of whether the code actually works.",
           "Replace with a real verification command before considering this DoD complete.",
-          "Examples: actual test run, linter check, build verification, grep for expected output.",
         ]
       : [];
   } else {
@@ -137,11 +116,9 @@ export async function handleDodRefine(params: RefineParams): Promise<string> {
       };
     });
 
-    // Convert draft leaf → task group with children
     node.children = childNodes;
-    node.refinement = "concrete"; // Task groups are always concrete
+    node.refinement = "concrete";
     node.intent = undefined;
-    // Clear leaf-only fields that shouldn't exist on a task group
     delete (node as Partial<TaskNode>).command;
     delete (node as Partial<TaskNode>).predicate;
     delete (node as Partial<TaskNode>).description;
@@ -158,14 +135,6 @@ export async function handleDodRefine(params: RefineParams): Promise<string> {
   }
 
   const draftCount = countDraftNodes(doc.roots);
-
-  // Lock gate: concretizing the last draft "locks" the DoD (no drafts remain).
-  // A locked DoD must satisfy the company baseline — reject before persisting so
-  // the tree stays in its pre-refine state and the author can add the missing proof.
-  if (mode === "concretize" && draftCount === 0) {
-    const lockErr = baselineLockError(doc.type ?? "general", extractBaselineSteps(doc.roots), doc.skip_reasons);
-    if (lockErr) return lockErr;
-  }
 
   doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
 

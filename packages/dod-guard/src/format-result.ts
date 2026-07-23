@@ -1,24 +1,12 @@
 import type { CheckResult } from "./types.js";
 
 export function formatCheckResult(result: CheckResult): string {
-  if (process.env.DOD_DEBUG) console.debug("format-result: formatCheckResult", { overall: result.overall });
   const l: string[] = [];
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
   l.push("");
 
   if (result.tampered) {
     l.push("🔴 **TAMPER DETECTED** — proof-set fingerprint mismatch. Store was edited outside dod_amend.");
-    l.push("");
-  }
-
-  if (result.blocked_by_manuals) {
-    l.push("⛔ **BLOCKED: Manual verification required.** All automated proofs pass, but this DoD is NOT complete.");
-    l.push(
-      `   ${result.manual_unverified} manual/review proof(s) await dod_verify. Call dod_verify for each, then re-run dod_check.`,
-    );
-    l.push(
-      "   Do NOT report done until manuals are verified — the fix may look correct to proofs but be visually wrong.",
-    );
     l.push("");
   }
 
@@ -37,12 +25,8 @@ export function formatCheckResult(result: CheckResult): string {
     l.push("");
   }
 
-  if (result.amendment_warnings.length > 0) {
-    l.push("⚠️ **Amendment cycle warnings:** These proofs have been amended 3+ times — possible proof-tuning:");
-    for (const w of result.amendment_warnings) {
-      l.push(`   • "${w.title}" — ${w.count} amendments`);
-    }
-    l.push("   Verify these proofs still test the right thing, not just whatever the code happens to do.");
+  if (result.manual_unverified > 0) {
+    l.push(`⏳ **${result.manual_unverified} manual/review proof(s)** await dod_verify.`);
     l.push("");
   }
 
@@ -61,19 +45,16 @@ export function formatCheckResult(result: CheckResult): string {
     const failCount = leaves.filter((p) => p.status === "fail").length;
     const skipCount = leaves.filter((p) => p.status === "skipped").length;
     const draftCount = leaves.filter((p) => p.status === "draft").length;
-    const baselineCount = leaves.filter((p) => p.status === "baseline_captured").length;
     const hasFail = failCount > 0;
     const hasDraft = draftCount > 0;
-    const hasBaseline = baselineCount > 0;
-    const icon = hasFail ? "❌" : hasBaseline ? "📊" : hasDraft ? "📝" : "✅";
-    const status = hasFail ? "FAIL" : hasBaseline ? "INCOMPLETE" : hasDraft ? "INCOMPLETE" : "PASS";
+    const icon = hasFail ? "❌" : hasDraft ? "📝" : "✅";
+    const status = hasFail ? "FAIL" : hasDraft ? "INCOMPLETE" : "PASS";
     const rootTitle = leaves[0]?.title ?? `Root ${rootIdx}`;
     const countStr = [
       passCount > 0 ? `${passCount} pass` : "",
       failCount > 0 ? `${failCount} fail` : "",
       skipCount > 0 ? `${skipCount} skipped` : "",
       draftCount > 0 ? `${draftCount} draft` : "",
-      baselineCount > 0 ? `${baselineCount} baseline` : "",
     ]
       .filter(Boolean)
       .join(", ");
@@ -85,37 +66,22 @@ export function formatCheckResult(result: CheckResult): string {
       const indent = "  ".repeat(depth + 1);
 
       if (leaf.status === "draft") {
-        // Summary mode: collapse all drafts to a single count line per root
-        if (summaryMode) continue; // drafts handled by collapsed line below
+        if (summaryMode) continue;
         l.push(`${indent}📝 ${leaf.description} — DRAFT (use dod_refine to concretize)`);
       } else if (leaf.status === "pass") {
-        const isManual = leaf.command === "manual";
-        if (isManual) {
-          l.push(`${indent}✓ MANUAL — ${leaf.description} (${leaf.output ?? "human-confirmed"})`);
-        } else {
-          l.push(`${indent}✓ \`${leaf.command}\` (${leaf.duration_ms ?? 0}ms)`);
-        }
+        l.push(`${indent}✓ \`${leaf.command}\` → ${leaf.description} (${leaf.duration_ms ?? 0}ms)`);
       } else if (leaf.status === "skipped") {
-        l.push(`${indent}⏳ \`${leaf.command}\` — not verified this run${leaf.output ? `: ${leaf.output}` : ""}`);
-      } else if (leaf.status === "baseline_captured") {
-        l.push(
-          `${indent}📊 \`${leaf.command}\` — baseline captured (N0=${leaf.error?.match(/N0=([\d.]+)/)?.[1] ?? "?"}). Re-run to compare.`,
-        );
+        l.push(`${indent}⏳ \`${leaf.command}\` — not verified${leaf.error ? `: ${leaf.error}` : ""}`);
       } else {
-        const isManual = leaf.command === "manual";
-        if (isManual) {
-          l.push(`${indent}✗ MANUAL — ${leaf.description}`);
-          if (leaf.error) l.push(`${indent}  ${leaf.error}`);
-        } else {
-          l.push(`${indent}✗ \`${leaf.command}\``);
-          if (leaf.exit_code !== undefined) l.push(`${indent}  exit code: ${leaf.exit_code}`);
-          if (leaf.error) l.push(`${indent}  stderr: ${leaf.error.split("\n").slice(0, 5).join(`\n${indent}  `)}`);
-          if (leaf.output) l.push(`${indent}  output: ${leaf.output.split("\n").slice(0, 5).join(`\n${indent}  `)}`);
-        }
+        // Fail
+        l.push(`${indent}✗ \`${leaf.command}\` → ${leaf.description}`);
+        if (leaf.exit_code !== undefined) l.push(`${indent}  exit code: ${leaf.exit_code}`);
+        if (leaf.error) l.push(`${indent}  error: ${leaf.error.split("\n").slice(0, 3).join(`\n${indent}  `)}`);
+        if (leaf.diagnosis) l.push(`${indent}  💡 Diagnosis: ${leaf.diagnosis}`);
+        if (leaf.output) l.push(`${indent}  output: ${leaf.output.split("\n").slice(0, 3).join(`\n${indent}  `)}`);
       }
     }
 
-    // Summary mode: add collapsed draft count after concrete results
     if (summaryMode && draftCount > 0) {
       l.push(`  📝 ${draftCount} draft node(s) unchanged — use dod_refine to concretize`);
     }

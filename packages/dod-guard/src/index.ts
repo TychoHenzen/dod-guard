@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { formatCheckResult, updateDocFromCheckResult, writeMarkdown } from "./author.js";
 import { checkAmendGate, checkDocument, countDraftNodes, findNodeByPath, isExecutablePredicate } from "./checker.js";
-import { findMissingTools, isPlaceholderCommand, validatePositiveEvidence } from "./command-check.js";
+import { findMissingTools, isPlaceholderCommand } from "./command-check.js";
 import { computeProofFingerprint, flattenConcreteLeaves } from "./fingerprint.js";
 import { type Confirmer, type ManualAnswer, resolveManual } from "./manual.js";
 import { playJingle } from "./notify.js";
@@ -33,7 +33,7 @@ server.tool(
     type: z
       .enum(["bug", "general", "minimal"])
       .describe(
-        "Work type — selects the company baseline. 'minimal' enforces only lint+format+test; 'bug' adds tdd; 'general' enforces all categories (standards/dod-baselines.md).",
+        "Work type. 'minimal' = advisory-only. 'general'/'bug' = behavioral predicates recommended.",
       ),
     cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: z.string().describe("Where to write the DoD markdown file (absolute path)"),
@@ -43,10 +43,6 @@ server.tool(
       .describe(
         "Root-level task nodes forming the decomposition tree. Task groups have children. Draft leaves have intent. Concrete leaves have command+predicate+description+category.",
       ),
-    skip_reasons: z
-      .record(z.string())
-      .optional()
-      .describe("Map from optional proof category to justification for omission."),
     dod_id: z
       .string()
       .optional()
@@ -649,13 +645,13 @@ server.tool(
 
 server.tool(
   "dod_amend",
-  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
+  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
   {
     dod_id: z.string().describe("DoD ID"),
     node_path: z
       .string()
       .describe(
-        "Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata",
+        "Dot-separated path to the concrete leaf node, or '*' for all concrete leaves (bulk amend)",
       ),
     node_id: z
       .string()
@@ -666,7 +662,6 @@ server.tool(
     new_command: z.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: z.string().optional(),
-    new_skip_reasons: z.record(z.string()).optional().describe("(__meta__ only) Replace DoD skip_reasons map"),
     reason: z.string().describe("Why this amendment is needed — logged permanently"),
     amend_justification: z
       .string()
@@ -682,7 +677,6 @@ server.tool(
     new_command,
     new_predicate,
     new_description,
-    new_skip_reasons,
     reason,
     amend_justification,
   }) => {
@@ -690,43 +684,12 @@ server.tool(
     if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
 
     // node_id incompatible with special paths
-    if (nodeId && (nodePath === "__meta__" || nodePath === "*")) {
+    if (nodeId && nodePath === "*") {
       return {
         content: [
           {
             type: "text" as const,
             text: `ERROR: node_id is incompatible with node_path="${nodePath}". Use one or the other.`,
-          },
-        ],
-      };
-    }
-
-    // __meta__ path: update DoD-level metadata (skip_reasons)
-    if (nodePath === "__meta__") {
-      if (new_skip_reasons === undefined) {
-        return {
-          content: [
-            { type: "text" as const, text: "ERROR: node_path='__meta__' requires new_skip_reasons parameter." },
-          ],
-        };
-      }
-      const oldSkip = doc.skip_reasons ? { ...doc.skip_reasons } : {};
-      doc.skip_reasons = new_skip_reasons as Record<string, string>;
-      doc.amendments.push({
-        timestamp: new Date().toISOString(),
-        node_path: "__meta__",
-        action: "modified",
-        old_value: oldSkip as any,
-        new_value: doc.skip_reasons as any,
-        reason,
-      });
-      await store.save(doc);
-      await writeMarkdown(doc);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `DoD metadata amended.\n\nSkip reasons updated. ${Object.keys(new_skip_reasons).length} categories.\nReason: ${reason}\n\nRun dod_check to re-verify.`,
           },
         ],
       };
@@ -762,23 +725,6 @@ server.tool(
         if (missing.length > 0) {
           return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
         }
-
-        // Positive evidence gate for behavioral categories in bulk amend.
-        // Check if any leaf has a behavioral category — the same new_command
-        // must provide evidence for each such leaf.
-        const effectivePredicate = new_predicate ? new_predicate.type : undefined;
-        for (const { node: leaf } of leaves) {
-          const cat = leaf.category;
-          if (!cat) continue;
-          const evidenceErr = await validatePositiveEvidence(
-            new_command,
-            cat,
-            doc.cwd,
-            effectivePredicate,
-            doc.skip_reasons?.[cat],
-          );
-          if (evidenceErr) return { content: [{ type: "text" as const, text: evidenceErr }] };
-        }
       }
 
       let amendedCount = 0;
@@ -786,7 +732,7 @@ server.tool(
       // Amend gate check for bulk: check each leaf and collect gate failures
       const gateFailures: string[] = [];
       for (const { node, node_path: leafPath } of leaves) {
-        const gateErr = checkAmendGate(doc.amendments, leafPath, node.predicate, new_predicate, amend_justification);
+        const gateErr = checkAmendGate(doc.amendments, leafPath, amend_justification);
         if (gateErr) gateFailures.push(`${leafPath} ("${node.title}"): ${gateErr}`);
       }
       if (gateFailures.length > 0) {
@@ -897,22 +843,10 @@ server.tool(
       if (missing.length > 0) {
         return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
       }
-
-      // Positive evidence gate for behavioral categories
-      if (node.category) {
-        const evidenceErr = await validatePositiveEvidence(
-          effectiveCommand,
-          node.category,
-          doc.cwd,
-          effectivePredicate.type,
-          doc.skip_reasons?.[node.category],
-        );
-        if (evidenceErr) return { content: [{ type: "text" as const, text: evidenceErr }] };
-      }
     }
 
     // Amend gate: reject excessive tuning or strength reduction without justification
-    const gateError = checkAmendGate(doc.amendments, resolvedPath, node.predicate, new_predicate, amend_justification);
+    const gateError = checkAmendGate(doc.amendments, resolvedPath, amend_justification);
     if (gateError) {
       return { content: [{ type: "text" as const, text: `ERROR: ${gateError}` }] };
     }

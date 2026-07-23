@@ -1,8 +1,7 @@
 import { execFile } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import * as path from "node:path";
 import { promisify } from "node:util";
-import type { ProofCategory } from "./types.js";
 
 const execFileAsync = promisify(execFile);
 const isWindows = process.platform === "win32";
@@ -12,73 +11,25 @@ export interface MissingTool {
   tool: string;
 }
 
-// ── cmd.exe builtins (not discoverable via `where`) ───────────────────────
+// ── cmd.exe builtins ───────────────────────────────────────────────────────
+
 const CMD_BUILTINS = new Set([
-  "assoc",
-  "break",
-  "call",
-  "cd",
-  "chdir",
-  "cls",
-  "color",
-  "copy",
-  "date",
-  "del",
-  "dir",
-  "echo",
-  "endlocal",
-  "erase",
-  "exit",
-  "for",
-  "ftype",
-  "goto",
-  "if",
-  "md",
-  "mkdir",
-  "mklink",
-  "move",
-  "path",
-  "pause",
-  "popd",
-  "prompt",
-  "pushd",
-  "rd",
-  "rem",
-  "ren",
-  "rename",
-  "rmdir",
-  "set",
-  "setlocal",
-  "shift",
-  "start",
-  "time",
-  "title",
-  "type",
-  "ver",
-  "verify",
-  "vol",
+  "assoc", "break", "call", "cd", "chdir", "cls", "color", "copy",
+  "date", "del", "dir", "echo", "endlocal", "erase", "exit", "for",
+  "ftype", "goto", "if", "md", "mkdir", "mklink", "move", "path",
+  "pause", "popd", "prompt", "pushd", "rd", "rem", "ren", "rename",
+  "rmdir", "set", "setlocal", "shift", "start", "time", "title",
+  "type", "ver", "verify", "vol",
 ]);
 
 const OPERATOR_CHARS = new Set(["|", "&", ";", "(", ")", "`", "\n", "\r"]);
 
 const WINDOWS_EQUIVALENTS: Record<string, string> = {
-  grep: "findstr",
-  cat: "type",
-  ls: "dir",
-  rm: "del  (or rmdir /s for dirs)",
-  cp: "copy",
-  mv: "move",
-  touch: "type nul > file",
-  which: "where",
-  sed: "PowerShell -replace",
-  awk: "PowerShell",
-  head: "PowerShell Select-Object -First N",
-  tail: "PowerShell Select-Object -Last N",
-  test: "if exist / if defined",
-  pwd: "cd",
-  export: "set",
-  diff: "fc",
-  wc: "find /c",
+  grep: "findstr", cat: "type", ls: "dir", rm: "del (or rmdir /s for dirs)",
+  cp: "copy", mv: "move", touch: "type nul > file", which: "where",
+  sed: "PowerShell -replace", awk: "PowerShell",
+  head: "PowerShell Select-Object -First N", tail: "PowerShell Select-Object -Last N",
+  test: "if exist / if defined", pwd: "cd", export: "set", diff: "fc", wc: "find /c",
 };
 
 // ── Token extraction ──────────────────────────────────────────────────────
@@ -93,21 +44,9 @@ export function splitCommands(command: string): string[] {
   let quote: '"' | "'" | null = null;
 
   for (const c of command) {
-    if (quote) {
-      buf += c;
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (isQuote(c)) {
-      quote = c;
-      buf += c;
-      continue;
-    }
-    if (OPERATOR_CHARS.has(c)) {
-      if (buf.trim()) segments.push(buf);
-      buf = "";
-      continue;
-    }
+    if (quote) { buf += c; if (c === quote) quote = null; continue; }
+    if (isQuote(c)) { quote = c; buf += c; continue; }
+    if (OPERATOR_CHARS.has(c)) { if (buf.trim()) segments.push(buf); buf = ""; continue; }
     buf += c;
   }
   if (buf.trim()) segments.push(buf);
@@ -150,15 +89,9 @@ function isShellAssignment(s: string | null): boolean {
 function firstToken(segment: string): string | null {
   let s = skipRedirection(segment);
   while (s.length > 0) {
-    if (isQuote(s[0])) {
-      const r = extractQuotedToken(s);
-      return r.token;
-    }
+    if (isQuote(s[0])) { const r = extractQuotedToken(s); return r.token; }
     const r = extractBareToken(s);
-    if (isShellAssignment(r.token)) {
-      s = r.rest.trim();
-      continue;
-    }
+    if (isShellAssignment(r.token)) { s = r.rest.trim(); continue; }
     return r.token;
   }
   return null;
@@ -172,35 +105,10 @@ export function extractCommandNames(command: string): string[] {
   const names: string[] = [];
   for (const seg of splitCommands(command)) {
     const tok = firstToken(seg);
-    // Skip bare fd-numbers (e.g. "1" in "2>&1") — never command names.
-    if (tok && /^\d+$/.test(tok)) continue;
+    if (tok && /^\d+$/.test(tok)) continue; // skip bare fd-numbers
     if (tok && hasAlnum(tok) && !names.includes(tok)) names.push(tok);
   }
   return names;
-}
-
-// ── Glob detection ────────────────────────────────────────────────────────
-
-const GLOB_CHARS = /[*?[]/;
-
-/**
- * Check whether a command string contains unquoted glob wildcards.
- * cmd.exe does not expand globs — tools must accept literal paths.
- */
-export function hasGlobWildcards(command: string): boolean {
-  let quote: '"' | "'" | null = null;
-  for (const c of command) {
-    if (quote) {
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (c === '"' || c === "'") {
-      quote = c;
-      continue;
-    }
-    if (GLOB_CHARS.test(c)) return true;
-  }
-  return false;
 }
 
 // ── Tool existence ────────────────────────────────────────────────────────
@@ -215,9 +123,7 @@ async function onPath(name: string): Promise<boolean> {
       await execFileAsync("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5000 });
     }
     return true;
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("command-check: tool existence check failed", { name, err: msg });
+  } catch {
     return false;
   }
 }
@@ -249,8 +155,6 @@ function resolvePathExists(name: string, cwd: string): boolean {
   return candidates.some((p) => existsSync(p));
 }
 
-// ── Public API ────────────────────────────────────────────────────────────
-
 export async function findMissingTools(commands: string[], cwd: string): Promise<MissingTool[]> {
   const missing: MissingTool[] = [];
   for (const command of commands) {
@@ -268,39 +172,36 @@ export function suggestionFor(tool: string): string | undefined {
   return WINDOWS_EQUIVALENTS[tool.toLowerCase()];
 }
 
-// ── Glob expansion (Windows cmd.exe compatibility) ──────────────────────────
+// ── Glob detection ────────────────────────────────────────────────────────
 
-/**
- * Expand unquoted glob wildcards in a command string by reading the filesystem.
- * Only expands directory-level globs (e.g. `packages/{star}/src/`) — file-level globs
- * are left as-is since the target tool handles its own globbing.
- *
- * On Windows, cmd.exe does NOT expand globs in arguments. Tools like biome,
- * eslint, and prettier handle their own globbing, but shell commands (findstr,
- * type, dir) do not. This function bridges the gap for the common monorepo
- * pattern where `packages/{star}/src/` needs to become explicit paths.
- *
- * Returns the expanded command, or the original if no directory globs were found
- * or expansion failed.
- */
+const GLOB_CHARS = /[*?[]/;
+
+export function hasGlobWildcards(command: string): boolean {
+  let quote: '"' | "'" | null = null;
+  for (const c of command) {
+    if (quote) { if (c === quote) quote = null; continue; }
+    if (c === '"' || c === "'") { quote = c; continue; }
+    if (GLOB_CHARS.test(c)) return true;
+  }
+  return false;
+}
+
+// ── Glob expansion (Windows cmd.exe compatibility) ────────────────────────
+
 export function expandGlobsInCommand(command: string, cwd: string): { expanded: string; expanded_count: number } {
   if (process.platform !== "win32") return { expanded: command, expanded_count: 0 };
 
-  // Only expand directory-level globs: <dir>/*/ or <dir>/*\  patterns
-  // Match segments like "packages/*/src/" or "packages\*\src\"
   const dirGlobRe = /([A-Za-z0-9_.-]+)\\([*?][^\\]*)\\/g;
   const dirGlobReFwd = /([A-Za-z0-9_.-]+)\/([*?][^/]*)\//g;
 
   let expanded = command;
   let count = 0;
 
-  // Resolve directory-level globs: readdir + wildcard match → explicit paths
   const globResolve = (re: RegExp, sep: "\\" | "/") => {
     const matches: { prefix: string; pattern: string; fullMatch: string }[] = [];
     for (const m of command.matchAll(re)) {
       matches.push({ prefix: m[1], pattern: m[2], fullMatch: m[0] });
     }
-    // Dedupe identical fullMatch strings so a glob appearing twice isn't double-counted.
     const seen = new Set<string>();
     for (const { prefix, pattern, fullMatch } of matches) {
       if (seen.has(fullMatch)) continue;
@@ -308,22 +209,17 @@ export function expandGlobsInCommand(command: string, cwd: string): { expanded: 
       try {
         const parentDir = path.resolve(cwd, prefix);
         if (!existsSync(parentDir)) continue;
-
         const entries = readdirSync(parentDir, { withFileTypes: true })
           .filter((d) => d.isDirectory())
           .map((d) => d.name)
           .filter((name) => wildcardMatch(name, pattern))
           .sort();
-
         if (entries.length > 0) {
           const replacement = entries.map((e) => `${prefix}${sep}${e}${sep}`).join(" ");
-          // replaceAll (via split/join) so every occurrence of the glob expands, not just the first.
           expanded = expanded.split(fullMatch).join(replacement);
           count += entries.length;
         }
-      } catch {
-        // Directory doesn't exist or can't be read — leave glob as-is
-      }
+      } catch { /* directory missing — leave glob as-is */ }
     }
   };
 
@@ -333,187 +229,32 @@ export function expandGlobsInCommand(command: string, cwd: string): { expanded: 
   return { expanded, expanded_count: count };
 }
 
-/** Simple wildcard match: supports * (any chars) and ? (single char). */
 function wildcardMatch(str: string, pattern: string): boolean {
   const re = new RegExp(
-    `^${pattern
-      .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-      .replace(/\*/g, ".*")
-      .replace(/\?/g, ".")}$`,
+    `^${pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`,
   );
   return re.test(str);
 }
 
-// ── Mutating command detection ──────────────────────────────────────────────
+// ── Placeholder (no-op) detection ─────────────────────────────────────────
 
-/**
- * Flags that modify files in-place. Proof commands using these dirty the
- * working tree, causing false failures in subsequent proof runs (#22, S7).
- *
- * Each entry: [flag, description] — flag may appear standalone or as part
- * of a tool name (e.g. `biome check --write` or `tsc` which writes dist/).
- */
-const MUTATING_FLAGS: ReadonlyArray<[RegExp, string]> = [
-  [/\bb(?:iome|eautifier)\b.*--write\b/, "biome/prettier --write modifies files in-place"],
-  [/\beslint\b.*--fix\b/, "eslint --fix modifies files in-place"],
-  [/\b(?:biome|prettier)\s+format\b(?!.*--check\b)/, "biome/prettier format (without --check) may modify files"],
-  [/\btsc\b(?!.*--noEmit\b)/, "tsc writes compiled .js files to dist/ — use --noEmit for check-only"],
-  [/\bstryker\b\s+run\b/, "Stryker mutates dist/ files in-place — use git checkout to restore after run"],
-  [/\bgit\s+add\b/, "git add stages changes — never use in proof commands"],
-  [/\bgit\s+commit\b/, "git commit creates commits — never use in proof commands"],
-  [/\bgit\s+reset\b/, "git reset modifies working tree — never use in proof commands"],
-  [/\brm\s+-[rf]/, "rm -rf deletes files — dangerous in proof commands"],
-  [/\bdel\s+\/[sfq]/, "Windows del with flags deletes files — dangerous in proof commands"],
-  [/\bnpm\s+(?:install|update|ci)\b/, "npm install/update/ci modifies node_modules/ and package-lock.json"],
-  [/\bpnpm\s+(?:install|update)\b/, "pnpm install/update modifies node_modules/ and lockfile"],
-  [/\bcargo\s+build\b(?!.*--check\b)/, "cargo build writes compiled artifacts (use cargo check for lint-only)"],
-];
-
-/**
- * Scan a command for mutating flags. Returns warnings for any detected
- * side-effect patterns. Proof commands should be side-effect-free — use
- * check-only equivalents (biome format, tsc --noEmit, eslint without --fix).
- */
-export function detectMutatingFlags(command: string): string[] {
-  const warnings: string[] = [];
-  for (const [re, desc] of MUTATING_FLAGS) {
-    if (re.test(command)) {
-      warnings.push(desc);
-    }
-  }
-  return warnings;
-}
-
-// ── Placeholder (no-op) command detection ───────────────────────────────────
-
-/**
- * No-op commands that always exit 0 and verify nothing (#45, #12). Used as
- * temporary placeholders during authoring — they must be replaced with a real
- * verification before a DoD is considered complete, since dod_check cannot
- * distinguish "real test passed" from "placeholder exited 0".
- */
 const PLACEHOLDER_PATTERNS: ReadonlyArray<RegExp> = [
   /^node\s+(?:-e|--eval)\s+["']?\s*process\.exit\s*\(\s*0\s*\)\s*["']?$/i,
-  /^node\s+(?:-e|--eval)\s+["']\s*["']$/i, // empty eval body
+  /^node\s+(?:-e|--eval)\s+["']\s*["']$/i,
   /^process\.exit\s*\(\s*0\s*\)$/i,
   /^echo\s+(?:ok|done|pass(?:ed)?)$/i,
   /^true$/,
-  /^:\s*$/, // shell no-op
+  /^:\s*$/,
   /^exit\s+0$/i,
   /^exit\s+\/b\s+0$/i,
   /^cmd\s+\/c\s+["']?exit(?:\s+\/b)?\s+0["']?$/i,
-  /^rem\b/i, // cmd.exe comment — always exits 0
+  /^rem\b/i,
 ];
 
-/** True when the command is a no-op that always exits 0 (zero verification). */
 export function isPlaceholderCommand(command: string): boolean {
   const cmd = command.trim();
   if (!cmd) return false;
   return PLACEHOLDER_PATTERNS.some((re) => re.test(cmd));
 }
 
-// ── Positive-evidence gate for behavioral categories ─────────────────────────
-
-/**
- * Behavioral proof categories that require positive evidence (changed-file
- * reference, tdd predicate, or skip_reason) to prevent always-pass no-ops
- * from being accepted at refine/amend time.
- */
-const BEHAVIORAL_CATEGORIES: ReadonlySet<ProofCategory> = new Set([
-  "test",
-  "integration_behavioral",
-  "integration_wiring",
-]);
-
-/**
- * For behavioral proof categories, require the command to demonstrate
- * positive evidence: either it references files changed in the working tree,
- * or the predicate is `tdd` (RED→GREEN transition), or an explicit
- * skip_reason exists on the DoD for this category.
- *
- * Returns null if the command passes validation, or an error string.
- *
- * @param changedFilesOverride — for testing: inject a changed-files list
- *   instead of reading from git.
- */
-export async function validatePositiveEvidence(
-  command: string,
-  category: ProofCategory,
-  cwd: string,
-  predicateType?: string,
-  skipReason?: string,
-  changedFilesOverride?: string[],
-): Promise<string | null> {
-  if (!BEHAVIORAL_CATEGORIES.has(category)) return null;
-
-  // tdd predicate is positive evidence (RED→GREEN transition proves behavioral correctness)
-  if (predicateType === "tdd") return null;
-
-  // skip_reason is positive evidence (author consciously opted out with justification)
-  if (skipReason) return null;
-
-  // Check if command references changed files in the working tree
-  const changedFiles = changedFilesOverride ?? (await getChangedFiles(cwd));
-  for (const file of changedFiles) {
-    if (command.includes(file)) return null;
-  }
-
-  // Also check by basename match: extract path-like tokens from the command
-  // and see if any basename matches a changed file basename.
-  const cmdTokens = command.split(/\s+/).filter((t) => /[./\\]/.test(t) && t.length > 2);
-  for (const token of cmdTokens) {
-    const tokenBasename = path.basename(token.replace(/\\/g, "/"));
-    if (!tokenBasename || tokenBasename.length <= 2) continue;
-    for (const file of changedFiles) {
-      if (path.posix.basename(file) === tokenBasename) return null;
-    }
-  }
-
-  return `No positive evidence: command must reference changed files, use a tdd predicate, or provide a skip_reason for category '${category}'.`;
-}
-
-async function getChangedFiles(cwd: string): Promise<string[]> {
-  try {
-    const { stdout } = await execFileAsync("git", ["diff", "--name-only", "HEAD"], {
-      cwd,
-      timeout: 5000,
-      windowsHide: true,
-    });
-    return stdout.trim().split("\n").filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-// ── ESM `node -e "require(...)"` detection ───────────────────────────────────
-
-/**
- * True when a command inlines `require(` through `node -e`/`--eval`. In a
- * `"type": "module"` package this throws `ERR_REQUIRE_ESM` (friction S2), so
- * such proof commands fail for reasons unrelated to the code under test.
- */
-export function usesNodeEvalRequire(command: string): boolean {
-  return /\bnode\b.*\s(?:-e|--eval)\b/.test(command) && /\brequire\s*\(/.test(command);
-}
-
-/** Walk up from cwd to the nearest package.json; true if it declares type: module. */
-export function isEsmPackage(cwd: string): boolean {
-  let dir = path.resolve(cwd);
-  for (let i = 0; i < 20; i++) {
-    const pkg = path.join(dir, "package.json");
-    if (existsSync(pkg)) {
-      try {
-        return JSON.parse(readFileSync(pkg, "utf-8")).type === "module";
-      } catch {
-        return false;
-      }
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return false;
-}
-
-/** The platform commands are validated against (matches the checker's host). */
 export const currentOs = process.platform;

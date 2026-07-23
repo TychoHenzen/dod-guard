@@ -7,7 +7,6 @@ interface CreateParams {
     markdown_path: string;
     sections: DodSections;
     roots: any[];
-    skip_reasons?: Record<string, string>;
 }
 export declare function handleDodCreate(params: CreateParams): Promise<string>;
 export {};

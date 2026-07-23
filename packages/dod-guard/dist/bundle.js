@@ -2980,7 +2980,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve8.call(this, root, ref);
+      let _sch = resolve5.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3007,7 +3007,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve8(root, ref) {
+    function resolve5(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3225,8 +3225,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path9) {
-      let input = path9;
+    function removeDotSegments(path6) {
+      let input = path6;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3478,8 +3478,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path9, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path9 && path9 !== "/" ? path9 : void 0;
+        const [path6, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path6 && path6 !== "/" ? path6 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3638,55 +3638,55 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve8(baseURI, relativeURI, options) {
+    function resolve5(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse3(baseURI, schemelessOptions), parse3(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative4, options, skipNormalization) {
+    function resolveComponent(base, relative, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative4 = parse3(serialize(relative4, options), options);
+        relative = parse3(serialize(relative, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative4.scheme) {
-        target.scheme = relative4.scheme;
-        target.userinfo = relative4.userinfo;
-        target.host = relative4.host;
-        target.port = relative4.port;
-        target.path = removeDotSegments(relative4.path || "");
-        target.query = relative4.query;
+      if (!options.tolerant && relative.scheme) {
+        target.scheme = relative.scheme;
+        target.userinfo = relative.userinfo;
+        target.host = relative.host;
+        target.port = relative.port;
+        target.path = removeDotSegments(relative.path || "");
+        target.query = relative.query;
       } else {
-        if (relative4.userinfo !== void 0 || relative4.host !== void 0 || relative4.port !== void 0) {
-          target.userinfo = relative4.userinfo;
-          target.host = relative4.host;
-          target.port = relative4.port;
-          target.path = removeDotSegments(relative4.path || "");
-          target.query = relative4.query;
+        if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
+          target.userinfo = relative.userinfo;
+          target.host = relative.host;
+          target.port = relative.port;
+          target.path = removeDotSegments(relative.path || "");
+          target.query = relative.query;
         } else {
-          if (!relative4.path) {
+          if (!relative.path) {
             target.path = base.path;
-            if (relative4.query !== void 0) {
-              target.query = relative4.query;
+            if (relative.query !== void 0) {
+              target.query = relative.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative4.path[0] === "/") {
-              target.path = removeDotSegments(relative4.path);
+            if (relative.path[0] === "/") {
+              target.path = removeDotSegments(relative.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative4.path;
+                target.path = "/" + relative.path;
               } else if (!base.path) {
-                target.path = relative4.path;
+                target.path = relative.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative4.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative4.query;
+            target.query = relative.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3694,7 +3694,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative4.fragment;
+      target.fragment = relative.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3896,7 +3896,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve8,
+      resolve: resolve5,
       resolveComponent,
       equal,
       serialize,
@@ -6886,7 +6886,7 @@ var require_dist = __commonJS({
 });
 
 // src/index.ts
-import * as path8 from "node:path";
+import * as path5 from "node:path";
 
 // ../../node_modules/zod/v3/external.js
 var external_exports = {};
@@ -7366,8 +7366,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path9, errorMaps, issueData } = params;
-  const fullPath = [...path9, ...issueData.path || []];
+  const { data, path: path6, errorMaps, issueData } = params;
+  const fullPath = [...path6, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7483,11 +7483,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path9, key) {
+  constructor(parent, value, path6, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path9;
+    this._path = path6;
     this._key = key;
   }
   get path() {
@@ -11124,10 +11124,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path9) {
-  if (!path9)
+function getElementAtPath(obj, path6) {
+  if (!path6)
     return obj;
-  return path9.reduce((acc, key) => acc?.[key], obj);
+  return path6.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11447,11 +11447,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path9, issues) {
+function prefixIssues(path6, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path9);
+    iss.path.unshift(path6);
     return iss;
   });
 }
@@ -18979,7 +18979,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve8) => setTimeout(resolve8, pollInterval));
+        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -18996,7 +18996,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve8, reject) => {
+    return new Promise((resolve5, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19074,7 +19074,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve8(parseResult.data);
+            resolve5(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19335,12 +19335,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve8, reject) => {
+    return new Promise((resolve5, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve8, interval);
+      const timeoutId = setTimeout(resolve5, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20440,7 +20440,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve8) => setTimeout(resolve8, pollInterval));
+      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21089,12 +21089,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve8) => {
+    return new Promise((resolve5) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve8();
+        resolve5();
       } else {
-        this._stdout.once("drain", resolve8);
+        this._stdout.once("drain", resolve5);
       }
     });
   }
@@ -21102,832 +21102,15 @@ var StdioServerTransport = class {
 
 // src/author.ts
 import { promises as fs } from "node:fs";
-import * as path4 from "node:path";
-
-// src/brevity.ts
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import * as path from "node:path";
 
-// src/find-functions.ts
-var CONTROL_KEYWORDS = /* @__PURE__ */ new Set([
-  "if",
-  "else",
-  "for",
-  "while",
-  "do",
-  "switch",
-  "catch",
-  "try",
-  "finally",
-  "return",
-  "throw",
-  "new",
-  "typeof",
-  "instanceof",
-  "class",
-  "import",
-  "export",
-  "default",
-  "from",
-  "as",
-  "yield",
-  "await",
-  "break",
-  "continue",
-  "with",
-  "debugger",
-  "void",
-  "delete",
-  "in",
-  "of"
-]);
-function getIndent(line) {
-  const m = line.match(/^(\s*)/);
-  return m ? m[1].length : 0;
-}
-function findBlockEnd(lines, startIdx, open, close) {
-  const baseIndent = getIndent(lines[startIdx]);
-  const openLine = lines[startIdx];
-  let braceIdx = openLine.indexOf(open);
-  if (braceIdx === -1) braceIdx = 0;
-  let depth = 0;
-  for (let i = startIdx; i < lines.length; i++) {
-    const line = lines[i];
-    let inString = null;
-    const startCol = i === startIdx ? braceIdx : 0;
-    for (let j = startCol; j < line.length; j++) {
-      const ch = line[j];
-      const prev = j > 0 ? line[j - 1] : "";
-      if (inString) {
-        if (ch === inString && prev !== "\\") inString = null;
-        continue;
-      }
-      if (ch === '"' || ch === "'" || ch === "`") {
-        inString = ch;
-        continue;
-      }
-      if (ch === "/" && j + 1 < line.length && line[j + 1] === "/") break;
-      if (ch === open) depth++;
-      else if (ch === close) {
-        depth--;
-        if (depth === 0 && getIndent(line) <= baseIndent) return i;
-      }
-    }
-  }
-  return lines.length - 1;
-}
-function findJsFunctions(lines) {
-  const out = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-    if (!trimmed || /^\s*\/\//.test(line) || /^\s*\/\*/.test(line)) continue;
-    let m = line.match(/^\s*(?:export\s+(?:default\s+)?)?(?:async\s+)?function\s+(\w+)/);
-    if (m) {
-      const end = findBlockEnd(lines, i, "{", "}");
-      out.push({
-        startLine: i + 1,
-        endLine: end + 1,
-        name: m[1],
-        bodyLines: lines.slice(i + 1, end)
-      });
-      i = end;
-      continue;
-    }
-    m = line.match(/^\s*(?:static\s+)?(?:async\s+)?(?:get\s+|set\s+)?(\w+)\s*\([^)]*\)\s*\{/);
-    if (m && !CONTROL_KEYWORDS.has(m[1])) {
-      const end = findBlockEnd(lines, i, "{", "}");
-      out.push({
-        startLine: i + 1,
-        endLine: end + 1,
-        name: m[1],
-        bodyLines: lines.slice(i + 1, end)
-      });
-      i = end;
-      continue;
-    }
-    m = line.match(/^\s*(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>\s*\{/);
-    if (m) {
-      const end = findBlockEnd(lines, i, "{", "}");
-      out.push({
-        startLine: i + 1,
-        endLine: end + 1,
-        name: m[1],
-        bodyLines: lines.slice(i + 1, end)
-      });
-      i = end;
-      continue;
-    }
-    m = line.match(/^\s*(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?function\s*\(/);
-    if (m) {
-      const end = findBlockEnd(lines, i, "{", "}");
-      out.push({
-        startLine: i + 1,
-        endLine: end + 1,
-        name: m[1],
-        bodyLines: lines.slice(i + 1, end)
-      });
-      i = end;
-    }
-  }
-  return out;
-}
-function findPyFunctions(lines) {
-  const out = [];
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^\s*def\s+(\w+)\s*\(/);
-    if (!m) continue;
-    const end = findPyBlockEnd(lines, i);
-    if (end > i) {
-      out.push({ startLine: i + 1, endLine: end + 1, name: m[1], bodyLines: lines.slice(i + 1, end + 1) });
-      i = end;
-    }
-  }
-  return out;
-}
-function findPyBlockEnd(lines, startIdx) {
-  const baseIndent = getIndent(lines[startIdx]);
-  let i = startIdx + 1;
-  while (i < lines.length) {
-    const trimmed = lines[i].trim();
-    if (trimmed === "") {
-      i++;
-      continue;
-    }
-    if (getIndent(lines[i]) <= baseIndent) return i - 1;
-    i++;
-  }
-  return lines.length - 1;
-}
-function findRsFunctions(lines) {
-  const out = [];
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(
-      /^\s*(?:pub(?:\s*\(\s*(?:crate|super|self)\s*\))?\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+(\w+)/
-    );
-    if (!m) continue;
-    const end = findBlockEnd(lines, i, "{", "}");
-    out.push({
-      startLine: i + 1,
-      endLine: end + 1,
-      name: m[1],
-      bodyLines: lines.slice(i + 1, end)
-    });
-    i = end;
-  }
-  return out;
-}
-function findCsFunctions(lines) {
-  const out = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line || line.startsWith("//") || line.startsWith("[") || line.startsWith("/*")) continue;
-    const m = line.match(
-      /^(?:(?:public|private|protected|internal|static|virtual|override|async|sealed|abstract|unsafe|partial|readonly|extern)\s+)*(\w+(?:<[^>]*>)?)\s+(\w+)\s*\([^)]*\)\s*(?:where\s+[^{]+)?\{/
-    );
-    if (!m) continue;
-    const nameToken = m[2];
-    if (CONTROL_KEYWORDS.has(nameToken)) continue;
-    const end = findBlockEnd(lines, i, "{", "}");
-    out.push({
-      startLine: i + 1,
-      endLine: end + 1,
-      name: nameToken,
-      bodyLines: lines.slice(i + 1, end)
-    });
-    i = end;
-  }
-  return out;
-}
-function findFunctions(lines, lang) {
-  switch (lang) {
-    case "js":
-      return findJsFunctions(lines);
-    case "py":
-      return findPyFunctions(lines);
-    case "rs":
-      return findRsFunctions(lines);
-    case "cs":
-      return findCsFunctions(lines);
-    default:
-      return [];
-  }
-}
-var CC_PATTERNS = {
-  js: [
-    /\bif\s*\(/g,
-    /\belse\s+if\b/g,
-    /\bfor\s*\(/g,
-    /\bwhile\s*\(/g,
-    /\bdo\s*\{/g,
-    /\bcase\s+[^:]+:/g,
-    /\bcatch\s*[({]/g,
-    /&&/g,
-    /\|\|/g,
-    /\?\?/g,
-    /\?\./g,
-    /\?[^:]+:/g
-    // ternary
-  ],
-  py: [/\bif\s+/g, /\belif\s+/g, /\bfor\s+/g, /\bwhile\s+/g, /\bexcept\s*:/g, /\band\b/g, /\bor\b/g],
-  rs: [
-    /\bif\s+/g,
-    /\belse\s+if\b/g,
-    /\bfor\s+/g,
-    /\bwhile\s+/g,
-    /\bloop\s*\{/g,
-    /\bmatch\s+/g,
-    /\bcase\s+/g,
-    /&&/g,
-    /\|\|/g,
-    /\?\?/g
-  ],
-  cs: [
-    /\bif\s*\(/g,
-    /\belse\s+if\b/g,
-    /\bfor\s*\(/g,
-    /\bforeach\s*\(/g,
-    /\bwhile\s*\(/g,
-    /\bdo\s*\{/g,
-    /\bcase\s+[^:]+:/g,
-    /\bcatch\s*[({]/g,
-    /&&/g,
-    /\|\|/g,
-    /\?\?/g,
-    /\?\s*[^:]+:/g
-  ]
-};
-var JUMP_PATTERNS = {
-  js: /\b(return|throw|break|continue)\b/,
-  py: /\b(return|raise|break|continue)\b/,
-  rs: /\b(return|break|continue)\b/,
-  cs: /\b(return|throw|break|continue)\b/
-};
-var ELSE_PATTERNS = {
-  js: /\}\s*else\b/,
-  py: /^\s*else\s*:/,
-  rs: /\}\s*else\b/,
-  cs: /\}\s*else\b/
-};
-var ELIF_PATTERN = /^\s*elif\s+/;
-function stripStringsAndComments(line) {
-  let s = line.replace(/\/\/.*$/, "").replace(/#.*$/, "");
-  s = s.replace(/`[^`]*`/g, "").replace(/"[^"]*"/g, '""').replace(/'[^']*'/g, "''");
-  return s;
-}
-function checkCyclomaticComplexity(bodyLines, lang) {
-  if (!lang) return { complexity: 0 };
-  const patterns = CC_PATTERNS[lang];
-  if (!patterns) return { complexity: 0 };
-  let complexity = 1;
-  for (const line of bodyLines) {
-    const stripped = stripStringsAndComments(line);
-    for (const re of patterns) {
-      re.lastIndex = 0;
-      const matches = stripped.match(re);
-      if (matches) complexity += matches.length;
-    }
-  }
-  return { complexity };
-}
-function checkUnnecessaryElse(bodyLines, lang) {
-  if (!lang) return { count: 0 };
-  const elseRe = ELSE_PATTERNS[lang];
-  const jumpRe = JUMP_PATTERNS[lang];
-  if (!(elseRe && jumpRe)) return { count: 0 };
-  let count = 0;
-  for (let i = 0; i < bodyLines.length; i++) {
-    const raw = bodyLines[i];
-    const trimmed = raw.trim();
-    if (lang !== "py" && elseRe.test(trimmed)) {
-      let j = i - 1;
-      let skipToDepth = null;
-      while (j >= 0) {
-        const t = bodyLines[j].trim();
-        if (t === "" || t.startsWith("//") || t.startsWith("/*")) {
-          j--;
-          continue;
-        }
-        if (t.endsWith("}") || t === "}") {
-          if (skipToDepth === null) skipToDepth = getIndent(bodyLines[j]);
-          j--;
-          continue;
-        }
-        if (skipToDepth !== null) {
-          if (getIndent(bodyLines[j]) >= skipToDepth) {
-            j--;
-            continue;
-          }
-          skipToDepth = null;
-        }
-        break;
-      }
-      if (j >= 0) {
-        const candidate = stripStringsAndComments(bodyLines[j].trim());
-        if (jumpRe.test(candidate)) {
-          count++;
-        }
-      }
-    } else if (lang === "py" && (ELSE_PATTERNS.py.test(trimmed) || ELIF_PATTERN.test(trimmed))) {
-      const currentIndent = getIndent(raw);
-      let j = i - 1;
-      while (j >= 0 && (bodyLines[j].trim() === "" || bodyLines[j].trim().startsWith("#"))) j--;
-      if (j >= 0) {
-        const prevIndent = getIndent(bodyLines[j]);
-        if (prevIndent > currentIndent && jumpRe.test(stripStringsAndComments(bodyLines[j].trim()))) {
-          count++;
-        }
-      }
-    }
-  }
-  return { count };
-}
-function checkAvoidableElse(bodyLines, lang) {
-  if (!lang) return { count: 0 };
-  const elseRe = ELSE_PATTERNS[lang];
-  const jumpRe = JUMP_PATTERNS[lang];
-  if (!(elseRe && jumpRe)) return { count: 0 };
-  let hasGuardClause = false;
-  for (let i = 0; i < bodyLines.length; i++) {
-    const _stripped = stripStringsAndComments(bodyLines[i]);
-    const trimmed = bodyLines[i].trim();
-    if (lang !== "py") {
-      if (/\bif\s*\(/.test(trimmed) || /\belse\s+if\b/.test(trimmed)) {
-        let depth = 0;
-        let started = false;
-        let blockEnd = -1;
-        for (let j = i; j < bodyLines.length; j++) {
-          const s = stripStringsAndComments(bodyLines[j]);
-          for (const ch of s) {
-            if (ch === "{") {
-              depth++;
-              started = true;
-            } else if (ch === "}") {
-              depth--;
-              if (started && depth === 0) {
-                blockEnd = j;
-                break;
-              }
-            }
-          }
-          if (blockEnd >= 0) break;
-        }
-        if (blockEnd > i) {
-          let prevLine = bodyLines[blockEnd - 1].trim();
-          let j2 = blockEnd - 1;
-          while (j2 > i && (prevLine === "" || prevLine.startsWith("//") || prevLine === "}")) {
-            j2--;
-            prevLine = bodyLines[j2].trim();
-          }
-          if (jumpRe.test(stripStringsAndComments(prevLine))) {
-            const nextLine = blockEnd + 1 < bodyLines.length ? bodyLines[blockEnd + 1].trim() : "";
-            if (!elseRe.test(nextLine)) {
-              hasGuardClause = true;
-              break;
-            }
-          }
-        }
-      }
-    } else {
-      if (/\bif\s+/.test(trimmed) || /\belif\s+/.test(trimmed)) {
-        const blockIndent = getIndent(bodyLines[i]);
-        let blockEnd = i;
-        for (let j = i + 1; j < bodyLines.length; j++) {
-          if (bodyLines[j].trim() === "") continue;
-          if (getIndent(bodyLines[j]) <= blockIndent) {
-            blockEnd = j - 1;
-            break;
-          }
-          blockEnd = j;
-        }
-        if (blockEnd > i && jumpRe.test(stripStringsAndComments(bodyLines[blockEnd].trim()))) {
-          const nextLine = blockEnd + 1 < bodyLines.length ? bodyLines[blockEnd + 1].trim() : "";
-          if (!(ELSE_PATTERNS.py.test(nextLine) || ELIF_PATTERN.test(nextLine))) {
-            hasGuardClause = true;
-            break;
-          }
-        }
-      }
-    }
-  }
-  if (hasGuardClause) return { count: 0 };
-  let count = 0;
-  for (const raw of bodyLines) {
-    const trimmed = raw.trim();
-    if (elseRe.test(trimmed) || lang === "py" && ELIF_PATTERN.test(trimmed)) {
-      count++;
-    }
-  }
-  return { count };
-}
-
-// src/brevity.ts
-var DEFAULT_BREVITY_OPTS = {
-  maxLineLength: 120,
-  maxFunctionLines: 30,
-  maxFileLines: 300,
-  maxComplexity: 5,
-  requireGuardClauses: true,
-  suggestGuardClauses: true,
-  minReplacementRatio: 0.2
-};
-function detectLanguage(file) {
-  const ext = path.extname(file).toLowerCase();
-  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
-  if (ext === ".py") return "py";
-  if (ext === ".rs") return "rs";
-  if (ext === ".cs") return "cs";
-  return null;
-}
-function parseDiffOutput(output, cwd) {
-  const files = [];
-  const stats = /* @__PURE__ */ new Map();
-  for (const line of output.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const ns = line.match(/^(\d+)\t(\d+)\t(.+)$/);
-    if (ns) {
-      const name = ns[3].trim();
-      files.push(name);
-      stats.set(name, { insertions: Number(ns[1]), deletions: Number(ns[2]) });
-      continue;
-    }
-    const st = line.match(/^(.+?)\s+\|\s+(\d+)\s+([+-]*)$/);
-    if (st) {
-      const name = st[1].trim();
-      files.push(name);
-      const pm = st[3];
-      let ins = 0, del = 0;
-      for (const ch of pm) {
-        if (ch === "+") ins++;
-        else if (ch === "-") del++;
-      }
-      if (ins > 0 || del > 0) stats.set(name, { insertions: ins, deletions: del });
-      continue;
-    }
-    if (/\.\w{1,6}$/.test(trimmed) && (trimmed.includes("/") || trimmed.includes("\\"))) {
-      const abs = path.resolve(cwd, trimmed);
-      if (!(files.includes(abs) || files.includes(trimmed))) {
-        files.push(trimmed);
-      }
-    }
-  }
-  return { files, stats };
-}
-var SOURCE_EXTS = /* @__PURE__ */ new Set([
-  ".js",
-  ".ts",
-  ".mjs",
-  ".cjs",
-  ".mts",
-  ".cts",
-  ".jsx",
-  ".tsx",
-  ".py",
-  ".rs",
-  ".cs",
-  ".go",
-  ".java",
-  ".rb",
-  ".swift",
-  ".kt"
-]);
-var SKIP_DIRS = /* @__PURE__ */ new Set(["dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git"]);
-function isSourceFile(fp) {
-  return SOURCE_EXTS.has(path.extname(fp).toLowerCase());
-}
-function isInSkipDir(fp) {
-  return fp.split(path.sep).some((p) => SKIP_DIRS.has(p));
-}
-function extractSourceFilesFromCommand(command, cwd) {
-  const tokens = command.split(/\s+/);
-  const files = [];
-  for (const token of tokens) {
-    if (token.startsWith("-")) continue;
-    if (/^(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go|git)$/.test(token)) continue;
-    if (token.includes("/") || token.includes("\\") || token.includes(".")) {
-      const resolved = path.resolve(cwd, token);
-      if (isInSkipDir(resolved)) continue;
-      if (existsSync(resolved) && isSourceFile(resolved)) files.push(resolved);
-      else {
-        const dir = path.dirname(resolved);
-        const pat = path.basename(resolved);
-        if (existsSync(dir) && pat.includes("*")) {
-          try {
-            for (const entry of readdirSync(dir)) {
-              const full = path.join(dir, entry);
-              const s = statSync(full);
-              if (s.isFile() && !isInSkipDir(full) && isSourceFile(full)) files.push(full);
-            }
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            console.error("brevity: unreadable dir", { dir, err: msg });
-          }
-        }
-      }
-    }
-  }
-  return [...new Set(files)];
-}
-function scanFile(filePath, cwd, opts) {
-  const lang = detectLanguage(filePath);
-  if (!lang) {
-    return {
-      violations: [],
-      lineCount: 0,
-      functionCount: 0,
-      longFunctions: 0,
-      highComplexityFunctions: 0,
-      unnecessaryElseCount: 0,
-      elseAvoidableCount: 0
-    };
-  }
-  const content = readFileSync(filePath, "utf-8");
-  const lines = content.split(/\r?\n/);
-  const relPath = path.relative(cwd, filePath);
-  const violations = [];
-  for (let i = 0; i < lines.length; i++) {
-    const len = lines[i].length;
-    if (len > opts.maxLineLength) {
-      violations.push({
-        file: relPath,
-        line: i + 1,
-        kind: "line_too_long",
-        detail: `line length ${len} exceeds max ${opts.maxLineLength}`
-      });
-    }
-  }
-  const lineCount = lines.length;
-  if (lineCount > opts.maxFileLines) {
-    violations.push({
-      file: relPath,
-      line: 1,
-      kind: "file_too_long",
-      detail: `file has ${lineCount} lines, exceeds max ${opts.maxFileLines}`
-    });
-  }
-  const functions = findFunctions(lines, lang);
-  let longFunctions = 0;
-  let highComplexityFunctions = 0;
-  let unnecessaryElseCount = 0;
-  let elseAvoidableCount = 0;
-  for (const fn of functions) {
-    const fnLen = fn.endLine - fn.startLine + 1;
-    if (fnLen > opts.maxFunctionLines) {
-      longFunctions++;
-      violations.push({
-        file: relPath,
-        line: fn.startLine,
-        kind: "function_too_long",
-        detail: `"${fn.name}" is ${fnLen} lines, exceeds max ${opts.maxFunctionLines}`
-      });
-    }
-    const { complexity } = checkCyclomaticComplexity(fn.bodyLines, lang);
-    if (complexity > opts.maxComplexity) {
-      highComplexityFunctions++;
-      violations.push({
-        file: relPath,
-        line: fn.startLine,
-        kind: "high_complexity",
-        detail: `"${fn.name}" CC=${complexity}, exceeds max ${opts.maxComplexity} \u2014 extract decision-heavy blocks into helpers`
-      });
-    }
-    if (opts.requireGuardClauses) {
-      const { count } = checkUnnecessaryElse(fn.bodyLines, lang);
-      if (count > 0) {
-        unnecessaryElseCount += count;
-        violations.push({
-          file: relPath,
-          line: fn.startLine,
-          kind: "unnecessary_else",
-          detail: `"${fn.name}" has ${count} unnecessary else clause${count > 1 ? "s" : ""} after exit statement \u2014 use guard clause instead`
-        });
-      }
-    }
-    if (opts.suggestGuardClauses) {
-      const { count } = checkAvoidableElse(fn.bodyLines, lang);
-      if (count > 0) {
-        elseAvoidableCount += count;
-        violations.push({
-          file: relPath,
-          line: fn.startLine,
-          kind: "else_avoidable",
-          detail: `"${fn.name}" has ${count} if/else pair${count > 1 ? "s" : ""} and zero guard clauses \u2014 refactor if-branch to exit early, eliminate else`
-        });
-      }
-    }
-  }
-  return {
-    violations,
-    lineCount,
-    functionCount: functions.length,
-    longFunctions,
-    highComplexityFunctions,
-    unnecessaryElseCount,
-    elseAvoidableCount
-  };
-}
-function analyseBrevity(command, cwd, opts = DEFAULT_BREVITY_OPTS) {
-  const files = extractSourceFilesFromCommand(command, cwd);
-  if (files.length === 0) return null;
-  return buildReport(files, cwd, opts, void 0);
-}
-function analyseBrevityFromOutput(commandOutput, cwd, opts = DEFAULT_BREVITY_OPTS) {
-  const { files: diffFiles, stats } = parseDiffOutput(commandOutput, cwd);
-  const resolved = diffFiles.map((f) => path.resolve(cwd, f)).filter((f) => existsSync(f) && isSourceFile(f) && !isInSkipDir(f));
-  if (resolved.length === 0) {
-    const extracted = [];
-    for (const line of commandOutput.split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith(" ") || trimmed.startsWith("	")) continue;
-      if (/\.\w{1,6}$/.test(trimmed)) {
-        const abs = path.resolve(cwd, trimmed);
-        if (existsSync(abs) && isSourceFile(abs) && !isInSkipDir(abs)) {
-          extracted.push(abs);
-        }
-      }
-    }
-    if (extracted.length === 0) return null;
-    return buildReport([...new Set(extracted)], cwd, opts, void 0);
-  }
-  return buildReport(resolved, cwd, opts, stats.size > 0 ? stats : void 0);
-}
-function normalizeRelPath(p) {
-  return p.replace(/\\/g, "/");
-}
-function buildReport(files, cwd, opts, diffStats) {
-  const normalizedStats = diffStats ? new Map([...diffStats].map(([k, v]) => [normalizeRelPath(k), v])) : void 0;
-  const allViolations = [];
-  const perFile = [];
-  for (const file of files) {
-    const result = scanFile(file, cwd, opts);
-    const ext = [...result.violations];
-    if (normalizedStats) {
-      const relPath2 = normalizeRelPath(path.relative(cwd, file));
-      const stat = normalizedStats.get(relPath2);
-      if (stat && stat.insertions > 10) {
-        const ratio = stat.deletions / stat.insertions;
-        if (ratio < opts.minReplacementRatio) {
-          ext.push({
-            file: relPath2,
-            line: 1,
-            kind: "low_replacement_ratio",
-            detail: `+${stat.insertions} -${stat.deletions} (deletion ratio ${(ratio * 100).toFixed(0)}% < required ${(opts.minReplacementRatio * 100).toFixed(0)}%) \u2014 old code not removed`
-          });
-        }
-      }
-    }
-    allViolations.push(...ext);
-    const relPath = normalizeRelPath(path.relative(cwd, file));
-    perFile.push({
-      file: relPath,
-      violations: ext,
-      lineCount: result.lineCount,
-      functionCount: result.functionCount,
-      longFunctions: result.longFunctions,
-      highComplexityFunctions: result.highComplexityFunctions,
-      unnecessaryElseCount: result.unnecessaryElseCount,
-      elseAvoidableCount: result.elseAvoidableCount,
-      insertions: normalizedStats?.get(relPath)?.insertions,
-      deletions: normalizedStats?.get(relPath)?.deletions
-    });
-  }
-  return {
-    totalViolations: allViolations.length,
-    violations: allViolations,
-    files: files.map((f) => normalizeRelPath(path.relative(cwd, f))),
-    perFile
-  };
-}
-
 // src/checker.ts
-import { exec as exec2 } from "node:child_process";
-import { promisify as promisify3 } from "node:util";
-
-// src/constants.ts
-var CMD_TRUNCATION = 80;
+import { exec } from "node:child_process";
+import { promisify as promisify2 } from "node:util";
 
 // src/evaluate-proof.ts
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-
-// src/assertions.ts
-import { existsSync as existsSync2, readdirSync as readdirSync2, readFileSync as readFileSync2 } from "node:fs";
-import * as path2 from "node:path";
-var PY_TRIVIAL = [
-  // assert True / assert False / assert None
-  /^\s*assert\s+(True|False|None)\s*(#.*)?$/,
-  // assert 1, assert 3.14, assert "hello"
-  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
-  // assert CONST OP CONST (both sides literal)
-  /^\s*assert\s+(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s* {4}(==|!=|is|is\s+not|in|not\s+in|[<>]=?)\s* {4}(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(#.*)?$/,
-  // self.assertX(CONST, CONST)
-  /^\s*self\.assert(?:True|False|Equal|NotEqual|Is|IsNot|In|NotIn|Greater|Less|AlmostEqual|Regex|Raises)\s*\(\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*(?:,\s*(True|False|None|\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*)?\)\s*(#.*)?$/
-];
-var JS_TRIVIAL = [
-  // expect(CONST).toXxx(CONST) — inline, no ^\s* anchor
-  /expect\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)\s*\.\s*(?:not\s*\.\s*)?(?:toBe|toEqual|toBeTruthy|toBeFalsy|toBeNull|toBeUndefined|toStrictEqual|toMatchObject|toContain|toHaveLength)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
-  // assert.equal(CONST, CONST) / assert.strictEqual(CONST, CONST)
-  /assert\.(?:equal|strictEqual|deepEqual|deepStrictEqual|notEqual|notStrictEqual|notDeepEqual)\s*\(\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*(true|false|null|undefined|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|`[^`]*`)\s*\)/,
-  // assert.ok(true) / assert.fail()
-  /assert\.(?:ok|fail)\s*\(\s*(true|false)\s*\)/
-];
-var PY_ASSERT = /^\s*(assert\b|self\.assert)/;
-var JS_ASSERT = /(expect\s*\(|assert\.)/;
-function classifyLine(line, detector, trivialPatterns) {
-  const globalDetector = new RegExp(detector.source, "g");
-  const matches = line.match(globalDetector);
-  if (!matches) return { count: 0, trivialCount: 0 };
-  const lineHasTrivial = trivialPatterns.some((p) => p.test(line));
-  return { count: matches.length, trivialCount: lineHasTrivial ? matches.length : 0 };
-}
-function languageForFile(file) {
-  const ext = path2.extname(file).toLowerCase();
-  if (ext === ".py") return "py";
-  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
-  return null;
-}
-function scanFile2(file) {
-  const lang = languageForFile(file);
-  if (!lang) return { total: 0, trivial: 0 };
-  const detector = lang === "py" ? PY_ASSERT : JS_ASSERT;
-  const trivialPatterns = lang === "py" ? PY_TRIVIAL : JS_TRIVIAL;
-  const content = readFileSync2(file, "utf-8");
-  const lines = content.split(/\r?\n/);
-  let total = 0;
-  let trivial = 0;
-  for (const line of lines) {
-    const result = classifyLine(line, detector, trivialPatterns);
-    total += result.count;
-    trivial += result.trivialCount;
-  }
-  return { total, trivial };
-}
-var TEST_FILE_PATTERNS = [
-  /^test_.*\.py$/,
-  /^.*_test\.py$/,
-  /\.test\.(ts|js|tsx|jsx|mts|mjs)$/,
-  /\.spec\.(ts|js|tsx|jsx|mts|mjs)$/
-];
-function isTestFile(filePath) {
-  const base = path2.basename(filePath);
-  return TEST_FILE_PATTERNS.some((p) => p.test(base));
-}
-function extractTestFilesFromCommand(command, cwd) {
-  const tokens = command.split(/\s+/);
-  const files = [];
-  for (const token of tokens) {
-    if (token.startsWith("-") || token.startsWith("--")) continue;
-    if (/^(python|python3?|pytest|node|npm|npx|pnpm|yarn|jest|vitest|mocha|ts-node|tsx)$/.test(token)) continue;
-    if (/^(test|run|exec)$/.test(token)) continue;
-    if (token.includes(".") || token.includes("/") || token.includes("\\")) {
-      const resolved = path2.resolve(cwd, token);
-      if (existsSync2(resolved) && isTestFile(resolved)) {
-        files.push(resolved);
-      }
-      const dir = path2.dirname(resolved);
-      const pat = path2.basename(resolved);
-      if (existsSync2(dir) && pat.includes("*")) {
-        try {
-          const entries = readdirSync2(dir);
-          const regex = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
-          for (const entry of entries) {
-            if (regex.test(entry)) {
-              const full = path2.join(dir, entry);
-              if (isTestFile(full)) files.push(full);
-            }
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error("assertions: unreadable dir", { dir, err: msg });
-        }
-      }
-    }
-  }
-  return [...new Set(files)];
-}
-function analyseAssertions(command, cwd) {
-  const files = extractTestFilesFromCommand(command, cwd);
-  if (files.length === 0) {
-    return null;
-  }
-  const perFile = [];
-  let total = 0;
-  let trivial = 0;
-  for (const file of files) {
-    const counts = scanFile2(file);
-    perFile.push({ file: path2.relative(cwd, file), ...counts });
-    total += counts.total;
-    trivial += counts.trivial;
-  }
-  return {
-    total,
-    trivial,
-    nonTrivial: total - trivial,
-    files: files.map((f) => path2.relative(cwd, f)),
-    perFile
-  };
-}
 
 // src/manual.ts
 import { createHash } from "node:crypto";
@@ -21967,1190 +21150,163 @@ async function resolveManual(node, confirm, label = "Manual verification") {
   };
 }
 
-// src/observability.ts
-import { existsSync as existsSync3, readdirSync as readdirSync3, readFileSync as readFileSync3, statSync as statSync2 } from "node:fs";
-import * as path3 from "node:path";
-function detectLanguage2(file) {
-  const ext = path3.extname(file).toLowerCase();
-  if ([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"].includes(ext)) return "js";
-  if (ext === ".py") return "py";
-  if (ext === ".rs") return "rs";
-  if (ext === ".cs") return "cs";
-  return null;
-}
-var LOG_PATTERNS = {
-  js: [
-    /\bconsole\.(log|error|warn|info|debug|trace)\s*\(/,
-    /\b(logger|log)\.(error|warn|info|debug|trace|fatal)\s*\(/,
-    /\bpino\./,
-    /\bwinston\./,
-    /\bbunyan\./
-  ],
-  py: [
-    /\blogging\.(debug|info|warning|error|critical|exception|log)\s*\(/,
-    /\b(logger|log|self\.logger|self\._logger)\.(debug|info|warning|warn|error|critical|exception|log)\s*\(/,
-    /\bloguru\./
-  ],
-  rs: [
-    /(?:\blog|error|warn|info|debug|trace)!\s*\(/,
-    /\beprintln!\s*\(/,
-    /\bdbg!\s*\(/,
-    /\btracing::(?:info|error|warn|debug|trace)\s*\(/
-  ],
-  cs: [
-    /\b(?:Log|_logger|logger|Logger)\.(?:Log(?:Information|Warning|Error|Debug|Critical|Trace)?|Information|Warning|Error|Debug|Fatal)\s*\(/,
-    /\bConsole\.Write(?:Line)?\s*\(/,
-    /\bDebug\.Write(?:Line)?\s*\(/
-  ]
-};
-function isLogStatement(line, lang) {
-  if (!lang) return false;
-  const patterns = LOG_PATTERNS[lang];
-  return patterns ? patterns.some((p) => p.test(line)) : false;
-}
-function findErrorHandlers(lines, lang) {
-  switch (lang) {
-    case "js":
-    case "cs":
-      return findBraceErrorHandlers(lines, lang);
-    case "py":
-      return findPyErrorHandlers(lines);
-    case "rs":
-      return findRsErrorHandlers(lines);
-    default:
-      return [];
-  }
-}
-function findBraceErrorHandlers(lines, lang) {
-  const results = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
-      const endLine = findBlockEnd2(lines, i, "{", "}");
-      const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, lang));
-      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
-    }
-  }
-  return results;
-}
-function findPyErrorHandlers(lines) {
-  const results = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/^\s*except\b/.test(line)) {
-      const endLine = findPyBlockEnd2(lines, i);
-      const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, "py"));
-      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
-    }
-  }
-  return results;
-}
-function findRsErrorHandlers(lines) {
-  const results = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/\bErr\s*\([^)]*\)\s*=>/.test(line) || /\bmatch\b.*\{/.test(line)) {
-      const endLine = findBlockEnd2(lines, i, "{", "}");
-      const blockLines = lines.slice(i, endLine + 1);
-      const hasLog = blockLines.some((l) => isLogStatement(l, "rs"));
-      results.push({ line: i + 1, endLine: endLine + 1, logged: hasLog, snippet: line.trim() });
-    }
-  }
-  return results;
-}
-function findBlockEnd2(lines, startIdx, open, close) {
-  const baseIndent = getIndent2(lines[startIdx]);
-  const openLine = lines[startIdx];
-  let braceIdx = -1;
-  for (let j = 0; j < openLine.length; j++) {
-    if (openLine[j] === open) {
-      braceIdx = j;
-      break;
-    }
-  }
-  if (braceIdx === -1) return lines.length - 1;
-  let depth = 0;
-  for (let i = startIdx; i < lines.length; i++) {
-    const line = lines[i];
-    let inString = null;
-    const startCol = i === startIdx ? braceIdx : 0;
-    for (let j = startCol; j < line.length; j++) {
-      const ch = line[j];
-      const prev = j > 0 ? line[j - 1] : "";
-      if (inString) {
-        if (ch === inString && prev !== "\\") inString = null;
-        continue;
-      }
-      if (ch === '"' || ch === "'" || ch === "`") {
-        inString = ch;
-        continue;
-      }
-      if (ch === "/" && j + 1 < line.length && line[j + 1] === "/") {
-        break;
-      }
-      if (ch === open) depth++;
-      else if (ch === close) {
-        depth--;
-        if (depth === 0 && getIndent2(line) <= baseIndent) {
-          return i;
-        }
-      }
-    }
-  }
-  return lines.length - 1;
-}
-function getIndent2(line) {
-  const match = line.match(/^(\s*)/);
-  return match ? match[1].length : 0;
-}
-function isInlineEmptyCatch(line) {
-  return /\bcatch\b\s*(\([^)]*\))?\s*\{\s*\}\s*$/.test(line);
-}
-function findPyBlockEnd2(lines, startIdx) {
-  const match = lines[startIdx].match(/^(\s*)/);
-  const baseIndent = match ? match[1].length : 0;
-  let i = startIdx + 1;
-  while (i < lines.length) {
-    const trimmed = lines[i].trim();
-    if (trimmed === "") {
-      i++;
-      continue;
-    }
-    const lineIndent = lines[i].match(/^(\s*)/)?.[1].length ?? 0;
-    if (lineIndent <= baseIndent) return i - 1;
-    i++;
-  }
-  return lines.length - 1;
-}
-function detectAntiPatterns(lines, lang, filePath) {
-  switch (lang) {
-    case "js":
-      return detectJsAntiPatterns(lines, filePath);
-    case "py":
-      return detectPyAntiPatterns(lines, filePath);
-    case "rs":
-      return detectRsAntiPatterns(lines, filePath);
-    default:
-      return [];
-  }
-}
-function detectJsAntiPatterns(lines, file) {
-  const hits = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-    if (/^\s*\/\/|^\s*\/\*|^\s*\*/.test(trimmed)) continue;
-    if (isInlineEmptyCatch(line)) {
-      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      continue;
-    }
-    if (/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) {
-      const endLine = findBlockEnd2(lines, i, "{", "}");
-      const body = lines.slice(i + 1, endLine).map((l) => l.trim()).filter((l) => l.length > 0);
-      if (body.length === 0) {
-        hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      }
-    }
-    if (isLogStatement(line, "js") && isBareStaticLog(line, "js")) {
-      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
-    }
-  }
-  return hits;
-}
-function detectPyAntiPatterns(lines, file) {
-  const hits = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/^\s*except\b.*:\s*pass\s*(#.*)?$/.test(line)) {
-      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      continue;
-    }
-    if (/^\s*except\b/.test(line)) {
-      const endLine = findPyBlockEnd2(lines, i);
-      const body = lines.slice(i + 1, endLine + 1).map((l) => l.trim()).filter((l) => l.length > 0);
-      const allPass = body.length > 0 && body.every((l) => l === "pass" || /^\s*pass\s*(#.*)?$/.test(l));
-      if (allPass) {
-        hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      }
-    }
-    if (isLogStatement(line, "py") && isBareStaticLog(line, "py")) {
-      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
-    }
-  }
-  return hits;
-}
-function detectRsAntiPatterns(lines, file) {
-  const hits = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/\bErr\s*\([^)]*\)\s*=>\s*\{\s*\}\s*,?$/.test(line)) {
-      hits.push({ file, line: i + 1, kind: "empty_catch", snippet: line.trim() });
-      continue;
-    }
-    if (isLogStatement(line, "rs") && isBareStaticLog(line, "rs")) {
-      hits.push({ file, line: i + 1, kind: "bare_log", snippet: line.trim() });
-    }
-  }
-  return hits;
-}
-function isBareStaticLog(line, lang) {
-  switch (lang) {
-    case "js":
-      return isBareStaticJs(line);
-    case "py":
-      return isBareStaticPy(line);
-    case "rs":
-      return isBareStaticRs(line);
-    default:
-      return false;
-  }
-}
-function isBareStaticJs(line) {
-  const match = line.match(/\b(?:console|logger|log|pino|winston)\.\w+\s*\(([^)]+)\)/);
-  if (!match) return false;
-  const args = match[1];
-  const argsList = splitArgs(args);
-  if (argsList.length === 0) return false;
-  if (argsList.some((a) => a.includes("`") && a.includes("${"))) return false;
-  if (argsList.length >= 2) return false;
-  const first = argsList[0].trim();
-  if (/^"[^"]*"$/.test(first) || /^'[^']*'$/.test(first) || /^`[^`]*`$/.test(first)) return true;
-  return false;
-}
-function isBareStaticPy(line) {
-  const match = line.match(/\b(?:logging|logger|log|self\.logger|self\._logger)\.\w+\s*\(([^)]+)\)/);
-  if (!match) return false;
-  const args = match[1];
-  const argsList = splitArgs(args);
-  if (argsList.length === 0) return false;
-  if (argsList.some((a) => a.startsWith('f"') || a.startsWith("f'"))) return false;
-  if (argsList.length >= 2) return false;
-  if (/%[sdfr]/.test(args)) return false;
-  const first = argsList[0].trim();
-  if (/^"[^"]*"$/.test(first) || /^'[^']*'$/.test(first)) return true;
-  return false;
-}
-function isBareStaticRs(line) {
-  const match = line.match(/\b(?:log|error|warn|info|debug|trace|eprintln|dbg)!\s*\(\s*("[^"]*")/);
-  if (!match) return false;
-  const msg = match[1];
-  if (/\{\}/.test(msg) || /\{[^}]*\}/.test(msg)) return false;
-  const afterStr = line.slice(line.indexOf(msg) + msg.length);
-  if (afterStr.includes(",") && afterStr.indexOf(",") < afterStr.indexOf(")")) return false;
-  return true;
-}
-function splitArgs(s) {
-  const args = [];
-  let depth = 0;
-  let current = "";
-  for (const ch of s) {
-    if (ch === "(" || ch === "{" || ch === "[") depth++;
-    else if (ch === ")" || ch === "}" || ch === "]") depth--;
-    if (ch === "," && depth === 0) {
-      args.push(current);
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  const trimmed = current.trim();
-  if (trimmed.length > 0) args.push(trimmed);
-  return args;
-}
-function detectSwallowedErrors(lines, lang, filePath) {
-  const hits = [];
-  if (lang !== "js" && lang !== "cs") return hits;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!/\bcatch\b\s*(\([^)]*\))?\s*\{/.test(line)) continue;
-    const endLine = findBlockEnd2(lines, i, "{", "}");
-    const blockLines = lines.slice(i + 1, endLine);
-    const codeLines = blockLines.map((l) => l.trim()).filter((l) => l.length > 0);
-    const hasLog = blockLines.some((l) => isLogStatement(l, lang));
-    const _hasReturn = codeLines.some((l) => /\breturn\b/.test(l));
-    const hasThrow = codeLines.some((l) => /\bthrow\b/.test(l));
-    if (!(hasLog || hasThrow) && codeLines.length > 0) {
-      hits.push({
-        file: filePath,
-        line: i + 1,
-        kind: "swallowed_error",
-        snippet: line.trim()
-      });
-    }
-  }
-  return hits;
-}
-var SOURCE_EXTS2 = /* @__PURE__ */ new Set([
-  ".js",
-  ".ts",
-  ".mjs",
-  ".cjs",
-  ".mts",
-  ".cts",
-  ".jsx",
-  ".tsx",
-  ".py",
-  ".rs",
-  ".cs",
-  ".go",
-  ".java",
-  ".rb",
-  ".swift",
-  ".kt"
-]);
-var SKIP_DIRS2 = /* @__PURE__ */ new Set(["dist", "build", "out", ".next", "node_modules", "__pycache__", "target", ".git"]);
-function isSourceFile2(filePath) {
-  const ext = path3.extname(filePath).toLowerCase();
-  return SOURCE_EXTS2.has(ext);
-}
-function isInSkipDir2(filePath) {
-  const parts = filePath.split(path3.sep);
-  return parts.some((p) => SKIP_DIRS2.has(p));
-}
-function extractSourceFilesFromOutput(output, cwd) {
-  const files = [];
-  for (const line of output.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (/^[a-z_]+:/i.test(trimmed) && !trimmed.includes("/") && !trimmed.includes("\\")) continue;
-    if (trimmed.includes(".") || trimmed.includes("/") || trimmed.includes("\\")) {
-      const pathMatch = trimmed.match(/([^\s:]+\.[a-z]{1,6})\b/gi);
-      if (pathMatch) {
-        for (const candidate of pathMatch) {
-          const resolved = path3.resolve(cwd, candidate.trim());
-          if (isInSkipDir2(resolved)) continue;
-          if (existsSync3(resolved) && isSourceFile2(resolved)) {
-            files.push(resolved);
-          }
-        }
-      }
-    }
-  }
-  return [...new Set(files)];
-}
-function extractSourceFilesFromCommand2(command, cwd) {
-  const tokens = command.split(/\s+/);
-  const files = [];
-  for (const token of tokens) {
-    if (token.startsWith("-")) continue;
-    if (/^(python|node|npm|npx|pnpm|yarn|jest|vitest|mocha|cargo|dotnet|go)$/.test(token)) continue;
-    if (token.includes("/") || token.includes("\\") || token.includes(".")) {
-      const resolved = path3.resolve(cwd, token);
-      if (isInSkipDir2(resolved)) continue;
-      if (existsSync3(resolved) && isSourceFile2(resolved)) {
-        files.push(resolved);
-      } else {
-        const dir = path3.dirname(resolved);
-        const pat = path3.basename(resolved);
-        if (existsSync3(dir) && pat.includes("*")) {
-          try {
-            const entries = readdirSync3(dir);
-            const _regex2 = new RegExp(`^${pat.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
-            for (const entry of entries) {
-              const full = path3.join(dir, entry);
-              if (isInSkipDir2(full)) continue;
-              if (!existsSync3(full)) continue;
-              const stat = statSync2(full);
-              if (stat.isFile() && isSourceFile2(full)) {
-                files.push(full);
-              }
-            }
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            console.error("observability: unreadable dir", { dir, err: msg });
-          }
-        }
-      }
-    }
-  }
-  return [...new Set(files)];
-}
-function scanFile3(filePath, cwd) {
-  const lang = detectLanguage2(filePath);
-  if (!lang) return { logCount: 0, errorHandlers: [], antiPatterns: [] };
-  const content = readFileSync3(filePath, "utf-8");
-  const lines = content.split(/\r?\n/);
-  let logCount = 0;
-  for (const line of lines) {
-    if (isLogStatement(line, lang)) logCount++;
-  }
-  const errorHandlerResults = findErrorHandlers(lines, lang);
-  const errorHandlers = errorHandlerResults.map((r) => ({
-    file: path3.relative(cwd, filePath),
-    line: r.line,
-    logged: r.logged,
-    snippet: r.snippet
-  }));
-  const antiPatterns = [
-    ...detectAntiPatterns(lines, lang, path3.relative(cwd, filePath)),
-    ...detectSwallowedErrors(lines, lang, path3.relative(cwd, filePath))
-  ];
-  return { logCount, errorHandlers, antiPatterns };
-}
-function analyseObservability(command, cwd) {
-  if (process.env.DOD_DEBUG)
-    console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
-  const files = extractSourceFilesFromCommand2(command, cwd);
-  if (files.length === 0) {
-    if (/\bgit\s+diff\b/.test(command) || /\bgit diff/.test(command)) {
-    }
-  }
-  if (files.length === 0) {
-    return null;
-  }
-  const perFile = [];
-  let totalLogStatements = 0;
-  let totalErrorHandlers = 0;
-  let errorHandlersLogged = 0;
-  const allAntiPatterns = [];
-  for (const file of files) {
-    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
-      if (process.env.DOD_DEBUG) console.debug("observability: skipping self-analysis of", file);
-      continue;
-    }
-    const result = scanFile3(file, cwd);
-    perFile.push({
-      file: path3.relative(cwd, file),
-      logCount: result.logCount,
-      errorHandlers: result.errorHandlers.length,
-      errorHandlersLogged: result.errorHandlers.filter((h) => h.logged).length,
-      antiPatterns: result.antiPatterns
-    });
-    totalLogStatements += result.logCount;
-    totalErrorHandlers += result.errorHandlers.length;
-    errorHandlersLogged += result.errorHandlers.filter((h) => h.logged).length;
-    allAntiPatterns.push(...result.antiPatterns);
-  }
-  return {
-    totalLogStatements,
-    totalErrorHandlers,
-    errorHandlersLogged,
-    antiPatterns: allAntiPatterns,
-    files: files.map((f) => path3.relative(cwd, f)),
-    perFile
-  };
-}
-function analyseObservabilityFromOutput(commandOutput, cwd) {
-  const files = extractSourceFilesFromOutput(commandOutput, cwd);
-  if (files.length === 0) return null;
-  const perFile = [];
-  let totalLogStatements = 0;
-  let totalErrorHandlers = 0;
-  let errorHandlersLogged = 0;
-  const allAntiPatterns = [];
-  for (const file of files) {
-    if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
-      if (process.env.DOD_DEBUG) console.debug("observability: skipping self-analysis of", file);
-      continue;
-    }
-    const result = scanFile3(file, cwd);
-    perFile.push({
-      file: path3.relative(cwd, file),
-      logCount: result.logCount,
-      errorHandlers: result.errorHandlers.length,
-      errorHandlersLogged: result.errorHandlers.filter((h) => h.logged).length,
-      antiPatterns: result.antiPatterns
-    });
-    totalLogStatements += result.logCount;
-    totalErrorHandlers += result.errorHandlers.length;
-    errorHandlersLogged += result.errorHandlers.filter((h) => h.logged).length;
-    allAntiPatterns.push(...result.antiPatterns);
-  }
-  return {
-    totalLogStatements,
-    totalErrorHandlers,
-    errorHandlersLogged,
-    antiPatterns: allAntiPatterns,
-    files: files.map((f) => path3.relative(cwd, f)),
-    perFile
-  };
-}
-
-// src/regression.ts
-function extractNumber(stdout, extract) {
-  if (extract) {
-    const match = stdout.match(new RegExp(extract));
-    if (!match || match[1] === void 0) return null;
-    const value2 = Number(match[1]);
-    return Number.isFinite(value2) ? value2 : null;
-  }
-  const numbers = stdout.match(/-?\d+(?:\.\d+)?/g);
-  if (!numbers || numbers.length === 0) return null;
-  const value = Number(numbers[numbers.length - 1]);
-  return Number.isFinite(value) ? value : null;
-}
-
 // src/evaluate-proof.ts
-var execFileAsync = promisify(execFile);
-function extractPathsFromCommand(command) {
-  const tokens = command.split(/\s+/);
-  const files = [];
-  for (const token of tokens) {
-    if (token.startsWith("-")) continue;
-    if (token.includes("/") || token.includes("\\") || token.includes(".")) {
-      files.push(token);
-    }
-  }
-  return [...new Set(files)];
+var execFileP = promisify(execFile);
+function escapeForCmd(s) {
+  return s.replace(/'/g, "''");
 }
-async function getGitChangedFiles(cwd, baseCommit) {
+function diagnoseFailure(node, result) {
+  const pred = node.predicate;
+  if (!pred) return "No predicate defined \u2014 cannot diagnose failure.";
+  const value = pred.value;
+  const rawOutput = (result.output ?? "").slice(0, 500);
+  const code = result.exit_code ?? -1;
+  switch (pred.type) {
+    case "exit_code":
+      return `Expected exit code ${value ?? 0}, got ${code}. Command failed to execute successfully. Check the error output above.`;
+    case "exit_code_not":
+      return `Expected exit code other than ${value ?? 0}, got ${code}. Command succeeded when it should have failed \u2014 error handling may be missing.`;
+    case "output_contains":
+      return value ? `Expected output to contain "${value}" but it was not found in stdout/stderr. First 500 chars of output: "${rawOutput}"` : `Expected output to contain a value but none was specified in the predicate.`;
+    case "output_not_contains":
+      return `Expected output NOT to contain "${value}" but it was found. Check that the unwanted text is no longer produced.`;
+    case "output_matches":
+      return value ? `Expected output to match /${value}/ but no match was found. First 500 chars of output: "${rawOutput}"` : `Expected output to match a regex but none was specified.`;
+    case "output_not_matches":
+      return `Expected output NOT to match /${value}/ but a match was found.`;
+    case "tdd":
+      return result.error ?? "TDD proof failed. Check the test output above for specific failures.";
+    case "manual":
+    case "review":
+      return `Manual verification required. Run dod_verify to confirm this proof.`;
+    default:
+      return `Proof failed with exit code ${code}. Check the output above.`;
+  }
+}
+function evalPredicate(predicate, run, output) {
+  const code = run.code ?? -1;
+  switch (predicate.type) {
+    case "exit_code": {
+      const expected = predicate.value !== void 0 ? Number(predicate.value) : 0;
+      return code === expected ? { status: "pass" } : { status: "fail", error: `expected exit ${expected} but got ${code}` };
+    }
+    case "exit_code_not": {
+      const forbidden = predicate.value !== void 0 ? Number(predicate.value) : 0;
+      return code !== forbidden ? { status: "pass" } : { status: "fail", error: `exit code was ${code} (must not be ${forbidden})` };
+    }
+    case "output_contains": {
+      const needle = String(predicate.value ?? "");
+      return output.includes(needle) ? { status: "pass" } : { status: "fail", error: `output did not contain "${needle}"` };
+    }
+    case "output_not_contains": {
+      const needle = String(predicate.value ?? "");
+      return !output.includes(needle) ? { status: "pass" } : { status: "fail", error: `output contained "${needle}" (must not)` };
+    }
+    case "output_matches": {
+      const pattern = String(predicate.value ?? "");
+      try {
+        return new RegExp(pattern).test(output) ? { status: "pass" } : { status: "fail", error: `output did not match /${pattern}/` };
+      } catch {
+        return { status: "fail", error: `invalid regex: /${pattern}/` };
+      }
+    }
+    case "output_not_matches": {
+      const pattern = String(predicate.value ?? "");
+      try {
+        return !new RegExp(pattern).test(output) ? { status: "pass" } : { status: "fail", error: `output matched /${pattern}/ (must not match)` };
+      } catch {
+        return { status: "fail", error: `invalid regex: /${pattern}/` };
+      }
+    }
+    default:
+      return { status: "fail", error: `unknown predicate type: ${predicate.type}` };
+  }
+}
+async function runCommand(command, cwd, timeoutMs) {
+  const shell = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
+  const shellArgs = process.platform === "win32" ? ["/d", "/s", "/c"] : ["-c"];
+  const escapedCmd = process.platform === "win32" ? `'${escapeForCmd(command)}'` : command;
   try {
-    const { stdout } = await execFileAsync("git", ["diff", "--name-only", baseCommit], {
+    const { stdout, stderr } = await execFileP(shell, [...shellArgs, escapedCmd], {
       cwd,
-      timeout: 5e3,
+      timeout: timeoutMs,
+      maxBuffer: 10 * 1024 * 1024,
+      // 10 MB
       windowsHide: true
     });
-    return stdout.trim().split("\n").filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-async function resolveAnalysisTargets(command, cwd, baseCommit, targetsOverride, changedFilesOverride) {
-  if (targetsOverride && targetsOverride.length > 0) {
-    return { targets: targetsOverride };
-  }
-  if (!baseCommit) {
-    return { targets: extractPathsFromCommand(command) };
-  }
-  const changedFiles = changedFilesOverride ?? await getGitChangedFiles(cwd, baseCommit);
-  if (changedFiles.length === 0) {
-    return { targets: extractPathsFromCommand(command) };
-  }
-  const targets = extractPathsFromCommand(command);
-  if (targets.length === 0) {
-    return { targets };
-  }
-  const overlapping = targets.filter((t) => {
-    const normT = t.replace(/\\/g, "/");
-    return changedFiles.some((cf) => {
-      const normCf = cf.replace(/\\/g, "/");
-      return normT === normCf || normCf.endsWith(`/${normT}`) || normT.endsWith(`/${normCf}`);
-    });
-  });
-  if (overlapping.length === 0) {
-    return { targets, error: `analyzer target does not overlap changed files. Target(s): ${targets.join(", ")}` };
-  }
-  return { targets: overlapping };
-}
-function parseStryker(o) {
-  const lines = o.split(/\r?\n/);
-  const hi = lines.findIndex((l) => l.includes("|") && /#\s*survived/i.test(l));
-  if (hi === -1) return null;
-  const col = lines[hi].split("|").map((c) => c.trim().toLowerCase()).findIndex((c) => /survived/.test(c));
-  if (col === -1) return null;
-  const dl = lines.find((l) => l.includes("|") && l.trim().toLowerCase().startsWith("all files"));
-  if (!dl) return null;
-  const v = Number(dl.split("|").map((c) => c.trim())[col]);
-  return Number.isFinite(v) ? v : null;
-}
-function parseMutmut(o) {
-  const m = o.match(/🙁[^\d]*(\d+)/);
-  return m ? Number(m[1]) : null;
-}
-function parseCargoMutants(o) {
-  const m = o.match(/(\d+)\s+missed\b/);
-  return m ? Number(m[1]) : null;
-}
-function parseSurvivors(o) {
-  for (const p of [parseStryker, parseMutmut, parseCargoMutants]) {
-    const s = p(o);
-    if (s !== null) return s;
-  }
-  return null;
-}
-function mk(b, ov) {
-  return { ...b, ...ov };
-}
-function buildManualOut(mr, label) {
-  const n = mr.note ? ` \u2014 "${mr.note}"` : "";
-  return `${mr.answer === "fail" ? "\u2717" : "\u2713"} ${label} ${mr.answer.toUpperCase()} (dod_verify) ${mr.confirmed_at}/${mr.channel}${n}`;
-}
-function buildAssertFail(r, min) {
-  const pf = r.perFile.map((f) => `  ${f.file}: ${f.total} tot, ${f.trivial} triv, ${f.total - f.trivial} nt`).join("\n");
-  const hdr = r.nonTrivial === 0 ? `ASSERTION QUALITY FAIL: all ${r.total} assertions trivial` : `ASSERTION QUALITY FAIL: only ${r.nonTrivial} nt, need ${min}`;
-  return [hdr, "", "Per-file:", pf].join("\n");
-}
-function buildObsFail(r, min) {
-  const l = [];
-  if (r.totalLogStatements < min) l.push(`observability: ${r.totalLogStatements} logs\u2014need ${min}`);
-  const u = r.totalErrorHandlers - r.errorHandlersLogged;
-  if (u > 0) l.push(`observability: ${u}/${r.totalErrorHandlers} handlers lack logs`);
-  if (r.antiPatterns.length > 0)
-    l.push(
-      "observability: " + r.antiPatterns.length + " anti-pattern(s)" + r.antiPatterns.map((a) => `  ${a.file}:${a.line}: ${a.kind} \u2014 ${a.snippet}`).join("")
-    );
-  return l.join("\n");
-}
-function buildBrev(r, passed, max) {
-  const l = [
-    passed ? `brevity: ${r.totalViolations} \u2264 ${max}` : `BREVITY FAIL: ${r.totalViolations} > ${max}`,
-    ""
-  ];
-  for (const f of r.perFile) {
-    const p = [`  ${f.file}: ${f.lineCount}L, ${f.functionCount} funcs`];
-    if (f.longFunctions > 0) p.push(`${f.longFunctions} long`);
-    if (f.highComplexityFunctions > 0) p.push(`${f.highComplexityFunctions} CC>5`);
-    if (f.unnecessaryElseCount > 0) p.push(`${f.unnecessaryElseCount} unnec else`);
-    if (f.elseAvoidableCount > 0) p.push(`${f.elseAvoidableCount} avoid else`);
-    if (f.insertions !== void 0 && f.deletions !== void 0) p.push(`+${f.insertions}/-${f.deletions}`);
-    l.push(p.join(", "));
-    for (const v of f.violations) l.push(`    \u2022 L${v.line}: ${v.kind} \u2014 ${v.detail}`);
-  }
-  if (!passed)
-    l.push(
-      "",
-      "Remediation:",
-      `  \u2022 Split functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines}L into single-purpose units`,
-      "  \u2022 Reduce cyclomatic complexity \u2014 extract decision-heavy blocks into helpers",
-      "  \u2022 Prefer guard clauses \u2014 if-block exits \u2192 no else needed",
-      "  \u2022 Delete old code when replacing (low deletion ratio = accretion)",
-      `  \u2022 Keep lines under ${DEFAULT_BREVITY_OPTS.maxLineLength} chars \u2014 break long expressions`,
-      `  \u2022 Split files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines into modules`
-    );
-  return l.join("\n");
-}
-async function hManual(n, b) {
-  const label = n.predicate?.type === "review" ? "Code review" : "Manual verification";
-  const mr = n.manual_result;
-  if (mr && mr.proof_fingerprint === perProofFingerprint(n))
-    return mk(b, {
-      status: mr.answer,
-      output: buildManualOut(mr, label),
-      error: mr.answer === "fail" ? `${label} confirmed failing.` : void 0
-    });
-  return mk(b, { status: "skipped", output: `${label} not verified \u2014 dod_verify(dod_id, "${n.id}")` });
-}
-function hExecFail(r, b) {
-  if (!(r.killed || r.notFound)) return null;
-  return mk(b, { status: "fail", output: r.combined, error: r.error, exit_code: r.exitCode, duration_ms: r.duration });
-}
-async function hMutate(n, r, b) {
-  const max = n.predicate?.value ?? 0;
-  const sv = parseSurvivors(r.combined);
-  if (sv === null)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "could not parse mutation results (no recognized tool)",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  const passed = sv <= max;
-  return mk(b, {
-    status: passed ? "pass" : "fail",
-    output: r.combined,
-    error: passed ? void 0 : `mutation: ${sv} > max ${max}`,
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hRegress(n, r, b) {
-  const m = extractNumber(r.combined, n.predicate?.extract);
-  if (m === null)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "regression: no metric (fail-safe)",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  if (n.baseline_value === void 0) {
-    n.baseline_value = m;
-    n.baseline_captured_at = (/* @__PURE__ */ new Date()).toISOString();
-    return mk(b, {
-      status: "baseline_captured",
-      output: r.combined,
-      error: `regression: baseline captured N0=${m}. Re-run to compare.`,
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  }
-  const lib = n.predicate?.lower_is_better ?? n.category !== "coverage";
-  const tol = n.predicate?.value ?? 0;
-  const bl = n.baseline_value;
-  const th = lib ? bl * (1 + tol) : bl * (1 - tol);
-  const passed = lib ? m <= th : m >= th;
-  const dir = lib ? "\u2264" : "\u2265";
-  return mk(b, {
-    status: passed ? "pass" : "fail",
-    output: r.combined,
-    error: passed ? void 0 : `regression: ${m} ${dir} ${th} (baseline=${bl}, lower_is_better=${lib})`,
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hStream(n, r, b) {
-  const max = n.predicate?.value ?? 0;
-  if (r.exitCode > 1)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: `streamline: exit ${r.exitCode} (fail-safe)`,
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  if (r.exitCode === 1)
-    return mk(b, {
-      status: "pass",
-      output: r.combined,
-      error: "streamline: no matches",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  const mc = r.combined.split(/\r?\n/).filter((l) => l.trim()).length;
-  const passed = mc <= max;
-  return mk(b, {
-    status: passed ? "pass" : "fail",
-    output: r.combined,
-    error: passed ? void 0 : `streamline: ${mc} > max ${max}`,
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hAssert(n, r, b, cmd, cwd, baseCommit, skipReason) {
-  const min = n.predicate?.value ?? 1;
-  if (!skipReason) {
-    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
-    if (targetCheck.error) {
-      return mk(b, {
-        status: "fail",
-        output: r.combined,
-        error: targetCheck.error,
-        exit_code: r.exitCode,
-        duration_ms: r.duration
-      });
-    }
-  }
-  const report = analyseAssertions(cmd, cwd);
-  if (!report)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "assertions: no test files found",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  if (report.nonTrivial < min)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: buildAssertFail(report, min),
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  const s = `${report.nonTrivial} non-trivial (${report.total} tot, ${report.trivial} triv)`;
-  return mk(b, {
-    status: "pass",
-    output: r.combined,
-    error: `assertions: ${s}`,
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hObs(n, r, b, cmd, cwd, baseCommit, skipReason) {
-  const min = n.predicate?.value ?? 1;
-  if (!skipReason) {
-    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
-    if (targetCheck.error) {
-      return mk(b, {
-        status: "fail",
-        output: r.combined,
-        error: targetCheck.error,
-        exit_code: r.exitCode,
-        duration_ms: r.duration
-      });
-    }
-  }
-  let report = analyseObservability(cmd, cwd);
-  if (!report) report = analyseObservabilityFromOutput(r.combined, cwd);
-  if (!report)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "observability: no source files",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  if (report.totalLogStatements >= min && report.totalErrorHandlers - report.errorHandlersLogged === 0 && report.antiPatterns.length === 0) {
-    const s = `${report.totalLogStatements} logs, ${report.totalErrorHandlers} handlers, clean`;
-    return mk(b, {
-      status: "pass",
-      output: r.combined,
-      error: `observability: ${s}`,
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  }
-  return mk(b, {
-    status: "fail",
-    output: r.combined,
-    error: buildObsFail(report, min),
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hBrev(n, r, b, cmd, cwd, baseCommit, skipReason) {
-  const max = n.predicate?.value ?? 0;
-  if (!n.predicate)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "brevity: no predicate",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  if (!skipReason) {
-    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
-    if (targetCheck.error) {
-      return mk(b, {
-        status: "fail",
-        output: r.combined,
-        error: targetCheck.error,
-        exit_code: r.exitCode,
-        duration_ms: r.duration
-      });
-    }
-  }
-  const p = n.predicate;
-  const opts = {
-    maxLineLength: p.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
-    maxFunctionLines: p.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines,
-    maxFileLines: p.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines,
-    maxComplexity: p.max_complexity ?? DEFAULT_BREVITY_OPTS.maxComplexity,
-    requireGuardClauses: p.require_guard_clauses ?? DEFAULT_BREVITY_OPTS.requireGuardClauses,
-    suggestGuardClauses: p.suggest_guard_clauses ?? DEFAULT_BREVITY_OPTS.suggestGuardClauses,
-    minReplacementRatio: p.min_replacement_ratio ?? DEFAULT_BREVITY_OPTS.minReplacementRatio
-  };
-  let report = analyseBrevity(cmd, cwd, opts);
-  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
-  if (!report)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "brevity: no source files",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  const passed = report.totalViolations <= max;
-  return mk(b, {
-    status: passed ? "pass" : "fail",
-    output: r.combined,
-    error: buildBrev(report, passed, max),
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-function buildLineLenFail(r, _max, maxChars) {
-  const vl = r.violations.filter((v) => v.kind === "line_too_long");
-  const l = [`line_length FAIL: ${vl.length} line(s) > ${maxChars} chars`, ""];
-  for (const f of r.perFile) {
-    const fv = f.violations.filter((v) => v.kind === "line_too_long");
-    if (fv.length === 0) continue;
-    l.push(`  ${f.file}: ${f.lineCount}L, ${fv.length} long line(s)`);
-    for (const v of fv) l.push(`    \u2022 L${v.line}: ${v.detail}`);
-  }
-  l.push("", `Remediation: break long lines at \u2264${DEFAULT_BREVITY_OPTS.maxLineLength} chars.`);
-  return l.join("\n");
-}
-function buildFnSizeFail(r, _max, maxLines) {
-  const vl = r.violations.filter((v) => v.kind === "function_too_long");
-  const l = [`function_size FAIL: ${vl.length} function(s) > ${maxLines} lines`, ""];
-  for (const f of r.perFile) {
-    const fv = f.violations.filter((v) => v.kind === "function_too_long");
-    if (fv.length === 0) continue;
-    l.push(`  ${f.file}: ${f.functionCount} funcs, ${fv.length} long`);
-    for (const v of fv) l.push(`    \u2022 L${v.line}: ${v.detail}`);
-  }
-  l.push("", `Remediation: split functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines into single-purpose units.`);
-  return l.join("\n");
-}
-function buildFileSizeFail(r, _max, maxLines) {
-  const vl = r.violations.filter((v) => v.kind === "file_too_long");
-  const l = [`file_size FAIL: ${vl.length} file(s) > ${maxLines} lines`, ""];
-  for (const f of r.perFile) {
-    const fv = f.violations.filter((v) => v.kind === "file_too_long");
-    if (fv.length === 0) continue;
-    l.push(`  ${f.file}: ${f.lineCount}L (max ${maxLines})`);
-    for (const v of fv) l.push(`    \u2022 ${v.detail}`);
-  }
-  l.push("", `Remediation: split files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines into modules.`);
-  return l.join("\n");
-}
-function buildCohesionFail(r, max) {
-  const kinds = ["high_complexity", "unnecessary_else", "else_avoidable"];
-  const vl = r.violations.filter((v) => kinds.includes(v.kind));
-  const l = [`cohesion FAIL: ${vl.length} violation(s) (max ${max} allowed)`, ""];
-  for (const f of r.perFile) {
-    const fv = f.violations.filter((v) => kinds.includes(v.kind));
-    if (fv.length === 0) continue;
-    const parts = [`  ${f.file}: ${f.functionCount} funcs`];
-    if (f.highComplexityFunctions > 0) parts.push(`${f.highComplexityFunctions} CC>5`);
-    if (f.unnecessaryElseCount > 0) parts.push(`${f.unnecessaryElseCount} unnec else`);
-    if (f.elseAvoidableCount > 0) parts.push(`${f.elseAvoidableCount} avoid else`);
-    l.push(parts.join(", "));
-    for (const v of fv) l.push(`    \u2022 L${v.line}: ${v.kind} \u2014 ${v.detail}`);
-  }
-  l.push(
-    "",
-    "Remediation:",
-    "  \u2022 Reduce cyclomatic complexity \u2014 extract decision-heavy blocks into helpers",
-    "  \u2022 Prefer guard clauses \u2014 if-block exits \u2192 no else needed",
-    "  \u2022 Refactor if/else to use early returns, eliminate else"
-  );
-  return l.join("\n");
-}
-function buildReplRatioFail(r, _max, minRatio) {
-  const vl = r.violations.filter((v) => v.kind === "low_replacement_ratio");
-  const l = [
-    `replacement_ratio FAIL: ${vl.length} file(s) below min ratio ${(minRatio * 100).toFixed(0)}%`,
-    ""
-  ];
-  for (const v of vl) l.push(`  \u2022 ${v.file} L${v.line}: ${v.detail}`);
-  l.push("", "Remediation: delete old code when replacing (low deletion ratio = accretion).");
-  return l.join("\n");
-}
-var BREVITY_LINE_LENGTH = {
-  label: "line_length",
-  optsOverride: (p) => ({ maxLineLength: p.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength }),
-  violationFilter: (v) => v.kind === "line_too_long",
-  passMsg: (() => {
-    const o = DEFAULT_BREVITY_OPTS;
-    return `line_length: all lines \u2264 ${o.maxLineLength} chars`;
-  })(),
-  buildFail: (r, max, opts) => buildLineLenFail(r, max, opts.maxLineLength)
-};
-var BREVITY_FUNCTION_SIZE = {
-  label: "function_size",
-  optsOverride: (p) => ({ maxFunctionLines: p.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines }),
-  violationFilter: (v) => v.kind === "function_too_long",
-  passMsg: (() => {
-    const o = DEFAULT_BREVITY_OPTS;
-    return `function_size: all functions \u2264 ${o.maxFunctionLines} lines`;
-  })(),
-  buildFail: (r, max, opts) => buildFnSizeFail(r, max, opts.maxFunctionLines)
-};
-var BREVITY_FILE_SIZE = {
-  label: "file_size",
-  optsOverride: (p) => ({ maxFileLines: p.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines }),
-  violationFilter: (v) => v.kind === "file_too_long",
-  passMsg: (() => {
-    const o = DEFAULT_BREVITY_OPTS;
-    return `file_size: all files \u2264 ${o.maxFileLines} lines`;
-  })(),
-  buildFail: (r, max, opts) => buildFileSizeFail(r, max, opts.maxFileLines)
-};
-var BREVITY_COHESION = {
-  label: "cohesion",
-  optsOverride: (p) => ({
-    maxComplexity: p.max_complexity ?? DEFAULT_BREVITY_OPTS.maxComplexity,
-    requireGuardClauses: p.require_guard_clauses ?? DEFAULT_BREVITY_OPTS.requireGuardClauses,
-    suggestGuardClauses: p.suggest_guard_clauses ?? DEFAULT_BREVITY_OPTS.suggestGuardClauses
-  }),
-  violationFilter: (v) => {
-    const kinds = ["high_complexity", "unnecessary_else", "else_avoidable"];
-    return kinds.includes(v.kind);
-  },
-  passMsg: (() => {
-    const o = DEFAULT_BREVITY_OPTS;
-    return `cohesion: 0 violations (CC\u2264${o.maxComplexity}, guards checked)`;
-  })(),
-  buildFail: (r, max) => buildCohesionFail(r, max)
-};
-async function hBrevity(n, r, b, cmd, cwd, config2, baseCommit, skipReason) {
-  const max = n.predicate?.value ?? 0;
-  if (!n.predicate)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "brevity: no predicate",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  if (!skipReason) {
-    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
-    if (targetCheck.error) {
-      return mk(b, {
-        status: "fail",
-        output: r.combined,
-        error: targetCheck.error,
-        exit_code: r.exitCode,
-        duration_ms: r.duration
-      });
-    }
-  }
-  const opts = { ...DEFAULT_BREVITY_OPTS, ...config2.optsOverride(n.predicate) };
-  let report = analyseBrevity(cmd, cwd, opts);
-  if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
-  if (!report)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: `${config2.label}: no source files`,
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  const count = report.violations.filter(config2.violationFilter).length;
-  const passed = count <= max;
-  return mk(b, {
-    status: passed ? "pass" : "fail",
-    output: r.combined,
-    error: passed ? config2.passMsg : config2.buildFail(report, max, opts),
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hReplacementRatio(n, r, b, _cmd, cwd) {
-  const max = n.predicate?.value ?? 0;
-  const minRatio = n.predicate?.min_replacement_ratio ?? DEFAULT_BREVITY_OPTS.minReplacementRatio;
-  const opts = {
-    ...DEFAULT_BREVITY_OPTS,
-    minReplacementRatio: minRatio
-  };
-  let report = analyseBrevityFromOutput(r.combined, cwd, opts);
-  if (!report) report = analyseBrevity(_cmd, cwd, opts);
-  if (!report)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "replacement_ratio: no diff data in command output",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  const count = report.violations.filter((v) => v.kind === "low_replacement_ratio").length;
-  const passed = count <= max;
-  return mk(b, {
-    status: passed ? "pass" : "fail",
-    output: r.combined,
-    error: passed ? `replacement_ratio: all files above ${(minRatio * 100).toFixed(0)}% deletion ratio` : buildReplRatioFail(report, max, minRatio),
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function hTdd(n, r, b, cmd, cwd) {
-  const exp = n.predicate?.value ?? 0;
-  const g = r.exitCode === exp;
-  if (g && !n.seen_failing)
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "TDD: GREEN w/o prior RED \u2014 tautology?",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  if (!(g || n.seen_failing)) {
-    n.seen_failing = true;
-    n.seen_failing_at = (/* @__PURE__ */ new Date()).toISOString();
-    return mk(b, {
-      status: "fail",
-      output: r.combined,
-      error: "TDD RED: test fails. Implement fix.",
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  }
-  if (g && n.seen_failing) {
-    const ar = analyseAssertions(cmd, cwd);
-    if (ar && ar.nonTrivial === 0)
-      return mk(b, {
-        status: "fail",
-        output: r.combined,
-        error: "TDD: GREEN but assertions trivial.",
-        exit_code: r.exitCode,
-        duration_ms: r.duration
-      });
-    return mk(b, {
-      status: "pass",
-      output: r.combined,
-      error: `TDD verified${ar ? ` (${ar.nonTrivial} nt)` : ""}`,
-      exit_code: r.exitCode,
-      duration_ms: r.duration
-    });
-  }
-  return mk(b, {
-    status: "fail",
-    output: r.combined,
-    error: `TDD: failed (exit=${r.exitCode}, exp=${exp})`,
-    exit_code: r.exitCode,
-    duration_ms: r.duration
-  });
-}
-async function executeProof(node, cwd, execFn, options) {
-  const isOutOfBand = node.predicate?.type === "manual" || node.predicate?.type === "review";
-  const cmd = node.command || "";
-  const base = { node_path: "", id: node.id, title: node.title, description: node.description ?? "", command: cmd };
-  const skipReason = node.category && options?.skipReasons ? options.skipReasons[node.category] : void 0;
-  const baseCommit = options?.baseCommit;
-  if (isOutOfBand) return hManual(node, base);
-  if (!node.command)
+    return { stdout, stderr, code: 0 };
+  } catch (err) {
     return {
-      ...base,
-      status: "fail",
-      output: "",
-      error: "no command",
-      exit_code: -1,
-      duration_ms: 0
+      stdout: err.stdout ?? "",
+      stderr: err.stderr ?? "",
+      code: err.code ?? (err.signal !== void 0 ? 128 : 1)
     };
-  const run = await execFn(cmd, cwd, node.predicate?.timeout_ms ?? void 0);
-  const ef = await hExecFail(run, base);
-  if (ef) return ef;
-  switch (node.predicate?.type) {
-    case "mutation":
-      return hMutate(node, run, base);
-    case "regression":
-      return hRegress(node, run, base);
-    case "streamline":
-      return hStream(node, run, base);
-    case "assertions":
-      return hAssert(node, run, base, cmd, cwd, baseCommit, skipReason);
-    case "observability":
-      return hObs(node, run, base, cmd, cwd, baseCommit, skipReason);
-    case "brevity":
-      return hBrev(node, run, base, cmd, cwd, baseCommit, skipReason);
-    case "line_length":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_LINE_LENGTH, baseCommit, skipReason);
-    case "function_size":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_FUNCTION_SIZE, baseCommit, skipReason);
-    case "file_size":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_FILE_SIZE, baseCommit, skipReason);
-    case "cohesion":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_COHESION, baseCommit, skipReason);
-    case "replacement_ratio":
-      return hReplacementRatio(node, run, base, cmd, cwd);
-    case "tdd":
-      return hTdd(node, run, base, cmd, cwd);
-    default:
-      break;
   }
-  const passed = evaluatePredicate(node.predicate ?? { type: "exit_code", value: 0 }, run.exitCode, run.combined);
-  return mk(base, {
-    status: passed ? "pass" : "fail",
-    output: run.combined,
-    error: passed ? void 0 : `pred ${node.predicate?.type} fail (exit=${run.exitCode}, expected=${node.predicate?.value ?? 0})`,
-    exit_code: run.exitCode,
-    duration_ms: run.duration
-  });
 }
-function evaluatePredicate(predicate, exitCode, stdout) {
-  switch (predicate.type) {
-    case "exit_code":
-      return exitCode === (predicate.value ?? 0);
-    case "exit_code_not":
-      return exitCode !== predicate.value;
-    case "output_contains":
-      return stdout.includes(predicate.value);
-    case "output_matches":
-      return new RegExp(predicate.value, "m").test(stdout);
-    case "output_not_contains":
-      return !stdout.includes(predicate.value);
-    case "output_not_matches":
-      return !new RegExp(predicate.value, "m").test(stdout);
-    case "tdd":
-      return exitCode === (predicate.value ?? 0);
-    default:
-      return true;
+async function executeProof(node, cwd, opts = {}) {
+  const predicate = node.predicate;
+  const timeoutMs = predicate.timeout_ms ?? 12e4;
+  const start = Date.now();
+  const result = {
+    node_path: "",
+    id: node.id,
+    title: node.title,
+    description: node.description ?? "",
+    status: "skipped",
+    command: node.command ?? ""
+  };
+  if (predicate.type === "manual" || predicate.type === "review") {
+    if (node.manual_result) {
+      const fp = perProofFingerprint(node);
+      if (node.manual_result.proof_fingerprint === fp) {
+        result.status = node.manual_result.answer;
+        if (node.manual_result.note) result.error = node.manual_result.note;
+        result.duration_ms = Date.now() - start;
+        return result;
+      }
+    }
+    result.status = "skipped";
+    result.error = `${predicate.type} proof awaiting human verification via dod_verify`;
+    result.duration_ms = Date.now() - start;
+    return result;
   }
+  if (predicate.type === "tdd") {
+    const run2 = await runCommand(node.command, cwd, timeoutMs);
+    const elapsed2 = Date.now() - start;
+    result.output = (run2.stdout + run2.stderr).slice(0, 4e3);
+    result.exit_code = run2.code ?? -1;
+    result.duration_ms = elapsed2;
+    if (!node.seen_failing) {
+      if (run2.code !== 0 && run2.code !== null) {
+        result.status = "pass";
+        result.error = "RED: test fails as expected \u2014 now implement to make it pass.";
+        return result;
+      }
+      result.status = "fail";
+      result.error = "TDD RED phase: test should have failed first but it passed. Check that the test actually exercises new behavior.";
+      return result;
+    }
+    if (run2.code === 0) {
+      result.status = "pass";
+      return result;
+    }
+    result.status = "fail";
+    result.error = `TDD GREEN phase: test failed with exit code ${run2.code ?? -1}. Implementation is incomplete or broken. Check the test output above.`;
+    return result;
+  }
+  const run = await runCommand(node.command, cwd, timeoutMs);
+  const elapsed = Date.now() - start;
+  const output = run.stdout + run.stderr;
+  result.output = output.slice(0, 4e3);
+  result.exit_code = run.code ?? -1;
+  result.duration_ms = elapsed;
+  const evaluation = evalPredicate(predicate, run, output);
+  result.status = evaluation.status;
+  if (evaluation.error) result.error = evaluation.error;
+  if (result.status === "fail") {
+    result.diagnosis = diagnoseFailure(node, result);
+  }
+  return result;
 }
 
 // src/fingerprint.ts
@@ -23184,32 +21340,8 @@ function computeProofFingerprint(roots) {
     if (node.predicate?.timeout_ms !== void 0) {
       parts.push(`timeout_ms:${node.predicate.timeout_ms}`);
     }
-    if (node.predicate?.extract !== void 0) {
-      parts.push(`extract:${node.predicate.extract}`);
-    }
     if (node.category !== void 0) {
       parts.push(`category:${node.category}`);
-    }
-    if (node.predicate?.min_replacement_ratio !== void 0) {
-      parts.push(`min_replacement_ratio:${node.predicate.min_replacement_ratio}`);
-    }
-    if (node.predicate?.max_function_lines !== void 0) {
-      parts.push(`max_function_lines:${node.predicate.max_function_lines}`);
-    }
-    if (node.predicate?.max_file_lines !== void 0) {
-      parts.push(`max_file_lines:${node.predicate.max_file_lines}`);
-    }
-    if (node.predicate?.max_line_length !== void 0) {
-      parts.push(`max_line_length:${node.predicate.max_line_length}`);
-    }
-    if (node.predicate?.max_complexity !== void 0) {
-      parts.push(`max_complexity:${node.predicate.max_complexity}`);
-    }
-    if (node.baseline_value !== void 0) {
-      parts.push(`baseline_value:${node.baseline_value}`);
-    }
-    if (node.predicate?.lower_is_better !== void 0) {
-      parts.push(`lib:${node.predicate.lower_is_better}`);
     }
     if (node.advisory !== void 0) {
       parts.push(`adv:${node.advisory}`);
@@ -23219,70 +21351,8 @@ function computeProofFingerprint(roots) {
   return createHash2("sha256").update(data).digest("hex");
 }
 
-// src/snapshot.ts
-import { exec } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { mkdir, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join as join4 } from "node:path";
-import { promisify as promisify2 } from "node:util";
-var execAsync = promisify2(exec);
-async function createSnapshot(repoCwd, commit) {
-  const tmpPath = join4(tmpdir(), `dod-snapshot-${randomUUID()}`);
-  let createdViaWorktree = false;
-  try {
-    await execAsync(`git worktree add --detach "${tmpPath}" "${commit}"`, {
-      cwd: repoCwd,
-      timeout: 3e4
-    });
-    createdViaWorktree = true;
-  } catch {
-    try {
-      const archivePath = join4(tmpdir(), `dod-archive-${randomUUID()}.tar`);
-      await mkdir(tmpPath, { recursive: true });
-      try {
-        await execAsync(`git archive --output="${archivePath}" "${commit}"`, {
-          cwd: repoCwd,
-          timeout: 3e4
-        });
-        await execAsync(`tar -xf "${archivePath}" -C "${tmpPath}"`, { timeout: 3e4 });
-      } finally {
-        await rm(archivePath, { recursive: true, force: true }).catch(() => {
-        });
-      }
-    } catch {
-      await rm(tmpPath, { recursive: true, force: true }).catch(() => {
-      });
-      throw new Error(`could not create snapshot for commit ${commit}: git worktree add and git archive both failed`);
-    }
-  }
-  return {
-    cwd: tmpPath,
-    commit,
-    cleanup: async () => {
-      if (createdViaWorktree) {
-        try {
-          await execAsync(`git worktree remove --force "${tmpPath}"`, {
-            cwd: repoCwd,
-            timeout: 15e3
-          });
-        } catch {
-        }
-      }
-      try {
-        await rm(tmpPath, { recursive: true, force: true });
-      } catch {
-      }
-    }
-  };
-}
-async function destroySnapshot(snapshot) {
-  await snapshot.cleanup();
-}
-
 // src/checker.ts
-var execAsync2 = promisify3(exec2);
-var TIMEOUT_MS = 12e4;
+var execAsync = promisify2(exec);
 function nodeDraftOrDescendant(node) {
   if (node.children && node.children.length > 0) return hasDraftNodes(node.children);
   return node.refinement === "draft";
@@ -23302,9 +21372,9 @@ function traverseNodePath(nodes, parts, depth) {
   if (!node.children) return null;
   return traverseNodePath(node.children, parts, depth + 1);
 }
-function findNodeByPath(nodes, path9) {
-  if (!path9) return null;
-  return traverseNodePath(nodes, path9.split("."), 0);
+function findNodeByPath(nodes, path6) {
+  if (!path6) return null;
+  return traverseNodePath(nodes, path6.split("."), 0);
 }
 function isExecutablePredicate(type) {
   return type !== "manual" && type !== "review";
@@ -23325,66 +21395,32 @@ function countNodeDrafts(node) {
 function countDraftNodes(nodes) {
   return nodes.reduce((sum, node) => sum + countNodeDrafts(node), 0);
 }
-async function runCommand(command, cwd, timeoutMs) {
-  const effectiveTimeout = timeoutMs ?? TIMEOUT_MS;
-  const start = Date.now();
-  try {
-    const shellCmd = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
-    const { stdout, stderr } = await execAsync2(command, {
-      cwd,
-      timeout: effectiveTimeout,
-      maxBuffer: 10 * 1024 * 1024,
-      shell: shellCmd,
-      windowsHide: true
-    });
-    return { exitCode: 0, combined: (stdout + stderr).slice(0, 4e3), duration: Date.now() - start };
-  } catch (err) {
-    const duration3 = Date.now() - start;
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("checker: exec failed", { cmd: command.slice(0, CMD_TRUNCATION), err: msg });
-    const execErr = err;
-    const exitCode = execErr.code ?? 1;
-    const stdout = execErr.stdout ?? "";
-    const stderr = execErr.stderr ?? "";
-    const combined = (stdout + stderr).slice(0, 4e3);
-    if (execErr.killed) {
-      return {
-        exitCode,
-        combined: `TIMEOUT after ${effectiveTimeout}ms`,
-        duration: duration3,
-        error: "Process killed due to timeout",
-        killed: true
-      };
-    }
-    const notFound = exitCode === 127 || exitCode === 9009 || /not recognized|command not found|no such file/i.test(stderr + (execErr.message ?? ""));
-    if (notFound) {
-      return {
-        exitCode,
-        combined,
-        duration: duration3,
-        error: `Command not found or not executable (exit ${exitCode})`,
-        notFound: true
-      };
-    }
-    return { exitCode, combined, duration: duration3, error: stderr.slice(0, 2e3) || void 0 };
-  }
+function countNodeAmendments(amendments, nodePath) {
+  return amendments.filter((a) => a.node_path === nodePath && (a.action === "modified" || a.action === "refined")).length;
 }
-function carryForwardNode(node, node_path) {
-  return {
-    node_path,
-    id: node.id,
-    title: node.title,
-    description: node.description ?? node.intent ?? node.title,
-    status: node.last_status === "pending" || node.last_status === "draft" ? "skipped" : node.last_status,
-    command: node.command ?? "",
-    output: node.last_output
-  };
+function checkAmendGate(amendments, resolvedPath, amendJustification) {
+  const amendCount = countNodeAmendments(amendments, resolvedPath);
+  if (amendCount >= 3 && !amendJustification) {
+    return `This node has been amended ${amendCount} times. Provide amend_justification explaining why further amendments are needed.`;
+  }
+  return null;
+}
+function collectAllConcreteLeaves(nodes, parentPath, out) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (node.children && node.children.length > 0) {
+      collectAllConcreteLeaves(node.children, currentPath, out);
+    } else if (node.refinement === "concrete") {
+      out.push({ node, node_path: currentPath });
+    }
+  }
 }
 function partitionLeaves(roots, targetPath) {
   if (!targetPath) {
     const allLeaves2 = [];
-    collectAllLeaves(roots, "", allLeaves2, []);
-    return { inScope: allLeaves2.filter((l) => l.node.refinement === "concrete"), outOfScope: [] };
+    collectAllConcreteLeaves(roots, "", allLeaves2);
+    return { inScope: allLeaves2, outOfScope: [] };
   }
   const target = findNodeByPath(roots, targetPath);
   if (!target) return { inScope: [], outOfScope: [] };
@@ -23410,240 +21446,15 @@ function flattenTargetLeaves(nodes, parentPath, out) {
     }
   }
 }
-function collectAllLeaves(nodes, parentPath, concrete, drafts) {
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-    if (node.children && node.children.length > 0) {
-      collectAllLeaves(node.children, currentPath, concrete, drafts);
-    } else if (node.refinement === "concrete") {
-      concrete.push({ node, node_path: currentPath });
-    } else if (node.refinement === "draft") {
-      drafts.push({ node, node_path: currentPath });
-    }
-  }
-}
-function carryForwardOutOfScopeLeaves(targetPath, outOfScope, roots, leafResults) {
-  if (!targetPath || outOfScope.length === 0) return;
-  for (const { node, node_path } of outOfScope) {
-    leafResults.push(carryForwardNode(node, node_path));
-  }
-  carryForwardDrafts(roots, "", targetPath, leafResults);
-}
-async function executeInScopeLeaves(inScope, cwd, execFn, leafResults, proofOptions) {
-  let anyRealFail = false;
-  let anyUnverified = false;
-  let anyBaselineCaptured = false;
-  let manualUnverified = 0;
-  for (const { node, node_path } of inScope) {
-    const result = await executeProof(node, cwd, execFn, proofOptions);
-    result.node_path = node_path;
-    leafResults.push(result);
-    if (result.status === "fail" && !node.advisory) anyRealFail = true;
-    if (result.status === "skipped" && !node.advisory) anyUnverified = true;
-    if (result.status === "baseline_captured") anyBaselineCaptured = true;
-    const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
-    if (result.status === "skipped" && isManualOrReview) manualUnverified++;
-  }
-  return { anyRealFail, anyUnverified, anyBaselineCaptured, manualUnverified };
-}
-function collectAmendmentCounts(amendments, roots) {
-  const amendmentCounts = /* @__PURE__ */ new Map();
-  for (const a of amendments) {
-    if (a.action === "modified" || a.action === "refined") {
-      const existing = amendmentCounts.get(a.node_path);
-      if (existing) {
-        existing.count++;
-      } else {
-        const node = findNodeByPath(roots, a.node_path);
-        amendmentCounts.set(a.node_path, { title: node?.title ?? a.node_path, count: 1 });
-      }
-    }
-  }
-  return amendmentCounts;
-}
-function detectStrengthReduction(oldPredicate, newPredicate) {
-  const weakenings = [];
-  if (!(oldPredicate && newPredicate)) return weakenings;
-  if (oldPredicate.max_function_lines !== void 0 && newPredicate.max_function_lines !== void 0 && newPredicate.max_function_lines > oldPredicate.max_function_lines) {
-    weakenings.push(
-      `max_function_lines increased from ${oldPredicate.max_function_lines} to ${newPredicate.max_function_lines}`
-    );
-  }
-  if (oldPredicate.max_file_lines !== void 0 && newPredicate.max_file_lines !== void 0 && newPredicate.max_file_lines > oldPredicate.max_file_lines) {
-    weakenings.push(`max_file_lines increased from ${oldPredicate.max_file_lines} to ${newPredicate.max_file_lines}`);
-  }
-  if (oldPredicate.max_line_length !== void 0 && newPredicate.max_line_length !== void 0 && newPredicate.max_line_length > oldPredicate.max_line_length) {
-    weakenings.push(
-      `max_line_length increased from ${oldPredicate.max_line_length} to ${newPredicate.max_line_length}`
-    );
-  }
-  if (oldPredicate.max_complexity !== void 0 && newPredicate.max_complexity !== void 0 && newPredicate.max_complexity > oldPredicate.max_complexity) {
-    weakenings.push(`max_complexity increased from ${oldPredicate.max_complexity} to ${newPredicate.max_complexity}`);
-  }
-  if (oldPredicate.min_replacement_ratio !== void 0 && newPredicate.min_replacement_ratio !== void 0 && newPredicate.min_replacement_ratio < oldPredicate.min_replacement_ratio) {
-    weakenings.push(
-      `min_replacement_ratio decreased from ${oldPredicate.min_replacement_ratio} to ${newPredicate.min_replacement_ratio}`
-    );
-  }
-  if (oldPredicate.timeout_ms !== void 0 && newPredicate.timeout_ms !== void 0 && newPredicate.timeout_ms > oldPredicate.timeout_ms) {
-    weakenings.push(`timeout_ms increased from ${oldPredicate.timeout_ms} to ${newPredicate.timeout_ms}`);
-  }
-  if (oldPredicate.extract !== void 0 && newPredicate.extract === void 0) {
-    weakenings.push("extract pattern removed");
-  }
-  if (oldPredicate.lower_is_better === false && newPredicate.lower_is_better === true) {
-    weakenings.push("lower_is_better changed from false to true (flips comparison direction)");
-  }
-  if (oldPredicate.type === "exit_code" && newPredicate.type === "exit_code" && oldPredicate.value === 0 && newPredicate.value !== void 0 && newPredicate.value !== 0) {
-    weakenings.push(`exit_code value changed from 0 to ${String(newPredicate.value)}`);
-  }
-  if ((oldPredicate.type === "output_contains" || oldPredicate.type === "output_matches") && oldPredicate.type === newPredicate.type) {
-    if (typeof oldPredicate.value === "string" && typeof newPredicate.value === "string") {
-      if (newPredicate.value.length < oldPredicate.value.length) {
-        weakenings.push(
-          `${oldPredicate.type} value shortened (length ${oldPredicate.value.length} \u2192 ${newPredicate.value.length})`
-        );
-      }
-    }
-    if (oldPredicate.value !== void 0 && newPredicate.value === void 0) {
-      weakenings.push(`${oldPredicate.type} value removed`);
-    }
-  }
-  return weakenings;
-}
-function countNodeAmendments(amendments, nodePath) {
-  return amendments.filter((a) => a.node_path === nodePath && (a.action === "modified" || a.action === "refined")).length;
-}
-function checkAmendGate(amendments, resolvedPath, oldPredicate, newPredicate, amendJustification) {
-  const amendCount = countNodeAmendments(amendments, resolvedPath);
-  const weakenings = newPredicate ? detectStrengthReduction(oldPredicate, newPredicate) : [];
-  if (!amendJustification && weakenings.length > 0) {
-    return `Strength-reducing changes detected: ${weakenings.join("; ")}. Provide amend_justification explaining why this weakening is necessary.`;
-  }
-  if (amendCount >= 3 && !amendJustification) {
-    return `This node has been amended ${amendCount} times. Provide amend_justification explaining why further amendments are needed.`;
-  }
-  return null;
-}
-async function checkDocument(doc, cwdOverride, opts) {
-  const cwd = cwdOverride ?? doc.cwd;
-  const targetPath = opts?.nodePath;
-  const { inScope, outOfScope } = partitionLeaves(doc.roots, targetPath);
-  const draftCount = countDraftNodes(doc.roots);
-  const leafResults = [];
-  carryForwardOutOfScopeLeaves(targetPath, outOfScope, doc.roots, leafResults);
-  let checkedCommit;
-  let checkedDirty;
-  let isGitRepo;
-  let snapshot;
-  let snapshotFallbackNote;
-  if (!targetPath) {
-    try {
-      const { stdout: commitOut } = await execAsync2("git rev-parse HEAD", { cwd });
-      checkedCommit = commitOut.trim();
-      isGitRepo = true;
-      const { stdout: statusOut } = await execAsync2("git status --porcelain", { cwd });
-      checkedDirty = statusOut.trim().length > 0;
-    } catch {
-      isGitRepo = false;
-    }
-    if (checkedCommit && !(checkedDirty && doc.allow_dirty_pass)) {
-      try {
-        snapshot = await createSnapshot(cwd, checkedCommit);
-      } catch {
-        snapshotFallbackNote = "could not create isolated snapshot \u2014 proofs ran in-place against live tree";
-      }
-    }
-  }
-  const effectiveCwd = snapshot?.cwd ?? cwd;
-  let anyRealFail = false;
-  let anyUnverified = false;
-  let anyBaselineCaptured = false;
-  let manualUnverified = 0;
-  try {
-    const proofOpts = {
-      baseCommit: checkedCommit,
-      skipReasons: doc.skip_reasons
-    };
-    const result = await executeInScopeLeaves(
-      inScope,
-      effectiveCwd,
-      opts?.execFn ?? runCommand,
-      leafResults,
-      proofOpts
-    );
-    anyRealFail = result.anyRealFail;
-    anyUnverified = result.anyUnverified;
-    anyBaselineCaptured = result.anyBaselineCaptured;
-    manualUnverified = result.manualUnverified;
-    if (!targetPath) {
-      addDraftLeafResults(doc.roots, "", leafResults);
-    }
-  } finally {
-    if (snapshot) {
-      await destroySnapshot(snapshot);
-    }
-  }
-  if (!targetPath && checkedDirty && doc.allow_dirty_pass && !snapshotFallbackNote) {
-    snapshotFallbackNote = "dirty tree \u2014 proofs ran in-place against uncommitted state";
-  }
-  const amendmentCounts = collectAmendmentCounts(doc.amendments, doc.roots);
-  const amendmentWarnings = [...amendmentCounts.entries()].filter(([, v]) => v.count > 2).map(([node_path, v]) => ({ node_path, title: v.title, count: v.count }));
-  const blockedByManuals = !targetPath && draftCount === 0 && !anyRealFail && manualUnverified > 0;
-  const concreteCount = inScope.length + outOfScope.length;
-  const suggestScoped = !targetPath && concreteCount > 5 && draftCount > 0;
-  const proofFingerprint = computeProofFingerprint(doc.roots);
-  const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
-  let overall = tampered ? "fail" : targetPath ? "incomplete" : draftCount > 0 ? "incomplete" : anyRealFail ? "fail" : anyBaselineCaptured ? "incomplete" : anyUnverified ? "incomplete" : "pass";
-  if (overall === "pass" && checkedDirty && !doc.allow_dirty_pass) {
-    overall = "pass_dirty";
-  }
-  const concreteTotal = leafResults.filter((r) => r.status !== "draft").length;
-  const passCount = leafResults.filter((r) => r.status === "pass").length;
-  const baseSummary = targetPath ? `SCOPED (node "${targetPath}"): run a full dod_check (no nodePath) to verify completion` : `${passCount}/${concreteTotal} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
-  const guidance = [];
-  if (snapshotFallbackNote) {
-    guidance.push(snapshotFallbackNote);
-  }
-  if (blockedByManuals) {
-    guidance.push(
-      `\u26D4 ${manualUnverified} manual/review proof(s) await dod_verify \u2014 DoD CANNOT pass without human verification.`
-    );
-  } else if (!targetPath && manualUnverified > 0) {
-    guidance.push(`${manualUnverified} manual/review proof(s) await dod_verify.`);
-  }
-  if (amendmentWarnings.length > 0) {
-    const names = amendmentWarnings.map((w) => `"${w.title}" (${w.count} amendments)`).join(", ");
-    guidance.push(`\u26A0\uFE0F Excessive amendment cycles: ${names} \u2014 are proofs being tuned rather than code being fixed?`);
-  }
-  if (suggestScoped) {
-    guidance.push(
-      `\u{1F4A1} ${concreteCount} concrete proofs \u2014 use dod_check(nodePath="0") to verify one subtree at a time (faster iteration).`
-    );
-  }
-  if (!targetPath && draftCount > 0 && !suggestScoped) {
-    guidance.push(
-      `${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end.`
-    );
-  }
-  const summary = tampered ? `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL. ${baseSummary}` : guidance.length > 0 ? [baseSummary, "", ...guidance].join("\n") : baseSummary;
+function carryForwardNode(node, node_path) {
   return {
-    overall,
-    leaves: leafResults,
-    summary,
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    proof_fingerprint: proofFingerprint,
-    draft_count: draftCount,
-    manual_unverified: manualUnverified,
-    amendment_warnings: amendmentWarnings,
-    blocked_by_manuals: blockedByManuals,
-    summary_mode: opts?.summary === true ? true : void 0,
-    ...targetPath ? { scoped: true, ran_node_path: targetPath } : {},
-    ...tampered ? { tampered: true } : {},
-    checked_commit: checkedCommit,
-    checked_dirty: checkedDirty,
-    is_git_repo: isGitRepo
+    node_path,
+    id: node.id,
+    title: node.title,
+    description: node.description ?? node.intent ?? node.title,
+    status: node.last_status === "pending" || node.last_status === "draft" ? "skipped" : node.last_status,
+    command: node.command ?? "",
+    output: node.last_output
   };
 }
 function addDraftLeafResults(nodes, parentPath, out) {
@@ -23686,25 +21497,109 @@ function carryForwardDrafts(nodes, parentPath, targetPath, out) {
     }
   }
 }
+async function checkDocument(doc, cwdOverride, opts) {
+  const cwd = cwdOverride ?? doc.cwd;
+  const targetPath = opts?.nodePath;
+  const { inScope, outOfScope } = partitionLeaves(doc.roots, targetPath);
+  const draftCount = countDraftNodes(doc.roots);
+  const leafResults = [];
+  if (targetPath) {
+    for (const { node, node_path } of outOfScope) {
+      leafResults.push(carryForwardNode(node, node_path));
+    }
+    carryForwardDrafts(doc.roots, "", targetPath, leafResults);
+  }
+  let checkedCommit;
+  let checkedDirty;
+  let isGitRepo;
+  if (!targetPath) {
+    try {
+      const { stdout: commitOut } = await execAsync("git rev-parse HEAD", { cwd });
+      checkedCommit = commitOut.trim();
+      isGitRepo = true;
+      const { stdout: statusOut } = await execAsync("git status --porcelain", { cwd });
+      checkedDirty = statusOut.trim().length > 0;
+    } catch {
+      isGitRepo = false;
+    }
+  }
+  let anyFail = false;
+  let manualUnverified = 0;
+  const proofOpts = {};
+  for (const { node, node_path } of inScope) {
+    const result = await executeProof(node, cwd, proofOpts);
+    result.node_path = node_path;
+    leafResults.push(result);
+    if (result.status === "fail" && !node.advisory) anyFail = true;
+    const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
+    if (result.status === "skipped" && isManualOrReview) manualUnverified++;
+  }
+  if (!targetPath) {
+    addDraftLeafResults(doc.roots, "", leafResults);
+  }
+  const proofFingerprint = computeProofFingerprint(doc.roots);
+  const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
+  let overall;
+  if (tampered) {
+    overall = "fail";
+  } else if (targetPath) {
+    overall = "incomplete";
+  } else if (draftCount > 0) {
+    overall = "incomplete";
+  } else if (anyFail) {
+    overall = "fail";
+  } else if (manualUnverified > 0) {
+    overall = "incomplete";
+  } else {
+    overall = "pass";
+  }
+  if (overall === "pass" && checkedDirty && !doc.allow_dirty_pass) {
+    overall = "pass_dirty";
+  }
+  const concreteTotal = leafResults.filter((r) => r.status !== "draft").length;
+  const passCount = leafResults.filter((r) => r.status === "pass").length;
+  let baseSummary;
+  if (tampered) {
+    baseSummary = `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL.`;
+  } else if (targetPath) {
+    baseSummary = `SCOPED (node "${targetPath}"): run a full dod_check to verify completion. ${passCount}/${concreteTotal} proofs pass.`;
+  } else {
+    baseSummary = `${passCount}/${concreteTotal} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
+  }
+  const guidance = [];
+  if (manualUnverified > 0) {
+    guidance.push(`${manualUnverified} manual/review proof(s) await dod_verify.`);
+  }
+  if (!targetPath && draftCount > 0) {
+    guidance.push(
+      `${draftCount} draft node(s) \u2014 refine with dod_refine, then re-run dod_check.`
+    );
+  }
+  const summary = guidance.length > 0 ? [baseSummary, "", ...guidance].join("\n") : baseSummary;
+  return {
+    overall,
+    leaves: leafResults,
+    summary,
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    proof_fingerprint: proofFingerprint,
+    draft_count: draftCount,
+    manual_unverified: manualUnverified,
+    summary_mode: opts?.summary === true ? true : void 0,
+    ...targetPath ? { scoped: true, ran_node_path: targetPath } : {},
+    ...tampered ? { tampered: true } : {},
+    checked_commit: checkedCommit,
+    checked_dirty: checkedDirty,
+    is_git_repo: isGitRepo
+  };
+}
 
 // src/format-result.ts
 function formatCheckResult(result) {
-  if (process.env.DOD_DEBUG) console.debug("format-result: formatCheckResult", { overall: result.overall });
   const l = [];
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
   l.push("");
   if (result.tampered) {
     l.push("\u{1F534} **TAMPER DETECTED** \u2014 proof-set fingerprint mismatch. Store was edited outside dod_amend.");
-    l.push("");
-  }
-  if (result.blocked_by_manuals) {
-    l.push("\u26D4 **BLOCKED: Manual verification required.** All automated proofs pass, but this DoD is NOT complete.");
-    l.push(
-      `   ${result.manual_unverified} manual/review proof(s) await dod_verify. Call dod_verify for each, then re-run dod_check.`
-    );
-    l.push(
-      "   Do NOT report done until manuals are verified \u2014 the fix may look correct to proofs but be visually wrong."
-    );
     l.push("");
   }
   if (result.scoped) {
@@ -23720,12 +21615,8 @@ function formatCheckResult(result) {
     );
     l.push("");
   }
-  if (result.amendment_warnings.length > 0) {
-    l.push("\u26A0\uFE0F **Amendment cycle warnings:** These proofs have been amended 3+ times \u2014 possible proof-tuning:");
-    for (const w of result.amendment_warnings) {
-      l.push(`   \u2022 "${w.title}" \u2014 ${w.count} amendments`);
-    }
-    l.push("   Verify these proofs still test the right thing, not just whatever the code happens to do.");
+  if (result.manual_unverified > 0) {
+    l.push(`\u23F3 **${result.manual_unverified} manual/review proof(s)** await dod_verify.`);
     l.push("");
   }
   const byRoot = /* @__PURE__ */ new Map();
@@ -23740,19 +21631,16 @@ function formatCheckResult(result) {
     const failCount = leaves.filter((p) => p.status === "fail").length;
     const skipCount = leaves.filter((p) => p.status === "skipped").length;
     const draftCount = leaves.filter((p) => p.status === "draft").length;
-    const baselineCount = leaves.filter((p) => p.status === "baseline_captured").length;
     const hasFail = failCount > 0;
     const hasDraft = draftCount > 0;
-    const hasBaseline = baselineCount > 0;
-    const icon = hasFail ? "\u274C" : hasBaseline ? "\u{1F4CA}" : hasDraft ? "\u{1F4DD}" : "\u2705";
-    const status = hasFail ? "FAIL" : hasBaseline ? "INCOMPLETE" : hasDraft ? "INCOMPLETE" : "PASS";
+    const icon = hasFail ? "\u274C" : hasDraft ? "\u{1F4DD}" : "\u2705";
+    const status = hasFail ? "FAIL" : hasDraft ? "INCOMPLETE" : "PASS";
     const rootTitle = leaves[0]?.title ?? `Root ${rootIdx}`;
     const countStr = [
       passCount > 0 ? `${passCount} pass` : "",
       failCount > 0 ? `${failCount} fail` : "",
       skipCount > 0 ? `${skipCount} skipped` : "",
-      draftCount > 0 ? `${draftCount} draft` : "",
-      baselineCount > 0 ? `${baselineCount} baseline` : ""
+      draftCount > 0 ? `${draftCount} draft` : ""
     ].filter(Boolean).join(", ");
     l.push(`${icon} **${rootTitle}** \u2014 ${status} (${countStr})`);
     for (const leaf of leaves) {
@@ -23762,31 +21650,17 @@ function formatCheckResult(result) {
         if (summaryMode) continue;
         l.push(`${indent}\u{1F4DD} ${leaf.description} \u2014 DRAFT (use dod_refine to concretize)`);
       } else if (leaf.status === "pass") {
-        const isManual = leaf.command === "manual";
-        if (isManual) {
-          l.push(`${indent}\u2713 MANUAL \u2014 ${leaf.description} (${leaf.output ?? "human-confirmed"})`);
-        } else {
-          l.push(`${indent}\u2713 \`${leaf.command}\` (${leaf.duration_ms ?? 0}ms)`);
-        }
+        l.push(`${indent}\u2713 \`${leaf.command}\` \u2192 ${leaf.description} (${leaf.duration_ms ?? 0}ms)`);
       } else if (leaf.status === "skipped") {
-        l.push(`${indent}\u23F3 \`${leaf.command}\` \u2014 not verified this run${leaf.output ? `: ${leaf.output}` : ""}`);
-      } else if (leaf.status === "baseline_captured") {
-        l.push(
-          `${indent}\u{1F4CA} \`${leaf.command}\` \u2014 baseline captured (N0=${leaf.error?.match(/N0=([\d.]+)/)?.[1] ?? "?"}). Re-run to compare.`
-        );
+        l.push(`${indent}\u23F3 \`${leaf.command}\` \u2014 not verified${leaf.error ? `: ${leaf.error}` : ""}`);
       } else {
-        const isManual = leaf.command === "manual";
-        if (isManual) {
-          l.push(`${indent}\u2717 MANUAL \u2014 ${leaf.description}`);
-          if (leaf.error) l.push(`${indent}  ${leaf.error}`);
-        } else {
-          l.push(`${indent}\u2717 \`${leaf.command}\``);
-          if (leaf.exit_code !== void 0) l.push(`${indent}  exit code: ${leaf.exit_code}`);
-          if (leaf.error) l.push(`${indent}  stderr: ${leaf.error.split("\n").slice(0, 5).join(`
+        l.push(`${indent}\u2717 \`${leaf.command}\` \u2192 ${leaf.description}`);
+        if (leaf.exit_code !== void 0) l.push(`${indent}  exit code: ${leaf.exit_code}`);
+        if (leaf.error) l.push(`${indent}  error: ${leaf.error.split("\n").slice(0, 3).join(`
 ${indent}  `)}`);
-          if (leaf.output) l.push(`${indent}  output: ${leaf.output.split("\n").slice(0, 5).join(`
+        if (leaf.diagnosis) l.push(`${indent}  \u{1F4A1} Diagnosis: ${leaf.diagnosis}`);
+        if (leaf.output) l.push(`${indent}  output: ${leaf.output.split("\n").slice(0, 3).join(`
 ${indent}  `)}`);
-        }
       }
     }
     if (summaryMode && draftCount > 0) {
@@ -23834,8 +21708,7 @@ function renderGroup(node, depth, indent, lines) {
   const children = node.children;
   if (!children) return;
   const hasDrafts = hasDraftNodes(children);
-  const allPass = isBranchLocked(children) && children.every((c) => c.refinement === "concrete" && (c.last_status === "pass" || c.last_status === "skipped")) && // Also check deep
-  allLeavesPass(children);
+  const allPass = isBranchLocked(children) && children.every((c) => c.refinement === "concrete" && (c.last_status === "pass" || c.last_status === "skipped")) && allLeavesPass(children);
   let mark;
   if (hasDrafts) mark = "[~]";
   else if (allPass && children.length > 0) mark = "[x]";
@@ -23866,44 +21739,13 @@ function renderLeaf(node, indent, lines) {
   }
   const mark = proofMark(node.last_status);
   let proofLine;
-  if (node.predicate?.type === "manual") {
+  if (node.predicate?.type === "manual" || node.predicate?.type === "review") {
     const mr = node.manual_result;
     const state = mr ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_` : " _(awaiting human verification)_";
-    proofLine = `${indent}- ${mark} Proof: Manual \u2014 ${node.description}${state}`;
+    proofLine = `${indent}- ${mark} Proof: ${node.predicate.type === "review" ? "Review" : "Manual"} \u2014 ${node.description}${state}`;
   } else if (node.predicate?.type === "tdd") {
-    const tddState = node.seen_failing ? node.last_status === "pass" ? "\u{1F7E2} GREEN" : "\u{1F534} RED" : "\u2B1C AWAITING RED";
+    const tddState = node.seen_failing ? node.last_status === "pass" ? "GREEN" : "RED" : "AWAITING RED";
     proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` \u2192 ${node.description}`;
-  } else if (node.predicate?.type === "brevity") {
-    const max = node.predicate.value ?? 0;
-    proofLine = `${indent}- ${mark} Proof (brevity \u2264${max} violations): \`${node.command}\` \u2192 ${node.description}`;
-  } else if (node.predicate?.type === "line_length") {
-    const maxChars = node.predicate.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength;
-    const maxV = node.predicate.value ?? 0;
-    proofLine = `${indent}- ${mark} Proof (line_length \u2264${maxChars} chars, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
-  } else if (node.predicate?.type === "function_size") {
-    const maxLines = node.predicate.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines;
-    const maxV = node.predicate.value ?? 0;
-    proofLine = `${indent}- ${mark} Proof (function_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
-  } else if (node.predicate?.type === "file_size") {
-    const maxLines = node.predicate.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines;
-    const maxV = node.predicate.value ?? 0;
-    proofLine = `${indent}- ${mark} Proof (file_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
-  } else if (node.predicate?.type === "cohesion") {
-    const maxCC = node.predicate.max_complexity ?? 5;
-    const guards = node.predicate.require_guard_clauses ?? true;
-    const suggest = node.predicate.suggest_guard_clauses ?? true;
-    const flags = [guards ? "guard" : "", suggest ? "suggest" : ""].filter(Boolean).join("+");
-    const maxV = node.predicate.value ?? 0;
-    proofLine = `${indent}- ${mark} Proof (cohesion CC\u2264${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
-  } else if (node.predicate?.type === "replacement_ratio") {
-    const minRatio = node.predicate.min_replacement_ratio ?? 0.2;
-    const maxV = node.predicate.value ?? 0;
-    proofLine = `${indent}- ${mark} Proof (replacement_ratio \u2265${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
-  } else if (node.predicate?.type === "regression") {
-    const lib = node.predicate.lower_is_better ?? true;
-    const tol = node.predicate.value ?? 0;
-    const dir = lib ? "\u2264baseline" : "\u2265baseline";
-    proofLine = `${indent}- ${mark} Proof (regression ${dir}, tolerance ${tol}): \`${node.command}\` \u2192 ${node.description}`;
   } else {
     proofLine = `${indent}- ${mark} Proof: \`${node.command}\` \u2192 ${node.description}`;
   }
@@ -23911,48 +21753,33 @@ function renderLeaf(node, indent, lines) {
     proofLine += ` <!--p:${JSON.stringify(node.predicate)}-->`;
   }
   lines.push(proofLine);
+  if (node.last_status === "fail" && node.last_output) {
+    const short = node.last_output.slice(0, 300);
+    lines.push(`${indent}  > \u26A0 ${short}`);
+  }
 }
 function renderMarkdown(doc) {
-  if (process.env.DOD_DEBUG) console.debug("author: renderMarkdown", { id: doc.id });
   const l = [];
   l.push(`# ${doc.title} \u2014 Requirements Spec`);
   l.push("");
   l.push("<claude_instructions>");
-  l.push("**For Claude (/goal):** Work through each incomplete task below.");
+  l.push("**For the implementer:** Work through each task below.");
   l.push("1. Mark a task `[>]` when you begin working on it.");
   l.push("2. Call `dod_check` to verify proofs \u2014 do NOT mark proofs manually.");
-  l.push(
-    "   While iterating on one subtree, pass `nodePath` to verify just that part fast (others are carried, not re-run). A scoped run returns INCOMPLETE, never PASS."
-  );
   l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
-  l.push("3b. For `manual`/`review` proofs: `dod_check` never auto-prompts \u2014 call");
-  l.push("    `dod_verify(dod_id, proof_id)` explicitly when verification is actually relevant.");
-  l.push("3c. **Manual verification is a HARD GATE.** DoD cannot PASS without it.");
-  l.push("    Proofs can pass against wrong code. Visual verification catches what metrics miss.");
-  l.push(
-    "4. Use `dod_refine` to turn a draft leaf into a concrete proof (mode=concretize) or subdivide into child tasks (mode=subdivide)."
-  );
-  l.push("4b. **Refine incrementally per task group, not all at once.** Scoped dod_check is faster");
-  l.push("    than full runs \u2014 use it. Refining 7 drafts at session end = rubber-stamping.");
-  l.push("4c. Use `dod_add_node` to add new nodes discovered during implementation.");
-  l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("5b. **Amending a proof 3+ times is a red flag** \u2014 you're probably tuning proofs to pass");
-  l.push("    rather than fixing the bug. Re-examine the approach.");
-  l.push("5c. Proof commands run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
-  l.push(
-    "6. Continue until `dod_check` returns PASS (zero drafts, all proofs pass, manuals verified) \u2014 then stop and report done."
-  );
-  l.push("6b. **If the approach isn't working, stop and re-interview.** Don't silently pivot to");
-  l.push("    a different implementation while keeping the old DoD. The DoD must match what you're doing.");
+  l.push("4. For `manual`/`review` proofs: call `dod_verify(dod_id, proof_id)` explicitly.");
+  l.push("5. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.");
+  l.push("6. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
+  l.push("7. Continue until `dod_check` returns PASS \u2014 then stop and report done.");
   l.push("");
-  l.push(`**Self-contained.** All commands run from \`${doc.cwd}\` unless noted.`);
+  l.push("**Behavioral predicates only.** Each proof is a concrete behavioral claim.");
+  l.push("Read failure diagnoses carefully \u2014 they tell you WHAT went wrong and what to fix.");
+  l.push("Proofs run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
   l.push("");
-  l.push("**\u{1F512} Anti-cheat:** Proofs are stored canonically in MCP storage (dod-guard).");
+  l.push(`**CWD:** \`${doc.cwd}\``);
+  l.push("");
+  l.push("**Anti-cheat:** Proofs stored canonically in MCP storage.");
   l.push("`dod_check` executes commands from the canonical copy, not this markdown file.");
-  l.push("Editing proof text here has no effect on verification.");
-  l.push("Store tampering is **logged and detectable** \u2014 each check prints a proof-set fingerprint.");
-  l.push("Manual/review proofs are confirmed by the human directly (popup / elicitation) via `dod_verify` \u2014");
-  l.push("Claude cannot self-confirm them, and an unrequested one holds the DoD at INCOMPLETE, never PASS.");
   l.push("</claude_instructions>");
   l.push("");
   l.push(`**Goal:** ${doc.goal}`);
@@ -24033,7 +21860,7 @@ function renderMarkdown(doc) {
 }
 async function writeMarkdown(doc) {
   const content = renderMarkdown(doc);
-  const dir = path4.dirname(doc.markdown_path);
+  const dir = path.dirname(doc.markdown_path);
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(doc.markdown_path, content, "utf-8");
 }
@@ -24046,7 +21873,9 @@ function updateDocFromCheckResult(doc, result) {
       continue;
     if (leafResult.status !== "draft") {
       node.last_status = leafResult.status;
-      node.last_output = leafResult.output;
+      node.last_output = leafResult.diagnosis ? `${leafResult.output ?? ""}
+
+Diagnosis: ${leafResult.diagnosis}` : leafResult.output;
       node.last_checked = result.timestamp;
     }
   }
@@ -24060,10 +21889,10 @@ function updateDocFromCheckResult(doc, result) {
 
 // src/command-check.ts
 import { execFile as execFile2 } from "node:child_process";
-import { existsSync as existsSync4, readdirSync as readdirSync4, readFileSync as readFileSync4 } from "node:fs";
-import * as path5 from "node:path";
-import { promisify as promisify4 } from "node:util";
-var execFileAsync2 = promisify4(execFile2);
+import { existsSync, readdirSync } from "node:fs";
+import * as path2 from "node:path";
+import { promisify as promisify3 } from "node:util";
+var execFileAsync = promisify3(execFile2);
 var isWindows = process.platform === "win32";
 var CMD_BUILTINS = /* @__PURE__ */ new Set([
   "assoc",
@@ -24196,34 +22025,16 @@ function extractCommandNames(command) {
   }
   return names;
 }
-var GLOB_CHARS = /[*?[]/;
-function hasGlobWildcards(command) {
-  let quote = null;
-  for (const c of command) {
-    if (quote) {
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (c === '"' || c === "'") {
-      quote = c;
-      continue;
-    }
-    if (GLOB_CHARS.test(c)) return true;
-  }
-  return false;
-}
 var existsCache = /* @__PURE__ */ new Map();
 async function onPath(name) {
   try {
     if (isWindows) {
-      await execFileAsync2("where", [name], { timeout: 5e3, windowsHide: true });
+      await execFileAsync("where", [name], { timeout: 5e3, windowsHide: true });
     } else {
-      await execFileAsync2("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5e3 });
+      await execFileAsync("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5e3 });
     }
     return true;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("command-check: tool existence check failed", { name, err: msg });
+  } catch {
     return false;
   }
 }
@@ -24246,9 +22057,9 @@ async function toolExists(name, cwd) {
   return ok;
 }
 function resolvePathExists(name, cwd) {
-  const base = path5.isAbsolute(name) ? name : path5.resolve(cwd, name);
+  const base = path2.isAbsolute(name) ? name : path2.resolve(cwd, name);
   const candidates = isWindows ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
-  return candidates.some((p) => existsSync4(p));
+  return candidates.some((p) => existsSync(p));
 }
 async function findMissingTools(commands, cwd) {
   const missing = [];
@@ -24262,13 +22073,29 @@ async function findMissingTools(commands, cwd) {
   }
   return missing;
 }
+var GLOB_CHARS = /[*?[]/;
+function hasGlobWildcards(command) {
+  let quote = null;
+  for (const c of command) {
+    if (quote) {
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      continue;
+    }
+    if (GLOB_CHARS.test(c)) return true;
+  }
+  return false;
+}
 function expandGlobsInCommand(command, cwd) {
   if (process.platform !== "win32") return { expanded: command, expanded_count: 0 };
   const dirGlobRe = /([A-Za-z0-9_.-]+)\\([*?][^\\]*)\\/g;
   const dirGlobReFwd = /([A-Za-z0-9_.-]+)\/([*?][^/]*)\//g;
   let expanded = command;
   let count = 0;
-  const globResolve = (re, sep3) => {
+  const globResolve = (re, sep) => {
     const matches = [];
     for (const m of command.matchAll(re)) {
       matches.push({ prefix: m[1], pattern: m[2], fullMatch: m[0] });
@@ -24278,11 +22105,11 @@ function expandGlobsInCommand(command, cwd) {
       if (seen.has(fullMatch)) continue;
       seen.add(fullMatch);
       try {
-        const parentDir = path5.resolve(cwd, prefix);
-        if (!existsSync4(parentDir)) continue;
-        const entries = readdirSync4(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
+        const parentDir = path2.resolve(cwd, prefix);
+        if (!existsSync(parentDir)) continue;
+        const entries = readdirSync(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
         if (entries.length > 0) {
-          const replacement = entries.map((e) => `${prefix}${sep3}${e}${sep3}`).join(" ");
+          const replacement = entries.map((e) => `${prefix}${sep}${e}${sep}`).join(" ");
           expanded = expanded.split(fullMatch).join(replacement);
           count += entries.length;
         }
@@ -24300,104 +22127,22 @@ function wildcardMatch(str, pattern) {
   );
   return re.test(str);
 }
-var MUTATING_FLAGS = [
-  [/\bb(?:iome|eautifier)\b.*--write\b/, "biome/prettier --write modifies files in-place"],
-  [/\beslint\b.*--fix\b/, "eslint --fix modifies files in-place"],
-  [/\b(?:biome|prettier)\s+format\b(?!.*--check\b)/, "biome/prettier format (without --check) may modify files"],
-  [/\btsc\b(?!.*--noEmit\b)/, "tsc writes compiled .js files to dist/ \u2014 use --noEmit for check-only"],
-  [/\bstryker\b\s+run\b/, "Stryker mutates dist/ files in-place \u2014 use git checkout to restore after run"],
-  [/\bgit\s+add\b/, "git add stages changes \u2014 never use in proof commands"],
-  [/\bgit\s+commit\b/, "git commit creates commits \u2014 never use in proof commands"],
-  [/\bgit\s+reset\b/, "git reset modifies working tree \u2014 never use in proof commands"],
-  [/\brm\s+-[rf]/, "rm -rf deletes files \u2014 dangerous in proof commands"],
-  [/\bdel\s+\/[sfq]/, "Windows del with flags deletes files \u2014 dangerous in proof commands"],
-  [/\bnpm\s+(?:install|update|ci)\b/, "npm install/update/ci modifies node_modules/ and package-lock.json"],
-  [/\bpnpm\s+(?:install|update)\b/, "pnpm install/update modifies node_modules/ and lockfile"],
-  [/\bcargo\s+build\b(?!.*--check\b)/, "cargo build writes compiled artifacts (use cargo check for lint-only)"]
-];
-function detectMutatingFlags(command) {
-  const warnings = [];
-  for (const [re, desc] of MUTATING_FLAGS) {
-    if (re.test(command)) {
-      warnings.push(desc);
-    }
-  }
-  return warnings;
-}
 var PLACEHOLDER_PATTERNS = [
   /^node\s+(?:-e|--eval)\s+["']?\s*process\.exit\s*\(\s*0\s*\)\s*["']?$/i,
   /^node\s+(?:-e|--eval)\s+["']\s*["']$/i,
-  // empty eval body
   /^process\.exit\s*\(\s*0\s*\)$/i,
   /^echo\s+(?:ok|done|pass(?:ed)?)$/i,
   /^true$/,
   /^:\s*$/,
-  // shell no-op
   /^exit\s+0$/i,
   /^exit\s+\/b\s+0$/i,
   /^cmd\s+\/c\s+["']?exit(?:\s+\/b)?\s+0["']?$/i,
   /^rem\b/i
-  // cmd.exe comment — always exits 0
 ];
 function isPlaceholderCommand(command) {
   const cmd = command.trim();
   if (!cmd) return false;
   return PLACEHOLDER_PATTERNS.some((re) => re.test(cmd));
-}
-var BEHAVIORAL_CATEGORIES = /* @__PURE__ */ new Set([
-  "test",
-  "integration_behavioral",
-  "integration_wiring"
-]);
-async function validatePositiveEvidence(command, category, cwd, predicateType, skipReason, changedFilesOverride) {
-  if (!BEHAVIORAL_CATEGORIES.has(category)) return null;
-  if (predicateType === "tdd") return null;
-  if (skipReason) return null;
-  const changedFiles = changedFilesOverride ?? await getChangedFiles(cwd);
-  for (const file of changedFiles) {
-    if (command.includes(file)) return null;
-  }
-  const cmdTokens = command.split(/\s+/).filter((t) => /[./\\]/.test(t) && t.length > 2);
-  for (const token of cmdTokens) {
-    const tokenBasename = path5.basename(token.replace(/\\/g, "/"));
-    if (!tokenBasename || tokenBasename.length <= 2) continue;
-    for (const file of changedFiles) {
-      if (path5.posix.basename(file) === tokenBasename) return null;
-    }
-  }
-  return `No positive evidence: command must reference changed files, use a tdd predicate, or provide a skip_reason for category '${category}'.`;
-}
-async function getChangedFiles(cwd) {
-  try {
-    const { stdout } = await execFileAsync2("git", ["diff", "--name-only", "HEAD"], {
-      cwd,
-      timeout: 5e3,
-      windowsHide: true
-    });
-    return stdout.trim().split("\n").filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-function usesNodeEvalRequire(command) {
-  return /\bnode\b.*\s(?:-e|--eval)\b/.test(command) && /\brequire\s*\(/.test(command);
-}
-function isEsmPackage(cwd) {
-  let dir = path5.resolve(cwd);
-  for (let i = 0; i < 20; i++) {
-    const pkg = path5.join(dir, "package.json");
-    if (existsSync4(pkg)) {
-      try {
-        return JSON.parse(readFileSync4(pkg, "utf-8")).type === "module";
-      } catch {
-        return false;
-      }
-    }
-    const parent = path5.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return false;
 }
 var currentOs = process.platform;
 
@@ -24651,57 +22396,12 @@ var PredicateSchema = external_exports.object({
     "output_not_matches",
     "tdd",
     "manual",
-    "review",
-    "mutation",
-    "regression",
-    "assertions",
-    "streamline",
-    "observability",
-    "brevity",
-    "line_length",
-    "function_size",
-    "file_size",
-    "cohesion",
-    "replacement_ratio"
+    "review"
   ]),
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
-  extract: external_exports.string().optional().describe(
-    "regression only: regex whose capture group 1 is the metric number; omit to use the last number in stdout."
-  ),
-  lower_is_better: external_exports.boolean().optional().describe(
-    "regression only: true (default) => smaller is better (perf/complexity/duplication); false => larger is better (coverage)."
-  ),
-  max_line_length: external_exports.number().optional().describe("brevity / line_length: max characters per line (default 120)."),
-  max_function_lines: external_exports.number().optional().describe("brevity / function_size: max lines per function (default 30)."),
-  max_file_lines: external_exports.number().optional().describe("brevity / file_size: max lines per file (default 300)."),
-  max_complexity: external_exports.number().optional().describe("brevity / cohesion: max cyclomatic complexity per function (default 5)."),
-  require_guard_clauses: external_exports.boolean().optional().describe("brevity / cohesion: flag unnecessary else after exit statement (default true)."),
-  suggest_guard_clauses: external_exports.boolean().optional().describe(
-    "brevity / cohesion: flag if/else pairs in functions lacking guard clauses \u2014 advisory suggestion (default true)."
-  ),
-  min_replacement_ratio: external_exports.number().optional().describe("brevity / replacement_ratio: minimum deletion/insertion ratio (default 0.2)."),
   timeout_ms: external_exports.number().optional().describe("Override the default 120s command timeout in milliseconds. Use for slow tools like Stryker (600s).")
 });
-var ProofCategorySchema = external_exports.enum([
-  "lint",
-  "format",
-  "tdd",
-  "structure",
-  "test",
-  "mutation",
-  "integration_wiring",
-  "integration_behavioral",
-  "performance",
-  "complexity",
-  "coverage",
-  "duplication",
-  "streamline",
-  "observability",
-  "brevity",
-  "regression",
-  "manual",
-  "other"
-]);
+var ProofCategorySchema = external_exports.enum(["behavioral", "wiring", "manual", "other"]);
 var TaskNodeInputSchema = external_exports.lazy(
   () => external_exports.object({
     title: external_exports.string(),
@@ -24728,15 +22428,15 @@ var SectionsSchema = external_exports.object({
 import * as crypto from "node:crypto";
 import { promises as fs3 } from "node:fs";
 import * as os from "node:os";
-import * as path6 from "node:path";
+import * as path3 from "node:path";
 function getStoreDir() {
-  return process.env.DOD_STORE_DIR || path6.join(os.homedir(), ".claude", "dod-store");
+  return process.env.DOD_STORE_DIR || path3.join(os.homedir(), ".claude", "dod-store");
 }
 async function ensureStoreDir() {
   await fs3.mkdir(getStoreDir(), { recursive: true });
 }
 function docPath(id) {
-  return path6.join(getStoreDir(), `${id}.json`);
+  return path3.join(getStoreDir(), `${id}.json`);
 }
 function generateId() {
   return crypto.randomUUID();
@@ -24769,10 +22469,10 @@ async function findByPath(markdownPath) {
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
     try {
-      const data = await fs3.readFile(path6.join(getStoreDir(), file), "utf-8");
+      const data = await fs3.readFile(path3.join(getStoreDir(), file), "utf-8");
       const doc = JSON.parse(data);
-      const normalizedStored = path6.resolve(doc.markdown_path).toLowerCase();
-      const normalizedSearch = path6.resolve(markdownPath).toLowerCase();
+      const normalizedStored = path3.resolve(doc.markdown_path).toLowerCase();
+      const normalizedSearch = path3.resolve(markdownPath).toLowerCase();
       if (normalizedStored === normalizedSearch) return doc;
     } catch (err) {
       console.error("store: failed to read file during findByPath", {
@@ -24790,7 +22490,7 @@ async function listAll() {
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
     try {
-      const data = await fs3.readFile(path6.join(getStoreDir(), file), "utf-8");
+      const data = await fs3.readFile(path3.join(getStoreDir(), file), "utf-8");
       docs.push(JSON.parse(data));
     } catch (err) {
       console.error("store: failed to read file during listAll", {
@@ -24843,7 +22543,7 @@ async function listAllRaw() {
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
     try {
-      const data = await fs3.readFile(path6.join(getStoreDir(), file), "utf-8");
+      const data = await fs3.readFile(path3.join(getStoreDir(), file), "utf-8");
       docs.push(JSON.parse(data));
     } catch (err) {
       console.error("store: failed to read file during listAllRaw", {
@@ -24884,10 +22584,7 @@ function buildTaskNodes(inputs) {
       node.predicate = input.predicate;
       node.description = input.description;
       node.category = input.category;
-      node.advisory = input.advisory ?? (input.predicate?.type === "regression" ? true : void 0);
-      if (input.predicate?.type === "regression" && node.category === "coverage" && input.predicate.lower_is_better === void 0) {
-        node.predicate.lower_is_better = false;
-      }
+      node.advisory = input.advisory;
     }
     return node;
   });
@@ -25073,64 +22770,8 @@ async function checkCommandsForOs(roots, cwd) {
   if (missing.length > 0) {
     lines.push(formatMissingTools(missing));
   }
-  const mutatingCmds = commands.filter((cmd) => detectMutatingFlags(cmd).length > 0);
-  if (mutatingCmds.length > 0) {
-    if (lines.length > 0) lines.push("");
-    lines.push(
-      `WARNING: ${mutatingCmds.length} proof command(s) mutate the working tree \u2014 this causes false dirty-tree signals on subsequent proof runs.`,
-      "Use check-only equivalents where possible:",
-      "  \u2022 biome format / prettier --check (not --write)",
-      "  \u2022 tsc --noEmit (check types without emitting .js)",
-      "  \u2022 eslint (without --fix)",
-      "  \u2022 npx stryker run \u2192 follow with git checkout -- <pkg>/dist/ to restore mutated files",
-      ""
-    );
-    for (const cmd of mutatingCmds) {
-      const flags = detectMutatingFlags(cmd);
-      lines.push(`  \u2022 \`${cmd.slice(0, 80)}\``);
-      for (const f of flags.slice(0, 2)) lines.push(`    \u2192 ${f}`);
-    }
-    lines.push("");
-  }
-  if (isEsmPackage(cwd)) {
-    const esmReqCmds = commands.filter(usesNodeEvalRequire);
-    if (esmReqCmds.length > 0) {
-      if (lines.length > 0) lines.push("");
-      lines.push(
-        `WARNING: ${esmReqCmds.length} proof command(s) use \`node -e\` with require() in an ESM ("type": "module") package.`,
-        "These throw ERR_REQUIRE_ESM at runtime. Use one of:",
-        "  \u2022 OS-native verification (Windows: `type file | findstr pattern`, POSIX: `grep`)",
-        '  \u2022 `node --input-type=commonjs -e "..."` to force CommonJS',
-        "  \u2022 ESM syntax: `node --input-type=module -e \"import('node:fs')...\"`",
-        ""
-      );
-      for (const cmd of esmReqCmds) lines.push(`  \u2022 \`${cmd.slice(0, 80)}\``);
-      lines.push("");
-    }
-  }
   if (lines.length === 0) return null;
   return lines.join("\n");
-}
-function extractBaselineSteps(roots) {
-  return roots.map((root) => ({
-    title: root.title,
-    proofs: collectBaselineProofs(root)
-  }));
-}
-function collectBaselineProofs(node) {
-  const results = [];
-  if (node.children) {
-    for (const child of node.children) {
-      results.push(...collectBaselineProofs(child));
-    }
-  } else if (node.refinement === "concrete" && node.category) {
-    results.push({
-      category: node.category,
-      predicate: { type: node.predicate?.type ?? "" },
-      advisory: node.advisory
-    });
-  }
-  return results;
 }
 
 // src/tools/dod-add-node.ts
@@ -25158,12 +22799,12 @@ async function handleDodAddNode(params) {
     parent = found.node;
     resolvedParentPath = found.path;
     if (!parent.children)
-      throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children. Add to a task group.`);
+      throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
   } else if (parent_path) {
     parent = findNodeByPath(doc.roots, parent_path);
     if (!parent) throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
     if (!parent.children)
-      throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children. Add to a task group.`);
+      throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
   }
   if (refinement === "concrete") {
     if (!(command && predicate && description)) {
@@ -25193,10 +22834,6 @@ async function handleDodAddNode(params) {
     node.description = description;
     node.category = category;
     if (advisory !== void 0) node.advisory = advisory;
-    else if (predicate?.type === "regression") node.advisory = true;
-    if (predicate?.type === "regression" && node.category === "coverage" && predicate.lower_is_better === void 0) {
-      node.predicate.lower_is_better = false;
-    }
   }
   if (parent) {
     parent.children?.push(node);
@@ -25222,159 +22859,14 @@ Run dod_check to verify${refinement === "draft" ? " after refining with dod_refi
 }
 
 // src/tools/dod-create.ts
-import * as path7 from "node:path";
-
-// src/baseline.ts
-var WIRING_LABEL = "Integration (wiring): a structural grep proving the change is connected to the real system (import in a real caller, route registration, public export).";
-var BEHAVIORAL_LABEL = "Integration (behavioral): exercise the change through the system's actual entry point (API/CLI/page render), not a test harness.";
-var TEST_LABEL = "Full test suite: a proof that the whole suite stays green (no regressions).";
-var HARD_MANDATORY = [
-  { cat: "integration_wiring", label: WIRING_LABEL },
-  { cat: "integration_behavioral", label: BEHAVIORAL_LABEL },
-  { cat: "test", label: TEST_LABEL }
-];
-var TDD_WARN_BUG = 'No "tdd" proof \u2014 a bug fix should include a regression test that fails first (red), then passes. Add a tdd proof, or provide a skip_reason.';
-var TDD_WARN_GENERAL = 'No "tdd" proof \u2014 new functionality should include a fail-first unit test. Add a tdd proof, or provide a skip_reason.';
-var MUTATION_WARN = 'No "mutation" proof \u2014 a green suite can still catch zero bugs. For critical logic, add a mutation proof (cargo-mutants / mutmut / Stryker), or provide a skip_reason.';
-var STREAMLINE_WARN = 'No "streamline" proof \u2014 when revising existing code, a streamline proof verifies old implementations were removed. Add one (grep/rg/findstr for old symbols), or provide a skip_reason.';
-var OBSERVABILITY_WARN = 'No "observability" proof \u2014 changed source files should have log statements at error paths, no empty catch/swallowed errors. Add an observability proof, or provide a skip_reason.';
-var BREVITY_WARN = `No "brevity" proof \u2014 changed source files should be scanned for structural bloat: functions >${DEFAULT_BREVITY_OPTS.maxFunctionLines} lines, mixed selection+iteration, files >${DEFAULT_BREVITY_OPTS.maxFileLines} lines, lines >${DEFAULT_BREVITY_OPTS.maxLineLength} chars, replacement without removal. Add a brevity proof, or provide a skip_reason.`;
-var OPTIONAL_REQUIRING_JUSTIFICATION = [
-  {
-    cat: "tdd",
-    label: "TDD: a fail-first test for new/changed behavior.",
-    warnMsg: (t) => t === "bug" ? TDD_WARN_BUG : TDD_WARN_GENERAL
-  },
-  {
-    cat: "mutation",
-    label: "Mutation testing: prove the test suite actually catches bugs.",
-    warnMsg: () => MUTATION_WARN
-  },
-  { cat: "streamline", label: "Streamline: prove old implementations were removed.", warnMsg: () => STREAMLINE_WARN },
-  {
-    cat: "observability",
-    label: "Observability: prove changed files are instrumented for debugging.",
-    warnMsg: () => OBSERVABILITY_WARN
-  },
-  {
-    cat: "brevity",
-    label: "Brevity: prove code is clean \u2014 short functions, single-purpose.",
-    warnMsg: () => BREVITY_WARN
-  }
-];
-var REGRESSION_CATEGORIES = [
-  { cat: "performance", label: "Performance: prove no perf regression via regression predicate." },
-  { cat: "complexity", label: "Complexity: prove cyclomatic complexity does not regress." },
-  { cat: "coverage", label: "Coverage: prove test coverage does not drop." },
-  { cat: "duplication", label: "Duplication: prove code duplication does not increase." }
-];
-var STRONG = ["test", "tdd", "integration_behavioral", "manual"];
-var WEAK = ["structure", "lint", "format"];
-function collectPresent(steps) {
-  const present = /* @__PURE__ */ new Set();
-  for (const s of steps) for (const p of s.proofs) present.add(p.category);
-  return present;
-}
-function checkHardMandatory(present, type) {
-  const errors = [];
-  for (const m of HARD_MANDATORY) {
-    if (!present.has(m.cat)) {
-      errors.push(`Missing mandatory proof category "${m.cat}" (${type} DoD). ${m.label}`);
-    }
-  }
-  return errors;
-}
-function checkOptional(present, skipReasons) {
-  const errors = [];
-  const warnings = [];
-  const check2 = (cat, label, _warnMsg) => {
-    if (present.has(cat)) return;
-    const reason = skipReasons?.[cat];
-    if (reason) {
-      warnings.push(`\u26A0 "${cat}" omitted (skip_reason: "${reason}").`);
-    } else {
-      errors.push(
-        `Missing "${cat}" proof. ${label} Either add a proof for this category, or provide skip_reasons["${cat}"] with a justification for why it does not apply to this change.`
-      );
-    }
-  };
-  for (const opt of OPTIONAL_REQUIRING_JUSTIFICATION) {
-    check2(opt.cat, opt.label, opt.warnMsg("general"));
-  }
-  for (const rc of REGRESSION_CATEGORIES) {
-    check2(rc.cat, rc.label, rc.label);
-  }
-  return { errors, warnings };
-}
-function checkStrengthOnly(steps) {
-  const warnings = [];
-  for (const s of steps) {
-    if (s.proofs.length === 0) continue;
-    const hasStrong = s.proofs.some((p) => STRONG.includes(p.category));
-    const allWeak = s.proofs.every((p) => WEAK.includes(p.category));
-    if (!hasStrong && allWeak) {
-      warnings.push(
-        `Step "${s.title}" has only presence/structural proofs \u2014 these confirm code exists, not that it works. Add a behavioral or test proof.`
-      );
-    }
-  }
-  return warnings;
-}
-function validateBaseline(type, steps, skipReasons) {
-  if (process.env.DOD_DEBUG) console.debug("baseline: validateBaseline", { type, stepCount: steps.length });
-  const present = collectPresent(steps);
-  const errors = [];
-  const warnings = [];
-  if (type !== "minimal") {
-    errors.push(...checkHardMandatory(present, type));
-    const optResult = checkOptional(present, skipReasons);
-    errors.push(...optResult.errors);
-    warnings.push(...optResult.warnings);
-    const hasManualReview = steps.some(
-      (s) => s.proofs.some((p) => p.predicate.type === "manual" || p.predicate.type === "review")
-    );
-    if (!hasManualReview) {
-      const reason = skipReasons?.manual;
-      if (reason) {
-        warnings.push(
-          `\u26A0 "manual" omitted (skip_reason: "${reason}"). At least one manual or review proof is expected for ${type} DoDs.`
-        );
-      } else {
-        errors.push(
-          `At least one manual or review proof is required for type "${type}". Add a manual/review proof or provide a skip_reason.`
-        );
-      }
-    }
-  }
-  warnings.push(...checkStrengthOnly(steps));
-  return { errors, warnings };
-}
-function baselineLockError(type, steps, skipReasons) {
-  const { errors } = validateBaseline(type, steps, skipReasons);
-  if (errors.length === 0) return null;
-  return [
-    "ERROR: cannot lock DoD \u2014 mandatory baseline categories are missing.",
-    "A DoD with no draft nodes is complete and must satisfy the company baseline.",
-    "",
-    ...errors.map((e) => `  \u2022 ${e}`),
-    "",
-    'Add a proof for each category, or pass skip_reasons["<category>"] with a justification.',
-    'Use type: "minimal" for narrow-scope changes that legitimately skip the baseline.'
-  ].join("\n");
-}
-
-// src/tools/dod-create.ts
+import * as path4 from "node:path";
 async function handleDodCreate(params) {
-  const { title, goal, type, cwd, markdown_path, sections, roots: rootInputs, skip_reasons } = params;
-  const resolvedCwd = path7.resolve(cwd);
+  const { title, goal, type, cwd, markdown_path, sections, roots: rootInputs } = params;
+  const resolvedCwd = path4.resolve(cwd);
   resetNodeIdCounter();
   const roots = buildTaskNodes(rootInputs);
   const osError = await checkCommandsForOs(roots, resolvedCwd);
   if (osError) return osError;
-  if (countDraftNodes(roots) === 0) {
-    const lockErr = baselineLockError(type, extractBaselineSteps(roots), skip_reasons);
-    if (lockErr) return lockErr;
-  }
   const id = generateId();
   const date3 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
   const fingerprint = computeProofFingerprint(roots);
@@ -25385,10 +22877,9 @@ async function handleDodCreate(params) {
     date: date3,
     type,
     cwd: resolvedCwd,
-    markdown_path: path7.resolve(markdown_path),
+    markdown_path: path4.resolve(markdown_path),
     created_at: (/* @__PURE__ */ new Date()).toISOString(),
     execution_confirmed: true,
-    skip_reasons,
     sections,
     roots,
     proof_fingerprint: fingerprint || void 0,
@@ -25399,17 +22890,14 @@ async function handleDodCreate(params) {
   const concreteCount = flattenConcreteLeaves(roots).length;
   const draftCount = countDraftNodes(roots);
   const rootCount = roots.length;
-  const baseline = validateBaseline(
-    type,
-    extractBaselineSteps(roots),
-    skip_reasons
+  const warnings = [];
+  const behavioralLeaves = flattenConcreteLeaves(roots).filter(
+    (l) => l.node.category === "behavioral"
   );
-  const warningBlock = baseline.errors.length > 0 || baseline.warnings.length > 0 ? [
-    "",
-    "\u26A0\uFE0F Baseline advisories:",
-    ...baseline.errors.map((e) => `  \u2022 ${e} (will be enforced at dod_refine time)`),
-    ...baseline.warnings.map((w) => `  \u2022 ${w}`)
-  ] : [];
+  if (behavioralLeaves.length === 0 && type !== "minimal") {
+    warnings.push("\u2022 No behavioral predicate proofs. Every DoD should have at least one");
+    warnings.push("  proof that verifies correct behavior (output_contains, output_matches, etc.).");
+  }
   return [
     "DoD created.",
     "",
@@ -25419,11 +22907,11 @@ async function handleDodCreate(params) {
     `Concrete proofs: ${concreteCount}`,
     `Draft nodes: ${draftCount}`,
     fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
-    ...warningBlock,
+    warnings.length > 0 ? "" : "",
+    ...warnings,
     "",
-    draftCount > 0 ? `${draftCount} draft node(s) \u2014 refine incrementally per task group with dod_refine, not all at once at the end. Use dod_check(nodePath="0") to verify one subtree at a time.` : "All nodes are concrete \u2014 dod_check can verify the full DoD.",
-    "",
-    "NEXT: run `dod_check` to validate proof commands execute on this OS."
+    draftCount > 0 ? `${draftCount} draft node(s) \u2014 refine with dod_refine. Use dod_check(nodePath="0") for fast scoped iteration.` : "All nodes concrete \u2014 run dod_check to verify.",
+    ""
   ].filter(Boolean).join("\n");
 }
 
@@ -25469,14 +22957,6 @@ async function handleDodRefine(params) {
       if (missing.length > 0) {
         return formatMissingTools(missing);
       }
-      const evidenceErr = await validatePositiveEvidence(
-        command,
-        category,
-        doc.cwd,
-        pred.type,
-        doc.skip_reasons?.[category]
-      );
-      if (evidenceErr) return evidenceErr;
     }
     node.refinement = "concrete";
     node.command = command;
@@ -25484,10 +22964,6 @@ async function handleDodRefine(params) {
     node.description = description ?? "";
     if (category) node.category = category;
     if (advisory !== void 0) node.advisory = advisory;
-    else if (pred.type === "regression") node.advisory = true;
-    if (pred.type === "regression" && node.category === "coverage" && pred.lower_is_better === void 0) {
-      node.predicate.lower_is_better = false;
-    }
     node.intent = void 0;
     node.last_status = "pending";
     doc.amendments.push({
@@ -25502,8 +22978,7 @@ async function handleDodRefine(params) {
       "",
       "\u26A0\uFE0F  PLACEHOLDER PROOF: This command always exits 0 \u2014 it provides zero verification.",
       "The proof will pass dod_check regardless of whether the code actually works.",
-      "Replace with a real verification command before considering this DoD complete.",
-      "Examples: actual test run, linter check, build verification, grep for expected output."
+      "Replace with a real verification command before considering this DoD complete."
     ] : [];
   } else {
     if (!children || children.length === 0) {
@@ -25536,10 +23011,6 @@ async function handleDodRefine(params) {
     });
   }
   const draftCount = countDraftNodes(doc.roots);
-  if (mode === "concretize" && draftCount === 0) {
-    const lockErr = baselineLockError(doc.type ?? "general", extractBaselineSteps(doc.roots), doc.skip_reasons);
-    if (lockErr) return lockErr;
-  }
   doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
   await save(doc);
   await writeMarkdown(doc);
@@ -25573,7 +23044,7 @@ server.tool(
     title: external_exports.string().describe("Feature/plan title"),
     goal: external_exports.string().describe("One-sentence goal"),
     type: external_exports.enum(["bug", "general", "minimal"]).describe(
-      "Work type \u2014 selects the company baseline. 'minimal' enforces only lint+format+test; 'bug' adds tdd; 'general' enforces all categories (standards/dod-baselines.md)."
+      "Work type. 'minimal' = advisory-only. 'general'/'bug' = behavioral predicates recommended."
     ),
     cwd: external_exports.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: external_exports.string().describe("Where to write the DoD markdown file (absolute path)"),
@@ -25581,7 +23052,6 @@ server.tool(
     roots: external_exports.array(TaskNodeInputSchema).describe(
       "Root-level task nodes forming the decomposition tree. Task groups have children. Draft leaves have intent. Concrete leaves have command+predicate+description+category."
     ),
-    skip_reasons: external_exports.record(external_exports.string()).optional().describe("Map from optional proof category to justification for omission."),
     dod_id: external_exports.string().optional().describe("REJECTED: dod_create creates new DoDs. Use dod_amend to update an existing one.")
   },
   async (params) => {
@@ -26071,11 +23541,11 @@ server.tool(
 );
 server.tool(
   "dod_amend",
-  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='__meta__' to update DoD-level skip_reasons. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
+  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
   {
     dod_id: external_exports.string().describe("DoD ID"),
     node_path: external_exports.string().describe(
-      "Dot-separated path to the concrete leaf node, '*' for all concrete leaves (bulk amend), or '__meta__' for DoD-level metadata"
+      "Dot-separated path to the concrete leaf node, or '*' for all concrete leaves (bulk amend)"
     ),
     node_id: external_exports.string().optional().describe(
       "Stable node ID (alternative to node_path \u2014 survives tree mutations). Incompatible with '*' and '__meta__'."
@@ -26083,7 +23553,6 @@ server.tool(
     new_command: external_exports.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: external_exports.string().optional(),
-    new_skip_reasons: external_exports.record(external_exports.string()).optional().describe("(__meta__ only) Replace DoD skip_reasons map"),
     reason: external_exports.string().describe("Why this amendment is needed \u2014 logged permanently"),
     amend_justification: external_exports.string().optional().describe(
       "Required when this node has been amended 3+ times, or when the change weakens a proof threshold (e.g. increasing limits, removing checks). Explains why further loosening is necessary."
@@ -26096,52 +23565,17 @@ server.tool(
     new_command,
     new_predicate,
     new_description,
-    new_skip_reasons,
     reason,
     amend_justification
   }) => {
     const doc = await load(dod_id);
     if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
-    if (nodeId && (nodePath === "__meta__" || nodePath === "*")) {
+    if (nodeId && nodePath === "*") {
       return {
         content: [
           {
             type: "text",
             text: `ERROR: node_id is incompatible with node_path="${nodePath}". Use one or the other.`
-          }
-        ]
-      };
-    }
-    if (nodePath === "__meta__") {
-      if (new_skip_reasons === void 0) {
-        return {
-          content: [
-            { type: "text", text: "ERROR: node_path='__meta__' requires new_skip_reasons parameter." }
-          ]
-        };
-      }
-      const oldSkip = doc.skip_reasons ? { ...doc.skip_reasons } : {};
-      doc.skip_reasons = new_skip_reasons;
-      doc.amendments.push({
-        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        node_path: "__meta__",
-        action: "modified",
-        old_value: oldSkip,
-        new_value: doc.skip_reasons,
-        reason
-      });
-      await save(doc);
-      await writeMarkdown(doc);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `DoD metadata amended.
-
-Skip reasons updated. ${Object.keys(new_skip_reasons).length} categories.
-Reason: ${reason}
-
-Run dod_check to re-verify.`
           }
         ]
       };
@@ -26171,24 +23605,11 @@ Run dod_check to re-verify.`
         if (missing.length > 0) {
           return { content: [{ type: "text", text: formatMissingTools(missing) }] };
         }
-        const effectivePredicate2 = new_predicate ? new_predicate.type : void 0;
-        for (const { node: leaf } of leaves) {
-          const cat = leaf.category;
-          if (!cat) continue;
-          const evidenceErr = await validatePositiveEvidence(
-            new_command,
-            cat,
-            doc.cwd,
-            effectivePredicate2,
-            doc.skip_reasons?.[cat]
-          );
-          if (evidenceErr) return { content: [{ type: "text", text: evidenceErr }] };
-        }
       }
       let amendedCount = 0;
       const gateFailures = [];
       for (const { node: node2, node_path: leafPath } of leaves) {
-        const gateErr = checkAmendGate(doc.amendments, leafPath, node2.predicate, new_predicate, amend_justification);
+        const gateErr = checkAmendGate(doc.amendments, leafPath, amend_justification);
         if (gateErr) gateFailures.push(`${leafPath} ("${node2.title}"): ${gateErr}`);
       }
       if (gateFailures.length > 0) {
@@ -26283,18 +23704,8 @@ ${gateFailures.join("\n")}`
       if (missing.length > 0) {
         return { content: [{ type: "text", text: formatMissingTools(missing) }] };
       }
-      if (node.category) {
-        const evidenceErr = await validatePositiveEvidence(
-          effectiveCommand,
-          node.category,
-          doc.cwd,
-          effectivePredicate.type,
-          doc.skip_reasons?.[node.category]
-        );
-        if (evidenceErr) return { content: [{ type: "text", text: evidenceErr }] };
-      }
     }
-    const gateError = checkAmendGate(doc.amendments, resolvedPath, node.predicate, new_predicate, amend_justification);
+    const gateError = checkAmendGate(doc.amendments, resolvedPath, amend_justification);
     if (gateError) {
       return { content: [{ type: "text", text: `ERROR: ${gateError}` }] };
     }
@@ -26401,7 +23812,7 @@ server.tool(
     }
     try {
       const parsed = await parseMarkdown(mdPath);
-      const resolvedCwd = path8.resolve(cwd);
+      const resolvedCwd = path5.resolve(cwd);
       const osError = await checkCommandsForOs(parsed.roots, resolvedCwd);
       if (osError) return { content: [{ type: "text", text: osError }] };
       const id = generateId();
@@ -26415,9 +23826,9 @@ server.tool(
         goal: parsed.goal,
         date: parsed.date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
         cwd: resolvedCwd,
-        markdown_path: path8.resolve(mdPath),
+        markdown_path: path5.resolve(mdPath),
         created_at: (/* @__PURE__ */ new Date()).toISOString(),
-        import_source: path8.resolve(mdPath),
+        import_source: path5.resolve(mdPath),
         execution_confirmed: false,
         sections: parsed.sections,
         roots: parsed.roots,

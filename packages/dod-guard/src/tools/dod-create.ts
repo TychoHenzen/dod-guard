@@ -3,11 +3,10 @@
  */
 import * as path from "node:path";
 import { writeMarkdown } from "../author.js";
-import { baselineLockError, validateBaseline } from "../baseline.js";
 import { countDraftNodes } from "../checker.js";
 import { computeProofFingerprint, flattenConcreteLeaves } from "../fingerprint.js";
 import * as store from "../store.js";
-import { buildTaskNodes, checkCommandsForOs, extractBaselineSteps, resetNodeIdCounter } from "../tree-utils.js";
+import { buildTaskNodes, checkCommandsForOs, resetNodeIdCounter } from "../tree-utils.js";
 import type { DodDocument, DodSections } from "../types.js";
 
 interface CreateParams {
@@ -19,11 +18,10 @@ interface CreateParams {
   sections: DodSections;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   roots: any[];
-  skip_reasons?: Record<string, string>;
 }
 
 export async function handleDodCreate(params: CreateParams): Promise<string> {
-  const { title, goal, type, cwd, markdown_path, sections, roots: rootInputs, skip_reasons } = params;
+  const { title, goal, type, cwd, markdown_path, sections, roots: rootInputs } = params;
 
   const resolvedCwd = path.resolve(cwd);
   resetNodeIdCounter();
@@ -33,14 +31,6 @@ export async function handleDodCreate(params: CreateParams): Promise<string> {
   // OS validation: concrete leaves only
   const osError = await checkCommandsForOs(roots, resolvedCwd);
   if (osError) return osError;
-
-  // Lock gate: a DoD created with zero draft nodes is already "locked" (complete),
-  // so the baseline is mandatory now — same enforcement point as concretizing the
-  // last draft in dod_refine. When drafts remain, baseline stays advisory (below).
-  if (countDraftNodes(roots) === 0) {
-    const lockErr = baselineLockError(type, extractBaselineSteps(roots), skip_reasons);
-    if (lockErr) return lockErr;
-  }
 
   const id = store.generateId();
   const date = new Date().toISOString().split("T")[0];
@@ -57,7 +47,6 @@ export async function handleDodCreate(params: CreateParams): Promise<string> {
     markdown_path: path.resolve(markdown_path),
     created_at: new Date().toISOString(),
     execution_confirmed: true,
-    skip_reasons: skip_reasons as Record<string, string> | undefined,
     sections,
     roots,
     proof_fingerprint: fingerprint || undefined,
@@ -71,21 +60,16 @@ export async function handleDodCreate(params: CreateParams): Promise<string> {
   const draftCount = countDraftNodes(roots);
   const rootCount = roots.length;
 
-  const baseline = validateBaseline(
-    type,
-    extractBaselineSteps(roots),
-    skip_reasons as Record<string, string> | undefined,
-  );
+  const warnings: string[] = [];
 
-  const warningBlock =
-    baseline.errors.length > 0 || baseline.warnings.length > 0
-      ? [
-          "",
-          "⚠️ Baseline advisories:",
-          ...baseline.errors.map((e) => `  • ${e} (will be enforced at dod_refine time)`),
-          ...baseline.warnings.map((w) => `  • ${w}`),
-        ]
-      : [];
+  // Count behavioral predicates for guidance
+  const behavioralLeaves = flattenConcreteLeaves(roots).filter(
+    (l) => l.node.category === "behavioral"
+  );
+  if (behavioralLeaves.length === 0 && type !== "minimal") {
+    warnings.push("• No behavioral predicate proofs. Every DoD should have at least one");
+    warnings.push("  proof that verifies correct behavior (output_contains, output_matches, etc.).");
+  }
 
   return [
     "DoD created.",
@@ -96,13 +80,13 @@ export async function handleDodCreate(params: CreateParams): Promise<string> {
     `Concrete proofs: ${concreteCount}`,
     `Draft nodes: ${draftCount}`,
     fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
-    ...warningBlock,
+    warnings.length > 0 ? "" : "",
+    ...warnings,
     "",
     draftCount > 0
-      ? `${draftCount} draft node(s) — refine incrementally per task group with dod_refine, not all at once at the end. Use dod_check(nodePath="0") to verify one subtree at a time.`
-      : "All nodes are concrete — dod_check can verify the full DoD.",
+      ? `${draftCount} draft node(s) — refine with dod_refine. Use dod_check(nodePath="0") for fast scoped iteration.`
+      : "All nodes concrete — run dod_check to verify.",
     "",
-    "NEXT: run `dod_check` to validate proof commands execute on this OS.",
   ]
     .filter(Boolean)
     .join("\n");

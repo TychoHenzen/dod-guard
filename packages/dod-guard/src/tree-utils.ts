@@ -1,12 +1,9 @@
 import {
   currentOs,
-  detectMutatingFlags,
   expandGlobsInCommand,
   findMissingTools,
   hasGlobWildcards,
-  isEsmPackage,
   type MissingTool,
-  usesNodeEvalRequire,
 } from "./command-check.js";
 import type { Predicate, ProofCategory, TaskNode } from "./types.js";
 
@@ -22,7 +19,6 @@ export function nextNodeId(): string {
 
 // ── Tree construction ─────────────────────────────────────────────────
 
-/** Convert TaskNodeInput trees into TaskNode objects with assigned IDs. */
 export function buildTaskNodes(
   inputs: {
     title: string;
@@ -60,15 +56,7 @@ export function buildTaskNodes(
       node.predicate = input.predicate as Predicate | undefined;
       node.description = input.description;
       node.category = input.category as ProofCategory | undefined;
-      node.advisory = input.advisory ?? (input.predicate?.type === "regression" ? true : undefined);
-      // Coverage metrics default to higher-is-better
-      if (
-        input.predicate?.type === "regression" &&
-        node.category === "coverage" &&
-        input.predicate.lower_is_better === undefined
-      ) {
-        (node.predicate as Predicate).lower_is_better = false;
-      }
+      node.advisory = input.advisory;
     }
 
     return node;
@@ -99,14 +87,8 @@ export function findInChildren(nodes: TaskNode[], proofId: string): TaskNode | n
   return null;
 }
 
-// ── ID-based path resolution ───────────────────────────────────────────
+// ── ID-based path resolution ──────────────────────────────────────────
 
-/**
- * Find a node by its stable ID and return both the node and its current
- * positional path. Unlike findNodeInTree (node-only), this also tracks the
- * dot-separated path during traversal so callers get the up-to-date position
- * without needing a separate path lookup.
- */
 export function findNodeById(roots: TaskNode[], id: string): { node: TaskNode; path: string } | null {
   function search(nodes: TaskNode[], parentPath: string): { node: TaskNode; path: string } | null {
     for (let i = 0; i < nodes.length; i++) {
@@ -123,9 +105,6 @@ export function findNodeById(roots: TaskNode[], id: string): { node: TaskNode; p
   return search(roots, "");
 }
 
-/**
- * Count all nodes in a tree (groups + leaves, draft + concrete).
- */
 export function countAllNodes(nodes: TaskNode[]): number {
   let count = 0;
   for (const node of nodes) {
@@ -135,25 +114,14 @@ export function countAllNodes(nodes: TaskNode[]): number {
   return count;
 }
 
-// ── Tree display ────────────────────────────────────────────────────────
+// ── Tree display ──────────────────────────────────────────────────────
 
-/**
- * Render a TaskNode tree as a human-readable, path-prefixed listing.
- * Pure structural dump — no proof execution.
- *
- * @param roots Root nodes of the DoD tree.
- * @param opts.title Optional DoD title for header.
- * @param opts.id Optional DoD ID for header.
- * @param opts.scopeId Optional node ID to scope the view to a subtree.
- * @param opts.scopePath Optional node path to scope the view to a subtree.
- */
 export function formatTree(
   roots: TaskNode[],
   opts?: { title?: string; id?: string; scopeId?: string; scopePath?: string },
 ): string {
   const lines: string[] = [];
 
-  // Resolve scope
   let displayRoots = roots;
   let scopeLabel = "";
   if (opts?.scopeId) {
@@ -168,17 +136,14 @@ export function formatTree(
     scopeLabel = ` (scoped to ${node.title} @ ${opts.scopePath})`;
   }
 
-  // Stats
   const totalNodes = countAllNodes(roots);
   const draftCount = countAllDrafts(roots);
   const concreteCount = countAllConcrete(roots);
 
-  // Header
   if (opts?.title) lines.push(`${opts.title}${opts.id ? ` (${opts.id})` : ""}`);
   lines.push(`${totalNodes} nodes: ${concreteCount} concrete, ${draftCount} draft${scopeLabel}`);
   lines.push("");
 
-  // Render
   function render(nodes: TaskNode[], parentPath: string, depth: number): void {
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
@@ -186,7 +151,6 @@ export function formatTree(
       const indent = "  ".repeat(depth);
 
       if (node.children && node.children.length > 0) {
-        // Task group
         const hasDrafts = hasDraftNodes(node.children);
         const allPass = allGroupLeavesPass(node.children);
         let groupMark = "";
@@ -200,7 +164,6 @@ export function formatTree(
         const adv = node.advisory ? " [advisory]" : "";
         lines.push(`${indent}${currentPath} [${node.id}] PROOF: "${node.title}" (${status}${cat}${adv})`);
       } else {
-        // Draft leaf
         const intent = node.intent ? ` — ${node.intent.slice(0, 80)}${node.intent.length > 80 ? "..." : ""}` : "";
         lines.push(`${indent}${currentPath} [${node.id}] DRAFT: "${node.title}"${intent}`);
       }
@@ -269,12 +232,10 @@ export function formatMissingTools(missing: MissingTool[]): string {
 
 function suggestionFor(tool: string): string {
   const map: Record<string, string> = {
-    grep: "findstr",
-    cat: "type",
+    grep: "findstr", cat: "type",
     sed: "(use PowerShell -replace or batch findstr with redirects)",
     awk: "(use PowerShell or batch for /f)",
-    sh: "cmd /c",
-    bash: "cmd /c",
+    sh: "cmd /c", bash: "cmd /c",
     python3: "python",
     make: "(Windows: install GNU Make or use npm scripts)",
     cargo: "(install Rust via rustup.rs)",
@@ -302,7 +263,6 @@ export async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promis
       );
       for (const cmd of globCmds) {
         lines.push(`  • ${cmd}`);
-        // Show expanded form if possible
         const { expanded, expanded_count } = expandGlobsInCommand(cmd, cwd);
         if (expanded_count > 0) {
           lines.push(`    → Auto-expanded: \`${expanded}\``);
@@ -317,75 +277,6 @@ export async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promis
     lines.push(formatMissingTools(missing));
   }
 
-  // Mutating command detection (#22): warn about proof commands that dirty the working tree
-  const mutatingCmds = commands.filter((cmd) => detectMutatingFlags(cmd).length > 0);
-  if (mutatingCmds.length > 0) {
-    if (lines.length > 0) lines.push("");
-    lines.push(
-      `WARNING: ${mutatingCmds.length} proof command(s) mutate the working tree — this causes false dirty-tree signals on subsequent proof runs.`,
-      "Use check-only equivalents where possible:",
-      "  • biome format / prettier --check (not --write)",
-      "  • tsc --noEmit (check types without emitting .js)",
-      "  • eslint (without --fix)",
-      "  • npx stryker run → follow with git checkout -- <pkg>/dist/ to restore mutated files",
-      "",
-    );
-    for (const cmd of mutatingCmds) {
-      const flags = detectMutatingFlags(cmd);
-      lines.push(`  • \`${cmd.slice(0, 80)}\``);
-      for (const f of flags.slice(0, 2)) lines.push(`    → ${f}`);
-    }
-    lines.push("");
-  }
-
-  // ESM require() detection (S2): `node -e "require(...)"` throws ERR_REQUIRE_ESM
-  // in a "type": "module" package — the proof fails for reasons unrelated to the code.
-  if (isEsmPackage(cwd)) {
-    const esmReqCmds = commands.filter(usesNodeEvalRequire);
-    if (esmReqCmds.length > 0) {
-      if (lines.length > 0) lines.push("");
-      lines.push(
-        `WARNING: ${esmReqCmds.length} proof command(s) use \`node -e\` with require() in an ESM ("type": "module") package.`,
-        "These throw ERR_REQUIRE_ESM at runtime. Use one of:",
-        "  • OS-native verification (Windows: `type file | findstr pattern`, POSIX: `grep`)",
-        '  • `node --input-type=commonjs -e "..."` to force CommonJS',
-        "  • ESM syntax: `node --input-type=module -e \"import('node:fs')...\"`",
-        "",
-      );
-      for (const cmd of esmReqCmds) lines.push(`  • \`${cmd.slice(0, 80)}\``);
-      lines.push("");
-    }
-  }
-
   if (lines.length === 0) return null;
   return lines.join("\n");
-}
-
-// ── Baseline extraction ───────────────────────────────────────────────
-
-export function extractBaselineSteps(
-  roots: TaskNode[],
-): { title: string; proofs: { category: ProofCategory; predicate: { type: string }; advisory?: boolean }[] }[] {
-  return roots.map((root) => ({
-    title: root.title,
-    proofs: collectBaselineProofs(root),
-  }));
-}
-
-function collectBaselineProofs(
-  node: TaskNode,
-): { category: ProofCategory; predicate: { type: string }; advisory?: boolean }[] {
-  const results: { category: ProofCategory; predicate: { type: string }; advisory?: boolean }[] = [];
-  if (node.children) {
-    for (const child of node.children) {
-      results.push(...collectBaselineProofs(child));
-    }
-  } else if (node.refinement === "concrete" && node.category) {
-    results.push({
-      category: node.category,
-      predicate: { type: node.predicate?.type ?? "" },
-      advisory: node.advisory,
-    });
-  }
-  return results;
 }

@@ -139,7 +139,7 @@ describe("checkDocument VCS state capture", () => {
     assert.equal(res.checked_dirty, true);
   });
 
-  it("dirty tree + allow_dirty_pass shows fallback note in guidance", async () => {
+  it("dirty tree + allow_dirty_pass keeps PASS and captures dirty state", async () => {
     mockDirty = true;
     mockGitFails = false;
     const { checkDocument } = await import("./checker.js");
@@ -148,8 +148,6 @@ describe("checkDocument VCS state capture", () => {
     assert.equal(res.overall, "pass");
     assert.equal(res.checked_commit, "deadbeef1234567890abcdef1234567890abcdef12");
     assert.equal(res.checked_dirty, true);
-    // Summary should contain the dirty-tree fallback note
-    assert.ok(res.summary.includes("dirty tree"), "guidance should mention dirty tree fallback");
   });
 
   it("scoped run skips VCS capture", async () => {

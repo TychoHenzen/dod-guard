@@ -42,7 +42,7 @@ export async function handleDodAddNode(params: AddNodeParams): Promise<{ path: s
   const doc = await store.load(dod_id);
   if (!doc) throw new Error("ERROR: DoD not found.");
 
-  // Resolve parent — parent_id takes precedence (stable across tree mutations)
+  // Resolve parent — parent_id takes precedence
   let resolvedParentPath = parent_path;
   let parent: TaskNode | null = null;
   if (parentId) {
@@ -51,12 +51,12 @@ export async function handleDodAddNode(params: AddNodeParams): Promise<{ path: s
     parent = found.node;
     resolvedParentPath = found.path;
     if (!parent.children)
-      throw new Error(`ERROR: parent "${parent.title}" is a leaf — cannot add children. Add to a task group.`);
+      throw new Error(`ERROR: parent "${parent.title}" is a leaf — cannot add children.`);
   } else if (parent_path) {
     parent = findNodeByPath(doc.roots, parent_path);
     if (!parent) throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
     if (!parent.children)
-      throw new Error(`ERROR: parent "${parent.title}" is a leaf — cannot add children. Add to a task group.`);
+      throw new Error(`ERROR: parent "${parent.title}" is a leaf — cannot add children.`);
   }
 
   // Validate concrete node
@@ -91,10 +91,6 @@ export async function handleDodAddNode(params: AddNodeParams): Promise<{ path: s
     node.description = description;
     node.category = category as ProofCategory | undefined;
     if (advisory !== undefined) node.advisory = advisory;
-    else if (predicate?.type === "regression") node.advisory = true;
-    if (predicate?.type === "regression" && node.category === "coverage" && predicate.lower_is_better === undefined) {
-      (node.predicate as Predicate).lower_is_better = false;
-    }
   }
 
   if (parent) {
