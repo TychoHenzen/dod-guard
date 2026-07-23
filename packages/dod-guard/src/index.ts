@@ -1179,15 +1179,17 @@ server.tool(
       .array(
         z.object({
           lens: z.string().describe("Lens name (e.g. 'Security', 'Coverage')"),
-          findings: z.array(
-            z.object({
-              severity: z.enum(["critical", "major", "minor", "blocker"]).describe("Finding severity"),
-              target: z.string().optional().describe("Which requirement/node this finding targets"),
-              problem: z.string().describe("Concrete problem description"),
-              suggestion: z.string().optional().describe("Suggested fix"),
-              evidence: z.string().optional().describe("Execution-based evidence: file:line + failing command"),
-            }),
-          ).describe("Findings from this lens"),
+          findings: z
+            .array(
+              z.object({
+                severity: z.enum(["critical", "major", "minor", "blocker"]).describe("Finding severity"),
+                target: z.string().optional().describe("Which requirement/node this finding targets"),
+                problem: z.string().describe("Concrete problem description"),
+                suggestion: z.string().optional().describe("Suggested fix"),
+                evidence: z.string().optional().describe("Execution-based evidence: file:line + failing command"),
+              }),
+            )
+            .describe("Findings from this lens"),
           mandatory_minimum_met: z.boolean().describe("Did this lens meet its mandatory minimum findings?"),
         }),
       )
@@ -1215,15 +1217,9 @@ server.tool(
         })),
         mandatory_minimum_met: l.mandatory_minimum_met,
       })),
-      critical_count: lenses.reduce(
-        (sum, l) => sum + l.findings.filter((f) => f.severity === "critical").length,
-        0,
-      ),
+      critical_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "critical").length, 0),
       major_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "major").length, 0),
-      minor_count: lenses.reduce(
-        (sum, l) => sum + l.findings.filter((f) => f.severity === "minor").length,
-        0,
-      ),
+      minor_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "minor").length, 0),
       summary,
     };
 
@@ -1232,14 +1228,18 @@ server.tool(
     // Validate phase progression: phase N requires GO on all prior phases
     for (let p = 1; p < phase; p++) {
       const priorGate = gates.find((g) => g.phase === p);
-      if (!priorGate || priorGate.verdict !== "GO") {
+      if (priorGate?.verdict !== "GO") {
         const phaseNames = ["", "Spec", "Test", "Implement", "Cleanup"];
         return {
-          content: [{ type: "text" as const, text:
-            `ERROR: Cannot record Phase ${phase} gate — Phase ${p} (${phaseNames[p]}) ` +
-            `is ${priorGate ? priorGate.verdict : "PENDING"}. ` +
-            `All prior phases must be GO before advancing.`
-          }],
+          content: [
+            {
+              type: "text" as const,
+              text:
+                `ERROR: Cannot record Phase ${phase} gate — Phase ${p} (${phaseNames[p]}) ` +
+                `is ${priorGate ? priorGate.verdict : "PENDING"}. ` +
+                `All prior phases must be GO before advancing.`,
+            },
+          ],
         };
       }
     }
@@ -1260,10 +1260,10 @@ server.tool(
       if (g) {
         const emoji = g.verdict === "GO" ? "✅" : g.verdict === "STOP" ? "🛑" : "🔄";
         gateStatusLines.push(
-          `  Phase ${p} (${["","Spec","Test","Implement","Cleanup"][p]}): ${emoji} ${g.verdict} — ${g.summary}`,
+          `  Phase ${p} (${["", "Spec", "Test", "Implement", "Cleanup"][p]}): ${emoji} ${g.verdict} — ${g.summary}`,
         );
       } else {
-        gateStatusLines.push(`  Phase ${p} (${["","Spec","Test","Implement","Cleanup"][p]}): ⬜ PENDING`);
+        gateStatusLines.push(`  Phase ${p} (${["", "Spec", "Test", "Implement", "Cleanup"][p]}): ⬜ PENDING`);
       }
     }
 

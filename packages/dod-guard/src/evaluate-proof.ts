@@ -78,20 +78,23 @@ function diagnoseFailure(node: TaskNode, result: LeafResult): string {
 
     case "adversarial": {
       const phase = pred.value !== undefined ? Number(pred.value) : 0;
-      return `Adversarial gate for phase ${phase} not GO. ` +
-        `Run dod_adversarial_gate to complete the adversarial review for this phase.`;
+      return (
+        `Adversarial gate for phase ${phase} not GO. ` +
+        `Run dod_adversarial_gate to complete the adversarial review for this phase.`
+      );
     }
 
     case "holdout": {
       const expected = String(pred.value ?? "");
-      return `Holdout test fingerprint mismatch. ` +
+      return (
+        `Holdout test fingerprint mismatch. ` +
         `Expected SHA-256 "${expected.slice(0, 16)}..." but got a different value. ` +
-        `The holdout test may have been weakened or removed.`;
+        `The holdout test may have been weakened or removed.`
+      );
     }
 
     case "convergence":
-      return `Convergence audit not GO. ` +
-        `Run the structural gates and convergence audit to reach stable state.`;
+      return `Convergence audit not GO. ` + `Run the structural gates and convergence audit to reach stable state.`;
 
     default:
       return `Proof failed with exit code ${code}. Check the output above.`;
@@ -213,7 +216,15 @@ export async function executeProof(
   _opts: ProofExecutionOptions = {},
 ): Promise<LeafResult> {
   if (!node.predicate) {
-    return { node_path: "", id: node.id, title: node.title, description: node.description ?? "", status: "fail", command: node.command ?? "", error: "No predicate on node" };
+    return {
+      node_path: "",
+      id: node.id,
+      title: node.title,
+      description: node.description ?? "",
+      status: "fail",
+      command: node.command ?? "",
+      error: "No predicate on node",
+    };
   }
   const predicate = node.predicate;
   const timeoutMs = predicate.timeout_ms ?? 120_000;
@@ -294,22 +305,20 @@ export async function executeProof(
     // For convergence: look for phase 4 gate specifically
     // For adversarial: look for the specified phase gate
     const searchPhase = predicate.type === "convergence" ? 4 : phase;
-    const gate = gates.find(g => g.phase === searchPhase);
+    const gate = gates.find((g) => g.phase === searchPhase);
 
     result.duration_ms = elapsed;
 
     if (!gate) {
       result.status = "fail";
-      result.error =
-        `${predicate.type} gate: no gate found for phase ${searchPhase}. Run dod_adversarial_gate first.`;
+      result.error = `${predicate.type} gate: no gate found for phase ${searchPhase}. Run dod_adversarial_gate first.`;
       result.diagnosis = diagnoseFailure(node, result);
       return result;
     }
 
     if (gate.verdict !== "GO") {
       result.status = "fail";
-      result.error = `${predicate.type} gate: verdict is ${gate.verdict} (need GO). ` +
-        `${gate.summary}`;
+      result.error = `${predicate.type} gate: verdict is ${gate.verdict} (need GO). ` + `${gate.summary}`;
       result.diagnosis = diagnoseFailure(node, result);
       return result;
     }
