@@ -1170,6 +1170,109 @@ server.tool(
   },
 );
 
+// ── dod_adversarial_gate ──────────────────────────────────────────────
+
+server.tool(
+  "dod_adversarial_gate",
+  "Record an adversarial gate verdict for a DoD phase. The skill orchestrator dispatches review subagents (lenses), collects findings, computes the GO/REVISE/STOP verdict, and records it here. A DoD cannot progress to phase N+1 until phase N's gate is GO.",
+  {
+    dod_id: z.string().describe("DoD ID"),
+    phase: z.number().min(1).max(4).describe("Phase number (1=Spec, 2=Test, 3=Implement, 4=Cleanup)"),
+    verdict: z.enum(["GO", "REVISE", "STOP"]).describe("Gate verdict"),
+    lenses: z
+      .array(
+        z.object({
+          lens: z.string().describe("Lens name (e.g. 'Security', 'Coverage')"),
+          findings: z.array(
+            z.object({
+              severity: z.enum(["critical", "major", "minor", "blocker"]).describe("Finding severity"),
+              target: z.string().optional().describe("Which requirement/node this finding targets"),
+              problem: z.string().describe("Concrete problem description"),
+              suggestion: z.string().optional().describe("Suggested fix"),
+              evidence: z.string().optional().describe("Execution-based evidence: file:line + failing command"),
+            }),
+          ).describe("Findings from this lens"),
+          mandatory_minimum_met: z.boolean().describe("Did this lens meet its mandatory minimum findings?"),
+        }),
+      )
+      .describe("Results from each adversarial lens"),
+    summary: z.string().describe("One-line summary of the gate result"),
+  },
+  async ({ dod_id, phase, verdict, lenses, summary }) => {
+    const doc = await store.load(dod_id);
+    if (!doc) {
+      return { content: [{ type: "text" as const, text: `ERROR: DoD "${dod_id}" not found.` }] };
+    }
+
+    const gate: import("./types.js").AdversarialGate = {
+      phase: phase as 1 | 2 | 3 | 4,
+      timestamp: new Date().toISOString(),
+      verdict,
+      lenses: lenses.map((l) => ({
+        lens: l.lens,
+        findings: l.findings.map((f) => ({
+          severity: f.severity as "critical" | "major" | "minor" | "blocker",
+          target: f.target,
+          problem: f.problem,
+          suggestion: f.suggestion,
+          evidence: f.evidence,
+        })),
+        mandatory_minimum_met: l.mandatory_minimum_met,
+      })),
+      critical_count: lenses.reduce(
+        (sum, l) => sum + l.findings.filter((f) => f.severity === "critical").length,
+        0,
+      ),
+      major_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "major").length, 0),
+      minor_count: lenses.reduce(
+        (sum, l) => sum + l.findings.filter((f) => f.severity === "minor").length,
+        0,
+      ),
+      summary,
+    };
+
+    const gates = doc.adversarial_gates ?? [];
+    const existingIdx = gates.findIndex((g) => g.phase === phase);
+    if (existingIdx >= 0) {
+      gates[existingIdx] = gate;
+    } else {
+      gates.push(gate);
+    }
+    doc.adversarial_gates = gates;
+    await store.save(doc);
+
+    // Gate status check: validate progression
+    const gateStatusLines: string[] = [];
+    for (let p = 1; p <= 4; p++) {
+      const g = gates.find((gg) => gg.phase === p);
+      if (g) {
+        const emoji = g.verdict === "GO" ? "✅" : g.verdict === "STOP" ? "🛑" : "🔄";
+        gateStatusLines.push(
+          `  Phase ${p} (${["","Spec","Test","Implement","Cleanup"][p]}): ${emoji} ${g.verdict} — ${g.summary}`,
+        );
+      } else {
+        gateStatusLines.push(`  Phase ${p} (${["","Spec","Test","Implement","Cleanup"][p]}): ⬜ PENDING`);
+      }
+    }
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: [
+            `Adversarial gate recorded: Phase ${phase} — ${verdict}`,
+            `  Critical: ${gate.critical_count}, Major: ${gate.major_count}, Minor: ${gate.minor_count}`,
+            `  Summary: ${summary}`,
+            "",
+            "Gate status for all phases:",
+            ...gateStatusLines,
+          ].join("\n"),
+        },
+      ],
+    };
+  },
+);
+
 import { fileURLToPath } from "node:url";
 
 const _filename = fileURLToPath(import.meta.url);

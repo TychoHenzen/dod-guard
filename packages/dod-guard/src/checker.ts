@@ -254,7 +254,9 @@ export async function checkDocument(
   // ── Execute proofs ───────────────────────────────────────────────────
   let anyFail = false;
   let manualUnverified = 0;
-  const proofOpts: ProofExecutionOptions = {};
+  const proofOpts: ProofExecutionOptions = {
+    adversarial_gates: doc.adversarial_gates ?? [],
+  };
 
   for (const { node, node_path } of inScope) {
     const result = await executeProof(node, cwd, proofOpts);

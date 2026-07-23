@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { perProofFingerprint } from "./manual.js";
-import type { LeafResult, Predicate, TaskNode } from "./types.js";
+import type { AdversarialGate, LeafResult, Predicate, TaskNode } from "./types.js";
 
 const execFileP = promisify(execFile);
 
@@ -9,6 +9,8 @@ const execFileP = promisify(execFile);
 
 export interface ProofExecutionOptions {
   confirmer?: (node: TaskNode) => Promise<{ answer: "pass" | "fail"; note?: string }>;
+  /** Adversarial gate results from the DoD document — checked by adversarial/convergence predicates. */
+  adversarial_gates?: AdversarialGate[];
 }
 
 interface ProofRun {
@@ -68,6 +70,23 @@ function diagnoseFailure(node: TaskNode, result: LeafResult): string {
     case "manual":
     case "review":
       return `Manual verification required. Run dod_verify to confirm this proof.`;
+
+    case "adversarial": {
+      const phase = pred.value !== undefined ? Number(pred.value) : 0;
+      return `Adversarial gate for phase ${phase} not GO. ` +
+        `Run dod_adversarial_gate to complete the adversarial review for this phase.`;
+    }
+
+    case "holdout": {
+      const expected = String(pred.value ?? "");
+      return `Holdout test fingerprint mismatch. ` +
+        `Expected SHA-256 "${expected.slice(0, 16)}..." but got a different value. ` +
+        `The holdout test may have been weakened or removed.`;
+    }
+
+    case "convergence":
+      return `Convergence audit not GO. ` +
+        `Run the structural gates and convergence audit to reach stable state.`;
 
     default:
       return `Proof failed with exit code ${code}. Check the output above.`;
@@ -133,6 +152,18 @@ function evalPredicate(
         return { status: "fail", error: `invalid regex: /${pattern}/` };
       }
     }
+
+    case "holdout": {
+      const expected = String(predicate.value ?? "").trim();
+      const actual = output.trim();
+      // Case-insensitive SHA-256 hex comparison
+      return actual.toLowerCase() === expected.toLowerCase()
+        ? { status: "pass" }
+        : { status: "fail", error: `holdout fingerprint mismatch: expected ${expected.slice(0, 16)}...` };
+    }
+
+    // adversarial and convergence are gate checks — evaluated in executeProof
+    // via opts.adversarial_gates, not via command output.
 
     default:
       return { status: "fail", error: `unknown predicate type: ${(predicate as any).type}` };
@@ -235,6 +266,40 @@ export async function executeProof(
     result.status = "fail";
     result.error = `TDD GREEN phase: test failed with exit code ${run.code ?? -1}. ` +
       "Implementation is incomplete or broken. Check the test output above.";
+    return result;
+  }
+
+  // ── Adversarial gate check (no command execution) ────────────────────
+  if (predicate.type === "adversarial" || predicate.type === "convergence") {
+    const elapsed = Date.now() - start;
+    const phase = predicate.value !== undefined ? Number(predicate.value) : 0;
+    const gates = opts.adversarial_gates ?? [];
+
+    // For convergence: look for phase 4 gate specifically
+    // For adversarial: look for the specified phase gate
+    const searchPhase = predicate.type === "convergence" ? 4 : phase;
+    const gate = gates.find(g => g.phase === searchPhase);
+
+    result.duration_ms = elapsed;
+
+    if (!gate) {
+      result.status = "fail";
+      result.error = `${predicate.type} gate: no gate found for phase ${searchPhase}. ` +
+        `Run dod_adversarial_gate first.`;
+      result.diagnosis = diagnoseFailure(node, result);
+      return result;
+    }
+
+    if (gate.verdict !== "GO") {
+      result.status = "fail";
+      result.error = `${predicate.type} gate: verdict is ${gate.verdict} (need GO). ` +
+        `${gate.summary}`;
+      result.diagnosis = diagnoseFailure(node, result);
+      return result;
+    }
+
+    result.status = "pass";
+    result.output = `Gate phase ${searchPhase}: GO — ${gate.summary}`;
     return result;
   }
 

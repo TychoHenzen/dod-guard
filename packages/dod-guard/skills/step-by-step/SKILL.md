@@ -68,6 +68,8 @@ Save to `.step-session/steps.json`:
 {
   "goal": "One-line goal",
   "cwd": "/absolute/path/to/project",
+  "plan_source": "/absolute/path/to/plan.md",
+  "plan_mtime": "2026-07-23T20:49:00+02:00",
   "steps": [
     {
       "id": "S01",
@@ -157,6 +159,18 @@ After ALL steps complete:
 2. Check for cross-step issues (imports, wiring, config)
 3. Report summary: steps completed, files changed, any concerns
 4. Present commit message (do NOT auto-commit)
+
+### Phase 3: Adversarial Injection Point
+
+When this skill is called as part of a larger adversarial workflow (via
+`/dod-guard:adversarial-workflow`), Phase 3 of that workflow runs AFTER
+the integration check here. The adversarial-workflow orchestrator dispatches
+3 mandatory-finding review roles (Saboteur, New Hire, Spec Auditor) against
+the implementation diff. Results are stored via `dod_adversarial_gate`.
+
+This skill does NOT run adversarial review itself — it stays focused on
+implementation. The orchestrator handles the gate. If a DoD has
+`adversarial_gates` set, `dod_check` enforces gate progression automatically.
 
 ## Subagent Briefing Template
 
@@ -276,8 +290,54 @@ as `subagent_type` — those aren't agent types, they're model names.
 └── progress.log   # One line per step: ✓ S01 | ✗ S03 (retry 1/2) | ⊘ S05 (skipped)
 ```
 
-On skill start: check for existing `.step-session/progress.log`. If found → resume
-from first pending step.
+### Staleness Detection (check BEFORE resuming)
+
+On skill start, check for existing `.step-session/progress.log`. If found, run staleness
+checks BEFORE resuming. Staleness is the norm — plans change between sessions, old plans
+finish, context shifts. Resuming a stale plan silently is WORSE than starting fresh
+(because you'll execute the wrong steps).
+
+**Staleness checks (in order, first match wins):**
+
+1. **ALL STEPS DONE** — if every step in `steps.json` has status `completed` or `skipped`:
+   → STALE. Old plan finished. Overwrite with new plan. Log: "Previous plan complete — overwriting."
+
+2. **GOAL MISMATCH** — if `steps.json` `goal` doesn't match the current plan being executed:
+   → STALE. Different task. Overwrite with new plan. Log: "Goal mismatch — overwriting stale session."
+
+3. **PLAN SOURCE CHANGED** — if `steps.json` has `plan_source` (path to the plan markdown file)
+   and that file's mtime is newer than `plan_mtime` stored in steps.json:
+   → STALE. Plan was updated after session started. Overwrite with new plan.
+   Log: "Plan source modified — overwriting stale session."
+
+4. **ALL CHECKS PASS** — session is fresh for this plan. Resume from first pending step.
+
+**NEVER silently resume a stale session.** If you're unsure whether the session is stale,
+it probably is. Ask: "Does this goal match what we're doing NOW?" If no → overwrite.
+
+### steps.json Format (with staleness fields)
+
+```json
+{
+  "goal": "One-line goal",
+  "cwd": "/absolute/path/to/project",
+  "plan_source": "/absolute/path/to/plan.md",
+  "plan_mtime": "2026-07-23T20:49:00+02:00",
+  "steps": [
+    {
+      "id": "S01",
+      "title": "Add user model",
+      "description": "Create User struct with id, name, email fields...",
+      "files": ["src/models/user.rs"],
+      "deps": [],
+      "status": "pending"
+    }
+  ]
+}
+```
+
+`plan_source` and `plan_mtime` are optional but recommended — they enable staleness check #3.
+Always include them when the plan comes from a file on disk.
 
 ## Failure Recovery
 
