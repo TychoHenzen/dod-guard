@@ -21261,6 +21261,9 @@ async function runCommand(command, cwd, timeoutMs) {
   }
 }
 async function executeProof(node, cwd, _opts = {}) {
+  if (!node.predicate) {
+    return { node_path: "", id: node.id, title: node.title, description: node.description ?? "", status: "fail", command: node.command ?? "", error: "No predicate on node" };
+  }
   const predicate = node.predicate;
   const timeoutMs = predicate.timeout_ms ?? 12e4;
   const start = Date.now();
@@ -21288,6 +21291,12 @@ async function executeProof(node, cwd, _opts = {}) {
     return result;
   }
   if (predicate.type === "tdd") {
+    if (!node.command) {
+      result.status = "fail";
+      result.error = "TDD proof missing command";
+      result.duration_ms = Date.now() - start;
+      return result;
+    }
     const run2 = await runCommand(node.command, cwd, timeoutMs);
     const elapsed2 = Date.now() - start;
     result.output = (run2.stdout + run2.stderr).slice(0, 4e3);
@@ -21332,6 +21341,12 @@ async function executeProof(node, cwd, _opts = {}) {
     }
     result.status = "pass";
     result.output = `Gate phase ${searchPhase}: GO \u2014 ${gate.summary}`;
+    return result;
+  }
+  if (!node.command) {
+    result.status = "fail";
+    result.error = "Behavioral proof missing command";
+    result.duration_ms = Date.now() - start;
     return result;
   }
   const run = await runCommand(node.command, cwd, timeoutMs);

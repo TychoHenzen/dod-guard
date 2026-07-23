@@ -212,7 +212,10 @@ export async function executeProof(
   cwd: string,
   _opts: ProofExecutionOptions = {},
 ): Promise<LeafResult> {
-  const predicate = node.predicate!;
+  if (!node.predicate) {
+    return { node_path: "", id: node.id, title: node.title, description: node.description ?? "", status: "fail", command: node.command ?? "", error: "No predicate on node" };
+  }
+  const predicate = node.predicate;
   const timeoutMs = predicate.timeout_ms ?? 120_000;
   const start = Date.now();
 
@@ -245,7 +248,13 @@ export async function executeProof(
 
   // ── TDD: run command, check red/green state ──────────────────────────
   if (predicate.type === "tdd") {
-    const run = await runCommand(node.command!, cwd, timeoutMs);
+    if (!node.command) {
+      result.status = "fail";
+      result.error = "TDD proof missing command";
+      result.duration_ms = Date.now() - start;
+      return result;
+    }
+    const run = await runCommand(node.command, cwd, timeoutMs);
     const elapsed = Date.now() - start;
     result.output = (run.stdout + run.stderr).slice(0, 4000);
     result.exit_code = run.code ?? -1;
@@ -291,8 +300,8 @@ export async function executeProof(
 
     if (!gate) {
       result.status = "fail";
-      result.error = `${predicate.type} gate: no gate found for phase ${searchPhase}. ` +
-        `Run dod_adversarial_gate first.`;
+      result.error =
+        `${predicate.type} gate: no gate found for phase ${searchPhase}. Run dod_adversarial_gate first.`;
       result.diagnosis = diagnoseFailure(node, result);
       return result;
     }
@@ -311,7 +320,13 @@ export async function executeProof(
   }
 
   // ── All other predicate types: basic behavioral ──────────────────────
-  const run = await runCommand(node.command!, cwd, timeoutMs);
+  if (!node.command) {
+    result.status = "fail";
+    result.error = "Behavioral proof missing command";
+    result.duration_ms = Date.now() - start;
+    return result;
+  }
+  const run = await runCommand(node.command, cwd, timeoutMs);
   const elapsed = Date.now() - start;
   const output = run.stdout + run.stderr;
   result.output = output.slice(0, 4000);
