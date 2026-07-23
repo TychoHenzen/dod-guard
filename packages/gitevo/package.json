@@ -1,6 +1,6 @@
 {
   "name": "gitevo",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Evolutionary git branching for LLM agents — checkpoint, spawn, learn, abandon, adopt, finish. Ported from Python GitEvoMCP to TypeScript.",
   "type": "module",
   "main": "dist/bundle.js",
@@ -15,12 +15,12 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "tsc && node --experimental-test-module-mocks --test \"dist/index.test.js\"",
+    "test": "tsc && node --experimental-test-module-mocks --test \"dist/*.test.js\"",
     "test:integration": "tsc && node --experimental-test-module-mocks --test \"dist/operations.test.js\"",
     "bundle": "node esbuild.config.mjs",
     "prepublishOnly": "npm run build && npm run bundle",
     "start": "node dist/bundle.js",
-    "coverage": "c8 --include=\"src/*.ts\" --exclude=\"src/*.test.ts\" --reporter=text --reporter=html node --experimental-test-module-mocks --test \"dist/index.test.js\" \"dist/operations.test.js\"",
+    "coverage": "c8 --include=\"src/*.ts\" --exclude=\"src/*.test.ts\" --reporter=text --reporter=html node --experimental-test-module-mocks --test \"dist/*.test.js\"",
     "dev": "tsc --watch"
   },
   "keywords": [
