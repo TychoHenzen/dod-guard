@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "dod-guard": {
+      "command": "node",
+      "args": ["C:\\Users\\siriu\\mcp-servers\\dod-guard\\packages\\dod-guard\\dist\\bundle.js"]
+    },
+    "evomcp": {
+      "command": "node",
+      "args": ["C:\\Users\\siriu\\mcp-servers\\dod-guard\\packages\\evomcp\\dist\\bundle.js"]
+    },
+    "gitevo": {
+      "command": "node",
+      "args": ["C:\\Users\\siriu\\mcp-servers\\dod-guard\\packages\\gitevo\\dist\\bundle.js"]
+    },
+    "obsidian-rag": {
+      "command": "node",
+      "args": ["C:\\Users\\siriu\\mcp-servers\\dod-guard\\packages\\obsidian-rag\\dist\\bundle.js"]
+    }
+  }
+}

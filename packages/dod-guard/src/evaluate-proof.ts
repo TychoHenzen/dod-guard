@@ -280,7 +280,7 @@ export async function executeProof(
   if (predicate.type === "adversarial" || predicate.type === "convergence") {
     const elapsed = Date.now() - start;
     const phase = predicate.value !== undefined ? Number(predicate.value) : 0;
-    const gates = opts.adversarial_gates ?? [];
+    const gates = _opts.adversarial_gates ?? [];
 
     // For convergence: look for phase 4 gate specifically
     // For adversarial: look for the specified phase gate

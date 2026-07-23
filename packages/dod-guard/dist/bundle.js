@@ -21260,7 +21260,7 @@ async function runCommand(command, cwd, timeoutMs) {
     };
   }
 }
-async function executeProof(node, cwd, opts = {}) {
+async function executeProof(node, cwd, _opts = {}) {
   const predicate = node.predicate;
   const timeoutMs = predicate.timeout_ms ?? 12e4;
   const start = Date.now();
@@ -21314,7 +21314,7 @@ async function executeProof(node, cwd, opts = {}) {
   if (predicate.type === "adversarial" || predicate.type === "convergence") {
     const elapsed2 = Date.now() - start;
     const phase = predicate.value !== void 0 ? Number(predicate.value) : 0;
-    const gates = opts.adversarial_gates ?? [];
+    const gates = _opts.adversarial_gates ?? [];
     const searchPhase = predicate.type === "convergence" ? 4 : phase;
     const gate = gates.find((g) => g.phase === searchPhase);
     result.duration_ms = elapsed2;
@@ -21613,9 +21613,7 @@ async function checkDocument(doc, cwdOverride, opts) {
     guidance.push(`${manualUnverified} manual/review proof(s) await dod_verify.`);
   }
   if (!targetPath && draftCount > 0) {
-    guidance.push(
-      `${draftCount} draft node(s) \u2014 refine with dod_refine, then re-run dod_check.`
-    );
+    guidance.push(`${draftCount} draft node(s) \u2014 refine with dod_refine, then re-run dod_check.`);
   }
   const summary = guidance.length > 0 ? [baseSummary, "", ...guidance].join("\n") : baseSummary;
   return {
@@ -21788,6 +21786,17 @@ function renderLeaf(node, indent, lines) {
   } else if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? node.last_status === "pass" ? "GREEN" : "RED" : "AWAITING RED";
     proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` \u2192 ${node.description}`;
+  } else if (node.predicate?.type === "adversarial") {
+    const phase = node.predicate.value !== void 0 ? Number(node.predicate.value) : 0;
+    const phaseName = ["", "Spec", "Test", "Implement", "Cleanup"][phase] ?? `Phase ${phase}`;
+    const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
+    proofLine = `${indent}- ${mark} Proof (Adversarial ${phaseName} Gate ${gateState}): ${node.description}`;
+  } else if (node.predicate?.type === "convergence") {
+    const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
+    proofLine = `${indent}- ${mark} Proof (Convergence Audit ${gateState}): ${node.description}`;
+  } else if (node.predicate?.type === "holdout") {
+    const fingerprint = node.predicate.value ? String(node.predicate.value).slice(0, 12) : "unknown";
+    proofLine = `${indent}- ${mark} Proof (Holdout ${fingerprint}\u2026): \`${node.command}\` \u2192 ${node.description}`;
   } else {
     proofLine = `${indent}- ${mark} Proof: \`${node.command}\` \u2192 ${node.description}`;
   }
@@ -22843,13 +22852,11 @@ async function handleDodAddNode(params) {
     if (!found) throw new Error(`ERROR: parent node not found by id "${parentId}".`);
     parent = found.node;
     resolvedParentPath = found.path;
-    if (!parent.children)
-      throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
+    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
   } else if (parent_path) {
     parent = findNodeByPath(doc.roots, parent_path);
     if (!parent) throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
-    if (!parent.children)
-      throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
+    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
   }
   if (refinement === "concrete") {
     if (!(command && predicate && description)) {
@@ -22936,9 +22943,7 @@ async function handleDodCreate(params) {
   const draftCount = countDraftNodes(roots);
   const rootCount = roots.length;
   const warnings = [];
-  const behavioralLeaves = flattenConcreteLeaves(roots).filter(
-    (l) => l.node.category === "behavioral"
-  );
+  const behavioralLeaves = flattenConcreteLeaves(roots).filter((l) => l.node.category === "behavioral");
   if (behavioralLeaves.length === 0 && type !== "minimal") {
     warnings.push("\u2022 No behavioral predicate proofs. Every DoD should have at least one");
     warnings.push("  proof that verifies correct behavior (output_contains, output_matches, etc.).");
@@ -23088,9 +23093,7 @@ server.tool(
   {
     title: external_exports.string().describe("Feature/plan title"),
     goal: external_exports.string().describe("One-sentence goal"),
-    type: external_exports.enum(["bug", "general", "minimal"]).describe(
-      "Work type. 'minimal' = advisory-only. 'general'/'bug' = behavioral predicates recommended."
-    ),
+    type: external_exports.enum(["bug", "general", "minimal"]).describe("Work type. 'minimal' = advisory-only. 'general'/'bug' = behavioral predicates recommended."),
     cwd: external_exports.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: external_exports.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
@@ -23589,9 +23592,7 @@ server.tool(
   "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
   {
     dod_id: external_exports.string().describe("DoD ID"),
-    node_path: external_exports.string().describe(
-      "Dot-separated path to the concrete leaf node, or '*' for all concrete leaves (bulk amend)"
-    ),
+    node_path: external_exports.string().describe("Dot-separated path to the concrete leaf node, or '*' for all concrete leaves (bulk amend)"),
     node_id: external_exports.string().optional().describe(
       "Stable node ID (alternative to node_path \u2014 survives tree mutations). Incompatible with '*' and '__meta__'."
     ),
@@ -24078,6 +24079,18 @@ server.tool(
       summary
     };
     const gates = doc.adversarial_gates ?? [];
+    for (let p = 1; p < phase; p++) {
+      const priorGate = gates.find((g) => g.phase === p);
+      if (!priorGate || priorGate.verdict !== "GO") {
+        const phaseNames = ["", "Spec", "Test", "Implement", "Cleanup"];
+        return {
+          content: [{
+            type: "text",
+            text: `ERROR: Cannot record Phase ${phase} gate \u2014 Phase ${p} (${phaseNames[p]}) is ${priorGate ? priorGate.verdict : "PENDING"}. All prior phases must be GO before advancing.`
+          }]
+        };
+      }
+    }
     const existingIdx = gates.findIndex((g) => g.phase === phase);
     if (existingIdx >= 0) {
       gates[existingIdx] = gate;

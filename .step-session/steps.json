@@ -1,54 +1,80 @@
 {
-  "goal": "Work through packages/dod-guard/docs/fix-plan.md â€” close anti-cheat holes in dod-guard",
-  "cwd": "C:\Users\siriu\mcp-servers\dod-guard",
+  "goal": "Encode adversarial feedback as a first-class workflow in dod-guard — 4-phase adversarial choreography replacing primitive Contrarian Agent",
+  "cwd": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "plan_source": "C:\\Users\\siriu\\mcp-servers\\dod-guard\\docs\\plans\\2026-07-23-adversarial-workflow-migration.md",
+  "plan_mtime": "2026-07-23T20:35:42+02:00",
   "steps": [
     {
-      "id": "S12", "title": "Strip debug litter and fix mojibake", "status": "pending",
-      "deps": []
+      "id": "S01",
+      "title": "Fix Interview Skill Phase 3.6",
+      "description": "Rewrite interview Phase 3.6 'Contrarian Agent' → 'Adversarial Spec Review' with 5-lens structure + GO/REVISE/STOP verdicts. Remove all references to deleted predicate types (mutation, streamline, observability, performance, complexity, coverage, duplication) and deleted proof categories. Fix stale predicate type list and proof category list in Phase 4.",
+      "files": ["packages/dod-guard/skills/interview/SKILL.md"],
+      "deps": [],
+      "status": "pending"
     },
     {
-      "id": "S01", "title": "Unify three fingerprint implementations into one", "status": "pending",
-      "deps": []
+      "id": "S02",
+      "title": "Add AdversarialGate Types",
+      "description": "Add AdversarialGate, AdversarialLensResult, AdversarialVerdict types to types.ts. Add adversarial_gates: AdversarialGate[] to DodDocument. Add adversarial, holdout, convergence to Predicate.type union. Add test_audit to ProofCategory.",
+      "files": ["packages/dod-guard/src/types.ts"],
+      "deps": [],
+      "status": "pending"
     },
     {
-      "id": "S02", "title": "Add regression tests proving store-side tamper detection", "status": "pending",
-      "deps": ["S01"]
+      "id": "S03",
+      "title": "Add AdversarialGate Proof Evaluators",
+      "description": "Add evalAdversarial(), evalHoldout(), evalConvergence() handlers in evaluate-proof.ts. Update PredicateSchema in schemas.ts for new predicate types.",
+      "files": ["packages/dod-guard/src/evaluate-proof.ts", "packages/dod-guard/src/schemas.ts"],
+      "deps": ["S02"],
+      "status": "pending"
     },
     {
-      "id": "S03", "title": "Bind full dod_check to captured VCS state", "status": "pending",
-      "deps": []
+      "id": "S04",
+      "title": "Add dod_adversarial_gate MCP Tool",
+      "description": "Register new dod_adversarial_gate tool in index.ts with Zod schema for phase + lenses. Implement gate creation (generates dispatch plan, stores results) and gate status check (reads existing gates, validates progression).",
+      "files": ["packages/dod-guard/src/index.ts"],
+      "deps": ["S02", "S03"],
+      "status": "pending"
     },
     {
-      "id": "S04", "title": "Run proofs against frozen snapshot", "status": "pending",
-      "deps": ["S03"]
+      "id": "S05",
+      "title": "Create /adversarial-workflow Skill",
+      "description": "Create new skill file at skills/adversarial-workflow/SKILL.md. Full 4-phase choreography: interview → test audit → implementation review → structural gates. Lens dispatch templates per phase, verdict computation rules, failure recovery, integration with existing skills.",
+      "files": ["packages/dod-guard/skills/adversarial-workflow/SKILL.md"],
+      "deps": ["S01"],
+      "status": "pending"
     },
     {
-      "id": "S05", "title": "Replace placeholder blocklist with positive-evidence requirements", "status": "pending",
-      "deps": []
+      "id": "S06",
+      "title": "Enhance /step-by-step with Adversarial Injection",
+      "description": "Update step-by-step SKILL.md to inject adversarial implementation review after all steps complete (new Phase 3). Add structural gates as Phase 4. Or document that adversarial-workflow skill calls step-by-step for implementation phase — whichever design is cleaner.",
+      "files": ["packages/dod-guard/skills/step-by-step/SKILL.md"],
+      "deps": ["S05"],
+      "status": "pending"
     },
     {
-      "id": "S06", "title": "Static analyzers target changed files not command string", "status": "pending",
-      "deps": ["S03"]
+      "id": "S07",
+      "title": "Create Structural Gate Templates",
+      "description": "Create standards/structural-gates.md with per-language behavioral structural proof commands (TypeScript, Python, Rust), convergence audit configuration, and anti-pattern JSON schema for postmortem capture.",
+      "files": ["standards/structural-gates.md"],
+      "deps": [],
+      "status": "pending"
     },
     {
-      "id": "S07", "title": "Protect the regression baseline", "status": "pending",
-      "deps": ["S01"]
+      "id": "S08",
+      "title": "Update Marketplace & Documentation",
+      "description": "Add adversarial-workflow skill to dod-guard marketplace.json. Update root marketplace.json skill descriptions. Update dod-guard CLAUDE.md architecture docs with new predicate types and tool. Update README.md user-facing docs.",
+      "files": ["packages/dod-guard/.claude-plugin/marketplace.json", ".claude-plugin/marketplace.json", "packages/dod-guard/CLAUDE.md", "packages/dod-guard/README.md"],
+      "deps": ["S04", "S05"],
+      "status": "pending"
     },
     {
-      "id": "S08", "title": "Turn amendment warnings into gates", "status": "pending",
-      "deps": []
-    },
-    {
-      "id": "S09", "title": "Gate first execution of imported DoDs", "status": "pending",
-      "deps": []
-    },
-    {
-      "id": "S10", "title": "Give manual/review predicates real teeth", "status": "pending",
-      "deps": []
-    },
-    {
-      "id": "S11", "title": "Remove markdownâ†’predicate inference feedback into canonical store", "status": "pending",
-      "deps": []
+      "id": "S09",
+      "title": "Test & Publish",
+      "description": "Write tests for new predicate evaluators (adversarial, holdout, convergence). Write tests for AdversarialGate validation. Run full test suite. Clean build + bundle. Version bump, commit, tag, push for CI publish.",
+      "files": ["packages/dod-guard/src/*.test.ts", "packages/dod-guard/package.json"],
+      "deps": ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08"],
+      "status": "pending"
     }
   ]
 }

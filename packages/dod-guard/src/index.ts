@@ -1228,6 +1228,22 @@ server.tool(
     };
 
     const gates = doc.adversarial_gates ?? [];
+
+    // Validate phase progression: phase N requires GO on all prior phases
+    for (let p = 1; p < phase; p++) {
+      const priorGate = gates.find((g) => g.phase === p);
+      if (!priorGate || priorGate.verdict !== "GO") {
+        const phaseNames = ["", "Spec", "Test", "Implement", "Cleanup"];
+        return {
+          content: [{ type: "text" as const, text:
+            `ERROR: Cannot record Phase ${phase} gate — Phase ${p} (${phaseNames[p]}) ` +
+            `is ${priorGate ? priorGate.verdict : "PENDING"}. ` +
+            `All prior phases must be GO before advancing.`
+          }],
+        };
+      }
+    }
+
     const existingIdx = gates.findIndex((g) => g.phase === phase);
     if (existingIdx >= 0) {
       gates[existingIdx] = gate;

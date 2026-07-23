@@ -84,6 +84,17 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
   } else if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? (node.last_status === "pass" ? "GREEN" : "RED") : "AWAITING RED";
     proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` → ${node.description}`;
+  } else if (node.predicate?.type === "adversarial") {
+    const phase = node.predicate.value !== undefined ? Number(node.predicate.value) : 0;
+    const phaseName = ["", "Spec", "Test", "Implement", "Cleanup"][phase] ?? `Phase ${phase}`;
+    const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
+    proofLine = `${indent}- ${mark} Proof (Adversarial ${phaseName} Gate ${gateState}): ${node.description}`;
+  } else if (node.predicate?.type === "convergence") {
+    const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
+    proofLine = `${indent}- ${mark} Proof (Convergence Audit ${gateState}): ${node.description}`;
+  } else if (node.predicate?.type === "holdout") {
+    const fingerprint = node.predicate.value ? String(node.predicate.value).slice(0, 12) : "unknown";
+    proofLine = `${indent}- ${mark} Proof (Holdout ${fingerprint}…): \`${node.command}\` → ${node.description}`;
   } else {
     proofLine = `${indent}- ${mark} Proof: \`${node.command}\` → ${node.description}`;
   }
