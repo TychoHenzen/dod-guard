@@ -17,7 +17,7 @@ the **user** — for the ~5% of sub-problems the search can't crack.
 
 ## Why This Exists
 
-The core economic insight from [EvoMCP.md](../../docs/EvoMCP.md):
+The core economic insight:
 
 > The cheap workers do the fanout, and "same failing assertion after 3 lineages"
 > is the trigger to spend smart tokens on exactly that node. Most of the cost
@@ -225,7 +225,7 @@ What happens inside (all backend-internal):
 7. Winner returned OR escalation report
 
 The host context never sees 19 failed candidates — only the winning patch +
-report. That's the context-economy argument for MCP co-location (EvoMCP.md §MCP).
+report.
 
 ### Phase 3: Review the Result
 
