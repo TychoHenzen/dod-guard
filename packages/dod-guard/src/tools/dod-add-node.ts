@@ -50,13 +50,11 @@ export async function handleDodAddNode(params: AddNodeParams): Promise<{ path: s
     if (!found) throw new Error(`ERROR: parent node not found by id "${parentId}".`);
     parent = found.node;
     resolvedParentPath = found.path;
-    if (!parent.children)
-      throw new Error(`ERROR: parent "${parent.title}" is a leaf — cannot add children.`);
+    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf — cannot add children.`);
   } else if (parent_path) {
     parent = findNodeByPath(doc.roots, parent_path);
     if (!parent) throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
-    if (!parent.children)
-      throw new Error(`ERROR: parent "${parent.title}" is a leaf — cannot add children.`);
+    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf — cannot add children.`);
   }
 
   // Validate concrete node

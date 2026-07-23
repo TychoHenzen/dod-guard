@@ -14,10 +14,7 @@ function flattenLeaf(node: TaskNode, index: number, parentPath?: string): { node
   return [];
 }
 
-export function flattenConcreteLeaves(
-  nodes: TaskNode[],
-  parentPath?: string,
-): { node: TaskNode; node_path: string }[] {
+export function flattenConcreteLeaves(nodes: TaskNode[], parentPath?: string): { node: TaskNode; node_path: string }[] {
   const results: { node: TaskNode; node_path: string }[] = [];
   for (let i = 0; i < nodes.length; i++) {
     results.push(...flattenLeaf(nodes[i], i, parentPath));

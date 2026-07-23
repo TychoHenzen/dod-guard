@@ -2,7 +2,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { executeProof, type ProofExecutionOptions } from "./evaluate-proof.js";
 import { computeProofFingerprint, flattenConcreteLeaves } from "./fingerprint.js";
-import type { Amendment, CheckResult, DodDocument, LeafResult, Predicate, TaskNode } from "./types.js";
+import type { Amendment, CheckResult, DodDocument, LeafResult, TaskNode } from "./types.js";
 
 const execAsync = promisify(exec);
 
@@ -150,9 +150,10 @@ function carryForwardNode(node: TaskNode, node_path: string): LeafResult {
     id: node.id,
     title: node.title,
     description: node.description ?? node.intent ?? node.title,
-    status: node.last_status === "pending" || node.last_status === "draft"
-      ? "skipped"
-      : (node.last_status as LeafResult["status"]),
+    status:
+      node.last_status === "pending" || node.last_status === "draft"
+        ? "skipped"
+        : (node.last_status as LeafResult["status"]),
     command: node.command ?? "",
     output: node.last_output,
   };
@@ -178,12 +179,7 @@ function addDraftLeafResults(nodes: TaskNode[], parentPath: string, out: LeafRes
   }
 }
 
-function carryForwardDrafts(
-  nodes: TaskNode[],
-  parentPath: string,
-  targetPath: string,
-  out: LeafResult[],
-): void {
+function carryForwardDrafts(nodes: TaskNode[], parentPath: string, targetPath: string, out: LeafResult[]): void {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
@@ -213,11 +209,7 @@ export interface CheckOptions {
   summary?: boolean;
 }
 
-export async function checkDocument(
-  doc: DodDocument,
-  cwdOverride?: string,
-  opts?: CheckOptions,
-): Promise<CheckResult> {
+export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts?: CheckOptions): Promise<CheckResult> {
   const cwd = cwdOverride ?? doc.cwd;
   const targetPath = opts?.nodePath;
 
@@ -320,14 +312,10 @@ export async function checkDocument(
   }
 
   if (!targetPath && draftCount > 0) {
-    guidance.push(
-      `${draftCount} draft node(s) — refine with dod_refine, then re-run dod_check.`,
-    );
+    guidance.push(`${draftCount} draft node(s) — refine with dod_refine, then re-run dod_check.`);
   }
 
-  const summary = guidance.length > 0
-    ? [baseSummary, "", ...guidance].join("\n")
-    : baseSummary;
+  const summary = guidance.length > 0 ? [baseSummary, "", ...guidance].join("\n") : baseSummary;
 
   return {
     overall,

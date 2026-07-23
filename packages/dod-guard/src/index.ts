@@ -32,9 +32,7 @@ server.tool(
     goal: z.string().describe("One-sentence goal"),
     type: z
       .enum(["bug", "general", "minimal"])
-      .describe(
-        "Work type. 'minimal' = advisory-only. 'general'/'bug' = behavioral predicates recommended.",
-      ),
+      .describe("Work type. 'minimal' = advisory-only. 'general'/'bug' = behavioral predicates recommended."),
     cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
     markdown_path: z.string().describe("Where to write the DoD markdown file (absolute path)"),
     sections: SectionsSchema,
@@ -650,9 +648,7 @@ server.tool(
     dod_id: z.string().describe("DoD ID"),
     node_path: z
       .string()
-      .describe(
-        "Dot-separated path to the concrete leaf node, or '*' for all concrete leaves (bulk amend)",
-      ),
+      .describe("Dot-separated path to the concrete leaf node, or '*' for all concrete leaves (bulk amend)"),
     node_id: z
       .string()
       .optional()

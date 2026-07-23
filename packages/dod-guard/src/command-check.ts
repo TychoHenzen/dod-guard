@@ -14,22 +14,71 @@ export interface MissingTool {
 // ── cmd.exe builtins ───────────────────────────────────────────────────────
 
 const CMD_BUILTINS = new Set([
-  "assoc", "break", "call", "cd", "chdir", "cls", "color", "copy",
-  "date", "del", "dir", "echo", "endlocal", "erase", "exit", "for",
-  "ftype", "goto", "if", "md", "mkdir", "mklink", "move", "path",
-  "pause", "popd", "prompt", "pushd", "rd", "rem", "ren", "rename",
-  "rmdir", "set", "setlocal", "shift", "start", "time", "title",
-  "type", "ver", "verify", "vol",
+  "assoc",
+  "break",
+  "call",
+  "cd",
+  "chdir",
+  "cls",
+  "color",
+  "copy",
+  "date",
+  "del",
+  "dir",
+  "echo",
+  "endlocal",
+  "erase",
+  "exit",
+  "for",
+  "ftype",
+  "goto",
+  "if",
+  "md",
+  "mkdir",
+  "mklink",
+  "move",
+  "path",
+  "pause",
+  "popd",
+  "prompt",
+  "pushd",
+  "rd",
+  "rem",
+  "ren",
+  "rename",
+  "rmdir",
+  "set",
+  "setlocal",
+  "shift",
+  "start",
+  "time",
+  "title",
+  "type",
+  "ver",
+  "verify",
+  "vol",
 ]);
 
 const OPERATOR_CHARS = new Set(["|", "&", ";", "(", ")", "`", "\n", "\r"]);
 
 const WINDOWS_EQUIVALENTS: Record<string, string> = {
-  grep: "findstr", cat: "type", ls: "dir", rm: "del (or rmdir /s for dirs)",
-  cp: "copy", mv: "move", touch: "type nul > file", which: "where",
-  sed: "PowerShell -replace", awk: "PowerShell",
-  head: "PowerShell Select-Object -First N", tail: "PowerShell Select-Object -Last N",
-  test: "if exist / if defined", pwd: "cd", export: "set", diff: "fc", wc: "find /c",
+  grep: "findstr",
+  cat: "type",
+  ls: "dir",
+  rm: "del (or rmdir /s for dirs)",
+  cp: "copy",
+  mv: "move",
+  touch: "type nul > file",
+  which: "where",
+  sed: "PowerShell -replace",
+  awk: "PowerShell",
+  head: "PowerShell Select-Object -First N",
+  tail: "PowerShell Select-Object -Last N",
+  test: "if exist / if defined",
+  pwd: "cd",
+  export: "set",
+  diff: "fc",
+  wc: "find /c",
 };
 
 // ── Token extraction ──────────────────────────────────────────────────────
@@ -44,9 +93,21 @@ export function splitCommands(command: string): string[] {
   let quote: '"' | "'" | null = null;
 
   for (const c of command) {
-    if (quote) { buf += c; if (c === quote) quote = null; continue; }
-    if (isQuote(c)) { quote = c; buf += c; continue; }
-    if (OPERATOR_CHARS.has(c)) { if (buf.trim()) segments.push(buf); buf = ""; continue; }
+    if (quote) {
+      buf += c;
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (isQuote(c)) {
+      quote = c;
+      buf += c;
+      continue;
+    }
+    if (OPERATOR_CHARS.has(c)) {
+      if (buf.trim()) segments.push(buf);
+      buf = "";
+      continue;
+    }
     buf += c;
   }
   if (buf.trim()) segments.push(buf);
@@ -89,9 +150,15 @@ function isShellAssignment(s: string | null): boolean {
 function firstToken(segment: string): string | null {
   let s = skipRedirection(segment);
   while (s.length > 0) {
-    if (isQuote(s[0])) { const r = extractQuotedToken(s); return r.token; }
+    if (isQuote(s[0])) {
+      const r = extractQuotedToken(s);
+      return r.token;
+    }
     const r = extractBareToken(s);
-    if (isShellAssignment(r.token)) { s = r.rest.trim(); continue; }
+    if (isShellAssignment(r.token)) {
+      s = r.rest.trim();
+      continue;
+    }
     return r.token;
   }
   return null;
@@ -179,8 +246,14 @@ const GLOB_CHARS = /[*?[]/;
 export function hasGlobWildcards(command: string): boolean {
   let quote: '"' | "'" | null = null;
   for (const c of command) {
-    if (quote) { if (c === quote) quote = null; continue; }
-    if (c === '"' || c === "'") { quote = c; continue; }
+    if (quote) {
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      continue;
+    }
     if (GLOB_CHARS.test(c)) return true;
   }
   return false;
@@ -219,7 +292,9 @@ export function expandGlobsInCommand(command: string, cwd: string): { expanded: 
           expanded = expanded.split(fullMatch).join(replacement);
           count += entries.length;
         }
-      } catch { /* directory missing — leave glob as-is */ }
+      } catch {
+        /* directory missing — leave glob as-is */
+      }
     }
   };
 
@@ -231,7 +306,10 @@ export function expandGlobsInCommand(command: string, cwd: string): { expanded: 
 
 function wildcardMatch(str: string, pattern: string): boolean {
   const re = new RegExp(
-    `^${pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`,
+    `^${pattern
+      .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+      .replace(/\*/g, ".*")
+      .replace(/\?/g, ".")}$`,
   );
   return re.test(str);
 }

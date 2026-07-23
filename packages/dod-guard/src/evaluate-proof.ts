@@ -36,12 +36,16 @@ function diagnoseFailure(node: TaskNode, result: LeafResult): string {
 
   switch (pred.type) {
     case "exit_code":
-      return `Expected exit code ${value ?? 0}, got ${code}. ` +
-        `Command failed to execute successfully. Check the error output above.`;
+      return (
+        `Expected exit code ${value ?? 0}, got ${code}. ` +
+        `Command failed to execute successfully. Check the error output above.`
+      );
 
     case "exit_code_not":
-      return `Expected exit code other than ${value ?? 0}, got ${code}. ` +
-        `Command succeeded when it should have failed — error handling may be missing.`;
+      return (
+        `Expected exit code other than ${value ?? 0}, got ${code}. ` +
+        `Command succeeded when it should have failed — error handling may be missing.`
+      );
 
     case "output_contains":
       return value
@@ -50,13 +54,14 @@ function diagnoseFailure(node: TaskNode, result: LeafResult): string {
         : `Expected output to contain a value but none was specified in the predicate.`;
 
     case "output_not_contains":
-      return `Expected output NOT to contain "${value}" but it was found. ` +
-        `Check that the unwanted text is no longer produced.`;
+      return (
+        `Expected output NOT to contain "${value}" but it was found. ` +
+        `Check that the unwanted text is no longer produced.`
+      );
 
     case "output_matches":
       return value
-        ? `Expected output to match /${value}/ but no match was found. ` +
-            `First 500 chars of output: "${rawOutput}"`
+        ? `Expected output to match /${value}/ but no match was found. ` + `First 500 chars of output: "${rawOutput}"`
         : `Expected output to match a regex but none was specified.`;
 
     case "output_not_matches":
@@ -174,7 +179,7 @@ async function runCommand(command: string, cwd: string, timeoutMs: number): Prom
 export async function executeProof(
   node: TaskNode,
   cwd: string,
-  opts: ProofExecutionOptions = {},
+  _opts: ProofExecutionOptions = {},
 ): Promise<LeafResult> {
   const predicate = node.predicate!;
   const timeoutMs = predicate.timeout_ms ?? 120_000;
@@ -222,7 +227,8 @@ export async function executeProof(
         return result;
       }
       result.status = "fail";
-      result.error = "TDD RED phase: test should have failed first but it passed. " +
+      result.error =
+        "TDD RED phase: test should have failed first but it passed. " +
         "Check that the test actually exercises new behavior.";
       return result;
     }
@@ -233,7 +239,8 @@ export async function executeProof(
       return result;
     }
     result.status = "fail";
-    result.error = `TDD GREEN phase: test failed with exit code ${run.code ?? -1}. ` +
+    result.error =
+      `TDD GREEN phase: test failed with exit code ${run.code ?? -1}. ` +
       "Implementation is incomplete or broken. Check the test output above.";
     return result;
   }

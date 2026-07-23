@@ -63,9 +63,7 @@ export async function handleDodCreate(params: CreateParams): Promise<string> {
   const warnings: string[] = [];
 
   // Count behavioral predicates for guidance
-  const behavioralLeaves = flattenConcreteLeaves(roots).filter(
-    (l) => l.node.category === "behavioral"
-  );
+  const behavioralLeaves = flattenConcreteLeaves(roots).filter((l) => l.node.category === "behavioral");
   if (behavioralLeaves.length === 0 && type !== "minimal") {
     warnings.push("• No behavioral predicate proofs. Every DoD should have at least one");
     warnings.push("  proof that verifies correct behavior (output_contains, output_matches, etc.).");

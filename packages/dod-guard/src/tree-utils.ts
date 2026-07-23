@@ -232,10 +232,12 @@ export function formatMissingTools(missing: MissingTool[]): string {
 
 function suggestionFor(tool: string): string {
   const map: Record<string, string> = {
-    grep: "findstr", cat: "type",
+    grep: "findstr",
+    cat: "type",
     sed: "(use PowerShell -replace or batch findstr with redirects)",
     awk: "(use PowerShell or batch for /f)",
-    sh: "cmd /c", bash: "cmd /c",
+    sh: "cmd /c",
+    bash: "cmd /c",
     python3: "python",
     make: "(Windows: install GNU Make or use npm scripts)",
     cargo: "(install Rust via rustup.rs)",

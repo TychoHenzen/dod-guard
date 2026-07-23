@@ -5,10 +5,14 @@ import type { CheckResult, DodDocument, TaskNode } from "./types.js";
 
 function proofMark(status: string): string {
   switch (status) {
-    case "pass": return "[x]";
-    case "skipped": return "[~]";
-    case "draft": return "[~]";
-    default: return "[ ]";
+    case "pass":
+      return "[x]";
+    case "skipped":
+      return "[~]";
+    case "draft":
+      return "[~]";
+    default:
+      return "[ ]";
   }
 }
 
