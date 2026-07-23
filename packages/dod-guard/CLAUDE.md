@@ -193,7 +193,7 @@ Production `console.debug` calls are gated behind `process.env.DOD_DEBUG`. Top-l
 
 ## Bundled Skills
 
-The plugin ships seven skills in `skills/`:
+The plugin ships eight skills in `skills/`:
 
 | Skill | File | Purpose |
 |-------|------|---------|
@@ -204,8 +204,9 @@ The plugin ships seven skills in `skills/`:
 | `ratchet` | `skills/ratchet/SKILL.md` | Unified ratcheting workflow combining dod-guard + gitevo + evomcp + obsidian-rag + code-review-graph |
 | `clean-house` | `skills/clean-house/SKILL.md` | Hunt down duplicate/obsolete implementations via git archaeology and aggressively remove dead code |
 | `step-by-step` | `skills/step-by-step/SKILL.md` | Execute multi-step plans by dispatching ONE fresh subagent per atomic step. Ships 2 specialized agents (step-implementer, step-fixer). |
+| `cheap-step` | `skills/cheap-step/SKILL.md` | Step-by-step's atomic discipline but each step implemented by cheap-worker fanout (evomcp solve → DeepSeek) with host-model verification and fallback. ~80% cost reduction vs. all-host step-by-step. |
 
-**Skill dependency chain**: `quality-upgrade` orchestrates `test-verification` and `test-fixer`. `test-fixer` requires `test-verification` manifest. `ratchet` orchestrates `interview` (requirements), `quality-upgrade`/`test-verification` (quality baseline), and delegates to gitevo/evomcp/obsidian-rag for branching/cascade/memory.
+**Skill dependency chain**: `quality-upgrade` orchestrates `test-verification` and `test-fixer`. `test-fixer` requires `test-verification` manifest. `ratchet` orchestrates `interview` (requirements), `quality-upgrade`/`test-verification` (quality baseline), and delegates to gitevo/evomcp/obsidian-rag for branching/cascade/memory. `cheap-step` depends on evomcp's `solve` tool for cheap-worker fanout and reuses step-by-step's `step-implementer` agent for host-only steps.
 
 **Skill references**: Skills reference each other via `Skill("name", ...)` using bare names. The plugin namespace (`dod-guard:`) is auto-prefixed by Claude Code at install time.
 

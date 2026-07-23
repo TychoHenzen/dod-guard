@@ -21316,10 +21316,10 @@ function gitOrNull(args, cwd) {
     return null;
   }
 }
-function getRepo() {
+function getRepo(cwdOverride) {
   let toplevel;
   try {
-    toplevel = git(["rev-parse", "--show-toplevel"]);
+    toplevel = git(["rev-parse", "--show-toplevel"], cwdOverride);
   } catch {
     throw new EvoError("Not a git repository. Run 'git init' first.");
   }
@@ -21499,8 +21499,8 @@ function evo_init() {
   git(["tag", "-a", "evo-root", "-m", "GitEvo root checkpoint"], cwd);
   return "GitEvo initialized. Root checkpoint tagged as evo-root.";
 }
-function evo_checkpoint(name, description) {
-  const { cwd } = getRepo();
+function evo_checkpoint(name, description, cwdOverride) {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
   let stashed = false;
   if (isDirty2(cwd)) {
@@ -21581,8 +21581,8 @@ function lessonHash(content, branch, timestamp) {
   const input = `${content}|${branch}|${timestamp}`;
   return createHash("sha256").update(input).digest("hex").slice(0, 12);
 }
-function evo_spawn(checkpoint_name, new_branch, force) {
-  const { cwd } = getRepo();
+function evo_spawn(checkpoint_name, new_branch, force, cwdOverride) {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
   const tagName = `evo-${checkpoint_name}`;
   if (!hasTag(tagName, cwd)) {
@@ -21639,8 +21639,8 @@ ${safetyWarnings}`;
   }
   return spawnMsg;
 }
-function evo_checkpoints() {
-  const { cwd } = getRepo();
+function evo_checkpoints(cwdOverride) {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
   const tags = tagsWithPrefix("evo-", cwd);
   if (tags.length === 0) return "No checkpoints found.";
@@ -21657,8 +21657,8 @@ function evo_checkpoints() {
   return `Checkpoints:
 ${lines.join("\n")}`;
 }
-function evo_branches() {
-  const { cwd, rootBranch } = getRepo();
+function evo_branches(cwdOverride) {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
   const defaultNames = /* @__PURE__ */ new Set(["master", "main", "trunk"]);
   const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
@@ -21667,8 +21667,8 @@ function evo_branches() {
   return `Branches:
   ${attempts.sort().join("\n  ")}`;
 }
-function evo_abandon(checkpoint, reason, force) {
-  const { cwd, rootBranch } = getRepo();
+function evo_abandon(checkpoint, reason, force, cwdOverride) {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
   let stashed = false;
   let stashPopWarning = "";
@@ -21744,8 +21744,8 @@ ${safetyWarnings}`;
   }
   return abandonMsg;
 }
-function evo_diff(checkpoint_a, checkpoint_b) {
-  const { cwd } = getRepo();
+function evo_diff(checkpoint_a, checkpoint_b, cwdOverride) {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
   const tagA = `evo-${checkpoint_a}`;
   const tagB = `evo-${checkpoint_b}`;
@@ -21757,8 +21757,8 @@ function evo_diff(checkpoint_a, checkpoint_b) {
   const diff = git(["diff", tagA, tagB], cwd);
   return diff || "No differences between checkpoints.";
 }
-function evo_summary() {
-  const { cwd } = getRepo();
+function evo_summary(cwdOverride) {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
   const active = currentBranch(cwd);
   const allTags = tagsWithPrefix("evo-", cwd);
@@ -21779,8 +21779,8 @@ function evo_summary() {
     `Adopted: ${adopted ? "yes" : "no"}`
   ].join("\n");
 }
-function evo_adopt(branch) {
-  const { cwd, rootBranch } = getRepo();
+function evo_adopt(branch, cwdOverride) {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
   if (isDirty2(cwd)) {
     throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
@@ -21795,7 +21795,7 @@ function evo_adopt(branch) {
   }
   try {
     git(["merge", branch, "--no-edit"], cwd);
-  } catch (err) {
+  } catch (_err) {
     let conflictFiles = [];
     try {
       const output = gitOrNull(["diff", "--name-only", "--diff-filter=U"], cwd);
@@ -21807,9 +21807,7 @@ function evo_adopt(branch) {
     } catch {
     }
     const fileList = conflictFiles.length > 0 ? `: ${conflictFiles.join(", ")}` : "";
-    throw new EvoError(
-      `adopt failed: merge conflicts${fileList}; resolve manually or abandon the branch`
-    );
+    throw new EvoError(`adopt failed: merge conflicts${fileList}; resolve manually or abandon the branch`);
   }
   try {
     git(["tag", "-d", "evo-adopted"], cwd);
@@ -21822,8 +21820,8 @@ function evo_adopt(branch) {
   }
   return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
 }
-function evo_finish() {
-  const { cwd, rootBranch } = getRepo();
+function evo_finish(cwdOverride) {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
   const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
   const current = currentBranch(cwd);
@@ -21831,9 +21829,7 @@ function evo_finish() {
     try {
       evo_adopt(current);
     } catch (err) {
-      throw new EvoError(
-        `Finish failed: internal adopt failed \u2014 ${err.message}`
-      );
+      throw new EvoError(`Finish failed: internal adopt failed \u2014 ${err.message}`);
     }
   }
   const allEvoTags = tagsWithPrefix("evo-", cwd);

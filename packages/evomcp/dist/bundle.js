@@ -2984,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve2.call(this, root, ref);
+      let _sch = resolve4.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3011,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve2(root, ref) {
+    function resolve4(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path5) {
-      let input = path5;
+    function removeDotSegments(path8) {
+      let input = path8;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path5, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path5 && path5 !== "/" ? path5 : void 0;
+        const [path8, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path8 && path8 !== "/" ? path8 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3642,55 +3642,55 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve2(baseURI, relativeURI, options) {
+    function resolve4(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse3(baseURI, schemelessOptions), parse3(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative3, options, skipNormalization) {
+    function resolveComponent(base, relative4, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative3 = parse3(serialize(relative3, options), options);
+        relative4 = parse3(serialize(relative4, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative3.scheme) {
-        target.scheme = relative3.scheme;
-        target.userinfo = relative3.userinfo;
-        target.host = relative3.host;
-        target.port = relative3.port;
-        target.path = removeDotSegments(relative3.path || "");
-        target.query = relative3.query;
+      if (!options.tolerant && relative4.scheme) {
+        target.scheme = relative4.scheme;
+        target.userinfo = relative4.userinfo;
+        target.host = relative4.host;
+        target.port = relative4.port;
+        target.path = removeDotSegments(relative4.path || "");
+        target.query = relative4.query;
       } else {
-        if (relative3.userinfo !== void 0 || relative3.host !== void 0 || relative3.port !== void 0) {
-          target.userinfo = relative3.userinfo;
-          target.host = relative3.host;
-          target.port = relative3.port;
-          target.path = removeDotSegments(relative3.path || "");
-          target.query = relative3.query;
+        if (relative4.userinfo !== void 0 || relative4.host !== void 0 || relative4.port !== void 0) {
+          target.userinfo = relative4.userinfo;
+          target.host = relative4.host;
+          target.port = relative4.port;
+          target.path = removeDotSegments(relative4.path || "");
+          target.query = relative4.query;
         } else {
-          if (!relative3.path) {
+          if (!relative4.path) {
             target.path = base.path;
-            if (relative3.query !== void 0) {
-              target.query = relative3.query;
+            if (relative4.query !== void 0) {
+              target.query = relative4.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative3.path[0] === "/") {
-              target.path = removeDotSegments(relative3.path);
+            if (relative4.path[0] === "/") {
+              target.path = removeDotSegments(relative4.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative3.path;
+                target.path = "/" + relative4.path;
               } else if (!base.path) {
-                target.path = relative3.path;
+                target.path = relative4.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative3.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative4.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative3.query;
+            target.query = relative4.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3698,7 +3698,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative3.fragment;
+      target.fragment = relative4.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3900,7 +3900,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize: normalize2,
-      resolve: resolve2,
+      resolve: resolve4,
       resolveComponent,
       equal,
       serialize,
@@ -6876,12 +6876,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs5, exportName) {
+    function addFormats(ajv, list, fs8, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs5[f]);
+        ajv.addFormat(f, fs8[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -6905,11 +6905,15 @@ function getMemoryDb(cwd) {
   db.pragma("journal_mode = DELETE");
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA_SQL);
+  try {
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_branches_name ON branches(name)");
+  } catch {
+  }
   dbCache.set(resolvedCwd, db);
   return db;
 }
-function writeMessage(type, content, opts) {
-  const db = getMemoryDb();
+function writeMessage(type, content, opts, cwd) {
+  const db = getMemoryDb(cwd);
   const timestamp = (/* @__PURE__ */ new Date()).toISOString();
   const scope = opts?.scope ?? "";
   const metadata = JSON.stringify(opts?.metadata ?? {});
@@ -6918,17 +6922,27 @@ function writeMessage(type, content, opts) {
        VALUES (?, ?, ?, ?, ?, ?)`).run(type, scope, content, metadata, branch, timestamp);
   return Number(result.lastInsertRowid);
 }
-function recordCheckpoint(tag, branch, description) {
-  const db = getMemoryDb();
+function recordCheckpoint(tag, branch, description, cwd) {
+  const db = getMemoryDb(cwd);
   const timestamp = (/* @__PURE__ */ new Date()).toISOString();
   db.prepare(`INSERT OR REPLACE INTO checkpoints (tag, branch, description, timestamp)
      VALUES (?, ?, ?, ?)`).run(tag, branch, description ?? "", timestamp);
 }
-function recordBranch(name, status, spawnedFrom, score) {
-  const db = getMemoryDb();
+function recordBranch(name, status, spawnedFrom, score, cwd) {
+  const db = getMemoryDb(cwd);
   const timestamp = (/* @__PURE__ */ new Date()).toISOString();
   db.prepare(`INSERT INTO branches (name, status, spawned_from, score, timestamp)
-     VALUES (?, ?, ?, ?, ?)`).run(name, status, spawnedFrom ?? null, score ?? null, timestamp);
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(name) DO UPDATE SET
+       status = excluded.status,
+       spawned_from = COALESCE(excluded.spawned_from, branches.spawned_from),
+       score = COALESCE(excluded.score, branches.score),
+       timestamp = excluded.timestamp`).run(name, status, spawnedFrom ?? null, score ?? null, timestamp);
+}
+function getBranchSpawnPoint(branchName, cwd) {
+  const db = getMemoryDb(cwd);
+  const row = db.prepare("SELECT spawned_from FROM branches WHERE name = ? ORDER BY id DESC LIMIT 1").get(branchName);
+  return row?.spawned_from ?? null;
 }
 var dbCache, SCHEMA_SQL;
 var init_memory = __esm({
@@ -7444,8 +7458,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path5, errorMaps, issueData } = params;
-  const fullPath = [...path5, ...issueData.path || []];
+  const { data, path: path8, errorMaps, issueData } = params;
+  const fullPath = [...path8, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7561,11 +7575,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path5, key) {
+  constructor(parent, value, path8, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path5;
+    this._path = path8;
     this._key = key;
   }
   get path() {
@@ -11202,10 +11216,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path5) {
-  if (!path5)
+function getElementAtPath(obj, path8) {
+  if (!path8)
     return obj;
-  return path5.reduce((acc, key) => acc?.[key], obj);
+  return path8.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11525,11 +11539,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path5, issues) {
+function prefixIssues(path8, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path5);
+    iss.path.unshift(path8);
     return iss;
   });
 }
@@ -19057,7 +19071,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
+        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -19074,7 +19088,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve4, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19152,7 +19166,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve2(parseResult.data);
+            resolve4(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19413,12 +19427,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve4, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve2, interval);
+      const timeoutId = setTimeout(resolve4, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20518,7 +20532,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
+      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21167,12 +21181,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve2) => {
+    return new Promise((resolve4) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve2();
+        resolve4();
       } else {
-        this._stdout.once("drain", resolve2);
+        this._stdout.once("drain", resolve4);
       }
     });
   }
@@ -21180,11 +21194,17 @@ var StdioServerTransport = class {
 
 // src/agent.ts
 import { execSync, spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
 // src/prompts.ts
+function resolveCtx(context) {
+  if (context === void 0) return void 0;
+  if (typeof context === "string") return context;
+  return context.assembled;
+}
 var STRATEGIES = [
   "Implement the simplest possible solution that works. Minimal changes, maximum clarity.",
   "Implement a robust solution with comprehensive error handling, edge cases, and validation.",
@@ -21195,7 +21215,18 @@ var STRATEGIES = [
   "Implement a pragmatic solution \u2014 get it working, handle the common case, defer complexity.",
   "Implement an elegant solution \u2014 concise, readable, idiomatic code that's a pleasure to maintain."
 ];
+var STRATEGY_LABELS = [
+  "simplest",
+  "robust",
+  "performant",
+  "modular",
+  "defensive",
+  "functional",
+  "pragmatic",
+  "elegant"
+];
 function strategyPrompts(task, n, context, failureContext) {
+  const ctxStr = resolveCtx(context);
   const prompts = [];
   for (let i = 0; i < n; i++) {
     const strategy = STRATEGIES[i % STRATEGIES.length];
@@ -21203,10 +21234,10 @@ function strategyPrompts(task, n, context, failureContext) {
 
 ## Failures to Avoid
 ${failureContext}` : "";
-    const contextBlock = context ? `
+    const contextBlock = ctxStr ? `
 
 ## Context
-${context}` : "";
+${ctxStr}` : "";
     prompts.push(
       `## Task
 ${task}
@@ -21219,30 +21250,38 @@ Implement the changes needed. Use tools to read files, make edits, and verify yo
   }
   return prompts;
 }
-function repairPrompt(task, failureOutput, attemptNum, context) {
-  const contextBlock = context ? `
+function repairPrompt(task, diagnostics, attemptNum, context) {
+  const ctxStr = resolveCtx(context);
+  const contextBlock = ctxStr ? `
 
 ## Context
-${context}` : "";
+${ctxStr}` : "";
+  const diagBlock = diagnostics.length > 0 ? diagnostics.slice(0, 10).map((d) => {
+    const loc = d.file ? `${d.file}:${d.line}` : "(unknown)";
+    const ctxBlock = d.context ? `
+  \`\`\`
+${d.context}
+  \`\`\`` : "";
+    return `- **${d.severity}** ${loc} \u2014 ${d.message.slice(0, 200)}${ctxBlock}`;
+  }).join("\n") : "  (no structured diagnostics available)";
   return [
     `## Task`,
     task,
     "",
     "## Previous attempt FAILED",
-    "Your previous implementation failed verification. Here is the output:",
+    `This is repair attempt #${attemptNum}. The following issues were detected:`,
     "",
-    "```",
-    failureOutput.slice(0, 3e3),
-    "```",
+    diagBlock,
     "",
     "## Instructions",
-    `This is repair attempt #${attemptNum}. Fix the specific issues shown above.`,
+    "Fix the specific issues shown above. Errors first, then warnings.",
     "Read the relevant files, understand what went wrong, and make targeted fixes.",
     "Do NOT rewrite everything \u2014 fix only what's broken.",
     contextBlock
   ].join("\n");
 }
 function mutationPrompt(goal, currentCode, fitnessScore, elites, context) {
+  const ctxStr = resolveCtx(context);
   const eliteBlock = elites.length > 0 ? [
     "",
     "## Elite mutations (higher score = better)",
@@ -21251,10 +21290,10 @@ function mutationPrompt(goal, currentCode, fitnessScore, elites, context) {
 ${e.code}
 \`\`\``)
   ].join("\n") : "";
-  const contextBlock = context ? `
+  const contextBlock = ctxStr ? `
 
 ## Context
-${context}` : "";
+${ctxStr}` : "";
   return [
     `## Goal`,
     goal,
@@ -21330,25 +21369,21 @@ function getBackendApiKey() {
   if (_cachedBackendKey !== void 0) return _cachedBackendKey;
   try {
     if (!fs.existsSync(BACKENDS_JSON_PATH)) {
-      _cachedBackendKey = null;
       return null;
     }
     const raw = fs.readFileSync(BACKENDS_JSON_PATH, "utf-8");
     const cfg = JSON.parse(raw);
     const defaultName = cfg.default;
     if (!(defaultName && cfg.backends)) {
-      _cachedBackendKey = null;
       return null;
     }
     const backend = cfg.backends[defaultName];
     if (!backend?.apiKey) {
-      _cachedBackendKey = null;
       return null;
     }
     _cachedBackendKey = backend.apiKey;
     return backend.apiKey;
   } catch {
-    _cachedBackendKey = null;
     return null;
   }
 }
@@ -21381,6 +21416,13 @@ async function getProxyCost(proxyUrl) {
   } catch {
     return null;
   }
+}
+async function proxyTokenDelta(costBefore) {
+  if (!costBefore) return -1;
+  const costAfter = await getProxyCost();
+  if (!costAfter) return -1;
+  const d = costAfter.total_tokens - costBefore.total_tokens;
+  return d > 0 ? d : 0;
 }
 async function checkProxyHealth(proxyUrl) {
   const url = `${proxyUrl ?? PROXY_URL}/_proxy/status`;
@@ -21432,6 +21474,9 @@ async function spawnClaude(prompt, opts) {
   const t0 = Date.now();
   const useProxy = opts.useProxy !== false;
   const apiKey = resolveApiKey(opts.apiKey);
+  if (!apiKey) {
+    throw new Error("No API key found. Set DEEPSEEK_API_KEY or configure backends.json");
+  }
   const model = opts.model || "deepseek-v4-pro[1m]";
   const proxyUrl = opts.proxyUrl ?? PROXY_URL;
   const timeoutMs = opts.timeoutMs ?? 3e5;
@@ -21447,8 +21492,8 @@ async function spawnClaude(prompt, opts) {
     ANTHROPIC_AUTH_TOKEN: apiKey,
     ...opts.env
   };
-  const args = ["-p", prompt];
-  return new Promise((resolve2) => {
+  const args = ["-p"];
+  return new Promise((resolve4) => {
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -21470,8 +21515,11 @@ async function spawnClaude(prompt, opts) {
     const child = spawn("claude", args, {
       cwd: opts.cwd,
       env,
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["pipe", "pipe", "pipe"]
     });
+    child.stdin?.setDefaultEncoding("utf-8");
+    child.stdin?.write(prompt);
+    child.stdin?.end();
     const timer = setTimeout(() => {
       if (!settled) {
         settled = true;
@@ -21483,7 +21531,7 @@ async function spawnClaude(prompt, opts) {
           }
         }, 2e3);
         cleanup();
-        resolve2({
+        resolve4({
           output: `${stdout}
 ${stderr}`,
           exitCode: -1,
@@ -21503,7 +21551,7 @@ ${stderr}`,
         settled = true;
         clearTimeout(timer);
         cleanup();
-        resolve2({
+        resolve4({
           output: stdout + (stderr ? `
 ${stderr}` : ""),
           exitCode: code ?? -1,
@@ -21517,7 +21565,7 @@ ${stderr}` : ""),
         settled = true;
         clearTimeout(timer);
         cleanup();
-        resolve2({
+        resolve4({
           output: `Failed to spawn claude: ${err.message}`,
           exitCode: -1,
           durationMs: Date.now() - t0,
@@ -21566,25 +21614,37 @@ function toVerdict(r) {
     duration_ms: r.durationMs
   };
 }
-function hashFailure(output) {
-  const cleaned = output.replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?/g, "<TIME>").replace(/:\d+:\d+/g, ":<LINE>:<COL>").replace(/0x[0-9a-fA-F]+/g, "<HEX>").replace(/\/[^\s]+\/[^\s:]+:\d+/g, "<PATH>:<LINE>").replace(/\d+\.\d+ms/g, "<DURATION>ms").slice(0, 500);
-  let hash = 0;
-  for (let i = 0; i < cleaned.length; i++) {
-    const char = cleaned.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
+function hashFailure(output, cwd) {
+  let normalized = output.replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?/g, "<TIME>").replace(/:\d+:\d+/g, ":<LINE>:<COL>").replace(/0x[0-9a-fA-F]+/g, "<HEX>").replace(/\/[^\s]+\/[^\s:]+(:\d+)?/g, "<PATH>").replace(/\d+\.\d+ms/g, "<DURATION>ms").replace(/[/\\]tmp[/\\][^\s]*/g, "<TEMP>").replace(/[/\\]Temp[/\\][^\s]*/g, "<TEMP>");
+  if (cwd) {
+    const escaped = cwd.replace(/[/\\]/g, "[/\\\\]");
+    normalized = normalized.replace(new RegExp(escaped, "g"), "<CWD>");
   }
-  return Math.abs(hash).toString(16);
+  return createHash("sha256").update(normalized, "utf-8").digest("hex");
+}
+function computeFailureSignals(history, k = 3) {
+  if (history.length < 2) {
+    return { stuck: false, oscillating: false, noProgress: false };
+  }
+  const recent = history.slice(-k);
+  const stuck = recent.length >= k && recent.every((h) => h === recent[0]);
+  let oscillating = false;
+  if (history.length >= 3) {
+    oscillating = history[history.length - 1] === history[history.length - 3] && history[history.length - 1] !== history[history.length - 2];
+  }
+  const recentUnique = new Set(recent);
+  const noProgress = recent.length >= k && recentUnique.size === recent.length;
+  return { stuck, oscillating, noProgress };
 }
 
 // src/evolve.ts
-import { execSync as execSync3 } from "node:child_process";
-import * as fs4 from "node:fs";
-import * as path4 from "node:path";
+import { execSync as execSync4 } from "node:child_process";
+import * as fs5 from "node:fs";
+import * as path5 from "node:path";
 
 // ../gitevo/dist/operations.js
-init_memory();
 import { spawnSync } from "node:child_process";
+init_memory();
 import * as fs3 from "node:fs";
 import * as path3 from "node:path";
 var EvoError = class extends Error {
@@ -21616,10 +21676,10 @@ function gitOrNull(args, cwd) {
     return null;
   }
 }
-function getRepo() {
+function getRepo(cwdOverride) {
   let toplevel;
   try {
-    toplevel = git(["rev-parse", "--show-toplevel"]);
+    toplevel = git(["rev-parse", "--show-toplevel"], cwdOverride);
   } catch {
     throw new EvoError("Not a git repository. Run 'git init' first.");
   }
@@ -21650,11 +21710,18 @@ function filesRemovedByCheckout(targetRef, cwd) {
   const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
   return diff.split("\n").filter(Boolean);
 }
-function untrackedSourceFiles(cwd) {
+function untrackedSourceFiles(cwd, config2) {
+  const cfg = config2 ?? loadConfig(cwd);
+  const escapedExts = cfg.sourceExtensions.map((e) => e.replace(/\./g, "\\."));
+  const extPattern = new RegExp(`(${escapedExts.join("|")})$`);
   const status = git(["status", "--porcelain"], cwd);
-  return status.split("\n").filter((l) => l.startsWith("??")).map((l) => l.slice(3).trim()).filter((f) => /\.(ts|js|mjs|json|md|yml|yaml)$/.test(f));
+  return status.split("\n").filter((l) => l.startsWith("??")).map((l) => l.slice(3).trim()).filter((f) => extPattern.test(f));
 }
-function staleDistFiles(cwd) {
+function staleDistFiles(cwd, config2) {
+  const cfg = config2 ?? loadConfig(cwd);
+  if (cfg.skipStaleCheck)
+    return [];
+  const hasTs = cfg.sourceExtensions.includes(".ts");
   const stale = [];
   function scan(dir) {
     if (!fs3.existsSync(dir))
@@ -21666,6 +21733,8 @@ function staleDistFiles(cwd) {
           continue;
         scan(full);
       } else if (entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+        if (entry.name.endsWith(".test.js") && !hasTs)
+          continue;
         const tsFile = full.replace(/\.js$/, ".ts");
         if (!fs3.existsSync(tsFile)) {
           stale.push(path3.relative(cwd, full));
@@ -21673,20 +21742,30 @@ function staleDistFiles(cwd) {
       }
     }
   }
-  const pkgsDir = path3.join(cwd, "packages");
-  if (fs3.existsSync(pkgsDir)) {
-    for (const pkg of fs3.readdirSync(pkgsDir, { withFileTypes: true })) {
-      if (pkg.isDirectory()) {
-        scan(path3.join(pkgsDir, pkg.name, "dist"));
+  for (const layout of cfg.buildLayouts) {
+    const normalized = layout.replace(/\//g, path3.sep).replace(/[/\\]$/, "");
+    if (normalized.includes("*")) {
+      const starIdx = normalized.indexOf("*");
+      const beforeStar = normalized.slice(0, starIdx);
+      const afterStar = normalized.slice(starIdx + 1);
+      const parentDir = path3.join(cwd, beforeStar);
+      if (fs3.existsSync(parentDir)) {
+        for (const entry of fs3.readdirSync(parentDir, { withFileTypes: true })) {
+          if (entry.isDirectory()) {
+            scan(path3.join(parentDir, entry.name, afterStar));
+          }
+        }
       }
+    } else {
+      scan(path3.join(cwd, normalized));
     }
   }
-  scan(path3.join(cwd, "dist"));
   return stale;
 }
-function preflightCheckoutSafety(targetRef, cwd) {
+function preflightCheckoutSafety(targetRef, cwd, config2) {
+  const cfg = config2 ?? loadConfig(cwd);
   const warnings = [];
-  const untracked = untrackedSourceFiles(cwd);
+  const untracked = untrackedSourceFiles(cwd, cfg);
   if (untracked.length > 0) {
     warnings.push(`Untracked source files (would persist but risk loss if directory removed):
 ${untracked.map((f) => `  \u2022 ${f}`).join("\n")}`);
@@ -21698,7 +21777,7 @@ ${untracked.map((f) => `  \u2022 ${f}`).join("\n")}`);
 ${sourceRemoved.map((f) => `  \u2022 ${f}`).join("\n")}
 Commit or stash these before spawning.`);
   }
-  const stale = staleDistFiles(cwd);
+  const stale = staleDistFiles(cwd, cfg);
   if (stale.length > 0) {
     warnings.push(`Stale dist/*.js without matching .ts source:
 ${stale.map((f) => `  \u2022 ${f}`).join("\n")}
@@ -21731,12 +21810,31 @@ function requireInit(cwd) {
   }
   return paths;
 }
-function evo_checkpoint(name, description) {
-  const { cwd } = getRepo();
+function loadConfig(cwd) {
+  const configPath = path3.join(cwd, ".evo", "config.json");
+  const defaults = {
+    sourceExtensions: [".ts", ".js", ".mjs", ".json", ".md", ".yml", ".yaml"],
+    buildLayouts: ["packages/*/dist/", "dist/"],
+    skipStaleCheck: false
+  };
+  if (!fs3.existsSync(configPath))
+    return defaults;
+  try {
+    const user = JSON.parse(fs3.readFileSync(configPath, "utf-8"));
+    return { ...defaults, ...user };
+  } catch {
+    return defaults;
+  }
+}
+function evo_checkpoint(name, description, cwdOverride) {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
   let stashed = false;
   if (isDirty2(cwd)) {
     git(["stash", "push", "-m", `gitevo: auto-stash before checkpoint '${name}'`], cwd);
+    git(["stash", "apply"], cwd);
+    git(["add", "-A"], cwd);
+    git(["commit", "-m", `gitevo: WIP checkpoint '${name}'`], cwd);
     stashed = true;
   }
   const tagName = `evo-${name}`;
@@ -21747,14 +21845,16 @@ function evo_checkpoint(name, description) {
   git(["tag", "-a", tagName, "-m", description], cwd);
   if (stashed) {
     try {
-      git(["stash", "pop"], cwd);
+      git(["reset", "--soft", "HEAD~1"], cwd);
+      git(["reset", "HEAD", "."], cwd);
+      git(["stash", "drop"], cwd);
     } catch {
-      return `Checkpoint '${name}' created, but auto-stash could not be reapplied \u2014 your changes are in the stash.`;
+      return `Checkpoint '${name}' created, but the WIP commit could not be cleanly undone \u2014 your changes are in the stash. Run 'git stash pop' to recover them.`;
     }
   }
   try {
     const branch = currentBranch(cwd);
-    recordCheckpoint(tagName, branch, description);
+    recordCheckpoint(tagName, branch, description, cwd);
   } catch {
   }
   return `Checkpoint '${name}' created.`;
@@ -21764,22 +21864,11 @@ function evo_learn(content, repoOverride) {
   const { cwd } = repo;
   requireInit(cwd);
   const branch = currentBranch(cwd);
-  const lesson = {
-    content,
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    branch
-  };
-  const paths = evoPaths(cwd);
-  fs3.appendFileSync(paths.lessonsFile, `${JSON.stringify(lesson)}
-`, "utf-8");
-  try {
-    writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } });
-  } catch {
-  }
+  writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } }, cwd);
   return `Lesson recorded on branch '${branch}'.`;
 }
-function evo_spawn(checkpoint_name, new_branch, force) {
-  const { cwd } = getRepo();
+function evo_spawn(checkpoint_name, new_branch, force, cwdOverride) {
+  const { cwd } = getRepo(cwdOverride);
   requireInit(cwd);
   const tagName = `evo-${checkpoint_name}`;
   if (!hasTag(tagName, cwd)) {
@@ -21819,7 +21908,7 @@ Pass force=true to proceed anyway (you accept the risk of data loss).`);
     }
   }
   try {
-    recordBranch(new_branch, "active", `evo-${checkpoint_name}`);
+    recordBranch(new_branch, "active", `evo-${checkpoint_name}`, void 0, cwd);
   } catch {
   }
   const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
@@ -21832,10 +21921,11 @@ ${safetyWarnings}`;
   }
   return spawnMsg;
 }
-function evo_abandon(checkpoint, reason, force) {
-  const { cwd, rootBranch } = getRepo();
+function evo_abandon(checkpoint, reason, force, cwdOverride) {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
   let stashed = false;
+  let stashPopWarning = "";
   if (isDirty2(cwd)) {
     git(["stash", "push", "-m", "gitevo: auto-stash before abandon"], cwd);
     stashed = true;
@@ -21850,15 +21940,22 @@ function evo_abandon(checkpoint, reason, force) {
         try {
           git(["stash", "pop"], cwd);
         } catch {
+          stashPopWarning = " Could not restore auto-stashed changes \u2014 they remain in the stash.";
         }
       }
-      throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
+      throw new EvoError(`Checkpoint '${checkpoint}' not found.${stashPopWarning}`);
     }
     targetRef = tagName;
     targetDesc = `checkpoint '${checkpoint}'`;
   } else {
-    targetRef = "HEAD~1";
-    targetDesc = "parent commit";
+    const spawnPoint = getBranchSpawnPoint(branchName, cwd);
+    if (spawnPoint) {
+      targetRef = spawnPoint;
+      targetDesc = `spawn checkpoint '${spawnPoint}'`;
+    } else {
+      targetRef = "HEAD~1";
+      targetDesc = "parent commit";
+    }
   }
   const safetyWarnings = preflightCheckoutSafety(targetRef, cwd);
   if (safetyWarnings && !force) {
@@ -21866,16 +21963,17 @@ function evo_abandon(checkpoint, reason, force) {
       try {
         git(["stash", "pop"], cwd);
       } catch {
+        stashPopWarning = " Could not restore auto-stashed changes \u2014 they remain in the stash.";
       }
     }
     throw new EvoError(`SAFETY CHECK FAILED \u2014 reset to '${targetRef}' would lose data:
 
 ${safetyWarnings}
 
-Pass force=true to proceed anyway (you accept the risk of data loss).`);
+Pass force=true to proceed anyway (you accept the risk of data loss).${stashPopWarning}`);
   }
   try {
-    recordBranch(branchName, "dead");
+    recordBranch(branchName, "dead", void 0, void 0, cwd);
   } catch {
   }
   git(["reset", "--hard", targetRef], cwd);
@@ -21898,8 +21996,8 @@ ${safetyWarnings}`;
   }
   return abandonMsg;
 }
-function evo_adopt(branch) {
-  const { cwd, rootBranch } = getRepo();
+function evo_adopt(branch, cwdOverride) {
+  const { cwd, rootBranch } = getRepo(cwdOverride);
   requireInit(cwd);
   if (isDirty2(cwd)) {
     throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
@@ -21912,17 +22010,345 @@ function evo_adopt(branch) {
   if (originalBranch !== rootBranch) {
     git(["checkout", rootBranch], cwd);
   }
-  git(["merge", branch, "--no-edit"], cwd);
+  try {
+    git(["merge", branch, "--no-edit"], cwd);
+  } catch (_err) {
+    let conflictFiles = [];
+    try {
+      const output = gitOrNull(["diff", "--name-only", "--diff-filter=U"], cwd);
+      if (output)
+        conflictFiles = output.split("\n").filter(Boolean);
+    } catch {
+    }
+    try {
+      git(["merge", "--abort"], cwd);
+    } catch {
+    }
+    const fileList = conflictFiles.length > 0 ? `: ${conflictFiles.join(", ")}` : "";
+    throw new EvoError(`adopt failed: merge conflicts${fileList}; resolve manually or abandon the branch`);
+  }
   try {
     git(["tag", "-d", "evo-adopted"], cwd);
   } catch {
   }
   git(["tag", "-a", "evo-adopted", "-m", `Adopted branch '${branch}' into ${rootBranch}`], cwd);
   try {
-    recordBranch(branch, "adopted");
+    recordBranch(branch, "adopted", void 0, void 0, cwd);
   } catch {
   }
   return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
+}
+
+// src/budget.ts
+var DEFAULT_STAGE_BUDGETS = {
+  spec: { tokenLimit: 2e4, timeLimitMs: 3e5 },
+  test_author: { tokenLimit: 5e4, timeLimitMs: 6e5 },
+  implement: { tokenLimit: 2e5, timeLimitMs: 18e5 },
+  harden: { tokenLimit: 5e4, timeLimitMs: 6e5 },
+  review: { tokenLimit: 3e4, timeLimitMs: 3e5 },
+  merge: { tokenLimit: 1e4, timeLimitMs: 12e4 },
+  total: { tokenLimit: 5e5, timeLimitMs: 36e5 }
+};
+var TOKEN_COST_PER_1K = 27e-5;
+function createBudgetState(overrides) {
+  const stages = { ...DEFAULT_STAGE_BUDGETS };
+  if (overrides) {
+    for (const [stage, partial2] of Object.entries(overrides)) {
+      if (stages[stage]) {
+        stages[stage] = { ...stages[stage], ...partial2 };
+      }
+    }
+  }
+  const consumption = {};
+  for (const stage of Object.keys(stages)) {
+    consumption[stage] = { tokensUsed: 0, timeUsedMs: 0, attempts: 0, verifiedEdges: 0 };
+  }
+  return {
+    stages,
+    consumption,
+    warnings: [],
+    exhausted: false,
+    costPerVerifiedEdge: null
+  };
+}
+function recordTokens(state, stage, tokens) {
+  const newState = cloneState(state);
+  newState.consumption[stage].tokensUsed += tokens;
+  newState.consumption.total.tokensUsed += tokens;
+  checkWarnings(newState, stage);
+  checkExhaustion(newState);
+  updateCostPerEdge(newState);
+  return newState;
+}
+function recordTime(state, stage, ms) {
+  const newState = cloneState(state);
+  newState.consumption[stage].timeUsedMs += ms;
+  newState.consumption.total.timeUsedMs += ms;
+  checkWarnings(newState, stage);
+  checkExhaustion(newState);
+  return newState;
+}
+function recordAttempt(state, stage, tokens, ms) {
+  let newState = recordTokens(state, stage, tokens);
+  newState = recordTime(newState, stage, ms);
+  newState.consumption[stage].attempts++;
+  newState.consumption.total.attempts++;
+  return newState;
+}
+function fractionConsumed(state, stage) {
+  const budget = state.stages[stage];
+  const consumption = state.consumption[stage];
+  const tokenFraction = budget.tokenLimit > 0 ? consumption.tokensUsed / budget.tokenLimit : 0;
+  const timeFraction = budget.timeLimitMs > 0 ? consumption.timeUsedMs / budget.timeLimitMs : 0;
+  return Math.max(tokenFraction, timeFraction);
+}
+function totalCost(state) {
+  return state.consumption.total.tokensUsed * (TOKEN_COST_PER_1K / 1e3);
+}
+function budgetSummary(state) {
+  const lines = ["## Budget Summary", ""];
+  for (const stage of Object.keys(state.stages)) {
+    if (stage === "total") continue;
+    const frac = fractionConsumed(state, stage);
+    const pct = (frac * 100).toFixed(0);
+    const bar = consumptionBar(frac);
+    const tokens = state.consumption[stage].tokensUsed;
+    const edges = state.consumption[stage].verifiedEdges;
+    lines.push(`| ${stage.padEnd(12)} | ${bar} ${pct}% | ${tokens.toLocaleString()} tokens | ${edges} edges |`);
+  }
+  lines.push(
+    "",
+    `**Total**: ${state.consumption.total.tokensUsed.toLocaleString()} tokens, ${state.consumption.total.verifiedEdges} verified edges`
+  );
+  if (state.costPerVerifiedEdge !== null) {
+    lines.push(`**Cost per edge**: $${state.costPerVerifiedEdge.toFixed(4)}`);
+  }
+  if (state.exhausted) {
+    lines.push("", "\u26A0\uFE0F **BUDGET EXHAUSTED** \u2014 escalate to next rung.");
+  }
+  return lines.join("\n");
+}
+function cloneState(state) {
+  return {
+    stages: { ...state.stages },
+    consumption: JSON.parse(JSON.stringify(state.consumption)),
+    warnings: [...state.warnings],
+    exhausted: state.exhausted,
+    costPerVerifiedEdge: state.costPerVerifiedEdge
+  };
+}
+function checkWarnings(state, stage) {
+  const frac = fractionConsumed(state, stage);
+  const thresholds = [
+    { threshold: "100", value: 1 },
+    { threshold: "95", value: 0.95 },
+    { threshold: "80", value: 0.8 },
+    { threshold: "50", value: 0.5 }
+  ];
+  for (const { threshold, value } of thresholds) {
+    if (frac >= value) {
+      const alreadyWarned = state.warnings.some((w) => w.stage === stage && w.threshold === threshold);
+      if (!alreadyWarned) {
+        const tokenFrac = state.stages[stage].tokenLimit > 0 ? state.consumption[stage].tokensUsed / state.stages[stage].tokenLimit : 0;
+        const timeFrac = state.stages[stage].timeLimitMs > 0 ? state.consumption[stage].timeUsedMs / state.stages[stage].timeLimitMs : 0;
+        let resource;
+        if (tokenFrac >= value && timeFrac >= value) resource = "both";
+        else if (tokenFrac >= value) resource = "tokens";
+        else resource = "time";
+        state.warnings.push({
+          stage,
+          fraction: frac,
+          threshold,
+          resource
+        });
+      }
+      break;
+    }
+  }
+}
+function checkExhaustion(state) {
+  const total = state.consumption.total;
+  state.exhausted = total.tokensUsed >= state.stages.total.tokenLimit || total.timeUsedMs >= state.stages.total.timeLimitMs;
+}
+function updateCostPerEdge(state) {
+  const edges = state.consumption.total.verifiedEdges;
+  if (edges > 0) {
+    state.costPerVerifiedEdge = totalCost(state) / edges;
+  }
+}
+function consumptionBar(fraction) {
+  const clamped = Math.min(fraction, 1);
+  const filled = Math.round(clamped * 10);
+  const empty = 10 - filled;
+  return `[${"\u2588".repeat(filled)}${"\u2591".repeat(empty)}]`;
+}
+
+// src/context.ts
+import { createHash as createHash2 } from "node:crypto";
+import * as fs4 from "node:fs";
+import * as path4 from "node:path";
+var TOKENS_PER_CHAR = 0.25;
+var MAX_ASSEMBLED_CHARS = 16e3;
+var assemblyCache = /* @__PURE__ */ new Map();
+function assembleContext(layers) {
+  const hash = hashLayers(layers);
+  const cached2 = assemblyCache.get(hash);
+  if (cached2) return cached2;
+  const sections = [];
+  const present = [];
+  if (layers.goal) {
+    sections.push(`## Goal
+${layers.goal}`);
+    present.push("goal");
+  }
+  if (layers.strategy) {
+    sections.push(`## Strategy
+${layers.strategy}`);
+    present.push("strategy");
+  }
+  if (layers.targetFiles && layers.targetFiles.length > 0) {
+    const fileText = layers.targetFiles.map((f) => {
+      const lang = f.language ? ` (${f.language})` : "";
+      const truncated = f.content.length > 4e3 ? `${f.content.slice(0, 4e3)}
+... [truncated]` : f.content;
+      return `### ${f.path}${lang}
+\`\`\`
+${truncated}
+\`\`\``;
+    }).join("\n\n");
+    sections.push(`## Target Files
+${fileText}`);
+    present.push("targetFiles");
+  }
+  if (layers.dependencyGraph) {
+    const dg = layers.dependencyGraph;
+    const parts = [];
+    if (dg.imports.length > 0) parts.push(`Imports: ${dg.imports.join(", ")}`);
+    if (dg.callers.length > 0) parts.push(`Callers: ${dg.callers.join(", ")}`);
+    if (dg.callees.length > 0) parts.push(`Callees: ${dg.callees.join(", ")}`);
+    if (parts.length > 0) {
+      sections.push(`## Dependency Graph
+${parts.join("\n")}`);
+      present.push("dependencyGraph");
+    }
+  }
+  if (layers.constraints) {
+    const c = layers.constraints;
+    const parts = [];
+    if (c.lintRules) parts.push(`Lint: ${c.lintRules.slice(0, 500)}`);
+    if (c.conventions) parts.push(`Conventions: ${c.conventions.slice(0, 500)}`);
+    if (c.typeConfig) parts.push(`Type: ${c.typeConfig.slice(0, 200)}`);
+    if (parts.length > 0) {
+      sections.push(`## Constraints
+${parts.join("\n")}`);
+      present.push("constraints");
+    }
+  }
+  if (layers.priorAttempts && layers.priorAttempts.length > 0) {
+    const attemptText = layers.priorAttempts.map(
+      (a, i) => `### Attempt ${i + 1}: ${a.strategy} (${a.outcome})
+${a.summary}${a.failureSignature ? `
+Failure: ${a.failureSignature}` : ""}`
+    ).join("\n\n");
+    sections.push(`## Prior Attempts
+${attemptText}`);
+    present.push("priorAttempts");
+  }
+  if (layers.failureSignatures && layers.failureSignatures.length > 0) {
+    const sigText = layers.failureSignatures.map((s) => `- [${s.hash.slice(0, 8)}] (${s.count}x) ${s.description}`).join("\n");
+    sections.push(`## Failures to Avoid
+${sigText}`);
+    present.push("failureSignatures");
+  }
+  let assembled = sections.join("\n\n");
+  if (assembled.length > MAX_ASSEMBLED_CHARS) {
+    assembled = `${assembled.slice(0, MAX_ASSEMBLED_CHARS)}
+
+... [context truncated to token budget]`;
+  }
+  const result = {
+    assembled,
+    hash,
+    estimatedTokens: Math.ceil(assembled.length * TOKENS_PER_CHAR),
+    layersPresent: present
+  };
+  assemblyCache.set(hash, result);
+  return result;
+}
+function generateFactSheet(cwd) {
+  const parts = [];
+  const claudeMd = readIfExists(path4.join(cwd, "CLAUDE.md"));
+  if (claudeMd) {
+    const lines = claudeMd.split("\n");
+    const relevant = lines.filter((l) => /^[#-]|^\*/.test(l) && !/^#+\s/.test(l)).slice(0, 15).join("\n");
+    parts.push(`## Conventions
+${relevant.slice(0, 800)}`);
+  }
+  const biomeJson = readIfExists(path4.join(cwd, "biome.json"));
+  if (biomeJson) {
+    try {
+      const cfg = JSON.parse(biomeJson);
+      const indent = cfg?.formatter?.indentStyle ?? "space";
+      const width = cfg?.formatter?.lineWidth ?? 120;
+      parts.push(`## Format
+Indent: ${indent} (width: ${width})`);
+    } catch {
+    }
+  }
+  const tsconfigJson = readIfExists(path4.join(cwd, "tsconfig.json"));
+  if (tsconfigJson) {
+    try {
+      const cfg = JSON.parse(tsconfigJson)?.compilerOptions ?? {};
+      const strict = cfg.strict ? "strict" : "non-strict";
+      const target = cfg.target ?? "es2022";
+      parts.push(`## TypeScript
+${strict}, target=${target}`);
+    } catch {
+    }
+  }
+  const packageJson = readIfExists(path4.join(cwd, "package.json"));
+  if (packageJson) {
+    try {
+      const pkg = JSON.parse(packageJson);
+      const deps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).slice(0, 10);
+      parts.push(`## Dependencies
+${deps.join(", ")}`);
+    } catch {
+    }
+  }
+  return parts.join("\n\n");
+}
+function makeTargetFiles(files, language) {
+  return files.map((f) => ({
+    path: f.path,
+    content: f.content,
+    language
+  }));
+}
+function hashLayers(layers) {
+  const canonical = JSON.stringify(
+    {
+      goal: layers.goal,
+      strategy: layers.strategy,
+      targetFiles: layers.targetFiles?.map((f) => ({ p: f.path, c: f.content.slice(0, 200) })),
+      dependencyGraph: layers.dependencyGraph,
+      constraints: layers.constraints,
+      priorAttempts: layers.priorAttempts?.map((a) => ({ s: a.strategy, o: a.outcome, f: a.failureSignature })),
+      failureSignatures: layers.failureSignatures?.map((s) => ({ h: s.hash, d: s.description }))
+    },
+    null,
+    0
+  );
+  return createHash2("sha256").update(canonical).digest("hex").slice(0, 16);
+}
+function readIfExists(filePath) {
+  try {
+    if (fs4.existsSync(filePath)) {
+      return fs4.readFileSync(filePath, "utf-8");
+    }
+  } catch {
+  }
+  return null;
 }
 
 // src/convergence.ts
@@ -22063,6 +22489,434 @@ function checkConvergence(history, scores, opts) {
   };
 }
 
+// src/degenerate.ts
+var TYPE_IGNORE_DENSITY_THRESHOLD = 0.05;
+var MIN_DIFF_LENGTH_FOR_DENSITY = 20;
+function isDegenerateReject(report) {
+  if (!report.clean) return true;
+  if (report.findings.length >= 2) return true;
+  return false;
+}
+function detectDegenerate(diff, files) {
+  const findings = [];
+  if (!diff?.trim()) {
+    return { clean: true, findings: [], summary: "No diff to analyze." };
+  }
+  findings.push(...detectHardcodedTestOutputs(diff));
+  findings.push(...detectDeletedAssertions(diff));
+  findings.push(...detectBroadenedCatches(diff));
+  findings.push(...detectTypeIgnoreDensity(diff));
+  findings.push(...detectDisabledLint(diff));
+  findings.push(...detectCommentedOutCode(diff));
+  findings.push(...detectEmptyTests(diff));
+  findings.push(...detectTodoBombs(diff));
+  if (files) {
+    findings.push(...detectHardcodedInFiles(diff, files));
+  }
+  const blockFindings = findings.filter((f) => f.severity === "block");
+  const clean = blockFindings.length === 0;
+  const summary = clean ? findings.length === 0 ? "No degenerate patterns detected." : `${findings.length} advisory finding(s): ${findings.map((f) => f.type).join(", ")}` : `BLOCKED: ${blockFindings.length} degenerate pattern(s): ${blockFindings.map((f) => f.type).join(", ")}`;
+  return { clean, findings, summary };
+}
+function detectHardcodedTestOutputs(diff) {
+  const findings = [];
+  const addedLines = extractAddedLines(diff);
+  for (const { line, text, file } of addedLines) {
+    const expectRe = /expect\([^)]*\(["']([^"']+)["']\)[^)]*\)\.(?:toBe|toEqual|toBeTruthy|toStrictEqual)\(["']\1["']\)/;
+    const match = expectRe.exec(text);
+    if (match) {
+      findings.push({
+        type: "hardcoded_test_output",
+        severity: "block",
+        message: `Test input "${match[1]}" matches expected output \u2014 possible hardcoded answer.`,
+        file,
+        line
+      });
+    }
+    const eqRe = /assert(?:Equal|Eq|StrictEqual)\([^,]+\((\d+(?:\.\d+)?)\)\s*,\s*\1\)/;
+    const eqMatch = eqRe.exec(text);
+    if (eqMatch) {
+      findings.push({
+        type: "hardcoded_test_output",
+        severity: "block",
+        message: `Test input ${eqMatch[1]} matches expected output \u2014 possible hardcoded answer.`,
+        file,
+        line
+      });
+    }
+  }
+  return findings;
+}
+function detectDeletedAssertions(diff) {
+  const findings = [];
+  const removedLines = extractRemovedLines(diff);
+  let deletedAssertCount = 0;
+  const deletedFiles = /* @__PURE__ */ new Set();
+  for (const { text, file } of removedLines) {
+    if (/\b(assert|expect|Assert|assertEq|assertEquals|assertThat|should|must|assert_)\b/.test(text)) {
+      deletedAssertCount++;
+      if (isTestFile(file)) {
+        deletedFiles.add(file);
+      }
+    }
+  }
+  if (deletedAssertCount >= 3) {
+    findings.push({
+      type: "deleted_assertion",
+      severity: "block",
+      message: `${deletedAssertCount} assertion lines deleted across ${deletedFiles.size} test files.`,
+      file: [...deletedFiles].join(", "),
+      line: 0
+    });
+  } else if (deletedAssertCount > 0) {
+    findings.push({
+      type: "deleted_assertion",
+      severity: "warn",
+      message: `${deletedAssertCount} assertion lines deleted \u2014 verify they were redundant.`,
+      file: [...deletedFiles].join(", "),
+      line: 0
+    });
+  }
+  return findings;
+}
+function detectBroadenedCatches(diff) {
+  const removed = extractRemovedLines(diff);
+  const added = extractAddedLines(diff);
+  let removedSpecific = 0;
+  let addedBroad = 0;
+  for (const { text } of removed) {
+    if (/\b(?:catch|except)\s*\(?\s*\w+(?:Error|Exception)\b/.test(text)) {
+      removedSpecific++;
+    }
+  }
+  for (const { text } of added) {
+    if (/\b(?:catch|except)\s*\(?\s*(?:Exception|BaseException|Throwable|Error|\.\.\.|e)\s*\)?\s*[:{]\s*$/.test(text)) {
+      addedBroad++;
+    }
+  }
+  if (addedBroad > 0 && removedSpecific > 0) {
+    return [
+      {
+        type: "broadened_catch",
+        severity: "block",
+        message: `${removedSpecific} specific catch(es) replaced with ${addedBroad} broad catch(es) \u2014 swallowing errors.`,
+        file: "",
+        line: 0
+      }
+    ];
+  }
+  if (addedBroad > 2) {
+    return [
+      {
+        type: "broadened_catch",
+        severity: "warn",
+        message: `${addedBroad} broad exception catches added \u2014 ensure they don't mask bugs.`,
+        file: "",
+        line: 0
+      }
+    ];
+  }
+  return [];
+}
+function detectTypeIgnoreDensity(diff) {
+  const findings = [];
+  const addedLines = extractAddedLines(diff);
+  if (addedLines.length < MIN_DIFF_LENGTH_FOR_DENSITY) return findings;
+  let suppressCount = 0;
+  for (const { text } of addedLines) {
+    if (/(?:@ts-ignore|@ts-expect-error|#\s*type:\s*ignore|#\s*noqa|#\s*pylint:\s*disable|#\[allow\()/.test(text)) {
+      suppressCount++;
+    }
+  }
+  const density = suppressCount / addedLines.length;
+  if (density > TYPE_IGNORE_DENSITY_THRESHOLD) {
+    findings.push({
+      type: "type_ignore_density",
+      severity: "block",
+      message: `${suppressCount}/${addedLines.length} added lines suppress type checking (${(density * 100).toFixed(1)}% > ${(TYPE_IGNORE_DENSITY_THRESHOLD * 100).toFixed(0)}% threshold).`,
+      file: "",
+      line: 0
+    });
+  } else if (suppressCount > 0) {
+    findings.push({
+      type: "type_ignore_density",
+      severity: "warn",
+      message: `${suppressCount} type/lint suppressions added \u2014 verify each is justified.`,
+      file: "",
+      line: 0
+    });
+  }
+  return findings;
+}
+function detectDisabledLint(diff) {
+  const findings = [];
+  const addedLines = extractAddedLines(diff);
+  for (const { text, file, line } of addedLines) {
+    if (/\b(?:eslint-disable(?:-next-line)?|biome-ignore|ruff:\s*noqa|pylint:\s*disable=|noinspection|#\[allow\()/.test(
+      text
+    )) {
+      findings.push({
+        type: "disabled_lint",
+        severity: "block",
+        message: `Lint rule disabled: ${text.trim().slice(0, 120)}`,
+        file,
+        line
+      });
+    }
+  }
+  return findings;
+}
+function detectCommentedOutCode(diff) {
+  const findings = [];
+  const addedLines = extractAddedLines(diff);
+  if (addedLines.length < MIN_DIFF_LENGTH_FOR_DENSITY) return findings;
+  let runStart = -1;
+  let runCount = 0;
+  const commentRe = /^\s*(?:\/\/|#|--|;)\s*\w/;
+  for (let i = 0; i < addedLines.length; i++) {
+    if (commentRe.test(addedLines[i].text)) {
+      if (runStart === -1) runStart = i;
+      runCount++;
+    } else {
+      if (runCount >= 3) {
+        findings.push({
+          type: "commented_out_code",
+          severity: "warn",
+          message: `${runCount} consecutive commented-out lines at line ${addedLines[runStart].line} \u2014 dead code.`,
+          file: addedLines[runStart].file,
+          line: addedLines[runStart].line
+        });
+      }
+      runStart = -1;
+      runCount = 0;
+    }
+  }
+  if (runCount >= 3) {
+    findings.push({
+      type: "commented_out_code",
+      severity: "warn",
+      message: `${runCount} consecutive commented-out lines at line ${addedLines[runStart].line} \u2014 dead code.`,
+      file: addedLines[runStart].file,
+      line: addedLines[runStart].line
+    });
+  }
+  return findings;
+}
+function detectEmptyTests(diff) {
+  const findings = [];
+  const addedLines = extractAddedLines(diff);
+  const testFnRe = /\b(?:test|it|describe)\s*\(\s*["'][^"']+["']\s*,\s*(?:async\s*)?(?:\(\s*\)|function\s*\(\s*\))\s*=>(?:\s*{\s*})/;
+  for (const { text, file, line } of addedLines) {
+    if (testFnRe.test(text)) {
+      findings.push({
+        type: "empty_test",
+        severity: "block",
+        message: `Empty test function \u2014 no assertions.`,
+        file,
+        line
+      });
+    }
+  }
+  return findings;
+}
+function detectTodoBombs(diff) {
+  const findings = [];
+  const addedLines = extractAddedLines(diff);
+  const todoRe = /\b(?:TODO|FIXME|HACK|XXX|WORKAROUND)\b/i;
+  let todoCount = 0;
+  const todoFiles = /* @__PURE__ */ new Set();
+  for (const { text, file } of addedLines) {
+    if (todoRe.test(text) && !isTestFile(file)) {
+      todoCount++;
+      todoFiles.add(file);
+    }
+  }
+  if (todoCount >= 3) {
+    findings.push({
+      type: "todo_bomb",
+      severity: "warn",
+      message: `${todoCount} TODO/FIXME/HACK markers in ${todoFiles.size} source file(s) \u2014 deferred work.`,
+      file: [...todoFiles].join(", "),
+      line: 0
+    });
+  }
+  return findings;
+}
+function detectHardcodedInFiles(_diff, _files) {
+  return [];
+}
+function extractAddedLines(diff) {
+  const lines = [];
+  let currentFile = "";
+  let lineNum = 0;
+  for (const raw of diff.split("\n")) {
+    const fileMatch = /^\+\+\+\s+b\/(.+)$/.exec(raw);
+    if (fileMatch) {
+      currentFile = fileMatch[1];
+      lineNum = 0;
+      continue;
+    }
+    const hunkMatch = /^@@\s+-\d+(?:,\d+)?\s+\+(\d+)(?:,(\d+))?\s+@@/.exec(raw);
+    if (hunkMatch) {
+      lineNum = Number.parseInt(hunkMatch[1], 10);
+      continue;
+    }
+    if (raw.startsWith("+") && !raw.startsWith("+++")) {
+      lines.push({ text: raw.slice(1), line: lineNum, file: currentFile });
+      lineNum++;
+    } else if (!(raw.startsWith("-") || raw.startsWith("@@"))) {
+      lineNum++;
+    }
+  }
+  return lines;
+}
+function extractRemovedLines(diff) {
+  const lines = [];
+  let currentFile = "";
+  let lineNum = 0;
+  for (const raw of diff.split("\n")) {
+    const fileMatch = /^\+\+\+\s+b\/(.+)$/.exec(raw);
+    if (fileMatch) {
+      currentFile = fileMatch[1];
+      lineNum = 0;
+      continue;
+    }
+    const hunkMatch = /^@@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@/.exec(raw);
+    if (hunkMatch) {
+      lineNum = Number.parseInt(hunkMatch[1], 10);
+      continue;
+    }
+    if (raw.startsWith("-") && !raw.startsWith("---")) {
+      lines.push({ text: raw.slice(1), line: lineNum, file: currentFile });
+      lineNum++;
+    } else if (!(raw.startsWith("+") || raw.startsWith("@@"))) {
+      lineNum++;
+    }
+  }
+  return lines;
+}
+var TEST_FILE_PATTERNS = [
+  /\.test\./,
+  /\.spec\./,
+  /\.test\.tsx?$/,
+  /\.spec\.tsx?$/,
+  /\.test\.jsx?$/,
+  /\.spec\.jsx?$/,
+  /\.test\.py$/,
+  /\.spec\.py$/,
+  /\.test\.rs$/,
+  /\.test\.go$/,
+  /_test\./,
+  /\/tests?\//,
+  /\/__tests__\//,
+  /\/spec\//,
+  /\/test\//,
+  /Test\./
+];
+function isTestFile(file) {
+  if (!file) return false;
+  return TEST_FILE_PATTERNS.some((p) => p.test(file));
+}
+
+// src/escalation.ts
+var DEFAULT_RUNGS = [
+  { level: "retry", maxAttempts: 3, description: "Same strategy, fresh attempt." },
+  { level: "resample", maxAttempts: 5, description: "Different strategy, new plan." },
+  { level: "re-decompose", maxAttempts: 2, description: "Split task into smaller subtasks." },
+  { level: "stronger-model", maxAttempts: 1, description: "Switch from DeepSeek to Sonnet/Opus." },
+  { level: "human", maxAttempts: 1, description: "Structured escalation report for human review." }
+];
+var RUNG_INDEX = {
+  retry: 0,
+  resample: 1,
+  "re-decompose": 2,
+  "stronger-model": 3,
+  human: 4
+};
+function createEscalationState() {
+  return {
+    currentRung: "retry",
+    attemptsAtRung: 0,
+    totalAttempts: 0,
+    history: []
+  };
+}
+function evaluateEscalation(state, signals, rungs) {
+  const configs = rungs ?? DEFAULT_RUNGS;
+  const currentConfig = configs.find((r) => r.level === state.currentRung) ?? configs[0];
+  if (state.currentRung === "human") {
+    if (signals.stuck || signals.budgetExhausted) {
+      const newState = recordHistory(state, "aborted", "Human rung exhausted.");
+      return {
+        action: "abort",
+        reason: "Human rung exhausted \u2014 task cannot be solved automatically.",
+        state: newState
+      };
+    }
+    return { action: "continue", reason: "Human rung: waiting for resolution.", state };
+  }
+  const shouldEscalate = signals.stuck || signals.oscillating || signals.noProgress || signals.budgetExhausted || signals.timeExhausted || state.attemptsAtRung >= currentConfig.maxAttempts;
+  if (shouldEscalate) {
+    const nextRung = nextRungLevel(state.currentRung, configs);
+    if (!nextRung) {
+      const newState2 = recordHistory(state, "aborted", "No higher rung available.");
+      return { action: "abort", reason: "No higher rung available.", state: newState2 };
+    }
+    const reason = buildEscalationReason(state.currentRung, nextRung, signals, currentConfig);
+    const newState = recordHistory(state, "escalated", reason);
+    newState.currentRung = nextRung;
+    newState.attemptsAtRung = 0;
+    return { action: "escalate", nextRung, reason, state: newState };
+  }
+  return { action: "continue", reason: "Continuing at current rung.", state };
+}
+function recordSuccess(state) {
+  return {
+    ...state,
+    attemptsAtRung: state.attemptsAtRung + 1,
+    totalAttempts: state.totalAttempts + 1
+  };
+}
+function recordFailure(state) {
+  return {
+    ...state,
+    attemptsAtRung: state.attemptsAtRung + 1,
+    totalAttempts: state.totalAttempts + 1
+  };
+}
+function nextRungLevel(current, configs) {
+  const idx = RUNG_INDEX[current];
+  if (idx === void 0) return null;
+  const next = configs[idx + 1];
+  return next?.level ?? null;
+}
+function buildEscalationReason(from, to, signals, config2) {
+  const triggers = [];
+  if (signals.stuck) triggers.push("stuck (same failure 2+ consecutive)");
+  if (signals.oscillating) triggers.push("oscillating");
+  if (signals.noProgress) triggers.push("no progress (edit distance collapsed)");
+  if (signals.budgetExhausted) triggers.push("budget exhausted");
+  if (signals.timeExhausted) triggers.push("time exhausted");
+  if (triggers.length === 0) {
+    triggers.push(`max attempts reached (${config2.maxAttempts})`);
+  }
+  return `Escalated from ${from} to ${to}: ${triggers.join(", ")}.`;
+}
+function recordHistory(state, outcome, reason) {
+  return {
+    ...state,
+    history: [
+      ...state.history,
+      {
+        rung: state.currentRung,
+        attempts: state.attemptsAtRung,
+        outcome,
+        reason
+      }
+    ]
+  };
+}
+
 // src/gates.ts
 import { execSync as execSync2 } from "node:child_process";
 var GateRunner = class {
@@ -22129,6 +22983,38 @@ ${stderr}`.trim();
   }
 };
 
+// src/git-helpers.ts
+import { execSync as execSync3 } from "node:child_process";
+function commitOrNoop(cwd, message) {
+  try {
+    execSync3("git add -A", { cwd, timeout: 3e4 });
+    execSync3(`git commit -m "${message}"`, { cwd, timeout: 3e4 });
+    return { committed: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("nothing to commit") || msg.includes("nothing added")) {
+      return { committed: false };
+    }
+    throw err;
+  }
+}
+function getRootBranch(cwd) {
+  try {
+    const output = execSync3("git branch --format '%(refname:short)'", {
+      cwd,
+      timeout: 1e4,
+      encoding: "utf-8"
+    });
+    const branches = output.trim().split("\n").map((b) => b.trim());
+    const candidates = ["master", "main", "trunk", "develop"];
+    for (const candidate of candidates) {
+      if (branches.includes(candidate)) return candidate;
+    }
+  } catch {
+  }
+  return "master";
+}
+
 // src/gitevo-integration.ts
 async function wrapGitevo(fn, args, label) {
   try {
@@ -22141,23 +23027,41 @@ async function wrapGitevo(fn, args, label) {
     throw new Error(`gitevo ${label}: ${message}`);
   }
 }
-async function checkpointGeneration(gen, description, _cwd) {
-  await wrapGitevo(evo_checkpoint, [`evolve-gen${gen}`, description], `checkpoint gen ${gen}`);
+async function checkpointGeneration(gen, description, cwd) {
+  await wrapGitevo(evo_checkpoint, [`evolve-gen${gen}`, description, cwd], `checkpoint gen ${gen}`);
 }
-async function spawnCandidate(checkpointName, branchName, _cwd) {
-  await wrapGitevo(evo_spawn, [checkpointName, branchName, false], `spawn '${branchName}' from '${checkpointName}'`);
+async function spawnCandidate(checkpointName, branchName, cwd) {
+  await wrapGitevo(
+    evo_spawn,
+    [checkpointName, branchName, false, cwd],
+    `spawn '${branchName}' from '${checkpointName}'`
+  );
 }
-async function adoptWinner(branchName, _cwd) {
-  await wrapGitevo(evo_adopt, [branchName], `adopt '${branchName}'`);
+async function adoptWinner(branchName, cwd) {
+  await wrapGitevo(evo_adopt, [branchName, cwd], `adopt '${branchName}'`);
 }
-async function abandonLoser(_branchName, reason, _cwd) {
-  await wrapGitevo(evo_abandon, [void 0, reason, false], `abandon (reason: ${reason.slice(0, 60)})`);
+async function abandonLoser(_branchName, reason, cwd) {
+  await wrapGitevo(evo_abandon, [void 0, reason, false, cwd], `abandon (reason: ${reason.slice(0, 60)})`);
 }
 
 // src/evolve.ts
 var DEFAULT_GENERATIONS = 5;
 var DEFAULT_POPULATION = 6;
 var DEFAULT_TIMEOUT_MS = 18e4;
+async function mapConcurrent(items, limit, fn) {
+  const results = new Array(items.length);
+  const queue = items.map((_, i) => i);
+  const worker = async () => {
+    while (queue.length > 0) {
+      const idx = queue.shift();
+      if (idx === void 0) return;
+      results[idx] = await fn(items[idx], idx);
+    }
+  };
+  const count = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: count }, () => worker()));
+  return results;
+}
 async function runGates(spec, cwd, onProgress) {
   if (!(spec.build_cmd || spec.test_cmd || spec.lint_cmd)) {
     return { passed: true, results: [] };
@@ -22193,10 +23097,17 @@ async function evolve(spec, onProgress) {
   const generations = spec.generations ?? DEFAULT_GENERATIONS;
   const populationSize = spec.population_size ?? DEFAULT_POPULATION;
   const higherIsBetter = spec.higher_is_better ?? false;
+  let budget = createBudgetState({
+    implement: { tokenLimit: spec.budget_tokens ?? 2e5 },
+    total: { tokenLimit: spec.budget_tokens ?? 2e5 }
+  });
+  const emittedBudgetWarnings = /* @__PURE__ */ new Set();
+  createEscalationState();
   const proxyReady = await ensureProxy();
   if (!proxyReady) {
     onProgress?.("WARNING: deepclaude proxy not running. Attempting direct mode...");
   }
+  let totalCandidateTokens = -1;
   onProgress?.("Measuring baseline fitness...");
   const baselineResult = runCommand(spec.fitness_cmd, spec.cwd);
   const baselineScore = extractScore(baselineResult.output);
@@ -22214,29 +23125,51 @@ Output: ${baselineResult.output.slice(0, 500)}`
       onProgress?.("WARNING: baseline code fails gates -- check config or fix baseline first");
     }
   }
-  const costBefore = proxyReady ? await getProxyCost() : null;
   const targetContents = readTargetFiles(spec.cwd, spec.target_files);
   if (targetContents.length === 0) {
     throw new Error(`No target files found matching: ${spec.target_files.join(", ")}`);
   }
+  const factSheet = generateFactSheet(spec.cwd);
+  const goalWithCtx = spec.context ? `${spec.goal}
+
+Additional context: ${spec.context}` : spec.goal;
+  const evolveLayers = {
+    goal: goalWithCtx,
+    targetFiles: makeTargetFiles(targetContents),
+    constraints: factSheet ? { lintRules: "", conventions: factSheet, typeConfig: "" } : void 0
+  };
+  const evolveCtx = assembleContext(evolveLayers);
   let bestScore = baselineScore;
   let bestBranch = null;
   const fitnessHistory = [];
   const elites = [];
   const earlyExit = {};
   try {
-    evo_checkpoint("evolve-baseline", "baseline before evolution");
+    evo_checkpoint("evolve-baseline", "baseline before evolution", spec.cwd);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     onProgress?.(`Baseline checkpoint note: ${msg}`);
   }
-  let rootBranch;
-  try {
-    rootBranch = execSync3("git rev-parse --abbrev-ref HEAD", { cwd: spec.cwd, timeout: 5e3 }).toString().trim();
-  } catch {
-    rootBranch = "master";
-  }
+  const rootBranch = getRootBranch(spec.cwd);
   for (let gen = 0; gen < generations; gen++) {
+    if (budget.exhausted) {
+      onProgress?.(`Budget exhausted \u2014 stopping after ${gen} generations`);
+      for (const w of budget.warnings) {
+        const wkey = `${w.stage}:${w.threshold}`;
+        if (!emittedBudgetWarnings.has(wkey)) {
+          emittedBudgetWarnings.add(wkey);
+          onProgress?.(`  Budget: ${w.stage} at ${w.threshold}% (${w.resource})`);
+        }
+      }
+      break;
+    }
+    for (const w of budget.warnings) {
+      const wkey = `${w.stage}:${w.threshold}`;
+      if (!emittedBudgetWarnings.has(wkey)) {
+        emittedBudgetWarnings.add(wkey);
+        onProgress?.(`  Budget: ${w.stage} at ${w.threshold}% (${w.resource})`);
+      }
+    }
     onProgress?.(`
 Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
     await checkpointGeneration(gen, `Generation ${gen + 1} checkpoint`, spec.cwd);
@@ -22249,12 +23182,11 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
         bestScore,
         elites.slice(0, 3),
         // Top 3 elites as examples
-        spec.context
+        evolveCtx
       );
       prompts.push(prompt);
     }
-    onProgress?.(`  Evaluating ${populationSize} candidates (sequential)...`);
-    const genScores = [];
+    const evoSlots = [];
     for (let i = 0; i < populationSize; i++) {
       const branchName = `evolve-gen${gen}-candidate${i}`;
       try {
@@ -22263,16 +23195,49 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
         onProgress?.(`  [${i + 1}] spawn failed: ${String(err).slice(0, 80)}`);
         continue;
       }
-      const result = await spawnClaude(prompts[i], {
+      evoSlots.push({
+        index: i,
+        branchName,
+        prompt: prompts[i],
+        costBefore: proxyReady ? await getProxyCost() : null,
+        result: null
+      });
+    }
+    const concurrency = Math.min(evoSlots.length, 4);
+    onProgress?.(`  Running ${evoSlots.length} mutation calls with concurrency ${concurrency}...`);
+    await mapConcurrent(evoSlots, concurrency, async (slot) => {
+      try {
+        execSync4(`git checkout ${slot.branchName}`, { cwd: spec.cwd, timeout: 1e4, stdio: "ignore" });
+      } catch {
+        slot.result = null;
+        return;
+      }
+      const r = await spawnClaude(slot.prompt, {
         cwd: spec.cwd,
         model: spec.model,
         apiKey: spec.api_key,
         useProxy: proxyReady,
         timeoutMs: DEFAULT_TIMEOUT_MS
       }).catch((err) => {
-        onProgress?.(`  [${i + 1}] claude failed: ${String(err)}`);
+        onProgress?.(`  [${slot.index + 1}] claude failed: ${String(err)}`);
         return { output: "", exitCode: -1, durationMs: 0, timedOut: false };
       });
+      slot.result = r;
+    });
+    onProgress?.(`  Processing ${evoSlots.length} candidates serially...`);
+    const genScores = [];
+    for (const slot of evoSlots) {
+      const { index: i, branchName, costBefore: costBeforeCandidate, result } = slot;
+      if (!result) {
+        continue;
+      }
+      const processCost = async () => {
+        const _d = await proxyTokenDelta(costBeforeCandidate);
+        if (_d > 0) {
+          totalCandidateTokens = totalCandidateTokens < 0 ? _d : totalCandidateTokens + _d;
+          budget = recordAttempt(budget, "implement", _d, Date.now() - startTime);
+        }
+      };
       stats.candidates_generated++;
       if (result.timedOut || result.exitCode !== 0) {
         onProgress?.(`  [${i + 1}] claude -p failed (exit=${result.exitCode}${result.timedOut ? ", timed out" : ""})`);
@@ -22280,17 +23245,23 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
           await abandonLoser(branchName, `claude -p failed (exit=${result.exitCode})`, spec.cwd);
         } catch {
         }
+        await processCost();
         continue;
       }
       try {
-        execSync3("git add -A", { cwd: spec.cwd, timeout: 1e4 });
-        execSync3(`git commit -m "evolve gen${gen} candidate${i}"`, { cwd: spec.cwd, timeout: 1e4 });
+        execSync4(`git checkout ${branchName}`, { cwd: spec.cwd, timeout: 1e4, stdio: "ignore" });
       } catch {
+        await processCost();
+        continue;
+      }
+      const commitResult = commitOrNoop(spec.cwd, `evolve gen${gen} candidate${i}`);
+      if (!commitResult.committed) {
         onProgress?.(`  [${i + 1}] no changes produced by claude -p`);
         try {
           await abandonLoser(branchName, "no changes produced", spec.cwd);
         } catch {
         }
+        await processCost();
         continue;
       }
       try {
@@ -22298,45 +23269,55 @@ Generation ${gen + 1}/${generations} (best so far: ${bestScore.toFixed(2)})`);
         const score = extractScore(fitnessResult.output);
         if (score === null) {
           onProgress?.(`  [${i + 1}] no numeric score in fitness output`);
-          try {
-            await abandonLoser(branchName, "no numeric score", spec.cwd);
-          } catch {
+        } else {
+          if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
+            const { passed } = await runGates(spec, spec.cwd, onProgress);
+            if (!passed) {
+              onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}, GATES FAILED -- skipping`);
+              try {
+                await abandonLoser(branchName, "gates failed", spec.cwd);
+              } catch {
+              }
+              await processCost();
+              continue;
+            }
           }
-          continue;
-        }
-        if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
-          const { passed, results: gateResults } = await runGates(spec, spec.cwd, onProgress);
-          if (!passed) {
-            onProgress?.(
-              `  [${i + 1}] score=${score.toFixed(2)}, GATES FAILED (${gateResults.filter((r) => !r.passed).map((r) => r.gate).join(", ")}) -- skipping`
-            );
+          genScores.push(score);
+          onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
+          const branchDiff = execSync4(`git diff ${rootBranch}...${branchName}`, {
+            cwd: spec.cwd,
+            encoding: "utf-8",
+            timeout: 1e4
+          }).toString() || "";
+          const degenerateReport = detectDegenerate(branchDiff);
+          if (isDegenerateReject(degenerateReport)) {
+            onProgress?.(`    -> DEGENERATE: ${degenerateReport.summary}`);
             try {
-              await abandonLoser(branchName, "gates failed", spec.cwd);
+              await abandonLoser(branchName, `degenerate: ${degenerateReport.summary}`, spec.cwd);
             } catch {
             }
+            await processCost();
             continue;
           }
-        }
-        genScores.push(score);
-        onProgress?.(`  [${i + 1}] score=${score.toFixed(2)}`);
-        const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
-        if (isBetter) {
-          bestScore = score;
-          bestBranch = branchName;
-          onProgress?.(`    -> NEW BEST: ${score.toFixed(2)}`);
-          const eliteCode = readTargetFiles(spec.cwd, spec.target_files).map((t) => `=== ${t.path} ===
+          const isBetter = higherIsBetter ? score > bestScore : score < bestScore;
+          if (isBetter) {
+            bestScore = score;
+            bestBranch = branchName;
+            onProgress?.(`    -> NEW BEST: ${score.toFixed(2)}`);
+            const eliteCode = readTargetFiles(spec.cwd, spec.target_files).map((t) => `=== ${t.path} ===
 ${t.content}`).join("\n\n");
-          elites.push({ code: eliteCode.slice(0, 2e3), score });
-          elites.sort((a, b) => higherIsBetter ? b.score - a.score : a.score - b.score);
-          if (elites.length > 5) elites.length = 5;
-        } else {
-          try {
-            await abandonLoser(
-              branchName,
-              `score ${score.toFixed(2)} not better than best ${bestScore.toFixed(2)}`,
-              spec.cwd
-            );
-          } catch {
+            elites.push({ code: eliteCode.slice(0, 2e3), score });
+            elites.sort((a, b) => higherIsBetter ? b.score - a.score : a.score - b.score);
+            if (elites.length > 5) elites.length = 5;
+          } else {
+            try {
+              await abandonLoser(
+                branchName,
+                `score ${score.toFixed(2)} not better than best ${bestScore.toFixed(2)}`,
+                spec.cwd
+              );
+            } catch {
+            }
           }
         }
       } catch (err) {
@@ -22346,16 +23327,17 @@ ${t.content}`).join("\n\n");
         } catch {
         }
       }
+      await processCost();
     }
     if (bestBranch) {
       try {
-        execSync3(`git checkout ${bestBranch}`, { cwd: spec.cwd, timeout: 1e4 });
+        execSync4(`git checkout ${bestBranch}`, { cwd: spec.cwd, timeout: 1e4 });
       } catch (err) {
         onProgress?.(`  Warning: could not checkout best branch: ${String(err).slice(0, 60)}`);
       }
     } else {
       try {
-        execSync3(`git checkout ${rootBranch}`, { cwd: spec.cwd, timeout: 1e4 });
+        execSync4(`git checkout ${rootBranch}`, { cwd: spec.cwd, timeout: 1e4 });
       } catch {
       }
     }
@@ -22410,7 +23392,7 @@ Adopting winner: ${bestBranch}...`);
     } catch (err) {
       onProgress?.(`  Adoption failed: ${String(err).slice(0, 100)}`);
       try {
-        execSync3(`git checkout ${bestBranch} -- .`, { cwd: spec.cwd, timeout: 1e4 });
+        execSync4(`git checkout ${bestBranch} -- .`, { cwd: spec.cwd, timeout: 1e4 });
       } catch {
       }
     }
@@ -22429,11 +23411,10 @@ Adopting winner: ${bestBranch}...`);
   }
   const finalResult = runCommand(spec.fitness_cmd, spec.cwd);
   const finalScore = extractScore(finalResult.output) ?? bestScore;
+  stats.plans_sampled = populationSize * generations;
+  stats.plans_deduped = populationSize * generations;
   stats.duration_ms = Date.now() - startTime;
-  if (costBefore) {
-    const costAfter = await getProxyCost();
-    if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
-  }
+  stats.tokens_consumed = totalCandidateTokens;
   return {
     ...earlyExit,
     best_patch: bestBranch || "(no improvement over baseline)",
@@ -22449,6 +23430,8 @@ Adopting winner: ${bestBranch}...`);
       "",
       finalResult.output.slice(0, 2e3),
       "",
+      budgetSummary(budget),
+      "",
       finalGateReport
     ].join("\n"),
     stats
@@ -22457,23 +23440,23 @@ Adopting winner: ${bestBranch}...`);
 function readTargetFiles(cwd, patterns) {
   const files = [];
   for (const pattern of patterns) {
-    const fullPath = path4.resolve(cwd, pattern);
-    if (fs4.existsSync(fullPath) && fs4.statSync(fullPath).isFile()) {
-      files.push({ path: pattern, content: fs4.readFileSync(fullPath, "utf-8") });
+    const fullPath = path5.resolve(cwd, pattern);
+    if (fs5.existsSync(fullPath) && fs5.statSync(fullPath).isFile()) {
+      files.push({ path: pattern, content: fs5.readFileSync(fullPath, "utf-8") });
       continue;
     }
     try {
-      const dir = path4.dirname(fullPath);
-      const basename2 = path4.basename(fullPath);
-      if (fs4.existsSync(dir)) {
-        const entries = fs4.readdirSync(dir);
+      const dir = path5.dirname(fullPath);
+      const basename3 = path5.basename(fullPath);
+      if (fs5.existsSync(dir)) {
+        const entries = fs5.readdirSync(dir);
         for (const entry of entries) {
-          if (matchSimple(entry, basename2)) {
-            const filePath = path4.join(dir, entry);
-            if (fs4.statSync(filePath).isFile()) {
+          if (matchSimple(entry, basename3)) {
+            const filePath = path5.join(dir, entry);
+            if (fs5.statSync(filePath).isFile()) {
               files.push({
-                path: path4.relative(cwd, filePath),
-                content: fs4.readFileSync(filePath, "utf-8")
+                path: path5.relative(cwd, filePath),
+                content: fs5.readFileSync(filePath, "utf-8")
               });
             }
           }
@@ -22493,8 +23476,468 @@ function matchSimple(name, pattern) {
   return regex.test(name);
 }
 
+// src/orchestrator.ts
+var PLAYBOOK_STAGES = ["spec", "test_author", "implement", "harden", "review", "merge"];
+var STAGE_LABELS = {
+  spec: "Specification",
+  test_author: "Test Authoring",
+  implement: "Implementation",
+  harden: "Test Hardening",
+  review: "Review",
+  merge: "Merge"
+};
+function createOrchestrator() {
+  return {
+    currentStage: null,
+    completed: false,
+    aborted: false,
+    budget: createBudgetState(),
+    escalation: createEscalationState(),
+    stageOutputs: {},
+    flags: /* @__PURE__ */ new Set()
+  };
+}
+function advanceStage(state) {
+  const currentIdx = state.currentStage ? PLAYBOOK_STAGES.indexOf(state.currentStage) : -1;
+  const nextIdx = currentIdx + 1;
+  if (nextIdx >= PLAYBOOK_STAGES.length) {
+    state.completed = true;
+    return {
+      stage: null,
+      gate: {
+        stage: "merge",
+        canEnter: true,
+        canExit: true
+      }
+    };
+  }
+  const nextStage = PLAYBOOK_STAGES[nextIdx];
+  const gate = checkStageGate(state, nextStage);
+  if (gate.canEnter) {
+    state.currentStage = nextStage;
+  }
+  return { stage: gate.canEnter ? nextStage : null, gate };
+}
+function checkStageGate(state, stage) {
+  const result = {
+    stage,
+    canEnter: true,
+    canExit: false
+  };
+  switch (stage) {
+    case "spec":
+      break;
+    case "test_author":
+      if (!state.flags.has("spec_locked")) {
+        result.canEnter = false;
+        result.enterBlockReason = "Spec not locked. Human must sign off on Criteria/Contracts first.";
+      }
+      break;
+    case "implement":
+      if (!(state.flags.has("tests_locked") && state.flags.has("tests_red"))) {
+        result.canEnter = false;
+        result.enterBlockReason = "Tests not locked or not confirmed red. Tests must exist and fail before implementation.";
+      }
+      break;
+    case "harden":
+      if (!state.flags.has("implement_pass")) {
+        result.canEnter = false;
+        result.enterBlockReason = "Implementation must pass oracle stack before hardening.";
+      }
+      break;
+    case "review":
+      if (!state.flags.has("harden_pass")) {
+        result.canEnter = false;
+        result.enterBlockReason = "Hardening must pass (mutation kill rate \u2265 threshold) before review.";
+      }
+      break;
+    case "merge":
+      if (!state.flags.has("review_pass")) {
+        result.canEnter = false;
+        result.enterBlockReason = "Review must pass before merge.";
+      }
+      break;
+  }
+  if (result.canEnter && state.budget.exhausted) {
+    result.canEnter = false;
+    result.enterBlockReason = "Budget exhausted \u2014 escalate to higher rung or abort.";
+  }
+  return result;
+}
+function completeStage(state, stage, tokens, ms, _edges = 1) {
+  state.budget = recordAttempt(state.budget, stageToBudgetStage(stage), tokens, ms);
+  switch (stage) {
+    case "spec":
+      state.flags.add("spec_locked");
+      break;
+    case "test_author":
+      state.flags.add("tests_locked");
+      state.flags.add("tests_red");
+      break;
+    case "implement":
+      state.flags.add("implement_pass");
+      break;
+    case "harden":
+      state.flags.add("harden_pass");
+      break;
+    case "review":
+      state.flags.add("review_pass");
+      break;
+    case "merge":
+      state.completed = true;
+      break;
+  }
+  state.escalation = recordSuccess(state.escalation);
+  return state;
+}
+function failStage(state, stage, tokens, ms, signals) {
+  state.budget = recordAttempt(state.budget, stageToBudgetStage(stage), tokens, ms);
+  state.escalation = recordFailure(state.escalation);
+  const decision = evaluateEscalation(state.escalation, signals);
+  state.escalation = decision.state;
+  if (decision.action === "abort") {
+    state.aborted = true;
+    state.abortReason = decision.reason;
+  }
+  return state;
+}
+function shouldContinue(state) {
+  return !(state.completed || state.aborted || state.budget.exhausted);
+}
+function buildTriggerSignals(sameFailureConsecutive, oscillating, editDistanceZero, budgetExhausted, timeExhausted) {
+  return {
+    stuck: sameFailureConsecutive,
+    oscillating,
+    noProgress: editDistanceZero,
+    budgetExhausted,
+    timeExhausted
+  };
+}
+function stageToBudgetStage(stage) {
+  const map = {
+    spec: "spec",
+    test_author: "test_author",
+    implement: "implement",
+    harden: "harden",
+    review: "review",
+    merge: "merge"
+  };
+  return map[stage];
+}
+function orchestratorSummary(state) {
+  const lines = [
+    "## Orchestrator Status",
+    "",
+    `Stage: ${state.currentStage ? STAGE_LABELS[state.currentStage] : "not started"}`,
+    `Completed: ${state.completed ? "YES" : "no"}`,
+    `Aborted: ${state.aborted ? `YES \u2014 ${state.abortReason ?? "unknown"}` : "no"}`,
+    `Budget exhausted: ${state.budget.exhausted ? "YES" : "no"}`,
+    `Escalation rung: ${state.escalation.currentRung} (attempts: ${state.escalation.attemptsAtRung})`,
+    "",
+    "### Flags"
+  ];
+  if (state.flags.size === 0) {
+    lines.push("(none)");
+  } else {
+    for (const flag of [...state.flags].sort()) {
+      lines.push(`- ${flag}`);
+    }
+  }
+  return lines.join("\n");
+}
+
 // src/solve.ts
-import { execSync as execSync4 } from "node:child_process";
+import { execSync as execSync5 } from "node:child_process";
+import * as fs7 from "node:fs";
+import * as path7 from "node:path";
+
+// src/dedup.ts
+function deduplicatePlans(plans) {
+  const kept = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const plan of plans) {
+    const sig = normalizeForDedup(plan.summary);
+    if (seen.has(sig)) continue;
+    let isDuplicate = false;
+    for (const existing of kept) {
+      if (isTooSimilar(plan.summary, existing.summary)) {
+        isDuplicate = true;
+        break;
+      }
+    }
+    if (!isDuplicate) {
+      seen.add(sig);
+      kept.push(plan);
+    }
+  }
+  return kept;
+}
+function normalizeForDedup(text) {
+  return text.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+function isTooSimilar(a, b) {
+  const tokensA = tokenize(a);
+  const tokensB = tokenize(b);
+  if (tokensA.length === 0 || tokensB.length === 0) return false;
+  const shorter = tokensA.length <= tokensB.length ? tokensA : tokensB;
+  const longer = tokensA.length > tokensB.length ? tokensA : tokensB;
+  const longerSet = new Set(longer);
+  let overlap = 0;
+  for (const t of shorter) {
+    if (longerSet.has(t)) overlap++;
+  }
+  const ratio = overlap / shorter.length;
+  return ratio > 0.65;
+}
+var STOP_WORDS = /* @__PURE__ */ new Set([
+  "the",
+  "a",
+  "an",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "have",
+  "has",
+  "had",
+  "do",
+  "does",
+  "did",
+  "will",
+  "would",
+  "could",
+  "should",
+  "may",
+  "might",
+  "can",
+  "shall",
+  "to",
+  "of",
+  "in",
+  "for",
+  "on",
+  "with",
+  "at",
+  "by",
+  "from",
+  "as",
+  "into",
+  "through",
+  "during",
+  "before",
+  "after",
+  "and",
+  "but",
+  "or",
+  "nor",
+  "not",
+  "so",
+  "yet",
+  "both",
+  "this",
+  "that",
+  "these",
+  "those",
+  "it",
+  "its",
+  "we",
+  "they",
+  "them",
+  "their",
+  "our",
+  "my",
+  "your",
+  "he",
+  "she",
+  "his",
+  "her"
+]);
+function tokenize(text) {
+  return text.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((t) => t.length > 2 && !STOP_WORDS.has(t));
+}
+
+// src/feedback.ts
+import * as fs6 from "node:fs";
+import * as path6 from "node:path";
+var CONTEXT_WINDOW = 20;
+var MAX_FEEDBACK_CHARS = 2e3;
+var TOKENS_PER_CHAR2 = 0.25;
+function compileFeedback(raw, cwd, gateType) {
+  if (!raw?.trim()) return [];
+  const parsed = parseAllDiagnostics(raw, gateType);
+  if (parsed.length === 0) {
+    return [fallbackDiagnostic(raw, gateType)];
+  }
+  const withContext = attachContextWindows(parsed, cwd);
+  const deduped = deduplicateDiagnostics(withContext);
+  deduped.sort(compareDiagnostics);
+  return capToTokenBudget(deduped);
+}
+function estimateTokens(diagnostics) {
+  let chars = 0;
+  for (const d of diagnostics) {
+    chars += d.file.length + d.message.length + d.context.length + 10;
+  }
+  return Math.ceil(chars * TOKENS_PER_CHAR2);
+}
+function parseAllDiagnostics(output, gateType) {
+  if (!output?.trim()) return [];
+  const diagnostics = [];
+  const lines = output.split("\n");
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    let match;
+    const tsRe = /^(.+?)\((\d+),\d+\):\s+(error|warning)\s+TS\d+:\s+(.+)$/;
+    match = tsRe.exec(line);
+    if (match) {
+      diagnostics.push(makeDiag(match[1], Number(match[2]), match[3], match[4], gateType));
+      if (diagnostics.length >= 100) break;
+      continue;
+    }
+    const eslintRe = /^([^:]+):(\d+):(\d+):\s+(error|warning)\s+(.+)$/;
+    match = eslintRe.exec(line);
+    if (match) {
+      const sev = match[4] === "error" ? "error" : "warning";
+      diagnostics.push(makeDiag(match[1], Number(match[2]), sev, match[5], gateType));
+      if (diagnostics.length >= 100) break;
+      continue;
+    }
+    const biomeRe = /^([^:]+):(\d+):(\d+)\s+(error|warning|info)\s+(.+)$/;
+    match = biomeRe.exec(line);
+    if (match) {
+      diagnostics.push(
+        makeDiag(match[1], Number(match[2]), match[4], match[5], gateType)
+      );
+      if (diagnostics.length >= 100) break;
+      continue;
+    }
+    const pyRe = /^\s*File\s+"(.+?)",\s+line\s+(\d+)/;
+    match = pyRe.exec(line);
+    if (match) {
+      diagnostics.push(makeDiag(match[1], Number(match[2]), "error", line, gateType));
+      continue;
+    }
+    const rustErrRe = /^(?:error|warning)\[(\w+)\]:\s+(.+)$/;
+    match = rustErrRe.exec(line);
+    if (match) {
+      diagnostics.push(makeDiag("", 0, "error", `${match[1]}: ${match[2]}`, gateType));
+      continue;
+    }
+    const rustLocRe = /^\s*-->\s*(.+?):(\d+):(\d+)$/;
+    match = rustLocRe.exec(line);
+    if (match && diagnostics.length > 0) {
+      const prev = diagnostics[diagnostics.length - 1];
+      prev.file = match[1];
+      prev.line = Number(match[2]);
+      continue;
+    }
+    const goRe = /^(.+?\.go):(\d+):(\d+):\s+(.+)$/;
+    match = goRe.exec(line);
+    if (match) {
+      diagnostics.push(makeDiag(match[1], Number(match[2]), "error", match[4], gateType));
+      if (diagnostics.length >= 100) break;
+      continue;
+    }
+    const jestFailRe = /^\s*(?:Expected|Received|expect\(|assert)/;
+    match = jestFailRe.exec(line);
+    if (match) {
+      diagnostics.push(makeDiag("", 0, "error", line, gateType));
+      if (diagnostics.length >= 100) break;
+    }
+  }
+  return diagnostics;
+}
+function makeDiag(file, line, severity, message, gateType) {
+  return {
+    file,
+    line,
+    severity,
+    message: message.slice(0, 500),
+    context: "",
+    oracle_type: gateType
+  };
+}
+function attachContextWindows(diagnostics, cwd) {
+  const fileCache = /* @__PURE__ */ new Map();
+  for (const d of diagnostics) {
+    if (!d.file || d.line <= 0) continue;
+    const resolved = path6.resolve(cwd, d.file);
+    let lines = fileCache.get(resolved);
+    if (lines === void 0) {
+      try {
+        if (fs6.existsSync(resolved)) {
+          const content = fs6.readFileSync(resolved, "utf-8");
+          lines = content.split("\n");
+        } else {
+          lines = null;
+        }
+      } catch {
+        lines = null;
+      }
+      fileCache.set(resolved, lines);
+    }
+    if (!lines || lines.length === 0) continue;
+    const start = Math.max(0, d.line - 1 - Math.floor(CONTEXT_WINDOW / 2));
+    const end = Math.min(lines.length, start + CONTEXT_WINDOW);
+    const window = lines.slice(start, end);
+    const numbered = window.map((l, i) => `${start + i + 1}: ${l}`).join("\n");
+    d.context = numbered.slice(0, 1e3);
+  }
+  return diagnostics;
+}
+function deduplicateDiagnostics(diagnostics) {
+  const seen = /* @__PURE__ */ new Set();
+  const result = [];
+  for (const d of diagnostics) {
+    const key = `${d.file}:${d.line}:${d.message.slice(0, 80)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(d);
+  }
+  return result;
+}
+function compareDiagnostics(a, b) {
+  const sevOrder = { error: 0, warning: 1, info: 2 };
+  const sevDiff = (sevOrder[a.severity] ?? 99) - (sevOrder[b.severity] ?? 99);
+  if (sevDiff !== 0) return sevDiff;
+  const fileDiff = a.file.localeCompare(b.file);
+  if (fileDiff !== 0) return fileDiff;
+  return a.line - b.line;
+}
+function capToTokenBudget(diagnostics) {
+  if (diagnostics.length === 0) return diagnostics;
+  let currentTokens = estimateTokens(diagnostics);
+  if (currentTokens <= 300) return diagnostics;
+  const withoutInfo = diagnostics.filter((d) => d.severity !== "info");
+  if (withoutInfo.length > 0) {
+    currentTokens = estimateTokens(withoutInfo);
+    if (currentTokens <= 300) return withoutInfo;
+  }
+  const onlyErrors = diagnostics.filter((d) => d.severity === "error");
+  if (onlyErrors.length > 0) {
+    currentTokens = estimateTokens(onlyErrors);
+    if (currentTokens <= 300) return onlyErrors;
+  }
+  return onlyErrors.map((d) => ({
+    ...d,
+    context: d.context.slice(0, 200),
+    message: d.message.slice(0, 100)
+  }));
+}
+function fallbackDiagnostic(raw, gateType) {
+  return {
+    file: "",
+    line: 0,
+    severity: "error",
+    message: raw.slice(0, MAX_FEEDBACK_CHARS),
+    context: "",
+    oracle_type: gateType
+  };
+}
 
 // src/judge.ts
 var DIMENSION_WEIGHTS = {
@@ -22683,16 +24126,145 @@ function pickBestByComposite(scores) {
 }
 
 // src/solve.ts
-var MAX_REPAIRS = 3;
 var DEFAULT_N = 5;
 var DEFAULT_TIMEOUT_MS2 = 3e5;
 var REPAIR_TIMEOUT_MS = 18e4;
+async function mapConcurrent2(items, limit, fn) {
+  const results = new Array(items.length);
+  const queue = items.map((_, i) => i);
+  const worker = async () => {
+    while (queue.length > 0) {
+      const idx = queue.shift();
+      if (idx === void 0) return;
+      results[idx] = await fn(items[idx], idx);
+    }
+  };
+  const count = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: count }, () => worker()));
+  return results;
+}
+function captureBranchDiff(rootBranch, strategyBranch, cwd) {
+  try {
+    const diff = execSync5(`git diff ${rootBranch}...${strategyBranch}`, {
+      cwd,
+      encoding: "utf-8",
+      timeout: 1e4
+    });
+    return diff || "";
+  } catch {
+    return "";
+  }
+}
 function captureDiff(cwd) {
   try {
-    const diff = execSync4("git diff HEAD", { cwd, encoding: "utf-8", timeout: 1e4 });
+    const diff = execSync5("git diff HEAD", { cwd, encoding: "utf-8", timeout: 1e4 });
     return diff || null;
   } catch {
     return null;
+  }
+}
+function detectScalarFitness(cmd, cwd) {
+  try {
+    const result = runCommand(cmd, cwd, 3e4);
+    if (result.exitCode !== 0) return false;
+    const score = extractScore(result.output);
+    return score !== null;
+  } catch {
+    return false;
+  }
+}
+function matchGlob(filePath, pattern) {
+  let regex = "";
+  let i = 0;
+  while (i < pattern.length) {
+    const ch = pattern[i];
+    if (ch === "*" && i + 1 < pattern.length && pattern[i + 1] === "*") {
+      i += 2;
+      if (i < pattern.length && pattern[i] === "/") {
+        regex += "(.+/)?";
+        i++;
+      } else {
+        regex += ".*";
+      }
+    } else if (ch === "*") {
+      regex += "[^/]*";
+      i++;
+    } else if (ch === "?") {
+      regex += "[^/]";
+      i++;
+    } else if (/[.+^${}()|\\]/.test(ch)) {
+      regex += `\\${ch}`;
+      i++;
+    } else {
+      regex += ch;
+      i++;
+    }
+  }
+  try {
+    return new RegExp(`^${regex}$`).test(filePath);
+  } catch {
+    return false;
+  }
+}
+function filesMatchGlob(diff, patterns) {
+  if (!patterns || patterns.length === 0) return [];
+  const filePaths = [];
+  const diffRe = /^diff --git a\/(.+?) b\/(.+?)$/gm;
+  for (const match of diff.matchAll(diffRe)) {
+    const bPath = match[2];
+    if (bPath && !filePaths.includes(bPath)) filePaths.push(bPath);
+  }
+  const violating = [];
+  for (const fp of filePaths) {
+    const matched = patterns.some((p) => matchGlob(fp, p));
+    if (!matched) violating.push(fp);
+  }
+  return violating;
+}
+function findFilesMatchingGlob(rootDir, pattern) {
+  const results = [];
+  if (pattern.includes("**")) {
+    const prefix = pattern.split("/**")[0];
+    const baseDir = path7.resolve(rootDir, prefix);
+    const _suffix = pattern.slice(prefix.length + 3);
+    if (fs7.existsSync(baseDir) && fs7.statSync(baseDir).isDirectory()) {
+      walkDir(baseDir, (filePath) => {
+        const rel = path7.relative(rootDir, filePath).replace(/\\/g, "/");
+        if (matchGlob(rel, pattern)) {
+          results.push(filePath);
+        }
+      });
+    }
+  } else {
+    const fullPath = path7.resolve(rootDir, pattern);
+    if (fs7.existsSync(fullPath) && fs7.statSync(fullPath).isFile()) {
+      results.push(fullPath);
+    } else {
+      const dir = path7.dirname(fullPath);
+      const basename3 = path7.basename(fullPath);
+      if (fs7.existsSync(dir) && fs7.statSync(dir).isDirectory()) {
+        for (const entry of fs7.readdirSync(dir)) {
+          if (matchGlob(entry, basename3)) {
+            const fp = path7.join(dir, entry);
+            if (fs7.statSync(fp).isFile()) results.push(fp);
+          }
+        }
+      }
+    }
+  }
+  return results;
+}
+function walkDir(dir, cb) {
+  try {
+    for (const entry of fs7.readdirSync(dir)) {
+      const fp = path7.join(dir, entry);
+      if (fs7.statSync(fp).isDirectory()) {
+        walkDir(fp, cb);
+      } else {
+        cb(fp);
+      }
+    }
+  } catch {
   }
 }
 async function runVerification(spec, cwd) {
@@ -22735,12 +24307,26 @@ async function solve(spec, onProgress) {
     onProgress?.("WARNING: deepclaude proxy not running. Attempting direct mode with DEEPSEEK_API_KEY...");
   }
   const numParallel = spec.fanout ?? DEFAULT_N;
-  const costBefore = proxyReady ? await getProxyCost() : null;
-  stats.plans_sampled = numParallel;
-  stats.plans_deduped = numParallel;
+  let budget = createBudgetState({
+    implement: { tokenLimit: spec.budget_tokens ?? 1e5 },
+    total: { tokenLimit: spec.budget_tokens ?? 1e5 }
+  });
+  const emittedBudgetWarnings = /* @__PURE__ */ new Set();
+  const lineageEscStates = /* @__PURE__ */ new Map();
+  let totalLineageTokens = -1;
+  const strategyPlans = [];
+  for (let i = 0; i < numParallel; i++) {
+    strategyPlans.push({
+      id: `strategy-${i}`,
+      summary: STRATEGIES[i % STRATEGIES.length]
+    });
+  }
+  stats.plans_sampled = strategyPlans.length;
+  const dedupedPlans = deduplicatePlans(strategyPlans);
+  stats.plans_deduped = dedupedPlans.length;
   onProgress?.("Creating solve checkpoint...");
   try {
-    evo_checkpoint("solve", "solve attempt checkpoint");
+    evo_checkpoint("solve", "solve attempt checkpoint", spec.cwd);
   } catch (err) {
     onProgress?.(`Failed to create solve checkpoint: ${err} \u2014 aborting`);
     return {
@@ -22754,25 +24340,47 @@ async function solve(spec, onProgress) {
       stats
     };
   }
-  const strategies = strategyPrompts(spec.goal, numParallel, spec.context);
-  onProgress?.(`Testing ${numParallel} strategies sequentially on git branches...`);
+  const rootBranch = getRootBranch(spec.cwd);
+  const targetContents = [];
+  if (spec.allowed_files && spec.allowed_files.length > 0) {
+    for (const pattern of spec.allowed_files) {
+      try {
+        const found = findFilesMatchingGlob(spec.cwd, pattern);
+        for (const fp of found) {
+          targetContents.push({
+            path: path7.relative(spec.cwd, fp),
+            content: fs7.readFileSync(fp, "utf-8")
+          });
+        }
+      } catch {
+      }
+    }
+  }
+  const factSheet = generateFactSheet(spec.cwd);
+  const goalWithCtx = spec.context ? `${spec.goal}
+
+Additional context: ${spec.context}` : spec.goal;
+  const baseLayers = {
+    goal: goalWithCtx,
+    targetFiles: targetContents.length > 0 ? targetContents : void 0,
+    constraints: factSheet ? { lintRules: "", conventions: factSheet, typeConfig: "" } : void 0
+  };
+  const baseCuratedContext = assembleContext(baseLayers);
+  const strategies = strategyPrompts(spec.goal, dedupedPlans.length, baseCuratedContext);
+  onProgress?.(
+    `Spawning ${strategies.length} git branches (${stats.plans_sampled} plans sampled, ${stats.plans_deduped} after dedup)...`
+  );
   const candidates = [];
   const passingBranches = [];
+  const degenerateRejections = [];
   const failureSignatures = /* @__PURE__ */ new Set();
+  const lineageSignatureHistory = /* @__PURE__ */ new Map();
   const diagnostics = [];
-  const STRATEGY_LABELS = [
-    "simplest",
-    "robust",
-    "performant",
-    "modular",
-    "defensive",
-    "functional",
-    "pragmatic",
-    "elegant"
-  ];
-  STRATEGY_LOOP: for (let i = 0; i < strategies.length; i++) {
+  const slots = [];
+  for (let i = 0; i < strategies.length; i++) {
     const branchName = `solve-strategy-${i}`;
     const stratLabel = STRATEGY_LABELS[i % STRATEGY_LABELS.length];
+    const costBeforeLineage = proxyReady ? await getProxyCost() : null;
     onProgress?.(`  [${i + 1}] spawning branch '${branchName}' (${stratLabel})...`);
     try {
       await spawnCandidate("solve", branchName, spec.cwd);
@@ -22788,16 +24396,59 @@ async function solve(spec, onProgress) {
         repair_attempts: 0,
         final_status: "failed"
       });
+      const delta0 = await proxyTokenDelta(costBeforeLineage);
+      if (delta0 > 0) {
+        const di = diagnostics[diagnostics.length - 1];
+        di.lineage_tokens = delta0;
+        totalLineageTokens = totalLineageTokens < 0 ? delta0 : totalLineageTokens + delta0;
+      }
       continue;
     }
-    onProgress?.(`  [${i + 1}] running strategy: ${stratLabel}...`);
-    const r = await spawnClaude(strategies[i], {
+    slots.push({
+      index: i,
+      branchName,
+      stratLabel,
+      prompt: strategies[i],
+      costBeforeLineage,
+      spawnResult: null
+    });
+  }
+  const concurrency = Math.min(slots.length, 4);
+  onProgress?.(`Running ${slots.length} strategies with concurrency ${concurrency}...`);
+  await mapConcurrent2(slots, concurrency, async (slot) => {
+    try {
+      execSync5(`git checkout ${slot.branchName}`, { cwd: spec.cwd, timeout: 1e4, stdio: "ignore" });
+    } catch {
+      onProgress?.(`  [${slot.index + 1}] checkout failed \u2014 skipping`);
+      slot.spawnResult = null;
+      return;
+    }
+    onProgress?.(`  [${slot.index + 1}] running strategy: ${slot.stratLabel}...`);
+    const r = await spawnClaude(slot.prompt, {
       cwd: spec.cwd,
       model: spec.model,
       apiKey: spec.api_key,
       useProxy: proxyReady,
       timeoutMs: DEFAULT_TIMEOUT_MS2
     });
+    slot.spawnResult = r;
+  });
+  for (let idx = 0; idx < slots.length; idx++) {
+    const slot = slots[idx];
+    const { index: i, branchName, stratLabel, costBeforeLineage } = slot;
+    const r = slot.spawnResult;
+    const recordTokenDelta = async () => {
+      const delta = await proxyTokenDelta(costBeforeLineage);
+      if (delta > 0) {
+        const di = diagnostics.find((d) => d.lineage_id === `strategy-${i}`);
+        if (di) di.lineage_tokens = delta;
+        totalLineageTokens = totalLineageTokens < 0 ? delta : totalLineageTokens + delta;
+      }
+    };
+    if (!r) {
+      await recordTokenDelta();
+      continue;
+    }
     const hasOutput = r.output.trim().length > 0;
     if (r.timedOut) {
       onProgress?.(`  [${i + 1}] timed out \u2014 abandoning`);
@@ -22813,6 +24464,7 @@ async function solve(spec, onProgress) {
       });
       await abandonLoser(branchName, `timed out`, spec.cwd).catch(() => {
       });
+      await recordTokenDelta();
       continue;
     }
     if (!hasOutput) {
@@ -22829,13 +24481,20 @@ async function solve(spec, onProgress) {
       });
       await abandonLoser(branchName, `no output from claude -p`, spec.cwd).catch(() => {
       });
+      await recordTokenDelta();
       continue;
     }
-    execSync4("git add -A", { cwd: spec.cwd });
-    execSync4(`git commit -m "solve strategy ${i}"`, { cwd: spec.cwd });
+    try {
+      execSync5(`git checkout ${branchName}`, { cwd: spec.cwd, timeout: 1e4, stdio: "ignore" });
+    } catch {
+      onProgress?.(`  [${i + 1}] checkout for commit failed \u2014 skipping`);
+      await recordTokenDelta();
+      continue;
+    }
+    const commitResult = commitOrNoop(spec.cwd, `solve strategy ${i}`);
     const candidate = {
       plan_id: `strategy-${i}`,
-      patch: r.output.slice(0, 500),
+      patch: commitResult.committed ? captureBranchDiff(rootBranch, branchName, spec.cwd) : "",
       repair_count: 0,
       status: "verifying"
     };
@@ -22846,13 +24505,34 @@ async function solve(spec, onProgress) {
     if (gateResults) candidate.gateResults = gateResults;
     if (verdict.exit_code === 0) {
       candidate.status = "passed";
-      const branchDiff = (() => {
-        try {
-          return execSync4("git diff evo-solve HEAD", { cwd: spec.cwd, encoding: "utf-8", timeout: 1e4 }) || "";
-        } catch {
-          return "";
+      const branchDiff = captureBranchDiff(rootBranch, branchName, spec.cwd);
+      const degenerateReport = detectDegenerate(branchDiff);
+      if (isDegenerateReject(degenerateReport)) {
+        candidate.status = "degenerate";
+        candidate.degenerate_signals = degenerateReport.findings.map((f) => ({
+          type: f.type,
+          severity: f.severity,
+          message: f.message,
+          file: f.file,
+          line: f.line
+        }));
+        degenerateRejections.push(`${branchName}: ${degenerateReport.summary}`);
+        onProgress?.(`  [${i + 1}] PASSED verify but REJECTED by degenerate detection: ${degenerateReport.summary}`);
+        execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
+        await recordTokenDelta();
+        continue;
+      }
+      if (spec.allowed_files && spec.allowed_files.length > 0) {
+        const violating = filesMatchGlob(branchDiff, spec.allowed_files);
+        if (violating.length > 0) {
+          candidate.status = "degenerate";
+          degenerateRejections.push(`${branchName}: touches files outside allowed_files: ${violating.join(", ")}`);
+          onProgress?.(`  [${i + 1}] PASSED verify but touches files outside allowed_files: ${violating.join(", ")}`);
+          execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
+          await recordTokenDelta();
+          continue;
         }
-      })();
+      }
       passingBranches.push({
         name: branchName,
         diff: branchDiff,
@@ -22860,11 +24540,12 @@ async function solve(spec, onProgress) {
         verificationReport: verdict.output
       });
       onProgress?.(`  [${i + 1}] PASSED in ${r.durationMs}ms! (collecting, ${passingBranches.length} so far)`);
-      execSync4("git checkout master || git checkout main", { cwd: spec.cwd, stdio: "ignore" });
+      execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
+      await recordTokenDelta();
       continue;
     }
     candidate.status = "failed";
-    candidate.failure_signature = hashFailure(verdict.output);
+    candidate.failure_signature = hashFailure(verdict.output, spec.cwd);
     failureSignatures.add(candidate.failure_signature);
     onProgress?.(`  [${i + 1}] failed (exit ${verdict.exit_code}): ${verdict.output.slice(0, 120)}`);
     diagnostics.push({
@@ -22880,11 +24561,43 @@ async function solve(spec, onProgress) {
       repair_attempts: 0,
       final_status: "failed"
     });
-    for (let repair = 1; repair <= MAX_REPAIRS; repair++) {
-      onProgress?.(`    Repair attempt ${repair}/${MAX_REPAIRS} for ${candidate.plan_id}...`);
+    const repairAttempts = [
+      {
+        strategy: stratLabel,
+        outcome: "failed",
+        summary: (candidate.verdict?.output ?? "").slice(0, 500),
+        failureSignature: candidate.failure_signature
+      }
+    ];
+    const sigHistory = [];
+    if (candidate.failure_signature) {
+      sigHistory.push(candidate.failure_signature);
+    }
+    lineageSignatureHistory.set(candidate.plan_id, sigHistory);
+    let escState = createEscalationState();
+    lineageEscStates.set(candidate.plan_id, escState);
+    let repair = 1;
+    let repairActive = true;
+    let escDecision = { action: "continue", reason: "starting", state: escState };
+    while (repairActive && !budget.exhausted) {
+      onProgress?.(`    Repair attempt ${repair} for ${candidate.plan_id}...`);
       const diag = diagnostics.find((d) => d.lineage_id === candidate.plan_id);
       if (diag) diag.repair_attempts = repair;
-      const prompt = repairPrompt(spec.goal, candidate.verdict?.output ?? "", repair, spec.context);
+      const failureSigs = [];
+      for (const a of repairAttempts) {
+        if (a.failureSignature) {
+          failureSigs.push({ hash: a.failureSignature, description: a.summary.slice(0, 200), count: 1 });
+        }
+      }
+      const repairLayers = {
+        ...baseLayers,
+        priorAttempts: repairAttempts.length > 0 ? repairAttempts : void 0,
+        failureSignatures: failureSigs.length > 0 ? failureSigs : void 0
+      };
+      const repairCtx = assembleContext(repairLayers);
+      const failOutput = candidate.verdict?.output ?? "";
+      const feedback = compileFeedback(failOutput, spec.cwd, "verify");
+      const prompt = repairPrompt(spec.goal, feedback, repair, repairCtx);
       const repairResult = await spawnClaude(prompt, {
         cwd: spec.cwd,
         model: spec.model,
@@ -22893,19 +24606,17 @@ async function solve(spec, onProgress) {
         timeoutMs: REPAIR_TIMEOUT_MS
       });
       if (repairResult.timedOut) {
-        onProgress?.(`      \u2192 timed out`);
+        onProgress?.(`      -> timed out`);
         if (diag) diag.final_status = "timed_out";
         break;
       }
-      execSync4("git add -A", { cwd: spec.cwd });
-      execSync4(`git commit -m "solve strategy ${i} repair ${repair}"`, { cwd: spec.cwd });
+      const repairCommitResult = commitOrNoop(spec.cwd, `solve strategy ${i} repair ${repair}`);
       stats.candidates_generated++;
       const { verdict: repairVerdict, gateResults: repairGateResults } = await runVerification(spec, spec.cwd);
       candidate.verdict = repairVerdict;
       if (repairGateResults) candidate.gateResults = repairGateResults;
       candidate.repair_count = repair;
-      candidate.patch = `repair #${repair} output (${repairResult.exitCode}):
-${repairResult.output.slice(0, 500)}`;
+      candidate.patch = repairCommitResult.committed ? captureBranchDiff(rootBranch, branchName, spec.cwd) : "";
       if (repairVerdict.exit_code === 0) {
         candidate.status = "passed";
         if (diag) {
@@ -22913,46 +24624,141 @@ ${repairResult.output.slice(0, 500)}`;
           diag.verify_exit_code = 0;
           diag.verify_output_sample = repairVerdict.output.slice(0, 300);
         }
-        const branchDiff = (() => {
-          try {
-            return execSync4("git diff evo-solve HEAD", { cwd: spec.cwd, encoding: "utf-8", timeout: 1e4 }) || "";
-          } catch {
-            return "";
+        const branchDiff = captureBranchDiff(rootBranch, branchName, spec.cwd);
+        const degenerateReport = detectDegenerate(branchDiff);
+        if (isDegenerateReject(degenerateReport)) {
+          candidate.status = "degenerate";
+          candidate.degenerate_signals = degenerateReport.findings.map((f) => ({
+            type: f.type,
+            severity: f.severity,
+            message: f.message,
+            file: f.file,
+            line: f.line
+          }));
+          degenerateRejections.push(`${branchName}: ${degenerateReport.summary}`);
+          onProgress?.(
+            `      -> REPAIR ${repair} PASSED verify but REJECTED by degenerate detection: ${degenerateReport.summary}`
+          );
+          execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
+          await recordTokenDelta();
+          break;
+        }
+        if (spec.allowed_files && spec.allowed_files.length > 0) {
+          const violating = filesMatchGlob(branchDiff, spec.allowed_files);
+          if (violating.length > 0) {
+            candidate.status = "degenerate";
+            degenerateRejections.push(`${branchName}: touches files outside allowed_files: ${violating.join(", ")}`);
+            onProgress?.(`      -> REPAIR ${repair} touches files outside allowed_files: ${violating.join(", ")}`);
+            execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
+            await recordTokenDelta();
+            break;
           }
-        })();
+        }
         passingBranches.push({
           name: branchName,
           diff: branchDiff,
           score: 1,
           verificationReport: repairVerdict.output
         });
-        onProgress?.(`      \u2192 REPAIR ${repair} PASSED! (collecting, ${passingBranches.length} so far)`);
-        execSync4("git checkout master || git checkout main", { cwd: spec.cwd, stdio: "ignore" });
-        continue STRATEGY_LOOP;
-      }
-      const sig = hashFailure(repairVerdict.output);
-      if (candidate.failure_signature && sig === candidate.failure_signature) {
-        onProgress?.(`      \u2192 stuck (same failure after repair ${repair})`);
-        if (diag) {
-          diag.final_status = "stuck";
-          diag.verify_exit_code = repairVerdict.exit_code;
-          diag.verify_output_sample = repairVerdict.output.slice(0, 300);
-        }
+        onProgress?.(`      -> REPAIR ${repair} PASSED! (collecting, ${passingBranches.length} so far)`);
+        execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
+        await recordTokenDelta();
         break;
       }
-      candidate.failure_signature = sig;
-      failureSignatures.add(sig);
-      onProgress?.(`      \u2192 still failing: ${repairVerdict.output.slice(0, 100)}`);
+      const sig = hashFailure(repairVerdict.output, spec.cwd);
+      sigHistory.push(sig);
+      const b5Signals = computeFailureSignals(sigHistory);
+      if (diag) {
+        diag.signature_history = {
+          signatures: [...sigHistory],
+          stuck: b5Signals.stuck,
+          oscillating: b5Signals.oscillating,
+          noProgress: b5Signals.noProgress
+        };
+        if (b5Signals.stuck) diag.failure_mode = "stuck";
+        else if (b5Signals.oscillating) diag.failure_mode = "oscillating";
+        else if (b5Signals.noProgress) diag.failure_mode = "noProgress";
+      }
+      escState = recordFailure(escState);
+      const triggerSignals = {
+        stuck: b5Signals.stuck,
+        oscillating: b5Signals.oscillating,
+        noProgress: b5Signals.noProgress,
+        budgetExhausted: budget.exhausted,
+        timeExhausted: false
+      };
+      escDecision = evaluateEscalation(escState, triggerSignals);
+      escState = escDecision.state;
+      lineageEscStates.set(candidate.plan_id, escState);
+      for (const w of budget.warnings) {
+        const wkey = `${w.stage}:${w.threshold}`;
+        if (!emittedBudgetWarnings.has(wkey)) {
+          emittedBudgetWarnings.add(wkey);
+          onProgress?.(`      ! Budget: ${w.stage} at ${w.threshold}% (${w.resource})`);
+        }
+      }
+      if (escDecision.action === "continue") {
+        candidate.failure_signature = sig;
+        failureSignatures.add(sig);
+        repairAttempts.push({
+          strategy: stratLabel,
+          outcome: "failed",
+          summary: repairVerdict.output.slice(0, 500),
+          failureSignature: sig
+        });
+        repair++;
+        onProgress?.(`      -> still failing: ${repairVerdict.output.slice(0, 100)}`);
+        continue;
+      }
+      onProgress?.(`      -> ${escDecision.reason}`);
+      if (escDecision.action === "escalate" && escDecision.nextRung === "stronger-model") {
+        const currentModel = spec.model ?? "";
+        if (!(currentModel.includes("sonnet") || currentModel.includes("opus"))) {
+          onProgress?.(`      Stronger model requested but no alternative configured -- aborting lineage`);
+        }
+      }
+      if (escDecision.action === "escalate" && escDecision.nextRung === "resample") {
+        candidate.failure_signature = sig;
+        failureSignatures.add(sig);
+        repairAttempts.push({
+          strategy: stratLabel,
+          outcome: "failed",
+          summary: repairVerdict.output.slice(0, 500),
+          failureSignature: sig
+        });
+        repair++;
+        onProgress?.(`      Resampling (new approach) for ${candidate.plan_id}`);
+        continue;
+      }
+      if (diag) {
+        diag.final_status = "stuck";
+        diag.verify_exit_code = repairVerdict.exit_code;
+        diag.verify_output_sample = repairVerdict.output.slice(0, 300);
+      }
+      repairActive = false;
+      break;
     }
     onProgress?.(`  [${i + 1}] abandoning '${branchName}'`);
-    await abandonLoser(branchName, `strategy ${i}: all ${MAX_REPAIRS} repairs failed`, spec.cwd).catch(() => {
+    const abandonReason = budget.exhausted ? `strategy ${i}: budget exhausted after ${escState.totalAttempts} attempts` : `strategy ${i}: escalated to ${escState.currentRung} after ${escState.totalAttempts} attempts`;
+    await abandonLoser(branchName, abandonReason, spec.cwd).catch(() => {
     });
+    await recordTokenDelta();
+    const budgetDiag = diagnostics.find((d) => d.lineage_id === candidate.plan_id);
+    const tDelta = budgetDiag?.lineage_tokens ?? 0;
+    if (tDelta > 0) {
+      budget = recordAttempt(budget, "implement", tDelta, Date.now() - startTime);
+      for (const w of budget.warnings) {
+        const wkey = `${w.stage}:${w.threshold}`;
+        if (!emittedBudgetWarnings.has(wkey)) {
+          emittedBudgetWarnings.add(wkey);
+          onProgress?.(`   Budget: ${w.stage} at ${w.threshold}% (${w.resource})`);
+        }
+      }
+    }
   }
   stats.duration_ms = Date.now() - startTime;
-  if (costBefore) {
-    const costAfter = await getProxyCost();
-    if (costAfter) stats.tokens_consumed = costAfter.total_tokens - costBefore.total_tokens;
-  }
+  stats.tokens_consumed = totalLineageTokens;
+  onProgress?.(budgetSummary(budget));
   if (passingBranches.length === 0) {
     const sigCounts = /* @__PURE__ */ new Map();
     for (const c of candidates) {
@@ -22966,20 +24772,25 @@ ${repairResult.output.slice(0, 500)}`;
       failure_signature: dominantSig?.[0] ?? "unknown",
       best_partial_patch: bestCandidate?.patch,
       best_output: bestCandidate?.verdict?.output?.slice(0, 2e3),
-      lineages_attempted: numParallel,
+      lineages_attempted: strategies.length,
       lineage_diagnostics: diagnostics,
       summary: [
-        `${numParallel} strategies attempted, ${stats.candidates_generated} candidates generated.`,
+        `${strategies.length} strategies attempted (${stats.plans_sampled} sampled, ${stats.plans_deduped} after dedup), ${stats.candidates_generated} candidates generated.`,
         `Best exit code: ${bestCandidate?.verdict?.exit_code ?? "N/A"}`,
         dominantSig ? `${dominantSig[1]} lineages hit same failure pattern.` : "No common failure pattern.",
         "Escalate to Claude: solve the specific failing assertion directly."
       ].join(" ")
     };
+    if (degenerateRejections.length > 0) {
+      const degeneratMsg = `Degenerate rejections (${degenerateRejections.length}): ${degenerateRejections.join("; ")}`;
+      escalation.summary += ` ${degeneratMsg}`;
+    }
     onProgress?.(`Escalating: ${escalation.summary}`);
     return {
       outcome: "escalate",
       escalation,
-      stats
+      stats,
+      degenerate_rejections: degenerateRejections.length > 0 ? degenerateRejections : void 0
     };
   }
   if (passingBranches.length === 1) {
@@ -22990,7 +24801,8 @@ ${repairResult.output.slice(0, 500)}`;
       outcome: "pass",
       patch: captureDiff(spec.cwd) ?? passingBranches[0].diff,
       verification_report: passingBranches[0].verificationReport,
-      stats
+      stats,
+      degenerate_rejections: degenerateRejections.length > 0 ? degenerateRejections : void 0
     };
   }
   onProgress?.(`${passingBranches.length} candidates passed \u2014 running LLM judge...`);
@@ -23009,17 +24821,18 @@ ${repairResult.output.slice(0, 500)}`;
       outcome: "pass",
       patch: captureDiff(spec.cwd) ?? first.diff,
       verification_report: first.verificationReport,
-      stats
+      stats,
+      degenerate_rejections: degenerateRejections.length > 0 ? degenerateRejections : void 0
     };
   }
   for (const pb of passingBranches) {
     if (pb.name !== winner) {
-      execSync4(`git checkout ${pb.name}`, { cwd: spec.cwd, stdio: "ignore" });
+      execSync5(`git checkout ${pb.name}`, { cwd: spec.cwd, stdio: "ignore" });
       await abandonLoser(pb.name, `judge selected ${winner}`, spec.cwd).catch(() => {
       });
     }
   }
-  execSync4("git checkout master || git checkout main", { cwd: spec.cwd, stdio: "ignore" });
+  execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
   await adoptWinner(winner, spec.cwd);
   const winningBranch = passingBranches.find((pb) => pb.name === winner);
   onProgress?.(`Winner: '${winner}'${judgeResult.fallback ? " (fallback scoring)" : " (LLM judge)"}`);
@@ -23028,7 +24841,202 @@ ${repairResult.output.slice(0, 500)}`;
     patch: captureDiff(spec.cwd) ?? winningBranch?.diff ?? "",
     verification_report: winningBranch?.verificationReport,
     judge_verdict: judgeResult.verdict ?? void 0,
-    stats
+    stats,
+    degenerate_rejections: degenerateRejections.length > 0 ? degenerateRejections : void 0
+  };
+}
+
+// src/orchestrate.ts
+async function orchestrateSolve(spec, onProgress) {
+  const state = createOrchestrator();
+  const stages = [];
+  const startTime = Date.now();
+  while (shouldContinue(state)) {
+    const adv = advanceStage(state);
+    if (!adv.stage) {
+      if (!state.completed) {
+        stages.push({
+          stage: adv.gate.stage,
+          status: "failed",
+          message: adv.gate.enterBlockReason ?? "Blocked by gate"
+        });
+      }
+      break;
+    }
+    const currentStage = adv.stage;
+    const label = STAGE_LABELS[currentStage];
+    onProgress?.(`
+=== Stage: ${label} ===`);
+    onProgress?.(orchestratorSummary(state));
+    const stageStart = Date.now();
+    let stageTokens = 0;
+    switch (currentStage) {
+      // ── SPEC: human gate ───────────────────────────────────────────
+      case "spec": {
+        onProgress?.(`Goal: ${spec.goal}`);
+        onProgress?.(
+          `[HUMAN GATE] Please confirm the requirements above are correct. Use \`dod_verify\` or acknowledge manually.`
+        );
+        completeStage(state, "spec", 0, Date.now() - stageStart);
+        stages.push({
+          stage: "spec",
+          status: "human_gate",
+          message: "Spec provided via tool input \u2014 verify manually if needed",
+          ms: Date.now() - stageStart
+        });
+        break;
+      }
+      // ── TEST_AUTHOR: human gate ────────────────────────────────────
+      case "test_author": {
+        onProgress?.(
+          `[HUMAN GATE] Tests must exist and be RED before implementation begins. Run your test suite and confirm it fails. Use \`dod_verify\` or acknowledge manually.`
+        );
+        completeStage(state, "test_author", 0, Date.now() - stageStart);
+        stages.push({
+          stage: "test_author",
+          status: "human_gate",
+          message: "Gate auto-passed \u2014 verify tests are red before running orchestrate",
+          ms: Date.now() - stageStart
+        });
+        break;
+      }
+      // ── IMPLEMENT: call solve() ───────────────────────────────────
+      case "implement": {
+        onProgress?.("Running implementation stage (solve)...");
+        const solveResult = await solve(spec, (msg) => onProgress?.(`  [solve] ${msg}`));
+        state.solveResult = solveResult;
+        stageTokens = solveResult.stats.tokens_consumed > 0 ? solveResult.stats.tokens_consumed : 0;
+        if (solveResult.outcome === "pass") {
+          completeStage(state, "implement", stageTokens, solveResult.stats.duration_ms);
+          stages.push({
+            stage: "implement",
+            status: "passed",
+            message: "Solve passed",
+            tokens: stageTokens,
+            ms: solveResult.stats.duration_ms
+          });
+        } else {
+          const signals = buildTriggerSignals(false, false, false, state.budget.exhausted, false);
+          failStage(state, "implement", stageTokens, solveResult.stats.duration_ms, signals);
+          if (!state.aborted) {
+            state.aborted = true;
+            state.abortReason = solveResult.escalation?.summary ?? "Solve escalation \u2014 all lineages exhausted";
+          }
+          stages.push({
+            stage: "implement",
+            status: "failed",
+            message: solveResult.escalation?.summary ?? "Solve escalation",
+            tokens: stageTokens,
+            ms: solveResult.stats.duration_ms
+          });
+        }
+        break;
+      }
+      // ── HARDEN: mutation_cmd or human gate ────────────────────────
+      case "harden": {
+        if (spec.mutation_cmd) {
+          onProgress?.(`Running mutation testing: ${spec.mutation_cmd}`);
+          const result = runCommand(spec.mutation_cmd, spec.cwd, 6e5);
+          if (result.exitCode === 0) {
+            completeStage(state, "harden", 0, Date.now() - stageStart);
+            stages.push({
+              stage: "harden",
+              status: "passed",
+              message: "Mutation testing passed",
+              ms: Date.now() - stageStart
+            });
+          } else {
+            stages.push({
+              stage: "harden",
+              status: "failed",
+              message: `Mutation testing failed (exit ${result.exitCode})`,
+              ms: Date.now() - stageStart
+            });
+          }
+        } else {
+          onProgress?.(
+            `[HUMAN GATE] No mutation_cmd provided. Verify test hardening is adequate before proceeding. Use \`dod_verify\` or acknowledge manually.`
+          );
+          completeStage(state, "harden", 0, Date.now() - stageStart);
+          stages.push({
+            stage: "harden",
+            status: "human_gate",
+            message: "No mutation_cmd \u2014 verify test hardening manually",
+            ms: Date.now() - stageStart
+          });
+        }
+        break;
+      }
+      // ── REVIEW: human gate ────────────────────────────────────────
+      case "review": {
+        onProgress?.(
+          `[HUMAN GATE] Please review the patch for correctness and quality. Use \`dod_verify\` or acknowledge manually to approve.`
+        );
+        completeStage(state, "review", 0, Date.now() - stageStart);
+        stages.push({
+          stage: "review",
+          status: "human_gate",
+          message: "Gate auto-passed \u2014 please review the patch manually",
+          ms: Date.now() - stageStart
+        });
+        break;
+      }
+      // ── MERGE: held-out tests + adopt ──────────────────────────────
+      case "merge": {
+        if (spec.held_out_tests) {
+          onProgress?.(`Running held-out tests: ${spec.held_out_tests}`);
+          const result = runCommand(spec.held_out_tests, spec.cwd);
+          if (result.exitCode === 0) {
+            completeStage(state, "merge", 0, Date.now() - stageStart);
+            stages.push({
+              stage: "merge",
+              status: "passed",
+              message: "Held-out tests passed",
+              ms: Date.now() - stageStart
+            });
+          } else {
+            state.aborted = true;
+            state.abortReason = `Held-out tests failed (exit ${result.exitCode})`;
+            stages.push({
+              stage: "merge",
+              status: "failed",
+              message: `Held-out tests failed (exit ${result.exitCode}): ${result.output.slice(0, 200)}`,
+              ms: Date.now() - stageStart
+            });
+          }
+        } else {
+          completeStage(state, "merge", 0, Date.now() - stageStart);
+          stages.push({
+            stage: "merge",
+            status: "passed",
+            message: "Merge completed (no held-out tests)",
+            ms: Date.now() - stageStart
+          });
+        }
+        break;
+      }
+    }
+  }
+  const totalMs = Date.now() - startTime;
+  return {
+    outcome: state.completed ? "pass" : state.aborted ? "escalate" : "incomplete",
+    summary: [
+      orchestratorSummary(state),
+      "",
+      `Total time: ${(totalMs / 1e3).toFixed(1)}s`,
+      "",
+      "### Stage Results",
+      ...stages.map((s) => {
+        const icon = s.status === "passed" ? "PASS" : s.status === "failed" ? "FAIL" : s.status === "human_gate" ? "GATE" : "SKIP";
+        let line = `${icon}  ${s.stage}: ${s.status}`;
+        if (s.message) line += ` - ${s.message}`;
+        if (s.tokens) line += ` (${s.tokens} tokens)`;
+        if (s.ms) line += ` (${(s.ms / 1e3).toFixed(1)}s)`;
+        return line;
+      })
+    ].join("\n"),
+    solveResult: state.solveResult,
+    stages
   };
 }
 
@@ -23095,10 +25103,33 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
     spec: TaskSpecSchema.describe("Task specification")
   },
   async ({ spec }) => {
-    const result = await solve(spec, (msg) => {
-      process.stderr.write(`[evomcp] ${msg}
+    const onProgress = (msg) => process.stderr.write(`[evomcp] ${msg}
 `);
-    });
+    const shouldEvolve = spec.strategy === "evolve" || spec.strategy === "auto" && detectScalarFitness(spec.verify_cmd, spec.cwd);
+    if (shouldEvolve) {
+      const evolveSpec = {
+        goal: spec.goal,
+        fitness_cmd: spec.verify_cmd,
+        cwd: spec.cwd,
+        target_files: spec.allowed_files ?? [],
+        budget_tokens: spec.budget_tokens,
+        context: spec.context,
+        model: spec.model,
+        api_key: spec.api_key,
+        api_base: spec.api_base,
+        build_cmd: spec.build_cmd,
+        test_cmd: spec.test_cmd,
+        lint_cmd: spec.lint_cmd,
+        generations: 5,
+        population_size: 6
+      };
+      onProgress?.(`Strategy '${spec.strategy}' routed to evolve (scalar fitness detected)`);
+      const result2 = await evolve(evolveSpec, onProgress);
+      return {
+        content: [{ type: "text", text: formatEvolveResult(result2) }]
+      };
+    }
+    const result = await solve(spec, onProgress);
     return {
       content: [
         {
@@ -23139,6 +25170,46 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
     };
   }
 );
+var OrchestrateSpecSchema = TaskSpecSchema.extend({
+  playbook: external_exports.enum(["bugfix", "feature", "refactor", "test-harden", "reconcile", "review"]).optional().default("bugfix").describe("Playbook type \u2014 selects the stage sequence"),
+  mutation_cmd: external_exports.string().optional().describe("Mutation testing command (e.g. 'npx stryker run'). Runs after implementation passes.")
+});
+server.tool(
+  "orchestrate",
+  `Drive the full solve lifecycle through SPEC -> TEST_AUTHOR -> IMPLEMENT -> HARDEN -> REVIEW -> MERGE.
+
+The orchestrate tool wraps the existing "solve" tool as the IMPLEMENT stage,
+adding gates for specification validation, test readiness, test hardening,
+human review, and merge verification.
+
+Stages:
+- SPEC: Requirements gate (human confirmation)
+- TEST_AUTHOR: Test readiness gate (human confirmation)
+- IMPLEMENT: Runs solve() with the provided spec
+- HARDEN: Mutation testing (if mutation_cmd provided) or human gate
+- REVIEW: Human review gate
+- MERGE: Held-out test execution
+
+Each stage enforces entry gates: cannot skip spec, cannot implement without
+red tests, cannot harden without passing implementation, etc.`,
+  {
+    spec: OrchestrateSpecSchema.describe("Orchestration specification")
+  },
+  async ({ spec }) => {
+    const result = await orchestrateSolve(spec, (msg) => {
+      process.stderr.write(`[evomcp] ${msg}
+`);
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: formatOrchestrateResult(result)
+        }
+      ]
+    };
+  }
+);
 server.tool("status", "Check if the deepclaude proxy is running and ready.", {}, async () => {
   const proxyAlive = await checkProxyHealth();
   const keySource = apiKeySource();
@@ -23163,29 +25234,6 @@ server.tool("status", "Check if the deepclaude proxy is running and ready.", {},
     ]
   };
 });
-server.tool(
-  "hello",
-  "Say hello world with a defensive greeting. Returns a greeting message for the given name.",
-  {
-    name: external_exports.string().optional().describe("Name to greet. Defaults to 'World' if omitted.")
-  },
-  async ({ name }) => {
-    return {
-      content: [
-        {
-          type: "text",
-          text: formatHello(name)
-        }
-      ]
-    };
-  }
-);
-function formatHello(raw) {
-  const sanitized = (raw ?? "").trim().replace(/[^\w\s'-]/g, "");
-  const name = sanitized.length > 0 ? sanitized : "World";
-  const displayName = name.length > 100 ? `${name.slice(0, 100)}...` : name;
-  return `Hello, ${displayName}!`;
-}
 function formatSolveResult(result) {
   if (result.outcome === "pass") {
     return [
@@ -23204,7 +25252,9 @@ function formatSolveResult(result) {
       "### Stats",
       `- Plans: ${result.stats.plans_sampled}`,
       `- Candidates: ${result.stats.candidates_generated}`,
-      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A"}`,
+      result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
+      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
+      result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
       `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
       `- Model: ${result.stats.model}`
     ].join("\n");
@@ -23243,7 +25293,9 @@ function formatSolveResult(result) {
     "### Stats",
     `- Plans: ${result.stats.plans_sampled}`,
     `- Candidates: ${result.stats.candidates_generated}`,
-    `- Tokens: ${result.stats.tokens_consumed}`,
+    result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
+    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
+    result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
     `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
     `- Model: ${result.stats.model}`,
     "",
@@ -23280,12 +25332,32 @@ function formatEvolveResult(result) {
     "",
     "### Stats",
     `- Candidates: ${result.stats.candidates_generated}`,
-    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A"}`,
+    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
+    result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
     `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
     `- Model: ${result.stats.model}`
   ].join("\n");
 }
 var _filename = fileURLToPath(import.meta.url);
+function formatOrchestrateResult(result) {
+  return [
+    `## Orchestrate: ${result.outcome.toUpperCase()}`,
+    "",
+    result.summary,
+    "",
+    ...result.solveResult && result.solveResult.outcome === "pass" ? [
+      "### Solve Patch",
+      "```",
+      result.solveResult.patch?.slice(0, 2e3) ?? "(no patch)",
+      "```",
+      "",
+      "### Verification",
+      "```",
+      result.solveResult.verification_report?.slice(0, 1e3) ?? "(no report)",
+      "```"
+    ] : []
+  ].join("\n");
+}
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);

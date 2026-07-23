@@ -21109,7 +21109,6 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import * as path from "node:path";
 
 // src/find-functions.ts
-console.debug("find-functions: module loaded", { pid: process.pid });
 var CONTROL_KEYWORDS = /* @__PURE__ */ new Set([
   "if",
   "else",
@@ -21802,12 +21801,15 @@ function buildReport(files, cwd, opts, diffStats) {
 }
 
 // src/checker.ts
-import { exec } from "node:child_process";
-import { createHash as createHash2 } from "node:crypto";
-import { promisify } from "node:util";
+import { exec as exec2 } from "node:child_process";
+import { promisify as promisify3 } from "node:util";
 
 // src/constants.ts
 var CMD_TRUNCATION = 80;
+
+// src/evaluate-proof.ts
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 // src/assertions.ts
 import { existsSync as existsSync2, readdirSync as readdirSync2, readFileSync as readFileSync2 } from "node:fs";
@@ -21929,7 +21931,6 @@ function analyseAssertions(command, cwd) {
 
 // src/manual.ts
 import { createHash } from "node:crypto";
-console.debug("manual: module loaded", { pid: process.pid });
 function perProofFingerprint(node) {
   const data = [
     node.command ?? "",
@@ -21955,7 +21956,9 @@ async function resolveManual(node, confirm, label = "Manual verification") {
     note: answer.note,
     confirmed_at: (/* @__PURE__ */ new Date()).toISOString(),
     channel: answer.channel,
-    proof_fingerprint: fingerprint
+    proof_fingerprint: fingerprint,
+    review_verdict: answer.review_verdict,
+    reviewer: answer.reviewer
   };
   return {
     status: answer.answer,
@@ -22387,7 +22390,8 @@ function scanFile3(filePath, cwd) {
   return { logCount, errorHandlers, antiPatterns };
 }
 function analyseObservability(command, cwd) {
-  console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
+  if (process.env.DOD_DEBUG)
+    console.debug("observability: analyseObservability", { cmd: command.slice(0, CMD_TRUNCATION) });
   const files = extractSourceFilesFromCommand2(command, cwd);
   if (files.length === 0) {
     if (/\bgit\s+diff\b/.test(command) || /\bgit diff/.test(command)) {
@@ -22403,7 +22407,7 @@ function analyseObservability(command, cwd) {
   const allAntiPatterns = [];
   for (const file of files) {
     if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
-      console.debug("observability: skipping self-analysis of", file);
+      if (process.env.DOD_DEBUG) console.debug("observability: skipping self-analysis of", file);
       continue;
     }
     const result = scanFile3(file, cwd);
@@ -22438,7 +22442,7 @@ function analyseObservabilityFromOutput(commandOutput, cwd) {
   const allAntiPatterns = [];
   for (const file of files) {
     if (file.endsWith("observability.ts") || file.endsWith("observability.js")) {
-      console.debug("observability: skipping self-analysis of", file);
+      if (process.env.DOD_DEBUG) console.debug("observability: skipping self-analysis of", file);
       continue;
     }
     const result = scanFile3(file, cwd);
@@ -22465,7 +22469,6 @@ function analyseObservabilityFromOutput(commandOutput, cwd) {
 }
 
 // src/regression.ts
-console.debug("regression: module loaded", { pid: process.pid });
 function extractNumber(stdout, extract) {
   if (extract) {
     const match = stdout.match(new RegExp(extract));
@@ -22480,7 +22483,57 @@ function extractNumber(stdout, extract) {
 }
 
 // src/evaluate-proof.ts
-console.debug("evaluate-proof: module loaded", { pid: process.pid });
+var execFileAsync = promisify(execFile);
+function extractPathsFromCommand(command) {
+  const tokens = command.split(/\s+/);
+  const files = [];
+  for (const token of tokens) {
+    if (token.startsWith("-")) continue;
+    if (token.includes("/") || token.includes("\\") || token.includes(".")) {
+      files.push(token);
+    }
+  }
+  return [...new Set(files)];
+}
+async function getGitChangedFiles(cwd, baseCommit) {
+  try {
+    const { stdout } = await execFileAsync("git", ["diff", "--name-only", baseCommit], {
+      cwd,
+      timeout: 5e3,
+      windowsHide: true
+    });
+    return stdout.trim().split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+async function resolveAnalysisTargets(command, cwd, baseCommit, targetsOverride, changedFilesOverride) {
+  if (targetsOverride && targetsOverride.length > 0) {
+    return { targets: targetsOverride };
+  }
+  if (!baseCommit) {
+    return { targets: extractPathsFromCommand(command) };
+  }
+  const changedFiles = changedFilesOverride ?? await getGitChangedFiles(cwd, baseCommit);
+  if (changedFiles.length === 0) {
+    return { targets: extractPathsFromCommand(command) };
+  }
+  const targets = extractPathsFromCommand(command);
+  if (targets.length === 0) {
+    return { targets };
+  }
+  const overlapping = targets.filter((t) => {
+    const normT = t.replace(/\\/g, "/");
+    return changedFiles.some((cf) => {
+      const normCf = cf.replace(/\\/g, "/");
+      return normT === normCf || normCf.endsWith(`/${normT}`) || normT.endsWith(`/${normCf}`);
+    });
+  });
+  if (overlapping.length === 0) {
+    return { targets, error: `analyzer target does not overlap changed files. Target(s): ${targets.join(", ")}` };
+  }
+  return { targets: overlapping };
+}
 function parseStryker(o) {
   const lines = o.split(/\r?\n/);
   const hi = lines.findIndex((l) => l.includes("|") && /#\s*survived/i.test(l));
@@ -22607,9 +22660,9 @@ async function hRegress(n, r, b) {
     n.baseline_value = m;
     n.baseline_captured_at = (/* @__PURE__ */ new Date()).toISOString();
     return mk(b, {
-      status: "pass",
+      status: "baseline_captured",
       output: r.combined,
-      error: `regression: N0=${m}. Re-run.`,
+      error: `regression: baseline captured N0=${m}. Re-run to compare.`,
       exit_code: r.exitCode,
       duration_ms: r.duration
     });
@@ -22656,8 +22709,20 @@ async function hStream(n, r, b) {
     duration_ms: r.duration
   });
 }
-async function hAssert(n, r, b, cmd, cwd) {
+async function hAssert(n, r, b, cmd, cwd, baseCommit, skipReason) {
   const min = n.predicate?.value ?? 1;
+  if (!skipReason) {
+    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
+    if (targetCheck.error) {
+      return mk(b, {
+        status: "fail",
+        output: r.combined,
+        error: targetCheck.error,
+        exit_code: r.exitCode,
+        duration_ms: r.duration
+      });
+    }
+  }
   const report = analyseAssertions(cmd, cwd);
   if (!report)
     return mk(b, {
@@ -22684,8 +22749,20 @@ async function hAssert(n, r, b, cmd, cwd) {
     duration_ms: r.duration
   });
 }
-async function hObs(n, r, b, cmd, cwd) {
+async function hObs(n, r, b, cmd, cwd, baseCommit, skipReason) {
   const min = n.predicate?.value ?? 1;
+  if (!skipReason) {
+    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
+    if (targetCheck.error) {
+      return mk(b, {
+        status: "fail",
+        output: r.combined,
+        error: targetCheck.error,
+        exit_code: r.exitCode,
+        duration_ms: r.duration
+      });
+    }
+  }
   let report = analyseObservability(cmd, cwd);
   if (!report) report = analyseObservabilityFromOutput(r.combined, cwd);
   if (!report)
@@ -22714,7 +22791,7 @@ async function hObs(n, r, b, cmd, cwd) {
     duration_ms: r.duration
   });
 }
-async function hBrev(n, r, b, cmd, cwd) {
+async function hBrev(n, r, b, cmd, cwd, baseCommit, skipReason) {
   const max = n.predicate?.value ?? 0;
   if (!n.predicate)
     return mk(b, {
@@ -22724,6 +22801,18 @@ async function hBrev(n, r, b, cmd, cwd) {
       exit_code: r.exitCode,
       duration_ms: r.duration
     });
+  if (!skipReason) {
+    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
+    if (targetCheck.error) {
+      return mk(b, {
+        status: "fail",
+        output: r.combined,
+        error: targetCheck.error,
+        exit_code: r.exitCode,
+        duration_ms: r.duration
+      });
+    }
+  }
   const p = n.predicate;
   const opts = {
     maxLineLength: p.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength,
@@ -22869,7 +22958,7 @@ var BREVITY_COHESION = {
   })(),
   buildFail: (r, max) => buildCohesionFail(r, max)
 };
-async function hBrevity(n, r, b, cmd, cwd, config2) {
+async function hBrevity(n, r, b, cmd, cwd, config2, baseCommit, skipReason) {
   const max = n.predicate?.value ?? 0;
   if (!n.predicate)
     return mk(b, {
@@ -22879,6 +22968,18 @@ async function hBrevity(n, r, b, cmd, cwd, config2) {
       exit_code: r.exitCode,
       duration_ms: r.duration
     });
+  if (!skipReason) {
+    const targetCheck = await resolveAnalysisTargets(cmd, cwd, baseCommit);
+    if (targetCheck.error) {
+      return mk(b, {
+        status: "fail",
+        output: r.combined,
+        error: targetCheck.error,
+        exit_code: r.exitCode,
+        duration_ms: r.duration
+      });
+    }
+  }
   const opts = { ...DEFAULT_BREVITY_OPTS, ...config2.optsOverride(n.predicate) };
   let report = analyseBrevity(cmd, cwd, opts);
   if (!report) report = analyseBrevityFromOutput(r.combined, cwd, opts);
@@ -22975,10 +23076,12 @@ async function hTdd(n, r, b, cmd, cwd) {
     duration_ms: r.duration
   });
 }
-async function executeProof(node, cwd, execFn) {
+async function executeProof(node, cwd, execFn, options) {
   const isOutOfBand = node.predicate?.type === "manual" || node.predicate?.type === "review";
   const cmd = node.command || "";
   const base = { node_path: "", id: node.id, title: node.title, description: node.description ?? "", command: cmd };
+  const skipReason = node.category && options?.skipReasons ? options.skipReasons[node.category] : void 0;
+  const baseCommit = options?.baseCommit;
   if (isOutOfBand) return hManual(node, base);
   if (!node.command)
     return {
@@ -23000,19 +23103,19 @@ async function executeProof(node, cwd, execFn) {
     case "streamline":
       return hStream(node, run, base);
     case "assertions":
-      return hAssert(node, run, base, cmd, cwd);
+      return hAssert(node, run, base, cmd, cwd, baseCommit, skipReason);
     case "observability":
-      return hObs(node, run, base, cmd, cwd);
+      return hObs(node, run, base, cmd, cwd, baseCommit, skipReason);
     case "brevity":
-      return hBrev(node, run, base, cmd, cwd);
+      return hBrev(node, run, base, cmd, cwd, baseCommit, skipReason);
     case "line_length":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_LINE_LENGTH);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_LINE_LENGTH, baseCommit, skipReason);
     case "function_size":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_FUNCTION_SIZE);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_FUNCTION_SIZE, baseCommit, skipReason);
     case "file_size":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_FILE_SIZE);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_FILE_SIZE, baseCommit, skipReason);
     case "cohesion":
-      return hBrevity(node, run, base, cmd, cwd, BREVITY_COHESION);
+      return hBrevity(node, run, base, cmd, cwd, BREVITY_COHESION, baseCommit, skipReason);
     case "replacement_ratio":
       return hReplacementRatio(node, run, base, cmd, cwd);
     case "tdd":
@@ -23050,9 +23153,8 @@ function evaluatePredicate(predicate, exitCode, stdout) {
   }
 }
 
-// src/checker.ts
-var execAsync = promisify(exec);
-var TIMEOUT_MS = 12e4;
+// src/fingerprint.ts
+import { createHash as createHash2 } from "node:crypto";
 function flattenLeaf(node, index, parentPath) {
   const currentPath = parentPath ? `${parentPath}.children.${index}` : `${index}`;
   if (node.children && node.children.length > 0) {
@@ -23070,6 +23172,117 @@ function flattenConcreteLeaves(nodes, parentPath) {
   }
   return results;
 }
+function computeProofFingerprint(roots) {
+  const leaves = flattenConcreteLeaves(roots);
+  if (leaves.length === 0) return "";
+  const sorted = leaves.slice().sort((a, b) => a.node.id.localeCompare(b.node.id));
+  const data = sorted.map(({ node }) => {
+    const parts = [];
+    parts.push(node.command ?? "");
+    parts.push(node.predicate?.type ?? "");
+    parts.push(node.predicate?.value !== void 0 ? String(node.predicate.value) : "");
+    if (node.predicate?.timeout_ms !== void 0) {
+      parts.push(`timeout_ms:${node.predicate.timeout_ms}`);
+    }
+    if (node.predicate?.extract !== void 0) {
+      parts.push(`extract:${node.predicate.extract}`);
+    }
+    if (node.category !== void 0) {
+      parts.push(`category:${node.category}`);
+    }
+    if (node.predicate?.min_replacement_ratio !== void 0) {
+      parts.push(`min_replacement_ratio:${node.predicate.min_replacement_ratio}`);
+    }
+    if (node.predicate?.max_function_lines !== void 0) {
+      parts.push(`max_function_lines:${node.predicate.max_function_lines}`);
+    }
+    if (node.predicate?.max_file_lines !== void 0) {
+      parts.push(`max_file_lines:${node.predicate.max_file_lines}`);
+    }
+    if (node.predicate?.max_line_length !== void 0) {
+      parts.push(`max_line_length:${node.predicate.max_line_length}`);
+    }
+    if (node.predicate?.max_complexity !== void 0) {
+      parts.push(`max_complexity:${node.predicate.max_complexity}`);
+    }
+    if (node.baseline_value !== void 0) {
+      parts.push(`baseline_value:${node.baseline_value}`);
+    }
+    if (node.predicate?.lower_is_better !== void 0) {
+      parts.push(`lib:${node.predicate.lower_is_better}`);
+    }
+    if (node.advisory !== void 0) {
+      parts.push(`adv:${node.advisory}`);
+    }
+    return parts.join("|");
+  }).join("\n");
+  return createHash2("sha256").update(data).digest("hex");
+}
+
+// src/snapshot.ts
+import { exec } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { mkdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join as join4 } from "node:path";
+import { promisify as promisify2 } from "node:util";
+var execAsync = promisify2(exec);
+async function createSnapshot(repoCwd, commit) {
+  const tmpPath = join4(tmpdir(), `dod-snapshot-${randomUUID()}`);
+  let createdViaWorktree = false;
+  try {
+    await execAsync(`git worktree add --detach "${tmpPath}" "${commit}"`, {
+      cwd: repoCwd,
+      timeout: 3e4
+    });
+    createdViaWorktree = true;
+  } catch {
+    try {
+      const archivePath = join4(tmpdir(), `dod-archive-${randomUUID()}.tar`);
+      await mkdir(tmpPath, { recursive: true });
+      try {
+        await execAsync(`git archive --output="${archivePath}" "${commit}"`, {
+          cwd: repoCwd,
+          timeout: 3e4
+        });
+        await execAsync(`tar -xf "${archivePath}" -C "${tmpPath}"`, { timeout: 3e4 });
+      } finally {
+        await rm(archivePath, { recursive: true, force: true }).catch(() => {
+        });
+      }
+    } catch {
+      await rm(tmpPath, { recursive: true, force: true }).catch(() => {
+      });
+      throw new Error(`could not create snapshot for commit ${commit}: git worktree add and git archive both failed`);
+    }
+  }
+  return {
+    cwd: tmpPath,
+    commit,
+    cleanup: async () => {
+      if (createdViaWorktree) {
+        try {
+          await execAsync(`git worktree remove --force "${tmpPath}"`, {
+            cwd: repoCwd,
+            timeout: 15e3
+          });
+        } catch {
+        }
+      }
+      try {
+        await rm(tmpPath, { recursive: true, force: true });
+      } catch {
+      }
+    }
+  };
+}
+async function destroySnapshot(snapshot) {
+  await snapshot.cleanup();
+}
+
+// src/checker.ts
+var execAsync2 = promisify3(exec2);
+var TIMEOUT_MS = 12e4;
 function nodeDraftOrDescendant(node) {
   if (node.children && node.children.length > 0) return hasDraftNodes(node.children);
   return node.refinement === "draft";
@@ -23112,23 +23325,12 @@ function countNodeDrafts(node) {
 function countDraftNodes(nodes) {
   return nodes.reduce((sum, node) => sum + countNodeDrafts(node), 0);
 }
-function computeProofFingerprint(roots) {
-  const leaves = flattenConcreteLeaves(roots);
-  if (leaves.length === 0) return "";
-  const data = leaves.map(({ node }) => {
-    let line = `${node.command}|${node.predicate?.type}|${node.predicate?.value ?? ""}`;
-    if (node.predicate?.lower_is_better !== void 0) line += `|lib:${node.predicate?.lower_is_better}`;
-    if (node.advisory !== void 0) line += `|adv:${node.advisory}`;
-    return line;
-  }).join("\n");
-  return createHash2("sha256").update(data).digest("hex").slice(0, 12);
-}
 async function runCommand(command, cwd, timeoutMs) {
   const effectiveTimeout = timeoutMs ?? TIMEOUT_MS;
   const start = Date.now();
   try {
     const shellCmd = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
-    const { stdout, stderr } = await execAsync(command, {
+    const { stdout, stderr } = await execAsync2(command, {
       cwd,
       timeout: effectiveTimeout,
       maxBuffer: 10 * 1024 * 1024,
@@ -23228,20 +23430,22 @@ function carryForwardOutOfScopeLeaves(targetPath, outOfScope, roots, leafResults
   }
   carryForwardDrafts(roots, "", targetPath, leafResults);
 }
-async function executeInScopeLeaves(inScope, cwd, execFn, leafResults) {
+async function executeInScopeLeaves(inScope, cwd, execFn, leafResults, proofOptions) {
   let anyRealFail = false;
   let anyUnverified = false;
+  let anyBaselineCaptured = false;
   let manualUnverified = 0;
   for (const { node, node_path } of inScope) {
-    const result = await executeProof(node, cwd, execFn);
+    const result = await executeProof(node, cwd, execFn, proofOptions);
     result.node_path = node_path;
     leafResults.push(result);
     if (result.status === "fail" && !node.advisory) anyRealFail = true;
     if (result.status === "skipped" && !node.advisory) anyUnverified = true;
+    if (result.status === "baseline_captured") anyBaselineCaptured = true;
     const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
     if (result.status === "skipped" && isManualOrReview) manualUnverified++;
   }
-  return { anyRealFail, anyUnverified, manualUnverified };
+  return { anyRealFail, anyUnverified, anyBaselineCaptured, manualUnverified };
 }
 function collectAmendmentCounts(amendments, roots) {
   const amendmentCounts = /* @__PURE__ */ new Map();
@@ -23258,6 +23462,70 @@ function collectAmendmentCounts(amendments, roots) {
   }
   return amendmentCounts;
 }
+function detectStrengthReduction(oldPredicate, newPredicate) {
+  const weakenings = [];
+  if (!(oldPredicate && newPredicate)) return weakenings;
+  if (oldPredicate.max_function_lines !== void 0 && newPredicate.max_function_lines !== void 0 && newPredicate.max_function_lines > oldPredicate.max_function_lines) {
+    weakenings.push(
+      `max_function_lines increased from ${oldPredicate.max_function_lines} to ${newPredicate.max_function_lines}`
+    );
+  }
+  if (oldPredicate.max_file_lines !== void 0 && newPredicate.max_file_lines !== void 0 && newPredicate.max_file_lines > oldPredicate.max_file_lines) {
+    weakenings.push(`max_file_lines increased from ${oldPredicate.max_file_lines} to ${newPredicate.max_file_lines}`);
+  }
+  if (oldPredicate.max_line_length !== void 0 && newPredicate.max_line_length !== void 0 && newPredicate.max_line_length > oldPredicate.max_line_length) {
+    weakenings.push(
+      `max_line_length increased from ${oldPredicate.max_line_length} to ${newPredicate.max_line_length}`
+    );
+  }
+  if (oldPredicate.max_complexity !== void 0 && newPredicate.max_complexity !== void 0 && newPredicate.max_complexity > oldPredicate.max_complexity) {
+    weakenings.push(`max_complexity increased from ${oldPredicate.max_complexity} to ${newPredicate.max_complexity}`);
+  }
+  if (oldPredicate.min_replacement_ratio !== void 0 && newPredicate.min_replacement_ratio !== void 0 && newPredicate.min_replacement_ratio < oldPredicate.min_replacement_ratio) {
+    weakenings.push(
+      `min_replacement_ratio decreased from ${oldPredicate.min_replacement_ratio} to ${newPredicate.min_replacement_ratio}`
+    );
+  }
+  if (oldPredicate.timeout_ms !== void 0 && newPredicate.timeout_ms !== void 0 && newPredicate.timeout_ms > oldPredicate.timeout_ms) {
+    weakenings.push(`timeout_ms increased from ${oldPredicate.timeout_ms} to ${newPredicate.timeout_ms}`);
+  }
+  if (oldPredicate.extract !== void 0 && newPredicate.extract === void 0) {
+    weakenings.push("extract pattern removed");
+  }
+  if (oldPredicate.lower_is_better === false && newPredicate.lower_is_better === true) {
+    weakenings.push("lower_is_better changed from false to true (flips comparison direction)");
+  }
+  if (oldPredicate.type === "exit_code" && newPredicate.type === "exit_code" && oldPredicate.value === 0 && newPredicate.value !== void 0 && newPredicate.value !== 0) {
+    weakenings.push(`exit_code value changed from 0 to ${String(newPredicate.value)}`);
+  }
+  if ((oldPredicate.type === "output_contains" || oldPredicate.type === "output_matches") && oldPredicate.type === newPredicate.type) {
+    if (typeof oldPredicate.value === "string" && typeof newPredicate.value === "string") {
+      if (newPredicate.value.length < oldPredicate.value.length) {
+        weakenings.push(
+          `${oldPredicate.type} value shortened (length ${oldPredicate.value.length} \u2192 ${newPredicate.value.length})`
+        );
+      }
+    }
+    if (oldPredicate.value !== void 0 && newPredicate.value === void 0) {
+      weakenings.push(`${oldPredicate.type} value removed`);
+    }
+  }
+  return weakenings;
+}
+function countNodeAmendments(amendments, nodePath) {
+  return amendments.filter((a) => a.node_path === nodePath && (a.action === "modified" || a.action === "refined")).length;
+}
+function checkAmendGate(amendments, resolvedPath, oldPredicate, newPredicate, amendJustification) {
+  const amendCount = countNodeAmendments(amendments, resolvedPath);
+  const weakenings = newPredicate ? detectStrengthReduction(oldPredicate, newPredicate) : [];
+  if (!amendJustification && weakenings.length > 0) {
+    return `Strength-reducing changes detected: ${weakenings.join("; ")}. Provide amend_justification explaining why this weakening is necessary.`;
+  }
+  if (amendCount >= 3 && !amendJustification) {
+    return `This node has been amended ${amendCount} times. Provide amend_justification explaining why further amendments are needed.`;
+  }
+  return null;
+}
 async function checkDocument(doc, cwdOverride, opts) {
   const cwd = cwdOverride ?? doc.cwd;
   const targetPath = opts?.nodePath;
@@ -23265,14 +23533,60 @@ async function checkDocument(doc, cwdOverride, opts) {
   const draftCount = countDraftNodes(doc.roots);
   const leafResults = [];
   carryForwardOutOfScopeLeaves(targetPath, outOfScope, doc.roots, leafResults);
-  const { anyRealFail, anyUnverified, manualUnverified } = await executeInScopeLeaves(
-    inScope,
-    cwd,
-    opts?.execFn ?? runCommand,
-    leafResults
-  );
+  let checkedCommit;
+  let checkedDirty;
+  let isGitRepo;
+  let snapshot;
+  let snapshotFallbackNote;
   if (!targetPath) {
-    addDraftLeafResults(doc.roots, "", leafResults);
+    try {
+      const { stdout: commitOut } = await execAsync2("git rev-parse HEAD", { cwd });
+      checkedCommit = commitOut.trim();
+      isGitRepo = true;
+      const { stdout: statusOut } = await execAsync2("git status --porcelain", { cwd });
+      checkedDirty = statusOut.trim().length > 0;
+    } catch {
+      isGitRepo = false;
+    }
+    if (checkedCommit && !(checkedDirty && doc.allow_dirty_pass)) {
+      try {
+        snapshot = await createSnapshot(cwd, checkedCommit);
+      } catch {
+        snapshotFallbackNote = "could not create isolated snapshot \u2014 proofs ran in-place against live tree";
+      }
+    }
+  }
+  const effectiveCwd = snapshot?.cwd ?? cwd;
+  let anyRealFail = false;
+  let anyUnverified = false;
+  let anyBaselineCaptured = false;
+  let manualUnverified = 0;
+  try {
+    const proofOpts = {
+      baseCommit: checkedCommit,
+      skipReasons: doc.skip_reasons
+    };
+    const result = await executeInScopeLeaves(
+      inScope,
+      effectiveCwd,
+      opts?.execFn ?? runCommand,
+      leafResults,
+      proofOpts
+    );
+    anyRealFail = result.anyRealFail;
+    anyUnverified = result.anyUnverified;
+    anyBaselineCaptured = result.anyBaselineCaptured;
+    manualUnverified = result.manualUnverified;
+    if (!targetPath) {
+      addDraftLeafResults(doc.roots, "", leafResults);
+    }
+  } finally {
+    if (snapshot) {
+      await destroySnapshot(snapshot);
+    }
+  }
+  if (!targetPath && checkedDirty && doc.allow_dirty_pass && !snapshotFallbackNote) {
+    snapshotFallbackNote = "dirty tree \u2014 proofs ran in-place against uncommitted state";
   }
   const amendmentCounts = collectAmendmentCounts(doc.amendments, doc.roots);
   const amendmentWarnings = [...amendmentCounts.entries()].filter(([, v]) => v.count > 2).map(([node_path, v]) => ({ node_path, title: v.title, count: v.count }));
@@ -23281,11 +23595,17 @@ async function checkDocument(doc, cwdOverride, opts) {
   const suggestScoped = !targetPath && concreteCount > 5 && draftCount > 0;
   const proofFingerprint = computeProofFingerprint(doc.roots);
   const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
-  const overall = tampered ? "fail" : targetPath ? "incomplete" : draftCount > 0 ? "incomplete" : anyRealFail ? "fail" : anyUnverified ? "incomplete" : "pass";
+  let overall = tampered ? "fail" : targetPath ? "incomplete" : draftCount > 0 ? "incomplete" : anyRealFail ? "fail" : anyBaselineCaptured ? "incomplete" : anyUnverified ? "incomplete" : "pass";
+  if (overall === "pass" && checkedDirty && !doc.allow_dirty_pass) {
+    overall = "pass_dirty";
+  }
   const concreteTotal = leafResults.filter((r) => r.status !== "draft").length;
   const passCount = leafResults.filter((r) => r.status === "pass").length;
   const baseSummary = targetPath ? `SCOPED (node "${targetPath}"): run a full dod_check (no nodePath) to verify completion` : `${passCount}/${concreteTotal} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
   const guidance = [];
+  if (snapshotFallbackNote) {
+    guidance.push(snapshotFallbackNote);
+  }
   if (blockedByManuals) {
     guidance.push(
       `\u26D4 ${manualUnverified} manual/review proof(s) await dod_verify \u2014 DoD CANNOT pass without human verification.`
@@ -23320,7 +23640,10 @@ async function checkDocument(doc, cwdOverride, opts) {
     blocked_by_manuals: blockedByManuals,
     summary_mode: opts?.summary === true ? true : void 0,
     ...targetPath ? { scoped: true, ran_node_path: targetPath } : {},
-    ...tampered ? { tampered: true } : {}
+    ...tampered ? { tampered: true } : {},
+    checked_commit: checkedCommit,
+    checked_dirty: checkedDirty,
+    is_git_repo: isGitRepo
   };
 }
 function addDraftLeafResults(nodes, parentPath, out) {
@@ -23366,7 +23689,7 @@ function carryForwardDrafts(nodes, parentPath, targetPath, out) {
 
 // src/format-result.ts
 function formatCheckResult(result) {
-  console.debug("format-result: formatCheckResult", { overall: result.overall });
+  if (process.env.DOD_DEBUG) console.debug("format-result: formatCheckResult", { overall: result.overall });
   const l = [];
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
   l.push("");
@@ -23417,16 +23740,19 @@ function formatCheckResult(result) {
     const failCount = leaves.filter((p) => p.status === "fail").length;
     const skipCount = leaves.filter((p) => p.status === "skipped").length;
     const draftCount = leaves.filter((p) => p.status === "draft").length;
+    const baselineCount = leaves.filter((p) => p.status === "baseline_captured").length;
     const hasFail = failCount > 0;
     const hasDraft = draftCount > 0;
-    const icon = hasFail ? "\u274C" : hasDraft ? "\u{1F4DD}" : "\u2705";
-    const status = hasFail ? "FAIL" : hasDraft ? "INCOMPLETE" : "PASS";
+    const hasBaseline = baselineCount > 0;
+    const icon = hasFail ? "\u274C" : hasBaseline ? "\u{1F4CA}" : hasDraft ? "\u{1F4DD}" : "\u2705";
+    const status = hasFail ? "FAIL" : hasBaseline ? "INCOMPLETE" : hasDraft ? "INCOMPLETE" : "PASS";
     const rootTitle = leaves[0]?.title ?? `Root ${rootIdx}`;
     const countStr = [
       passCount > 0 ? `${passCount} pass` : "",
       failCount > 0 ? `${failCount} fail` : "",
       skipCount > 0 ? `${skipCount} skipped` : "",
-      draftCount > 0 ? `${draftCount} draft` : ""
+      draftCount > 0 ? `${draftCount} draft` : "",
+      baselineCount > 0 ? `${baselineCount} baseline` : ""
     ].filter(Boolean).join(", ");
     l.push(`${icon} **${rootTitle}** \u2014 ${status} (${countStr})`);
     for (const leaf of leaves) {
@@ -23444,6 +23770,10 @@ function formatCheckResult(result) {
         }
       } else if (leaf.status === "skipped") {
         l.push(`${indent}\u23F3 \`${leaf.command}\` \u2014 not verified this run${leaf.output ? `: ${leaf.output}` : ""}`);
+      } else if (leaf.status === "baseline_captured") {
+        l.push(
+          `${indent}\u{1F4CA} \`${leaf.command}\` \u2014 baseline captured (N0=${leaf.error?.match(/N0=([\d.]+)/)?.[1] ?? "?"}). Re-run to compare.`
+        );
       } else {
         const isManual = leaf.command === "manual";
         if (isManual) {
@@ -23467,6 +23797,14 @@ ${indent}  `)}`);
   l.push(`**Summary:** ${result.summary}`);
   l.push(`**Timestamp:** ${result.timestamp}`);
   l.push(`**Proof fingerprint:** \`${result.proof_fingerprint}\``);
+  if (result.is_git_repo !== void 0) {
+    if (result.is_git_repo && result.checked_commit) {
+      const dirtyTag = result.checked_dirty ? " (DIRTY)" : " (clean)";
+      l.push(`**Git state:** \`${result.checked_commit.slice(0, 12)}\`${dirtyTag}`);
+    } else if (!result.is_git_repo) {
+      l.push(`**Git state:** not a git repository`);
+    }
+  }
   return l.join("\n");
 }
 
@@ -23527,62 +23865,55 @@ function renderLeaf(node, indent, lines) {
     return;
   }
   const mark = proofMark(node.last_status);
+  let proofLine;
   if (node.predicate?.type === "manual") {
     const mr = node.manual_result;
     const state = mr ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_` : " _(awaiting human verification)_";
-    lines.push(`${indent}- ${mark} Proof: Manual \u2014 ${node.description}${state}`);
+    proofLine = `${indent}- ${mark} Proof: Manual \u2014 ${node.description}${state}`;
   } else if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? node.last_status === "pass" ? "\u{1F7E2} GREEN" : "\u{1F534} RED" : "\u2B1C AWAITING RED";
-    lines.push(`${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` \u2192 ${node.description}`);
+    proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` \u2192 ${node.description}`;
   } else if (node.predicate?.type === "brevity") {
     const max = node.predicate.value ?? 0;
-    lines.push(`${indent}- ${mark} Proof (brevity \u2264${max} violations): \`${node.command}\` \u2192 ${node.description}`);
+    proofLine = `${indent}- ${mark} Proof (brevity \u2264${max} violations): \`${node.command}\` \u2192 ${node.description}`;
   } else if (node.predicate?.type === "line_length") {
     const maxChars = node.predicate.max_line_length ?? DEFAULT_BREVITY_OPTS.maxLineLength;
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (line_length \u2264${maxChars} chars, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
-    );
+    proofLine = `${indent}- ${mark} Proof (line_length \u2264${maxChars} chars, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
   } else if (node.predicate?.type === "function_size") {
     const maxLines = node.predicate.max_function_lines ?? DEFAULT_BREVITY_OPTS.maxFunctionLines;
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (function_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
-    );
+    proofLine = `${indent}- ${mark} Proof (function_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
   } else if (node.predicate?.type === "file_size") {
     const maxLines = node.predicate.max_file_lines ?? DEFAULT_BREVITY_OPTS.maxFileLines;
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (file_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
-    );
+    proofLine = `${indent}- ${mark} Proof (file_size \u2264${maxLines} lines, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
   } else if (node.predicate?.type === "cohesion") {
     const maxCC = node.predicate.max_complexity ?? 5;
     const guards = node.predicate.require_guard_clauses ?? true;
     const suggest = node.predicate.suggest_guard_clauses ?? true;
     const flags = [guards ? "guard" : "", suggest ? "suggest" : ""].filter(Boolean).join("+");
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (cohesion CC\u2264${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
-    );
+    proofLine = `${indent}- ${mark} Proof (cohesion CC\u2264${maxCC}${flags ? ` ${flags}` : ""}, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
   } else if (node.predicate?.type === "replacement_ratio") {
     const minRatio = node.predicate.min_replacement_ratio ?? 0.2;
     const maxV = node.predicate.value ?? 0;
-    lines.push(
-      `${indent}- ${mark} Proof (replacement_ratio \u2265${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`
-    );
+    proofLine = `${indent}- ${mark} Proof (replacement_ratio \u2265${(minRatio * 100).toFixed(0)}%, max ${maxV} violations): \`${node.command}\` \u2192 ${node.description}`;
   } else if (node.predicate?.type === "regression") {
     const lib = node.predicate.lower_is_better ?? true;
     const tol = node.predicate.value ?? 0;
     const dir = lib ? "\u2264baseline" : "\u2265baseline";
-    lines.push(
-      `${indent}- ${mark} Proof (regression ${dir}, tolerance ${tol}): \`${node.command}\` \u2192 ${node.description}`
-    );
+    proofLine = `${indent}- ${mark} Proof (regression ${dir}, tolerance ${tol}): \`${node.command}\` \u2192 ${node.description}`;
   } else {
-    lines.push(`${indent}- ${mark} Proof: \`${node.command}\` \u2192 ${node.description}`);
+    proofLine = `${indent}- ${mark} Proof: \`${node.command}\` \u2192 ${node.description}`;
   }
+  if (node.predicate) {
+    proofLine += ` <!--p:${JSON.stringify(node.predicate)}-->`;
+  }
+  lines.push(proofLine);
 }
 function renderMarkdown(doc) {
-  console.debug("author: renderMarkdown", { id: doc.id });
+  if (process.env.DOD_DEBUG) console.debug("author: renderMarkdown", { id: doc.id });
   const l = [];
   l.push(`# ${doc.title} \u2014 Requirements Spec`);
   l.push("");
@@ -23728,11 +24059,11 @@ function updateDocFromCheckResult(doc, result) {
 }
 
 // src/command-check.ts
-import { execFile } from "node:child_process";
+import { execFile as execFile2 } from "node:child_process";
 import { existsSync as existsSync4, readdirSync as readdirSync4, readFileSync as readFileSync4 } from "node:fs";
 import * as path5 from "node:path";
-import { promisify as promisify2 } from "node:util";
-var execFileAsync = promisify2(execFile);
+import { promisify as promisify4 } from "node:util";
+var execFileAsync2 = promisify4(execFile2);
 var isWindows = process.platform === "win32";
 var CMD_BUILTINS = /* @__PURE__ */ new Set([
   "assoc",
@@ -23885,9 +24216,9 @@ var existsCache = /* @__PURE__ */ new Map();
 async function onPath(name) {
   try {
     if (isWindows) {
-      await execFileAsync("where", [name], { timeout: 5e3, windowsHide: true });
+      await execFileAsync2("where", [name], { timeout: 5e3, windowsHide: true });
     } else {
-      await execFileAsync("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5e3 });
+      await execFileAsync2("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5e3 });
     }
     return true;
   } catch (err) {
@@ -24013,6 +24344,41 @@ function isPlaceholderCommand(command) {
   if (!cmd) return false;
   return PLACEHOLDER_PATTERNS.some((re) => re.test(cmd));
 }
+var BEHAVIORAL_CATEGORIES = /* @__PURE__ */ new Set([
+  "test",
+  "integration_behavioral",
+  "integration_wiring"
+]);
+async function validatePositiveEvidence(command, category, cwd, predicateType, skipReason, changedFilesOverride) {
+  if (!BEHAVIORAL_CATEGORIES.has(category)) return null;
+  if (predicateType === "tdd") return null;
+  if (skipReason) return null;
+  const changedFiles = changedFilesOverride ?? await getChangedFiles(cwd);
+  for (const file of changedFiles) {
+    if (command.includes(file)) return null;
+  }
+  const cmdTokens = command.split(/\s+/).filter((t) => /[./\\]/.test(t) && t.length > 2);
+  for (const token of cmdTokens) {
+    const tokenBasename = path5.basename(token.replace(/\\/g, "/"));
+    if (!tokenBasename || tokenBasename.length <= 2) continue;
+    for (const file of changedFiles) {
+      if (path5.posix.basename(file) === tokenBasename) return null;
+    }
+  }
+  return `No positive evidence: command must reference changed files, use a tdd predicate, or provide a skip_reason for category '${category}'.`;
+}
+async function getChangedFiles(cwd) {
+  try {
+    const { stdout } = await execFileAsync2("git", ["diff", "--name-only", "HEAD"], {
+      cwd,
+      timeout: 5e3,
+      windowsHide: true
+    });
+    return stdout.trim().split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
 function usesNodeEvalRequire(command) {
   return /\bnode\b.*\s(?:-e|--eval)\b/.test(command) && /\brequire\s*\(/.test(command);
 }
@@ -24069,81 +24435,22 @@ function playJingle() {
 
 // src/parser.ts
 import { promises as fs2 } from "node:fs";
-function extractQuoted(text) {
-  const m = text.match(/"([^"]+)"/);
-  return m ? m[1] : null;
+function extractPredicateMetadata(line) {
+  const metaMatch = line.match(/<!--p:(.+?)-->/);
+  if (metaMatch) {
+    try {
+      const predicate = JSON.parse(metaMatch[1]);
+      const cleanLine = line.replace(/<!--p:.+?-->/, "").trimEnd();
+      return { predicate, cleanLine };
+    } catch {
+    }
+  }
+  return { predicate: null, cleanLine: line };
 }
-function extractExitCode(text, pattern) {
-  const m = text.match(pattern);
-  return m ? Number.parseInt(m[1], 10) : null;
-}
-var INFERENCE_RULES = [
-  {
-    test: (l) => l.includes("tdd") || l.includes("must fail first") || l.includes("red before green"),
-    infer: (l) => ({ type: "tdd", value: extractExitCode(l, /exit\s*(?:code\s*)?(\d+)/) ?? 0 })
-  },
-  {
-    test: (l) => l.includes("no match"),
-    infer: () => ({ type: "exit_code", value: 1 })
-  },
-  {
-    test: (l) => ["not contain", "must not contain", "no warning", "no error"].some((k) => l.includes(k)),
-    infer: (_, t) => {
-      const q = extractQuoted(t);
-      return q ? { type: "output_not_contains", value: q } : { type: "exit_code", value: 0 };
-    }
-  },
-  {
-    test: (l) => l.includes("not match") || l.includes("must not match"),
-    infer: (_, t) => {
-      const q = extractQuoted(t);
-      return q ? { type: "output_not_matches", value: q } : { type: "exit_code", value: 0 };
-    }
-  },
-  {
-    test: (l) => l.includes("matches") || l.includes("must match"),
-    infer: (_, t) => {
-      const q = extractQuoted(t);
-      return q ? { type: "output_matches", value: q } : { type: "exit_code", value: 0 };
-    }
-  },
-  {
-    test: (l) => l.includes("contains") || l.includes("must contain"),
-    infer: (_, t) => {
-      const q = extractQuoted(t);
-      return q ? { type: "output_contains", value: q } : { type: "exit_code", value: 0 };
-    }
-  },
-  {
-    test: (l) => ["must not exit", "exit code must not be", "non-zero exit"].some((k) => l.includes(k)),
-    infer: (l) => ({ type: "exit_code_not", value: extractExitCode(l, /exit\s*(?:\S+\s+)?(\d+)/) ?? 0 })
-  }
-];
-var CATEGORY_PATTERNS = [
-  [["mutation", "mutants"], "mutation"],
-  [["regression", "baseline"], "regression"],
-  [["assertion count", "at least", "non-trivial"], "assertions"],
-  [["streamline", "leftover", "old code"], "streamline"],
-  [["observability", "log statements", "logging"], "observability"],
-  [["brevity", "code quality", "static analysis"], "brevity"]
-];
-function inferPredicate(description) {
-  const lower = description.toLowerCase();
-  for (const rule of INFERENCE_RULES) {
-    if (rule.test(lower)) return rule.infer(lower, description);
-  }
-  const exitMatch = lower.match(/exit\s*(?:code\s*)?(\d+)/);
-  if (exitMatch) return { type: "exit_code", value: Number.parseInt(exitMatch[1], 10) };
-  if (lower.startsWith("manual")) return { type: "manual" };
-  if (lower.startsWith("review") || lower.includes("review \u2014") || lower.includes("review:")) return { type: "review" };
-  for (const [keywords, type] of CATEGORY_PATTERNS) {
-    if (keywords.some((k) => lower.includes(k))) {
-      const countMatch = type === "assertions" ? lower.match(/at least (\d+)/) : null;
-      const value = countMatch ? Number.parseInt(countMatch[1], 10) : 0;
-      return { type, value };
-    }
-  }
-  return { type: "exit_code", value: 0 };
+function markerToStatus(marker) {
+  if (marker === "x") return "pass";
+  if (marker === "~") return "skipped";
+  return "pending";
 }
 function parseLeafLine(line) {
   const trimmed = line.trim();
@@ -24157,40 +24464,49 @@ function parseLeafLine(line) {
       last_status: "draft"
     };
   }
-  const tddMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof\s*\(TDD\s+[^)]+\):\s*`([^`]+)`\s*→\s*(.+)$/);
-  if (tddMatch) {
+  const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
+  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*→\s*(.+)$/);
+  if (proofMatch) {
+    const desc = proofMatch[3].trim();
+    if (metaPredicate) {
+      return {
+        id: "",
+        title: desc,
+        refinement: "concrete",
+        command: proofMatch[2].trim(),
+        predicate: metaPredicate,
+        description: desc,
+        last_status: markerToStatus(proofMatch[1])
+      };
+    }
     return {
       id: "",
-      title: tddMatch[3].trim(),
-      refinement: "concrete",
-      command: tddMatch[2].trim(),
-      predicate: { type: "tdd", value: 0 },
-      description: tddMatch[3].trim(),
-      last_status: tddMatch[1] === "x" ? "pass" : tddMatch[1] === "~" ? "skipped" : "pending"
+      title: desc,
+      refinement: "draft",
+      intent: desc,
+      last_status: "draft"
     };
   }
-  const cmdMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*`([^`]+)`\s*→\s*(.+)$/);
-  if (cmdMatch) {
-    return {
-      id: "",
-      title: cmdMatch[3].trim(),
-      refinement: "concrete",
-      command: cmdMatch[2].trim(),
-      predicate: inferPredicate(cmdMatch[3]),
-      description: cmdMatch[3].trim(),
-      last_status: cmdMatch[1] === "x" ? "pass" : cmdMatch[1] === "~" ? "skipped" : "pending"
-    };
-  }
-  const manualMatch = trimmed.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
+  const manualMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
   if (manualMatch) {
+    const desc = manualMatch[2].trim();
+    if (metaPredicate) {
+      return {
+        id: "",
+        title: desc,
+        refinement: "concrete",
+        command: "manual",
+        predicate: metaPredicate,
+        description: desc,
+        last_status: markerToStatus(manualMatch[1])
+      };
+    }
     return {
       id: "",
-      title: manualMatch[2].trim(),
-      refinement: "concrete",
-      command: "manual",
-      predicate: { type: "manual" },
-      description: manualMatch[2].trim(),
-      last_status: manualMatch[1] === "x" ? "pass" : manualMatch[1] === "~" ? "skipped" : "pending"
+      title: desc,
+      refinement: "draft",
+      intent: desc,
+      last_status: "draft"
     };
   }
   return null;
@@ -24292,7 +24608,7 @@ function parseDodTree(lines, startIdx) {
   return roots;
 }
 function parseContent(content) {
-  console.debug("parser: parseContent", { length: content.length });
+  if (process.env.DOD_DEBUG) console.debug("parser: parseContent", { length: content.length });
   const lines = content.split("\n");
   let title = "", goal = "", date3 = "", cwd = ".";
   for (const line of lines) {
@@ -24516,21 +24832,7 @@ async function migrateDoc(doc) {
   doc.roots = legacySteps.map(legacyStepToTaskNode);
   delete doc.steps;
   delete doc.locked;
-  const leafLines = [];
-  function walk(nodes) {
-    for (const n of nodes) {
-      if (n.children) walk(n.children);
-      else if (n.refinement === "concrete" && n.command) {
-        leafLines.push(`${n.command}|${n.predicate?.type ?? ""}|${n.predicate?.value ?? ""}|${n.advisory ?? false}`);
-      }
-    }
-  }
-  walk(doc.roots);
-  if (leafLines.length > 0) {
-    const hash = crypto.createHash("sha256");
-    for (const line of leafLines.sort()) hash.update(line);
-    doc.proof_fingerprint = hash.digest("hex");
-  }
+  doc.proof_fingerprint = computeProofFingerprint(doc.roots);
   await save(doc);
   return true;
 }
@@ -25019,7 +25321,7 @@ function checkStrengthOnly(steps) {
   return warnings;
 }
 function validateBaseline(type, steps, skipReasons) {
-  console.debug("baseline: validateBaseline", { type, stepCount: steps.length });
+  if (process.env.DOD_DEBUG) console.debug("baseline: validateBaseline", { type, stepCount: steps.length });
   const present = collectPresent(steps);
   const errors = [];
   const warnings = [];
@@ -25028,6 +25330,21 @@ function validateBaseline(type, steps, skipReasons) {
     const optResult = checkOptional(present, skipReasons);
     errors.push(...optResult.errors);
     warnings.push(...optResult.warnings);
+    const hasManualReview = steps.some(
+      (s) => s.proofs.some((p) => p.predicate.type === "manual" || p.predicate.type === "review")
+    );
+    if (!hasManualReview) {
+      const reason = skipReasons?.manual;
+      if (reason) {
+        warnings.push(
+          `\u26A0 "manual" omitted (skip_reason: "${reason}"). At least one manual or review proof is expected for ${type} DoDs.`
+        );
+      } else {
+        errors.push(
+          `At least one manual or review proof is required for type "${type}". Add a manual/review proof or provide a skip_reason.`
+        );
+      }
+    }
   }
   warnings.push(...checkStrengthOnly(steps));
   return { errors, warnings };
@@ -25070,6 +25387,7 @@ async function handleDodCreate(params) {
     cwd: resolvedCwd,
     markdown_path: path7.resolve(markdown_path),
     created_at: (/* @__PURE__ */ new Date()).toISOString(),
+    execution_confirmed: true,
     skip_reasons,
     sections,
     roots,
@@ -25151,6 +25469,14 @@ async function handleDodRefine(params) {
       if (missing.length > 0) {
         return formatMissingTools(missing);
       }
+      const evidenceErr = await validatePositiveEvidence(
+        command,
+        category,
+        doc.cwd,
+        pred.type,
+        doc.skip_reasons?.[category]
+      );
+      if (evidenceErr) return evidenceErr;
     }
     node.refinement = "concrete";
     node.command = command;
@@ -25284,7 +25610,12 @@ function manualInstructions(node) {
     lines.push(
       "",
       "Run `/code-review` (fresh context) against the current diff vs the DoD requirements.",
-      "Confirm PASS only if it reports no gaps affecting correctness or the stated requirements."
+      "Confirm PASS only if it reports no gaps affecting correctness or the stated requirements.",
+      "",
+      "After running the review, you MUST provide:",
+      "1. review_verdict: Paste the full review output/verdict text.",
+      "2. reviewer: Your name or identifier.",
+      "A bare 'yes' without concrete attestation will be rejected."
     );
   } else {
     lines.push("", "Confirm PASS only after you have personally verified this works as described.");
@@ -25303,6 +25634,31 @@ function buildConfirmer() {
     const caps = server.server.getClientCapabilities();
     if (caps?.elicitation) {
       try {
+        const baseProperties = {
+          result: {
+            type: "string",
+            enum: ["pass", "fail"],
+            enumNames: ["Verified works as expected", "Not verified does not work"],
+            description: "Did the manual verification pass?"
+          },
+          note: {
+            type: "string",
+            maxLength: 500,
+            description: "Optional note about what you observed"
+          }
+        };
+        const requiredFields = ["result"];
+        if (isReview) {
+          baseProperties.review_verdict = {
+            type: "string",
+            description: "Paste the review output/verdict text"
+          };
+          baseProperties.reviewer = {
+            type: "string",
+            description: "Who performed the review (name or identifier)"
+          };
+          requiredFields.push("review_verdict", "reviewer");
+        }
         const result = await server.server.elicitInput(
           {
             message: `${promptLabel}:
@@ -25310,20 +25666,8 @@ function buildConfirmer() {
 ${instructions}`,
             requestedSchema: {
               type: "object",
-              properties: {
-                result: {
-                  type: "string",
-                  enum: ["pass", "fail"],
-                  enumNames: ["Verified works as expected", "Not verified does not work"],
-                  description: "Did the manual verification pass?"
-                },
-                note: {
-                  type: "string",
-                  maxLength: 500,
-                  description: "Optional note about what you observed"
-                }
-              },
-              required: ["result"]
+              properties: baseProperties,
+              required: requiredFields
             }
           },
           { timeout: ELICITATION_MAX_WAIT_MS }
@@ -25331,7 +25675,15 @@ ${instructions}`,
         if (result.action === "accept") {
           const passed = result.content?.result === "pass";
           const note = typeof result.content?.note === "string" ? result.content.note : void 0;
-          return { answer: passed ? "pass" : "fail", note, channel: "elicitation" };
+          const reviewVerdict = typeof result.content?.review_verdict === "string" ? result.content.review_verdict : void 0;
+          const reviewer = typeof result.content?.reviewer === "string" ? result.content.reviewer : void 0;
+          return {
+            answer: passed ? "pass" : "fail",
+            note,
+            channel: "elicitation",
+            review_verdict: reviewVerdict,
+            reviewer
+          };
         }
         return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
       } catch (err) {
@@ -25342,6 +25694,23 @@ ${instructions}`,
       console.error("dod-guard: MCP client does not support elicitation \u2014 manual verification unavailable");
     }
     return { answer: "fail", note: "no verification channel available on this host", channel: "elicitation" };
+  };
+}
+function buildImportGateInfo(doc) {
+  if (!doc.import_source || doc.execution_confirmed !== false) {
+    return { blocked: false };
+  }
+  const executableLeaves = flattenConcreteLeaves(doc.roots).filter(
+    ({ node }) => node.command && node.predicate && isExecutablePredicate(node.predicate.type)
+  );
+  return {
+    blocked: true,
+    executableCount: executableLeaves.length,
+    commandList: executableLeaves.map(({ node }) => ({
+      title: node.title,
+      command: node.command ?? "",
+      description: node.description ?? ""
+    }))
   };
 }
 server.tool(
@@ -25356,9 +25725,12 @@ server.tool(
     ),
     summary: external_exports.boolean().optional().describe(
       "Collapse unchanged draft nodes into a single count line. Use for large DoDs where drafts dominate the output."
+    ),
+    confirm_import: external_exports.boolean().optional().describe(
+      "For imported DoDs: confirm that proof commands are safe to execute. Sets execution_confirmed=true and proceeds."
     )
   },
-  async ({ dod_id, path: mdPath, cwd_override, nodePath, summary }) => {
+  async ({ dod_id, path: mdPath, cwd_override, nodePath, summary, confirm_import }) => {
     let doc = null;
     if (dod_id) doc = await load(dod_id);
     else if (mdPath) doc = await findByPath(mdPath);
@@ -25382,6 +25754,37 @@ Use dod_list to see tracked DoDs, or dod_import to register an existing file.`
           }
         ]
       };
+    }
+    const gateInfo = buildImportGateInfo(doc);
+    if (gateInfo.blocked && !confirm_import) {
+      const cmdLines = gateInfo.commandList.map(
+        (c, i) => `${i + 1}. "${c.title}"
+   Command: \`${c.command}\`
+   Description: ${c.description}`
+      );
+      return {
+        content: [
+          {
+            type: "text",
+            text: [
+              "## Import Gate: Execution Not Confirmed",
+              "",
+              `This DoD was imported from "${doc.import_source}" and has NOT been confirmed for execution.`,
+              `${gateInfo.executableCount} executable proof(s) would be run:`,
+              "",
+              ...cmdLines,
+              "",
+              "Review the commands above. To confirm and proceed, re-run dod_check with confirm_import:true.",
+              "Once confirmed, subsequent checks will execute normally."
+            ].join("\n")
+          }
+        ]
+      };
+    }
+    if (confirm_import && doc.import_source) {
+      doc.execution_confirmed = true;
+      await save(doc);
+      await writeMarkdown(doc);
     }
     const result = await checkDocument(doc, cwd_override, { nodePath, summary });
     if (!doc.proof_fingerprint && result.proof_fingerprint) {
@@ -25572,6 +25975,18 @@ server.tool(
     }
     const label = node.predicate.type === "review" ? "Code review" : "Manual verification";
     const resolution = await resolveManual(node, buildConfirmer(), label);
+    if (node.predicate.type === "review") {
+      if (!(node.manual_result?.review_verdict && node.manual_result?.reviewer)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "ERROR: Review attestation required \u2014 provide the review verdict text and reviewer identity. Verification not recorded."
+            }
+          ]
+        };
+      }
+    }
     node.last_status = resolution.status;
     node.last_output = resolution.output;
     node.last_checked = (/* @__PURE__ */ new Date()).toISOString();
@@ -25669,7 +26084,10 @@ server.tool(
     new_predicate: PredicateSchema.optional(),
     new_description: external_exports.string().optional(),
     new_skip_reasons: external_exports.record(external_exports.string()).optional().describe("(__meta__ only) Replace DoD skip_reasons map"),
-    reason: external_exports.string().describe("Why this amendment is needed \u2014 logged permanently")
+    reason: external_exports.string().describe("Why this amendment is needed \u2014 logged permanently"),
+    amend_justification: external_exports.string().optional().describe(
+      "Required when this node has been amended 3+ times, or when the change weakens a proof threshold (e.g. increasing limits, removing checks). Explains why further loosening is necessary."
+    )
   },
   async ({
     dod_id,
@@ -25679,7 +26097,8 @@ server.tool(
     new_predicate,
     new_description,
     new_skip_reasons,
-    reason
+    reason,
+    amend_justification
   }) => {
     const doc = await load(dod_id);
     if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
@@ -25752,8 +26171,37 @@ Run dod_check to re-verify.`
         if (missing.length > 0) {
           return { content: [{ type: "text", text: formatMissingTools(missing) }] };
         }
+        const effectivePredicate2 = new_predicate ? new_predicate.type : void 0;
+        for (const { node: leaf } of leaves) {
+          const cat = leaf.category;
+          if (!cat) continue;
+          const evidenceErr = await validatePositiveEvidence(
+            new_command,
+            cat,
+            doc.cwd,
+            effectivePredicate2,
+            doc.skip_reasons?.[cat]
+          );
+          if (evidenceErr) return { content: [{ type: "text", text: evidenceErr }] };
+        }
       }
       let amendedCount = 0;
+      const gateFailures = [];
+      for (const { node: node2, node_path: leafPath } of leaves) {
+        const gateErr = checkAmendGate(doc.amendments, leafPath, node2.predicate, new_predicate, amend_justification);
+        if (gateErr) gateFailures.push(`${leafPath} ("${node2.title}"): ${gateErr}`);
+      }
+      if (gateFailures.length > 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `ERROR: Bulk amend gate blocked for ${gateFailures.length} leaf/leaves:
+${gateFailures.join("\n")}`
+            }
+          ]
+        };
+      }
       for (const { node: node2, node_path: leafPath } of leaves) {
         const oldSnap = {
           command: node2.command,
@@ -25774,7 +26222,8 @@ Run dod_check to re-verify.`
             predicate: node2.predicate ? { ...node2.predicate } : void 0,
             description: node2.description
           },
-          reason
+          reason,
+          justification: amend_justification
         });
         amendedCount++;
       }
@@ -25834,6 +26283,20 @@ Run dod_check to re-verify.`
       if (missing.length > 0) {
         return { content: [{ type: "text", text: formatMissingTools(missing) }] };
       }
+      if (node.category) {
+        const evidenceErr = await validatePositiveEvidence(
+          effectiveCommand,
+          node.category,
+          doc.cwd,
+          effectivePredicate.type,
+          doc.skip_reasons?.[node.category]
+        );
+        if (evidenceErr) return { content: [{ type: "text", text: evidenceErr }] };
+      }
+    }
+    const gateError = checkAmendGate(doc.amendments, resolvedPath, node.predicate, new_predicate, amend_justification);
+    if (gateError) {
+      return { content: [{ type: "text", text: `ERROR: ${gateError}` }] };
     }
     const oldSnapshot = {
       command: node.command,
@@ -25854,7 +26317,8 @@ Run dod_check to re-verify.`
         predicate: node.predicate ? { ...node.predicate } : void 0,
         description: node.description
       },
-      reason
+      reason,
+      justification: amend_justification
     });
     doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
     await save(doc);
@@ -25918,7 +26382,7 @@ server.tool("dod_list", "List all tracked DoD documents with their last check st
 });
 server.tool(
   "dod_import",
-  "Import an existing DoD markdown file into canonical MCP storage. Parses hierarchical tree structure, infers predicates, and stores them.",
+  "Import an existing DoD markdown file into canonical MCP storage. Parses hierarchical tree structure from author.ts output format (<!--p:...--> metadata) or hand-written markdown (leaves become drafts).",
   {
     path: external_exports.string().describe("Absolute path to the existing DoD markdown file"),
     cwd: external_exports.string().describe("Working directory for running proof commands (absolute path)")
@@ -25942,6 +26406,9 @@ server.tool(
       if (osError) return { content: [{ type: "text", text: osError }] };
       const id = generateId();
       const fingerprint = computeProofFingerprint(parsed.roots);
+      const executableConcrete = flattenConcreteLeaves(parsed.roots).filter(
+        ({ node }) => node.command && node.predicate && isExecutablePredicate(node.predicate.type)
+      );
       const doc = {
         id,
         title: parsed.title,
@@ -25950,6 +26417,8 @@ server.tool(
         cwd: resolvedCwd,
         markdown_path: path8.resolve(mdPath),
         created_at: (/* @__PURE__ */ new Date()).toISOString(),
+        import_source: path8.resolve(mdPath),
+        execution_confirmed: false,
         sections: parsed.sections,
         roots: parsed.roots,
         proof_fingerprint: fingerprint || void 0,
@@ -25958,6 +26427,7 @@ server.tool(
       await save(doc);
       const concreteCount = flattenConcreteLeaves(parsed.roots).length;
       const draftCount = countDraftNodes(parsed.roots);
+      const explicitPredicateMsg = concreteCount > 0 && draftCount > 0 ? `${concreteCount} proof(s) imported with explicit predicates, ${draftCount} imported as drafts (predicates could not be determined \u2014 use dod_refine to concretize them).` : concreteCount > 0 ? `${concreteCount} proof(s) imported with explicit predicates from author.ts metadata.` : `${draftCount} node(s) imported as drafts (no explicit predicate metadata \u2014 use dod_refine to concretize them).`;
       return {
         content: [
           {
@@ -25972,8 +26442,11 @@ server.tool(
               `Draft nodes: ${draftCount}`,
               `Cwd: ${resolvedCwd}`,
               "",
-              "Use dod_check to run verification."
-            ].join("\n")
+              explicitPredicateMsg,
+              "",
+              executableConcrete.length > 0 ? `Imported DoD has ${executableConcrete.length} executable proof(s). Commands have NOT been reviewed for safety.` : "",
+              "Run dod_check with confirm_import:true to confirm execution, or review the command list first."
+            ].filter(Boolean).join("\n")
           }
         ]
       };
@@ -26105,3 +26578,6 @@ if (process.argv[1] === _filename) {
     process.exit(1);
   });
 }
+export {
+  buildImportGateInfo
+};

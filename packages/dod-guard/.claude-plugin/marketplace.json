@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "dod-guard",
-      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Ships 7 skills: /interview, /quality-upgrade, /test-verification, /test-fixer, /ratchet, /clean-house, and /step-by-step (multi-step sequential execution with 2 specialized agents).",
+      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Ships 8 skills: /interview, /quality-upgrade, /test-verification, /test-fixer, /ratchet, /clean-house, /step-by-step (multi-step sequential execution with 2 specialized agents), and /cheap-step (host formulates specs, cheap workers implement, host verifies — step-by-step at 20% the cost).",
       "source": "./",
       "category": "productivity"
     }

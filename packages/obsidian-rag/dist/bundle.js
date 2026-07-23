@@ -10929,14 +10929,14 @@ async function indexVault(vaultPath, vaultName, store2, embedder2 = null) {
     }
   }
   const indexedPaths = store2.listNotePaths(vaultName);
-  let deleted = 0;
+  let _deleted = 0;
   for (const notePath of indexedPaths) {
     const fullPath = join3(vaultPath, notePath);
     if (!existsSync3(fullPath)) {
       store2.deleteChunksForNote(vaultName, notePath);
       store2.deleteNote(vaultName, notePath);
       console.error(`obsidian-rag: reconciliation removed deleted note "${notePath}"`);
-      deleted++;
+      _deleted++;
     }
   }
   store2.setIndexMeta(vaultName, {
@@ -25370,9 +25370,7 @@ var Store = class {
       d.exec("ALTER TABLE chunks ADD COLUMN embedding_blob BLOB");
     } catch {
     }
-    const migrateRows = d.prepare(
-      "SELECT rowid, id, embedding FROM chunks WHERE embedding IS NOT NULL AND embedding_blob IS NULL"
-    ).all();
+    const migrateRows = d.prepare("SELECT rowid, id, embedding FROM chunks WHERE embedding IS NOT NULL AND embedding_blob IS NULL").all();
     for (const row of migrateRows) {
       try {
         const arr = JSON.parse(row.embedding);
@@ -25537,7 +25535,11 @@ var Store = class {
   setEmbedding(chunkId, embedding) {
     const d = this.db;
     const blob = Buffer.from(new Float32Array(embedding).buffer);
-    d.prepare("UPDATE chunks SET embedding = ?, embedding_blob = ? WHERE id = ?").run(JSON.stringify(embedding), blob, chunkId);
+    d.prepare("UPDATE chunks SET embedding = ?, embedding_blob = ? WHERE id = ?").run(
+      JSON.stringify(embedding),
+      blob,
+      chunkId
+    );
     d.prepare(`
       UPDATE index_meta SET embedded_chunks = (SELECT COUNT(*) FROM chunks WHERE embedding_blob IS NOT NULL)
       WHERE vault_name = (SELECT vault_name FROM chunks WHERE id = ?)
@@ -25804,7 +25806,7 @@ ${lines.join("\n")}` }] };
         for (const n of allNotes) {
           if (n.path === path) continue;
           const fullNote = store2.getNote(vault.name, n.path);
-          if (fullNote && fullNote.links.some((l) => targetPaths.includes(l))) {
+          if (fullNote?.links.some((l) => targetPaths.includes(l))) {
             backlinks.push(n.path);
           }
         }
