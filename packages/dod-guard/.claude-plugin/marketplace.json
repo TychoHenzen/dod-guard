@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "dod-guard",
-      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Ships 6 skills: /interview (structured requirements with adversarial spec review), /ratchet (multi-step problem solving with verification gates), /clean-house (hunt duplicate/obsolete implementations), /step-by-step (multi-step sequential execution with 2 specialized agents), /cheap-step (step-by-step with cheap-worker fanout), and /adversarial-workflow (4-phase adversarial choreography — spec review, test audit, implementation review, structural gates).",
+      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Ships 6 skills: /interview (structured requirements with adversarial spec review), /ratchet (multi-step problem solving with verification gates), /clean-house (hunt duplicate/obsolete implementations), /step-by-step (multi-step sequential execution with 2 specialized agents), /cheap-step (step-by-step with cheap-worker fanout), and /adversarial-workflow (4-phase adversarial choreography with 6 specialized review agents — spec review, test audit, implementation review, structural gates).",
       "source": "./",
       "category": "productivity"
     }

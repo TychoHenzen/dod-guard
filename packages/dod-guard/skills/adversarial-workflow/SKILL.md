@@ -45,13 +45,13 @@ Build a DoD from the user's task, then attack it with 5 adversarial lenses.
 
 2. Dispatch these 5 subagents IN PARALLEL — each gets the DoD as context:
 
-| Lens | Agent tool: subagent_type | Agent tool: model | What to ask |
-|------|--------------------------|-------------------|-------------|
-| Security | general-purpose | sonnet | STRIDE threats, trust boundaries, authZ gaps. Look for injection vectors, missing validation, exposed secrets. |
-| Assumptions | general-purpose | haiku | Implicit assumptions about codebase state, user behavior, environment, data format. What happens if any assumption is wrong? |
-| Testability | general-purpose | haiku | Can each requirement produce a falsifiable proof? Which requirements are vague or unverifiable? |
-| Consistency | general-purpose | haiku | Do requirements align? Contradictions? Duplicates? Scope drift from the original goal? |
-| Implementability | general-purpose | haiku | Does this fit existing architecture? Missing dependencies? Breaking changes to shared interfaces? |
+| Lens | subagent_type | model | What to ask |
+|------|---------------|-------|-------------|
+| Security | dod-guard:adversarial-security | sonnet | STRIDE threats, trust boundaries, authZ gaps. Look for injection vectors, missing validation, exposed secrets. |
+| Assumptions | dod-guard:adversarial-spec-reviewer | haiku | Implicit assumptions about codebase state, user behavior, environment, data format. What happens if any assumption is wrong? |
+| Testability | dod-guard:adversarial-spec-reviewer | haiku | Can each requirement produce a falsifiable proof? Which requirements are vague or unverifiable? |
+| Consistency | dod-guard:adversarial-spec-reviewer | haiku | Do requirements align? Contradictions? Duplicates? Scope drift from the original goal? |
+| Implementability | dod-guard:adversarial-spec-reviewer | haiku | Does this fit existing architecture? Missing dependencies? Breaking changes to shared interfaces? |
 
 3. Each lens prompt (customize the bracketed parts):
 
@@ -116,11 +116,11 @@ Phase 1 gate must be GO. Verify: `dod_status(dod_id: "<id>")` → check adversar
 
 2. After tests exist, dispatch these 3 audit lenses IN PARALLEL:
 
-| Lens | Agent tool | What to ask | Evidence required |
-|------|-----------|-------------|-------------------|
-| Coverage | general-purpose (sonnet) | Does every requirement have at least one test? | Map each requirement → test file:line |
-| Falsifiability | general-purpose (sonnet) | Would each test fail if the requirement was wrong? | Describe a bug that WOULD make each test fail |
-| Gap Detection | general-purpose (sonnet) | What edge cases, error paths, or boundary conditions are untested? | List specific missing test scenarios with example inputs |
+| Lens | subagent_type | model | What to ask | Evidence required |
+|------|---------------|-------|-------------|-------------------|
+| Coverage | dod-guard:adversarial-test-auditor | sonnet | Does every requirement have at least one test? | Map each requirement → test file:line |
+| Falsifiability | dod-guard:adversarial-test-auditor | sonnet | Would each test fail if the requirement was wrong? | Describe a bug that WOULD make each test fail |
+| Gap Detection | dod-guard:adversarial-test-auditor | sonnet | What edge cases, error paths, or boundary conditions are untested? | List specific missing test scenarios with example inputs |
 
 Each lens MUST find at least 1 issue. Zero findings from a lens = rubber-stamp → re-dispatch that lens with a stronger prompt.
 
@@ -144,11 +144,11 @@ Phase 2 gate must be GO.
 
 2. Dispatch these 3 roles IN PARALLEL — each gets CLEAN context (only the diff + spec, never the implementer's reasoning or intermediate steps):
 
-| Role | Agent tool | Must find | Perspective |
-|------|-----------|-----------|-------------|
-| Saboteur | general-purpose (opus) | 2 issues | "How do I break this?" Worst-case inputs, concurrency races, resource exhaustion, null/undefined injection |
-| New Hire | general-purpose (haiku) | 1 issue | "Can I understand this cold?" Unclear naming, missing comments, confusing control flow, undocumented assumptions |
-| Spec Auditor | general-purpose (sonnet) | 1 issue | "Does this match the original spec?" Compare implementation against Phase 1 requirements (not the implementation plan) |
+| Role | subagent_type | model | Must find | Perspective |
+|------|---------------|-------|-----------|-------------|
+| Saboteur | dod-guard:adversarial-saboteur | opus | 2 issues | "How do I break this?" Worst-case inputs, concurrency races, resource exhaustion, null/undefined injection |
+| New Hire | dod-guard:adversarial-new-hire | haiku | 1 issue | "Can I understand this cold?" Unclear naming, missing comments, confusing control flow, undocumented assumptions |
+| Spec Auditor | dod-guard:adversarial-spec-auditor | sonnet | 1 issue | "Does this match the original spec?" Compare implementation against Phase 1 requirements (not the implementation plan) |
 
 3. Every finding MUST include all three (reject findings missing any):
    - `file:line` of the issue
@@ -247,3 +247,35 @@ Rules:
 4. EXECUTION EVIDENCE — every Phase 3 finding cites file:line + failing command.
 5. MAX 3 REVISE ITERATIONS per phase — then escalate to user.
 6. NEVER SKIP GATES — every phase runs, even if it seems "obviously fine."
+
+## Shipped Agents
+
+This skill ships 6 specialized agents in `agents/`:
+
+| Agent | File | Purpose | Phase(s) |
+|-------|------|---------|----------|
+| `adversarial-security` | `agents/adversarial-security.md` | STRIDE threats, OWASP Top 10, authZ, injection, secrets | Phase 1 |
+| `adversarial-spec-reviewer` | `agents/adversarial-spec-reviewer.md` | Assumptions, testability, consistency, implementability | Phase 1 |
+| `adversarial-test-auditor` | `agents/adversarial-test-auditor.md` | Coverage mapping, falsifiability, edge case gaps | Phase 2 |
+| `adversarial-saboteur` | `agents/adversarial-saboteur.md` | Worst-case inputs, races, exhaustion, null injection | Phase 3 |
+| `adversarial-new-hire` | `agents/adversarial-new-hire.md` | Naming, comments, control flow, conventions | Phase 3 |
+| `adversarial-spec-auditor` | `agents/adversarial-spec-auditor.md` | Requirement-to-implementation tracing, fidelity | Phase 3 |
+
+These are referenced by scoped name (`dod-guard:adversarial-security`, etc.) —
+the plugin namespace is auto-prefixed at install time.
+
+## Agent Tool Usage
+
+**CRITICAL**: The `subagent_type` parameter is an agent NAME, NOT a model name.
+
+```
+// ✅ CORRECT — agent name + model are separate
+Agent(subagent_type: "dod-guard:adversarial-saboteur", model: "opus", ...)
+
+// ❌ WRONG — model name passed as agent type (agent "sonnet" doesn't exist)
+Agent(subagent_type: "sonnet", ...)
+```
+
+The `model` parameter is optional when the agent's frontmatter already specifies
+the model — it overrides the agent default when you need a different model for
+a specific invocation. When omitted, the agent's own `model` frontmatter is used.

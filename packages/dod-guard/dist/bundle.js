@@ -21262,7 +21262,15 @@ async function runCommand(command, cwd, timeoutMs) {
 }
 async function executeProof(node, cwd, _opts = {}) {
   if (!node.predicate) {
-    return { node_path: "", id: node.id, title: node.title, description: node.description ?? "", status: "fail", command: node.command ?? "", error: "No predicate on node" };
+    return {
+      node_path: "",
+      id: node.id,
+      title: node.title,
+      description: node.description ?? "",
+      status: "fail",
+      command: node.command ?? "",
+      error: "No predicate on node"
+    };
   }
   const predicate = node.predicate;
   const timeoutMs = predicate.timeout_ms ?? 12e4;
@@ -24082,27 +24090,23 @@ server.tool(
         })),
         mandatory_minimum_met: l.mandatory_minimum_met
       })),
-      critical_count: lenses.reduce(
-        (sum, l) => sum + l.findings.filter((f) => f.severity === "critical").length,
-        0
-      ),
+      critical_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "critical").length, 0),
       major_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "major").length, 0),
-      minor_count: lenses.reduce(
-        (sum, l) => sum + l.findings.filter((f) => f.severity === "minor").length,
-        0
-      ),
+      minor_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "minor").length, 0),
       summary
     };
     const gates = doc.adversarial_gates ?? [];
     for (let p = 1; p < phase; p++) {
       const priorGate = gates.find((g) => g.phase === p);
-      if (!priorGate || priorGate.verdict !== "GO") {
+      if (priorGate?.verdict !== "GO") {
         const phaseNames = ["", "Spec", "Test", "Implement", "Cleanup"];
         return {
-          content: [{
-            type: "text",
-            text: `ERROR: Cannot record Phase ${phase} gate \u2014 Phase ${p} (${phaseNames[p]}) is ${priorGate ? priorGate.verdict : "PENDING"}. All prior phases must be GO before advancing.`
-          }]
+          content: [
+            {
+              type: "text",
+              text: `ERROR: Cannot record Phase ${phase} gate \u2014 Phase ${p} (${phaseNames[p]}) is ${priorGate ? priorGate.verdict : "PENDING"}. All prior phases must be GO before advancing.`
+            }
+          ]
         };
       }
     }
