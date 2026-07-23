@@ -21179,6 +21179,16 @@ function diagnoseFailure(node, result) {
     case "manual":
     case "review":
       return `Manual verification required. Run dod_verify to confirm this proof.`;
+    case "adversarial": {
+      const phase = pred.value !== void 0 ? Number(pred.value) : 0;
+      return `Adversarial gate for phase ${phase} not GO. Run dod_adversarial_gate to complete the adversarial review for this phase.`;
+    }
+    case "holdout": {
+      const expected = String(pred.value ?? "");
+      return `Holdout test fingerprint mismatch. Expected SHA-256 "${expected.slice(0, 16)}..." but got a different value. The holdout test may have been weakened or removed.`;
+    }
+    case "convergence":
+      return `Convergence audit not GO. Run the structural gates and convergence audit to reach stable state.`;
     default:
       return `Proof failed with exit code ${code}. Check the output above.`;
   }
@@ -21218,6 +21228,13 @@ function evalPredicate(predicate, run, output) {
         return { status: "fail", error: `invalid regex: /${pattern}/` };
       }
     }
+    case "holdout": {
+      const expected = String(predicate.value ?? "").trim();
+      const actual = output.trim();
+      return actual.toLowerCase() === expected.toLowerCase() ? { status: "pass" } : { status: "fail", error: `holdout fingerprint mismatch: expected ${expected.slice(0, 16)}...` };
+    }
+    // adversarial and convergence are gate checks — evaluated in executeProof
+    // via opts.adversarial_gates, not via command output.
     default:
       return { status: "fail", error: `unknown predicate type: ${predicate.type}` };
   }
@@ -21292,6 +21309,29 @@ async function executeProof(node, cwd, opts = {}) {
     }
     result.status = "fail";
     result.error = `TDD GREEN phase: test failed with exit code ${run2.code ?? -1}. Implementation is incomplete or broken. Check the test output above.`;
+    return result;
+  }
+  if (predicate.type === "adversarial" || predicate.type === "convergence") {
+    const elapsed2 = Date.now() - start;
+    const phase = predicate.value !== void 0 ? Number(predicate.value) : 0;
+    const gates = opts.adversarial_gates ?? [];
+    const searchPhase = predicate.type === "convergence" ? 4 : phase;
+    const gate = gates.find((g) => g.phase === searchPhase);
+    result.duration_ms = elapsed2;
+    if (!gate) {
+      result.status = "fail";
+      result.error = `${predicate.type} gate: no gate found for phase ${searchPhase}. Run dod_adversarial_gate first.`;
+      result.diagnosis = diagnoseFailure(node, result);
+      return result;
+    }
+    if (gate.verdict !== "GO") {
+      result.status = "fail";
+      result.error = `${predicate.type} gate: verdict is ${gate.verdict} (need GO). ${gate.summary}`;
+      result.diagnosis = diagnoseFailure(node, result);
+      return result;
+    }
+    result.status = "pass";
+    result.output = `Gate phase ${searchPhase}: GO \u2014 ${gate.summary}`;
     return result;
   }
   const run = await runCommand(node.command, cwd, timeoutMs);
@@ -21525,7 +21565,9 @@ async function checkDocument(doc, cwdOverride, opts) {
   }
   let anyFail = false;
   let manualUnverified = 0;
-  const proofOpts = {};
+  const proofOpts = {
+    adversarial_gates: doc.adversarial_gates ?? []
+  };
   for (const { node, node_path } of inScope) {
     const result = await executeProof(node, cwd, proofOpts);
     result.node_path = node_path;
@@ -22396,12 +22438,15 @@ var PredicateSchema = external_exports.object({
     "output_not_matches",
     "tdd",
     "manual",
-    "review"
+    "review",
+    "adversarial",
+    "holdout",
+    "convergence"
   ]),
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
   timeout_ms: external_exports.number().optional().describe("Override the default 120s command timeout in milliseconds. Use for slow tools like Stryker (600s).")
 });
-var ProofCategorySchema = external_exports.enum(["behavioral", "wiring", "manual", "other"]);
+var ProofCategorySchema = external_exports.enum(["behavioral", "wiring", "manual", "other", "test_audit"]);
 var TaskNodeInputSchema = external_exports.lazy(
   () => external_exports.object({
     title: external_exports.string(),
@@ -23971,6 +24016,99 @@ server.tool(
             `Migration complete: ${migrated} migrated, ${skipped} skipped.`,
             "",
             "Run dod_list to see updated documents."
+          ].join("\n")
+        }
+      ]
+    };
+  }
+);
+server.tool(
+  "dod_adversarial_gate",
+  "Record an adversarial gate verdict for a DoD phase. The skill orchestrator dispatches review subagents (lenses), collects findings, computes the GO/REVISE/STOP verdict, and records it here. A DoD cannot progress to phase N+1 until phase N's gate is GO.",
+  {
+    dod_id: external_exports.string().describe("DoD ID"),
+    phase: external_exports.number().min(1).max(4).describe("Phase number (1=Spec, 2=Test, 3=Implement, 4=Cleanup)"),
+    verdict: external_exports.enum(["GO", "REVISE", "STOP"]).describe("Gate verdict"),
+    lenses: external_exports.array(
+      external_exports.object({
+        lens: external_exports.string().describe("Lens name (e.g. 'Security', 'Coverage')"),
+        findings: external_exports.array(
+          external_exports.object({
+            severity: external_exports.enum(["critical", "major", "minor", "blocker"]).describe("Finding severity"),
+            target: external_exports.string().optional().describe("Which requirement/node this finding targets"),
+            problem: external_exports.string().describe("Concrete problem description"),
+            suggestion: external_exports.string().optional().describe("Suggested fix"),
+            evidence: external_exports.string().optional().describe("Execution-based evidence: file:line + failing command")
+          })
+        ).describe("Findings from this lens"),
+        mandatory_minimum_met: external_exports.boolean().describe("Did this lens meet its mandatory minimum findings?")
+      })
+    ).describe("Results from each adversarial lens"),
+    summary: external_exports.string().describe("One-line summary of the gate result")
+  },
+  async ({ dod_id, phase, verdict, lenses, summary }) => {
+    const doc = await load(dod_id);
+    if (!doc) {
+      return { content: [{ type: "text", text: `ERROR: DoD "${dod_id}" not found.` }] };
+    }
+    const gate = {
+      phase,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      verdict,
+      lenses: lenses.map((l) => ({
+        lens: l.lens,
+        findings: l.findings.map((f) => ({
+          severity: f.severity,
+          target: f.target,
+          problem: f.problem,
+          suggestion: f.suggestion,
+          evidence: f.evidence
+        })),
+        mandatory_minimum_met: l.mandatory_minimum_met
+      })),
+      critical_count: lenses.reduce(
+        (sum, l) => sum + l.findings.filter((f) => f.severity === "critical").length,
+        0
+      ),
+      major_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "major").length, 0),
+      minor_count: lenses.reduce(
+        (sum, l) => sum + l.findings.filter((f) => f.severity === "minor").length,
+        0
+      ),
+      summary
+    };
+    const gates = doc.adversarial_gates ?? [];
+    const existingIdx = gates.findIndex((g) => g.phase === phase);
+    if (existingIdx >= 0) {
+      gates[existingIdx] = gate;
+    } else {
+      gates.push(gate);
+    }
+    doc.adversarial_gates = gates;
+    await save(doc);
+    const gateStatusLines = [];
+    for (let p = 1; p <= 4; p++) {
+      const g = gates.find((gg) => gg.phase === p);
+      if (g) {
+        const emoji2 = g.verdict === "GO" ? "\u2705" : g.verdict === "STOP" ? "\u{1F6D1}" : "\u{1F504}";
+        gateStatusLines.push(
+          `  Phase ${p} (${["", "Spec", "Test", "Implement", "Cleanup"][p]}): ${emoji2} ${g.verdict} \u2014 ${g.summary}`
+        );
+      } else {
+        gateStatusLines.push(`  Phase ${p} (${["", "Spec", "Test", "Implement", "Cleanup"][p]}): \u2B1C PENDING`);
+      }
+    }
+    return {
+      content: [
+        {
+          type: "text",
+          text: [
+            `Adversarial gate recorded: Phase ${phase} \u2014 ${verdict}`,
+            `  Critical: ${gate.critical_count}, Major: ${gate.major_count}, Minor: ${gate.minor_count}`,
+            `  Summary: ${summary}`,
+            "",
+            "Gate status for all phases:",
+            ...gateStatusLines
           ].join("\n")
         }
       ]

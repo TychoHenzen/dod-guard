@@ -23,7 +23,7 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 
 **Behavioral predicates only.** Every proof is a concrete, falsifiable claim about what the implementation should do. No mechanical quality metrics (line length, log count, assertion count) — those are noise that weak models game without fixing actual behavior.
 
-### Predicate types (8)
+### Predicate types (11 — 8 behavioral + 3 gate)
 
 | Type | Behavior |
 |------|----------|
@@ -32,10 +32,13 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 | `output_matches` / `output_not_matches` | Regex match |
 | `tdd` | Test must fail first (RED), then pass (GREEN) |
 | `manual` / `review` | Out-of-band human verification via MCP elicitation |
+| `adversarial` | Checks DoD's `adversarial_gates[]` — gate for specified phase must be GO |
+| `holdout` | Verifies holdout test fingerprint (SHA-256) hasn't changed |
+| `convergence` | Checks convergence audit (Phase 4) reached GO |
 
-### Proof categories (4)
+### Proof categories (5)
 
-`"behavioral"` | `"wiring"` | `"manual"` | `"other"`
+`"behavioral"` | `"wiring"` | `"manual"` | `"other"` | `"test_audit"`
 
 ### Proof execution flow (checker.ts)
 
@@ -51,8 +54,8 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 
 | File | Role |
 |------|------|
-| `index.ts` | MCP server: tool registration, Zod schemas, import gate, amend gate, manual elicitation |
-| `types.ts` | All types: `TaskNode`, `DodDocument`, `Predicate`, `CheckResult`, `LeafResult`, `ProofCategory`, `ManualResult` |
+| `index.ts` | MCP server: tool registration, Zod schemas, import gate, amend gate, adversarial gate, manual elicitation |
+| `types.ts` | All types: `TaskNode`, `DodDocument`, `Predicate`, `CheckResult`, `LeafResult`, `ProofCategory`, `ManualResult`, `AdversarialGate`, `AdversarialLensResult`, `AdversarialFinding` |
 | `checker.ts` | Proof execution engine: VCS capture, leaf execution, predicate evaluation, tamper detection, amendment gate |
 | `evaluate-proof.ts` | Single proof execution: command run, predicate eval, failure diagnosis |
 | `fingerprint.ts` | Canonical fingerprint: `computeProofFingerprint()` (SHA-256 of command+type+value+options) |
@@ -84,6 +87,7 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 | `dod_list` | List all tracked DoDs |
 | `dod_import` | Parse existing markdown DoD into canonical storage |
 | `dod_tree` | Read-only structural dump of node tree |
+| `dod_adversarial_gate` | Record adversarial gate verdict (GO/REVISE/STOP) for a DoD phase |
 
 ### Adding a new predicate type
 
@@ -104,6 +108,7 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 | `clean-house` | Hunt down duplicate/obsolete implementations |
 | `step-by-step` | Execute multi-step plans one atomic step at a time |
 | `cheap-step` | Step-by-step with evomcp cheap-worker fanout |
+| `adversarial-workflow` | 4-phase adversarial choreography (spec review → test audit → implementation review → structural gates) |
 
 ## Lessons
 

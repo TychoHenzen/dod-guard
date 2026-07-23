@@ -10,7 +10,10 @@ export interface Predicate {
     | "output_not_matches"
     | "tdd"
     | "manual"
-    | "review";
+    | "review"
+    | "adversarial"
+    | "holdout"
+    | "convergence";
   value?: number | string;
   /** Override the default 120s command timeout (ms). Slow tools like Stryker need up to 600s. */
   timeout_ms?: number;
@@ -22,8 +25,9 @@ export interface Predicate {
  * "wiring" = proves the change is connected to the real system (integration_wiring).
  * "manual" = human-verified proof.
  * "other" = catch-all.
+ * "test_audit" = adversarial test verification gate (Phase 2 holdout contracts).
  */
-export type ProofCategory = "behavioral" | "wiring" | "manual" | "other";
+export type ProofCategory = "behavioral" | "wiring" | "manual" | "other" | "test_audit";
 
 /**
  * Record of a human's confirmation of a `manual` proof.
@@ -46,6 +50,53 @@ export interface ManualResult {
   review_verdict?: string;
   /** `review` predicate only: who performed the review (name or identifier). */
   reviewer?: string;
+}
+
+/**
+ * Adversarial gate verdict — computed from aggregated lens findings.
+ * GO = proceed to next phase. REVISE = fix issues and re-run. STOP = fatal blocker.
+ */
+export type AdversarialVerdict = "GO" | "REVISE" | "STOP";
+
+/**
+ * A single finding from one adversarial lens.
+ * Must cite concrete evidence (file:line + failing command) to prevent CIC.
+ */
+export interface AdversarialFinding {
+  severity: "critical" | "major" | "minor" | "blocker";
+  /** Which requirement/node this finding targets (optional for systemic findings). */
+  target?: string;
+  /** Concrete problem description. */
+  problem: string;
+  /** Suggested fix — actionable, not abstract. */
+  suggestion?: string;
+  /** Execution-based evidence: file:line + failing command. Required for non-blocker findings. */
+  evidence?: string;
+}
+
+/**
+ * Result from a single adversarial lens.
+ * mandatory_minimum_met = false if the lens found nothing (rubber-stamp detection).
+ */
+export interface AdversarialLensResult {
+  lens: string;
+  findings: AdversarialFinding[];
+  mandatory_minimum_met: boolean;
+}
+
+/**
+ * A recorded adversarial gate — checkpoint between workflow phases.
+ * A DoD cannot progress to phase N+1 until phase N's gate is GO.
+ */
+export interface AdversarialGate {
+  phase: 1 | 2 | 3 | 4;
+  timestamp: string;
+  verdict: AdversarialVerdict;
+  lenses: AdversarialLensResult[];
+  critical_count: number;
+  major_count: number;
+  minor_count: number;
+  summary: string;
 }
 
 export type ProofRefinement = "draft" | "concrete";
@@ -128,6 +179,8 @@ export interface DodDocument {
    */
   proof_fingerprint?: string;
   amendments: Amendment[];
+  /** Adversarial gate checkpoints — one per phase. Phase N+1 cannot execute until phase N gate is GO. */
+  adversarial_gates?: AdversarialGate[];
   last_check?: {
     timestamp: string;
     overall: "pass" | "fail" | "incomplete" | "pass_dirty";

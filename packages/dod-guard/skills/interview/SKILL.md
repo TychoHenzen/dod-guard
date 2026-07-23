@@ -213,7 +213,7 @@ roots:
 2. For Feature Work, decompose into sub-tasks (Password Hashing, Login Endpoint, etc.).
 3. For each sub-task, ask: "What exact behaviors must be verified?" Write each as a leaf.
 4. Mark leaves as concrete (known command) or draft (intent only).
-5. Run the contrarian (Phase 3.6) against the tree — it will argue for adding optional categories as draft leaves.
+5. Run the adversarial spec review (Phase 3.6) against the tree — 5 parallel lenses attack the spec from independent angles, finding missing requirements, untestable claims, and hidden assumptions before any code is written.
 
 **Anti-patterns:**
 - One concrete proof per task group claiming to cover the entire sub-goal (e.g., "Tests pass" for "User Auth" with no decomposition)
@@ -323,107 +323,178 @@ Both layers are needed because:
 
 **Step ordering rule:** The integration proof must be in the **final implementation step** of the DoD (the last step before any manual-only steps). This ensures all pieces are built before integration is verified, and prevents "done" claims when units pass but nothing is wired.
 
-## Phase 3.6: Contrarian Agent — Push for Maximum Proof Coverage
+## Phase 3.6: Adversarial Spec Review — Attack the Requirements Before Code Exists
 
-Models are lazy — they skip optional proofs to save effort. The contrarian agent acts as an adversarial counterweight: it reviews the planned DoD, argues for adding every optional proof category that could reasonably apply, and forces conscious opt-out with justification for any that are omitted.
+Models are lazy — they accept weak specs to save effort. The adversarial spec review attacks the requirements from multiple independent angles, finding ambiguities, missing edge cases, and contradictions BEFORE any code is written. This replaces the old "contrarian agent" approach (which argued for adding static analysis proofs — those predicates no longer exist).
 
-**When:** After constructing the DoD steps in Phase 3.5 but BEFORE calling `dod_create`.
+**When:** After constructing the TaskNode tree in Phase 3.4/3.5 but BEFORE calling `dod_create`.
 
-### The Contrarian's Mandate
+**Core principle:** Each lens is a clean-context subagent — it sees only the spec + tree structure, never the author's reasoning. Context isolation eliminates confirmation bias (self-critique false positive rate ~30-60%; adversarial review ~7%).
 
-Spawn a contrarian agent. Its job is to be skeptical of every omission:
+### Five Adversarial Lenses
 
-> You are a contrarian quality reviewer. Review the planned DoD steps below. For each of these optional proof categories, argue WHY it should be ADDED to this DoD. Be specific — reference the actual change and code. If the category genuinely does not apply, say so and suggest a one-line skip_reason. Your goal is maximum proof coverage, not comfort.
->
-> Optional categories:
-> - **tdd** — fail-first test for new/changed behavior
-> - **mutation** — prove tests actually catch bugs (cargo-mutants / mutmut / Stryker)
-> - **streamline** — prove old code was removed when revising functionality
-> - **observability** — prove changed files have logging, no empty catch, no swallowed errors
-> - **performance** — prove no perf regression (benchmark)
-> - **complexity** — prove cyclomatic complexity doesn't regress
-> - **coverage** — prove test coverage doesn't drop
-> - **duplication** — prove code duplication doesn't increase
->
-> Planned DoD steps: [steps summary]
-> Work type: [bug|general]
-> Project language/stack: [from Phase 1 research]
->
-> Output format:
-> - For each category, one of: "MUST ADD — [reason]" or "SKIP — [one-line justification]"
-> - Then a skip_reasons JSON object for categories being skipped
-> - Then concrete proof commands for categories being added
+Dispatch these in parallel. Each lens is a separate subagent with a specific attack surface:
+
+| Lens | Question | Severity if violated |
+|------|----------|---------------------|
+| **Security** | What STRIDE risks exist? Trust boundaries? Where could bad input cause harm? AuthZ gaps? | critical |
+| **Assumptions** | What implicit assumptions does the spec make about the codebase, user behavior, or environment? Are they documented? | major |
+| **Testability** | Can each requirement produce a falsifiable behavioral proof? Are any requirements untestable? | major |
+| **Consistency** | Do all requirements align with each other? Any contradictions? Scope drift from original ask? | major |
+| **Implementability** | Can this be built on the existing architecture? Missing dependencies? Integration seams defined? | minor |
+
+Each lens must find at least 1 issue OR report "NO_FINDINGS: [specific justification of why this lens found nothing]." A bare "no issues found" without justification = invalid verdict (rubber-stamp detection — re-dispatch).
+
+### Verdict Computation
+
+| Verdict | Rule |
+|---------|------|
+| **GO** | 0 critical, 0-2 major, any minor. All lenses returned valid output. |
+| **REVISE** | 1+ critical OR 3+ major. Fix the spec, then re-run adversarial review. |
+| **STOP** | 1+ blocker: fundamentally infeasible, security showstopper, or spec contradicts itself irreconcilably. Escalate to user for redesign. |
 
 ### Integration Flow
 
-1. **Draft DoD steps** (Phase 3.5 output)
-2. **Spawn contrarian agent** with the steps and project context
-3. **Present contrarian's recommendations** to the user:
-   - "The contrarian agent found X proofs we should add and Y we can skip with justification"
-   - Show the proposed additions and skip_reasons
-4. **User decides** — accept, reject, or modify each recommendation
-5. **Apply accepted additions** to the DoD steps
-6. **Collect skip_reasons** for all omitted optional categories
-7. **Call dod_create** with the final steps AND skip_reasons
+1. **Draft DoD tree** (Phase 3.4/3.5 output)
+2. **Dispatch 5 lens subagents in parallel** with the spec summary, tree structure, and project context
+3. **Collect findings.** Each lens returns structured output: findings with severity, the lens that found it, and a concrete suggestion
+4. **Compute verdict** from aggregated findings
+5. **If GO**: present findings summary, proceed to `dod_create`
+6. **If REVISE**: present findings to user via AskUserQuestion:
+   - Show each finding with severity and suggested fix
+   - User resolves each (accept fix, alternative fix, or dismiss with reason)
+   - Return to Phase 2 questioning for unresolved critical/major issues
+   - Re-run adversarial review after spec is updated
+   - Max 3 REVISE iterations — after 3, escalate remaining unresolved findings to user for explicit override
+7. **If STOP**: present blocker to user, abort spec creation
 
-### Contrarian Prompt Template
+### Lens Subagent Prompts
 
-Use this prompt when spawning the contrarian agent:
-
+**Security lens:**
 ```
-You are an adversarial quality reviewer. Your job is to maximize DoD proof coverage.
-Given the planned implementation below, argue for adding every optional proof category
-that could reasonably apply. Be aggressive — if there's even a 50% chance a category
-is relevant, argue for it.
+You are a security reviewer attacking a planned implementation. Review the spec below.
+Find: STRIDE threats, injection vectors, authZ gaps, trust boundary violations,
+data integrity risks, exposed secrets. Cite specific requirements or tree nodes.
+If you find nothing, explain WHY this spec has zero security exposure.
 
-PLANNED WORK:
-- Type: {bug|general}
+SPEC:
+- Goal: {goal}
+- Type: {bug|general|minimal}
+- Language/stack: {language}
+- Requirements: {requirements summary}
+- TaskNode tree: {tree structure}
+
+Output EACH finding as:
+  SEVERITY: critical|major|minor
+  TARGET: which requirement/node this attacks
+  PROBLEM: specific vulnerability or gap
+  SUGGESTION: how to fix the spec to address this
+```
+
+**Assumptions lens:**
+```
+You are reviewing a spec for hidden assumptions. Review the spec below.
+Find: implicit assumptions about the codebase (existing functions, types, patterns),
+user behavior (workflows, inputs), environment (OS, dependencies, config),
+and data (formats, schemas, constraints). Every undocumented assumption is a bug waiting to happen.
+If you find nothing, explain WHY every assumption is already explicit.
+
+SPEC:
+- Goal: {goal}
+- Type: {bug|general|minimal}
+- Language/stack: {language}
+- Requirements: {requirements summary}
+- TaskNode tree: {tree structure}
+
+Output EACH finding as:
+  SEVERITY: critical|major|minor
+  ASSUMPTION: what is being assumed
+  RISK: what happens if the assumption is wrong
+  SUGGESTION: how to validate or document this assumption
+```
+
+**Testability lens:**
+```
+You are reviewing a spec for testability gaps. Review the spec below.
+Find: requirements that cannot produce a falsifiable behavioral proof (a command
+with clear pass/fail output), draft nodes with vague intents, integration proofs
+with undefined entry points, manual proofs that should be machine-checkable.
+If you find nothing, explain WHY every requirement maps to a concrete testable proof.
+
+SPEC:
+- Goal: {goal}
+- Type: {bug|general|minimal}
+- Requirements: {requirements summary}
+- TaskNode tree: {tree structure}
+- Concrete proofs: {list of concrete leaves with commands}
+- Draft intents: {list of draft leaves with intents}
+
+Output EACH finding as:
+  SEVERITY: critical|major|minor
+  UNTESTABLE: which requirement/node lacks a falsifiable proof
+  WHY: why it can't be verified by a command
+  SUGGESTION: how to rewrite it as a testable behavioral proof
+```
+
+**Consistency lens:**
+```
+You are reviewing a spec for internal contradictions and scope drift. Review
+the spec below. Find: requirements that contradict each other, scope that
+has drifted from the original goal, edge cases defined one way in one node
+and differently in another, tree structure that doesn't match the requirements text.
+If you find nothing, explain WHY the spec is internally consistent.
+
+SPEC:
+- Goal: {goal}
+- Original ask: {user's original request — paste verbatim}
+- Requirements: {requirements summary}
+- TaskNode tree: {tree structure}
+
+Output EACH finding as:
+  SEVERITY: critical|major|minor
+  CONFLICT: which two requirements/nodes disagree
+  WHY: how they contradict or diverge
+  SUGGESTION: how to reconcile them
+```
+
+**Implementability lens:**
+```
+You are reviewing a spec for buildability on the existing codebase. Review
+the spec below. Find: missing dependencies, architectural mismatches,
+integration seams not defined, patterns that clash with existing code,
+scope that requires infrastructure not present in the project.
+If you find nothing, explain WHY this fits cleanly into the existing architecture.
+
+SPEC:
 - Goal: {goal}
 - Language/stack: {language}
-- Scope: {scope — files/layers involved}
-- Existing DoD steps: {step summary}
+- Project structure: {key directories, frameworks, patterns from Phase 1 research}
+- Requirements: {requirements summary}
+- TaskNode tree: {tree structure}
 
-For EACH of these 8 categories, output ONE of:
-  "MUST ADD: <concrete proof command suggestion with specific file paths>"
-  "SKIP: <one-line justification why this category does not apply>"
-
-Categories to review:
-1. tdd — TDD fail-first test for new/changed behavior
-2. mutation — Mutation testing (prove tests catch bugs)
-3. streamline — Prove old implementations were removed
-4. observability — Prove changed files are instrumented (logging, no empty catch)
-5. performance — Prove no performance regression
-6. complexity — Prove cyclomatic complexity does not regress  
-7. coverage — Prove test coverage does not drop
-8. duplication — Prove code duplication does not increase
-
-After your per-category analysis, output:
-- A JSON skip_reasons object for categories you recommend skipping
-- Concrete proof objects for categories you recommend adding
+Output EACH finding as:
+  SEVERITY: critical|major|minor
+  BLOCKER: what about the architecture makes this hard/impossible
+  WHY: why the current approach won't fit
+  SUGGESTION: how to adjust the spec or architecture
 ```
 
-### skip_reasons Format
+### Post-Review: skip_reasons for Dod Creation
 
-The `skip_reasons` parameter is a flat JSON map from ProofCategory name to one-line justification:
+The `skip_reasons` parameter on `dod_create` captures conscious omissions — things deliberately left out of the DoD. After the adversarial review resolves all findings, collect skip_reasons as a flat map:
 
 ```json
 {
-  "tdd": "config-only change, no logic to test",
-  "mutation": "trivial CRUD endpoints, mutation testing overkill",
-  "streamline": "greenfield — no old code to remove",
-  "observability": "documentation update, no runtime code changed",
-  "performance": "no perf-sensitive paths touched",
-  "complexity": "no algorithmic code added",
-  "coverage": "no new testable surface — purely config",
-  "duplication": "no shared logic extracted"
+  "why_no_security_tests": "internal tool, no network exposure",
+  "why_no_observability_proofs": "pure data transformation, no side effects to monitor"
 }
 ```
 
 Rules:
-- HARD_MANDATORY categories (integration_wiring, integration_behavioral, test) CANNOT be skipped — skip_reasons for them are silently ignored
-- Every optional category absent from the DoD MUST have a skip_reason entry OR dod_create will reject
-- skip_reasons show up as warnings (not errors) in the dod_create output — they prove conscious choice, not laziness
-- Categories that ARE present in the DoD don't need skip_reasons
+- skip_reasons keys are free-form strings — use descriptive keys, not deleted enum values
+- Every concern the adversarial lenses raised and was dismissed MUST have a skip_reason
+- skip_reasons show up as informational notes in dod_create output — they prove conscious choice, not laziness
+- Real issues that were fixed in the spec don't need skip_reasons (they're resolved, not skipped)
 
 ## Phase 4: Create DoD via dod-guard MCP
 
@@ -456,7 +527,7 @@ Call `dod_create` to build a DoD with a hierarchical `roots` tree. DoDs start wi
           "command": "npm run lint",
           "predicate": {"type": "exit_code", "value": 0},
           "description": "lint passes with zero warnings",
-          "category": "lint"
+          "category": "behavioral"
         },
         {
           "title": "Full test suite",
@@ -464,7 +535,7 @@ Call `dod_create` to build a DoD with a hierarchical `roots` tree. DoDs start wi
           "command": "npm test",
           "predicate": {"type": "exit_code", "value": 0},
           "description": "all tests pass",
-          "category": "test"
+          "category": "behavioral"
         }
       ]
     },
@@ -480,7 +551,7 @@ Call `dod_create` to build a DoD with a hierarchical `roots` tree. DoDs start wi
               "command": "grep \"bcrypt\" src/auth.ts",
               "predicate": {"type": "output_contains", "value": "bcrypt"},
               "description": "uses bcrypt for password hashing",
-              "category": "structure"
+              "category": "wiring"
             },
             {
               "title": "Hash function TDD",
@@ -513,7 +584,7 @@ Call `dod_create` to build a DoD with a hierarchical `roots` tree. DoDs start wi
               "command": "grep \"auth\" src/routes.ts",
               "predicate": {"type": "output_contains", "value": "auth"},
               "description": "auth routes registered in the real router",
-              "category": "integration_wiring"
+              "category": "wiring"
             },
             {
               "title": "Login endpoint reachable",
@@ -547,7 +618,7 @@ Call `dod_create` to build a DoD with a hierarchical `roots` tree. DoDs start wi
     }
   ],
   "skip_reasons": {
-    "mutation": "trivial CRUD endpoints, mutation testing overkill"
+    "why_no_security_proofs": "internal auth feature, no external network exposure"
   }
 }
 ```
@@ -566,11 +637,11 @@ Call `dod_create` to build a DoD with a hierarchical `roots` tree. DoDs start wi
 | `category` | on concrete leaves | Baseline category (see categories below) |
 | `advisory` | optional | Advisory tier — failing advisory proof warns but does not block |
 
-**Predicate types** (unchanged from v1.x): `exit_code`, `exit_code_not`, `output_contains`, `output_matches`, `output_not_contains`, `output_not_matches`, `tdd`, `manual`, `review`, `mutation`, `regression`, `assertions`, `streamline`, `observability`.
+**Predicate types** (behavioral only — post-v2.4.0): `exit_code`, `exit_code_not`, `output_contains`, `output_matches`, `output_not_contains`, `output_not_matches`, `tdd`, `manual`, `review`.
 
-**Proof categories** (unchanged): `lint`, `format`, `tdd`, `structure`, `test`, `mutation`, `integration_wiring`, `integration_behavioral`, `performance`, `complexity`, `coverage`, `duplication`, `streamline`, `observability`, `manual`, `other`.
+**Proof categories**: `"behavioral"` (proves correct behavior — tests, lint, format, tdd), `"wiring"` (proves connection to system — integration), `"manual"` (human-verified), `"other"` (catch-all).
 
-Baseline enforcement is **advisory only** at create time — categories are filled during `dod_refine`. Mandatory categories (integration_wiring, integration_behavioral, test) warn if absent but do not block creation.
+Baseline enforcement is **advisory only** at create time — categories are filled during `dod_refine`. Behavioral proofs should use `"behavioral"` or `"wiring"`. Manual/review proofs use `"manual"`.
 
 ```json
 {
@@ -649,7 +720,7 @@ During implementation, draft leaves become concrete via `dod_refine`. Concrete p
   "command": "curl -s localhost:3000/api/auth/login -d '{\"email\":\"test@test.com\",\"password\":\"correct\"}' | findstr JWT",
   "predicate": {"type": "output_contains", "value": "JWT"},
   "description": "login endpoint returns JWT on valid credentials",
-  "category": "integration_behavioral"
+  "category": "behavioral"
 }
 ```
 
