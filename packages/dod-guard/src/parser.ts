@@ -71,31 +71,6 @@ function parseLeafLine(line: string): TaskNode | null {
     };
   }
 
-  // Manual proof (no backtick command, just "Manual — description")
-  const manualMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
-  if (manualMatch) {
-    const desc = manualMatch[2].trim();
-    if (metaPredicate) {
-      return {
-        id: "",
-        title: desc,
-        refinement: "concrete",
-        command: "manual",
-        predicate: metaPredicate,
-        description: desc,
-        last_status: markerToStatus(manualMatch[1]),
-      };
-    }
-    // No explicit metadata → import as draft
-    return {
-      id: "",
-      title: desc,
-      refinement: "draft",
-      intent: desc,
-      last_status: "draft",
-    };
-  }
-
   return null;
 }
 

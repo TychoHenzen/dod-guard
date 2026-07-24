@@ -35,20 +35,6 @@ export function findNodeByPath(nodes: TaskNode[], path: string): TaskNode | null
   return traverseNodePath(nodes, path.split("."), 0);
 }
 
-export function isExecutablePredicate(type: string): boolean {
-  return type !== "manual" && type !== "review";
-}
-
-function isExecutableLeaf(leaf: { node: TaskNode }): boolean {
-  return !!(leaf.node.command && leaf.node.predicate && isExecutablePredicate(leaf.node.predicate.type));
-}
-
-export function extractExecutableCommands(nodes: TaskNode[]): string[] {
-  return flattenConcreteLeaves(nodes)
-    .filter(isExecutableLeaf)
-    .map(({ node }) => node.command as string);
-}
-
 export function isBranchLocked(nodes: TaskNode[]): boolean {
   return !hasDraftNodes(nodes);
 }
@@ -245,7 +231,6 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
 
   // ── Execute proofs ───────────────────────────────────────────────────
   let anyFail = false;
-  let manualUnverified = 0;
   let stuckTriggered = false;
   const proofOpts: ProofExecutionOptions = {
     adversarial_gates: doc.adversarial_gates ?? [],
@@ -268,9 +253,6 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
         stuckTriggered = true;
       }
     }
-
-    const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
-    if (result.status === "skipped" && isManualOrReview) manualUnverified++;
   }
 
   // Add draft leaves
@@ -295,8 +277,6 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
     overall = "stuck";
   } else if (anyFail) {
     overall = "fail";
-  } else if (manualUnverified > 0) {
-    overall = "incomplete";
   } else {
     overall = "pass";
   }
@@ -329,10 +309,6 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
   // Add guidance lines
   const guidance: string[] = [];
 
-  if (manualUnverified > 0) {
-    guidance.push(`${manualUnverified} manual/review proof(s) await dod_verify.`);
-  }
-
   if (!targetPath && draftCount > 0) {
     guidance.push(`${draftCount} draft node(s) — refine with dod_refine, then re-run dod_check.`);
   }
@@ -346,7 +322,6 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
     timestamp: new Date().toISOString(),
     proof_fingerprint: proofFingerprint,
     draft_count: draftCount,
-    manual_unverified: manualUnverified,
     summary_mode: opts?.summary === true ? true : undefined,
     ...(targetPath ? { scoped: true, ran_node_path: targetPath } : {}),
     ...(tampered ? { tampered: true } : {}),

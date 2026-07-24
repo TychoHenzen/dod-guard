@@ -11,8 +11,6 @@ export const PredicateSchema = z.object({
     "output_not_contains",
     "output_not_matches",
     "tdd",
-    "manual",
-    "review",
     "adversarial",
     "holdout",
     "convergence",
@@ -24,7 +22,7 @@ export const PredicateSchema = z.object({
     .describe("Override the default 120s command timeout in milliseconds. Use for slow tools like Stryker (600s)."),
 });
 
-export const ProofCategorySchema = z.enum(["behavioral", "wiring", "manual", "other", "test_audit"]);
+export const ProofCategorySchema = z.enum(["behavioral", "wiring", "other", "test_audit"]);
 
 // Recursive TaskNode input schema
 export const TaskNodeInputSchema: z.ZodType<{

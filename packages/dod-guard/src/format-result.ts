@@ -26,11 +26,6 @@ export function formatCheckResult(result: CheckResult): string {
     l.push("");
   }
 
-  if (result.manual_unverified > 0) {
-    l.push(`⏳ **${result.manual_unverified} manual/review proof(s)** await dod_verify.`);
-    l.push("");
-  }
-
   // Group leaves by root-level path prefix for hierarchical display
   const byRoot = new Map<string, typeof result.leaves>();
   for (const leaf of result.leaves) {

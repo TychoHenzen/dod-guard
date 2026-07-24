@@ -23,7 +23,7 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 
 **Behavioral predicates only.** Every proof is a concrete, falsifiable claim about what the implementation should do. No mechanical quality metrics (line length, log count, assertion count) — those are noise that weak models game without fixing actual behavior.
 
-### Predicate types (11 — 8 behavioral + 3 gate)
+### Predicate types (10 — 7 behavioral + 3 gate)
 
 | Type | Behavior |
 |------|----------|
@@ -31,25 +31,23 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 | `output_contains` / `output_not_contains` | Substring match in combined stdout+stderr |
 | `output_matches` / `output_not_matches` | Regex match |
 | `tdd` | Test must fail first (RED), then pass (GREEN) |
-| `manual` / `review` | Out-of-band human verification via MCP elicitation |
 | `adversarial` | Checks DoD's `adversarial_gates[]` — gate for specified phase must be GO |
 | `holdout` | Verifies holdout test fingerprint (SHA-256) hasn't changed |
 | `convergence` | Checks convergence audit (Phase 4) reached GO |
 
-### Proof categories (5)
+### Proof categories (4)
 
-`"behavioral"` | `"wiring"` | `"manual"` | `"other"` | `"test_audit"`
+`"behavioral"` | `"wiring"` | `"other"` | `"test_audit"`
 
 ### Proof execution flow (checker.ts)
 
 `checkDocument()` is the main entry point:
 1. Flatten concrete leaves (skips drafts, recurses into groups)
 2. For each leaf: `executeProof()` → runs command via `execFile()` with timeout (default 120s)
-3. Manual/review proofs check cached fingerprint — skip until `dod_verify` is called
-4. TDD proofs track `seen_failing` state across runs (must fail before passing)
-5. `computeProofFingerprint()` hashes all concrete leaves → compared against stored hash for tamper detection
-6. Any behavioral predicate fail → overall FAIL
-7. Any node amended 3+ times triggers STUCK verdict (approach likely wrong; re-read requirements) — overrides PASS even if all proofs pass
+3. TDD proofs track `seen_failing` state across runs (must fail before passing)
+4. `computeProofFingerprint()` hashes all concrete leaves → compared against stored hash for tamper detection
+5. Any behavioral predicate fail → overall FAIL
+6. Any node amended 3+ times triggers STUCK verdict (approach likely wrong; re-read requirements) — overrides PASS even if all proofs pass
 
 ### File responsibilities
 
@@ -64,11 +62,9 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 | `parser.ts` | Reverse: parse DoD markdown → `DodDocument` using `<!--p:JSON-->` metadata |
 | `store.ts` | JSON file persistence in `~/.claude/dod-store/{uuid}.json` |
 | `tree-utils.ts` | Tree utilities: ID-based path resolution, tree display, node counting, OS command validation |
-| `manual.ts` | Human verification: fingerprint caching, `resolveManual()` with confirmer callback |
 | `command-check.ts` | Validate proof commands: OS tool availability, glob expansion, placeholder detection |
 | `format-result.ts` | Format `CheckResult` into human-readable output |
 | `snapshot.ts` | Ephemeral git worktree isolation (kept for potential future use but checker no longer calls it) |
-| `notify.ts` | Jingle (PowerShell beep arpeggio) for manual verification attention chime |
 | `schemas.ts` | Shared Zod schemas for Predicate and ProofCategory |
 | `tools/dod-create.ts` | Build new DoD |
 | `tools/dod-refine.ts` | Refine draft → concrete or subdivide |
@@ -83,7 +79,6 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 | `dod_refine` | Turn draft leaf into concrete or subdivide into children |
 | `dod_add_node` / `dod_remove_node` | Add/remove nodes |
 | `dod_amend` | Modify a concrete proof with audit trail |
-| `dod_verify` | MCP elicitation for manual/review proofs |
 | `dod_status` | Read cached check result without re-running |
 | `dod_list` | List all tracked DoDs |
 | `dod_import` | Parse existing markdown DoD into canonical storage |
@@ -97,8 +92,7 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 3. Add case in `evaluate-proof.ts` → `diagnoseFailure()`
 4. Add rendering in `author.ts` → `renderLeaf()`
 5. Update `PredicateSchema` in `schemas.ts`
-6. Update `predicate.type` enum in `index.ts` tool registrations
-7. Write tests
+6. Write tests
 
 ## Bundled Skills
 

@@ -9,8 +9,6 @@ export interface Predicate {
     | "output_not_contains"
     | "output_not_matches"
     | "tdd"
-    | "manual"
-    | "review"
     | "adversarial"
     | "holdout"
     | "convergence";
@@ -23,34 +21,10 @@ export interface Predicate {
  * Proof category — classifies what kind of verification a proof provides.
  * "behavioral" = proves correct behavior (test, integration_behavioral).
  * "wiring" = proves the change is connected to the real system (integration_wiring).
- * "manual" = human-verified proof.
  * "other" = catch-all.
  * "test_audit" = adversarial test verification gate (Phase 2 holdout contracts).
  */
-export type ProofCategory = "behavioral" | "wiring" | "manual" | "other" | "test_audit";
-
-/**
- * Record of a human's confirmation of a `manual` proof.
- *
- * Anti-cheat: this is written ONLY by the server after collecting the answer
- * out-of-band (MCP elicitation or a server-spawned dialog). It is never
- * derived from a parameter Claude supplies to dod_check.
- *
- * `proof_fingerprint` ties the answer to the exact proof text it was given for.
- * If the proof is later amended (command/predicate/description change), the
- * fingerprint no longer matches and the cached answer is invalidated.
- */
-export interface ManualResult {
-  answer: "pass" | "fail";
-  note?: string;
-  confirmed_at: string;
-  channel: "elicitation" | "messagebox";
-  proof_fingerprint: string;
-  /** `review` predicate only: pasted review output/verdict text. */
-  review_verdict?: string;
-  /** `review` predicate only: who performed the review (name or identifier). */
-  reviewer?: string;
-}
+export type ProofCategory = "behavioral" | "wiring" | "other" | "test_audit";
 
 /**
  * Adversarial gate verdict — computed from aggregated lens findings.
@@ -137,7 +111,6 @@ export interface TaskNode {
   last_checked?: string;
   seen_failing?: boolean;
   seen_failing_at?: string;
-  manual_result?: ManualResult;
 }
 
 export interface Amendment {
@@ -217,9 +190,6 @@ export interface CheckResult {
   /** True when the recomputed proof-set fingerprint differs from the stored one
    * (store edited outside dod_amend). Forces overall to "fail". */
   tampered?: boolean;
-  /** Number of manual/review proofs not yet verified by a human. >0 means
-   * those proofs can pass only via dod_verify — dod_check skips them. */
-  manual_unverified: number;
   /** When true: format output in summary mode (collapse unchanged drafts). */
   summary_mode?: boolean;
   /** Git commit hash at check time (full checks only). */

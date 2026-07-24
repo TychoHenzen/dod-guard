@@ -29,7 +29,6 @@ function makeResult(overrides: Partial<CheckResult> = {}): CheckResult {
     timestamp: "2026-01-01T00:00:00Z",
     proof_fingerprint: "abc123",
     draft_count: 0,
-    manual_unverified: 0,
     ...overrides,
   };
 }
@@ -108,14 +107,6 @@ test("formatCheckResult draft nodes shown", () => {
   assert.ok(out.includes("not done yet"));
 });
 
-// ── Manual unverified ─────────────────────────────────────────────────
-
-test("formatCheckResult manual proofs warning", () => {
-  const out = formatCheckResult(makeResult({ manual_unverified: 3 }));
-  assert.ok(out.includes("3 manual/review proof"));
-  assert.ok(out.includes("dod_verify"));
-});
-
 // ── Grouping ──────────────────────────────────────────────────────────
 
 test("formatCheckResult groups leaves by root path", () => {
@@ -158,7 +149,7 @@ test("formatCheckResult skipped leaves shown with reason", () => {
     leaves: [
       leafResult("0", {
         status: "skipped",
-        error: "manual proof awaiting human verification",
+        error: "proof skipped — dependency not met",
       }),
     ],
   });

@@ -4,11 +4,9 @@ import {
   checkAmendGate,
   countDraftNodes,
   countNodeAmendments,
-  extractExecutableCommands,
   findNodeByPath,
   hasDraftNodes,
   isBranchLocked,
-  isExecutablePredicate,
 } from "./checker.js";
 import type { Amendment, TaskNode } from "./types.js";
 
@@ -108,66 +106,6 @@ test("findNodeByPath deeply nested path", () => {
   const nodes = [group("L1", [group("L2", [group("L3", [concLeaf("Deep", "echo deep")])])])];
   const result = findNodeByPath(nodes, "0.children.0.children.0.children.0");
   assert.equal(result?.title, "Deep");
-});
-
-// ── isExecutablePredicate ─────────────────────────────────────────────
-
-test("isExecutablePredicate exit_code is executable", () => {
-  assert.equal(isExecutablePredicate("exit_code"), true);
-});
-
-test("isExecutablePredicate output_contains is executable", () => {
-  assert.equal(isExecutablePredicate("output_contains"), true);
-});
-
-test("isExecutablePredicate manual is NOT executable", () => {
-  assert.equal(isExecutablePredicate("manual"), false);
-});
-
-test("isExecutablePredicate review is NOT executable", () => {
-  assert.equal(isExecutablePredicate("review"), false);
-});
-
-test("isExecutablePredicate tdd is executable", () => {
-  assert.equal(isExecutablePredicate("tdd"), true);
-});
-
-test("isExecutablePredicate adversarial is executable", () => {
-  assert.equal(isExecutablePredicate("adversarial"), true);
-});
-
-// ── extractExecutableCommands ─────────────────────────────────────────
-
-test("extractExecutableCommands returns commands from concrete leaves", () => {
-  const nodes = [concLeaf("A", "echo a"), concLeaf("B", "echo b")];
-  assert.deepEqual(extractExecutableCommands(nodes), ["echo a", "echo b"]);
-});
-
-test("extractExecutableCommands skips drafts", () => {
-  const nodes = [draftLeaf("todo", "do this"), concLeaf("Build", "npm run build")];
-  assert.deepEqual(extractExecutableCommands(nodes), ["npm run build"]);
-});
-
-test("extractExecutableCommands recurses into groups", () => {
-  const nodes = [
-    group("Core", [concLeaf("lint", "npx biome check"), concLeaf("test", "npm test")]),
-    concLeaf("deploy", "npm run deploy"),
-  ];
-  const cmds = extractExecutableCommands(nodes);
-  assert.deepEqual(cmds, ["npx biome check", "npm test", "npm run deploy"]);
-});
-
-test("extractExecutableCommands skips manual/review predicates", () => {
-  const nodes = [
-    concLeaf("manual check", "manual", { type: "manual" }),
-    concLeaf("build", "npm run build", { type: "exit_code" }),
-  ];
-  const cmds = extractExecutableCommands(nodes);
-  assert.deepEqual(cmds, ["npm run build"]);
-});
-
-test("extractExecutableCommands empty array", () => {
-  assert.deepEqual(extractExecutableCommands([]), []);
 });
 
 // ── isBranchLocked ────────────────────────────────────────────────────

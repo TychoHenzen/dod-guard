@@ -3,7 +3,7 @@
  */
 
 import { writeMarkdown } from "../author.js";
-import { findNodeByPath, isExecutablePredicate } from "../checker.js";
+import { findNodeByPath } from "../checker.js";
 import { findMissingTools } from "../command-check.js";
 import { computeProofFingerprint } from "../fingerprint.js";
 import * as store from "../store.js";
@@ -62,8 +62,7 @@ export async function handleDodAddNode(params: AddNodeParams): Promise<{ path: s
     if (!(command && predicate && description)) {
       throw new Error("ERROR: concrete nodes require command, predicate, and description.");
     }
-    const pred = predicate as Predicate;
-    if (isExecutablePredicate(pred.type) && command.trim() !== "") {
+    if (command.trim() !== "") {
       const missing = await findMissingTools([command], doc.cwd);
       if (missing.length > 0) {
         throw new Error(formatMissingTools(missing));

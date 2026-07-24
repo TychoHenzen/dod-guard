@@ -303,7 +303,6 @@ All dod-guard skills use these MCP tools under the hood. You rarely need to call
 | `dod_check` | Run proofs, get pass/fail/stuck verdict | All skills |
 | `dod_refine` | Draft → concrete or subdivide | step-by-step, cheap-step, ratchet |
 | `dod_amend` | Modify concrete proof (audit trail) | All skills (when requirements change) |
-| `dod_verify` | Human out-of-band verification popup | step-by-step (manual steps) |
 | `dod_tree` | Read-only structural dump | All skills (discover node paths) |
 | `dod_status` | Last check result without re-running | ratchet (loop iteration start) |
 | `dod_list` | List all tracked DoDs | Any skill (find existing DoDs) |

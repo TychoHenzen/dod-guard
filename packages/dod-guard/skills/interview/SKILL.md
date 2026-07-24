@@ -222,38 +222,38 @@ Not all changes can be verified the same way. The verification surface determine
 | Surface | Examples | Can be machine-verified? | Required proof types |
 |---------|----------|--------------------------|---------------------|
 | **Code** | Logic, algorithms, data flow, API endpoints | Yes — tests pass, lint, build | behavioral + wiring |
-| **Visual** | Rendering, UI layout, colors, animations, 3D meshes, CSS | Partially — build compiles but visual output needs human eyes | behavioral + wiring + **manual** |
-| **Gameplay** | Physics, AI behavior, level design, game balance, collision | Partially — unit tests check logic, playtest checks feel | behavioral + wiring + **manual** |
+| **Visual** | Rendering, UI layout, colors, animations, 3D meshes, CSS | Partially — build compiles but visual output needs human eyes | behavioral + wiring |
+| **Gameplay** | Physics, AI behavior, level design, game balance, collision | Partially — unit tests check logic, playtest checks feel | behavioral + wiring |
 | **Config** | Env vars, dependency versions, settings files | Yes — config parse + system start | wiring |
 | **Structural** | Renames, file moves, refactors | Yes — tests pass + diff review | behavioral |
 
-**The mandatory manual predicate rule:** Every DoD that involves visual or gameplay changes MUST include at least one `manual` predicate leaf. This is not optional. Build passes for visual changes = unverified. The manual predicate forces the out-of-band human verification popup (via `dod_verify`) before the DoD can reach PASS.
+For visual/gameplay changes, include behavioral proofs that verify the output can be produced (build succeeds, assets load, scene renders without crashes). For human visual inspection, add a descriptive proof with a command that launches or screenshots the relevant output.
 
-**Example — manual leaf for a rendering change:**
+**Example — launch-and-inspect proof for a rendering change:**
 ```json
 {
-  "title": "Visual output matches expected rendering",
+  "title": "App launches and renders scene without errors",
   "refinement": "concrete",
-  "command": "manual",
-  "predicate": {"type": "manual"},
-  "description": "Launch the application and confirm the screen renders UI content correctly on the 3D mesh. Verify colors, layout, and text readability match the spec.",
-  "category": "manual"
+  "command": "npm run dev 2>&1 | findstr /C:\"scene loaded\"",
+  "predicate": {"type": "output_contains", "value": "scene loaded"},
+  "description": "Launch the application and confirm the scene initializes successfully.",
+  "category": "behavioral"
 }
 ```
 
-**Example — manual leaf for a gameplay change:**
+**Example — visual change proof with screenshot command:**
 ```json
 {
-  "title": "Gameplay behavior matches spec",
+  "title": "Screenshot capture succeeds",
   "refinement": "concrete",
-  "command": "manual",
-  "predicate": {"type": "manual"},
-  "description": "Launch the game and playtest: verify enemy AI pathfinding avoids walls, spawn rates match configured values, and difficulty curve feels correct.",
-  "category": "manual"
+  "command": "npx playwright test --grep screenshot",
+  "predicate": {"type": "exit_code", "value": 0},
+  "description": "Capture a screenshot of the application to verify visual output.",
+  "category": "behavioral"
 }
 ```
 
-**When to add manual leaves:**
+**When to add screenshot/inspect proofs:**
 - Any task group that modifies files in `rendering/`, `ui/`, `graphics/`, `shaders/`, `sprites/`, `scenes/`, `levels/`
 - Any task group with leaf intents containing "render", "display", "show", "look", "appear", "visual"
 - Any task group with leaf intents containing "movement", "collision", "spawn", "ai behavior", "gameplay"
@@ -847,12 +847,11 @@ Work through task groups sequentially. Concrete proofs are verified by dod_check
 For draft leaves in your current task group: determine the exact command that proves
 the intent, call dod_refine to concretize it, then dod_check with nodePath to verify
 just that subtree. If a concrete proof is unreasonable, dod_amend with a reason.
-Concrete manual/review proofs: call dod_verify once that subtree's implementation is done.
 When all drafts are refined and all concrete proofs pass, run dod_check with no nodePath
 for the full PASS verdict.
 </process>
 <success_criteria>A full dod_check (no nodePath) returns overall PASS with zero draft nodes.
-An unverified manual/review proof holds the verdict at INCOMPLETE.</success_criteria>
+Draft nodes hold the verdict at INCOMPLETE until refined.</success_criteria>
 <on_completion>List every remaining manual step the user must complete.</on_completion>
 ```
 

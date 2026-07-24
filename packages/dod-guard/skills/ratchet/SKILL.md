@@ -681,7 +681,6 @@ dod_check(dod_id?, path?, cwd_override?, nodePath?)
 dod_refine(dod_id, node_path, mode, command?, predicate?, description?, category?, children?)
 dod_add_node(dod_id, parent_path, title, refinement?, intent?, command?, predicate?, ...)
 dod_amend(dod_id, node_path, reason, new_command?, new_predicate?, new_description?)
-dod_verify(dod_id?, path?, proof_id)
 dod_status(dod_id?, path?)
 dod_list()
 ```

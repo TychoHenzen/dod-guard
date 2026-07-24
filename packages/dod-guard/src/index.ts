@@ -3,18 +3,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { formatCheckResult, updateDocFromCheckResult, writeMarkdown } from "./author.js";
-import { checkAmendGate, checkDocument, countDraftNodes, findNodeByPath, isExecutablePredicate } from "./checker.js";
+import { checkAmendGate, checkDocument, countDraftNodes, findNodeByPath } from "./checker.js";
 import { findMissingTools, isPlaceholderCommand } from "./command-check.js";
 import { computeProofFingerprint, flattenConcreteLeaves } from "./fingerprint.js";
-import { type Confirmer, type ManualAnswer, resolveManual } from "./manual.js";
-import { playJingle } from "./notify.js";
 import { parseMarkdown } from "./parser.js";
 import { PredicateSchema, ProofCategorySchema, SectionsSchema, TaskNodeInputSchema } from "./schemas.js";
 import * as store from "./store.js";
 import { handleDodAddNode } from "./tools/dod-add-node.js";
 import { handleDodCreate } from "./tools/dod-create.js";
 import { handleDodRefine } from "./tools/dod-refine.js";
-import { checkCommandsForOs, findNodeById, findNodeInTree, formatMissingTools, formatTree } from "./tree-utils.js";
+import { checkCommandsForOs, findNodeById, formatMissingTools, formatTree } from "./tree-utils.js";
 import type { DodDocument, Predicate, TaskNode } from "./types.js";
 
 const server = new McpServer({
@@ -62,115 +60,6 @@ server.tool(
   },
 );
 
-// ── Manual verification confirmer ───────────────────────────────────
-
-const ELICITATION_MAX_WAIT_MS = 0x7fffffff;
-
-function manualInstructions(node: TaskNode): string {
-  const isReview = node.predicate?.type === "review";
-  const lines = [node.description ?? node.title];
-  if (node.command?.trim() && node.command.trim() !== "manual" && !isReview) {
-    lines.push("", `Steps / command: ${node.command}`);
-  }
-  if (isReview) {
-    lines.push(
-      "",
-      "Run `/code-review` (fresh context) against the current diff vs the DoD requirements.",
-      "Confirm PASS only if it reports no gaps affecting correctness or the stated requirements.",
-      "",
-      "After running the review, you MUST provide:",
-      "1. review_verdict: Paste the full review output/verdict text.",
-      "2. reviewer: Your name or identifier.",
-      "A bare 'yes' without concrete attestation will be rejected.",
-    );
-  } else {
-    lines.push("", "Confirm PASS only after you have personally verified this works as described.");
-  }
-  return lines.join("\n");
-}
-
-function buildConfirmer(): Confirmer {
-  return async (node: TaskNode): Promise<ManualAnswer> => {
-    const isReview = node.predicate?.type === "review";
-    const promptLabel = isReview ? "Code review required" : "Manual verification required";
-    const instructions = manualInstructions(node);
-
-    // Fire-and-forget jingle — never block verification on audio.
-    try {
-      playJingle();
-    } catch {
-      /* audio best-effort */
-    }
-
-    const caps = server.server.getClientCapabilities();
-    if (caps?.elicitation) {
-      try {
-        const baseProperties: Record<string, any> = {
-          result: {
-            type: "string",
-            enum: ["pass", "fail"],
-            enumNames: ["Verified works as expected", "Not verified does not work"],
-            description: "Did the manual verification pass?",
-          },
-          note: {
-            type: "string",
-            maxLength: 500,
-            description: "Optional note about what you observed",
-          },
-        };
-        const requiredFields: string[] = ["result"];
-
-        if (isReview) {
-          baseProperties.review_verdict = {
-            type: "string",
-            description: "Paste the review output/verdict text",
-          };
-          baseProperties.reviewer = {
-            type: "string",
-            description: "Who performed the review (name or identifier)",
-          };
-          requiredFields.push("review_verdict", "reviewer");
-        }
-
-        const result = await server.server.elicitInput(
-          {
-            message: `${promptLabel}:\n\n${instructions}`,
-            requestedSchema: {
-              type: "object",
-              properties: baseProperties,
-              required: requiredFields,
-            },
-          },
-          { timeout: ELICITATION_MAX_WAIT_MS },
-        );
-
-        if (result.action === "accept") {
-          const passed = result.content?.result === "pass";
-          const note = typeof result.content?.note === "string" ? result.content.note : undefined;
-          const reviewVerdict =
-            typeof result.content?.review_verdict === "string" ? result.content.review_verdict : undefined;
-          const reviewer = typeof result.content?.reviewer === "string" ? result.content.reviewer : undefined;
-          return {
-            answer: passed ? "pass" : "fail",
-            note,
-            channel: "elicitation",
-            review_verdict: reviewVerdict,
-            reviewer,
-          };
-        }
-        return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error("dod-guard: elicitation request failed", { err: msg });
-      }
-    } else {
-      console.error("dod-guard: MCP client does not support elicitation — manual verification unavailable");
-    }
-
-    return { answer: "fail", note: "no verification channel available on this host", channel: "elicitation" };
-  };
-}
-
 // ── Import gate helper ──────────────────────────────────────────────
 
 /**
@@ -190,7 +79,7 @@ export function buildImportGateInfo(doc: DodDocument):
   }
 
   const executableLeaves = flattenConcreteLeaves(doc.roots).filter(
-    ({ node }) => node.command && node.predicate && isExecutablePredicate(node.predicate.type),
+    ({ node }) => node.command && node.predicate,
   );
 
   return {
@@ -208,7 +97,7 @@ export function buildImportGateInfo(doc: DodDocument):
 
 server.tool(
   "dod_check",
-  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Use `dod_tree` to discover current node paths before scoping. Manual/review proofs are NEVER auto-prompted — call dod_verify on that proof_id when verification is relevant.",
+  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Use `dod_tree` to discover current node paths before scoping.",
   {
     dod_id: z.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
@@ -488,84 +377,6 @@ server.tool(
   },
 );
 
-// ── dod_verify ──────────────────────────────────────────────────────
-
-server.tool(
-  "dod_verify",
-  "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now.",
-  {
-    dod_id: z.string().optional().describe("DoD ID"),
-    path: z.string().optional().describe("Markdown file path"),
-    proof_id: z.string().describe('The proof id to verify (e.g. "node-3").'),
-  },
-  async ({ dod_id, path: mdPath, proof_id }) => {
-    let doc: DodDocument | null = null;
-    if (dod_id) doc = await store.load(dod_id);
-    else if (mdPath) doc = await store.findByPath(mdPath);
-
-    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
-
-    const node = findNodeInTree(doc.roots, proof_id);
-    if (!node) return { content: [{ type: "text" as const, text: `ERROR: proof "${proof_id}" not found.` }] };
-    if (node.predicate?.type !== "manual" && node.predicate?.type !== "review") {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `ERROR: proof "${proof_id}" is "${node.predicate?.type ?? "unknown"}" — only manual/review proofs are verified out-of-band.`,
-          },
-        ],
-      };
-    }
-    if (node.refinement !== "concrete") {
-      return {
-        content: [
-          { type: "text" as const, text: `ERROR: proof "${proof_id}" is a draft — refine with dod_refine first.` },
-        ],
-      };
-    }
-
-    const label = node.predicate.type === "review" ? "Code review" : "Manual verification";
-    const resolution = await resolveManual(node, buildConfirmer(), label);
-
-    // Review attestation validation: verdict text and reviewer required
-    if (node.predicate.type === "review") {
-      if (!(node.manual_result?.review_verdict && node.manual_result?.reviewer)) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: "ERROR: Review attestation required — provide the review verdict text and reviewer identity. Verification not recorded.",
-            },
-          ],
-        };
-      }
-    }
-
-    node.last_status = resolution.status;
-    node.last_output = resolution.output;
-    node.last_checked = new Date().toISOString();
-
-    await store.save(doc);
-    await writeMarkdown(doc);
-
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: [
-            `## Manual verification: ${resolution.status.toUpperCase()}`,
-            "",
-            resolution.output,
-            "",
-            "Run dod_check to fold this into the overall verdict.",
-          ].join("\n"),
-        },
-      ],
-    };
-  },
-);
-
 // ── dod_status ──────────────────────────────────────────────────────
 
 server.tool(
@@ -700,21 +511,6 @@ server.tool(
         };
       }
 
-      // Block weakening on any leaf
-      if (new_predicate && !isExecutablePredicate(new_predicate.type)) {
-        const machineLeaves = leaves.filter(({ node }) => node.predicate && isExecutablePredicate(node.predicate.type));
-        if (machineLeaves.length > 0) {
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: `ERROR: Cannot convert ${machineLeaves.length} machine-checkable proof(s) to manual/review — this would bypass verification.`,
-              },
-            ],
-          };
-        }
-      }
-
       // Validate commands against OS
       if (new_command !== undefined) {
         const missing = await findMissingTools([new_command], doc.cwd);
@@ -814,27 +610,10 @@ server.tool(
       };
     }
 
-    // Block weakening: machine → out-of-band (manual or review)
-    if (
-      new_predicate &&
-      !isExecutablePredicate(new_predicate.type) &&
-      node.predicate &&
-      isExecutablePredicate(node.predicate.type)
-    ) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: "ERROR: Cannot convert a machine-checkable proof to manual or review — this would bypass verification.",
-          },
-        ],
-      };
-    }
-
-    // Validate command against OS (skip out-of-band proofs: manual, review)
+    // Validate command against OS
     const effectivePredicate = (new_predicate ?? node.predicate) as Predicate;
     const effectiveCommand = new_command ?? node.command ?? "";
-    if (isExecutablePredicate(effectivePredicate.type) && effectiveCommand.trim() !== "") {
+    if (effectiveCommand.trim() !== "") {
       const missing = await findMissingTools([effectiveCommand], doc.cwd);
       if (missing.length > 0) {
         return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
@@ -878,7 +657,7 @@ server.tool(
     await writeMarkdown(doc);
 
     const placeholderWarn =
-      isExecutablePredicate(effectivePredicate.type) && isPlaceholderCommand(effectiveCommand)
+      isPlaceholderCommand(effectiveCommand)
         ? [
             "",
             "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
@@ -980,7 +759,7 @@ server.tool(
       const fingerprint = computeProofFingerprint(parsed.roots);
 
       const executableConcrete = flattenConcreteLeaves(parsed.roots).filter(
-        ({ node }) => node.command && node.predicate && isExecutablePredicate(node.predicate.type),
+        ({ node }) => node.command && node.predicate,
       );
 
       const doc: DodDocument = {

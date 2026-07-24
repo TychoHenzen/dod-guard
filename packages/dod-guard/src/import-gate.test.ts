@@ -92,24 +92,6 @@ describe("buildImportGateInfo", () => {
     }
   });
 
-  it("excludes manual/review predicates from command list", () => {
-    const doc = makeDoc({
-      import_source: "/tmp/imported.md",
-      execution_confirmed: false,
-      roots: [
-        leaf("n1", "Lint", "npx biome check", "Run linter"),
-        leaf("n2", "Manual check", "manual", "Visual check", "manual"),
-        leaf("n3", "Review", "review", "Code review", "review"),
-      ],
-    });
-    const result = buildImportGateInfo(doc);
-    assert.ok(result.blocked);
-    if (result.blocked) {
-      assert.equal(result.executableCount, 1);
-      assert.equal(result.commandList[0].command, "npx biome check");
-    }
-  });
-
   it("excludes draft nodes from command list", () => {
     const doc = makeDoc({
       import_source: "/tmp/imported.md",
@@ -149,20 +131,6 @@ describe("buildImportGateInfo", () => {
     if (result.blocked) {
       assert.equal(result.executableCount, 2);
       assert.equal(result.commandList.length, 2);
-    }
-  });
-
-  it("returns executableCount 0 when no executable leaves exist", () => {
-    const doc = makeDoc({
-      import_source: "/tmp/imported.md",
-      execution_confirmed: false,
-      roots: [leaf("n1", "Manual", "manual", "Visual check", "manual"), draftLeaf("n2", "Draft", "Not ready")],
-    });
-    const result = buildImportGateInfo(doc);
-    assert.ok(result.blocked);
-    if (result.blocked) {
-      assert.equal(result.executableCount, 0);
-      assert.equal(result.commandList.length, 0);
     }
   });
 });

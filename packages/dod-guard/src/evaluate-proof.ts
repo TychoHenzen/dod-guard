@@ -1,6 +1,5 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { perProofFingerprint } from "./manual.js";
 import type { AdversarialGate, LeafResult, Predicate, TaskNode } from "./types.js";
 
 const execFileP = promisify(execFile);
@@ -8,7 +7,6 @@ const execFileP = promisify(execFile);
 // ── Public types ──────────────────────────────────────────────────────────
 
 export interface ProofExecutionOptions {
-  confirmer?: (node: TaskNode) => Promise<{ answer: "pass" | "fail"; note?: string }>;
   /** Adversarial gate results from the DoD document — checked by adversarial/convergence predicates. */
   adversarial_gates?: AdversarialGate[];
 }
@@ -71,10 +69,6 @@ function diagnoseFailure(node: TaskNode, result: LeafResult): string {
 
     case "tdd":
       return result.error ?? "TDD proof failed. Check the test output above for specific failures.";
-
-    case "manual":
-    case "review":
-      return `Manual verification required. Run dod_verify to confirm this proof.`;
 
     case "adversarial": {
       const phase = pred.value !== undefined ? Number(pred.value) : 0;
@@ -238,24 +232,6 @@ export async function executeProof(
     status: "skipped",
     command: node.command ?? "",
   };
-
-  // ── Out-of-band: manual / review ─────────────────────────────────────
-  if (predicate.type === "manual" || predicate.type === "review") {
-    if (node.manual_result) {
-      const fp = perProofFingerprint(node);
-      if (node.manual_result.proof_fingerprint === fp) {
-        result.status = node.manual_result.answer;
-        if (node.manual_result.note) result.error = node.manual_result.note;
-        result.duration_ms = Date.now() - start;
-        return result;
-      }
-    }
-    // No cached result — skip until dod_verify is called
-    result.status = "skipped";
-    result.error = `${predicate.type} proof awaiting human verification via dod_verify`;
-    result.duration_ms = Date.now() - start;
-    return result;
-  }
 
   // ── TDD: run command, check red/green state ──────────────────────────
   if (predicate.type === "tdd") {

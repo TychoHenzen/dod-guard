@@ -75,13 +75,7 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
   const mark = proofMark(node.last_status);
   let proofLine: string;
 
-  if (node.predicate?.type === "manual" || node.predicate?.type === "review") {
-    const mr = node.manual_result;
-    const state = mr
-      ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_`
-      : " _(awaiting human verification)_";
-    proofLine = `${indent}- ${mark} Proof: ${node.predicate.type === "review" ? "Review" : "Manual"} — ${node.description}${state}`;
-  } else if (node.predicate?.type === "tdd") {
+  if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? (node.last_status === "pass" ? "GREEN" : "RED") : "AWAITING RED";
     proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` → ${node.description}`;
   } else if (node.predicate?.type === "adversarial") {
@@ -125,10 +119,9 @@ export function renderMarkdown(doc: DodDocument): string {
   l.push("1. Mark a task `[>]` when you begin working on it.");
   l.push("2. Call `dod_check` to verify proofs — do NOT mark proofs manually.");
   l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
-  l.push("4. For `manual`/`review` proofs: call `dod_verify(dod_id, proof_id)` explicitly.");
-  l.push("5. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.");
-  l.push("6. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("7. Continue until `dod_check` returns PASS — then stop and report done.");
+  l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.");
+  l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
+  l.push("6. Continue until `dod_check` returns PASS — then stop and report done.");
   l.push("");
   l.push("**Behavioral predicates only.** Each proof is a concrete behavioral claim.");
   l.push("Read failure diagnoses carefully — they tell you WHAT went wrong and what to fix.");

@@ -47,8 +47,7 @@ npm install -g dod-guard
 | Tool | Description |
 |------|-------------|
 | `dod_create` | Create a locked DoD (declares a `type`; each proof a `category`). Rejects DoDs missing mandatory baseline categories |
-| `dod_check` | Execute proofs from canonical storage, return PASS/FAIL/INCOMPLETE. Optional `step` N verifies one step (scoped → INCOMPLETE, never PASS). Never auto-prompts manual/review proofs — see `dod_verify` |
-| `dod_verify` | Request human out-of-band verification (popup, notes field) for ONE manual/review proof. Call it when verification is actually relevant, not on every `dod_check` |
+| `dod_check` | Execute proofs from canonical storage, return PASS/FAIL/INCOMPLETE. Optional `step` N verifies one step (scoped → INCOMPLETE, never PASS) |
 | `dod_status` | Read cached last check result without re-running |
 | `dod_amend` | Modify a proof with mandatory reason (audit-logged) |
 | `dod_list` | List all tracked DoDs with status |
@@ -143,8 +142,6 @@ All six skills are self-contained in the plugin — no manual installation neede
 | `output_not_contains` | `"text"` | stdout does NOT contain text |
 | `output_not_matches` | `"regex"` | stdout does NOT match regex |
 | `tdd` | `0` | **TDD enforcer.** Must be observed failing before it can pass |
-| `manual` | — | **Human-verified.** Confirmed via `dod_verify`, called explicitly by Claude, through a channel Claude cannot drive — see Manual verification |
-| `review` | — | **Fresh-context code review.** The agent runs `/code-review` against the diff vs requirements, then calls `dod_verify`; the PASS/FAIL verdict arrives through the same out-of-band channel as `manual` (model cannot self-pass). For intent/edge-case correctness commands can't assert |
 | `mutation` | `N` (default `0`) | **Mutation testing.** Runs the command in-band, parses surviving (un-killed) mutants from Stryker / mutmut / cargo-mutants output, and passes iff survivors `<= N`. Output it cannot parse FAILs (fail-safe — never auto-passes). The strongest signal that tests actually catch bugs; scope to changed/critical functions |
 | `regression` | `tol` (fraction, e.g. `0.10`) | **Non-regression gate.** Two-phase: a capture run on pre-change code stores the metric baseline N0; later runs compare N1 against N0 with tolerance `tol`. `extract` (regex, group 1) or the last number in stdout picks the metric; unparseable output FAILs. `lower_is_better` (default true) for perf/complexity/duplication, false for coverage. Defaults to **advisory** — set `advisory: false` for a hard SLA gate. Proves quality doesn't regress vs a baseline, never an impossible absolute target |
 

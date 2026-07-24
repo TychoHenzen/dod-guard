@@ -21111,46 +21111,6 @@ import { promisify as promisify2 } from "node:util";
 // src/evaluate-proof.ts
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-
-// src/manual.ts
-import { createHash } from "node:crypto";
-function perProofFingerprint(node) {
-  const data = [
-    node.command ?? "",
-    node.predicate?.type ?? "",
-    node.predicate?.value ?? "",
-    node.description ?? ""
-  ].join("|");
-  return createHash("sha256").update(data).digest("hex").slice(0, 12);
-}
-async function resolveManual(node, confirm, label = "Manual verification") {
-  const fingerprint = perProofFingerprint(node);
-  const cached2 = node.manual_result;
-  if (cached2 && cached2.answer === "pass" && cached2.proof_fingerprint === fingerprint) {
-    return {
-      status: "pass",
-      cached: true,
-      output: `${label} cached: PASS at ${cached2.confirmed_at} via ${cached2.channel}${cached2.note ? ` \u2014 "${cached2.note}"` : ""}`
-    };
-  }
-  const answer = await confirm(node);
-  node.manual_result = {
-    answer: answer.answer,
-    note: answer.note,
-    confirmed_at: (/* @__PURE__ */ new Date()).toISOString(),
-    channel: answer.channel,
-    proof_fingerprint: fingerprint,
-    review_verdict: answer.review_verdict,
-    reviewer: answer.reviewer
-  };
-  return {
-    status: answer.answer,
-    cached: false,
-    output: `${label} ${answer.answer.toUpperCase()} via ${answer.channel}${answer.note ? ` \u2014 "${answer.note}"` : ""}`
-  };
-}
-
-// src/evaluate-proof.ts
 var execFileP = promisify(execFile);
 function escapeForCmd(s) {
   return s.replace(/'/g, "''");
@@ -21176,9 +21136,6 @@ function diagnoseFailure(node, result) {
       return `Expected output NOT to match /${value}/ but a match was found.`;
     case "tdd":
       return result.error ?? "TDD proof failed. Check the test output above for specific failures.";
-    case "manual":
-    case "review":
-      return `Manual verification required. Run dod_verify to confirm this proof.`;
     case "adversarial": {
       const phase = pred.value !== void 0 ? Number(pred.value) : 0;
       return `Adversarial gate for phase ${phase} not GO. Run dod_adversarial_gate to complete the adversarial review for this phase.`;
@@ -21283,21 +21240,6 @@ async function executeProof(node, cwd, _opts = {}) {
     status: "skipped",
     command: node.command ?? ""
   };
-  if (predicate.type === "manual" || predicate.type === "review") {
-    if (node.manual_result) {
-      const fp = perProofFingerprint(node);
-      if (node.manual_result.proof_fingerprint === fp) {
-        result.status = node.manual_result.answer;
-        if (node.manual_result.note) result.error = node.manual_result.note;
-        result.duration_ms = Date.now() - start;
-        return result;
-      }
-    }
-    result.status = "skipped";
-    result.error = `${predicate.type} proof awaiting human verification via dod_verify`;
-    result.duration_ms = Date.now() - start;
-    return result;
-  }
   if (predicate.type === "tdd") {
     if (!node.command) {
       result.status = "fail";
@@ -21373,7 +21315,7 @@ async function executeProof(node, cwd, _opts = {}) {
 }
 
 // src/fingerprint.ts
-import { createHash as createHash2 } from "node:crypto";
+import { createHash } from "node:crypto";
 function flattenLeaf(node, index, parentPath) {
   const currentPath = parentPath ? `${parentPath}.children.${index}` : `${index}`;
   if (node.children && node.children.length > 0) {
@@ -21411,7 +21353,7 @@ function computeProofFingerprint(roots) {
     }
     return parts.join("|");
   }).join("\n");
-  return createHash2("sha256").update(data).digest("hex");
+  return createHash("sha256").update(data).digest("hex");
 }
 
 // src/checker.ts
@@ -21438,15 +21380,6 @@ function traverseNodePath(nodes, parts, depth) {
 function findNodeByPath(nodes, path6) {
   if (!path6) return null;
   return traverseNodePath(nodes, path6.split("."), 0);
-}
-function isExecutablePredicate(type) {
-  return type !== "manual" && type !== "review";
-}
-function isExecutableLeaf(leaf) {
-  return !!(leaf.node.command && leaf.node.predicate && isExecutablePredicate(leaf.node.predicate.type));
-}
-function extractExecutableCommands(nodes) {
-  return flattenConcreteLeaves(nodes).filter(isExecutableLeaf).map(({ node }) => node.command);
 }
 function isBranchLocked(nodes) {
   return !hasDraftNodes(nodes);
@@ -21587,7 +21520,6 @@ async function checkDocument(doc, cwdOverride, opts) {
     }
   }
   let anyFail = false;
-  let manualUnverified = 0;
   let stuckTriggered = false;
   const proofOpts = {
     adversarial_gates: doc.adversarial_gates ?? []
@@ -21605,8 +21537,6 @@ async function checkDocument(doc, cwdOverride, opts) {
         stuckTriggered = true;
       }
     }
-    const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
-    if (result.status === "skipped" && isManualOrReview) manualUnverified++;
   }
   if (!targetPath) {
     addDraftLeafResults(doc.roots, "", leafResults);
@@ -21624,8 +21554,6 @@ async function checkDocument(doc, cwdOverride, opts) {
     overall = "stuck";
   } else if (anyFail) {
     overall = "fail";
-  } else if (manualUnverified > 0) {
-    overall = "incomplete";
   } else {
     overall = "pass";
   }
@@ -21646,9 +21574,6 @@ async function checkDocument(doc, cwdOverride, opts) {
     baseSummary = `${passCount}/${concreteTotal} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
   }
   const guidance = [];
-  if (manualUnverified > 0) {
-    guidance.push(`${manualUnverified} manual/review proof(s) await dod_verify.`);
-  }
   if (!targetPath && draftCount > 0) {
     guidance.push(`${draftCount} draft node(s) \u2014 refine with dod_refine, then re-run dod_check.`);
   }
@@ -21660,7 +21585,6 @@ async function checkDocument(doc, cwdOverride, opts) {
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     proof_fingerprint: proofFingerprint,
     draft_count: draftCount,
-    manual_unverified: manualUnverified,
     summary_mode: opts?.summary === true ? true : void 0,
     ...targetPath ? { scoped: true, ran_node_path: targetPath } : {},
     ...tampered ? { tampered: true } : {},
@@ -21691,10 +21615,6 @@ function formatCheckResult(result) {
     l.push(
       `\u{1F4DD} **${result.draft_count} draft node(s)** \u2014 use dod_refine to concretize before a final pass is possible.`
     );
-    l.push("");
-  }
-  if (result.manual_unverified > 0) {
-    l.push(`\u23F3 **${result.manual_unverified} manual/review proof(s)** await dod_verify.`);
     l.push("");
   }
   const byRoot = /* @__PURE__ */ new Map();
@@ -21817,11 +21737,7 @@ function renderLeaf(node, indent, lines) {
   }
   const mark = proofMark(node.last_status);
   let proofLine;
-  if (node.predicate?.type === "manual" || node.predicate?.type === "review") {
-    const mr = node.manual_result;
-    const state = mr ? ` _(human-confirmed ${mr.answer.toUpperCase()} at ${mr.confirmed_at} via ${mr.channel})_` : " _(awaiting human verification)_";
-    proofLine = `${indent}- ${mark} Proof: ${node.predicate.type === "review" ? "Review" : "Manual"} \u2014 ${node.description}${state}`;
-  } else if (node.predicate?.type === "tdd") {
+  if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? node.last_status === "pass" ? "GREEN" : "RED" : "AWAITING RED";
     proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` \u2192 ${node.description}`;
   } else if (node.predicate?.type === "adversarial") {
@@ -21856,10 +21772,9 @@ function renderMarkdown(doc) {
   l.push("1. Mark a task `[>]` when you begin working on it.");
   l.push("2. Call `dod_check` to verify proofs \u2014 do NOT mark proofs manually.");
   l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
-  l.push("4. For `manual`/`review` proofs: call `dod_verify(dod_id, proof_id)` explicitly.");
-  l.push("5. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.");
-  l.push("6. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("7. Continue until `dod_check` returns PASS \u2014 then stop and report done.");
+  l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.");
+  l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
+  l.push("6. Continue until `dod_check` returns PASS \u2014 then stop and report done.");
   l.push("");
   l.push("**Behavioral predicates only.** Each proof is a concrete behavioral claim.");
   l.push("Read failure diagnoses carefully \u2014 they tell you WHAT went wrong and what to fix.");
@@ -22235,38 +22150,6 @@ function isPlaceholderCommand(command) {
 }
 var currentOs = process.platform;
 
-// src/notify.ts
-import { spawn } from "node:child_process";
-var isWindows2 = process.platform === "win32";
-function playJingle() {
-  if (!isWindows2) return;
-  const tune = [
-    "[console]::beep(659,140)",
-    // E5
-    "[console]::beep(988,140)",
-    // B5
-    "[console]::beep(1319,180)",
-    // E6
-    "[console]::beep(988,90)",
-    // B5
-    "[console]::beep(1319,260)"
-    // E6 (hold)
-  ].join(";");
-  try {
-    const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", tune], {
-      stdio: "ignore",
-      detached: true,
-      windowsHide: true
-    });
-    child.on("error", () => {
-    });
-    child.unref();
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[dod-guard] playJingle failed", { err: msg });
-  }
-}
-
 // src/parser.ts
 import { promises as fs2 } from "node:fs";
 function extractPredicateMetadata(line) {
@@ -22311,28 +22194,6 @@ function parseLeafLine(line) {
         predicate: metaPredicate,
         description: desc,
         last_status: markerToStatus(proofMatch[1])
-      };
-    }
-    return {
-      id: "",
-      title: desc,
-      refinement: "draft",
-      intent: desc,
-      last_status: "draft"
-    };
-  }
-  const manualMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof:\s*[Mm]anual[\s—-]+(.+)$/);
-  if (manualMatch) {
-    const desc = manualMatch[2].trim();
-    if (metaPredicate) {
-      return {
-        id: "",
-        title: desc,
-        refinement: "concrete",
-        command: "manual",
-        predicate: metaPredicate,
-        description: desc,
-        last_status: markerToStatus(manualMatch[1])
       };
     }
     return {
@@ -22484,8 +22345,6 @@ var PredicateSchema = external_exports.object({
     "output_not_contains",
     "output_not_matches",
     "tdd",
-    "manual",
-    "review",
     "adversarial",
     "holdout",
     "convergence"
@@ -22493,7 +22352,7 @@ var PredicateSchema = external_exports.object({
   value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
   timeout_ms: external_exports.number().optional().describe("Override the default 120s command timeout in milliseconds. Use for slow tools like Stryker (600s).")
 });
-var ProofCategorySchema = external_exports.enum(["behavioral", "wiring", "manual", "other", "test_audit"]);
+var ProofCategorySchema = external_exports.enum(["behavioral", "wiring", "other", "test_audit"]);
 var TaskNodeInputSchema = external_exports.lazy(
   () => external_exports.object({
     title: external_exports.string(),
@@ -22681,26 +22540,6 @@ function buildTaskNodes(inputs) {
     return node;
   });
 }
-function findNodeInTree(roots, proofId) {
-  for (const root of roots) {
-    if (root.id === proofId) return root;
-    if (root.children) {
-      const found = findInChildren(root.children, proofId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-function findInChildren(nodes, proofId) {
-  for (const node of nodes) {
-    if (node.id === proofId) return node;
-    if (node.children) {
-      const found = findInChildren(node.children, proofId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
 function findNodeById(roots, id) {
   function search(nodes, parentPath) {
     for (let i = 0; i < nodes.length; i++) {
@@ -22817,7 +22656,7 @@ function formatMissingTools(missing) {
   }
   lines.push("");
   lines.push(
-    "Rewrite these commands for the current OS, then retry. (For human-only checks, use a `manual` proof instead.)"
+    "Rewrite these commands for the current OS, then retry."
   );
   return lines.join("\n");
 }
@@ -22836,7 +22675,7 @@ function suggestionFor(tool) {
   return map[tool.toLowerCase()] ?? "";
 }
 async function checkCommandsForOs(roots, cwd) {
-  const commands = extractExecutableCommands(roots);
+  const commands = flattenConcreteLeaves(roots).filter(({ node }) => node.command && node.predicate).map(({ node }) => node.command);
   const missing = await findMissingTools(commands, cwd);
   const lines = [];
   const isWin = process.platform === "win32";
@@ -22900,8 +22739,7 @@ async function handleDodAddNode(params) {
     if (!(command && predicate && description)) {
       throw new Error("ERROR: concrete nodes require command, predicate, and description.");
     }
-    const pred = predicate;
-    if (isExecutablePredicate(pred.type) && command.trim() !== "") {
+    if (command.trim() !== "") {
       const missing = await findMissingTools([command], doc.cwd);
       if (missing.length > 0) {
         throw new Error(formatMissingTools(missing));
@@ -23040,7 +22878,7 @@ async function handleDodRefine(params) {
       return "ERROR: concretize mode requires command and predicate.";
     }
     const pred = predicate;
-    if (isExecutablePredicate(pred.type) && command.trim() !== "") {
+    if (command.trim() !== "") {
       const missing = await findMissingTools([command], doc.cwd);
       if (missing.length > 0) {
         return formatMissingTools(missing);
@@ -23155,109 +22993,12 @@ server.tool(
     return { content: [{ type: "text", text: result }] };
   }
 );
-var ELICITATION_MAX_WAIT_MS = 2147483647;
-function manualInstructions(node) {
-  const isReview = node.predicate?.type === "review";
-  const lines = [node.description ?? node.title];
-  if (node.command?.trim() && node.command.trim() !== "manual" && !isReview) {
-    lines.push("", `Steps / command: ${node.command}`);
-  }
-  if (isReview) {
-    lines.push(
-      "",
-      "Run `/code-review` (fresh context) against the current diff vs the DoD requirements.",
-      "Confirm PASS only if it reports no gaps affecting correctness or the stated requirements.",
-      "",
-      "After running the review, you MUST provide:",
-      "1. review_verdict: Paste the full review output/verdict text.",
-      "2. reviewer: Your name or identifier.",
-      "A bare 'yes' without concrete attestation will be rejected."
-    );
-  } else {
-    lines.push("", "Confirm PASS only after you have personally verified this works as described.");
-  }
-  return lines.join("\n");
-}
-function buildConfirmer() {
-  return async (node) => {
-    const isReview = node.predicate?.type === "review";
-    const promptLabel = isReview ? "Code review required" : "Manual verification required";
-    const instructions = manualInstructions(node);
-    try {
-      playJingle();
-    } catch {
-    }
-    const caps = server.server.getClientCapabilities();
-    if (caps?.elicitation) {
-      try {
-        const baseProperties = {
-          result: {
-            type: "string",
-            enum: ["pass", "fail"],
-            enumNames: ["Verified works as expected", "Not verified does not work"],
-            description: "Did the manual verification pass?"
-          },
-          note: {
-            type: "string",
-            maxLength: 500,
-            description: "Optional note about what you observed"
-          }
-        };
-        const requiredFields = ["result"];
-        if (isReview) {
-          baseProperties.review_verdict = {
-            type: "string",
-            description: "Paste the review output/verdict text"
-          };
-          baseProperties.reviewer = {
-            type: "string",
-            description: "Who performed the review (name or identifier)"
-          };
-          requiredFields.push("review_verdict", "reviewer");
-        }
-        const result = await server.server.elicitInput(
-          {
-            message: `${promptLabel}:
-
-${instructions}`,
-            requestedSchema: {
-              type: "object",
-              properties: baseProperties,
-              required: requiredFields
-            }
-          },
-          { timeout: ELICITATION_MAX_WAIT_MS }
-        );
-        if (result.action === "accept") {
-          const passed = result.content?.result === "pass";
-          const note = typeof result.content?.note === "string" ? result.content.note : void 0;
-          const reviewVerdict = typeof result.content?.review_verdict === "string" ? result.content.review_verdict : void 0;
-          const reviewer = typeof result.content?.reviewer === "string" ? result.content.reviewer : void 0;
-          return {
-            answer: passed ? "pass" : "fail",
-            note,
-            channel: "elicitation",
-            review_verdict: reviewVerdict,
-            reviewer
-          };
-        }
-        return { answer: "fail", note: `elicitation ${result.action}`, channel: "elicitation" };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error("dod-guard: elicitation request failed", { err: msg });
-      }
-    } else {
-      console.error("dod-guard: MCP client does not support elicitation \u2014 manual verification unavailable");
-    }
-    return { answer: "fail", note: "no verification channel available on this host", channel: "elicitation" };
-  };
-}
 function buildImportGateInfo(doc) {
   if (!doc.import_source || doc.execution_confirmed !== false) {
     return { blocked: false };
   }
   const executableLeaves = flattenConcreteLeaves(doc.roots).filter(
-    ({ node }) => node.command && node.predicate && isExecutablePredicate(node.predicate.type)
+    ({ node }) => node.command && node.predicate
   );
   return {
     blocked: true,
@@ -23271,7 +23012,7 @@ function buildImportGateInfo(doc) {
 }
 server.tool(
   "dod_check",
-  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Use `dod_tree` to discover current node paths before scoping. Manual/review proofs are NEVER auto-prompted \u2014 call dod_verify on that proof_id when verification is relevant.",
+  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Use `dod_tree` to discover current node paths before scoping.",
   {
     dod_id: external_exports.string().optional().describe("DoD ID (from dod_create or dod_list)"),
     path: external_exports.string().optional().describe("Markdown file path \u2014 resolves to DoD by path if no ID given"),
@@ -23498,73 +23239,6 @@ server.tool(
   }
 );
 server.tool(
-  "dod_verify",
-  "Request human out-of-band verification for ONE manual or review proof, via a popup dialog (MCP elicitation fallback on non-Windows hosts). Call this when verification is actually relevant right now.",
-  {
-    dod_id: external_exports.string().optional().describe("DoD ID"),
-    path: external_exports.string().optional().describe("Markdown file path"),
-    proof_id: external_exports.string().describe('The proof id to verify (e.g. "node-3").')
-  },
-  async ({ dod_id, path: mdPath, proof_id }) => {
-    let doc = null;
-    if (dod_id) doc = await load(dod_id);
-    else if (mdPath) doc = await findByPath(mdPath);
-    if (!doc) return { content: [{ type: "text", text: "ERROR: DoD not found." }] };
-    const node = findNodeInTree(doc.roots, proof_id);
-    if (!node) return { content: [{ type: "text", text: `ERROR: proof "${proof_id}" not found.` }] };
-    if (node.predicate?.type !== "manual" && node.predicate?.type !== "review") {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `ERROR: proof "${proof_id}" is "${node.predicate?.type ?? "unknown"}" \u2014 only manual/review proofs are verified out-of-band.`
-          }
-        ]
-      };
-    }
-    if (node.refinement !== "concrete") {
-      return {
-        content: [
-          { type: "text", text: `ERROR: proof "${proof_id}" is a draft \u2014 refine with dod_refine first.` }
-        ]
-      };
-    }
-    const label = node.predicate.type === "review" ? "Code review" : "Manual verification";
-    const resolution = await resolveManual(node, buildConfirmer(), label);
-    if (node.predicate.type === "review") {
-      if (!(node.manual_result?.review_verdict && node.manual_result?.reviewer)) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "ERROR: Review attestation required \u2014 provide the review verdict text and reviewer identity. Verification not recorded."
-            }
-          ]
-        };
-      }
-    }
-    node.last_status = resolution.status;
-    node.last_output = resolution.output;
-    node.last_checked = (/* @__PURE__ */ new Date()).toISOString();
-    await save(doc);
-    await writeMarkdown(doc);
-    return {
-      content: [
-        {
-          type: "text",
-          text: [
-            `## Manual verification: ${resolution.status.toUpperCase()}`,
-            "",
-            resolution.output,
-            "",
-            "Run dod_check to fold this into the overall verdict."
-          ].join("\n")
-        }
-      ]
-    };
-  }
-);
-server.tool(
   "dod_status",
   "Get the last check result for a DoD without re-running proofs.",
   {
@@ -23671,19 +23345,6 @@ server.tool(
           content: [{ type: "text", text: "ERROR: no concrete leaves to amend. Refine drafts first." }]
         };
       }
-      if (new_predicate && !isExecutablePredicate(new_predicate.type)) {
-        const machineLeaves = leaves.filter(({ node: node2 }) => node2.predicate && isExecutablePredicate(node2.predicate.type));
-        if (machineLeaves.length > 0) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `ERROR: Cannot convert ${machineLeaves.length} machine-checkable proof(s) to manual/review \u2014 this would bypass verification.`
-              }
-            ]
-          };
-        }
-      }
       if (new_command !== void 0) {
         const missing = await findMissingTools([new_command], doc.cwd);
         if (missing.length > 0) {
@@ -23771,19 +23432,9 @@ ${gateFailures.join("\n")}`
         content: [{ type: "text", text: `ERROR: node is a draft. Use dod_refine to concretize it first.` }]
       };
     }
-    if (new_predicate && !isExecutablePredicate(new_predicate.type) && node.predicate && isExecutablePredicate(node.predicate.type)) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "ERROR: Cannot convert a machine-checkable proof to manual or review \u2014 this would bypass verification."
-          }
-        ]
-      };
-    }
     const effectivePredicate = new_predicate ?? node.predicate;
     const effectiveCommand = new_command ?? node.command ?? "";
-    if (isExecutablePredicate(effectivePredicate.type) && effectiveCommand.trim() !== "") {
+    if (effectiveCommand.trim() !== "") {
       const missing = await findMissingTools([effectiveCommand], doc.cwd);
       if (missing.length > 0) {
         return { content: [{ type: "text", text: formatMissingTools(missing) }] };
@@ -23818,7 +23469,7 @@ ${gateFailures.join("\n")}`
     doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
     await save(doc);
     await writeMarkdown(doc);
-    const placeholderWarn = isExecutablePredicate(effectivePredicate.type) && isPlaceholderCommand(effectiveCommand) ? [
+    const placeholderWarn = isPlaceholderCommand(effectiveCommand) ? [
       "",
       "\u26A0\uFE0F  PLACEHOLDER PROOF: This command always exits 0 \u2014 it provides zero verification.",
       "Replace with a real verification command before considering this DoD complete."
@@ -23902,7 +23553,7 @@ server.tool(
       const id = generateId();
       const fingerprint = computeProofFingerprint(parsed.roots);
       const executableConcrete = flattenConcreteLeaves(parsed.roots).filter(
-        ({ node }) => node.command && node.predicate && isExecutablePredicate(node.predicate.type)
+        ({ node }) => node.command && node.predicate
       );
       const doc = {
         id,

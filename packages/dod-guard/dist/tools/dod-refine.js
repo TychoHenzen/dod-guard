@@ -2,7 +2,7 @@
  * dod_refine — Refine a draft TaskNode into concrete or subdivide into children.
  */
 import { writeMarkdown } from "../author.js";
-import { countDraftNodes, findNodeByPath, isExecutablePredicate } from "../checker.js";
+import { countDraftNodes, findNodeByPath } from "../checker.js";
 import { findMissingTools, isPlaceholderCommand } from "../command-check.js";
 import { computeProofFingerprint } from "../fingerprint.js";
 import * as store from "../store.js";
@@ -38,7 +38,7 @@ export async function handleDodRefine(params) {
             return "ERROR: concretize mode requires command and predicate.";
         }
         const pred = predicate;
-        if (isExecutablePredicate(pred.type) && command.trim() !== "") {
+        if (command.trim() !== "") {
             const missing = await findMissingTools([command], doc.cwd);
             if (missing.length > 0) {
                 return formatMissingTools(missing);

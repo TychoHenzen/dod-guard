@@ -225,7 +225,7 @@ export function formatMissingTools(missing: MissingTool[]): string {
   }
   lines.push("");
   lines.push(
-    "Rewrite these commands for the current OS, then retry. (For human-only checks, use a `manual` proof instead.)",
+    "Rewrite these commands for the current OS, then retry.",
   );
   return lines.join("\n");
 }
@@ -245,10 +245,13 @@ function suggestionFor(tool: string): string {
   return map[tool.toLowerCase()] ?? "";
 }
 
-import { extractExecutableCommands, findNodeByPath, hasDraftNodes } from "./checker.js";
+import { findNodeByPath, hasDraftNodes } from "./checker.js";
+import { flattenConcreteLeaves } from "./fingerprint.js";
 
 export async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promise<string | null> {
-  const commands = extractExecutableCommands(roots);
+  const commands = flattenConcreteLeaves(roots)
+    .filter(({ node }) => node.command && node.predicate)
+    .map(({ node }) => node.command!);
   const missing = await findMissingTools(commands, cwd);
 
   const lines: string[] = [];
