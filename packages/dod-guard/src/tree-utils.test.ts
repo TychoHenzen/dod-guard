@@ -145,7 +145,8 @@ test("findNodeInTree returns null for unknown ID", () => {
 
 test("findNodeById returns node and path", () => {
   const tree = sampleTree();
-  const target = tree[0].children?.[0]!;
+  const target = tree[0].children?.[0];
+  assert.ok(target, "sample tree must have children");
   const result = findNodeById(tree, target.id);
   assert.ok(result);
   assert.equal(result.node.title, "Leaf A1");
