@@ -33,9 +33,7 @@ test("resetNodeIdCounter restarts from 1", () => {
 // ── buildTaskNodes ─────────────────────────────────────────────────────
 
 test("buildTaskNodes creates draft leaf", () => {
-  const nodes = buildTaskNodes([
-    { title: "Check auth", refinement: "draft", intent: "verify login works" },
-  ]);
+  const nodes = buildTaskNodes([{ title: "Check auth", refinement: "draft", intent: "verify login works" }]);
   assert.equal(nodes.length, 1);
   assert.equal(nodes[0].title, "Check auth");
   assert.equal(nodes[0].refinement, "draft");
@@ -75,7 +73,7 @@ test("buildTaskNodes creates task group with children", () => {
   assert.equal(nodes[0].title, "Core checks");
   assert.equal(nodes[0].refinement, "concrete"); // groups are concrete
   assert.ok(nodes[0].children);
-  assert.equal(nodes[0].children!.length, 2);
+  assert.equal(nodes[0].children?.length, 2);
 });
 
 test("buildTaskNodes nested groups", () => {
@@ -85,14 +83,12 @@ test("buildTaskNodes nested groups", () => {
       children: [
         {
           title: "Subgroup",
-          children: [
-            { title: "Deep leaf", intent: "deep check" },
-          ],
+          children: [{ title: "Deep leaf", intent: "deep check" }],
         },
       ],
     },
   ]);
-  assert.equal(nodes[0].children![0].children![0].title, "Deep leaf");
+  assert.equal(nodes[0].children?.[0].children?.[0].title, "Deep leaf");
 });
 
 test("buildTaskNodes advisory flag", () => {
@@ -136,7 +132,7 @@ test("findNodeInTree finds nested child by ID", () => {
   const tree = sampleTree();
   const rootA = tree[0];
   assert.ok(rootA.children);
-  const leafA2 = rootA.children![1];
+  const leafA2 = rootA.children?.[1];
   const found = findNodeInTree(tree, leafA2.id);
   assert.equal(found?.title, "Leaf A2");
 });
@@ -149,7 +145,7 @@ test("findNodeInTree returns null for unknown ID", () => {
 
 test("findNodeById returns node and path", () => {
   const tree = sampleTree();
-  const target = tree[0].children![0];
+  const target = tree[0].children?.[0];
   const result = findNodeById(tree, target.id);
   assert.ok(result);
   assert.equal(result.node.title, "Leaf A1");
@@ -234,9 +230,7 @@ test("formatTree shows PROOF for concrete leaf", () => {
 });
 
 test("formatTree shows DRAFT for draft leaf", () => {
-  const nodes = buildTaskNodes([
-    { title: "Todo item", refinement: "draft", intent: "do this later" },
-  ]);
+  const nodes = buildTaskNodes([{ title: "Todo item", refinement: "draft", intent: "do this later" }]);
   const out = formatTree(nodes);
   assert.ok(out.includes("DRAFT:"));
   assert.ok(out.includes("do this later"));
@@ -246,9 +240,7 @@ test("formatTree shows GROUP for task group", () => {
   const nodes = buildTaskNodes([
     {
       title: "Core",
-      children: [
-        { title: "Leaf", intent: "sub item" },
-      ],
+      children: [{ title: "Leaf", intent: "sub item" }],
     },
   ]);
   const out = formatTree(nodes);
@@ -276,9 +268,7 @@ test("formatTree scoped by ID", () => {
   const nodes = buildTaskNodes([
     {
       title: "Root",
-      children: [
-        { title: "Child A", intent: "a" },
-      ],
+      children: [{ title: "Child A", intent: "a" }],
     },
   ]);
   const rootId = nodes[0].id;

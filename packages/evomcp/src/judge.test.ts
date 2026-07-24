@@ -26,21 +26,21 @@ describe("parseJudgeOutput", () => {
   });
 
   it("parses JSON in markdown fences", () => {
-    const output = "```json\n" + validJson + "\n```";
+    const output = `\`\`\`json\n${validJson}\n\`\`\``;
     const verdict = parseJudgeOutput(output);
     assert.ok(verdict);
     assert.equal(verdict.winner_branch, "branch-a");
   });
 
   it("parses JSON without language tag in fences", () => {
-    const output = "```\n" + validJson + "\n```";
+    const output = `\`\`\`\n${validJson}\n\`\`\``;
     const verdict = parseJudgeOutput(output);
     assert.ok(verdict);
     assert.equal(verdict.winner_branch, "branch-a");
   });
 
   it("extracts JSON block from surrounding text", () => {
-    const output = "Some preamble text\n\n" + validJson + "\n\nSome trailing text";
+    const output = `Some preamble text\n\n${validJson}\n\nSome trailing text`;
     const verdict = parseJudgeOutput(output);
     assert.ok(verdict);
     assert.equal(verdict.winner_branch, "branch-a");
@@ -68,9 +68,7 @@ describe("parseJudgeOutput", () => {
   });
 
   it("parses regex with colons instead of equals", () => {
-    const output = [
-      "branch-p: correctness: 9, clarity: 8, efficiency: 7, maintainability: 8",
-    ].join("\n");
+    const output = ["branch-p: correctness: 9, clarity: 8, efficiency: 7, maintainability: 8"].join("\n");
     const verdict = parseJudgeOutput(output);
     assert.ok(verdict);
     assert.equal(verdict.scores["branch-p"].correctness, 9);

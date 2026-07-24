@@ -10,9 +10,7 @@ function nid(): string {
   return `fp-${++nodeCounter}`;
 }
 
-function concLeaf(
-  overrides: Partial<TaskNode> = {},
-): TaskNode {
+function concLeaf(overrides: Partial<TaskNode> = {}): TaskNode {
   return {
     id: nid(),
     title: "test",
@@ -55,27 +53,13 @@ test("flattenConcreteLeaves skips draft nodes", () => {
 });
 
 test("flattenConcreteLeaves recurses into groups", () => {
-  const nodes: TaskNode[] = [
-    group([
-      concLeaf(),
-      concLeaf(),
-    ]),
-    concLeaf(),
-  ];
+  const nodes: TaskNode[] = [group([concLeaf(), concLeaf()]), concLeaf()];
   const result = flattenConcreteLeaves(nodes);
   assert.equal(result.length, 3);
 });
 
 test("flattenConcreteLeaves deeply nested groups", () => {
-  const nodes: TaskNode[] = [
-    group([
-      group([
-        group([
-          concLeaf(),
-        ]),
-      ]),
-    ]),
-  ];
+  const nodes: TaskNode[] = [group([group([group([concLeaf()])])])];
   const result = flattenConcreteLeaves(nodes);
   assert.equal(result.length, 1);
 });
@@ -92,15 +76,7 @@ test("flattenConcreteLeaves assigns correct paths", () => {
 });
 
 test("flattenConcreteLeaves nested paths", () => {
-  const nodes: TaskNode[] = [
-    group([
-      concLeaf(),
-      group([
-        concLeaf(),
-      ]),
-    ]),
-    concLeaf(),
-  ];
+  const nodes: TaskNode[] = [group([concLeaf(), group([concLeaf()])]), concLeaf()];
   const result = flattenConcreteLeaves(nodes);
   const paths = result.map((r) => r.node_path);
   assert.deepEqual(paths, ["0.children.0", "0.children.1.children.0", "1"]);

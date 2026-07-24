@@ -165,8 +165,8 @@ describe("GateRunner", () => {
   it("runs multiple gates in order", async () => {
     // Use echo + exit 0 for pass, echo + exit 1 for fail
     const runner = new GateRunner({
-      lint_cmd: process.platform === "win32" ? "cmd /c \"echo lint-ok & exit 0\"" : "echo lint-ok",
-      build_cmd: process.platform === "win32" ? "cmd /c \"echo build-ok & exit 0\"" : "echo build-ok",
+      lint_cmd: process.platform === "win32" ? 'cmd /c "echo lint-ok & exit 0"' : "echo lint-ok",
+      build_cmd: process.platform === "win32" ? 'cmd /c "echo build-ok & exit 0"' : "echo build-ok",
     });
     const results = await runner.runAll("/tmp");
     assert.equal(results.length, 2);

@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  extractCommandNames,
-  hasGlobWildcards,
-  isPlaceholderCommand,
-  splitCommands,
-} from "./command-check.js";
+import { extractCommandNames, hasGlobWildcards, isPlaceholderCommand, splitCommands } from "./command-check.js";
 
 // ── splitCommands ──────────────────────────────────────────────────────
 

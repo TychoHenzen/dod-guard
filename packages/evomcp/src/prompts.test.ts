@@ -1,12 +1,6 @@
 import * as assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import {
-  buildJudgePrompt,
-  feedbackActionPrompt,
-  mutationPrompt,
-  repairPrompt,
-  strategyPrompts,
-} from "./prompts.js";
+import { buildJudgePrompt, feedbackActionPrompt, mutationPrompt, repairPrompt, strategyPrompts } from "./prompts.js";
 import type { Diagnostic } from "./types.js";
 
 // ── strategyPrompts ────────────────────────────────────────────────────
@@ -107,7 +101,7 @@ describe("mutationPrompt", () => {
   it("includes elite examples when provided", () => {
     const elites = [
       { code: "const best = [1,2,3].sort();", score: 0.95 },
-      { code: "const good = [].concat(arr).sort();", score: 0.80 },
+      { code: "const good = [].concat(arr).sort();", score: 0.8 },
     ];
     const prompt = mutationPrompt("Goal", "current code", 0.5, elites);
     assert.ok(prompt.includes("Elite #1"));
@@ -147,11 +141,13 @@ describe("buildJudgePrompt", () => {
   });
 
   it("includes verification report when provided", () => {
-    const prompt = buildJudgePrompt([{
-      name: "b1",
-      diff: "diff",
-      verificationReport: "All tests passed",
-    }]);
+    const prompt = buildJudgePrompt([
+      {
+        name: "b1",
+        diff: "diff",
+        verificationReport: "All tests passed",
+      },
+    ]);
     assert.ok(prompt.includes("All tests passed"));
   });
 
@@ -172,9 +168,7 @@ describe("buildJudgePrompt", () => {
 
 describe("feedbackActionPrompt", () => {
   it("includes task and diagnostics", () => {
-    const diags: Diagnostic[] = [
-      { file: "src/x.ts", line: 1, severity: "error", message: "Bad import", context: "" },
-    ];
+    const diags: Diagnostic[] = [{ file: "src/x.ts", line: 1, severity: "error", message: "Bad import", context: "" }];
     const prompt = feedbackActionPrompt("Fix imports", diags);
     assert.ok(prompt.includes("Fix imports"));
     assert.ok(prompt.includes("Bad import"));

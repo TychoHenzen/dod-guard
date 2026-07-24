@@ -63,7 +63,9 @@ describe("getMemoryDb", () => {
 
   it("creates tables on first open", () => {
     const db = getMemoryDb(tempDir);
-    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as { name: string }[];
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as {
+      name: string;
+    }[];
     const names = tables.map((t) => t.name);
     assert.ok(names.includes("messages"));
     assert.ok(names.includes("checkpoints"));
@@ -298,11 +300,7 @@ describe("migrateLessons", () => {
 
   it("skips malformed lines", () => {
     const lessonsPath = path.join(tempDir, ".evo", "lessons.jsonl");
-    const lines = [
-      JSON.stringify({ content: "valid" }),
-      "this is not json",
-      JSON.stringify({ content: "also valid" }),
-    ];
+    const lines = [JSON.stringify({ content: "valid" }), "this is not json", JSON.stringify({ content: "also valid" })];
     fs.writeFileSync(lessonsPath, lines.join("\n"), "utf-8");
 
     const count = migrateLessons(tempDir);

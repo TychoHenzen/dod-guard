@@ -69,10 +69,7 @@ test("countDraftNodes skips concrete leaves", () => {
 });
 
 test("countDraftNodes recurses into groups", () => {
-  const nodes = [
-    group("G", [draftLeaf("a", "a"), draftLeaf("b", "b")]),
-    draftLeaf("c", "c"),
-  ];
+  const nodes = [group("G", [draftLeaf("a", "a"), draftLeaf("b", "b")]), draftLeaf("c", "c")];
   assert.equal(countDraftNodes(nodes), 3);
 });
 
@@ -90,9 +87,7 @@ test("findNodeByPath root level index", () => {
 });
 
 test("findNodeByPath nested child", () => {
-  const nodes = [
-    group("Root", [draftLeaf("Child", "c")]),
-  ];
+  const nodes = [group("Root", [draftLeaf("Child", "c")])];
   const result = findNodeByPath(nodes, "0.children.0");
   assert.equal(result?.title, "Child");
 });
@@ -110,13 +105,7 @@ test("findNodeByPath returns null for non-integer segment", () => {
 });
 
 test("findNodeByPath deeply nested path", () => {
-  const nodes = [
-    group("L1", [
-      group("L2", [
-        group("L3", [concLeaf("Deep", "echo deep")]),
-      ]),
-    ]),
-  ];
+  const nodes = [group("L1", [group("L2", [group("L3", [concLeaf("Deep", "echo deep")])])])];
   const result = findNodeByPath(nodes, "0.children.0.children.0.children.0");
   assert.equal(result?.title, "Deep");
 });
@@ -150,10 +139,7 @@ test("isExecutablePredicate adversarial is executable", () => {
 // ── extractExecutableCommands ─────────────────────────────────────────
 
 test("extractExecutableCommands returns commands from concrete leaves", () => {
-  const nodes = [
-    concLeaf("A", "echo a"),
-    concLeaf("B", "echo b"),
-  ];
+  const nodes = [concLeaf("A", "echo a"), concLeaf("B", "echo b")];
   assert.deepEqual(extractExecutableCommands(nodes), ["echo a", "echo b"]);
 });
 

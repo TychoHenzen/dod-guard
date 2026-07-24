@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { CheckResult, DodDocument, TaskNode } from "./types.js";
 import { formatCheckResult } from "./format-result.js";
+import type { CheckResult } from "./types.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -24,10 +24,7 @@ function leafResult(
 function makeResult(overrides: Partial<CheckResult> = {}): CheckResult {
   return {
     overall: "pass",
-    leaves: [
-      leafResult("0", { title: "Root A" }),
-      leafResult("1", { title: "Root B" }),
-    ],
+    leaves: [leafResult("0", { title: "Root A" }), leafResult("1", { title: "Root B" })],
     summary: "2/2 concrete proofs pass",
     timestamp: "2026-01-01T00:00:00Z",
     proof_fingerprint: "abc123",
@@ -46,11 +43,13 @@ test("formatCheckResult PASS output", () => {
 });
 
 test("formatCheckResult FAIL output", () => {
-  const out = formatCheckResult(makeResult({
-    overall: "fail",
-    leaves: [leafResult("0", { status: "fail", error: "expected exit 0 but got 1" })],
-    summary: "0/1 concrete proofs pass",
-  }));
+  const out = formatCheckResult(
+    makeResult({
+      overall: "fail",
+      leaves: [leafResult("0", { status: "fail", error: "expected exit 0 but got 1" })],
+      summary: "0/1 concrete proofs pass",
+    }),
+  );
   assert.ok(out.includes("FAIL"));
   assert.ok(out.includes("✗"));
   assert.ok(out.includes("expected exit 0 but got 1"));
@@ -170,21 +169,25 @@ test("formatCheckResult skipped leaves shown with reason", () => {
 // ── Git state ─────────────────────────────────────────────────────────
 
 test("formatCheckResult shows git commit when available", () => {
-  const out = formatCheckResult(makeResult({
-    checked_commit: "abcdef1234567890abcdef1234567890abcdef12",
-    is_git_repo: true,
-    checked_dirty: false,
-  }));
+  const out = formatCheckResult(
+    makeResult({
+      checked_commit: "abcdef1234567890abcdef1234567890abcdef12",
+      is_git_repo: true,
+      checked_dirty: false,
+    }),
+  );
   assert.ok(out.includes("abcdef123456"));
   assert.ok(out.includes("clean"));
 });
 
 test("formatCheckResult shows dirty git state", () => {
-  const out = formatCheckResult(makeResult({
-    checked_commit: "abcdef1234567890abcdef1234567890abcdef12",
-    is_git_repo: true,
-    checked_dirty: true,
-  }));
+  const out = formatCheckResult(
+    makeResult({
+      checked_commit: "abcdef1234567890abcdef1234567890abcdef12",
+      is_git_repo: true,
+      checked_dirty: true,
+    }),
+  );
   assert.ok(out.includes("DIRTY"));
 });
 

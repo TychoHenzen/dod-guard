@@ -10,7 +10,6 @@ import {
   orchestratorSummary,
   shouldContinue,
   stageToBudgetStage,
-  type OrchestratorState,
 } from "./orchestrator.js";
 
 // ── createOrchestrator ─────────────────────────────────────────────────
