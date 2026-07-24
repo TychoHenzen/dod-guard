@@ -224,9 +224,7 @@ export function formatMissingTools(missing: MissingTool[]): string {
     lines.push(`    in: ${m.command}`);
   }
   lines.push("");
-  lines.push(
-    "Rewrite these commands for the current OS, then retry.",
-  );
+  lines.push("Rewrite these commands for the current OS, then retry.");
   return lines.join("\n");
 }
 

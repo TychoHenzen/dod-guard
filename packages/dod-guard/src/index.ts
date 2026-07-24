@@ -78,9 +78,7 @@ export function buildImportGateInfo(doc: DodDocument):
     return { blocked: false };
   }
 
-  const executableLeaves = flattenConcreteLeaves(doc.roots).filter(
-    ({ node }) => node.command && node.predicate,
-  );
+  const executableLeaves = flattenConcreteLeaves(doc.roots).filter(({ node }) => node.command && node.predicate);
 
   return {
     blocked: true,
@@ -611,7 +609,7 @@ server.tool(
     }
 
     // Validate command against OS
-    const effectivePredicate = (new_predicate ?? node.predicate) as Predicate;
+    const _effectivePredicate = (new_predicate ?? node.predicate) as Predicate;
     const effectiveCommand = new_command ?? node.command ?? "";
     if (effectiveCommand.trim() !== "") {
       const missing = await findMissingTools([effectiveCommand], doc.cwd);
@@ -656,14 +654,13 @@ server.tool(
     await store.save(doc);
     await writeMarkdown(doc);
 
-    const placeholderWarn =
-      isPlaceholderCommand(effectiveCommand)
-        ? [
-            "",
-            "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
-            "Replace with a real verification command before considering this DoD complete.",
-          ]
-        : [];
+    const placeholderWarn = isPlaceholderCommand(effectiveCommand)
+      ? [
+          "",
+          "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
+          "Replace with a real verification command before considering this DoD complete.",
+        ]
+      : [];
 
     return {
       content: [
