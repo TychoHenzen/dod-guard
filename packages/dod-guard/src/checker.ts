@@ -246,16 +246,28 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
   // ── Execute proofs ───────────────────────────────────────────────────
   let anyFail = false;
   let manualUnverified = 0;
+  let stuckTriggered = false;
   const proofOpts: ProofExecutionOptions = {
     adversarial_gates: doc.adversarial_gates ?? [],
   };
+
+  // Populate amend_count on each leaf from the doc's amendment audit trail
+  for (const { node, node_path } of inScope) {
+    node.amend_count = countNodeAmendments(doc.amendments, node_path);
+  }
 
   for (const { node, node_path } of inScope) {
     const result = await executeProof(node, cwd, proofOpts);
     result.node_path = node_path;
     leafResults.push(result);
 
-    if (result.status === "fail" && !node.advisory) anyFail = true;
+    if (result.status === "fail" && !node.advisory) {
+      anyFail = true;
+      // STUCK detection: node failing after 3+ amendment cycles without approach change
+      if ((node.amend_count ?? 0) >= 3) {
+        stuckTriggered = true;
+      }
+    }
 
     const isManualOrReview = node.predicate?.type === "manual" || node.predicate?.type === "review";
     if (result.status === "skipped" && isManualOrReview) manualUnverified++;
@@ -279,6 +291,8 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
     overall = "incomplete";
   } else if (draftCount > 0) {
     overall = "incomplete";
+  } else if (stuckTriggered) {
+    overall = "stuck";
   } else if (anyFail) {
     overall = "fail";
   } else if (manualUnverified > 0) {
@@ -300,6 +314,12 @@ export async function checkDocument(doc: DodDocument, cwdOverride?: string, opts
 
   if (tampered) {
     baseSummary = `TAMPER DETECTED — proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL.`;
+  } else if (stuckTriggered) {
+    const stuckNodes = inScope
+      .filter(({ node }) => (node.amend_count ?? 0) >= 3 && node.last_status === "fail")
+      .map(({ node }) => `"${node.title}" (${node.amend_count} amendments)`)
+      .join(", ");
+    baseSummary = `STUCK — ${stuckNodes}: node(s) failing after 3+ amendment cycles. The approach itself may be wrong. Re-read the original requirements. Consider re-speccing the affected nodes with a different architectural approach rather than further parameter tuning.`;
   } else if (targetPath) {
     baseSummary = `SCOPED (node "${targetPath}"): run a full dod_check to verify completion. ${passCount}/${concreteTotal} proofs pass.`;
   } else {

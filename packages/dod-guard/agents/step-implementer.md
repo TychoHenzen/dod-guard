@@ -50,6 +50,19 @@ Confirm:
 - Build clean
 - Output matches expected criteria from briefing
 
+**Verification surface awareness:** Your briefing may include a `verify_surface` tag. Match your verification to the surface:
+
+| Surface | Required verification | Anti-pattern |
+|---------|----------------------|--------------|
+| `code` | Tests pass + build clean | — |
+| `visual` | Tests pass + build clean + launch app/view if possible. **Build passes ≠ visual verification.** If you cannot launch the application, explicitly state "VISUAL OUTPUT NOT VERIFIED — requires human confirmation." | ❌ "Build passes" for rendering/UI/CSS changes |
+| `gameplay` | Tests pass + build clean + launch and playtest if possible. **Unit tests ≠ gameplay verification.** | ❌ "Tests pass" for physics/AI/balance changes |
+| `config` | Config syntax valid + system starts | ❌ "File written" without validation |
+| `structural` | Tests pass + build clean + diff review | ❌ "No type errors" without checking imports |
+
+**If you cannot perform the required verification for visual/gameplay changes:**
+Report it explicitly in your output: "⚠️ VERIFICATION GAP: This is a visual/gameplay change but I cannot launch the application to verify. Manual human verification required." This is NOT a failure — it's honest reporting. The orchestrator will handle the manual verification step.
+
 ### Step 5: Report
 Report compactly:
 - Files changed (with brief note per file)
@@ -69,6 +82,13 @@ Report compactly:
    Bad implementation is worse than no implementation.
 6. **VERIFY.** Don't claim done without running tests. The orchestrator will verify
    again — false passes waste a dispatch.
+7. **VISUAL/GAMEPLAY CHANGES = EXTRA SCRUTINY.** If your task involves rendering, UI,
+   graphics, physics, game behavior, or any visual output — "build passes" is NOT
+   verification. The code compiled; that proves nothing about what it looks like.
+   Explicitly report whether you could or could not visually verify the output.
+8. **DON'T FAKE VISUAL VERIFICATION.** You are a text-based agent. You cannot see
+   rendered output. Do not claim "the UI looks correct" or "the gameplay works."
+   Report what you can verify (tests, build, lint) and flag what needs human eyes.
 
 ## Report Format
 

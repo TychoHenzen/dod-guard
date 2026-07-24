@@ -2,7 +2,8 @@ import type { CheckResult } from "./types.js";
 
 export function formatCheckResult(result: CheckResult): string {
   const l: string[] = [];
-  l.push(`## DoD Check Result: ${result.overall.toUpperCase()}`);
+  const stuckLabel = result.overall === "stuck" ? " 🔄 STUCK — approach may be wrong" : "";
+  l.push(`## DoD Check Result: ${result.overall.toUpperCase()}${stuckLabel}`);
   l.push("");
 
   if (result.tampered) {

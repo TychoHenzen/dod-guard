@@ -183,7 +183,7 @@ export interface DodDocument {
   adversarial_gates?: AdversarialGate[];
   last_check?: {
     timestamp: string;
-    overall: "pass" | "fail" | "incomplete" | "pass_dirty";
+    overall: "pass" | "fail" | "incomplete" | "pass_dirty" | "stuck";
     summary: string;
   };
 }
@@ -203,7 +203,7 @@ export interface CheckResult {
    * Only a full (unscoped) run with zero drafts yields "pass"/"fail"/"pass_dirty".
    * "pass_dirty" = all proofs pass but the working tree has uncommitted changes.
    */
-  overall: "pass" | "fail" | "incomplete" | "pass_dirty";
+  overall: "pass" | "fail" | "incomplete" | "pass_dirty" | "stuck";
   leaves: LeafResult[];
   summary: string;
   timestamp: string;

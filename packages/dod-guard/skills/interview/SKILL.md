@@ -215,6 +215,63 @@ roots:
 4. Mark leaves as concrete (known command) or draft (intent only).
 5. Run the adversarial spec review (Phase 3.6) against the tree — 5 parallel lenses attack the spec from independent angles, finding missing requirements, untestable claims, and hidden assumptions before any code is written.
 
+### Verification Surface Rules (CRITICAL — from dod-guard failure analysis)
+
+Not all changes can be verified the same way. The verification surface determines what "done" means:
+
+| Surface | Examples | Can be machine-verified? | Required proof types |
+|---------|----------|--------------------------|---------------------|
+| **Code** | Logic, algorithms, data flow, API endpoints | Yes — tests pass, lint, build | behavioral + wiring |
+| **Visual** | Rendering, UI layout, colors, animations, 3D meshes, CSS | Partially — build compiles but visual output needs human eyes | behavioral + wiring + **manual** |
+| **Gameplay** | Physics, AI behavior, level design, game balance, collision | Partially — unit tests check logic, playtest checks feel | behavioral + wiring + **manual** |
+| **Config** | Env vars, dependency versions, settings files | Yes — config parse + system start | wiring |
+| **Structural** | Renames, file moves, refactors | Yes — tests pass + diff review | behavioral |
+
+**The mandatory manual predicate rule:** Every DoD that involves visual or gameplay changes MUST include at least one `manual` predicate leaf. This is not optional. Build passes for visual changes = unverified. The manual predicate forces the out-of-band human verification popup (via `dod_verify`) before the DoD can reach PASS.
+
+**Example — manual leaf for a rendering change:**
+```json
+{
+  "title": "Visual output matches expected rendering",
+  "refinement": "concrete",
+  "command": "manual",
+  "predicate": {"type": "manual"},
+  "description": "Launch the application and confirm the screen renders UI content correctly on the 3D mesh. Verify colors, layout, and text readability match the spec.",
+  "category": "manual"
+}
+```
+
+**Example — manual leaf for a gameplay change:**
+```json
+{
+  "title": "Gameplay behavior matches spec",
+  "refinement": "concrete",
+  "command": "manual",
+  "predicate": {"type": "manual"},
+  "description": "Launch the game and playtest: verify enemy AI pathfinding avoids walls, spawn rates match configured values, and difficulty curve feels correct.",
+  "category": "manual"
+}
+```
+
+**When to add manual leaves:**
+- Any task group that modifies files in `rendering/`, `ui/`, `graphics/`, `shaders/`, `sprites/`, `scenes/`, `levels/`
+- Any task group with leaf intents containing "render", "display", "show", "look", "appear", "visual"
+- Any task group with leaf intents containing "movement", "collision", "spawn", "ai behavior", "gameplay"
+- When in doubt: add a manual leaf. False positive = harmless extra check. False negative = unverified visual/gameplay change.
+
+**Spec-before-implementation locking:** The DoD tree created here is the contract. Implementation must NOT:
+- Change the requirements during implementation (that's `dod_amend`, which requires a reason)
+- Add behavioral predicates after seeing the implementation (that's post-hoc justification)
+- Refine drafts to match whatever was easiest to implement (that defeats verification)
+
+If implementation reveals a requirement is wrong, `dod_amend` with a documented reason. The amendment audit trail makes requirement drift visible. Repeated amendments on the same node signal the spec itself was wrong — not the implementation.
+
+**Anti-patterns:**
+- ❌ DoD with 15 behavioral proofs and zero manual proofs for a rendering feature
+- ❌ "The tests pass so the UI must be correct" — tests test logic, not visual output
+- ❌ Adding manual proofs AFTER implementation when you realize build-only isn't enough
+- ❌ Refining all drafts at once after implementation (happens to match what was built)
+
 **Anti-patterns:**
 - One concrete proof per task group claiming to cover the entire sub-goal (e.g., "Tests pass" for "User Auth" with no decomposition)
 - All leaves concrete with no drafts (means you're guessing at implementation details)

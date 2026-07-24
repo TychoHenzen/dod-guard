@@ -49,6 +49,7 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 4. TDD proofs track `seen_failing` state across runs (must fail before passing)
 5. `computeProofFingerprint()` hashes all concrete leaves → compared against stored hash for tamper detection
 6. Any behavioral predicate fail → overall FAIL
+7. Any node amended 3+ times triggers STUCK verdict (approach likely wrong; re-read requirements) — overrides PASS even if all proofs pass
 
 ### File responsibilities
 
@@ -56,7 +57,7 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 |------|------|
 | `index.ts` | MCP server: tool registration, Zod schemas, import gate, amend gate, adversarial gate, manual elicitation |
 | `types.ts` | All types: `TaskNode`, `DodDocument`, `Predicate`, `CheckResult`, `LeafResult`, `ProofCategory`, `ManualResult`, `AdversarialGate`, `AdversarialLensResult`, `AdversarialFinding` |
-| `checker.ts` | Proof execution engine: VCS capture, leaf execution, predicate evaluation, tamper detection, amendment gate |
+| `checker.ts` | Proof execution engine: VCS capture, leaf execution, predicate evaluation, tamper detection, amendment gate, STUCK verdict detection (node amended 3+ times) |
 | `evaluate-proof.ts` | Single proof execution: command run, predicate eval, failure diagnosis |
 | `fingerprint.ts` | Canonical fingerprint: `computeProofFingerprint()` (SHA-256 of command+type+value+options) |
 | `author.ts` | Markdown rendering: `<claude_instructions>`, sections, proof tree, predicate metadata |

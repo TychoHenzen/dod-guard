@@ -41,6 +41,8 @@ Identify root cause. Was it:
 - Missing edge case?
 - Test that doesn't match implementation behavior?
 - Implementation that doesn't match test expectations?
+- **Wrong verification surface?** If this is a visual/gameplay change and the original step-implementer claimed "build passes" as verification, the step was never properly verified. The code may compile but the visual/gameplay output is unconfirmed.
+- **Same approach, new parameters?** If the original step-implementer already tried this strategy and failed, applying the same strategy with different parameters will fail again. Flag this as "APPROACH PIVOT NEEDED" — do not attempt the fix.
 
 ### Step 4: Apply minimal fix
 Fix ONLY what caused the failure. Don't:
@@ -69,6 +71,15 @@ Report:
    Don't burn tokens on a hopeless repair.
 5. **REPORT CLEARLY.** If you can't fix it, say why clearly. "Test still fails
    because X" is actionable. "Tried things, didn't work" is not.
+6. **SAME APPROACH = SAME FAILURE.** If the original step-implementer already tried
+   this strategy and it failed, do NOT attempt the same strategy with different
+   parameters. Report "APPROACH PIVOT NEEDED — same strategy, will fail again."
+   This saves the orchestrator from wasting a dispatch on a guaranteed failure.
+7. **VISUAL/GAMEPLAY VERIFICATION GAP.** If the failure is "verification was
+   build-only for a visual/gameplay change," the fix is not to change the code —
+   the fix is to add proper verification. Report: "VERIFICATION GAP — visual/gameplay
+   change was verified by build-only. Code may be correct but unverified. Human
+   visual confirmation needed."
 
 ## Report Format
 

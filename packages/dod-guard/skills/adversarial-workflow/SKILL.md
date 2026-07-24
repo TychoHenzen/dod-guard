@@ -122,6 +122,8 @@ Phase 1 gate must be GO. Verify: `dod_status(dod_id: "<id>")` → check adversar
 | Falsifiability | dod-guard:adversarial-test-auditor | sonnet | Would each test fail if the requirement was wrong? | Describe a bug that WOULD make each test fail |
 | Gap Detection | dod-guard:adversarial-test-auditor | sonnet | What edge cases, error paths, or boundary conditions are untested? | List specific missing test scenarios with example inputs |
 
+**Model-diversity override:** If the test author used Sonnet/Opus, dispatch these lenses with `model: "haiku"` instead. Haiku reviewing Sonnet's tests = genuine independence. See Model-Diversity Enforcement section below for the full routing table.
+
 Each lens MUST find at least 1 issue. Zero findings from a lens = rubber-stamp → re-dispatch that lens with a stronger prompt.
 
 3. Compute verdict (same thresholds as Phase 1: 0 critical, ≤2 major).
@@ -149,6 +151,8 @@ Phase 2 gate must be GO.
 | Saboteur | dod-guard:adversarial-saboteur | opus | 2 issues | "How do I break this?" Worst-case inputs, concurrency races, resource exhaustion, null/undefined injection |
 | New Hire | dod-guard:adversarial-new-hire | haiku | 1 issue | "Can I understand this cold?" Unclear naming, missing comments, confusing control flow, undocumented assumptions |
 | Spec Auditor | dod-guard:adversarial-spec-auditor | sonnet | 1 issue | "Does this match the original spec?" Compare implementation against Phase 1 requirements (not the implementation plan) |
+
+**Model-diversity override:** If the implementation was done by the same model that would run these lenses, apply model diversity per the routing table. Example: if implementation was DeepSeek (cheap-step), dispatch all 3 lenses with `model: "sonnet"` — Claude reviewing DeepSeek output = genuine independence. See Model-Diversity Enforcement section below.
 
 3. Every finding MUST include all three (reject findings missing any):
    - `file:line` of the issue
@@ -229,6 +233,67 @@ Rules:
 2. Every finding MUST cite concrete evidence (file:line, command output)
 3. Be specific. "file:line: X causes Y because Z" is useful. "This is wrong" is rejected.
 ```
+
+## Model-Diversity Enforcement (Phase 2 & 3)
+
+**The problem:** Same model writing tests AND implementation = TDD theater (test written to pass the implementation the model already has in mind). Same model running adversarial lenses against its own output = rubber-stamp (model agrees with itself).
+
+**The fix:** Phase 2 (Test Audit) and Phase 3 (Implementation Review) lenses SHOULD use a different model/provider than the implementation author.
+
+### Model-diversity routing table
+
+| Phase | Author model | Recommended lens model | Rationale |
+|-------|-------------|----------------------|-----------|
+| Phase 2 (Test Audit) — if tests written by Claude/Sonnet | sonnet | haiku (different model) | Haiku won't share Sonnet's "the tests are fine" bias |
+| Phase 2 (Test Audit) — if tests written by DeepSeek | deepseek | sonnet | Claude catches what DeepSeek misses |
+| Phase 3 (Implement Review) — if implementation by Claude | sonnet/opus | haiku (new-hire, spec-auditor), sonnet (saboteur) | Different model for understanding gaps; same-model OK for attack lens since attack surface is different |
+| Phase 3 (Implement Review) — if implementation by DeepSeek | deepseek | sonnet (all 3 lenses) | Claude reviews DeepSeek output — genuine independence |
+
+### How to apply model diversity
+
+When dispatching adversarial subagents, set the `model` parameter explicitly:
+
+```
+// Phase 2 example — tests written by sonnet, audit by haiku
+Agent(subagent_type: "dod-guard:adversarial-test-auditor", model: "haiku", ...)
+
+// Phase 3 example — implementation by deepseek, review by sonnet
+Agent(subagent_type: "dod-guard:adversarial-saboteur", model: "sonnet", ...)
+Agent(subagent_type: "dod-guard:adversarial-new-hire", model: "sonnet", ...)
+Agent(subagent_type: "dod-guard:adversarial-spec-auditor", model: "sonnet", ...)
+```
+
+**When model diversity is unavailable** (single-provider setup):
+- Use the same model but with maximally different lens prompts
+- The lens agent definitions already encode different personas and attack surfaces
+- This is defense-in-depth-lite — better than nothing, not as strong as true model diversity
+- Flag this degradation in the gate summary: "Model diversity unavailable — single-model adversarial review (degraded independence)"
+
+### Negative Control Injection (rubber-stamp detection)
+
+**The problem:** A lens that returns zero findings on everything is rubber-stamping. But you can't tell a legitimately clean artifact from a lazy lens without testing the lens itself.
+
+**The fix:** Periodically feed a known-bad artifact to one lens during Phase 1 (Spec Review). If the lens returns zero findings on a known-bad spec, it's rubber-stamping — re-dispatch with a stronger prompt.
+
+**Implementation (lightweight — Phase 1 only):**
+
+After the 5 Phase 1 lenses complete, apply this check:
+
+1. Pick the lens with the FEWEST findings (if any lens returned 0 findings)
+2. Feed it a synthetic bad spec derived from the REAL spec but with one obvious flaw injected:
+   - Missing error handling for a required edge case
+   - Contradictory requirement (e.g., "must be fast" AND "must validate all fields synchronously")
+   - Missing security consideration (e.g., "no auth required" on a user data endpoint)
+3. If the lens returns 0 findings on the KNOWN-BAD spec → rubber-stamp detected
+4. Re-dispatch that lens with the original spec and a stronger prompt: "You previously found nothing. A known-flawed variant of this spec also received zero findings. Re-review with higher scrutiny."
+
+**Skip negative controls when:**
+- All 5 lenses found at least 1 issue (no zero-finding lenses to test)
+- Fewer than 3 total findings across all lenses (the spec is genuinely sparse — negative control would be noise)
+- Phase 1 gate is already REVISE (no point testing lenses when the spec is known-bad)
+
+**Recording negative control results:**
+Add to the gate summary: "Negative control: <lens-name> detected <N>/1 injected flaws — <OK/RUBBER-STAMP>."
 
 ## Recovery
 

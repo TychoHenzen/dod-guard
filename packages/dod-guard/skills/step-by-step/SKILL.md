@@ -77,13 +77,26 @@ Save to `.step-session/steps.json`:
       "description": "Create User struct with id, name, email fields...",
       "files": ["src/models/user.rs"],
       "deps": [],
+      "verify_surface": "code",
       "status": "pending"
     }
   ]
 }
 ```
 
-Report step count to user. Proceed without asking unless steps > 20 or unclear.
+Each step gets a `verify_surface` tag set during decomposition:
+
+| verify_surface | Meaning | Minimum verification |
+|----------------|---------|---------------------|
+| `code` | Logic, algorithms, data flow, API | Tests pass + build clean |
+| `visual` | Rendering, UI, graphics, layout, CSS | Tests pass + build clean + manual visual check OR automated screenshot diff |
+| `gameplay` | Game behavior, physics, interaction | Tests pass + build clean + manual playtest |
+| `config` | Config files, env vars, dependencies | Config syntax valid + system starts |
+| `structural` | Refactors, renames, file moves | Tests pass + build clean + diff review |
+
+**Visual/gameplay steps CANNOT be verified by build-only.** Build passes = the code compiles, not that it looks or plays right. Every step tagged `visual` or `gameplay` MUST include a manual verification action.
+
+Report step count and verify_surface breakdown to user. Proceed without asking unless steps > 20 or unclear.
 
 ### Phase 1: Execute — One Step at a Time
 
@@ -135,10 +148,28 @@ The briefing IS the subagent's entire prompt. Subagent implements, tests, verifi
 
 #### 1.3 Verify
 
-Run verification before marking done. At minimum:
+Run verification before marking done. The verification surface determines what "done" means:
+
+**All steps (baseline):**
 - Tests pass for affected code
 - Build clean
 - Output matches expected criteria from briefing
+
+**By verify_surface — additional requirements:**
+
+| Surface | Additional verification | Anti-pattern |
+|---------|------------------------|--------------|
+| `code` | None beyond baseline | — |
+| `visual` | Manual visual confirmation OR automated screenshot diff. Launch the app/view if possible. Screenshot comparison if tooling exists. | ❌ "Build passes" for a visual change = NOT VERIFIED |
+| `gameplay` | Manual playtest OR automated gameplay test. The game/application must be launched and interacted with. | ❌ "Tests pass" for gameplay behavior without launching = NOT VERIFIED |
+| `config` | Config syntax check. System/service starts with new config. | ❌ "File written" without validation = NOT VERIFIED |
+| `structural` | Diff review. No unexpected files changed. Imports consistent. | ❌ "No type errors" without diff review = NOT VERIFIED |
+
+**Visual/gameplay verification rule (ABSOLUTE):** If a step is tagged `visual` or `gameplay` and verification consists solely of "build/tests pass," the step is NOT verified. The orchestrator MUST either:
+1. Launch the application and confirm the visual/gameplay output matches expected behavior, OR
+2. Mark the step as requiring manual verification and report it to the user as pending human confirmation
+
+Subagents cannot be trusted to self-report visual correctness. If the orchestrator cannot perform automated visual verification (no screenshot tooling, no headless browser, no Godot/game engine on PATH), the step's verify_surface should have been `visual` + `manual_required: true` set during decomposition.
 
 #### 1.4 Gate decision
 
@@ -146,6 +177,15 @@ Run verification before marking done. At minimum:
 - **FAIL** → dispatch `step-fixer` with original briefing + failure output. Max 2 retries.
   If still failing after 2 → report BLOCKED to user
 - **SKIP** → only with user approval. Mark `skipped` with reason
+
+**Rewind on second rejection (NEW — from transcript analysis):** If a step fails verification twice on the SAME approach (step-fixer applies the same strategy with different parameters), the approach itself is wrong. Do not dispatch a third fixer. Instead:
+1. Re-read the original requirements for this step
+2. Ask: "Is this step implementing the right thing, or a convenient adjacent thing?"
+3. If wrong problem: re-spec the step with corrected requirements
+4. If right problem, wrong approach: dispatch step-implementer (not step-fixer) with explicit instruction to use a DIFFERENT architectural approach
+5. Record the approach pivot in progress.log: `⟳ S0N — approach pivot: <old approach> → <new approach>`
+
+This pattern comes from 8 of 10 confirmed breakdown events where the model iterated on the same wrong approach (build verification for visual changes, material properties instead of viewport rendering, single-corridor layout). Fixing the fixer doesn't help when the fixer inherits the same wrong premise.
 
 #### 1.5 Compact
 
@@ -243,6 +283,20 @@ is EXACTLY the wrong instinct here. Read these before dispatching each step:
 9. **COST DOES NOT MATTER.** Subagents run on cheap models. Spending 20 subagent
    dispatches costs ~$0.50. Correct work is worth it.
 
+10. **BUILD PASSES ≠ VERIFIED.** For visual, gameplay, or UI changes, "build passes"
+    is a lie. The code compiled — that's all. Launch the application and verify the
+    output matches expected behavior, or mark the step as needing manual verification.
+    This rule exists because 80% of dod-guard breakdown events followed the exact
+    pattern: code change → build → "done" → user launches → still broken.
+
+11. **SAME APPROACH, SAME FAILURE.** If step-fixer applies the same strategy with
+    different parameters and fails, the strategy is wrong — not the parameters.
+    Rewind to requirements. Do not dispatch a third fixer with the same approach.
+
+12. **VERIFY THE RIGHT THING.** A step tagged `visual` verified by "tests pass" is
+    unverified. A step tagged `gameplay` verified by "build clean" is unverified.
+    Match the verification to the verification surface.
+
 ## Anti-Patterns (watch for these in yourself)
 
 | Temptation | Correct Response |
@@ -255,6 +309,23 @@ is EXACTLY the wrong instinct here. Read these before dispatching each step:
 | "The plan has too many steps, let me simplify" | Maybe valid. ASK USER first. Don't silently drop. |
 | "This is getting long, I should check in with user" | NO. Complete ALL steps, then report. Only interrupt for blockers. |
 | "I can do a batch of mechanical steps together" | NO. One per dispatch. Always. |
+| "Build passes, visual change is verified" | NO. Build ≠ visual verification. Launch the app or mark it pending human check. |
+| "The subagent says it looks right" | NO. Subagents cannot see. They report code output, not visual output. |
+| "I changed the approach slightly, same strategy" | NO. If the same strategy failed twice, the strategy is wrong. Pivot. |
+| "The tests pass so the game behavior is correct" | NO. Tests test logic, not feel/balance/visuals. Gameplay needs playtest. |
+| "I'll verify the visual output on the next step" | NO. Verify THIS step before moving on. Deferred verification = forgotten verification. |
+
+## Verification Surface Reference
+
+Use this table during Phase 0 decomposition to correctly tag each step:
+
+| Step description keywords | verify_surface | Reasoning |
+|---------------------------|----------------|-----------|
+| "render", "display", "show", "UI", "screen", "color", "layout", "css", "style", "animation", "mesh", "texture", "sprite", "canvas" | `visual` | Output is visual — cannot be verified by build alone |
+| "physics", "collision", "movement", "spawn", "ai", "enemy", "player", "level", "balance", "difficulty", "gameplay" | `gameplay` | Output is interactive behavior — needs playtest |
+| "calculate", "parse", "validate", "transform", "query", "filter", "sort", "encode", "serialize", "route", "endpoint" | `code` | Output is deterministic data — tests verify |
+| "config", "env", "settings", ".json", ".yaml", ".toml", ".env", "dependency", "package" | `config` | Output is configuration state — validate + start |
+| "rename", "move", "extract", "refactor", "reorganize", "split", "merge files" | `structural` | Output is code organization — diff review |
 
 ## Shipped Agents
 

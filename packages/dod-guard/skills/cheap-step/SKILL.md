@@ -106,6 +106,7 @@ Save to `.cheap-step/steps.json`:
       "allowed_files": ["src/models/user.ts", "src/models/user.test.ts"],
       "context": "User model is at src/models/user.ts, uses zod for validation...",
       "mode": "cheap",
+      "verify_surface": "code",
       "deps": [],
       "status": "pending"
     },
@@ -114,6 +115,7 @@ Save to `.cheap-step/steps.json`:
       "title": "Design auth middleware architecture",
       "description": "Design the auth middleware chain — this is architectural, host does it...",
       "mode": "host-only",
+      "verify_surface": "code",
       "deps": [],
       "status": "pending"
     }
@@ -124,6 +126,18 @@ Save to `.cheap-step/steps.json`:
 **Step modes:**
 - `cheap` — evomcp solve → verify → feedback/retry → host fallback
 - `host-only` — host model implements directly (like step-by-step's step-implementer)
+
+**verify_surface tags** (same taxonomy as step-by-step):
+
+| verify_surface | Meaning | Cheap-worker viable? |
+|----------------|---------|---------------------|
+| `code` | Logic, algorithms, data flow, API | Yes — verify_cmd covers it |
+| `visual` | Rendering, UI, graphics, layout | No — mark as `host-only`. Cheap workers cannot see. |
+| `gameplay` | Game behavior, physics, interaction | No — mark as `host-only`. Cheap workers cannot playtest. |
+| `config` | Config files, env vars, dependencies | Yes — parse/start checks |
+| `structural` | Refactors, renames, file moves | Yes — verify_cmd + diff review |
+
+**Visual/gameplay steps MUST be `host-only`.** Cheap workers (DeepSeek via evomcp) cannot visually verify output. They will substitute "build passes" for verification — the exact pattern that caused 80% of dod-guard breakdown events. The host model must implement these steps directly and apply manual verification.
 
 Report step count and mode breakdown to user. Flag any step >3 files or with
 verify_cmd running >50 tests — these will likely need decomposition.
@@ -351,6 +365,16 @@ If a step's estimated success rate is <60%, either split it or mark it
     from this skill. If evomcp solve returns no output, report `evomcp status`
     to the user and stop. Backend health is not this skill's job.
 
+13. **VISUAL/GAMEPLAY = HOST-ONLY.** Never dispatch a step tagged `visual` or
+    `gameplay` to cheap workers. They cannot see. They will substitute "build
+    passes" for verification. This pattern caused 8 of 10 dod-guard breakdown
+    events. Mark these steps `host-only` during decomposition.
+
+14. **SAME APPROACH, SAME FAILURE.** If a cheap step fails 2 retries with the
+    same failure signature, the approach is wrong — not the parameters. Don't
+    retry a third time with the same strategy. Host fallback with a DIFFERENT
+    approach, or re-spec the step.
+
 ## Anti-Patterns
 
 | Temptation | Correct Response |
@@ -364,6 +388,9 @@ If a step's estimated success rate is <60%, either split it or mark it
 | "I'll skip the checkpoint, it's just one step" | One command. Zero cost. |
 | "Let me run the full test suite after every step" | NO. Scoped verify_cmd is enough per step. Full suite at integration check. |
 | "This failed because the verify_cmd is flaky, let me just mark it pass" | NO. Fix the flaky test first. Flaky verify poisons the whole workflow. |
+| "This visual change passes build, it's verified" | NO. Build ≠ visual verification. Visual/gameplay steps are host-only for a reason. |
+| "The cheap worker says the UI looks correct" | NO. Cheap workers cannot see. They report code output, not visual output. |
+| "Same approach but different parameters, third retry" | NO. Max 2 retries with same approach. Third retry needs approach pivot. |
 
 ## Session Files
 
