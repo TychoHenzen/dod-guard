@@ -118,6 +118,7 @@ The CLI exists so `verify_cmd` / `fitness_cmd` in evomcp can gate on a DoD subtr
 | `step-by-step` | Execute multi-step plans one atomic step at a time |
 | `cheap-step` | Step-by-step with evomcp cheap-worker fanout |
 | `adversarial-workflow` | 4-phase adversarial choreography (spec review → test audit → implementation review → structural gates) |
+| `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |
 
 ## Lessons
 

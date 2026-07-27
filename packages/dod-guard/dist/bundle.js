@@ -22449,9 +22449,7 @@ function formatMissingTools(missing) {
     lines.push(`    in: ${m.command}`);
   }
   lines.push("");
-  lines.push(
-    "Rewrite these commands for the current OS, then retry."
-  );
+  lines.push("Rewrite these commands for the current OS, then retry.");
   return lines.join("\n");
 }
 function suggestionFor(tool) {
@@ -23645,7 +23643,7 @@ ${gateFailures.join("\n")}`
         content: [{ type: "text", text: `ERROR: node is a draft. Use dod_refine to concretize it first.` }]
       };
     }
-    const effectivePredicate = new_predicate ?? node.predicate;
+    const _effectivePredicate = new_predicate ?? node.predicate;
     const effectiveCommand = new_command ?? node.command ?? "";
     if (effectiveCommand.trim() !== "") {
       const missing = await findMissingTools([effectiveCommand], doc.cwd);
