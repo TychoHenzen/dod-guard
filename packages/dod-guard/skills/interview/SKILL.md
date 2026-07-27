@@ -7,7 +7,7 @@ description: Use when starting any implementation task, feature request, bug fix
 
 ## Overview
 
-Thoroughly investigate what is actually intended before touching code. Research the codebase and external sources, then interrogate the user until every detail is unambiguous. Produce a self-contained requirements spec with a Definition of Done checklist — each step backed by testable, LLM-invokable proofs. The resulting spec can be passed directly to `/goal` for autonomous implementation.
+Thoroughly investigate what is actually intended before touching code. Research the codebase and external sources, then interrogate the user until every detail is unambiguous. Produce a self-contained requirements spec with a Definition of Done checklist — each step backed by testable, LLM-invokable proofs. The resulting DoD is handed to an executor skill (see Phase 5) for implementation.
 
 **Core principle:** Never assume. If you don't know, research it. If you can't research it, ask.
 
@@ -87,10 +87,12 @@ Work through these as relevant (not all apply to every task):
 
 ### Minimum Questions by Scope
 
-Scale clarifying questions to the change's blast radius. PBI #31790 — a 17-file, 6-project
-change — shipped after only **3** questions, leaving real ambiguities unprobed (`Copy()`
-semantics for the new property, separate-flag vs shared-logic, rollback on validation failure).
-Use the floor below as a **minimum**, derived from the scope you established in Phase 1 research:
+Scale clarifying questions to the change's blast radius. The floor below exists
+because a 17-file, 6-project change once shipped after only **3** questions,
+leaving real ambiguities unprobed: copy/clone semantics for a new property,
+separate-flag vs shared-logic, and rollback behaviour on validation failure —
+each one a seam between layers that nobody asked about. Treat it as a
+**minimum**, derived from the scope you established in Phase 1 research:
 
 | Estimated scope (from Phase 1) | Minimum clarifying questions |
 |--------------------------------|------------------------------|
@@ -188,8 +190,8 @@ For a user auth feature:
 ```
 roots:
   "Code Quality" (task group)
-    - "Lint" (concrete): npm run lint → exit_code:0, category: lint
-    - "Full test suite" (concrete): npm test → exit_code:0, category: test
+    - "Lint" (concrete): npm run lint → exit_code:0, category: behavioral
+    - "Full test suite" (concrete): npm test → exit_code:0, category: behavioral
 
   "User Authentication" (task group)
     "Password Hashing" (task group)
@@ -203,9 +205,13 @@ roots:
       - Draft: "curl login endpoint returns JWT" (behavioral)
 
   "Manual Verification" (task group)
-    - "Code review" (manual): peer review
-    - "Walkthrough" (manual): run app, verify login flow end-to-end
+    - Draft: "MANUAL: peer review of the auth implementation"
+    - Draft: "MANUAL: run app, verify login flow end-to-end"
 ```
+
+Human-verified steps are draft leaves with a `MANUAL:` intent — there is no
+`manual` predicate. Drafts hold the DoD at INCOMPLETE until a human signs off,
+which is the behaviour you want.
 
 ### How to Build the Tree
 
@@ -267,15 +273,13 @@ For visual/gameplay changes, include behavioral proofs that verify the output ca
 If implementation reveals a requirement is wrong, `dod_amend` with a documented reason. The amendment audit trail makes requirement drift visible. Repeated amendments on the same node signal the spec itself was wrong — not the implementation.
 
 **Anti-patterns:**
-- ❌ DoD with 15 behavioral proofs and zero manual proofs for a rendering feature
+- ❌ DoD with 15 behavioral proofs and zero `MANUAL:` drafts for a rendering feature
 - ❌ "The tests pass so the UI must be correct" — tests test logic, not visual output
-- ❌ Adding manual proofs AFTER implementation when you realize build-only isn't enough
+- ❌ Adding manual drafts AFTER implementation when you realize build-only isn't enough
 - ❌ Refining all drafts at once after implementation (happens to match what was built)
-
-**Anti-patterns:**
-- One concrete proof per task group claiming to cover the entire sub-goal (e.g., "Tests pass" for "User Auth" with no decomposition)
-- All leaves concrete with no drafts (means you're guessing at implementation details)
-- All leaves drafted with no concrete (means no structural verification)
+- ❌ One concrete proof per task group claiming to cover the entire sub-goal (e.g. "Tests pass" for "User Auth" with no decomposition)
+- ❌ All leaves concrete with no drafts (means you're guessing at implementation details)
+- ❌ All leaves drafted with no concrete (means no structural verification)
 
 ## Phase 3.5: Apply Company DoD Baselines
 
@@ -390,15 +394,23 @@ Models are lazy — they accept weak specs to save effort. The adversarial spec 
 
 ### Five Adversarial Lenses
 
-Dispatch these in parallel. Each lens is a separate subagent with a specific attack surface:
+Dispatch these in parallel using the **shipped agents** — do not hand-write lens
+prompts. Each agent already encodes its persona, attack surface, mandatory-finding
+rule, and output format:
 
-| Lens | Question | Severity if violated |
-|------|----------|---------------------|
-| **Security** | What STRIDE risks exist? Trust boundaries? Where could bad input cause harm? AuthZ gaps? | critical |
-| **Assumptions** | What implicit assumptions does the spec make about the codebase, user behavior, or environment? Are they documented? | major |
-| **Testability** | Can each requirement produce a falsifiable behavioral proof? Are any requirements untestable? | major |
-| **Consistency** | Do all requirements align with each other? Any contradictions? Scope drift from original ask? | major |
-| **Implementability** | Can this be built on the existing architecture? Missing dependencies? Integration seams defined? | minor |
+| Lens | subagent_type | Attack surface | Severity if violated |
+|------|---------------|----------------|---------------------|
+| **Security** | `dod-guard:adversarial-security` | STRIDE risks, trust boundaries, injection vectors, authZ gaps | critical |
+| **Assumptions** | `dod-guard:adversarial-spec-reviewer` | Implicit assumptions about codebase, user behavior, environment | major |
+| **Testability** | `dod-guard:adversarial-spec-reviewer` | Requirements that can't produce a falsifiable behavioral proof | major |
+| **Consistency** | `dod-guard:adversarial-spec-reviewer` | Contradictions between requirements, scope drift from the original ask | major |
+| **Implementability** | `dod-guard:adversarial-spec-reviewer` | Architectural fit, missing dependencies, undefined integration seams | minor |
+
+The four `adversarial-spec-reviewer` instances differ only by the lens named in
+the dispatch prompt — pass the lens name and its attack surface, plus the spec
+context below. This is the same lens set `/dod-guard:adversarial-workflow` runs
+as its Phase 1; running it here means a standalone `/interview` gets the same
+scrutiny.
 
 Each lens must find at least 1 issue OR report "NO_FINDINGS: [specific justification of why this lens found nothing]." A bare "no issues found" without justification = invalid verdict (rubber-stamp detection — re-dispatch).
 
@@ -425,117 +437,46 @@ Each lens must find at least 1 issue OR report "NO_FINDINGS: [specific justifica
    - Max 3 REVISE iterations — after 3, escalate remaining unresolved findings to user for explicit override
 7. **If STOP**: present blocker to user, abort spec creation
 
-### Lens Subagent Prompts
+### Lens Dispatch Context
 
-**Security lens:**
+Every lens gets the same context block. Paste values, don't reference files â€”
+the agents run with clean context and cannot see this conversation:
+
 ```
-You are a security reviewer attacking a planned implementation. Review the spec below.
-Find: STRIDE threats, injection vectors, authZ gaps, trust boundary violations,
-data integrity risks, exposed secrets. Cite specific requirements or tree nodes.
-If you find nothing, explain WHY this spec has zero security exposure.
+LENS: {Security|Assumptions|Testability|Consistency|Implementability}
+ATTACK SURFACE: {the row from the table above}
 
 SPEC:
 - Goal: {goal}
+- Original ask (verbatim): {user's original request}
 - Type: {bug|general|minimal}
-- Language/stack: {language}
-- Requirements: {requirements summary}
-- TaskNode tree: {tree structure}
-
-Output EACH finding as:
-  SEVERITY: critical|major|minor
-  TARGET: which requirement/node this attacks
-  PROBLEM: specific vulnerability or gap
-  SUGGESTION: how to fix the spec to address this
-```
-
-**Assumptions lens:**
-```
-You are reviewing a spec for hidden assumptions. Review the spec below.
-Find: implicit assumptions about the codebase (existing functions, types, patterns),
-user behavior (workflows, inputs), environment (OS, dependencies, config),
-and data (formats, schemas, constraints). Every undocumented assumption is a bug waiting to happen.
-If you find nothing, explain WHY every assumption is already explicit.
-
-SPEC:
-- Goal: {goal}
-- Type: {bug|general|minimal}
-- Language/stack: {language}
-- Requirements: {requirements summary}
-- TaskNode tree: {tree structure}
-
-Output EACH finding as:
-  SEVERITY: critical|major|minor
-  ASSUMPTION: what is being assumed
-  RISK: what happens if the assumption is wrong
-  SUGGESTION: how to validate or document this assumption
-```
-
-**Testability lens:**
-```
-You are reviewing a spec for testability gaps. Review the spec below.
-Find: requirements that cannot produce a falsifiable behavioral proof (a command
-with clear pass/fail output), draft nodes with vague intents, integration proofs
-with undefined entry points, manual proofs that should be machine-checkable.
-If you find nothing, explain WHY every requirement maps to a concrete testable proof.
-
-SPEC:
-- Goal: {goal}
-- Type: {bug|general|minimal}
-- Requirements: {requirements summary}
-- TaskNode tree: {tree structure}
-- Concrete proofs: {list of concrete leaves with commands}
-- Draft intents: {list of draft leaves with intents}
-
-Output EACH finding as:
-  SEVERITY: critical|major|minor
-  UNTESTABLE: which requirement/node lacks a falsifiable proof
-  WHY: why it can't be verified by a command
-  SUGGESTION: how to rewrite it as a testable behavioral proof
-```
-
-**Consistency lens:**
-```
-You are reviewing a spec for internal contradictions and scope drift. Review
-the spec below. Find: requirements that contradict each other, scope that
-has drifted from the original goal, edge cases defined one way in one node
-and differently in another, tree structure that doesn't match the requirements text.
-If you find nothing, explain WHY the spec is internally consistent.
-
-SPEC:
-- Goal: {goal}
-- Original ask: {user's original request — paste verbatim}
-- Requirements: {requirements summary}
-- TaskNode tree: {tree structure}
-
-Output EACH finding as:
-  SEVERITY: critical|major|minor
-  CONFLICT: which two requirements/nodes disagree
-  WHY: how they contradict or diverge
-  SUGGESTION: how to reconcile them
-```
-
-**Implementability lens:**
-```
-You are reviewing a spec for buildability on the existing codebase. Review
-the spec below. Find: missing dependencies, architectural mismatches,
-integration seams not defined, patterns that clash with existing code,
-scope that requires infrastructure not present in the project.
-If you find nothing, explain WHY this fits cleanly into the existing architecture.
-
-SPEC:
-- Goal: {goal}
 - Language/stack: {language}
 - Project structure: {key directories, frameworks, patterns from Phase 1 research}
 - Requirements: {requirements summary}
 - TaskNode tree: {tree structure}
-
-Output EACH finding as:
-  SEVERITY: critical|major|minor
-  BLOCKER: what about the architecture makes this hard/impossible
-  WHY: why the current approach won't fit
-  SUGGESTION: how to adjust the spec or architecture
+- Concrete proofs: {list of concrete leaves with commands}
+- Draft intents: {list of draft leaves with intents}
 ```
 
+Each agent returns findings as `SEVERITY / TARGET / PROBLEM / SUGGESTION`, and
+must find at least 1 issue or return `NO_FINDINGS: [specific justification]`. A
+bare "no issues found" is an invalid verdict â€” re-dispatch that lens.
+
+### Recording the Gate
+
+The verdict belongs in the DoD, not just in this conversation. Because
+`dod_adversarial_gate` needs a `dod_id`, record it **immediately after
+`dod_create`** (Phase 4):
+
+```
+dod_adversarial_gate(dod_id: "<id>", phase: 1, verdict: "GO",
+  lenses: [{lens: "Security", findings: [...], mandatory_minimum_met: true}, ...],
+  summary: "Spec review: 0 critical, 2 major, 4 minor across 5 lenses")
+```
+
+Without this the DoD has no phase-1 gate, and any later
+`/dod-guard:adversarial-workflow` run will redo the whole review from scratch.
+If a DoD carries `adversarial_gates`, `dod_check` enforces phase progression.
 ### Post-Review: skip_reasons for Dod Creation
 
 The `skip_reasons` parameter on `dod_create` captures conscious omissions — things deliberately left out of the DoD. After the adversarial review resolves all findings, collect skip_reasons as a flat map:
@@ -657,19 +598,13 @@ Call `dod_create` to build a DoD with a hierarchical `roots` tree. DoDs start wi
       "children": [
         {
           "title": "Code review",
-          "refinement": "concrete",
-          "command": "manual",
-          "predicate": {"type": "review"},
-          "description": "peer review of auth implementation",
-          "category": "manual"
+          "refinement": "draft",
+          "intent": "MANUAL: peer review of auth implementation — human sign-off, no command"
         },
         {
           "title": "App walkthrough",
-          "refinement": "concrete",
-          "command": "manual",
-          "predicate": {"type": "manual"},
-          "description": "run app, verify login/register flow end-to-end",
-          "category": "manual"
+          "refinement": "draft",
+          "intent": "MANUAL: run app, verify login/register flow end-to-end — human sign-off, no command"
         }
       ]
     }
@@ -694,31 +629,46 @@ Call `dod_create` to build a DoD with a hierarchical `roots` tree. DoDs start wi
 | `category` | on concrete leaves | Baseline category (see categories below) |
 | `advisory` | optional | Advisory tier — failing advisory proof warns but does not block |
 
-**Predicate types** (behavioral only — post-v2.4.0): `exit_code`, `exit_code_not`, `output_contains`, `output_matches`, `output_not_contains`, `output_not_matches`, `tdd`, `manual`, `review`.
+**Predicate types — these 10 and no others** (validated by `PredicateSchema` in `src/schemas.ts`; anything else is rejected at `dod_create`):
 
-**Proof categories**: `"behavioral"` (proves correct behavior — tests, lint, format, tdd), `"wiring"` (proves connection to system — integration), `"manual"` (human-verified), `"other"` (catch-all).
+| Kind | Types |
+|------|-------|
+| Behavioral (7) | `exit_code`, `exit_code_not`, `output_contains`, `output_not_contains`, `output_matches`, `output_not_matches`, `tdd` |
+| Gate (3) | `adversarial`, `holdout`, `convergence` |
 
-Baseline enforcement is **advisory only** at create time — categories are filled during `dod_refine`. Behavioral proofs should use `"behavioral"` or `"wiring"`. Manual/review proofs use `"manual"`.
+**There is no `manual` or `review` predicate.** They were removed. Human-verified
+steps are **draft leaves** whose `intent` starts with `MANUAL:` — drafts hold the
+DoD at INCOMPLETE, which is exactly the "a human still has to do this" semantic.
+Do not invent a command for them.
+
+**Proof categories — these 4 and no others** (`ProofCategorySchema`): `"behavioral"` (tests, lint, format, tdd), `"wiring"` (proves connection to the system — integration), `"test_audit"` (test-quality checks), `"other"` (catch-all). There is no `manual`, `lint`, `test`, or `duplication` category.
+
+Baseline enforcement is **advisory only** at create time — categories are filled during `dod_refine`.
+
+**TDD proof pairing.** A TDD requirement needs two concrete leaves: a structural
+one proving the test asserts something real (not `assert True`), and the `tdd`
+proof itself proving the red-to-green cycle. As tree nodes:
 
 ```json
-{
-  "title": "Add email validation with TDD",
-  "proofs": [
-    {
-      "command": "grep -E \"assert.*(invalid|valid|@|email)\" tests/test_email.py",
-      "predicate": {"type": "output_matches", "value": "assert.*(invalid|@)"},
-      "description": "test file contains assertions about email validity"
-    },
-    {
-      "command": "python -m pytest tests/test_email.py -v",
-      "predicate": {"type": "tdd", "value": 0},
-      "description": "TDD: tests must fail first (RED), then pass after implementation (GREEN)"
-    }
-  ]
-}
+[
+  {
+    "title": "Email test has real assertions",
+    "refinement": "concrete",
+    "command": "grep -E \"assert.*(invalid|valid|@|email)\" tests/test_email.py",
+    "predicate": {"type": "output_matches", "value": "assert.*(invalid|@)"},
+    "description": "test file contains assertions about email validity",
+    "category": "test_audit"
+  },
+  {
+    "title": "Email validation TDD cycle",
+    "refinement": "concrete",
+    "command": "python -m pytest tests/test_email.py -v",
+    "predicate": {"type": "tdd", "value": 0},
+    "description": "TDD: tests must fail first (RED), then pass after implementation (GREEN)",
+    "category": "behavioral"
+  }
+]
 ```
-
-The structural proof verifies the test checks something real (not `assert True`). The TDD proof verifies the red-to-green cycle. Together they enforce genuine test-driven development.
 
 Flexible naming is fine — use regex patterns like `output_matches: "test_.*valid"` rather than exact test names, since the agent may choose reasonable names during implementation.
 
@@ -820,7 +770,7 @@ Interpreting the baseline:
 
 ### Phase 4.6: Incremental Refinement During Implementation
 
-The `/goal` agent refines drafts as it implements. The workflow:
+The executor skill chosen in Phase 5 refines drafts as it implements. The workflow:
 
 1. Agent picks a task group to implement
 2. For each draft leaf in that group, decides the exact command that proves the intent
@@ -832,30 +782,41 @@ The `/goal` agent refines drafts as it implements. The workflow:
 
 **Key rule:** Refine drafts only when implementing that part of the code. Don't refine everything upfront — that defeats the purpose.
 
-## Phase 5: Output /goal Prompt
+## Phase 5: Hand Off for Implementation
 
-After the baseline check, output the `/goal` prompt directly:
+After the baseline check, report the DoD and hand off. Pick the executor by shape
+of the work — do NOT implement here:
+
+| Situation | Hand off to |
+|-----------|-------------|
+| Plan has 5+ discrete steps | `/dod-guard:step-by-step` |
+| Same, and you want evomcp fanout per step | `/dod-guard:cheap-step` |
+| Interdependent sub-problems, regression risk, unknown unknowns | `/dod-guard:ratchet` (Phase B) |
+| Quality/security gates required at each stage | `/dod-guard:adversarial-workflow` (resume at Phase 2) |
+
+Output:
 
 ```
 DoD created. ID: <dod_id>. <N> root groups, <M> concrete proofs, <K> draft nodes.
+Baseline: <P> passing, <Q> expected-failing (code not written yet).
+Markdown: docs/plans/<filename>
 
-/goal
-<task>Implement the DoD (ID: <dod_id>), refining drafts as you go.</task>
-<reference>DoD markdown: docs/plans/<filename></reference>
-<process>
-Work through task groups sequentially. Concrete proofs are verified by dod_check.
-For draft leaves in your current task group: determine the exact command that proves
-the intent, call dod_refine to concretize it, then dod_check with nodePath to verify
-just that subtree. If a concrete proof is unreasonable, dod_amend with a reason.
-When all drafts are refined and all concrete proofs pass, run dod_check with no nodePath
-for the full PASS verdict.
-</process>
-<success_criteria>A full dod_check (no nodePath) returns overall PASS with zero draft nodes.
-Draft nodes hold the verdict at INCOMPLETE until refined.</success_criteria>
-<on_completion>List every remaining manual step the user must complete.</on_completion>
+Recommended next step: <chosen skill> — <one-line reason>.
 ```
 
-The goal agent must end by listing all manual proofs requiring human action.
+Whichever executor runs, these rules hold:
+
+- Refine a draft only when implementing that part of the code. Refining
+  everything upfront defeats the point — the commands end up matching whatever
+  was easiest to build.
+- Verify a subtree with `dod_check` (`nodePath` scoped) during implementation;
+  run the full check for the real verdict.
+- From a shell (e.g. an evomcp `verify_cmd`), use the CLI instead:
+  `dod-guard check --dod-id=<id> --node-path=<path> --quiet`.
+- A concrete proof that turns out unreasonable gets `dod_amend` **with a
+  reason** — never a silent weakening.
+- Done means a full `dod_check` returns PASS with zero draft nodes. End by
+  listing every `MANUAL:` draft still awaiting human action.
 
 ## Anti-Rationalization Rules
 

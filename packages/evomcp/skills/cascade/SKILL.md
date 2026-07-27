@@ -1,5 +1,5 @@
 ---
-name: cascade-solver
+name: cascade
 description: >
   Cheap-model fanout with verified selection, escalating stuck sub-problems up a
   ladder that ends at the user. Use this skill whenever the user wants to dispatch
@@ -182,10 +182,16 @@ tokens burn. The answers become part of the spec's `context`.
 **verify_cmd rules** (CRITICAL — the whole strategy depends on this):
 
 1. **Use dod-guard DoDs as verify_cmd when possible.** A DoD with
-   lint+format+build+test+mutation gates is a pre-built multi-layer oracle:
+   lint+format+build+test gates is a pre-built multi-layer oracle. Use the
+   `dod-guard` CLI — `dod_check` is an MCP tool name, not a shell command, and
+   running it as one does nothing:
    ```
-   dod_check --dod-id=abc123 --nodePath=0.children.2
+   dod-guard check --dod-id=abc123 --node-path=0.children.2 --quiet
    ```
+   Exit codes: `0` pass · `1` a proof failed (or tampered/stuck) · `2` full run
+   with drafts remaining · `3` usage error or DoD not found. A scoped
+   (`--node-path`) run exits 0 when that subtree passes, which is what makes it
+   usable as a verify_cmd. Find node paths with `dod-guard tree --dod-id=<id>`.
 2. **Be specific.** `npm test` runs 500 tests and drowns the feedback compiler.
    `npm test -- --testNamePattern="auth login"` runs 5 and gives precise signal.
 3. **Test the verify command** on a deliberately wrong change AND the current
@@ -214,6 +220,11 @@ evomcp solve spec={goal, verify_cmd, ...}
 ```
 evomcp evolve spec={goal, fitness_cmd, target_files, generations, population_size}
 ```
+**Full playbook (multi-stage feature)** — `orchestrate`: walks
+SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE through evomcp's stage machine,
+with human gates at SPEC, TEST_AUTHOR, and REVIEW. Use it instead of hand-rolling
+that sequence out of repeated `solve` calls; use plain `solve` when you only need
+one stage. The escalation ladder and U-points below apply either way.
 
 What happens inside (all backend-internal):
 1. N diverse plans sampled, deduped by token overlap
@@ -322,8 +333,15 @@ Referenced by bare name — the plugin namespace is auto-prefixed at install tim
 
 ### dod-guard
 DoDs are the PREFERRED verify_cmd — multi-layer oracle for free, structured
-diagnostics per gate layer. Scope with `--nodePath` to the relevant subtree;
+diagnostics per gate layer. Scope with `--node-path` to the relevant subtree;
 full DoDs are too slow for repair loops.
+
+```
+dod-guard check --dod-id=<id> --node-path=<path> --quiet
+```
+
+Note the CLI is `dod-guard check`, not `dod_check` — the latter is the MCP tool
+name and is not executable from a shell.
 
 ### gitevo
 ```

@@ -19,6 +19,18 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 
 **dod-guard** is an MCP server + Claude Code plugin that enforces Definition of Done verification with behavioral predicates. Proofs are stored canonically in `~/.claude/dod-store/` — the rendered markdown cannot influence verification.
 
+### Two entry points, one binary
+
+`dist/bundle.js` is both the MCP server and a CLI. `process.argv.slice(2)` decides:
+
+| Invocation | Behavior |
+|------------|----------|
+| `dod-guard` (no args) | Starts the MCP stdio server |
+| `dod-guard check --dod-id=<id> [--node-path=<p>] [--quiet]` | Runs proofs, exits `0` pass / `1` fail / `2` drafts remain / `3` usage error |
+| `dod-guard status\|tree\|list` | Read-only inspection |
+
+The CLI exists so `verify_cmd` / `fitness_cmd` in evomcp can gate on a DoD subtree — MCP tool names are not shell commands. Exit codes are a public contract; changing them breaks every cascade and cheap-step spec in the wild. A scoped run exits 0 when its subtree passes even though `checkDocument` reports `incomplete`; see `exitCodeFor` in `cli.ts`.
+
 ### Core principle
 
 **Behavioral predicates only.** Every proof is a concrete, falsifiable claim about what the implementation should do. No mechanical quality metrics (line length, log count, assertion count) — those are noise that weak models game without fixing actual behavior.
@@ -54,7 +66,9 @@ The bundled output is `dist/bundle.js` — this is what ships as the package ent
 | File | Role |
 |------|------|
 | `index.ts` | MCP server: tool registration, Zod schemas, import gate, amend gate, adversarial gate, manual elicitation |
-| `types.ts` | All types: `TaskNode`, `DodDocument`, `Predicate`, `CheckResult`, `LeafResult`, `ProofCategory`, `ManualResult`, `AdversarialGate`, `AdversarialLensResult`, `AdversarialFinding` |
+| `types.ts` | All types: `TaskNode`, `DodDocument`, `Predicate`, `CheckResult`, `LeafResult`, `ProofCategory`, `AdversarialGate`, `AdversarialLensResult`, `AdversarialFinding` |
+| `cli.ts` | Shell CLI: `dod-guard check\|status\|tree\|list`. Exit codes are the contract for evomcp `verify_cmd` — see `EXIT` and `exitCodeFor`. Bare `dod-guard` (no args) starts the MCP server instead |
+| `import-gate.ts` | `buildImportGateInfo()` — blocks execution of imported DoDs until confirmed. Shared by the MCP tool and the CLI |
 | `checker.ts` | Proof execution engine: VCS capture, leaf execution, predicate evaluation, tamper detection, amendment gate, STUCK verdict detection (node amended 3+ times) |
 | `evaluate-proof.ts` | Single proof execution: command run, predicate eval, failure diagnosis |
 | `fingerprint.ts` | Canonical fingerprint: `computeProofFingerprint()` (SHA-256 of command+type+value+options) |

@@ -16,7 +16,7 @@ description: >
 
 Two-phase workflow for complex multi-sub-problem work. A ratchet only moves forward — each iteration must pass ALL previous verification gates plus any new ones. dod-guard enforces this; the other tools accelerate exploration, capture learning, and minimize token spend.
 
-**Phase A (Setup — this session, interactive):** Triage → research → requirements via AskUserQuestion → DoD tree → contrarian review → baseline check → gitevo init → **user lock-in gate**. You do not write a single line of implementation code in Phase A.
+**Phase A (Setup — this session, interactive):** Triage → research → requirements via AskUserQuestion → DoD tree → adversarial spec review (5 lenses) → baseline check → gitevo init → **user lock-in gate**. You do not write a single line of implementation code in Phase A.
 
 **Phase B (Execution — /loop dynamic, autonomous):** User runs `/loop dod-guard:ratchet phase-b` (bare `/loop` shows usage — always include a prompt argument). The agent then self-paces via `ScheduleWakeup`, processing one sub-problem per iteration. Each iteration: refine drafts → implement → scoped dod_check → full regression check → learn → checkpoint → schedule next wakeup. Loop terminates via `ScheduleWakeup(stop=true)` when dod_check returns PASS, or when escalated for manual intervention.
 
@@ -45,7 +45,7 @@ Critical mechanics — the skill's Phase B design depends on these:
 ### Skip ratchet when:
 
 - Single straightforward change (one file, one function)
-- Already have a complete DoD from /interview — just use /goal
+- Already have a complete DoD from /interview — hand it to /dod-guard:step-by-step instead
 - Trivial config change, typo fix, or mechanical rename
 - You're in a hurry and accept the regression risk
 
@@ -88,7 +88,7 @@ Before investing in a full DoD, ask 2-3 scoping questions via AskUserQuestion:
 
 Options: "1 (single change)", "2-3", "4-6", "7+ (complex)"
 
-If "1": suggest downgrading to /interview + /goal. Stop and offer: "This looks like a single change. Use /interview instead for a faster workflow. Continue with ratchet anyway?"
+If "1": suggest downgrading. Stop and offer: "This looks like a single change. Use /interview to pin requirements, then /dod-guard:step-by-step to execute — faster than a full ratchet. Continue with ratchet anyway?"
 
 ### Question 2: Dependencies
 
@@ -111,7 +111,7 @@ This determines which predicate types and baseline categories apply.
 After 2-3 questions, decide:
 - **Full ratchet**: 2+ sub-problems, dependencies, non-trivial verification → continue to A.2
 - **Ratchet-lite**: 2-3 sub-problems, mostly independent, but still want ratchet guarantees → continue but skip evomcp, implement directly
-- **Downgrade**: Recommend /interview + /goal instead, user confirms
+- **Downgrade**: Recommend /interview + /dod-guard:step-by-step instead, user confirms
 
 Report the triage decision before proceeding.
 
@@ -208,9 +208,13 @@ roots:
     - Behavioral proof (draft)
 
   "Manual Verification" (task group)
-    - Code review (concrete, manual)
-    - Walkthrough (concrete, manual)
+    - Draft: "MANUAL: code review"
+    - Draft: "MANUAL: walkthrough — run app, verify end to end"
 ```
+
+Human-verified steps are **draft leaves** with a `MANUAL:` intent. There is no
+`manual` predicate or category — drafts hold the DoD at INCOMPLETE until a human
+signs off, which is exactly the semantic you want.
 
 ### TaskNode Rules
 
@@ -224,19 +228,38 @@ roots:
 
 Each **task group under Feature Work** that has draft nodes is a sub-problem for Phase B. Name them clearly — these become branch names and loop iteration targets.
 
-## A.5 Contrarian Review
+## A.5 Adversarial Spec Review
 
-Spawn a contrarian agent to push for maximum proof coverage before calling dod_create:
+Attack the DoD tree before calling `dod_create`. Dispatch the five shipped lens
+agents in parallel — each gets the spec and tree, never your reasoning:
 
-> You are an adversarial quality reviewer. Review the planned DoD tree below. For each optional proof category, argue WHY it should be ADDED. Be specific — reference the actual change and code.
->
-> Optional categories: tdd, mutation, streamline, observability, performance, complexity, coverage, duplication
->
-> For each: "MUST ADD — [reason + suggested command]" or "SKIP — [one-line justification]"
->
-> Output skip_reasons JSON for skipped categories.
+| Lens | subagent_type | Attack surface |
+|------|---------------|----------------|
+| Security | `dod-guard:adversarial-security` | STRIDE risks, trust boundaries, injection, authZ gaps |
+| Assumptions | `dod-guard:adversarial-spec-reviewer` | Implicit assumptions about codebase, users, environment |
+| Testability | `dod-guard:adversarial-spec-reviewer` | Requirements with no falsifiable behavioral proof |
+| Consistency | `dod-guard:adversarial-spec-reviewer` | Contradictions, scope drift from the original ask |
+| Implementability | `dod-guard:adversarial-spec-reviewer` | Architectural fit, missing deps, undefined seams |
 
-Present contrarian's recommendations to user. Accept, reject, or modify each. Collect skip_reasons for all omitted categories.
+Each lens must return ≥1 finding or `NO_FINDINGS: [specific justification]`. A
+bare "no issues" is an invalid verdict — re-dispatch.
+
+Verdict: **GO** (0 critical, ≤2 major) · **REVISE** (1+ critical or 3+ major —
+fix the spec, re-run, max 3 cycles) · **STOP** (blocker — escalate to the user).
+
+Present findings to the user. Accept, reject, or modify each. Collect
+`skip_reasons` for every concern consciously dismissed. After `dod_create`
+succeeds in A.6, record the verdict with
+`dod_adversarial_gate(dod_id, phase: 1, verdict, lenses, summary)`.
+
+**This replaced an older "contrarian" pass** that argued for adding `mutation`,
+`streamline`, `complexity`, `coverage`, and `duplication` proofs. Those predicates
+and categories were deleted from dod-guard — it is behavioral predicates only.
+Do not ask for them; `dod_create` rejects them. Valid predicate types are the 7
+behavioral (`exit_code`, `exit_code_not`, `output_contains`,
+`output_not_contains`, `output_matches`, `output_not_matches`, `tdd`) plus 3 gate
+types (`adversarial`, `holdout`, `convergence`). Valid categories are
+`behavioral`, `wiring`, `test_audit`, `other`.
 
 ## A.6 Create DoD & Baseline Check
 
@@ -395,7 +418,7 @@ EXACTLY the wrong instinct here. Read before every iteration:
 1. REFINE: dod_refine any draft nodes in this subtree to concrete
 2. SPAWN: evo_spawn("baseline" or last checkpoint, "ratchet/<slug>")
 3. IMPLEMENT: cascade (evomcp solve) or direct. See cascade-vs-direct rules.
-4. VERIFY: dod_check --nodePath=<path> → all concrete proofs in subtree pass
+4. VERIFY: dod_check(nodePath=<path>) → all concrete proofs in subtree pass
 5. REGRESSION: dod_check (full, no nodePath) → ANY regression = fix NOW
 6. LEARN: evo_learn + evo_checkpoint
 7. SCHEDULE: ScheduleWakeup for next iteration or termination
@@ -488,7 +511,7 @@ LOOP ITERATION:
   ↓
   Cascade or direct? → implement
   ↓
-  dod_check --nodePath=X → subtree must pass
+  dod_check(nodePath=X) → subtree must pass
   ↓
   dod_check (full) → REGRESSION? fix it NOW
   ↓
@@ -507,7 +530,7 @@ When using evomcp solve:
 
 1. N parallel `claude -p` instances (DeepSeek), each with different strategy
 2. Each implements a candidate solution
-3. Verify each candidate against `dod_check --nodePath=X`
+3. Verify each candidate against `dod-guard check --node-path=X --quiet` (shell)
 4. Failed candidates get up to 3 repair iterations with failure feedback
 5. Stuck detection: same failure after repair → kill lineage
 6. First passing candidate → return patch + verification report
@@ -530,7 +553,7 @@ When a sub-problem escalates (all approaches failed):
 1. **Read the escalation report** — the failure signature tells you what's stuck
 2. **Identify the barrier** — missing dependency? wrong architecture? test infrastructure gap?
 3. **Fix directly** — this is the 5% that needs expensive model
-4. **Verify** with dod_check --nodePath=X
+4. **Verify** with dod_check(nodePath=X)
 5. **Learn the lesson** — evo_learn with root cause, not just "it failed"
 
 ```
@@ -645,7 +668,7 @@ mcp__plugin_dod-guard_dod-guard__dod_list()  # dod-guard connected?
 | Running full dod_check on every cascade attempt | Slow — runs all proofs when only one subtree changed | Scoped `--nodePath=X` during implementation, full check after |
 | evomcp solve without dod-guard verify_cmd | No ratchet — solution quality unverified | Always use dod_check as verify_cmd |
 | Not capturing lessons on escalation | Same failure repeats next session | Always evo_learn + memory_save on escalation |
-| Manual-only DoD (no concrete machine proofs) | Nothing to ratchet against | Minimum: lint, format, test, integration_wiring |
+| Manual-only DoD (no concrete machine proofs) | Nothing to ratchet against | Minimum: lint, format, full test suite, and a `wiring`-category integration proof |
 | Running cascade on trivial sub-problems | Wastes tokens on fanout for 1-line fixes | Direct implementation for trivial nodes |
 | Adopting before full dod_check | Merges code that breaks other sub-problems | Full dod_check before any evo_adopt |
 | Skipping regression check (full dod_check after each sub-problem) | Sub-problem B breaks sub-problem A silently | Full dod_check after EVERY sub-problem |
@@ -664,9 +687,8 @@ mcp__plugin_dod-guard_dod-guard__dod_list()  # dod-guard connected?
 | Research (A.2) | Explore agent, code-review-graph, obsidian-rag | Codebase context + past learnings |
 | Requirements (A.3) | `dod-guard:interview` patterns | Structured questioning → DoD tree |
 | Contrarian (A.5) | `dod-guard:interview` contrarian pattern | Push for max proof coverage |
-| Quality baseline | `dod-guard:test-verification` | Score existing tests before changes |
-| Quality improvement | `dod-guard:quality-upgrade` | Multi-phase test+source quality loop |
-| Test fixes | `dod-guard:test-fixer` | Fix specific test quality findings |
+| Test audit | `dod-guard:adversarial-workflow` (Phase 2) | Coverage, falsifiability, and edge-case audit of the test suite |
+| Implementation review | `dod-guard:adversarial-workflow` (Phase 3) | Saboteur / new-hire / spec-auditor pass over the diff |
 | Code review | `/code-review` | Review diffs between checkpoints |
 | Pre-PR review | `/pre-pr-review` | Check for LLM-isms before adopting |
 
@@ -682,7 +704,14 @@ dod_refine(dod_id, node_path, mode, command?, predicate?, description?, category
 dod_add_node(dod_id, parent_path, title, refinement?, intent?, command?, predicate?, ...)
 dod_amend(dod_id, node_path, reason, new_command?, new_predicate?, new_description?)
 dod_status(dod_id?, path?)
+dod_tree(dod_id?, path?, node_path?)
+dod_adversarial_gate(dod_id, phase, verdict, lenses, summary)
 dod_list()
+
+# From a shell (e.g. an evomcp verify_cmd) use the CLI — `dod_check` is an MCP
+# tool name and is NOT executable from a shell:
+#   dod-guard check --dod-id=<id> --node-path=<path> --quiet
+#   exit 0 pass | 1 proof failed | 2 drafts remain | 3 usage error
 ```
 
 ### gitevo
@@ -704,8 +733,10 @@ evo_finish()
 
 ### evomcp
 ```
-solve(spec: {goal, verify_cmd, cwd, budget_tokens?, strategy?, context?})
+solve(spec: {goal, verify_cmd, cwd, allowed_files?, fanout?, budget_tokens?,
+             strategy?, context?, build_cmd?, test_cmd?, lint_cmd?, held_out_tests?})
 evolve(spec: {goal, fitness_cmd, cwd, target_files, generations?, population_size?, ...})
+orchestrate(spec)   # full SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE playbook
 status()
 ```
 
@@ -771,8 +802,8 @@ A.4 DOD TREE:
       - Wiring: grep for middleware registration (concrete)
       - Draft: "curl login returns 429 after 5 rapid requests"
     "Manual Verification" (task group)
-      - Code review (manual)
-      - Walkthrough (manual)
+      - Draft: "MANUAL: code review"
+      - Draft: "MANUAL: walkthrough"
 
   Sub-problems: A=Middleware, B=Wiring, C=Config. Order: A → B → C.
   (Integration depends on all three, runs last.)
@@ -805,9 +836,9 @@ ITERATION 1 — Sub-problem A: Middleware
   dod_refine drafts → concrete proofs for sliding window + 429 response
   evo_spawn("baseline", "ratchet/middleware")
   evomcp_solve(goal="Implement rate limiter middleware...",
-               verify_cmd="dod_check --nodePath=1.children.0", ...)
+               verify_cmd="dod-guard check --dod-id=abc123 --node-path=1.children.0 --quiet", ...)
   → PASSED after 2 repair iterations
-  dod_check --nodePath=1.children.0 → 4/4 concrete pass
+  dod_check(nodePath=1.children.0) → 4/4 concrete pass
   dod_check (full) → no regressions
   evo_learn("Middleware: in-memory Map with sliding window. 2nd repair fixed boundary bug.")
   evo_checkpoint("middleware-solved", "Middleware passes scoped check.")
@@ -819,7 +850,7 @@ ITERATION 2 — Sub-problem B: Wiring
   evomcp_solve(...) → ESCALATED: all 6 lineages failed
   // Claude inspects: project uses non-standard middleware chain, not Express-style
   // Claude implements directly: registers middleware in custom chain
-  dod_check --nodePath=1.children.1 → PASS
+  dod_check(nodePath=1.children.1) → PASS
   dod_check (full) → no regressions
   evo_learn("ESCALATED: non-standard middleware chain. Claude fixed by reading router code.")
   evo_checkpoint("wiring-solved", "Wiring passes. Direct implementation after escalation.")
@@ -828,7 +859,7 @@ ITERATION 2 — Sub-problem B: Wiring
 ITERATION 3 — Sub-problem C: Config
   dod_refine draft → concrete: "node -e 'process.env.RATE_LIMIT_MAX=10; require(...)'"
   Direct implementation (trivial — one env var read)
-  dod_check --nodePath=1.children.2 → PASS
+  dod_check(nodePath=1.children.2) → PASS
   dod_check (full) → no regressions
   evo_learn("Config: process.env.RATE_LIMIT_MAX || 5. Trivial.")
   evo_checkpoint("config-solved", "Config passes.")

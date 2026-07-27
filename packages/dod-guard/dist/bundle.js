@@ -97,7 +97,7 @@ var require_code = __commonJS({
     }
     exports._ = _;
     var plus = new _Code("+");
-    function str(strs, ...args) {
+    function str2(strs, ...args) {
       const expr = [safeStringify(strs[0])];
       let i = 0;
       while (i < args.length) {
@@ -108,7 +108,7 @@ var require_code = __commonJS({
       optimize(expr);
       return new _Code(expr);
     }
-    exports.str = str;
+    exports.str = str2;
     function addCodeArg(code, arg) {
       if (arg instanceof _Code)
         code.push(...arg._items);
@@ -151,7 +151,7 @@ var require_code = __commonJS({
       return;
     }
     function strConcat(c1, c2) {
-      return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str`${c1}${c2}`;
+      return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str2`${c1}${c2}`;
     }
     exports.strConcat = strConcat;
     function interpolate(x) {
@@ -1113,22 +1113,22 @@ var require_util = __commonJS({
       return (0, codegen_1._)`${topSchemaRef}${schemaPath}${(0, codegen_1.getProperty)(keyword)}`;
     }
     exports.schemaRefOrVal = schemaRefOrVal;
-    function unescapeFragment(str) {
-      return unescapeJsonPointer(decodeURIComponent(str));
+    function unescapeFragment(str2) {
+      return unescapeJsonPointer(decodeURIComponent(str2));
     }
     exports.unescapeFragment = unescapeFragment;
-    function escapeFragment(str) {
-      return encodeURIComponent(escapeJsonPointer(str));
+    function escapeFragment(str2) {
+      return encodeURIComponent(escapeJsonPointer(str2));
     }
     exports.escapeFragment = escapeFragment;
-    function escapeJsonPointer(str) {
-      if (typeof str == "number")
-        return `${str}`;
-      return str.replace(/~/g, "~0").replace(/\//g, "~1");
+    function escapeJsonPointer(str2) {
+      if (typeof str2 == "number")
+        return `${str2}`;
+      return str2.replace(/~/g, "~0").replace(/\//g, "~1");
     }
     exports.escapeJsonPointer = escapeJsonPointer;
-    function unescapeJsonPointer(str) {
-      return str.replace(/~1/g, "/").replace(/~0/g, "~");
+    function unescapeJsonPointer(str2) {
+      return str2.replace(/~1/g, "/").replace(/~0/g, "~");
     }
     exports.unescapeJsonPointer = unescapeJsonPointer;
     function eachItem(xs, f) {
@@ -2153,8 +2153,8 @@ var require_json_schema_traverse = __commonJS({
         post(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
       }
     }
-    function escapeJsonPtr(str) {
-      return str.replace(/~/g, "~0").replace(/\//g, "~1");
+    function escapeJsonPtr(str2) {
+      return str2.replace(/~/g, "~0").replace(/\//g, "~1");
     }
   }
 });
@@ -3218,10 +3218,10 @@ var require_utils = __commonJS({
         return { host, isIPV6: false };
       }
     }
-    function findToken(str, token) {
+    function findToken(str2, token) {
       let ind = 0;
-      for (let i = 0; i < str.length; i++) {
-        if (str[i] === token) ind++;
+      for (let i = 0; i < str2.length; i++) {
+        if (str2[i] === token) ind++;
       }
       return ind;
     }
@@ -3958,7 +3958,7 @@ var require_core = __commonJS({
     var util_1 = require_util();
     var $dataRefSchema = require_data();
     var uri_1 = require_uri();
-    var defaultRegExp = (str, flags) => new RegExp(str, flags);
+    var defaultRegExp = (str2, flags) => new RegExp(str2, flags);
     defaultRegExp.code = "new RegExp";
     var META_IGNORE_OPTIONS = ["removeAdditional", "useDefaults", "coerceTypes"];
     var EXT_SCOPE_NAMES = /* @__PURE__ */ new Set([
@@ -4753,16 +4753,16 @@ var require_ucs2length = __commonJS({
   "../../node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    function ucs2length(str) {
-      const len = str.length;
+    function ucs2length(str2) {
+      const len = str2.length;
       let length = 0;
       let pos = 0;
       let value;
       while (pos < len) {
         length++;
-        value = str.charCodeAt(pos++);
+        value = str2.charCodeAt(pos++);
         if (value >= 55296 && value <= 56319 && pos < len) {
-          value = str.charCodeAt(pos);
+          value = str2.charCodeAt(pos);
           if ((value & 64512) === 56320)
             pos++;
         }
@@ -6645,8 +6645,8 @@ var require_formats = __commonJS({
     }
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    function date3(str) {
-      const matches = DATE.exec(str);
+    function date3(str2) {
+      const matches = DATE.exec(str2);
       if (!matches)
         return false;
       const year = +matches[1];
@@ -6665,8 +6665,8 @@ var require_formats = __commonJS({
     }
     var TIME = /^(\d\d):(\d\d):(\d\d(?:\.\d+)?)(z|([+-])(\d\d)(?::?(\d\d))?)?$/i;
     function getTime(strictTimeZone) {
-      return function time3(str) {
-        const matches = TIME.exec(str);
+      return function time3(str2) {
+        const matches = TIME.exec(str2);
         if (!matches)
           return false;
         const hr = +matches[1];
@@ -6712,8 +6712,8 @@ var require_formats = __commonJS({
     var DATE_TIME_SEPARATOR = /t|\s/i;
     function getDateTime(strictTimeZone) {
       const time3 = getTime(strictTimeZone);
-      return function date_time(str) {
-        const dateTime = str.split(DATE_TIME_SEPARATOR);
+      return function date_time(str2) {
+        const dateTime = str2.split(DATE_TIME_SEPARATOR);
         return dateTime.length === 2 && date3(dateTime[0]) && time3(dateTime[1]);
       };
     }
@@ -6738,13 +6738,13 @@ var require_formats = __commonJS({
     }
     var NOT_URI_FRAGMENT = /\/|:/;
     var URI = /^(?:[a-z][a-z0-9+\-.]*:)(?:\/?\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:]|%[0-9a-f]{2})*@)?(?:\[(?:(?:(?:(?:[0-9a-f]{1,4}:){6}|::(?:[0-9a-f]{1,4}:){5}|(?:[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){4}|(?:(?:[0-9a-f]{1,4}:){0,1}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){3}|(?:(?:[0-9a-f]{1,4}:){0,2}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){2}|(?:(?:[0-9a-f]{1,4}:){0,3}[0-9a-f]{1,4})?::[0-9a-f]{1,4}:|(?:(?:[0-9a-f]{1,4}:){0,4}[0-9a-f]{1,4})?::)(?:[0-9a-f]{1,4}:[0-9a-f]{1,4}|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?))|(?:(?:[0-9a-f]{1,4}:){0,5}[0-9a-f]{1,4})?::[0-9a-f]{1,4}|(?:(?:[0-9a-f]{1,4}:){0,6}[0-9a-f]{1,4})?::)|[Vv][0-9a-f]+\.[a-z0-9\-._~!$&'()*+,;=:]+)\]|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)|(?:[a-z0-9\-._~!$&'()*+,;=]|%[0-9a-f]{2})*)(?::\d*)?(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*|\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)?|(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)(?:\?(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?(?:#(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?$/i;
-    function uri(str) {
-      return NOT_URI_FRAGMENT.test(str) && URI.test(str);
+    function uri(str2) {
+      return NOT_URI_FRAGMENT.test(str2) && URI.test(str2);
     }
     var BYTE = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/gm;
-    function byte(str) {
+    function byte(str2) {
       BYTE.lastIndex = 0;
-      return BYTE.test(str);
+      return BYTE.test(str2);
     }
     var MIN_INT32 = -(2 ** 31);
     var MAX_INT32 = 2 ** 31 - 1;
@@ -6758,11 +6758,11 @@ var require_formats = __commonJS({
       return true;
     }
     var Z_ANCHOR = /[^\\]\\Z/;
-    function regex(str) {
-      if (Z_ANCHOR.test(str))
+    function regex(str2) {
+      if (Z_ANCHOR.test(str2))
         return false;
       try {
-        new RegExp(str);
+        new RegExp(str2);
         return true;
       } catch (e) {
         return false;
@@ -11142,14 +11142,14 @@ function promiseAllObject(promisesObj) {
 }
 function randomString(length = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyz";
-  let str = "";
+  let str2 = "";
   for (let i = 0; i < length; i++) {
-    str += chars[Math.floor(Math.random() * chars.length)];
+    str2 += chars[Math.floor(Math.random() * chars.length)];
   }
-  return str;
+  return str2;
 }
-function esc(str) {
-  return JSON.stringify(str);
+function esc(str2) {
+  return JSON.stringify(str2);
 }
 var captureStackTrace = Error.captureStackTrace ? Error.captureStackTrace : (..._args) => {
 };
@@ -11237,8 +11237,8 @@ var getParsedType2 = (data) => {
 };
 var propertyKeyTypes = /* @__PURE__ */ new Set(["string", "number", "symbol"]);
 var primitiveTypes = /* @__PURE__ */ new Set(["string", "number", "bigint", "boolean", "symbol", "undefined"]);
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRegex(str2) {
+  return str2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function clone(inst, def, params) {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
@@ -21112,8 +21112,11 @@ import { promisify as promisify2 } from "node:util";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 var execFileP = promisify(execFile);
-function escapeForCmd(s) {
-  return s.replace(/'/g, "''");
+function buildShellInvocation(command) {
+  if (process.platform === "win32") {
+    return { shell: "cmd.exe", args: ["/d", "/s", "/c", `"${command}"`], verbatim: true };
+  }
+  return { shell: "/bin/sh", args: ["-c", command], verbatim: false };
 }
 function diagnoseFailure(node, result) {
   const pred = node.predicate;
@@ -21197,16 +21200,15 @@ function evalPredicate(predicate, run, output) {
   }
 }
 async function runCommand(command, cwd, timeoutMs) {
-  const shell = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
-  const shellArgs = process.platform === "win32" ? ["/d", "/s", "/c"] : ["-c"];
-  const escapedCmd = process.platform === "win32" ? `'${escapeForCmd(command)}'` : command;
+  const { shell, args, verbatim } = buildShellInvocation(command);
   try {
-    const { stdout, stderr } = await execFileP(shell, [...shellArgs, escapedCmd], {
+    const { stdout, stderr } = await execFileP(shell, args, {
       cwd,
       timeout: timeoutMs,
       maxBuffer: 10 * 1024 * 1024,
       // 10 MB
-      windowsHide: true
+      windowsHide: true,
+      windowsVerbatimArguments: verbatim
     });
     return { stdout, stderr, code: 0 };
   } catch (err) {
@@ -21891,10 +21893,158 @@ Diagnosis: ${leafResult.diagnosis}` : leafResult.output;
   };
 }
 
+// src/import-gate.ts
+function buildImportGateInfo(doc) {
+  if (!doc.import_source || doc.execution_confirmed !== false) {
+    return { blocked: false };
+  }
+  const executableLeaves = flattenConcreteLeaves(doc.roots).filter(({ node }) => node.command && node.predicate);
+  return {
+    blocked: true,
+    executableCount: executableLeaves.length,
+    commandList: executableLeaves.map(({ node }) => ({
+      title: node.title,
+      command: node.command ?? "",
+      description: node.description ?? ""
+    }))
+  };
+}
+
+// src/store.ts
+import * as crypto from "node:crypto";
+import { promises as fs2 } from "node:fs";
+import * as os from "node:os";
+import * as path2 from "node:path";
+function getStoreDir() {
+  return process.env.DOD_STORE_DIR || path2.join(os.homedir(), ".claude", "dod-store");
+}
+async function ensureStoreDir() {
+  await fs2.mkdir(getStoreDir(), { recursive: true });
+}
+function docPath(id) {
+  return path2.join(getStoreDir(), `${id}.json`);
+}
+function generateId() {
+  return crypto.randomUUID();
+}
+async function save(doc) {
+  await ensureStoreDir();
+  await fs2.writeFile(docPath(doc.id), JSON.stringify(doc, null, 2), "utf-8");
+}
+async function load(id) {
+  try {
+    const data = await fs2.readFile(docPath(id), "utf-8");
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("store: failed to load document", { id, err: err instanceof Error ? err.message : String(err) });
+    return null;
+  }
+}
+async function loadRaw(id) {
+  try {
+    const data = await fs2.readFile(docPath(id), "utf-8");
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("store: failed to loadRaw document", { id, err: err instanceof Error ? err.message : String(err) });
+    return null;
+  }
+}
+async function findByPath(markdownPath) {
+  await ensureStoreDir();
+  const files = await fs2.readdir(getStoreDir());
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const data = await fs2.readFile(path2.join(getStoreDir(), file), "utf-8");
+      const doc = JSON.parse(data);
+      const normalizedStored = path2.resolve(doc.markdown_path).toLowerCase();
+      const normalizedSearch = path2.resolve(markdownPath).toLowerCase();
+      if (normalizedStored === normalizedSearch) return doc;
+    } catch (err) {
+      console.error("store: failed to read file during findByPath", {
+        file,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+  return null;
+}
+async function listAll() {
+  await ensureStoreDir();
+  const files = await fs2.readdir(getStoreDir());
+  const docs = [];
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const data = await fs2.readFile(path2.join(getStoreDir(), file), "utf-8");
+      docs.push(JSON.parse(data));
+    } catch (err) {
+      console.error("store: failed to read file during listAll", {
+        file,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+  return docs;
+}
+function legacyStepToTaskNode(step) {
+  const children = step.proofs.map((p) => ({
+    id: p.id,
+    title: p.title ?? p.description ?? step.title,
+    refinement: "concrete",
+    command: p.command,
+    predicate: p.predicate,
+    description: p.description ?? "",
+    category: p.category,
+    advisory: p.advisory,
+    last_status: p.last_status ?? "pending",
+    last_output: p.last_output,
+    last_checked: p.last_checked
+  }));
+  return {
+    id: step.id,
+    title: step.title,
+    refinement: "concrete",
+    last_status: children.length > 0 ? "pending" : "draft",
+    children
+  };
+}
+async function migrateDoc(doc) {
+  if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) return false;
+  const legacySteps = doc.steps;
+  if (!(legacySteps && Array.isArray(legacySteps)) || legacySteps.length === 0) {
+    return false;
+  }
+  doc.roots = legacySteps.map(legacyStepToTaskNode);
+  delete doc.steps;
+  delete doc.locked;
+  doc.proof_fingerprint = computeProofFingerprint(doc.roots);
+  await save(doc);
+  return true;
+}
+async function listAllRaw() {
+  await ensureStoreDir();
+  const files = await fs2.readdir(getStoreDir());
+  const docs = [];
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const data = await fs2.readFile(path2.join(getStoreDir(), file), "utf-8");
+      docs.push(JSON.parse(data));
+    } catch (err) {
+      console.error("store: failed to read file during listAllRaw", {
+        file,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+  return docs;
+}
+
 // src/command-check.ts
 import { execFile as execFile2 } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
-import * as path2 from "node:path";
+import * as path3 from "node:path";
 import { promisify as promisify3 } from "node:util";
 var execFileAsync = promisify3(execFile2);
 var isWindows = process.platform === "win32";
@@ -22061,7 +22211,7 @@ async function toolExists(name, cwd) {
   return ok;
 }
 function resolvePathExists(name, cwd) {
-  const base = path2.isAbsolute(name) ? name : path2.resolve(cwd, name);
+  const base = path3.isAbsolute(name) ? name : path3.resolve(cwd, name);
   const candidates = isWindows ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
   return candidates.some((p) => existsSync(p));
 }
@@ -22109,7 +22259,7 @@ function expandGlobsInCommand(command, cwd) {
       if (seen.has(fullMatch)) continue;
       seen.add(fullMatch);
       try {
-        const parentDir = path2.resolve(cwd, prefix);
+        const parentDir = path3.resolve(cwd, prefix);
         if (!existsSync(parentDir)) continue;
         const entries = readdirSync(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
         if (entries.length > 0) {
@@ -22125,11 +22275,11 @@ function expandGlobsInCommand(command, cwd) {
   globResolve(dirGlobReFwd, "/");
   return { expanded, expanded_count: count };
 }
-function wildcardMatch(str, pattern) {
+function wildcardMatch(str2, pattern) {
   const re = new RegExp(
     `^${pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`
   );
-  return re.test(str);
+  return re.test(str2);
 }
 var PLACEHOLDER_PATTERNS = [
   /^node\s+(?:-e|--eval)\s+["']?\s*process\.exit\s*\(\s*0\s*\)\s*["']?$/i,
@@ -22149,362 +22299,6 @@ function isPlaceholderCommand(command) {
   return PLACEHOLDER_PATTERNS.some((re) => re.test(cmd));
 }
 var currentOs = process.platform;
-
-// src/parser.ts
-import { promises as fs2 } from "node:fs";
-function extractPredicateMetadata(line) {
-  const metaMatch = line.match(/<!--p:(.+?)-->/);
-  if (metaMatch) {
-    try {
-      const predicate = JSON.parse(metaMatch[1]);
-      const cleanLine = line.replace(/<!--p:.+?-->/, "").trimEnd();
-      return { predicate, cleanLine };
-    } catch {
-    }
-  }
-  return { predicate: null, cleanLine: line };
-}
-function markerToStatus(marker) {
-  if (marker === "x") return "pass";
-  if (marker === "~") return "skipped";
-  return "pending";
-}
-function parseLeafLine(line) {
-  const trimmed = line.trim();
-  const draftMatch = trimmed.match(/^-\s*\[[ ~]\s*\]\s*\*\*Draft\*\*:\s*(.+)$/i);
-  if (draftMatch) {
-    return {
-      id: "",
-      title: draftMatch[1].trim(),
-      refinement: "draft",
-      intent: draftMatch[1].trim(),
-      last_status: "draft"
-    };
-  }
-  const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
-  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*→\s*(.+)$/);
-  if (proofMatch) {
-    const desc = proofMatch[3].trim();
-    if (metaPredicate) {
-      return {
-        id: "",
-        title: desc,
-        refinement: "concrete",
-        command: proofMatch[2].trim(),
-        predicate: metaPredicate,
-        description: desc,
-        last_status: markerToStatus(proofMatch[1])
-      };
-    }
-    return {
-      id: "",
-      title: desc,
-      refinement: "draft",
-      intent: desc,
-      last_status: "draft"
-    };
-  }
-  return null;
-}
-var SECTION_MAP = {
-  requirements: "requirements",
-  "research notes": "research_notes",
-  "open questions": "open_questions",
-  "open risks": "open_risks",
-  decisions: "decisions",
-  "current state": "current_state"
-};
-function parseSections(lines) {
-  const sections = { requirements: "" };
-  let currentSection = "";
-  let buf = [];
-  function flush() {
-    if (!currentSection) return;
-    sections[currentSection] = buf.join("\n").trim();
-    currentSection = "";
-    buf = [];
-  }
-  for (const line of lines) {
-    const h2Match = line.match(/^## (.+?)(?:\s*\(.*\))?$/);
-    if (h2Match) {
-      flush();
-      const heading = h2Match[1].trim().toLowerCase();
-      for (const [key, val] of Object.entries(SECTION_MAP)) {
-        if (heading.startsWith(key)) {
-          currentSection = val;
-          break;
-        }
-      }
-      continue;
-    }
-    if (line.match(/^---$/) && currentSection) {
-      flush();
-      continue;
-    }
-    if (currentSection) buf.push(line);
-  }
-  flush();
-  return sections;
-}
-function parseDodTree(lines, startIdx) {
-  const roots = [];
-  const stack = [];
-  let nodeCounter = 0;
-  for (let i = startIdx; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.match(/^## /)) break;
-    if (!line.trim()) continue;
-    const leadingSpaces = line.length - line.trimStart().length;
-    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
-    if (rootMatch) {
-      const node = {
-        id: `node-${nodeCounter++}`,
-        title: rootMatch[1].trim(),
-        refinement: "draft",
-        children: [],
-        last_status: "draft"
-      };
-      roots.push(node);
-      stack.length = 0;
-      stack.push({ node, depth: -1 });
-      continue;
-    }
-    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
-    if (groupMatch) {
-      const depth = Math.floor(leadingSpaces / 2);
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      const node = {
-        id: `node-${nodeCounter++}`,
-        title: groupMatch[1].trim(),
-        refinement: "draft",
-        children: [],
-        last_status: "draft"
-      };
-      if (parent?.children) parent.children.push(node);
-      stack.push({ node, depth });
-      continue;
-    }
-    const leaf = parseLeafLine(line);
-    if (leaf) {
-      leaf.id = `node-${nodeCounter++}`;
-      const depth = Math.floor(leadingSpaces / 2);
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      if (parent?.children) parent.children.push(leaf);
-      else if (!parent) roots.push(leaf);
-    }
-  }
-  function cleanup(node) {
-    if (node.children?.length === 0) delete node.children;
-    if (node.children) for (const c of node.children) cleanup(c);
-  }
-  for (const r of roots) cleanup(r);
-  return roots;
-}
-function parseContent(content) {
-  if (process.env.DOD_DEBUG) console.debug("parser: parseContent", { length: content.length });
-  const lines = content.split("\n");
-  let title = "", goal = "", date3 = "", cwd = ".";
-  for (const line of lines) {
-    if (!title && line.startsWith("# ")) {
-      title = line.replace(/^#\s+/, "").replace(/\s*—.*$/, "").trim();
-    }
-    const goalMatch = line.match(/^\*\*Goal:\*\*\s*(.+)/);
-    if (goalMatch) goal = goalMatch[1].trim();
-    const dateMatch = line.match(/^\*\*Date:\*\*\s*(.+)/);
-    if (dateMatch) date3 = dateMatch[1].trim();
-    const targetMatch = line.match(/^\*\*Target:\*\*\s*`?([^`]+)`?/);
-    if (targetMatch) cwd = targetMatch[1].trim();
-    const cwdMatch = line.match(/All commands run from `([^`]+)`/);
-    if (cwdMatch) cwd = cwdMatch[1].trim();
-  }
-  const sections = parseSections(lines);
-  let dodStart = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].match(/^## Definition of Done/)) {
-      dodStart = i + 1;
-      break;
-    }
-  }
-  const roots = dodStart >= 0 ? parseDodTree(lines, dodStart) : [];
-  return { title, goal, date: date3, cwd, sections, roots };
-}
-async function parseMarkdown(filePath) {
-  const content = await fs2.readFile(filePath, "utf-8");
-  return parseContent(content);
-}
-
-// src/schemas.ts
-var PredicateSchema = external_exports.object({
-  type: external_exports.enum([
-    "exit_code",
-    "exit_code_not",
-    "output_contains",
-    "output_matches",
-    "output_not_contains",
-    "output_not_matches",
-    "tdd",
-    "adversarial",
-    "holdout",
-    "convergence"
-  ]),
-  value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
-  timeout_ms: external_exports.number().optional().describe("Override the default 120s command timeout in milliseconds. Use for slow tools like Stryker (600s).")
-});
-var ProofCategorySchema = external_exports.enum(["behavioral", "wiring", "other", "test_audit"]);
-var TaskNodeInputSchema = external_exports.lazy(
-  () => external_exports.object({
-    title: external_exports.string(),
-    refinement: external_exports.enum(["draft", "concrete"]).optional().default("draft"),
-    intent: external_exports.string().optional().describe("Required for draft nodes: what behavior this will prove"),
-    children: external_exports.array(TaskNodeInputSchema).optional().describe("Subtask decomposition \u2014 present on task groups"),
-    command: external_exports.string().optional(),
-    predicate: PredicateSchema.optional(),
-    description: external_exports.string().optional(),
-    category: ProofCategorySchema.optional(),
-    advisory: external_exports.boolean().optional()
-  })
-);
-var SectionsSchema = external_exports.object({
-  decisions: external_exports.string().optional(),
-  current_state: external_exports.string().optional(),
-  requirements: external_exports.string(),
-  research_notes: external_exports.string().optional(),
-  open_questions: external_exports.string().optional(),
-  open_risks: external_exports.string().optional()
-});
-
-// src/store.ts
-import * as crypto from "node:crypto";
-import { promises as fs3 } from "node:fs";
-import * as os from "node:os";
-import * as path3 from "node:path";
-function getStoreDir() {
-  return process.env.DOD_STORE_DIR || path3.join(os.homedir(), ".claude", "dod-store");
-}
-async function ensureStoreDir() {
-  await fs3.mkdir(getStoreDir(), { recursive: true });
-}
-function docPath(id) {
-  return path3.join(getStoreDir(), `${id}.json`);
-}
-function generateId() {
-  return crypto.randomUUID();
-}
-async function save(doc) {
-  await ensureStoreDir();
-  await fs3.writeFile(docPath(doc.id), JSON.stringify(doc, null, 2), "utf-8");
-}
-async function load(id) {
-  try {
-    const data = await fs3.readFile(docPath(id), "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("store: failed to load document", { id, err: err instanceof Error ? err.message : String(err) });
-    return null;
-  }
-}
-async function loadRaw(id) {
-  try {
-    const data = await fs3.readFile(docPath(id), "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("store: failed to loadRaw document", { id, err: err instanceof Error ? err.message : String(err) });
-    return null;
-  }
-}
-async function findByPath(markdownPath) {
-  await ensureStoreDir();
-  const files = await fs3.readdir(getStoreDir());
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const data = await fs3.readFile(path3.join(getStoreDir(), file), "utf-8");
-      const doc = JSON.parse(data);
-      const normalizedStored = path3.resolve(doc.markdown_path).toLowerCase();
-      const normalizedSearch = path3.resolve(markdownPath).toLowerCase();
-      if (normalizedStored === normalizedSearch) return doc;
-    } catch (err) {
-      console.error("store: failed to read file during findByPath", {
-        file,
-        err: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }
-  return null;
-}
-async function listAll() {
-  await ensureStoreDir();
-  const files = await fs3.readdir(getStoreDir());
-  const docs = [];
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const data = await fs3.readFile(path3.join(getStoreDir(), file), "utf-8");
-      docs.push(JSON.parse(data));
-    } catch (err) {
-      console.error("store: failed to read file during listAll", {
-        file,
-        err: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }
-  return docs;
-}
-function legacyStepToTaskNode(step) {
-  const children = step.proofs.map((p) => ({
-    id: p.id,
-    title: p.title ?? p.description ?? step.title,
-    refinement: "concrete",
-    command: p.command,
-    predicate: p.predicate,
-    description: p.description ?? "",
-    category: p.category,
-    advisory: p.advisory,
-    last_status: p.last_status ?? "pending",
-    last_output: p.last_output,
-    last_checked: p.last_checked
-  }));
-  return {
-    id: step.id,
-    title: step.title,
-    refinement: "concrete",
-    last_status: children.length > 0 ? "pending" : "draft",
-    children
-  };
-}
-async function migrateDoc(doc) {
-  if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) return false;
-  const legacySteps = doc.steps;
-  if (!(legacySteps && Array.isArray(legacySteps)) || legacySteps.length === 0) {
-    return false;
-  }
-  doc.roots = legacySteps.map(legacyStepToTaskNode);
-  delete doc.steps;
-  delete doc.locked;
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots);
-  await save(doc);
-  return true;
-}
-async function listAllRaw() {
-  await ensureStoreDir();
-  const files = await fs3.readdir(getStoreDir());
-  const docs = [];
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const data = await fs3.readFile(path3.join(getStoreDir(), file), "utf-8");
-      docs.push(JSON.parse(data));
-    } catch (err) {
-      console.error("store: failed to read file during listAllRaw", {
-        file,
-        err: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }
-  return docs;
-}
 
 // src/tree-utils.ts
 var nodeIdCounter = 0;
@@ -22704,6 +22498,442 @@ async function checkCommandsForOs(roots, cwd) {
   if (lines.length === 0) return null;
   return lines.join("\n");
 }
+
+// src/cli.ts
+var EXIT = {
+  /** All in-scope proofs passed. */
+  PASS: 0,
+  /** At least one in-scope proof failed, or the DoD is tampered/stuck. */
+  FAIL: 1,
+  /** Full run: every executed proof passed but draft nodes remain unrefined. */
+  INCOMPLETE: 2,
+  /** Usage error, DoD not found, or execution blocked by the import gate. */
+  ERROR: 3
+};
+var USAGE = `dod-guard \u2014 Definition of Done verification
+
+USAGE
+  dod-guard <command> [options]
+  dod-guard                          Start the MCP server on stdio (no args)
+
+COMMANDS
+  check     Run a DoD's proofs and exit with a verdict code
+  status    Print the last cached check result without re-running proofs
+  tree      Print the DoD's node tree with paths (use to find --node-path values)
+  list      List all tracked DoDs
+
+OPTIONS (check / status / tree)
+  --dod-id=<id>        DoD ID, as returned by dod_create or 'dod-guard list'
+  --path=<file>        Resolve the DoD by its markdown path instead of by ID
+  --node-path=<path>   Scope to one subtree, e.g. --node-path=0.children.1
+  --cwd=<dir>          Override the working directory proofs run in (check only)
+  --summary            Collapse unchanged draft nodes into a count line
+  --confirm-import     Confirm an imported DoD's commands are safe to execute
+  --quiet              Print only the verdict line; suppress per-proof output
+
+EXIT CODES (check)
+  0  pass         every in-scope proof passed
+  1  fail         a proof failed, or the DoD is tampered/stuck
+  2  incomplete   full run, proofs pass, but draft nodes remain
+  3  error        bad usage, DoD not found, or import gate blocked
+
+A scoped run (--node-path) exits 0 when that subtree's proofs pass, which is what
+makes it usable as a verify_cmd. Only an unscoped run can report code 2.
+
+EXAMPLES
+  dod-guard check --dod-id=abc123
+  dod-guard check --dod-id=abc123 --node-path=0.children.1 --quiet
+  dod-guard check --path=docs/plans/2026-07-27-auth.md --cwd=/repo
+  dod-guard tree --dod-id=abc123
+`;
+function parseArgs(argv) {
+  const flags = {};
+  const positional = [];
+  for (const arg of argv) {
+    if (arg.startsWith("--")) {
+      const body = arg.slice(2);
+      const eq = body.indexOf("=");
+      if (eq === -1) flags[body] = true;
+      else flags[body.slice(0, eq)] = body.slice(eq + 1);
+    } else {
+      positional.push(arg);
+    }
+  }
+  return { command: positional[0] ?? "", flags, positional: positional.slice(1) };
+}
+function str(flags, key) {
+  const v = flags[key];
+  return typeof v === "string" ? v : void 0;
+}
+async function resolveDoc(flags, write) {
+  const dodId = str(flags, "dod-id");
+  const mdPath = str(flags, "path");
+  if (!(dodId || mdPath)) {
+    write("ERROR: pass --dod-id=<id> or --path=<file>. Run 'dod-guard list' to see tracked DoDs.\n");
+    return null;
+  }
+  const doc = dodId ? await load(dodId) : await findByPath(mdPath);
+  if (!doc) {
+    write(
+      dodId ? `ERROR: DoD ID "${dodId}" not found in the store. Run 'dod-guard list' to see tracked DoDs.
+` : `ERROR: no DoD registered for path "${mdPath}". Use dod_import to register an existing file.
+`
+    );
+    return null;
+  }
+  return doc;
+}
+function exitCodeFor(result) {
+  if (result.tampered || result.overall === "stuck" || result.overall === "fail") return EXIT.FAIL;
+  if (result.scoped) {
+    return result.leaves.some((l) => l.status === "fail") ? EXIT.FAIL : EXIT.PASS;
+  }
+  if (result.overall === "incomplete") return EXIT.INCOMPLETE;
+  return EXIT.PASS;
+}
+async function cmdCheck(flags, write, writeErr) {
+  const doc = await resolveDoc(flags, writeErr);
+  if (!doc) return EXIT.ERROR;
+  const nodePath = str(flags, "node-path");
+  if (nodePath && !findNodeByPath(doc.roots, nodePath)) {
+    writeErr(
+      `ERROR: node path "${nodePath}" not found in this DoD. Run 'dod-guard tree --dod-id=${doc.id}' to see valid paths.
+`
+    );
+    return EXIT.ERROR;
+  }
+  const gate = buildImportGateInfo(doc);
+  if (gate.blocked && flags["confirm-import"] !== true) {
+    writeErr(
+      [
+        `ERROR: import gate \u2014 this DoD was imported from "${doc.import_source}" and is not confirmed for execution.`,
+        `${gate.executableCount} proof command(s) would run. Review them with 'dod-guard tree --dod-id=${doc.id}',`,
+        "then re-run with --confirm-import once you are satisfied they are safe.",
+        ""
+      ].join("\n")
+    );
+    return EXIT.ERROR;
+  }
+  if (flags["confirm-import"] === true && doc.import_source) {
+    doc.execution_confirmed = true;
+    await save(doc);
+    await writeMarkdown(doc);
+  }
+  const result = await checkDocument(doc, str(flags, "cwd"), {
+    nodePath,
+    summary: flags.summary === true
+  });
+  if (!doc.proof_fingerprint && result.proof_fingerprint) {
+    doc.proof_fingerprint = result.proof_fingerprint;
+  }
+  updateDocFromCheckResult(doc, result);
+  await save(doc);
+  await writeMarkdown(doc);
+  if (flags.quiet === true) {
+    write(`${result.overall.toUpperCase()}: ${result.summary.split("\n")[0]}
+`);
+  } else {
+    write(`${formatCheckResult(result)}
+`);
+  }
+  return exitCodeFor(result);
+}
+async function cmdStatus(flags, write, writeErr) {
+  const doc = await resolveDoc(flags, writeErr);
+  if (!doc) return EXIT.ERROR;
+  if (!doc.last_check) {
+    write("No cached check result. Run 'dod-guard check' first.\n");
+    return EXIT.INCOMPLETE;
+  }
+  const { overall, summary, timestamp } = doc.last_check;
+  write(`${overall.toUpperCase()} (cached ${timestamp})
+${summary}
+`);
+  if (overall === "fail" || overall === "stuck") return EXIT.FAIL;
+  if (overall === "incomplete") return EXIT.INCOMPLETE;
+  return EXIT.PASS;
+}
+async function cmdTree(flags, write, writeErr) {
+  const doc = await resolveDoc(flags, writeErr);
+  if (!doc) return EXIT.ERROR;
+  write(`${formatTree(doc.roots)}
+`);
+  return EXIT.PASS;
+}
+async function cmdList(write) {
+  const docs = await listAll();
+  if (docs.length === 0) {
+    write("No DoDs tracked. Create one with dod_create, or register an existing file with dod_import.\n");
+    return EXIT.PASS;
+  }
+  for (const doc of docs) {
+    const verdict = doc.last_check?.overall ?? "unchecked";
+    write(`${doc.id}  ${verdict.padEnd(11)}  ${doc.title}
+`);
+  }
+  return EXIT.PASS;
+}
+var defaultIo = {
+  write: (s) => process.stdout.write(s),
+  writeErr: (s) => process.stderr.write(s)
+};
+async function runCli(argv, io = defaultIo) {
+  const { command, flags } = parseArgs(argv);
+  if (flags.help === true || flags.h === true || command === "help") {
+    io.write(USAGE);
+    return EXIT.PASS;
+  }
+  try {
+    switch (command) {
+      case "check":
+        return await cmdCheck(flags, io.write, io.writeErr);
+      case "status":
+        return await cmdStatus(flags, io.write, io.writeErr);
+      case "tree":
+        return await cmdTree(flags, io.write, io.writeErr);
+      case "list":
+        return await cmdList(io.write);
+      default:
+        io.writeErr(`ERROR: unknown command "${command}".
+
+`);
+        io.writeErr(USAGE);
+        return EXIT.ERROR;
+    }
+  } catch (err) {
+    io.writeErr(`ERROR: ${err instanceof Error ? err.message : String(err)}
+`);
+    return EXIT.ERROR;
+  }
+}
+function isCliInvocation(argv) {
+  return argv.length > 0;
+}
+
+// src/parser.ts
+import { promises as fs3 } from "node:fs";
+function extractPredicateMetadata(line) {
+  const metaMatch = line.match(/<!--p:(.+?)-->/);
+  if (metaMatch) {
+    try {
+      const predicate = JSON.parse(metaMatch[1]);
+      const cleanLine = line.replace(/<!--p:.+?-->/, "").trimEnd();
+      return { predicate, cleanLine };
+    } catch {
+    }
+  }
+  return { predicate: null, cleanLine: line };
+}
+function markerToStatus(marker) {
+  if (marker === "x") return "pass";
+  if (marker === "~") return "skipped";
+  return "pending";
+}
+function parseLeafLine(line) {
+  const trimmed = line.trim();
+  const draftMatch = trimmed.match(/^-\s*\[[ ~]\s*\]\s*\*\*Draft\*\*:\s*(.+)$/i);
+  if (draftMatch) {
+    return {
+      id: "",
+      title: draftMatch[1].trim(),
+      refinement: "draft",
+      intent: draftMatch[1].trim(),
+      last_status: "draft"
+    };
+  }
+  const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
+  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*→\s*(.+)$/);
+  if (proofMatch) {
+    const desc = proofMatch[3].trim();
+    if (metaPredicate) {
+      return {
+        id: "",
+        title: desc,
+        refinement: "concrete",
+        command: proofMatch[2].trim(),
+        predicate: metaPredicate,
+        description: desc,
+        last_status: markerToStatus(proofMatch[1])
+      };
+    }
+    return {
+      id: "",
+      title: desc,
+      refinement: "draft",
+      intent: desc,
+      last_status: "draft"
+    };
+  }
+  return null;
+}
+var SECTION_MAP = {
+  requirements: "requirements",
+  "research notes": "research_notes",
+  "open questions": "open_questions",
+  "open risks": "open_risks",
+  decisions: "decisions",
+  "current state": "current_state"
+};
+function parseSections(lines) {
+  const sections = { requirements: "" };
+  let currentSection = "";
+  let buf = [];
+  function flush() {
+    if (!currentSection) return;
+    sections[currentSection] = buf.join("\n").trim();
+    currentSection = "";
+    buf = [];
+  }
+  for (const line of lines) {
+    const h2Match = line.match(/^## (.+?)(?:\s*\(.*\))?$/);
+    if (h2Match) {
+      flush();
+      const heading = h2Match[1].trim().toLowerCase();
+      for (const [key, val] of Object.entries(SECTION_MAP)) {
+        if (heading.startsWith(key)) {
+          currentSection = val;
+          break;
+        }
+      }
+      continue;
+    }
+    if (line.match(/^---$/) && currentSection) {
+      flush();
+      continue;
+    }
+    if (currentSection) buf.push(line);
+  }
+  flush();
+  return sections;
+}
+function parseDodTree(lines, startIdx) {
+  const roots = [];
+  const stack = [];
+  let nodeCounter = 0;
+  for (let i = startIdx; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.match(/^## /)) break;
+    if (!line.trim()) continue;
+    const leadingSpaces = line.length - line.trimStart().length;
+    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
+    if (rootMatch) {
+      const node = {
+        id: `node-${nodeCounter++}`,
+        title: rootMatch[1].trim(),
+        refinement: "draft",
+        children: [],
+        last_status: "draft"
+      };
+      roots.push(node);
+      stack.length = 0;
+      stack.push({ node, depth: -1 });
+      continue;
+    }
+    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
+    if (groupMatch) {
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      const node = {
+        id: `node-${nodeCounter++}`,
+        title: groupMatch[1].trim(),
+        refinement: "draft",
+        children: [],
+        last_status: "draft"
+      };
+      if (parent?.children) parent.children.push(node);
+      stack.push({ node, depth });
+      continue;
+    }
+    const leaf = parseLeafLine(line);
+    if (leaf) {
+      leaf.id = `node-${nodeCounter++}`;
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      if (parent?.children) parent.children.push(leaf);
+      else if (!parent) roots.push(leaf);
+    }
+  }
+  function cleanup(node) {
+    if (node.children?.length === 0) delete node.children;
+    if (node.children) for (const c of node.children) cleanup(c);
+  }
+  for (const r of roots) cleanup(r);
+  return roots;
+}
+function parseContent(content) {
+  if (process.env.DOD_DEBUG) console.debug("parser: parseContent", { length: content.length });
+  const lines = content.split("\n");
+  let title = "", goal = "", date3 = "", cwd = ".";
+  for (const line of lines) {
+    if (!title && line.startsWith("# ")) {
+      title = line.replace(/^#\s+/, "").replace(/\s*—.*$/, "").trim();
+    }
+    const goalMatch = line.match(/^\*\*Goal:\*\*\s*(.+)/);
+    if (goalMatch) goal = goalMatch[1].trim();
+    const dateMatch = line.match(/^\*\*Date:\*\*\s*(.+)/);
+    if (dateMatch) date3 = dateMatch[1].trim();
+    const targetMatch = line.match(/^\*\*Target:\*\*\s*`?([^`]+)`?/);
+    if (targetMatch) cwd = targetMatch[1].trim();
+    const cwdMatch = line.match(/All commands run from `([^`]+)`/);
+    if (cwdMatch) cwd = cwdMatch[1].trim();
+  }
+  const sections = parseSections(lines);
+  let dodStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].match(/^## Definition of Done/)) {
+      dodStart = i + 1;
+      break;
+    }
+  }
+  const roots = dodStart >= 0 ? parseDodTree(lines, dodStart) : [];
+  return { title, goal, date: date3, cwd, sections, roots };
+}
+async function parseMarkdown(filePath) {
+  const content = await fs3.readFile(filePath, "utf-8");
+  return parseContent(content);
+}
+
+// src/schemas.ts
+var PredicateSchema = external_exports.object({
+  type: external_exports.enum([
+    "exit_code",
+    "exit_code_not",
+    "output_contains",
+    "output_matches",
+    "output_not_contains",
+    "output_not_matches",
+    "tdd",
+    "adversarial",
+    "holdout",
+    "convergence"
+  ]),
+  value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
+  timeout_ms: external_exports.number().optional().describe("Override the default 120s command timeout in milliseconds. Use for slow tools like Stryker (600s).")
+});
+var ProofCategorySchema = external_exports.enum(["behavioral", "wiring", "other", "test_audit"]);
+var TaskNodeInputSchema = external_exports.lazy(
+  () => external_exports.object({
+    title: external_exports.string(),
+    refinement: external_exports.enum(["draft", "concrete"]).optional().default("draft"),
+    intent: external_exports.string().optional().describe("Required for draft nodes: what behavior this will prove"),
+    children: external_exports.array(TaskNodeInputSchema).optional().describe("Subtask decomposition \u2014 present on task groups"),
+    command: external_exports.string().optional(),
+    predicate: PredicateSchema.optional(),
+    description: external_exports.string().optional(),
+    category: ProofCategorySchema.optional(),
+    advisory: external_exports.boolean().optional()
+  })
+);
+var SectionsSchema = external_exports.object({
+  decisions: external_exports.string().optional(),
+  current_state: external_exports.string().optional(),
+  requirements: external_exports.string(),
+  research_notes: external_exports.string().optional(),
+  open_questions: external_exports.string().optional(),
+  open_risks: external_exports.string().optional()
+});
 
 // src/tools/dod-add-node.ts
 async function handleDodAddNode(params) {
@@ -22993,23 +23223,6 @@ server.tool(
     return { content: [{ type: "text", text: result }] };
   }
 );
-function buildImportGateInfo(doc) {
-  if (!doc.import_source || doc.execution_confirmed !== false) {
-    return { blocked: false };
-  }
-  const executableLeaves = flattenConcreteLeaves(doc.roots).filter(
-    ({ node }) => node.command && node.predicate
-  );
-  return {
-    blocked: true,
-    executableCount: executableLeaves.length,
-    commandList: executableLeaves.map(({ node }) => ({
-      title: node.title,
-      command: node.command ?? "",
-      description: node.description ?? ""
-    }))
-  };
-}
 server.tool(
   "dod_check",
   "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Use `dod_tree` to discover current node paths before scoping.",
@@ -23819,11 +24032,20 @@ async function main() {
   await server.connect(transport);
 }
 if (process.argv[1] === _filename) {
-  main().catch((err) => {
-    process.stderr.write(`dod-guard MCP server failed: ${err}
+  const argv = process.argv.slice(2);
+  if (isCliInvocation(argv)) {
+    runCli(argv).then((code) => process.exit(code)).catch((err) => {
+      process.stderr.write(`dod-guard CLI failed: ${err}
 `);
-    process.exit(1);
-  });
+      process.exit(3);
+    });
+  } else {
+    main().catch((err) => {
+      process.stderr.write(`dod-guard MCP server failed: ${err}
+`);
+      process.exit(1);
+    });
+  }
 }
 export {
   buildImportGateInfo

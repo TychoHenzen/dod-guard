@@ -19,8 +19,28 @@ interface ProofRun {
 
 // ── Shell ─────────────────────────────────────────────────────────────────
 
-function escapeForCmd(s: string): string {
-  return s.replace(/'/g, "''");
+/**
+ * Build the argv for running `command` through the host shell.
+ *
+ * On Windows this is `cmd.exe /d /s /c "command"`, passed with
+ * windowsVerbatimArguments so Node does not re-quote the string. Node's default
+ * Windows quoting escapes embedded double quotes in a way cmd.exe does not
+ * understand, which silently mangles commands like `findstr /C:"x" file` and
+ * `node -e "..."` — they run, exit 0, and produce nothing. `/s` tells cmd.exe to
+ * strip exactly the outer quote pair we add here.
+ *
+ * Single quotes are NOT a grouping character in cmd.exe; wrapping in them makes
+ * cmd look for a program literally named `'command`.
+ */
+export function buildShellInvocation(command: string): {
+  shell: string;
+  args: string[];
+  verbatim: boolean;
+} {
+  if (process.platform === "win32") {
+    return { shell: "cmd.exe", args: ["/d", "/s", "/c", `"${command}"`], verbatim: true };
+  }
+  return { shell: "/bin/sh", args: ["-c", command], verbatim: false };
 }
 
 // ── Diagnosis ─────────────────────────────────────────────────────────────
@@ -175,18 +195,15 @@ function evalPredicate(
 // ── Command execution ─────────────────────────────────────────────────────
 
 async function runCommand(command: string, cwd: string, timeoutMs: number): Promise<ProofRun> {
-  const shell = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
-  const shellArgs = process.platform === "win32" ? ["/d", "/s", "/c"] : ["-c"];
-
-  // On Windows, wrap the command in single quotes to protect special chars
-  const escapedCmd = process.platform === "win32" ? `'${escapeForCmd(command)}'` : command;
+  const { shell, args, verbatim } = buildShellInvocation(command);
 
   try {
-    const { stdout, stderr } = await execFileP(shell, [...shellArgs, escapedCmd], {
+    const { stdout, stderr } = await execFileP(shell, args, {
       cwd,
       timeout: timeoutMs,
       maxBuffer: 10 * 1024 * 1024, // 10 MB
       windowsHide: true,
+      windowsVerbatimArguments: verbatim,
     });
     return { stdout, stderr, code: 0 };
   } catch (err: any) {

@@ -19,11 +19,16 @@ and risks introducing new issues.
 
 Your prompt includes:
 
-- **Original briefing**: what the step was supposed to do
+- **Original briefing**: what the step was supposed to do, including its
+  `verify_surface` and the exact verify command
 - **Failure output**: build errors, test failures, verification command output
 - **Fix instructions**: what the orchestrator thinks is wrong
 - **Files from original attempt**: what was changed, what should NOT be touched
 - **Working directory**
+
+**You have no channel to the user.** Do not call `AskUserQuestion` — nobody is
+listening. If the step can't proceed because the spec itself is underdetermined
+(not because the code is broken), return AMBIGUOUS and let the orchestrator ask.
 
 ## Process
 
@@ -52,8 +57,12 @@ Fix ONLY what caused the failure. Don't:
 - Add new features
 
 ### Step 5: Verify
-Run the verification command. Confirm the failure is resolved.
-Also check that previously-passing tests still pass.
+Run the exact verify command from the original briefing. Confirm the failure is
+resolved, and that previously-passing tests still pass.
+
+Match the original step's `verify_surface`. If it's `visual` or `gameplay`, a passing
+build does not close the loop — launch the app if you can, and say plainly if you
+can't.
 
 ### Step 6: Report
 Report:
@@ -73,13 +82,20 @@ Report:
    because X" is actionable. "Tried things, didn't work" is not.
 6. **SAME APPROACH = SAME FAILURE.** If the original step-implementer already tried
    this strategy and it failed, do NOT attempt the same strategy with different
-   parameters. Report "APPROACH PIVOT NEEDED — same strategy, will fail again."
-   This saves the orchestrator from wasting a dispatch on a guaranteed failure.
+   parameters. Report BLOCKED with "APPROACH PIVOT NEEDED — same strategy, will fail
+   again" and name the strategy. This saves the orchestrator a guaranteed-failure
+   dispatch and tells it what NOT to retry.
 7. **VISUAL/GAMEPLAY VERIFICATION GAP.** If the failure is "verification was
    build-only for a visual/gameplay change," the fix is not to change the code —
    the fix is to add proper verification. Report: "VERIFICATION GAP — visual/gameplay
    change was verified by build-only. Code may be correct but unverified. Human
    visual confirmation needed."
+8. **DON'T ASK, RETURN AMBIGUOUS.** A spec question is not a fixable failure. If the
+   step failed because nobody decided what it should do, return AMBIGUOUS — don't
+   decide on the user's behalf.
+9. **NO GIT MUTATIONS.** Never run `git commit`, `git push`, `git checkout`,
+   `git reset`, or `git stash`. Read-only git (`status`, `diff`, `log`) is fine.
+   The orchestrator commits, once, after all steps land.
 
 ## Report Format
 
@@ -103,12 +119,29 @@ If BLOCKED:
 ## Step {id}: {title} — BLOCKED
 
 ### Failure
-{what's still failing}
+{what's still failing — quote the shortest decisive error line}
 
 ### Diagnosis
 {what you determined}
 
 ### Why Blocked
 {why you can't fix it within scope — e.g. "requires changes to shared util outside
-this step's scope", "underlying API changed and this approach no longer works"}
+this step's scope", "underlying API changed and this approach no longer works",
+"APPROACH PIVOT NEEDED — <strategy> already failed, retrying it will fail again"}
+```
+
+If AMBIGUOUS (spec question, not a code failure):
+
+```
+## Step {id}: {title} — AMBIGUOUS
+
+### Question
+{the single thing that is underdetermined}
+
+### Interpretations Considered
+1. {option} — implies {concrete consequence}
+2. {option} — implies {concrete consequence}
+
+### What I Did
+Nothing beyond reading. No files changed.
 ```

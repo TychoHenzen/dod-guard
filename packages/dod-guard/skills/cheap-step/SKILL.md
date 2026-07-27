@@ -21,12 +21,24 @@ only touches code directly when cheap workers fail after feedback+retry.
 ## Why This Exists
 
 Step-by-step already solves the context-pressure problem (fresh subagent per
-step). But each subagent runs on Anthropic models — even for routine,
-mechanical implementation work. A 20-step plan costs ~$2–5 in host-model tokens.
+step), but every subagent runs on whatever model the host session runs on.
 
 The cascade strategy proved that cheap workers with a good verifier can handle
 ~90% of implementation work. The remaining ~10% needs the host model's
 judgment.
+
+**Which benefit you actually get depends on your host model — check this first:**
+
+| Host session runs on | What cheap-step buys you |
+|----------------------|--------------------------|
+| A premium model (Claude via Anthropic) | Both cost AND structure. A 20-step plan drops from ~$2–5 of host tokens to well under $1, because implementation moves to the cheap backend. |
+| A cheap model already (session proxied to DeepSeek) | Structure only, **not** cost — workers and host are the same backend, so there is no arbitrage. What you still gain: evomcp's fanout (N diverse attempts instead of one), automatic repair chains with structured feedback, the degenerate-pattern gate, and a host/worker split that keeps the orchestrator's context clean. |
+
+If you are on a cheap host and want *only* cost savings, cheap-step is the wrong
+tool — use `/dod-guard:step-by-step`, which has the same discipline without the
+evomcp round-trip. Choose cheap-step for the fanout and the repair loop, not for
+a cost delta that isn't there. Every cost figure below assumes a premium host;
+ignore them on a cheap host.
 
 **Cheap-step combines both insights:**
 
@@ -41,10 +53,13 @@ Step 3: Host writes spec → evomcp solve (DeepSeek) → Host verifies ✗
 Step 20: Host writes spec → evomcp solve (DeepSeek) → Host verifies ✓
 ```
 
-**Cost reality:** 20 steps where 18 pass on first try, 1 passes on retry, 1
-needs host fix ≈ $0.50–1.00 total. Same work with all-host-model subagents ≈
-$2–5. And the host model's context stays lean because it never holds
-implementation details — only specs and verification results.
+**Cost reality (premium host only):** 20 steps where 18 pass on first try, 1
+passes on retry, 1 needs host fix ≈ $0.50–1.00 total. Same work with all-host
+subagents ≈ $2–5. On a cheap host these two numbers converge — see the table
+above.
+
+Independent of host model: the orchestrator's context stays lean because it
+never holds implementation details, only specs and verification results.
 
 **The hard-10% guarantee:** The cascade strategy predicts ~10% of sub-problems
 will be too hard for cheap workers. Cheap-step budgets for this: every step has
@@ -73,7 +88,10 @@ could do, but ALWAYS catches what cheap workers can't.
 1. **Backend alive:** `evomcp status` → RUNNING. If not, report and stop.
 2. **evomcp tools available:** `solve` tool must be registered. If not, this skill can't work.
 3. **Git clean or checkpointed:** evomcp solve creates branches. Dirty tree without
-   gitevo checkpoint = risk of lost work. Run `evo_checkpoint "pre-cheap-step"` first.
+   a checkpoint = risk of lost work. Run `evo_checkpoint "pre-cheap-step"` first.
+   **If gitevo is unavailable**, degrade rather than skip: commit the current
+   state (or `git stash`) before starting, and again before each solve. Report
+   the degradation to the user — checkpointing is not optional, only the tool is.
 
 ## Process
 
@@ -92,11 +110,14 @@ success. Cheap workers do best with:
 If a step is too big for cheap workers, split it. If it requires architectural
 novelty, mark it `host-only` — the host model implements these steps directly.
 
-Save to `.cheap-step/steps.json`:
+Write `.cheap-step/steps.json` before dispatching step 1, and rewrite it after
+every gate decision:
 ```json
 {
   "goal": "One-line goal",
   "cwd": "/absolute/path/to/project",
+  "plan_source": "/absolute/path/to/plan.md",
+  "plan_mtime": "2026-07-27T11:00:00+02:00",
   "steps": [
     {
       "id": "S01",
@@ -145,6 +166,25 @@ verify_cmd running >50 tests — these will likely need decomposition.
 ### Phase 1: Execute — One Step at a Time
 
 For each step in dependency order:
+
+#### 1.0 Ambiguity gate — before writing any spec
+
+Ask: does this step's description determine exactly one implementation, or could
+two reasonable readings produce materially different code?
+
+If it's underdetermined, do NOT write a spec around your best guess. Cheap
+workers cannot ask, and fanout will confidently produce N variants of the wrong
+thing — the failure mode is not "no answer," it's "5 lineages that all pass a
+verify_cmd written against the wrong interpretation."
+
+Resolve it with the user via `AskUserQuestion`, using the competing readings as
+options. Batch multiple ambiguities into one interaction. Record the answer in
+`.cheap-step/decisions.json` and fold it into the spec's `context` so no worker
+has to infer it. Never re-ask a resolved question.
+
+This is cascade's U1, applied per step. Ambiguity is an authority gap — no model
+at any tier is entitled to decide it, and no amount of fanout budget substitutes
+for one question.
 
 #### 1.1 Cheap steps: Write spec + dispatch
 
@@ -276,8 +316,8 @@ Good specs make cheap workers succeed. Bad specs waste fanout budget.
 # Good — specific test pattern
 npm test -- --testNamePattern="user model validation"
 
-# Good — dod-guard DoD subtree
-dod_check --dod-id=abc123 --nodePath=0.children.2
+# Good — dod-guard DoD subtree (CLI, not the MCP tool name)
+dod-guard check --dod-id=abc123 --node-path=0.children.2 --quiet
 
 # Good — targeted lint
 npx biome check src/models/user.ts
@@ -355,7 +395,13 @@ If a step's estimated success rate is <60%, either split it or mark it
    not an end. Never accept a wrong result because "it was cheap."
 
 10. **CHECKPOINT BEFORE EACH SOLVE.** `evo_checkpoint "pre-S{N}"` — one
-    command, zero cost, infinite regret prevention.
+    command, zero cost, infinite regret prevention. No gitevo? Plain `git
+    commit` or `git stash` instead. The checkpoint is mandatory; the tool isn't.
+
+15. **AMBIGUITY GOES TO THE USER, NOT TO FANOUT.** Cheap workers cannot ask.
+    An underdetermined spec produces N confident implementations of the wrong
+    thing, all passing a verify_cmd you wrote against your own guess. Resolve
+    with AskUserQuestion at 1.0, before any budget burns.
 
 11. **HOST-ONLY MEANS HOST-ONLY.** Don't try evomcp solve "just to see" on a
     step you marked host-only. Those steps exist because you judged the cheap
@@ -398,14 +444,37 @@ If a step's estimated success rate is <60%, either split it or mark it
 ```
 .cheap-step/
 ├── steps.json       # Plan with per-step status, mode, verify_cmd
-├── progress.log     # One line per step: ✓ S01 (cheap) | ✗ S03 (retry 1/2) | ⚑ S07 (host-fallback) | ◆ S02 (host-only)
+├── progress.log     # One line per step: ✓ S01 (cheap) | ✗ S03 (retry 1/2) | ⚑ S07 (host-fallback) | ◆ S02 (host-only) | ? S04 (ambiguity resolved)
+├── decisions.json   # Ambiguity questions asked + user answers (never re-ask)
 └── specs/           # Saved evomcp specs per step (for debugging failures)
     ├── S01-spec.json
     └── S03-spec.json
 ```
 
-On skill start: check for existing `.cheap-step/progress.log`. If found → resume
-from first pending step.
+Write `steps.json` and `progress.log` on EVERY gate decision, not at the end. A
+session file written only at the end is a session file that never survives the
+crash it exists for.
+
+### Staleness Detection (check BEFORE resuming)
+
+On skill start, if `.cheap-step/steps.json` exists, run these checks BEFORE
+resuming. Staleness is the norm — plans change between sessions, old plans
+finish, context shifts. Silently resuming a stale session is WORSE than starting
+fresh, because you execute the wrong steps against a plan nobody asked for.
+
+First match wins:
+
+1. **ALL STEPS DONE** — every step is `completed`, `skipped`, or `host-fallback`
+   → STALE. Overwrite. Log: "Previous plan complete — overwriting."
+2. **GOAL MISMATCH** — `goal` doesn't match the plan you were just handed
+   → STALE. Overwrite. Log: "Goal mismatch — overwriting stale session."
+3. **PLAN SOURCE CHANGED** — `plan_source` exists and that file's mtime is newer
+   than the stored `plan_mtime` → STALE. Overwrite.
+   Log: "Plan source modified — overwriting stale session."
+4. **ALL CHECKS PASS** — fresh for this plan. Resume from the first pending step.
+
+**Never silently resume a stale session.** If you are unsure whether it's stale,
+it is. Ask: "Does this goal match what we're doing NOW?" If no → overwrite.
 
 ## Failure Recovery
 
@@ -428,10 +497,14 @@ assumes evomcp is installed and the deepclaude proxy is running.
 
 ### dod-guard
 Preferred verify_cmd format. DoD subtrees give multi-layer verification
-(lint+build+test+mutation) in one command:
+(lint+build+test) in one command:
 ```
-dod_check --dod-id=abc123 --nodePath=0.children.2
+dod-guard check --dod-id=abc123 --node-path=0.children.2 --quiet
 ```
+The shell command is `dod-guard check`. `dod_check` is the MCP tool name and is
+not executable from a shell — a verify_cmd using it never runs a check. Exit
+codes: `0` pass · `1` proof failed · `2` drafts remain (full runs only) · `3`
+usage error. Discover node paths with `dod-guard tree --dod-id=<id>`.
 
 ### gitevo
 ```

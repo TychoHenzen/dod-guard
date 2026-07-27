@@ -4,8 +4,10 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { formatCheckResult, updateDocFromCheckResult, writeMarkdown } from "./author.js";
 import { checkAmendGate, checkDocument, countDraftNodes, findNodeByPath } from "./checker.js";
+import { isCliInvocation, runCli } from "./cli.js";
 import { findMissingTools, isPlaceholderCommand } from "./command-check.js";
 import { computeProofFingerprint, flattenConcreteLeaves } from "./fingerprint.js";
+import { buildImportGateInfo } from "./import-gate.js";
 import { parseMarkdown } from "./parser.js";
 import { PredicateSchema, ProofCategorySchema, SectionsSchema, TaskNodeInputSchema } from "./schemas.js";
 import * as store from "./store.js";
@@ -60,36 +62,8 @@ server.tool(
   },
 );
 
-// ── Import gate helper ──────────────────────────────────────────────
-
-/**
- * Check whether an imported DoD needs human confirmation before execution.
- * Returns a gate info object when the doc is imported and unconfirmed,
- * or { blocked: false } when execution can proceed freely.
- */
-export function buildImportGateInfo(doc: DodDocument):
-  | {
-      blocked: true;
-      executableCount: number;
-      commandList: { title: string; command: string; description: string }[];
-    }
-  | { blocked: false } {
-  if (!doc.import_source || doc.execution_confirmed !== false) {
-    return { blocked: false };
-  }
-
-  const executableLeaves = flattenConcreteLeaves(doc.roots).filter(({ node }) => node.command && node.predicate);
-
-  return {
-    blocked: true,
-    executableCount: executableLeaves.length,
-    commandList: executableLeaves.map(({ node }) => ({
-      title: node.title,
-      command: node.command ?? "",
-      description: node.description ?? "",
-    })),
-  };
-}
+// Import gate helper lives in import-gate.ts — shared with the CLI.
+export { buildImportGateInfo } from "./import-gate.js";
 
 // ── dod_check ───────────────────────────────────────────────────────
 
@@ -1073,8 +1047,21 @@ async function main(): Promise<void> {
 }
 
 if (process.argv[1] === _filename) {
-  main().catch((err) => {
-    process.stderr.write(`dod-guard MCP server failed: ${err}\n`);
-    process.exit(1);
-  });
+  const argv = process.argv.slice(2);
+
+  if (isCliInvocation(argv)) {
+    // `dod-guard check ...` — run once, exit with a verdict code.
+    runCli(argv)
+      .then((code) => process.exit(code))
+      .catch((err) => {
+        process.stderr.write(`dod-guard CLI failed: ${err}\n`);
+        process.exit(3);
+      });
+  } else {
+    // No args — this is an MCP stdio launch.
+    main().catch((err) => {
+      process.stderr.write(`dod-guard MCP server failed: ${err}\n`);
+      process.exit(1);
+    });
+  }
 }

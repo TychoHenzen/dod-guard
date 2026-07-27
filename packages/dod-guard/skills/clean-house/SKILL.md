@@ -89,17 +89,22 @@ Cast a wide net. Every candidate found here goes to Phase 2 for analysis.
 
 #### 1.1 Structural Name Scan
 
-Search for files, functions, and classes with version/age markers:
+Search for files, functions, and classes with version/age markers.
+
+**Use `rg` for every scan in this skill, including filename scans.** `rg` is
+cross-platform and identical on Windows and POSIX; `find` with `\( -name ... \)`
+is POSIX-only and silently fails or behaves differently under cmd.exe. See
+Platform Notes.
 
 ```bash
-# Version suffixes
-rg -l "v1|v2|v3|_v[0-9]" --type-add 'src:*.{ts,js,py,rs,go,cs,java}' --type src
+# Version suffixes in code
+rg -l "v1|v2|v3|_v[0-9]" -g "*.{ts,js,py,rs,go,cs,java}"
 
-# Old/new/legacy markers (filenames)
-find . -type f \( -name "*-old*" -o -name "*-legacy*" -o -name "*-new*" -o -name "*-deprecated*" -o -name "*-compat*" -o -name "*-shim*" \)
+# Old/new/legacy markers in FILENAMES (rg --files lists paths, then filter)
+rg --files | rg -- "-(old|legacy|new|deprecated|compat|shim)|_(old|legacy|new)"
 
 # Directories suggesting obsolete code
-find . -type d \( -name "old" -o -name "legacy" -o -name "compat" -o -name "shims" -o -name "deprecated" -o -name "v1" \)
+rg --files | rg -- "/(old|legacy|compat|shims|deprecated|v1)/"
 ```
 
 #### 1.2 Near-Name Clusters
@@ -107,10 +112,13 @@ find . -type d \( -name "old" -o -name "legacy" -o -name "compat" -o -name "shim
 Find files whose names differ only by a suffix/prefix — strong duplicate signal:
 
 ```bash
-# List all source files, sort by name, visually scan for clusters
+# List all source files sorted by name, then scan for clusters
 # e.g., auth.ts, auth-v2.ts, auth_new.ts, auth_old.ts
-find . -name "*.ts" -o -name "*.js" | sort | less
+rg --files -g "*.{ts,js,py,rs,go,cs,java}" | sort
 ```
+
+Never pipe to `less` here — it's an interactive pager and will hang a
+non-interactive agent session waiting for a keypress that never comes.
 
 Focus on clusters where names share a common stem but diverge with markers like `-v2`, `-new`, `_old`, `2`, `Compat`, `Legacy`, `Shim`, `Impl`, `Better`.
 
@@ -209,7 +217,22 @@ git blame --line-porcelain <file> | grep "^author " | sort | uniq -c | sort -rn
 git shortlog -sn -- <file>
 ```
 
-**Same-author rule**: If the same person (or same LLM session) wrote both old and new, the old version is safe to delete. They knew what they were doing — the old one was the first attempt, the new one is the real one.
+**Same-author rule**: If the same person (or same LLM session) wrote both old and new, the old version is likely safe to delete — the old one was the first attempt, the new one is the real one.
+
+⚠️ **Check whether this heuristic can discriminate in this repo before using it.**
+In a solo repo, or any repo where an agent commits under the human's identity
+(the common setup — agent attribution lives in a `Co-Authored-By` trailer, not
+the author field), `git blame` reports the same author for everything and this
+rule returns "safe to delete" unconditionally. Test it:
+
+```bash
+git shortlog -sn | head
+```
+
+One dominant author → the rule carries no signal. Say so, drop it, and lean on
+the checks that do discriminate: reference count (3.1), test coverage (3.2), and
+which file the runtime actually reaches (3.3). A heuristic that always fires is
+not evidence.
 
 #### 2.3 Confused-Model Detection (CRITICAL)
 
@@ -256,13 +279,17 @@ git log --oneline --after="$NEW_CREATED" -- <old-file>
 #### 2.4 Divergence Analysis
 
 ```bash
-# How different are the two files now?
-git diff --stat <old-file> <new-file>
+# How different are the two files now? --no-index is REQUIRED — without it git
+# treats both paths as pathspecs and diffs working tree vs index, which answers
+# a completely different question.
+git diff --no-index --stat <old-file> <new-file>
 
 # If they're nearly identical, one is just a stale copy → delete
 # If they've diverged significantly, check what diverged
-git diff <old-file> <new-file> | head -200
+git diff --no-index <old-file> <new-file> | head -200
 ```
+
+`git diff --no-index` exits 1 when the files differ. That's expected, not an error.
 
 #### Blame Report
 
@@ -347,7 +374,50 @@ For function calls, trace the call graph from entry points to verify the old fun
 - Active route still receiving traffic (check logs)
 - Documentation that users rely on (update docs first)
 
+### Phase 3.5: APPROVAL GATE — Stop Here
+
+**Deletion does not start until the user says so.** Everything up to this point
+is read-only analysis. Everything after it runs `git rm` and `npm remove`.
+
+Present the consolidated plan and **wait for an explicit yes**:
+
+```markdown
+## Clean House — Deletion Plan (awaiting approval)
+
+**Delete (N files, ~M lines):**
+- `src/auth/login-old.ts` (187 lines) — 0 refs, superseded by login.ts
+- `legacyParser()` in `src/parse/utils.ts` (43 lines) — 2 test refs, will update
+
+**Migrate first (confused-model changes):**
+- `a1b2c3d` "fix: handle null session" → port to `src/auth/login.ts`
+
+**Update (not delete):**
+- `src/app.ts:42` — swap legacyAuth → authV2
+
+**Blocked / needs your call:**
+- `/api/v1/users` — still referenced in `deploy/prod.yaml`
+
+Approve deletion?
+```
+
+Rules for this gate:
+
+- **Silence is not approval.** No answer → do nothing.
+- **Partial approval is normal.** The user may approve items 1 and 3 but not 2.
+  Delete exactly what was approved; leave the rest and say so in the report.
+- **Anything the user did not see in this plan does not get deleted.** If Phase 4
+  uncovers another candidate, it goes on the next plan, not into this pass.
+- **Re-gate after a plan change.** If migration reveals the plan was wrong,
+  return here with a corrected plan rather than improvising.
+
+This gate exists because the rest of this skill is deliberately aggressive, and
+"git history is the safety net" is only true for work that was committed. It is
+not true for uncommitted changes, untracked files, or a reader's memory of why
+something existed.
+
 ### Phase 4: CLEAN — Aggressive Removal
+
+Runs only on the approved subset from Phase 3.5.
 
 #### 4.1 Migrate Confused-Model Changes First
 
@@ -461,12 +531,23 @@ TIMELINE:
 
 ### Windows (cmd.exe / Git Bash)
 
-- Use `findstr` instead of `grep` in cmd.exe; use `rg` (ripgrep) when available (works cross-platform)
-- `git blame` works identically on all platforms
-- File deletion: `del` in cmd.exe, `rm` in Git Bash — use `git rm` when tracked
-- Path separators: use `/` in Git Bash, `\` in cmd.exe
-- `find` paths: Git Bash uses Unix-style `find`, cmd.exe uses `dir /s /b`
-- jscpd: `npx jscpd` works cross-platform; use `--silent` to suppress progress
+**Prefer `rg` for every scan.** It behaves identically on both platforms, so the
+commands in this skill work as written. The alternatives do not:
+
+- `find` — Git Bash has Unix `find`; cmd.exe's `find` is a completely different
+  program (it searches file *contents*). `find . -type f \( -name ... \)` fails
+  under cmd.exe. Use `rg --files` and filter.
+- `grep` — not present in cmd.exe. Use `rg`, or `findstr` if you must.
+- `less` and other pagers — never in an agent session; they wait for input forever.
+- `git blame` / `git log` / `git rm` — identical on all platforms, safe to use directly.
+- Deletion: `git rm` when tracked. Untracked: `rm` in Git Bash, `del` in cmd.exe.
+- Path separators: `/` in Git Bash, `\` in cmd.exe. `rg` accepts `/` on both.
+- jscpd: `npx jscpd` is cross-platform; `--silent` suppresses progress output.
+
+**Don't mix dialects mid-command.** Pick the shell you're actually in and write
+native syntax for it. Translating one shell's quoting into another is the single
+most common way these scans fail silently and return nothing — which reads
+exactly like "no duplicates found."
 
 ### POSIX (Linux/macOS)
 
@@ -479,8 +560,8 @@ TIMELINE:
 
 ### Hunt
 ```bash
-# Name clusters
-find . -type f \( -name "*-old*" -o -name "*-legacy*" -o -name "*-new*" -o -name "*-v2*" -o -name "*-deprecated*" \) | sort
+# Name clusters (rg is cross-platform; find is POSIX-only)
+rg --files | rg -- "-(old|legacy|new|v2|deprecated)" | sort
 
 # Version markers in code
 rg -n "(v1|v2|v3|legacy|deprecated|old_|_old|compat)" --type-add 'src:*.{ts,js,py,rs,go}' --type src
@@ -539,8 +620,9 @@ npm run build && npm test
 
 | Rule | Rationale |
 |------|-----------|
-| **Never keep old version "just in case"** | Git history IS your safety net. Deleted code is recoverable. |
-| **Same author = delete** | Author knew the new version supersedes the old. |
+| **Never delete without user approval** | Phase 3.5 is a hard stop. Showing a report is not the same as being told yes. |
+| **Never keep old version "just in case"** | Git history IS your safety net — for committed work. Verify the deletion target is committed first. |
+| **Same author = delete, IF that test discriminates** | In a single-author repo it always returns true and proves nothing. Check `git shortlog -sn` first. |
 | **Migrate confused-model changes, don't discard them** | Those changes represent real work done on the wrong file. |
 | **Grep before delete, every time** | code-review-graph dead_code has ~50% false positives. |
 | **Full test suite after cleanup** | Catch regressions from over-aggressive deletion. |
@@ -558,11 +640,17 @@ npm run build && npm test
 |------------|-------------|
 | `code-review-graph` `refactor_tool(mode="dead_code")` | Primary dead-symbol scanner |
 | `code-review-graph` `get_impact_radius_tool` | Verify old code isn't on active call paths |
-| `dod-guard` `streamline` predicate | Prove old symbols are gone (grep exit 1 = pass) |
-| `dod-guard` `brevity` predicate | Detect code accretion (low replacement ratio) |
-| `dod-guard` `duplication` category | jscpd regression tracking |
-| `test-fixer` / `test-verification` | Score tests before/after migration |
+| `dod-guard` `exit_code_not` predicate | Prove old symbols are gone — `rg "<old-symbol>"` with `exit_code_not: 0` passes when ripgrep finds nothing |
+| `dod-guard` `output_not_contains` predicate | Prove a specific file or import no longer appears in build/lint output |
+| `dod-guard:adversarial-workflow` (Phase 2) | Audit test coverage before and after migrating test cases |
 | `gitevo` `evo_learn` | Record what was cleaned and why |
+
+There is no `streamline`, `brevity`, or `duplication` predicate or category —
+those were removed when dod-guard went behavioral-only. Valid predicates are the
+7 behavioral (`exit_code`, `exit_code_not`, `output_contains`,
+`output_not_contains`, `output_matches`, `output_not_matches`, `tdd`) plus
+`adversarial`, `holdout`, `convergence`. Valid categories are `behavioral`,
+`wiring`, `test_audit`, `other`.
 
 ---
 
@@ -623,30 +711,46 @@ Candidate 2: legacyAuth
   Test coverage: authV2 has authV2.test.ts
   ⚠ MUST update src/app.ts line 42 before deleting
 
+=== PHASE 3.5: APPROVAL GATE ===
+
+Deletion plan: 3 files (~423 lines), 1 migration, 1 reference update.
+  DELETE  src/utils/format-old.ts (187 lines, 0 refs)
+  DELETE  legacyAuth middleware (src/auth/legacy.ts, 1 ref — will update)
+  DELETE  parseLegacy() from src/parse.ts
+  MIGRATE b7c8d9e "add rate limiting to auth" → authV2
+  UPDATE  src/app.ts:42 legacyAuth → authV2
+
+Approve deletion?
+
+User: "yes, but keep parseLegacy for now"
+
+Approved: format-old.ts, legacyAuth (+ migration + reference update).
+Skipped by user: parseLegacy.
+
 === PHASE 4: CLEAN ===
 
 Migrating confused-model changes:
   ✅ "add rate limiting to auth" ported from legacyAuth → authV2
 
-Deleting:
+Deleting (approved subset only):
   ✅ git rm src/utils/format-old.ts
   ✅ Removed legacyAuth middleware (src/auth/legacy.ts)
-  ✅ Removed /api/v1/health route handler
-  ✅ Removed parseLegacy() from src/parse.ts
+  ⊘ parseLegacy() — SKIPPED per user
 
 Updating references:
   ✅ src/app.ts line 42: legacyAuth → authV2
-  ✅ src/parse/index.ts: removed parseLegacy re-export
 
 Verifying:
   ✅ Build: PASS
   ✅ Tests: 142/142 PASS
   ✅ Lint: PASS
-  ✅ rg "format-old|legacyAuth|v1/health|parseLegacy": NO RESULTS
+  ✅ rg "format-old|legacyAuth": NO RESULTS
+  (parseLegacy still present — intentional, user deferred)
 
 === CLEAN HOUSE COMPLETE ===
-Lines removed: 423
-Files deleted: 3
+Lines removed: 230
+Files deleted: 2
 Confused-model changes rescued: 1 (rate limiting)
+Deferred by user: 1 (parseLegacy)
 All gates green.
 ```

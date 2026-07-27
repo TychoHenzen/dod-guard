@@ -40,8 +40,13 @@ Build a DoD from the user's task, then attack it with 5 adversarial lenses.
 ### Steps
 
 1. Run `/dod-guard:interview` to gather requirements and build the DoD.
-   Stop after interview phases 1–3.5 (spec + requirements + TaskNode tree).
-   Do NOT proceed to implementation phases.
+   Run it through **Phase 4 (`dod_create`)** — you need a real `dod_id` before
+   any gate can be recorded in step 6. Stop before Phase 5 (hand-off); this
+   skill is the executor. Do NOT let it start implementation.
+
+   Interview runs the same 5 lenses as its own Phase 3.6. If it already did and
+   recorded a phase-1 gate, don't repeat the work — read `adversarial_gates[]`
+   and skip to Phase 2.
 
 2. Dispatch these 5 subagents IN PARALLEL — each gets the DoD as context:
 
@@ -116,13 +121,13 @@ Phase 1 gate must be GO. Verify: `dod_status(dod_id: "<id>")` → check adversar
 
 2. After tests exist, dispatch these 3 audit lenses IN PARALLEL:
 
-| Lens | subagent_type | model | What to ask | Evidence required |
-|------|---------------|-------|-------------|-------------------|
-| Coverage | dod-guard:adversarial-test-auditor | sonnet | Does every requirement have at least one test? | Map each requirement → test file:line |
-| Falsifiability | dod-guard:adversarial-test-auditor | sonnet | Would each test fail if the requirement was wrong? | Describe a bug that WOULD make each test fail |
-| Gap Detection | dod-guard:adversarial-test-auditor | sonnet | What edge cases, error paths, or boundary conditions are untested? | List specific missing test scenarios with example inputs |
+| Lens | subagent_type | What to ask | Evidence required |
+|------|---------------|-------------|-------------------|
+| Coverage | dod-guard:adversarial-test-auditor | Does every requirement have at least one test? | Map each requirement → test file:line |
+| Falsifiability | dod-guard:adversarial-test-auditor | Would each test fail if the requirement was wrong? | Describe a bug that WOULD make each test fail |
+| Gap Detection | dod-guard:adversarial-test-auditor | What edge cases, error paths, or boundary conditions are untested? | List specific missing test scenarios with example inputs |
 
-**Model-diversity override:** If the test author used Sonnet/Opus, dispatch these lenses with `model: "haiku"` instead. Haiku reviewing Sonnet's tests = genuine independence. See Model-Diversity Enforcement section below for the full routing table.
+**Model selection comes from the Model-Diversity Enforcement section below** — it depends on who wrote the tests, so there is no fixed default here.
 
 Each lens MUST find at least 1 issue. Zero findings from a lens = rubber-stamp → re-dispatch that lens with a stronger prompt.
 
@@ -146,13 +151,13 @@ Phase 2 gate must be GO.
 
 2. Dispatch these 3 roles IN PARALLEL — each gets CLEAN context (only the diff + spec, never the implementer's reasoning or intermediate steps):
 
-| Role | subagent_type | model | Must find | Perspective |
-|------|---------------|-------|-----------|-------------|
-| Saboteur | dod-guard:adversarial-saboteur | opus | 2 issues | "How do I break this?" Worst-case inputs, concurrency races, resource exhaustion, null/undefined injection |
-| New Hire | dod-guard:adversarial-new-hire | haiku | 1 issue | "Can I understand this cold?" Unclear naming, missing comments, confusing control flow, undocumented assumptions |
-| Spec Auditor | dod-guard:adversarial-spec-auditor | sonnet | 1 issue | "Does this match the original spec?" Compare implementation against Phase 1 requirements (not the implementation plan) |
+| Role | subagent_type | Must find | Perspective |
+|------|---------------|-----------|-------------|
+| Saboteur | dod-guard:adversarial-saboteur | 2 issues | "How do I break this?" Worst-case inputs, concurrency races, resource exhaustion, null/undefined injection |
+| New Hire | dod-guard:adversarial-new-hire | 1 issue | "Can I understand this cold?" Unclear naming, missing comments, confusing control flow, undocumented assumptions |
+| Spec Auditor | dod-guard:adversarial-spec-auditor | 1 issue | "Does this match the original spec?" Compare implementation against Phase 1 requirements (not the implementation plan) |
 
-**Model-diversity override:** If the implementation was done by the same model that would run these lenses, apply model diversity per the routing table. Example: if implementation was DeepSeek (cheap-step), dispatch all 3 lenses with `model: "sonnet"` — Claude reviewing DeepSeek output = genuine independence. See Model-Diversity Enforcement section below.
+**Model selection is decided by the Model-Diversity Enforcement section below, not here** — it depends on which model wrote the implementation, so there is no fixed default. When model diversity is unavailable, omit `model` and let each agent's own frontmatter decide.
 
 3. Every finding MUST include all three (reject findings missing any):
    - `file:line` of the issue
@@ -180,14 +185,18 @@ Phase 3 gate must be GO.
 
 ### Steps
 
-1. Add structural proofs to the DoD as concrete leaves (via dod_add_node or dod_refine):
+1. Add structural proofs to the DoD as concrete leaves (via `dod_add_node` or `dod_refine`).
 
-| Proof | Command | Predicate |
-|-------|---------|-----------|
-| Complexity | `npx biome lint` | exit_code: 0 |
-| Large files | find *.ts >300 lines | output_not_contains |
-| Dead code | `npx ts-prune` | output_matches: "0" |
-| Error swallowing | grep catch blocks without log/throw/rethrow | output_not_contains |
+   **Copy them from [`standards/structural-gates.md`](../../../../standards/structural-gates.md)** — it holds ready-made,
+   per-language proof JSON (complexity, large files, dead code, error swallowing)
+   with correct commands and predicates. Do not hand-write these; the obvious
+   one-liners are wrong in subtle ways (`ts-prune` prints a list, so matching
+   `"0"` never fires; a bare `find` for line counts isn't a portable command).
+
+   Pick the section matching the project's language, adapt paths, and verify each
+   proof runs before adding it. If the language has no section, write the proof,
+   test it against a deliberately-bad file to confirm it actually fails, and add
+   the new section to `standards/structural-gates.md` so the next run inherits it.
 
 2. Convergence audit loop:
    a. Run `dod_check(dod_id: "<id>")` on the structural proofs
@@ -196,11 +205,15 @@ Phase 3 gate must be GO.
    d. If count == 0 on two consecutive runs → GO
    e. Max 3 iterations — if still finding issues, report to user
 
-3. If any Phase 3 findings were critical, distill them into anti-pattern rules and append to `.dod-guard/anti-patterns.json`.
+3. Call dod_adversarial_gate(phase: 4, verdict: "GO", lenses: [{lens: "Convergence", findings: [], mandatory_minimum_met: true}], summary: "Structural cleanup converged after N iterations").
 
-4. Call dod_adversarial_gate(phase: 4, verdict: "GO", lenses: [{lens: "Convergence", findings: [], mandatory_minimum_met: true}], summary: "Structural cleanup converged after N iterations").
+4. Run full `dod_check(dod_id: "<id>")` → should return PASS (all 4 gates GO, all behavioral proofs pass).
 
-5. Run full `dod_check(dod_id: "<id>")` → should return PASS (all 4 gates GO, all behavioral proofs pass).
+5. If any Phase 3 finding was critical, write it up as a durable lesson so the
+   next run doesn't reproduce it. Use whichever of these is available:
+   `memory_save(type: "project")` for cross-session recall, or `evo_learn` if a
+   gitevo run is active. Do not invent a local rules file for this — a JSON blob
+   nothing reads is not a feedback loop.
 
 ---
 
@@ -263,11 +276,22 @@ Agent(subagent_type: "dod-guard:adversarial-new-hire", model: "sonnet", ...)
 Agent(subagent_type: "dod-guard:adversarial-spec-auditor", model: "sonnet", ...)
 ```
 
-**When model diversity is unavailable** (single-provider setup):
+**When model diversity is unavailable** — this includes any single-provider
+setup, and notably a session proxied entirely to one cheap backend, where
+`model: "sonnet"` and `model: "haiku"` both resolve to the same weights and the
+whole routing table above is inert:
+
 - Use the same model but with maximally different lens prompts
 - The lens agent definitions already encode different personas and attack surfaces
-- This is defense-in-depth-lite — better than nothing, not as strong as true model diversity
-- Flag this degradation in the gate summary: "Model diversity unavailable — single-model adversarial review (degraded independence)"
+- Lean harder on the compensating controls that don't depend on model identity:
+  clean context per lens, mandatory minimum findings, required `file:line` +
+  reproducing command on every Phase 3 finding, and negative-control injection
+- This is defense-in-depth-lite — better than nothing, weaker than true diversity
+- Flag it in the gate summary: "Model diversity unavailable — single-model adversarial review (degraded independence)"
+
+**Check before relying on the table:** if you cannot name two distinct models
+actually reachable in this session, you are in the degraded case. Say so rather
+than passing `model:` params that quietly resolve to the same thing.
 
 ### Negative Control Injection (rubber-stamp detection)
 
@@ -277,20 +301,30 @@ Agent(subagent_type: "dod-guard:adversarial-spec-auditor", model: "sonnet", ...)
 
 **Implementation (lightweight — Phase 1 only):**
 
-After the 5 Phase 1 lenses complete, apply this check:
+Run this on the **weakest lens**, not only on a lens that returned literally
+zero — a lens returning zero is already an invalid verdict handled by the
+mandatory-finding rule, so gating on that makes this check dead code.
 
-1. Pick the lens with the FEWEST findings (if any lens returned 0 findings)
-2. Feed it a synthetic bad spec derived from the REAL spec but with one obvious flaw injected:
-   - Missing error handling for a required edge case
-   - Contradictory requirement (e.g., "must be fast" AND "must validate all fields synchronously")
-   - Missing security consideration (e.g., "no auth required" on a user data endpoint)
-3. If the lens returns 0 findings on the KNOWN-BAD spec → rubber-stamp detected
-4. Re-dispatch that lens with the original spec and a stronger prompt: "You previously found nothing. A known-flawed variant of this spec also received zero findings. Re-review with higher scrutiny."
+After the 5 Phase 1 lenses complete:
+
+1. Pick the lens with the fewest findings, counting a `NO_FINDINGS:` return as
+   zero. Ties → pick Security.
+2. Feed that lens a synthetic bad spec: the REAL spec with one obvious flaw
+   injected, chosen to fall inside that lens's own attack surface —
+   - Security → drop auth from an endpoint serving user data
+   - Assumptions → reference a helper that doesn't exist in the codebase
+   - Testability → replace a requirement with an unfalsifiable one ("feels fast")
+   - Consistency → add a requirement contradicting an existing one
+   - Implementability → require infrastructure the project doesn't have
+3. Lens catches the injected flaw → it's discriminating. Record and move on.
+4. Lens misses it → rubber-stamp. Re-dispatch against the original spec with:
+   "You previously found N issues. A variant of this spec with a deliberate
+   [flaw type] also passed your review. Re-review with higher scrutiny."
 
 **Skip negative controls when:**
-- All 5 lenses found at least 1 issue (no zero-finding lenses to test)
 - Fewer than 3 total findings across all lenses (the spec is genuinely sparse — negative control would be noise)
 - Phase 1 gate is already REVISE (no point testing lenses when the spec is known-bad)
+- The run is already over its time budget — this costs one extra dispatch
 
 **Recording negative control results:**
 Add to the gate summary: "Negative control: <lens-name> detected <N>/1 injected flaws — <OK/RUBBER-STAMP>."

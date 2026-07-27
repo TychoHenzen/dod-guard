@@ -1,3 +1,16 @@
+---
+name: rag-memory
+description: >-
+  Search, read, and write an Obsidian vault through the obsidian-rag MCP server —
+  hybrid semantic + keyword search over notes, backlink and tag traversal, note
+  creation, and structured memory save/recall that persists across sessions.
+  TRIGGER when: the user mentions their vault, notes, or Obsidian; asks to
+  remember or recall something across sessions; asks what was decided or learned
+  previously; wants to search personal knowledge rather than the codebase; or says
+  "save this to memory", "check my notes", "what do I have on X".
+  DO NOT TRIGGER for searching code in the current repo — use Grep/Glob for that.
+---
+
 # RAG Memory Skill
 
 Use when working with Obsidian vaults via the obsidian-rag MCP plugin. Provides workflows for searching notes, retrieving context, saving memories, and traversing knowledge graphs.
@@ -19,12 +32,16 @@ When you need relevant context from your knowledge base:
 
 ### Memory Operations
 
-The vault's `.claude-memories/` directory stores structured memory entries compatible with Claude Code's memory system:
+The vault's `Claude-Memories/` directory stores structured memory entries compatible with Claude Code's memory system:
 - `memory_save` — save a new memory or update existing
 - `memory_recall` — semantic search over saved memories
 - `memory_list` — browse all memories by type
 
 Memory types: `user`, `feedback`, `project`, `reference`
+
+Entries land in `Claude-Memories/<type>/<id>.md` — note the capitalisation, and
+that it is not a dotfile. `memory_save` reindexes the single note it wrote, so a
+saved memory is searchable immediately.
 
 ### Knowledge Graph Traversal
 

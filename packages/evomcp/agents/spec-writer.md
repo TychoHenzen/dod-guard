@@ -84,7 +84,10 @@ What command, when run, will exit 0 on success and non-zero on failure?
 
 Preferred sources (in order):
 1. **Existing dod-guard DoD**: Check `dod_list` for relevant DoDs. A DoD's test gate
-   subtree is the ideal verify_cmd. Example: `dod_check --dod-id=abc --nodePath=0.children.2`
+   subtree is the ideal verify_cmd. verify_cmd runs in a SHELL, so use the CLI —
+   `dod_check` is an MCP tool name and does nothing from a shell:
+   `dod-guard check --dod-id=abc --node-path=0.children.2 --quiet`
+   (exit 0 pass, 1 proof failed, 2 drafts remain, 3 usage error)
 2. **Existing test suite**: Target specific tests. `npm test -- --testNamePattern="auth login"`
 3. **Custom script**: Write a small verification script if no existing oracle exists.
    Keep it simple — evomcp runs this hundreds of times.

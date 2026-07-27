@@ -133,7 +133,11 @@ if (process.argv[1] === _filename) {
 
 ### OS awareness (dod-guard)
 
-Proof commands run on the **host OS**. Windows uses `cmd.exe` shell. `dod_create`/`dod_refine`/`dod_amend` validate commands reference tools available on the current platform. Use `isExecutablePredicate()` from checker.ts as the single gate — never inline `pred.type !== "manual"` checks.
+Proof commands run on the **host OS**. `dod_create`/`dod_refine`/`dod_amend` validate that commands reference tools available on the current platform.
+
+Shell invocation is built by `buildShellInvocation()` in `evaluate-proof.ts` — the single place that knows how to reach a shell. On Windows it produces `cmd.exe /d /s /c "<command>"` with `windowsVerbatimArguments: true`. Both details are load-bearing: cmd.exe has no single-quote grouping (wrapping in `'...'` makes it look for a program named `'command`), and Node's default Windows quoting escapes embedded double quotes in a way cmd.exe doesn't understand, silently mangling `findstr /C:"x" file` and `node -e "..."` into no-ops that exit 0. Never hand-roll shell escaping elsewhere.
+
+There is no `manual` predicate. Human-verified steps are **draft leaves** with a `MANUAL:` intent — drafts hold the verdict at INCOMPLETE, which is the correct "a human still owes us something" semantic.
 
 ### No backwards compatibility shims
 
@@ -145,7 +149,7 @@ This is a private project. Remove old code paths outright — no deprecation war
 
 ## Cross-package concerns
 
-- **evomcp → dod-guard**: `verify_cmd` and `fitness_cmd` parameters often use dod-guard commands (e.g. `dod_check --node-path=0.children.1`)
+- **evomcp → dod-guard**: `verify_cmd` and `fitness_cmd` take **shell** commands, so they use the dod-guard CLI, not MCP tool names: `dod-guard check --dod-id=<id> --node-path=0.children.1 --quiet`. Exit codes: `0` pass · `1` a proof failed (or tampered/stuck) · `2` unscoped run with drafts remaining · `3` usage error. A scoped run exits 0 when that subtree passes — that is what makes a DoD subtree usable as a verify_cmd, since `checkDocument` always reports scoped runs as `incomplete`. `dod_check` is the MCP tool name and does nothing in a shell.
 - **gitevo → obsidian-rag**: `evo_export_lessons` outputs memory_save-compatible JSON for persistence
 - **evomcp → gitevo**: `gitevo-integration.ts` reads gitevo's SQLite memory bus (`.evo/memory.db`) to seed strategy prompts with past failures, elite solutions, and insights
 - **obsidian-rag**: Used by the session-start hook for memory injection across all packages

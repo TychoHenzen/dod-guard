@@ -1,6 +1,6 @@
 import * as assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildImportGateInfo } from "./index.js";
+import { buildImportGateInfo } from "./import-gate.js";
 import type { DodDocument, TaskNode } from "./types.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────

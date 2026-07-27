@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "obsidian-rag",
-      "description": "RAG/memory MCP server on an Obsidian vault. Semantic search, note CRUD, memory recall, backlink traversal — all local, all offline.",
+      "description": "RAG/memory MCP server on an Obsidian vault. Semantic search, note CRUD, memory recall, backlink traversal — all local, all offline. Ships the /rag-memory skill for vault search and cross-session memory workflows.",
       "source": "./",
       "category": "knowledge-management"
     }
