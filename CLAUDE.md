@@ -59,30 +59,27 @@ npx @biomejs/biome check --write packages/*/src/   # auto-fix
 The correct flow:
 
 1. Bump `version` in the package's `package.json`
-2. Commit all changes
-3. Tag with format `<package-name>-v<version>` (e.g. `dod-guard-v2.2.7`, `evomcp-v0.1.6`)
-4. Push the commit AND the tag: `git push origin master && git push origin <tag>`
-5. CI (`npm-publish.yml`) detects the tag at HEAD, runs build+test, then `npm publish`
-6. User runs `/plugin update` + `/reload-plugins` to get the new version
+2. Commit and push to `master` — that is the whole release instruction
+3. CI runs every gate, publishes each package whose version npm does not have, then pushes the `<package>-v<version>` tag itself
+4. User runs `/plugin update` + `/reload-plugins` to get the new version
 
-**Tag format**: `<package>-v<version>` — CI detects these with `git tag --points-at HEAD | grep -- '-v'`.
+**Do not create release tags by hand.** `detect-releases.mjs` compares each `package.json` version against the registry; the tag is written afterwards as a record of what shipped. A version bump that lands on master will publish — there is no opt-out, so keep the bump out of the commit until you mean it.
 
 **Marketplace**: Update `.claude-plugin/marketplace.json` in each package when adding/removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes all four plugins for the git-based marketplace.
 
 **CI behavior** (`.github/workflows/npm-publish.yml`):
 - Push to `master` → every gate below runs
-- Tag pointing at HEAD → matching publish job fires, but only after all gates pass
-- `workflow_dispatch` fallback for manual publishes
+- A package whose version is not on npm → its publish job fires, but only after all gates pass
+- `workflow_dispatch` fallback for manual publishes (npm rejects a duplicate version, so a needless run is harmless)
 
 **Gates** — a publish job needs all of them green:
 
 | Job | What it blocks on |
 |-----|-------------------|
-| `build-test` | tsc, `npm test`, and `check-release.mjs`: a `<pkg>-v<version>` tag must match that package's `package.json` version |
+| `build-test` | tsc, `npm test`, and `detect-releases.mjs`, which decides what publishes |
 | `plugin-config` | `validate-plugins.mjs` — see below |
 | `static-analysis` | Biome (autofix + strict), coverage thresholds, and three ratchets |
 | `package-integrity` | `check-pack.mjs` (every skill, agent and hook target is in the tarball; no `src/` or `node_modules`) and `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) |
-| `release-gate` | `check-release.mjs --registry`: the version is not already on npm |
 
 `validate-plugins.mjs` checks, all hard-fail:
 
@@ -105,36 +102,6 @@ That last one matters because **the marketplace installs from git, not npm** —
 Existing debt is allowed; making it worse is not. When a ratchet improves, CI rewrites the baseline in the same commit as the Biome autofixes, so the bar can only rise. To rebaseline by hand: `node scripts/ci/<script>.mjs --write-baseline`.
 
 Gate scripts live in `scripts/ci/` and all run locally with no arguments (except `check-pack`/`smoke-bundle`, which take a package name). Run them before pushing a release.
-
-**NEVER split branch push from tag push.** CI only sees tags when they arrive in the same push as the commit. Always push together:
-
-```bash
-# ✅ CORRECT — branch + tags in one compound command
-git push origin master && git push origin <tag1> <tag2> ...
-
-# ❌ WRONG — push branch first, tags later
-git push origin master
-git push origin <tag1> <tag2> ...
-```
-
-If you push branch first without tags, CI fires on a HEAD with no tags → publish jobs skip (0s). Tags pushed afterwards won't retrigger CI because the commit already exists.
-
-### Retriggering CI when tags end up on the wrong commit
-
-Tags on existing commits don't retrigger CI. If you need to move tags to a new commit (e.g., CI fix after tagging):
-
-```
-# 1. Delete old tags FIRST
-git tag -d <tag1> <tag2> ...
-git push origin --delete <tag1> <tag2> ...
-
-# 2. Tag+push commit WITH tags in place (atomically)
-git commit --allow-empty -m "chore: retrigger CI with tags"
-git tag <tag1> <tag2> ...
-git push origin master && git push origin <tag1> <tag2> ...
-```
-
-**Never**: commit first, then move tags after. Tags on a pre-existing commit don't retrigger — CI only fires on the push event that introduces both the commit AND the tag.
 
 ## Key architectural rules
 
