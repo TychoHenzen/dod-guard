@@ -6,10 +6,10 @@ Anti-cheat Definition of Done verification for Claude Code. Locks proof commands
 
 - **Locks proofs canonically** — proof commands stored in MCP, not in editable markdown
 - **Tamper-blocking** — SHA256 fingerprint mismatch forces the verdict to FAIL, not just a warning
-- **Baseline enforcement** — `dod_create` rejects a DoD missing the mandatory proof categories (two-layer integration, full test suite)
-- **Incremental checking** — `dod_check --step N` verifies one step fast; only a full run can return PASS
+- **Behavioral predicates only** — no mechanical metrics (line counts, log counts) that a weak model can game without fixing behavior
+- **Scoped checking** — `node_path` verifies one subtree fast; an unscoped run with drafts left can never return PASS
 - **Amendment audit trail** — all proof modifications logged with mandatory reasons
-- **Weakening prevention** — cannot convert machine-checkable proofs to manual
+- **Stuck detection** — a node amended three or more times forces a STUCK verdict, overriding PASS. Repeatedly rewriting a proof until it goes green is the approach being wrong, not the proof
 - **Structured interviews** — `/interview` skill gathers requirements before implementation
 
 ## Install
@@ -46,40 +46,82 @@ npm install -g dod-guard
 
 | Tool | Description |
 |------|-------------|
-| `dod_create` | Create a locked DoD (declares a `type`; each proof a `category`). Rejects DoDs missing mandatory baseline categories |
-| `dod_check` | Execute proofs from canonical storage, return PASS/FAIL/INCOMPLETE. Optional `step` N verifies one step (scoped → INCOMPLETE, never PASS) |
-| `dod_status` | Read cached last check result without re-running |
-| `dod_amend` | Modify a proof with mandatory reason (audit-logged) |
+| `dod_create` | Create a locked DoD with a recursive `TaskNode` tree. Nodes are `draft` (intent only) or `concrete` (proof command + predicate). Validates that commands reference tools available on the host OS |
+| `dod_check` | Execute concrete proofs from canonical storage, return PASS/FAIL/INCOMPLETE. Drafts are reported but skipped, so the verdict stays INCOMPLETE while any remain. Optional `node_path` scopes the run to one subtree |
+| `dod_refine` | Turn a draft leaf into a concrete proof (`concretize`) or split it into child subtasks (`subdivide`) |
+| `dod_add_node` | Add a draft or concrete node under a task group, or at root level |
+| `dod_remove_node` | Remove a node and all its descendants |
+| `dod_tree` | Read-only dump of the node tree with stable IDs, paths, titles, and statuses. Use it to find `node_path` values without running proofs |
+| `dod_status` | Read the cached last check result without re-running |
+| `dod_amend` | Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Resets the proof to pending |
 | `dod_list` | List all tracked DoDs with status |
-| `dod_import` | Parse existing DoD markdown and lock its proofs |
+| `dod_import` | Parse an existing DoD markdown file into canonical storage and lock its proofs |
+| `dod_adversarial_gate` | Record a GO/REVISE/STOP verdict for a DoD phase. Used by `/adversarial-workflow` to block phase N+1 until phase N passes |
+| `dod_store_migrate` | One-time migration of legacy `steps`-format documents to the current `roots` tree format. Idempotent |
+
+## CLI
+
+The same binary is a shell CLI, so a DoD subtree can gate other tools:
+
+```bash
+dod-guard check --dod-id=<id> [--node-path=0.children.1] [--quiet]
+dod-guard tree --dod-id=<id>      # find --node-path values
+dod-guard status --dod-id=<id>
+dod-guard list
+```
+
+Exit codes: `0` pass · `1` a proof failed (or tampered/stuck) · `2` an unscoped run with drafts remaining · `3` usage error. A scoped run exits `0` when that subtree passes, which is what makes a subtree usable as a `verify_cmd` in evomcp or `/cheap-step`.
 
 ## Skills
 
-The plugin ships six skills for a complete quality workflow:
+The plugin ships eight skills and nine specialized agents.
+
+| Skill | Use it for |
+|---|---|
+| [`/interview`](#interview) | Gathering requirements before any implementation |
+| [`/ratchet`](#ratchet) | Complex multi-sub-problem work with unknown unknowns |
+| [`/step-by-step`](#step-by-step) | Executing a multi-step plan without batching or corner-cutting |
+| [`/cheap-step`](#cheap-step) | The same, with implementation offloaded to a cheap model |
+| [`/adversarial-workflow`](#adversarial-workflow) | Gated 4-phase review on non-trivial features |
+| [`/clean-house`](#clean-house) | Hunting duplicate and obsolete implementations |
+| [`/test-integrity-checker`](#test-integrity-checker) | Tests that bless bugs instead of catching them |
+| [`/quality-refactor`](#quality-refactor) | Refactoring to an explicit, machine-checked quality bar |
 
 ### `/interview`
 
 Structured requirements gathering skill. Researches the codebase, asks targeted questions one at a time, builds a confirmed requirements summary, then creates a locked DoD via `dod_create`.
 
-The output is a self-contained spec with testable proofs that can be passed to `/goal` for autonomous implementation.
+The output is a self-contained spec with testable proofs — hand it to `/step-by-step` or `/ratchet` for implementation.
 
-### `/test-verification`
+Triggers: any implementation task, feature request, bug fix, or refactor, before writing code or plans.
 
-Verify and score test file quality across 8 dimensions (assertion quality, determinism, isolation, clarity, coverage depth, speed, diagnostics, assertion triviality). Also runs source code quality analysis (observability, brevity). Generates a scored manifest at `.claude/test-verification/manifest.json` and an HTML dashboard.
+### `/step-by-step`
 
-Triggers: "verify my tests", "check test quality", "audit the test suite", "find weak tests", "coverage gaps".
+Executes a multi-step plan by dispatching ONE fresh subagent per atomic step. The orchestrator holds only the current step plus a compact result of the last one, so its context stays lean regardless of step count — which removes the pressure that makes models batch steps, skip verification, and "wrap up" around step 5.
 
-### `/test-fixer`
+Each step carries a `verify_surface` tag (`code`, `visual`, `gameplay`, `config`, `structural`) that decides what counts as verified. A passing build proves the code compiled; it proves nothing about what the UI looks like. Ships the `step-implementer` and `step-fixer` agents. Session state in `.step-session/` survives compaction.
 
-Fix test quality issues identified by test-verification. Reads the manifest, applies targeted fixes for weak assertions, flake risks, missing edge cases, poor diagnostics, and source code quality issues (empty catches, missing logs, long functions, high CC, unnecessary else). Re-verifies and updates the manifest.
+Triggers: "work through this step by step", "don't batch", or any plan with 5+ steps.
 
-Triggers: "fix my tests", "improve test quality", "fix weak tests", "fix assertion quality", "fix observability issues", "fix brevity violations".
+### `/cheap-step`
 
-### `/quality-upgrade`
+`/step-by-step` with implementation offloaded to cheap-worker fanout (evomcp solve → DeepSeek). The host model writes the specs, reviews the results, and fixes what the cheap workers can't crack. 90%+ of the work costs pennies; the host model only touches the hard 10%.
 
-Multi-phase orchestrator that iteratively brings test quality and source code health to a target score (~8/10). Manages 5 phases (baseline, fix cycles, coverage gaps, final verify, commit) using test-verification and test-fixer in a loop. Durable state in manifest.cycle survives session restarts.
+Triggers: "cheap step", "offload to deepseek", "delegate the grunt work".
 
-Triggers: "upgrade quality", "improve quality to 8", "quality loop", "full quality pass", "bring tests to 8/10".
+### `/adversarial-workflow`
+
+Four phases, each gated by adversarial review before the next can run: Spec Review → Test Audit → Implementation Review → Structural Cleanup. Verdicts are stored canonically via `dod_adversarial_gate`, so `dod_check` blocks phase N+1 until phase N is GO.
+
+Ships six review agents: `adversarial-spec-reviewer`, `adversarial-security`, `adversarial-test-auditor`, `adversarial-new-hire`, `adversarial-saboteur`, `adversarial-spec-auditor`. The implementation-review agents have mandatory finding quotas — a reviewer that returns "looks good" has not reviewed.
+
+Triggers: "adversarial workflow", "gate this", "strict quality", "full adversarial pass".
+
+### `/test-integrity-checker`
+
+Detects and fixes tests that bless production bugs instead of catching them: logic mirroring (the test reimplements the same algorithm as the code), output blessing (expected values copied from buggy output), weak assertions (`toBeDefined`/`toBeTruthy`), mock-everything tests that pass vacuously, symmetry and inverse tests that cancel a shared bug, and missing negative cases. Ships the `test-integrity-auditor` agent.
+
+Triggers: "audit my tests", "are these tests real", "tests pass but the bug shipped".
 
 ### `/ratchet`
 
@@ -93,42 +135,77 @@ Aggressively hunts down duplicate and obsolete implementations using git archaeo
 
 Triggers: "clean house", "dedupe", "clean up old versions", "remove dead implementations", "consolidate duplicates", "debloat".
 
-### Skill dependencies
+### `/quality-refactor`
+
+Systematic refactoring to an explicit, machine-checked quality bar: one type per file, files under 300 lines, cyclomatic complexity under 10, at most 7 parameters, no unnamed tuples, guard clauses instead of `else`, free functions instead of stateless methods, and aggressive removal of dead, test-only, duplicate, and compatibility-shim code.
+
+Ships `scripts/quality-scan.mjs` — a zero-dependency structural scanner (TypeScript/JavaScript, C#, Rust, Python, Go, Java, C++) with a ratcheting baseline, so preferred bounds can only ever improve:
+
+```bash
+node "$QS" src --fail-on=error                                     # hard gate
+node "$QS" src --baseline=.quality/baseline.json --fail-on=regression   # ratchet
+```
+
+The skill produces a `.step-session/steps.json` plan ordered in waves (delete → dedupe → split → simplify → signatures → cosmetic) and hands it to `/step-by-step` for execution. It does not execute steps itself.
+
+Triggers: "refactor this properly", "clean this up to a high standard", "enforce code quality", "quality pass", "reduce complexity", "this file is too long".
+
+### How the skills compose
+
+Two skills produce plans, two execute them, and the rest gate or clean up:
 
 ```
-quality-upgrade → test-verification + test-fixer
-test-fixer → test-verification
-ratchet → interview + quality-upgrade + test-verification
-clean-house → code-review-graph (optional, for dead_code scan)
+PLAN                      EXECUTE                    GATE
+────                      ───────                    ────
+interview        ──┐   ┌─► step-by-step  ──► dod_check
+  → locked DoD     ├───┤     (step-implementer,        │
+quality-refactor ──┘   │      step-fixer)               │
+  → steps.json         └─► cheap-step                   │
+                             (evomcp → DeepSeek)        │
+                                                        ▼
+ratchet ─────────────► one sub-problem per loop iteration,
+                       ratchet gate every cycle
+
+adversarial-workflow ► dod_adversarial_gate ──► blocks phase N+1 until N is GO
+
+clean-house ─────────► deletes duplicate/obsolete implementations
+test-integrity-checker ► rewrites tests that bless bugs
 ```
 
-All six skills are self-contained in the plugin — no manual installation needed.
+External dependencies, all optional:
 
-> **Note for existing users:** If you previously installed `test-verification`, `test-fixer`, or `quality-upgrade` manually in `~/.claude/skills/`, remove those copies. The plugin versions are the canonical source and having both installed causes name conflicts.
+| Skill | Wants | Degrades to |
+|---|---|---|
+| `ratchet` | gitevo, evomcp, obsidian-rag, code-review-graph | Manual branching and no learning persistence |
+| `cheap-step` | evomcp + a configured cheap model | Use `/step-by-step` instead |
+| `clean-house` | code-review-graph (dead-symbol scan), jscpd (duplication) | git archaeology and grep only |
+| `quality-refactor` | none — the scanner is zero-dependency | — |
+
+All eight skills and nine agents ship inside the plugin. No manual installation.
 
 ## How it works
 
 ### Proof lifecycle
 
 ```
-/interview → dod_create → [implement] → dod_check → PASS/FAIL
-                                              ↓
-                                    dod_amend (if unreasonable)
+/interview → dod_create → dod_refine → [implement] → dod_check → PASS/FAIL
+                          (draft →                        ↓
+                           concrete)             dod_amend (if unreasonable)
 ```
 
-1. **Create** — `/interview` or direct `dod_create` call locks proofs in `~/.claude/dod-store/`
-2. **Implement** — work through steps, proofs are the acceptance criteria
-3. **Check** — `dod_check` executes commands from the locked store (not the markdown)
-4. **Amend** — if a proof is genuinely unreasonable, `dod_amend` modifies it with a logged reason
+1. **Create** — `/interview` or a direct `dod_create` call locks the node tree in `~/.claude/dod-store/`
+2. **Refine** — `dod_refine` turns draft leaves into concrete proofs, or subdivides them into subtasks
+3. **Implement** — work the tree; the proofs are the acceptance criteria
+4. **Check** — `dod_check` executes commands from the locked store, not from the markdown
+5. **Amend** — if a proof is genuinely unreasonable, `dod_amend` modifies it with a logged reason
 
 ### Anti-cheat properties
 
-- Proof commands live in `~/.claude/dod-store/{uuid}.json` claude is not aware of, not in the markdown file claude may read/alter
-- `dod_check` reads from the store — editing markdown proof text has zero effect
-- Each check prints a SHA256 fingerprint — compare to detect store tampering
-- Cannot weaken a machine-checkable proof to `manual` (blocked server-side)
-- `manual` proofs are confirmed by the human out-of-band (elicitation / server dialog) — Claude cannot self-confirm or fabricate the answer
+- Proof commands live in `~/.claude/dod-store/{uuid}.json`, not in the markdown file Claude reads and can rewrite
+- `dod_check` reads from the store — editing the rendered proof text has zero effect on verification
+- Each check prints a SHA256 fingerprint; a mismatch forces FAIL rather than warning
 - All amendments are permanently logged with timestamps and reasons
+- Three or more amendments on one node forces STUCK, which overrides PASS even when every proof is green
 
 ### Predicate types
 
@@ -142,10 +219,20 @@ All six skills are self-contained in the plugin — no manual installation neede
 | `output_not_contains` | `"text"` | stdout does NOT contain text |
 | `output_not_matches` | `"regex"` | stdout does NOT match regex |
 | `tdd` | `0` | **TDD enforcer.** Must be observed failing before it can pass |
-| `mutation` | `N` (default `0`) | **Mutation testing.** Runs the command in-band, parses surviving (un-killed) mutants from Stryker / mutmut / cargo-mutants output, and passes iff survivors `<= N`. Output it cannot parse FAILs (fail-safe — never auto-passes). The strongest signal that tests actually catch bugs; scope to changed/critical functions |
-| `regression` | `tol` (fraction, e.g. `0.10`) | **Non-regression gate.** Two-phase: a capture run on pre-change code stores the metric baseline N0; later runs compare N1 against N0 with tolerance `tol`. `extract` (regex, group 1) or the last number in stdout picks the metric; unparseable output FAILs. `lower_is_better` (default true) for perf/complexity/duplication, false for coverage. Defaults to **advisory** — set `advisory: false` for a hard SLA gate. Proves quality doesn't regress vs a baseline, never an impossible absolute target |
 
-**Advisory tier.** Any proof may set `advisory: true`: a failing advisory proof warns loudly but does not fail its step or the overall verdict. `regression` proofs default to advisory. The flag is part of the proof fingerprint, so a hard gate cannot be silently downgraded.
+Three more are **gate predicates** — they read recorded state rather than running a check of their own:
+
+| Type | Value | Passes when |
+|------|-------|-------------|
+| `adversarial` | phase number | The DoD's `adversarial_gates[]` entry for that phase is GO. Written by `dod_adversarial_gate` |
+| `holdout` | SHA-256 | A holdout test's fingerprint still matches — the test was not weakened or deleted |
+| `convergence` | — | The Phase 4 convergence audit reached GO |
+
+**Core principle: behavioral predicates only.** Every proof is a concrete, falsifiable claim about what the implementation does. There are deliberately no mechanical quality metrics (line count, log count, assertion count) — weak models game those without fixing behavior. Structural quality is enforced separately by `/quality-refactor`, which uses a real scanner and a ratcheting baseline.
+
+**Advisory tier.** Any proof may set `advisory: true`: a failing advisory proof warns loudly but does not fail its node or the overall verdict. The flag is part of the proof fingerprint, so a hard gate cannot be silently downgraded.
+
+**Timeouts.** Proofs default to a 120s command timeout; set `timeout_ms` for slow tools.
 
 ### TDD enforcement
 
@@ -158,54 +245,51 @@ The `tdd` predicate enforces test-driven development by requiring proof of a red
 
 If a test passes without ever being observed failing, dod-guard rejects it with **"TDD VIOLATION"**. This prevents writing tests after implementation that merely confirm existing behavior.
 
-### Manual verification
+### Human-verified criteria
 
-Some acceptance criteria can't be machine-checked (e.g. "the app launches and the dashboard renders correctly"). The `manual` predicate covers these — but in a way Claude **cannot fake**.
+Some acceptance criteria can't be machine-checked — "the app launches and the dashboard renders correctly". **There is no `manual` predicate.** A predicate whose verdict a model can request is a predicate a model can eventually talk its way past, so dod-guard does not have one.
 
-**`dod_check` never auto-prompts.** Every earlier version of dod-guard fired a popup for every unverified `manual`/`review` proof on every single `dod_check` run — including proofs on steps nobody was working on yet. Now `dod_check` only *reads* whatever verdict is already on record: an unverified proof reports `skipped` and holds the overall verdict at **INCOMPLETE** (not FAIL — "not yet checked" is distinct from "checked and failed").
+Instead, a human-verified criterion stays a **draft leaf** carrying a `MANUAL:` intent. Drafts are reported by `dod_check` but never executed, and any remaining draft holds the overall verdict at **INCOMPLETE** — never PASS, never FAIL. That is the correct semantic: "a human still owes us something" is not the same as "checked and failed".
 
-**`dod_verify` triggers the actual prompt.** Claude calls `dod_verify(dod_id, proof_id)` explicitly, when it judges verification is actually relevant — typically right after implementing the step that proof belongs to, not preemptively for steps still ahead. This is the only path that fires the human-facing channel:
-
-1. A distinctive **audible jingle** (Windows) plays to draw the user's attention.
-2. The server asks the human directly through a channel Claude does not control:
-   - **Popup (primary)** — a server-spawned Windows dialog with PASS / FAIL buttons and a free-text **notes field**. No timeout — the human may take a while to respond, so it waits indefinitely rather than auto-failing on a clock.
-   - **MCP elicitation (fallback)** — used only where the popup can't run (non-Windows hosts) and the client advertises elicitation support.
-3. The human's verdict (and any note) is recorded on the proof (`manual_result`) with a timestamp, channel, and a fingerprint of the proof text. Run `dod_check` afterward to fold it into the overall verdict.
-
-**Anti-cheat guarantee.** Neither `dod_check` nor `dod_verify` accepts a parameter that could carry a "passed" verdict. The answer is sourced solely from the popup or elicitation — both outside the model's reach. Claude can choose *when* to call `dod_verify`, but cannot supply, infer, or fabricate the confirmation itself. If no human is available (non-interactive run, or no channel on this host), the proof **fails** — a missing human can never produce a pass. And since `dod_check` no longer auto-fires the channel, Claude cannot dodge the anti-cheat by simply never calling `dod_verify` either — an unrequested manual/review proof holds the whole DoD at INCOMPLETE, never PASS.
-
-**Persistence.** Whatever `dod_verify` last recorded (PASS or FAIL) is what `dod_check` reports — it never re-prompts on its own. The record is keyed to a fingerprint of the proof's command, predicate, and description; if the proof changes (e.g. via `dod_amend`), the fingerprint no longer matches and `dod_check` reports it unverified (`skipped`) again until `dod_verify` is called afresh. To retry a FAIL, just call `dod_verify` again — nothing about a prior FAIL blocks a new attempt.
+The consequence is the anti-cheat property. Claude cannot mark the criterion verified, because there is nothing to mark; the only way the verdict leaves INCOMPLETE is for a human to look, decide, and either `dod_refine` the draft into a real machine-checkable proof or accept the DoD as incomplete. A model working alone can never reach PASS on a DoD that contains one.
 
 ### OS-correct commands (no bash-on-Windows)
 
 Proof commands execute on the **host OS** via `dod_check`. To stop the common failure of authoring Linux/bash commands that then fail on a Windows host (and the slow `dod_amend` cleanup that follows), dod-guard validates commands **up-front**:
 
-- On `dod_create`, `dod_import`, and `dod_amend`, every non-`manual` proof command is parsed for the executables it invokes (across pipes and `&&`/`||`/`;` chains, respecting quotes).
+- On `dod_create`, `dod_refine`, and `dod_amend`, every proof command is parsed for the executables it invokes (across pipes and `&&`/`||`/`;` chains, respecting quotes).
 - Each executable is checked against the current OS: cmd.exe built-ins, anything on `PATH` (`where` / `command -v`), or a real file at the working directory.
-- If any tool is missing, the operation is **rejected** with the offending tools and a suggested native replacement (`grep`→`findstr`, `cat`→`type`, `ls`→`dir`, `rm`→`del`, …). The DoD is not created/amended until the commands are OS-correct.
+- If any tool is missing, the operation is **rejected** with the offending tools and a suggested native replacement (`grep`→`findstr`, `cat`→`type`, `ls`→`dir`, `rm`→`del`, …). The DoD is not created or amended until the commands are OS-correct.
 
-This forces correct commands at authoring time instead of discovering breakage at check time. Checks that genuinely need a human use a `manual` proof (see above) rather than a shell command.
+This forces correct commands at authoring time instead of discovering breakage at check time. Criteria that genuinely need a human stay draft leaves (see above) rather than becoming a shell command.
+
+Shell invocation lives in one place — `buildShellInvocation()` in `evaluate-proof.ts`. On Windows it produces `cmd.exe /d /s /c "<command>"` with `windowsVerbatimArguments: true`. Both details are load-bearing: cmd.exe has no single-quote grouping, and Node's default Windows quoting mangles embedded double quotes into no-ops that exit 0.
 
 ### Tamper detection (blocking)
 
 Each DoD stores a SHA256 fingerprint of its proof set at creation time. On every `dod_check`, the current fingerprint is compared to the stored original. If they don't match — the store was edited outside `dod_amend` — the verdict is **forced to FAIL** (not merely warned). `dod_amend` legitimately re-locks the fingerprint, so real changes go through the audited path; a raw store edit can never return PASS.
 
-### Baseline category enforcement
+### Proof categories
 
-Every proof declares a `category` and each DoD declares a `type` (`bug` / `general`), keyed to the company baselines in `standards/`. `dod_create` **rejects** a DoD missing the mandatory machine-checkable categories — two-layer integration (`integration_wiring` + `integration_behavioral`) and the full `test` suite — and **warns** when TDD is absent or a step is proven only by presence/structural checks. The mandate is enforced by the tool, not left to the authoring agent's goodwill.
+Every proof declares a `category` — `behavioral`, `wiring`, `other`, or `test_audit` — and each DoD declares a `type`: `bug`, `general`, or `minimal`. On `dod_create`, a non-`minimal` DoD with zero `behavioral` proofs is **warned** about, because a DoD proven entirely by wiring and structural checks proves that code exists, not that it works. Company baselines live in `standards/dod-baselines.md`.
 
-### Incremental checking
+### Scoped checking
 
-`dod_check` accepts an optional `step` (1-based). A scoped run executes only that step's proofs and carries the others forward from their last result without re-running them — fast iteration without paying for the whole suite each time. A scoped run always returns **INCOMPLETE**, never PASS, so it can't satisfy a `/goal` completion gate; run `dod_check` with no `step` for the full verdict. Scoped runs never overwrite the canonical last full verdict.
+`dod_check` accepts an optional `node_path` (use `dod_tree` or the CLI's `tree` command to find one). A scoped run executes only that subtree's proofs and carries every other leaf forward from its last recorded result — fast iteration without paying for the whole suite. Scoped runs never overwrite the canonical last full verdict.
+
+The MCP verdict for a scoped run is always **INCOMPLETE**, never PASS, so a scoped check cannot satisfy a completion gate. The CLI is deliberately different: `dod-guard check --node-path=... ` exits **0** when that subtree passes. That is what makes a DoD subtree usable as a `verify_cmd` in evomcp or `/cheap-step` — the shell needs a pass/fail signal for the part it just built, while the MCP verdict stays honest about the whole tree.
 
 ## Development
 
 ```bash
 npm install
-npm run build    # TypeScript compilation
-npm run bundle   # esbuild → dist/bundle.js
-npm start        # Run MCP server
+npm run build    # TypeScript compilation → dist/
+npm test         # build + node --test on dist/*.test.js
+npm run bundle   # esbuild → dist/bundle.js (what ships)
+npm start        # run the MCP server
 ```
+
+`dist/bundle.js` is both the MCP server and the CLI — `process.argv.slice(2)` decides which. Publishing goes through a git tag (`dod-guard-v<version>`), never by copying a bundle into the plugin cache.
 
 ## License
 
