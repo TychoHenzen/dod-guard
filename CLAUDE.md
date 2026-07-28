@@ -101,6 +101,8 @@ That last one matters because **the marketplace installs from git, not npm** —
 
 Existing debt is allowed; making it worse is not. When a ratchet improves, CI rewrites the baseline in the same commit as the Biome autofixes, so the bar can only rise. To rebaseline by hand: `node scripts/ci/<script>.mjs --write-baseline`.
 
+The quality baseline records **which files it scanned**, not only their counts. A file the baseline has never seen is adopted at its current counts — written into the baseline by that same run and picked up by the autofix commit — instead of failing as a jump from zero. Otherwise every file created or extracted in a commit would fail the ratchet, and because the gate failed the tighten step would be skipped, leaving CI red until someone rebaselined by hand. A file is ratcheted normally from the run after it is adopted.
+
 Gate scripts live in `scripts/ci/` and all run locally with no arguments (except `check-pack`/`smoke-bundle`, which take a package name). Run them before pushing a release.
 
 ## Key architectural rules

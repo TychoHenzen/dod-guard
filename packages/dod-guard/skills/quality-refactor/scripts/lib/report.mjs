@@ -77,6 +77,14 @@ function topEntries(counts, limit) {
     .slice(0, limit);
 }
 
+function renderAdoptions(comparison, lines) {
+  const recorded = comparison.adopted.reduce((sum, item) => sum + item.now, 0);
+  lines.push(`Adopted ${comparison.newFiles.length} new files into the baseline (${recorded} violations recorded):`);
+  for (const file of comparison.newFiles.slice(0, 20)) lines.push(`  ${file}`);
+  const hidden = comparison.newFiles.length - 20;
+  if (hidden > 0) lines.push(`  ... ${hidden} more`);
+}
+
 function renderComparison(comparison) {
   const lines = [""];
   lines.push(`Baseline: ${comparison.totalBefore} -> ${comparison.totalNow}`);
@@ -89,6 +97,7 @@ function renderComparison(comparison) {
     lines.push("No regressions.");
   }
   lines.push(`Improvements: ${comparison.improvements.length} (file, rule) pairs`);
+  if (comparison.newFiles.length > 0) renderAdoptions(comparison, lines);
   return lines.join("\n");
 }
 

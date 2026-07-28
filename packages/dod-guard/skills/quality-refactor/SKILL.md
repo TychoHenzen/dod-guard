@@ -104,6 +104,14 @@ node "$QS" src --profile=strict --fail-on=error          # the bar for new code
 
 Exit codes: `0` gate passed · `1` gate failed · `3` usage error.
 
+A baseline records which files it scanned, not just their violation counts. A
+file the baseline has never seen is **adopted** on the next `--baseline` run:
+its current counts are written into the baseline file and it is not reported as
+a regression. Without that, every file you extract during a refactor would fail
+the ratchet against a phantom zero. From the run after adoption on, the file is
+held to the counts that were recorded. Baselines written by an older scanner
+(no file list) are rejected with exit `3` — re-record with `--write-baseline`.
+
 **The scanner is a heuristic, not a compiler.** It is tuned to stay quiet
 rather than to catch everything. Two consequences: a finding is almost always
 real, and a clean scan does not mean a clean module. The judgment rules below

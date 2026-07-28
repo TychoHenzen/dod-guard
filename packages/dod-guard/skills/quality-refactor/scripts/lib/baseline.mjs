@@ -1,11 +1,13 @@
 // Ratchet support: compare a scan against a recorded baseline.
 //
-// Baselines record per-file, per-rule COUNTS rather than line numbers, so an
-// unrelated edit that shifts lines does not register as a regression. The only
-// thing that counts as a regression is more violations of a rule in a file
-// than there were before.
+// Counts are keyed `<file>::<rule>` rather than by line number, so an edit that
+// shifts lines is not a regression. The recorded file list matters just as much:
+// without it, a file the baseline never saw is indistinguishable from a file
+// that was clean, so every newly created file reads as a regression from zero.
 
 import { readFileSync, writeFileSync } from "node:fs";
+
+const BASELINE_VERSION = 2;
 
 function countByFileRule(violations) {
   const counts = {};
@@ -16,12 +18,27 @@ function countByFileRule(violations) {
   return counts;
 }
 
-export function buildBaseline(violations, profile) {
+function splitKey(key) {
+  const at = key.lastIndexOf("::");
+  return [key.slice(0, at), key.slice(at + 2)];
+}
+
+function sortedUnique(values) {
+  return [...new Set(values)].sort();
+}
+
+function bucketFor(before, now) {
+  if (now === before) return null;
+  return now > before ? "regressions" : "improvements";
+}
+
+export function buildBaseline(violations, profile, scannedFiles) {
   return {
-    version: 1,
+    version: BASELINE_VERSION,
     profile,
     createdAt: new Date().toISOString(),
     total: violations.length,
+    files: sortedUnique(scannedFiles),
     counts: countByFileRule(violations),
   };
 }
@@ -31,29 +48,52 @@ export function writeBaseline(path, baseline) {
 }
 
 export function readBaseline(path) {
-  return JSON.parse(readFileSync(path, "utf8"));
+  const baseline = JSON.parse(readFileSync(path, "utf8"));
+  if (baseline.version !== BASELINE_VERSION || !Array.isArray(baseline.files)) {
+    const found = baseline.version ?? "unknown";
+    throw new Error(
+      `baseline ${path} is version ${found}, this scanner needs version ${BASELINE_VERSION} with a files list — re-record it with --write-baseline`,
+    );
+  }
+  return baseline;
 }
 
 /**
- * Compare current counts to the baseline. `regressions` are strictly worse,
- * `improvements` are strictly better. A file that disappeared counts as fixed.
+ * `regressions` are strictly worse, `improvements` strictly better, a vanished
+ * file counts as fixed, and a file the baseline never scanned lands in
+ * `adopted` — first measurement, nothing for it to be worse than.
  */
-export function compareToBaseline(violations, baseline) {
+export function compareToBaseline(violations, baseline, scannedFiles) {
   const current = countByFileRule(violations);
-  const keys = new Set([...Object.keys(current), ...Object.keys(baseline.counts)]);
-  const regressions = [];
-  const improvements = [];
-  for (const key of keys) {
-    const [file, rule] = key.split("::");
+  const known = new Set(baseline.files);
+  const newFiles = sortedUnique(scannedFiles).filter((file) => !known.has(file));
+  const isNew = new Set(newFiles);
+  const result = { regressions: [], improvements: [], adopted: [], newFiles };
+  for (const key of new Set([...Object.keys(current), ...Object.keys(baseline.counts)])) {
+    const [file, rule] = splitKey(key);
     const now = current[key] ?? 0;
+    if (isNew.has(file)) {
+      if (now > 0) result.adopted.push({ file, rule, now });
+      continue;
+    }
     const before = baseline.counts[key] ?? 0;
-    if (now > before) regressions.push({ file, rule, before, now });
-    else if (now < before) improvements.push({ file, rule, before, now });
+    const bucket = bucketFor(before, now);
+    if (bucket) result[bucket].push({ file, rule, before, now });
   }
-  return {
-    regressions,
-    improvements,
-    totalBefore: baseline.total,
-    totalNow: violations.length,
-  };
+  return { ...result, totalBefore: baseline.total, totalNow: violations.length };
+}
+
+/**
+ * Fold the new files' counts into the baseline so the next run holds them to
+ * this bar. Additive only: a vanished file keeps its recorded counts until a
+ * full `--write-baseline` rewrite drops it.
+ */
+export function adoptNewFiles(baseline, violations, newFiles) {
+  const isNew = new Set(newFiles);
+  const counts = { ...baseline.counts };
+  for (const [key, count] of Object.entries(countByFileRule(violations))) {
+    if (isNew.has(splitKey(key)[0])) counts[key] = count;
+  }
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  return { ...baseline, files: sortedUnique([...baseline.files, ...newFiles]), total, counts };
 }

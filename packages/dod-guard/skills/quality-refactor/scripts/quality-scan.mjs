@@ -11,7 +11,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { ALL_RULES, buildConfig } from "./lib/config.mjs";
-import { buildBaseline, compareToBaseline, readBaseline, writeBaseline } from "./lib/baseline.mjs";
+import { adoptNewFiles, buildBaseline, compareToBaseline, readBaseline, writeBaseline } from "./lib/baseline.mjs";
 import { renderJson, renderText, sortViolations, summarize, toWorkUnits } from "./lib/report.mjs";
 import { scanFile } from "./lib/rules-file.mjs";
 import { checkDuplication, checkReachability } from "./lib/rules-project.mjs";
@@ -26,7 +26,8 @@ const USAGE = `quality-scan [paths...] [options]
   --root=<dir>               anchor for relative paths (default: cwd)
   --top=N                    text mode: show N worst files (default 15)
   --write-baseline=<path>    record the current scan as the ratchet baseline
-  --baseline=<path>          compare against a baseline
+  --baseline=<path>          compare against a baseline; files the baseline has
+                             never seen are recorded into it, not failed
   --fail-on=none|error|regression|any   what makes this exit 1 (default: none)
 
 Rules: ${ALL_RULES.join(", ")}`;
@@ -125,6 +126,26 @@ function gateFailed(failOn, summary, comparison) {
   return false;
 }
 
+/**
+ * Compare against the baseline and fold any file the baseline has never seen
+ * into it, so a file's first appearance records a bar instead of failing the
+ * gate against a phantom zero. Returns null if the baseline is unreadable.
+ */
+function compareAndAdopt(path, violations, scanned) {
+  let baseline;
+  try {
+    baseline = readBaseline(path);
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    return null;
+  }
+  const comparison = compareToBaseline(violations, baseline, scanned);
+  if (comparison.newFiles.length > 0) {
+    writeBaseline(path, adoptNewFiles(baseline, violations, comparison.newFiles));
+  }
+  return comparison;
+}
+
 function main(argv) {
   const options = parseArgs(argv);
   if (options.help) {
@@ -139,11 +160,14 @@ function main(argv) {
 
   const config = buildConfig(options.profile);
   const { files, violations } = scan(options, config);
+  const scanned = files.map((file) => file.rel);
   const sorted = sortViolations(violations);
   const summary = summarize(sorted);
-  const comparison = options.baseline ? compareToBaseline(sorted, readBaseline(options.baseline)) : null;
 
-  if (options.writeBaseline) writeBaseline(options.writeBaseline, buildBaseline(sorted, options.profile));
+  const comparison = options.baseline ? compareAndAdopt(options.baseline, sorted, scanned) : null;
+  if (options.baseline && comparison === null) return 3;
+
+  if (options.writeBaseline) writeBaseline(options.writeBaseline, buildBaseline(sorted, options.profile, scanned));
 
   const result = {
     profile: options.profile,
