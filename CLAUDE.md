@@ -70,9 +70,41 @@ The correct flow:
 **Marketplace**: Update `.claude-plugin/marketplace.json` in each package when adding/removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes all four plugins for the git-based marketplace.
 
 **CI behavior** (`.github/workflows/npm-publish.yml`):
-- Push to `master` → build + test always run, plus Biome check + coverage gap detection
-- Tag pointing at HEAD → matching publish job fires
+- Push to `master` → every gate below runs
+- Tag pointing at HEAD → matching publish job fires, but only after all gates pass
 - `workflow_dispatch` fallback for manual publishes
+
+**Gates** — a publish job needs all of them green:
+
+| Job | What it blocks on |
+|-----|-------------------|
+| `build-test` | tsc, `npm test`, and `check-release.mjs`: a `<pkg>-v<version>` tag must match that package's `package.json` version |
+| `plugin-config` | `validate-plugins.mjs` — see below |
+| `static-analysis` | Biome (autofix + strict), coverage thresholds, and three ratchets |
+| `package-integrity` | `check-pack.mjs` (every skill, agent and hook target is in the tarball; no `src/` or `node_modules`) and `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) |
+| `release-gate` | `check-release.mjs --registry`: the version is not already on npm |
+
+`validate-plugins.mjs` checks, all hard-fail:
+
+- **Manifest agreement** — plugin.json / .mcp.json / package.json / marketplace.json name the same plugin; `main` is `dist/bundle.js`; `repository.directory` is right; plugin.json `version`, if present, matches package.json.
+- **Reachability** — `files[]` ships `dist/bundle.js`, `.mcp.json`, `.claude-plugin/`, plus `skills/` and `agents/` when they exist; hook commands point at files that exist and get shipped; marketplace `source` paths resolve; every plugin appears in the root marketplace.
+- **Skills and agents** — each skill directory has a SKILL.md whose frontmatter `name` matches the directory; each agent file's `name` matches its filename; both carry a description; `subagent_type: "<plugin>:<agent>"` references resolve.
+- **Description honesty** — every `/slug` mentioned resolves to a skill that ships, "Ships N skills" matches the real count, and no mojibake or control characters (this is what shipped the double-encoded em-dash in `b4b2e13`).
+- **Repo-wide content** — every JSON file parses; no `skills/` or `agents/` directory without a `plugin.json` above it; no credentials or `C:\Users\<name>` paths in shipped `.md`/`.json`; every skill, agent and `.claude-plugin` file is tracked by git.
+
+That last one matters because **the marketplace installs from git, not npm** — `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo. `files[]` governs npm installs only; git tracking governs what `/plugin` users actually get.
+
+**Ratchets** compare against baselines in `.github/quality/`:
+
+| Ratchet | Baseline | Fails when |
+|---------|----------|-----------|
+| structural quality | `quality-baseline.json` | more violations of a rule in a file than before (`quality-scan.mjs`, all rules except line-length — Biome owns that) |
+| test presence | `untested-sources.txt` | a new `src/*.ts` has no `*.test.ts` |
+| advisories | `audit-baseline.json` | a new high/critical advisory in production dependencies |
+
+Existing debt is allowed; making it worse is not. When a ratchet improves, CI rewrites the baseline in the same commit as the Biome autofixes, so the bar can only rise. To rebaseline by hand: `node scripts/ci/<script>.mjs --write-baseline`.
+
+Gate scripts live in `scripts/ci/` and all run locally with no arguments (except `check-pack`/`smoke-bundle`, which take a package name). Run them before pushing a release.
 
 **NEVER split branch push from tag push.** CI only sees tags when they arrive in the same push as the commit. Always push together:
 

@@ -6886,7 +6886,9 @@ var require_dist = __commonJS({
 });
 
 // src/index.ts
+import { readFileSync } from "node:fs";
 import * as path5 from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
 var external_exports = {};
@@ -23186,10 +23188,12 @@ ${draftCount} draft node(s) total. Refine each draft leaf before running dod_che
 }
 
 // src/index.ts
-import { fileURLToPath } from "node:url";
+var _pkg = JSON.parse(
+  readFileSync(path5.join(path5.dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf-8")
+);
 var server = new McpServer({
   name: "dod-guard",
-  version: "2.2.5"
+  version: _pkg.version
 });
 server.tool(
   "dod_create",

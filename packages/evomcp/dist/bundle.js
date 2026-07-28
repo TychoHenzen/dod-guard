@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path8) {
-      let input = path8;
+    function removeDotSegments(path9) {
+      let input = path9;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path8, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path8 && path8 !== "/" ? path8 : void 0;
+        const [path9, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path9 && path9 !== "/" ? path9 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -6980,6 +6980,11 @@ var init_memory = __esm({
   }
 });
 
+// src/index.ts
+import { readFileSync as readFileSync8 } from "node:fs";
+import * as path8 from "node:path";
+import { fileURLToPath } from "node:url";
+
 // ../../node_modules/zod/v3/external.js
 var external_exports = {};
 __export(external_exports, {
@@ -7458,8 +7463,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path8, errorMaps, issueData } = params;
-  const fullPath = [...path8, ...issueData.path || []];
+  const { data, path: path9, errorMaps, issueData } = params;
+  const fullPath = [...path9, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7575,11 +7580,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path8, key) {
+  constructor(parent, value, path9, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path8;
+    this._path = path9;
     this._key = key;
   }
   get path() {
@@ -11216,10 +11221,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path8) {
-  if (!path8)
+function getElementAtPath(obj, path9) {
+  if (!path9)
     return obj;
-  return path8.reduce((acc, key) => acc?.[key], obj);
+  return path9.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11539,11 +11544,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path8, issues) {
+function prefixIssues(path9, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path8);
+    iss.path.unshift(path9);
     return iss;
   });
 }
@@ -25041,10 +25046,12 @@ async function orchestrateSolve(spec, onProgress) {
 }
 
 // src/index.ts
-import { fileURLToPath } from "node:url";
+var _pkg = JSON.parse(
+  readFileSync8(path8.join(path8.dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf-8")
+);
 var server = new McpServer({
   name: "evomcp",
-  version: "0.1.12"
+  version: _pkg.version
 });
 var TaskSpecSchema = external_exports.object({
   goal: external_exports.string().describe("Natural-language description of what to build/fix/optimize"),

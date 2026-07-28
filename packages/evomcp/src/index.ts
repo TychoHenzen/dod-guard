@@ -13,6 +13,9 @@
  * candidates — only the winning patch + report comes back.
  */
 
+import { readFileSync } from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -22,9 +25,14 @@ import { orchestrateSolve } from "./orchestrate.js";
 import { detectScalarFitness, solve } from "./solve.js";
 import type { EvolveSpec } from "./types.js";
 
+// Read from package.json so the reported version can never drift from the published one.
+const _pkg = JSON.parse(
+  readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf-8"),
+);
+
 const server = new McpServer({
   name: "evomcp",
-  version: "0.1.12",
+  version: _pkg.version,
 });
 
 // ── Shared schemas ──────────────────────────────────────────────────
@@ -387,8 +395,6 @@ function formatEvolveResult(result: Awaited<ReturnType<typeof evolve>>): string 
     `- Model: ${result.stats.model}`,
   ].join("\n");
 }
-
-import { fileURLToPath } from "node:url";
 
 const _filename = fileURLToPath(import.meta.url);
 

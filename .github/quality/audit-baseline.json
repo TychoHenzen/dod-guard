@@ -1,0 +1,65 @@
+{
+  "note": "Known high/critical advisories in production dependencies. New ones fail CI.",
+  "known": [
+    {
+      "id": "1123997",
+      "package": "hono",
+      "severity": "moderate",
+      "title": "hono: Body Limit Middleware can be bypassed on AWS Lambda by understating `Content-Length`"
+    },
+    {
+      "id": "1123998",
+      "package": "hono",
+      "severity": "moderate",
+      "title": "hono: Lambda@Edge adapter keeps only the last value of a repeated request header, dropping the rest"
+    },
+    {
+      "id": "1123999",
+      "package": "hono",
+      "severity": "high",
+      "title": "hono: CORS Middleware reflects any Origin with credentials when `origin` defaults to the wildcard"
+    },
+    {
+      "id": "1124000",
+      "package": "hono",
+      "severity": "moderate",
+      "title": "hono: Path traversal in `serve-static` on Windows via encoded backslash (`%5C`)"
+    },
+    {
+      "id": "1124001",
+      "package": "hono",
+      "severity": "moderate",
+      "title": "hono: AWS Lambda adapter merges multiple `Set-Cookie` headers into one value, dropping cookies on ALB single-header and Lattice"
+    },
+    {
+      "id": "1124005",
+      "package": "hono",
+      "severity": "moderate",
+      "title": "Hono: API Gateway v1 adapter can drop a distinct repeated request header value during de-duplication"
+    },
+    {
+      "id": "1124009",
+      "package": "hono",
+      "severity": "moderate",
+      "title": "hono/jsx does not isolate context per request, leading to cross-request data disclosure"
+    },
+    {
+      "id": "1124010",
+      "package": "hono",
+      "severity": "moderate",
+      "title": "Hono: Server-Side XSS via JSX Escaping Bypass in cx() Utility"
+    },
+    {
+      "id": "1124064",
+      "package": "fast-uri",
+      "severity": "high",
+      "title": "fast-uri vulnerable to host confusion via literal backslash authority delimiter"
+    },
+    {
+      "id": "1124231",
+      "package": "fast-uri",
+      "severity": "high",
+      "title": "fast-uri vulnerable to host confusion via failed IDN canonicalization"
+    }
+  ]
+}

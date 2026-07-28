@@ -1,4 +1,6 @@
+import { readFileSync } from "node:fs";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -17,9 +19,14 @@ import { handleDodRefine } from "./tools/dod-refine.js";
 import { checkCommandsForOs, findNodeById, formatMissingTools, formatTree } from "./tree-utils.js";
 import type { DodDocument, Predicate, TaskNode } from "./types.js";
 
+// Read from package.json so the reported version can never drift from the published one.
+const _pkg = JSON.parse(
+  readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf-8"),
+);
+
 const server = new McpServer({
   name: "dod-guard",
-  version: "2.2.5",
+  version: _pkg.version,
 });
 
 // ── dod_create ──────────────────────────────────────────────────────
@@ -1034,8 +1041,6 @@ server.tool(
     };
   },
 );
-
-import { fileURLToPath } from "node:url";
 
 const _filename = fileURLToPath(import.meta.url);
 

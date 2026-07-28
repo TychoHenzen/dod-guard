@@ -3,6 +3,17 @@
 #
 # Publish tag format: <package>-v<version>
 #   dod-guard-v2.2.4 | evomcp-v0.1.3 | gitevo-v0.1.3 | obsidian-rag-v0.1.10
+#
+# Gates, in the order they can stop a release:
+#   build-test        compile + unit tests + tag/version agreement
+#   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency
+#   static-analysis   Biome, coverage, and three ratchets (quality, test presence, advisories)
+#   package-integrity what npm would publish, and whether that bundle actually speaks MCP
+#   release-gate      the version is not already on the registry
+#
+# The ratchets compare against baselines in .github/quality/. Existing debt is
+# allowed; anything worse fails. When a ratchet improves, CI rewrites the
+# baseline in the same commit as the Biome autofixes, so the bar only rises.
 
 name: ci
 
@@ -23,11 +34,17 @@ on:
           - obsidian-rag
           - all
 
+env:
+  # Biome owns line width (120); ratcheting it here would fight the formatter.
+  QUALITY_RULES: file-length,function-length,complexity,param-count,nesting-depth,types-per-file,duplicate-block,else-branch,unnamed-tuple,dead-export,unused-local,test-only-export,commented-out-code,todo-marker,stateless-method
+  QUALITY_SCAN: packages/dod-guard/skills/quality-refactor/scripts/quality-scan.mjs
+
 jobs:
   # ── Always runs ──────────────────────────────────────────────────────
 
   build-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # Export which release tags point at HEAD — publish jobs filter on this.
     outputs:
       tags: ${{ steps.tag-detect.outputs.tags }}
@@ -48,9 +65,30 @@ jobs:
           TAGS=$(git tag --points-at HEAD | grep -- '-v' | paste -sd ',' - || true)
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
 
+      # Fail before anything is published if a tag names a version package.json does not hold.
+      - name: Release tags match package.json
+        if: steps.tag-detect.outputs.tags != ''
+        run: node scripts/ci/check-release.mjs "${{ steps.tag-detect.outputs.tags }}"
+
+  plugin-config:
+    needs: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Names, sources, hook targets, skill/agent frontmatter, encoding, files[] coverage.
+      - name: Plugin configuration is consistent
+        run: node scripts/ci/validate-plugins.mjs
+
   static-analysis:
     needs: build-test
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       contents: write
     steps:
@@ -64,11 +102,62 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # A lockfile that npm ci rewrites means the committed one is stale.
+      - name: Lockfile is in sync
+        run: git diff --exit-code -- package-lock.json
+
+      - run: npm run build -w packages/gitevo
+      - run: npm run build
+
       # Autofix: apply Biome fixes, commit + push if any changes.
       - name: Biome autofix
-        run: npx @biomejs/biome check --write --unsafe packages/*/src/ --no-errors-on-unmatched
-      - name: Commit & push autofixes
+        run: npx @biomejs/biome check --write --unsafe packages/*/src/ scripts/ci/ --no-errors-on-unmatched
+
+      # ── Ratchets: record the outcome, tighten on improvement, fail at the end ──
+
+      - name: Quality ratchet (structure)
+        id: quality
+        continue-on-error: true
         run: |
+          node "$QUALITY_SCAN" packages \
+            --exclude=/dist/ --exclude=node_modules \
+            --rules="$QUALITY_RULES" \
+            --baseline=.github/quality/quality-baseline.json \
+            --fail-on=regression | tee quality-report.txt
+          exit "${PIPESTATUS[0]}"
+      - name: Tighten quality baseline
+        if: steps.quality.outcome == 'success'
+        run: |
+          if ! grep -q "Improvements: 0 " quality-report.txt; then
+            node "$QUALITY_SCAN" packages \
+              --exclude=/dist/ --exclude=node_modules \
+              --rules="$QUALITY_RULES" \
+              --write-baseline=.github/quality/quality-baseline.json
+          fi
+
+      - name: Test presence ratchet
+        id: tests-present
+        continue-on-error: true
+        run: |
+          node scripts/ci/check-tests-present.mjs | tee tests-present.txt
+          exit "${PIPESTATUS[0]}"
+      - name: Tighten test presence baseline
+        if: steps.tests-present.outcome == 'success'
+        run: grep -q "fixed:" tests-present.txt && node scripts/ci/check-tests-present.mjs --write-baseline || true
+
+      - name: Advisory ratchet (production dependencies)
+        id: audit
+        continue-on-error: true
+        run: |
+          node scripts/ci/check-audit.mjs | tee audit-report.txt
+          exit "${PIPESTATUS[0]}"
+      - name: Tighten audit baseline
+        if: steps.audit.outcome == 'success'
+        run: grep -q "fixed:" audit-report.txt && node scripts/ci/check-audit.mjs --write-baseline || true
+
+      - name: Commit & push autofixes and tightened baselines
+        run: |
+          rm -f quality-report.txt tests-present.txt audit-report.txt
           if ! git diff --exit-code --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -79,7 +168,7 @@ jobs:
 
       # Strict check: must be clean after autofix.
       - name: Biome strict check
-        run: npx @biomejs/biome check packages/*/src/ --max-diagnostics=200 --no-errors-on-unmatched
+        run: npx @biomejs/biome check packages/*/src/ scripts/ci/ --max-diagnostics=200 --no-errors-on-unmatched
 
       # Coverage thresholds — fail if any package drops below 90% statements
       - name: Coverage gate (≥90% statements)
@@ -105,36 +194,90 @@ jobs:
           fi
           echo "All packages pass coverage gate."
 
-      # Coverage gaps
-      - name: Missing test coverage
+      # Ratchets run with continue-on-error so baselines still get pushed; enforce here.
+      - name: Enforce ratchet outcomes
         run: |
-          echo "=== Missing test coverage ==="
+          FAILED=""
+          if [ "${{ steps.quality.outcome }}" = "failure" ]; then FAILED="$FAILED structural-quality"; fi
+          if [ "${{ steps.tests-present.outcome }}" = "failure" ]; then FAILED="$FAILED test-presence"; fi
+          if [ "${{ steps.audit.outcome }}" = "failure" ]; then FAILED="$FAILED advisories"; fi
+          if [ -n "$FAILED" ]; then
+            echo "RATCHET FAILED for:$FAILED — see the step logs above"
+            exit 1
+          fi
+          echo "All ratchets held."
+
+  package-integrity:
+    needs: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w packages/gitevo
+      - run: npm run build
+      - run: npm run bundle
+
+      # What npm would actually ship: every skill, agent and hook target present, no src/ or node_modules.
+      - name: Tarball contents
+        run: |
+          FAILED=""
           for pkg in dod-guard evomcp gitevo obsidian-rag; do
-            srcs=$(find packages/$pkg/src -name '*.ts' ! -name '*.test.ts' ! -name 'types.ts' ! -name 'constants.ts' | sort)
-            for f in $srcs; do
-              base=$(basename "$f" .ts)
-              dir=$(dirname "$f")
-              test_file="${dir}/${base}.test.ts"
-              if [ ! -f "$test_file" ]; then
-                echo "  ⚠ $f — no matching test file"
-              fi
-            done
+            node scripts/ci/check-pack.mjs "$pkg" || FAILED="$FAILED $pkg"
           done
-          echo "=== Done ==="
+          [ -z "$FAILED" ] || { echo "PACK CONTENTS FAILED for:$FAILED"; exit 1; }
 
-      # Brevity checks
-      - name: Brevity — files > 300 lines
+      # The bundle is what users run and nothing else tests it: it must complete an MCP handshake.
+      - name: Bundle MCP handshake
         run: |
-          echo "=== Brevity: files > 300 lines ==="
-          find packages/*/src -name '*.ts' ! -name '*.test.ts' -exec wc -l {} + | awk '$1 > 300 {print "  ⚠", $2, "(" $1 " lines)"}'
-          echo "=== Done ==="
+          FAILED=""
+          for pkg in dod-guard evomcp gitevo obsidian-rag; do
+            node scripts/ci/smoke-bundle.mjs "$pkg" || FAILED="$FAILED $pkg"
+          done
+          [ -z "$FAILED" ] || { echo "BUNDLE SMOKE FAILED for:$FAILED"; exit 1; }
 
-  # ── Publish: fires when matching tag points at HEAD AND static-analysis passes ──
+  # ── Release gate: runs only when something is about to be published ──
+
+  release-gate:
+    needs: build-test
+    if: needs.build-test.outputs.tags != '' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # On workflow_dispatch there are no tags — derive them from the chosen package(s).
+      - name: Resolve release tags
+        id: resolve
+        run: |
+          TAGS="${{ needs.build-test.outputs.tags }}"
+          if [ -z "$TAGS" ]; then
+            SELECTED="${{ github.event.inputs.package }}"
+            [ "$SELECTED" = "all" ] && SELECTED="dod-guard evomcp gitevo obsidian-rag"
+            for pkg in $SELECTED; do
+              VERSION=$(node -p "require('./packages/$pkg/package.json').version")
+              TAGS="${TAGS:+$TAGS,}$pkg-v$VERSION"
+            done
+          fi
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+      - name: Versions are unpublished
+        run: node scripts/ci/check-release.mjs "${{ steps.resolve.outputs.tags }}" --registry
+
+  # ── Publish: fires when matching tag points at HEAD AND every gate passed ──
 
   publish-dod-guard:
-    needs: [build-test, static-analysis]
+    needs: [build-test, plugin-config, static-analysis, package-integrity, release-gate]
     if: contains(needs.build-test.outputs.tags, 'dod-guard-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'dod-guard' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       id-token: write
       contents: read
@@ -149,9 +292,10 @@ jobs:
       - run: npm publish -w packages/dod-guard
 
   publish-evomcp:
-    needs: [build-test, static-analysis]
+    needs: [build-test, plugin-config, static-analysis, package-integrity, release-gate]
     if: contains(needs.build-test.outputs.tags, 'evomcp-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'evomcp' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       id-token: write
       contents: read
@@ -167,9 +311,10 @@ jobs:
       - run: npm publish -w packages/evomcp
 
   publish-gitevo:
-    needs: [build-test, static-analysis]
+    needs: [build-test, plugin-config, static-analysis, package-integrity, release-gate]
     if: contains(needs.build-test.outputs.tags, 'gitevo-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'gitevo' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       id-token: write
       contents: read
@@ -184,9 +329,10 @@ jobs:
       - run: npm publish -w packages/gitevo
 
   publish-obsidian-rag:
-    needs: [build-test, static-analysis]
+    needs: [build-test, plugin-config, static-analysis, package-integrity, release-gate]
     if: contains(needs.build-test.outputs.tags, 'obsidian-rag-v') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'obsidian-rag' || github.event.inputs.package == 'all'))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       id-token: write
       contents: read
