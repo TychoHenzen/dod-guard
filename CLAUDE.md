@@ -75,6 +75,11 @@ The correct flow:
 
 **Gates** — a publish job needs all of them green:
 
+Adding a package is not finished until `npm install` has run at the root.
+`npm ci` refuses a lock file that does not list every workspace, so CI dies at
+its first step with `Missing: <name>@<version> from lock file`. Commit the
+updated `package-lock.json` with the new package.
+
 | Job | What it blocks on |
 |-----|-------------------|
 | `build-test` | tsc, `npm test`, and `detect-releases.mjs`, which decides what publishes |
