@@ -113,9 +113,13 @@ whole harness under `test-only-export`.
 
 **Point `--root` at the repo, not at the target.** Reachability reads non-code
 manifest files as evidence that a symbol is used. That covers scene files,
-project files, config and markup. A Godot scene that wires `PlayerController.cs` usually sits
-above `Scripts/`. A root scoped to the target misses that scene, and the class
-looks dead. Manifests are collected from `--root` only.
+project files and component templates. A Godot scene that wires
+`PlayerController.cs` usually sits above `Scripts/`. A root scoped to the
+target misses that scene, and the class looks dead. Manifests are collected
+from `--root` only.
+
+Generic data formats do not count. A `.json`, `.yaml`, `.xml` or `.md` file
+that merely names a symbol is not usage.
 
 A baseline records which files it scanned, not just their violation counts. A
 file the baseline has never seen is **adopted** on the next `--baseline` run.

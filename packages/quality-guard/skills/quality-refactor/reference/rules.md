@@ -28,9 +28,14 @@ as a production reference, never a test reference, because scene and config
 wiring is real usage. `MANIFEST_EXTS` in `scripts/lib/config.mjs` lists the
 extensions. Manifests are collected from `--root`, not from the scanned target
 paths, because the scene file that wires a script routinely sits above the
-directory being scanned. `.md` is deliberately not a manifest extension. A doc
-that mentions a class name is not usage, and counting it would hide real dead
-code.
+directory being scanned.
+
+Generic data formats are deliberately not manifest extensions. That covers
+`.md`, `.json`, `.yaml`, `.xml` and `.toml`. A file that mentions a class name
+is not usage, and counting it hides real dead code. Those formats are also the
+shape most build artifacts, caches and audit reports take. Such files are
+usually gitignored, so counting them made the same commit pass on a developer
+machine and fail in CI.
 
 **False positives:** symbols reached by reflection, dependency injection by
 string name, or dynamic `import()`. Check before deleting a symbol whose name

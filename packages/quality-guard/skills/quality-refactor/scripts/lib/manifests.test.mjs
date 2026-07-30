@@ -61,7 +61,7 @@ test("collectManifests honors IGNORED_DIRS", () => {
   withTempDir((dir) => {
     const nodeModules = join(dir, "node_modules");
     mkdirSync(nodeModules);
-    writeFileSync(join(nodeModules, "pkg.json"), "{}\n");
+    writeFileSync(join(nodeModules, "pkg.tscn"), "{}\n");
     const manifests = collectManifests(dir);
     assert.equal(manifests.length, 0);
   });
@@ -71,19 +71,19 @@ test("collectManifests honors an --exclude fragment", () => {
   withTempDir((dir) => {
     const excluded = join(dir, "vendored");
     mkdirSync(excluded);
-    writeFileSync(join(excluded, "third_party.json"), "{}\n");
-    writeFileSync(join(dir, "keep.json"), "{}\n");
+    writeFileSync(join(excluded, "third_party.tscn"), "{}\n");
+    writeFileSync(join(dir, "keep.tscn"), "{}\n");
     const manifests = collectManifests(dir, ["vendored"]);
     assert.deepEqual(
       manifests.map((m) => m.rel),
-      ["keep.json"],
+      ["keep.tscn"],
     );
   });
 });
 
 test("collectManifests skips a manifest-extension file that contains binary control bytes", () => {
   withTempDir((dir) => {
-    writeFileSync(join(dir, "weird.json"), Buffer.from([0x7b, 0x00, 0x7d]));
+    writeFileSync(join(dir, "weird.tscn"), Buffer.from([0x7b, 0x00, 0x7d]));
     const manifests = collectManifests(dir);
     assert.equal(manifests.length, 0);
   });

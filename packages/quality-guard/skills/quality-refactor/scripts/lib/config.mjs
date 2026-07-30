@@ -23,11 +23,19 @@ export const LANG_BY_EXT = {
 };
 
 /**
- * Non-code files that can still connect a symbol (scene graphs, project
- * files, config/markup). A hit in one of these counts as production usage
- * evidence in `referenceCounts`, even though the file itself is never parsed
- * or scanned for violations. `.md` is deliberately excluded: a doc mentioning
- * a class name is not usage, and counting it would mask real dead code.
+ * Non-code files that can still connect a symbol. A hit in one of these counts
+ * as production usage evidence in `referenceCounts`, even though the file
+ * itself is never parsed or scanned for violations.
+ *
+ * Every entry has to be a file a human connects on purpose. That means a scene
+ * graph, a project file, or a template that names the component it renders.
+ *
+ * Generic data formats stay out, for the same reason `.md` stays out. A file
+ * that merely contains a symbol name is not usage. Worse, `.json` and its
+ * relatives are the shape most build artifacts, caches and audit reports take.
+ * Those files are usually gitignored, so counting them made the verdict differ
+ * between a developer machine and CI. A `dead-export` that a local test-report
+ * JSON silenced is exactly the dead code this rule exists to find.
  */
 export const MANIFEST_EXTS = new Set([
   ".tscn",
@@ -40,18 +48,13 @@ export const MANIFEST_EXTS = new Set([
   ".vbproj",
   ".sln",
   ".gradle",
-  ".cfg",
-  ".json",
-  ".xml",
-  ".yaml",
-  ".yml",
-  ".toml",
   ".razor",
   ".cshtml",
-  ".html",
   ".vue",
   ".svelte",
   ".plist",
+  ".storyboard",
+  ".xib",
 ]);
 
 /** Directories never worth scanning. */
