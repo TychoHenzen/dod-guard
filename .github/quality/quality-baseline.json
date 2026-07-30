@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-07-30T10:31:56.539Z",
-  "total": 867,
+  "total": 868,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/src/author.ts",
@@ -104,6 +104,7 @@
     "packages/quality-guard/scripts/changed-lines.mjs",
     "packages/quality-guard/scripts/check-skips.mjs",
     "packages/quality-guard/scripts/check-skips.test.mjs",
+    "packages/quality-guard/scripts/git-tracked-adoption.test.mjs",
     "packages/quality-guard/scripts/project-linter.mjs",
     "packages/quality-guard/scripts/quality-guard.mjs",
     "packages/quality-guard/scripts/sentinel.d.mts",
@@ -517,6 +518,7 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.mjs::else-branch": 3,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::else-branch": 1,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/quality-guard/scripts/git-tracked-adoption.test.mjs::file-length": 1
   }
 }
