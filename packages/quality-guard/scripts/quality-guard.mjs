@@ -65,7 +65,7 @@ function findRepoRoot(filePath) {
  * Any failure reports false: git missing, not a work tree, path untracked.
  * That is the same as today's behaviour. An unreadable answer means "new".
  */
-export function isGitTracked(repoRoot, filePath) {
+function isGitTracked(repoRoot, filePath) {
   const result = spawnSync("git", ["ls-files", "--error-unmatch", "--", filePath], {
     cwd: repoRoot,
     encoding: "utf8",
@@ -120,15 +120,16 @@ export function waive(repoRoot, sentinel, context) {
 }
 
 /**
- * A file the baseline has never scanned is either genuinely new (git does
- * not track it) or pre-existing (git already does). Only the genuinely new
- * one gets the generous ceiling. The pre-existing one adopts at its current
- * counts, the same as CI does for a file the baseline never saw.
+ * Read a file the baseline has never scanned. Genuinely new means git does not
+ * track it, and only that one gets the generous ceiling. A file git already
+ * tracks is pre-existing, so it adopts at its current counts, the same as CI
+ * does. `checkTracked` is a callback, so a file the baseline already knows
+ * costs no git call at all.
  */
-function classifyUnseenFile(repoRoot, filePath, relPath, comparison, isTracked) {
+function unseenVerdict(comparison, relPath, checkTracked) {
   if (!comparison.newFiles.includes(relPath)) return { isNew: false, adopt: false };
-  const tracked = isTracked(repoRoot, filePath);
-  return tracked ? { isNew: false, adopt: true } : { isNew: true, adopt: false };
+  const tracked = checkTracked();
+  return { isNew: !tracked, adopt: tracked };
 }
 
 export function gate(input, filePath, deps) {
@@ -149,7 +150,7 @@ export function gate(input, filePath, deps) {
 
   const relPath = relative(repoRoot, resolve(filePath)).split("\\").join("/");
   const comparison = compareToBaseline(scan.violations, baseline, [relPath]);
-  const { isNew, adopt } = classifyUnseenFile(repoRoot, filePath, relPath, comparison, isTracked);
+  const { isNew, adopt } = unseenVerdict(comparison, relPath, () => isTracked(repoRoot, filePath));
   const blocking = isNew
     ? newFileVerdict(scan.violations)
     : ratchetVerdict(comparison, relPath, scan.violations);
