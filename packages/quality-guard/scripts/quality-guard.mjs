@@ -57,6 +57,22 @@ function findRepoRoot(filePath) {
   return dirname(resolve(filePath));
 }
 
+/**
+ * Whether git already tracks this path. Used to tell a genuinely new file
+ * (never committed) from a file the baseline simply never scanned, so the
+ * two do not get the same generous ceiling.
+ *
+ * Any failure reports false: git missing, not a work tree, path untracked.
+ * That is the same as today's behaviour. An unreadable answer means "new".
+ */
+export function isGitTracked(repoRoot, filePath) {
+  const result = spawnSync("git", ["ls-files", "--error-unmatch", "--", filePath], {
+    cwd: repoRoot,
+    encoding: "utf8",
+  });
+  return result.status === 0;
+}
+
 function runScanner(filePath, repoRoot) {
   const result = spawnSync(process.execPath, [
     SCANNER, filePath, `--root=${repoRoot}`, "--format=json", `--rules=${FILE_RULES}`,
@@ -103,8 +119,20 @@ export function waive(repoRoot, sentinel, context) {
   return true;
 }
 
+/**
+ * A file the baseline has never scanned is either genuinely new (git does
+ * not track it) or pre-existing (git already does). Only the genuinely new
+ * one gets the generous ceiling. The pre-existing one adopts at its current
+ * counts, the same as CI does for a file the baseline never saw.
+ */
+function classifyUnseenFile(repoRoot, filePath, relPath, comparison, isTracked) {
+  if (!comparison.newFiles.includes(relPath)) return { isNew: false, adopt: false };
+  const tracked = isTracked(repoRoot, filePath);
+  return tracked ? { isNew: false, adopt: true } : { isNew: true, adopt: false };
+}
+
 export function gate(input, filePath, deps) {
-  const { readBaseline, compareToBaseline, writeBaseline } = deps;
+  const { readBaseline, compareToBaseline, writeBaseline, isTracked = isGitTracked } = deps;
   const repoRoot = findRepoRoot(filePath);
   const baselinePath = join(repoRoot, BASELINE);
   if (!existsSync(baselinePath)) return 0;
@@ -121,7 +149,7 @@ export function gate(input, filePath, deps) {
 
   const relPath = relative(repoRoot, resolve(filePath)).split("\\").join("/");
   const comparison = compareToBaseline(scan.violations, baseline, [relPath]);
-  const isNew = comparison.newFiles.includes(relPath);
+  const { isNew, adopt } = classifyUnseenFile(repoRoot, filePath, relPath, comparison, isTracked);
   const blocking = isNew
     ? newFileVerdict(scan.violations)
     : ratchetVerdict(comparison, relPath, scan.violations);
@@ -137,7 +165,7 @@ export function gate(input, filePath, deps) {
     );
   }
 
-  if (isNew || waived) writeBaseline(baselinePath, rebaselineFile(baseline, scan.violations, relPath));
+  if (isNew || adopt || waived) writeBaseline(baselinePath, rebaselineFile(baseline, scan.violations, relPath));
 
   const findings = scopeToChangedLines(input, runProjectLinter(filePath, repoRoot));
   if (findings.length > 0) {
