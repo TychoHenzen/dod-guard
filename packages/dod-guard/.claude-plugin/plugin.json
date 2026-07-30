@@ -1,6 +1,6 @@
 {
   "name": "dod-guard",
-  "description": "Anti-cheat Definition of Done verification with locked proofs. Ships 8 skills: /interview, /ratchet, /clean-house, /step-by-step, /cheap-step, /adversarial-workflow (4-phase adversarial choreography with gated review), /test-integrity-checker (audit tests for LLM patterns where tests bless bugs instead of catching them), and /quality-refactor (systematic refactoring to an explicit machine-checked quality bar).",
+  "description": "Anti-cheat Definition of Done verification with locked proofs. Ships 7 skills: /interview, /ratchet, /clean-house, /step-by-step, /cheap-step, /adversarial-workflow (4-phase adversarial choreography with gated review), and /test-integrity-checker (audit tests for LLM patterns where tests bless bugs instead of catching them).",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"

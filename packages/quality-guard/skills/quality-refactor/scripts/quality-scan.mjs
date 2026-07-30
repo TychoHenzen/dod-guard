@@ -15,6 +15,7 @@ import { adoptNewFiles, buildBaseline, compareToBaseline, readBaseline, writeBas
 import { renderJson, renderText, sortViolations, summarize, toWorkUnits } from "./lib/report.mjs";
 import { scanFile } from "./lib/rules-file.mjs";
 import { checkDuplication, checkReachability } from "./lib/rules-project.mjs";
+import { collectManifests } from "./lib/manifests.mjs";
 import { collectFiles, loadFiles } from "./lib/walk.mjs";
 
 const USAGE = `quality-scan [paths...] [options]
@@ -23,6 +24,7 @@ const USAGE = `quality-scan [paths...] [options]
   --profile=default|strict   strict promotes every "preferably" bound to a hard bound
   --rules=a,b,c              only run these rules (default: all)
   --exclude=<fragment>       skip paths containing this fragment (repeatable)
+  --test-path=<fragment>     treat paths containing this fragment as test code (repeatable)
   --root=<dir>               anchor for relative paths (default: cwd)
   --top=N                    text mode: show N worst files (default 15)
   --write-baseline=<path>    record the current scan as the ratchet baseline
@@ -44,6 +46,7 @@ const FLAG_HANDLERS = {
     options.rules = value.split(",").filter(Boolean);
   },
   exclude: (options, value) => options.excludes.push(value),
+  "test-path": (options, value) => options.testPaths.push(value),
   root: (options, value) => {
     options.root = resolve(value);
   },
@@ -68,6 +71,7 @@ function defaultOptions() {
     profile: "default",
     rules: null,
     excludes: [],
+    testPaths: [],
     root: process.cwd(),
     top: 15,
     writeBaseline: null,
@@ -105,7 +109,13 @@ function validate(options) {
 
 function scan(options, config) {
   const targets = options.paths.map((p) => resolve(options.root, p));
-  const files = loadFiles(collectFiles(targets, options.root, options.excludes));
+  const files = loadFiles(collectFiles(targets, options.root, options.excludes), options.testPaths);
+  // Manifests are collected from the scan root, not from targets. A scene or
+  // project file that connects a target's symbols routinely sits above the
+  // scanned subdirectory. For example, RootScene.tscn sits at the repo root
+  // while the target is Scripts/. Scoping this collection to targets would
+  // miss exactly the case it exists to catch.
+  const manifests = collectManifests(options.root, options.excludes);
   const scans = new Map();
   let violations = [];
   for (const file of files) {
@@ -113,7 +123,7 @@ function scan(options, config) {
     scans.set(file.rel, result);
     violations = violations.concat(result.violations);
   }
-  violations = violations.concat(checkReachability(files, scans, config));
+  violations = violations.concat(checkReachability(files, scans, config, manifests));
   violations = violations.concat(checkDuplication(files, config));
   if (options.rules) violations = violations.filter((v) => options.rules.includes(v.rule));
   return { files, violations };

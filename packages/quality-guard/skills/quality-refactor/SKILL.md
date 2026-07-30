@@ -62,7 +62,7 @@ difference between "never ship this" and "make it better every pass."
 | `unnamed-tuple` | — | none allowed |
 | `dead-export` | — | none allowed |
 | `unused-local` | — | none allowed |
-| `test-only-export` | — | none allowed |
+| `test-only-export` | none preferred | - |
 | `commented-out-code` | — | none allowed |
 | `else-branch` | none preferred | — |
 | `stateless-method` | none preferred | — |
@@ -100,14 +100,27 @@ node "$QS" src --write-baseline=.quality/baseline.json   # record the ratchet
 node "$QS" src --baseline=.quality/baseline.json --fail-on=regression
 node "$QS" src --fail-on=error                           # the hard gate
 node "$QS" src --profile=strict --fail-on=error          # the bar for new code
+node "$QS" Scripts --test-path=Scenario/ --root=.        # declare a harness dir
 ```
 
 Exit codes: `0` gate passed · `1` gate failed · `3` usage error.
 
+**Declare test-support directories.** `--test-path=<fragment>` marks every path
+containing that fragment as test code, and it repeats. Use it for harness,
+fixture, and scenario directories the built-in patterns miss. Without it the
+scanner reads a harness as production code that only tests call, and reports the
+whole harness under `test-only-export`.
+
+**Point `--root` at the repo, not at the target.** Reachability reads non-code
+manifest files as evidence that a symbol is used. That covers scene files,
+project files, config and markup. A Godot scene that wires `PlayerController.cs` usually sits
+above `Scripts/`. A root scoped to the target misses that scene, and the class
+looks dead. Manifests are collected from `--root` only.
+
 A baseline records which files it scanned, not just their violation counts. A
-file the baseline has never seen is **adopted** on the next `--baseline` run:
-its current counts are written into the baseline file and it is not reported as
-a regression. Without that, every file you extract during a refactor would fail
+file the baseline has never seen is **adopted** on the next `--baseline` run.
+Its current counts go into the baseline file. It is not reported as a
+regression. Without that, every file you extract during a refactor would fail
 the ratchet against a phantom zero. From the run after adoption on, the file is
 held to the counts that were recorded. Baselines written by an older scanner
 (no file list) are rejected with exit `3` — re-record with `--write-baseline`.
@@ -154,7 +167,9 @@ not a coverage loss — it was never covering anything.
 - It asserts nothing, or only that the code did not throw.
 - Its assertions are so loose they would pass if the function returned a
   constant.
-- It tests a symbol nothing in production calls (`test-only-export`).
+- It tests a symbol nothing in production calls (`test-only-export`). Check
+  first that the symbol is not test-support code. If it is, declare its
+  directory with `--test-path` instead of deleting anything.
 - It duplicates another test with different literals and no different branch.
 - It was written to make a coverage number move.
 

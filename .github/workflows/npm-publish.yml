@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: 'Package to publish (dod-guard, evomcp, gitevo, obsidian-rag, or "all")'
+        description: 'Package to publish (dod-guard, evomcp, gitevo, obsidian-rag, quality-guard, or "all")'
         required: true
         type: choice
         default: 'all'
@@ -32,12 +32,13 @@ on:
           - evomcp
           - gitevo
           - obsidian-rag
+          - quality-guard
           - all
 
 env:
   # Biome owns line width (120); ratcheting it here would fight the formatter.
   QUALITY_RULES: file-length,function-length,complexity,param-count,nesting-depth,types-per-file,duplicate-block,else-branch,unnamed-tuple,dead-export,unused-local,test-only-export,commented-out-code,todo-marker,stateless-method
-  QUALITY_SCAN: packages/dod-guard/skills/quality-refactor/scripts/quality-scan.mjs
+  QUALITY_SCAN: packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs
 
 jobs:
   # ── Always runs ──────────────────────────────────────────────────────
@@ -139,6 +140,11 @@ jobs:
         if: steps.tests-present.outcome == 'success'
         run: grep -q "fixed:" tests-present.txt && node scripts/ci/check-tests-present.mjs --write-baseline || true
 
+      # A consumed .quality-skip is a deliberate bypass of the quality gate.
+      # It must not reach a release without a human signing it off.
+      - name: Unacknowledged quality-gate waivers
+        run: node packages/quality-guard/scripts/check-skips.mjs .
+
       - name: Advisory ratchet (production dependencies)
         id: audit
         continue-on-error: true
@@ -169,7 +175,7 @@ jobs:
         run: |
           echo "=== Coverage gate (≥90% statements) ==="
           FAILED=""
-          for pkg in dod-guard evomcp gitevo obsidian-rag; do
+          for pkg in dod-guard evomcp gitevo obsidian-rag quality-guard; do
             echo "--- $pkg ---"
             npx c8 --include="packages/$pkg/src/*.ts" \
                    --exclude="packages/$pkg/src/*.test.ts" \
@@ -220,7 +226,7 @@ jobs:
       - name: Tarball contents
         run: |
           FAILED=""
-          for pkg in dod-guard evomcp gitevo obsidian-rag; do
+          for pkg in dod-guard evomcp gitevo obsidian-rag quality-guard; do
             node scripts/ci/check-pack.mjs "$pkg" || FAILED="$FAILED $pkg"
           done
           [ -z "$FAILED" ] || { echo "PACK CONTENTS FAILED for:$FAILED"; exit 1; }
@@ -229,7 +235,7 @@ jobs:
       - name: Bundle MCP handshake
         run: |
           FAILED=""
-          for pkg in dod-guard evomcp gitevo obsidian-rag; do
+          for pkg in dod-guard evomcp gitevo obsidian-rag quality-guard; do
             node scripts/ci/smoke-bundle.mjs "$pkg" || FAILED="$FAILED $pkg"
           done
           [ -z "$FAILED" ] || { echo "BUNDLE SMOKE FAILED for:$FAILED"; exit 1; }
@@ -335,3 +341,28 @@ jobs:
           VERSION=$(node -p "require('./packages/obsidian-rag/package.json').version")
           git tag "obsidian-rag-v$VERSION"
           git push origin "obsidian-rag-v$VERSION"
+
+  publish-quality-guard:
+    needs: [build-test, plugin-config, static-analysis, package-integrity]
+    if: (needs.build-test.outputs.releases != '' && contains(fromJSON(needs.build-test.outputs.releases), 'quality-guard')) || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'quality-guard' || github.event.inputs.package == 'all'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: write   # pushes the <package>-v<version> tag after publishing
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run bundle -w packages/quality-guard
+      - run: npm publish -w packages/quality-guard
+
+      # The tag records what shipped; it is not what triggered the publish.
+      - name: Tag the release
+        run: |
+          VERSION=$(node -p "require('./packages/quality-guard/package.json').version")
+          git tag "quality-guard-v$VERSION"
+          git push origin "quality-guard-v$VERSION"

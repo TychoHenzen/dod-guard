@@ -22,6 +22,38 @@ export const LANG_BY_EXT = {
   ".h": "cpp",
 };
 
+/**
+ * Non-code files that can still connect a symbol (scene graphs, project
+ * files, config/markup). A hit in one of these counts as production usage
+ * evidence in `referenceCounts`, even though the file itself is never parsed
+ * or scanned for violations. `.md` is deliberately excluded: a doc mentioning
+ * a class name is not usage, and counting it would mask real dead code.
+ */
+export const MANIFEST_EXTS = new Set([
+  ".tscn",
+  ".tres",
+  ".godot",
+  ".gd",
+  ".gdshader",
+  ".csproj",
+  ".fsproj",
+  ".vbproj",
+  ".sln",
+  ".gradle",
+  ".cfg",
+  ".json",
+  ".xml",
+  ".yaml",
+  ".yml",
+  ".toml",
+  ".razor",
+  ".cshtml",
+  ".html",
+  ".vue",
+  ".svelte",
+  ".plist",
+]);
+
 /** Directories never worth scanning. */
 export const IGNORED_DIRS = new Set([
   ".git",
@@ -62,6 +94,7 @@ const TEST_PATTERNS = [
   /(^|[\\/])__tests__[\\/]/,
   /_test\.(go|py|rs)$/,
   /Tests?\.cs$/,
+  /(^|[\\/])(testing|fixtures|harness|mocks|stubs)[\\/]/i,
 ];
 
 /**
@@ -94,7 +127,7 @@ const PRESENCE_SEVERITY = {
   "unnamed-tuple": "error",
   "dead-export": "error",
   "unused-local": "error",
-  "test-only-export": "error",
+  "test-only-export": "warn",
   "commented-out-code": "error",
   "todo-marker": "warn",
   "stateless-method": "warn",
@@ -131,8 +164,15 @@ export function severityFor(config, rule, value) {
   return null;
 }
 
-export function isTestPath(relPath) {
-  return TEST_PATTERNS.some((re) => re.test(relPath));
+/**
+ * `extraFragments` are repo-declared test-support path fragments (from
+ * `--test-path`), matched as a plain substring against the relative path, on
+ * top of the built-in patterns. Callers that pass none get the built-in
+ * behavior unchanged.
+ */
+export function isTestPath(relPath, extraFragments = []) {
+  if (TEST_PATTERNS.some((re) => re.test(relPath))) return true;
+  return extraFragments.some((fragment) => relPath.includes(fragment));
 }
 
 export function isEntryPath(relPath) {

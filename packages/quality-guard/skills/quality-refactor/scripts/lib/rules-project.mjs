@@ -63,13 +63,25 @@ function exportsOf(file, scan) {
   return [...found].map(([name, line]) => ({ name, line }));
 }
 
-function referenceCounts(name, files, scans, ownFile) {
+function manifestHits(pattern, manifests) {
+  let hits = 0;
+  for (const manifest of manifests) {
+    hits += manifest.text.match(pattern)?.length ?? 0;
+  }
+  return hits;
+}
+
+/**
+ * `corpus` is `{ files, scans, manifests }`. `ownFile` is excluded, so a symbol
+ * referencing itself does not keep itself alive.
+ */
+function referenceCounts(name, corpus, ownFile) {
   const pattern = new RegExp(`\\b${name}\\b`, "g");
-  let prod = 0;
+  let prod = manifestHits(pattern, corpus.manifests);
   let test = 0;
-  for (const file of files) {
+  for (const file of corpus.files) {
     if (file.rel === ownFile) continue;
-    const hits = scans.get(file.rel).code.match(pattern);
+    const hits = corpus.scans.get(file.rel).code.match(pattern);
     if (!hits) continue;
     if (file.isTest) test += hits.length;
     else prod += hits.length;
@@ -80,13 +92,20 @@ function referenceCounts(name, files, scans, ownFile) {
 /**
  * Flag exports nothing else uses, and exports only tests use. Both are dead
  * weight: the first has no callers at all, the second exists to be tested.
+ *
+ * `manifests` are non-code reference evidence collected from the scan root.
+ * See `MANIFEST_EXTS` in config.mjs for the file types: scene files, project
+ * files, config and markup. A hit there counts as a production reference.
+ * Scene and config wiring is real usage, not test usage. The manifest itself
+ * is never scanned for violations and never treated as a file in the output.
  */
-export function checkReachability(files, scans, config) {
+export function checkReachability(files, scans, config, manifests = []) {
   const out = [];
+  const corpus = { files, scans, manifests };
   for (const file of files) {
     if (file.isTest || isEntryPath(file.rel)) continue;
     for (const symbol of exportsOf(file, scans.get(file.rel))) {
-      const { prod, test } = referenceCounts(symbol.name, files, scans, file.rel);
+      const { prod, test } = referenceCounts(symbol.name, corpus, file.rel);
       if (prod > 0) continue;
       const rule = test > 0 ? "test-only-export" : "dead-export";
       const message =

@@ -56,7 +56,7 @@
       "title": "fast-uri vulnerable to host confusion via literal backslash authority delimiter"
     },
     {
-      "id": "1124231",
+      "id": "1130129",
       "package": "fast-uri",
       "severity": "high",
       "title": "fast-uri vulnerable to host confusion via failed IDN canonicalization"

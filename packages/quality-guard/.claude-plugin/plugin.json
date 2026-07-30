@@ -1,0 +1,23 @@
+{
+  "name": "quality-guard",
+  "description": "Structural code quality gate. A PostToolUse hook ratchets every write against a recorded baseline, so existing debt is allowed but making it worse is not. Ships 1 skill: /quality-refactor (systematic refactoring to an explicit machine-checked quality bar).",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/quality-guard.mjs\"",
+            "timeout": 30,
+            "statusMessage": "quality-guard: checking structure..."
+          }
+        ]
+      }
+    ]
+  }
+}

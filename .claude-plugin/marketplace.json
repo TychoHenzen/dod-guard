@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "dod-guard",
-      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Ships 8 skills: /interview (structured requirements with adversarial spec review), /ratchet (multi-step problem solving with verification gates), /clean-house (hunt duplicate/obsolete implementations), /step-by-step (multi-step sequential execution with 2 specialized agents), /cheap-step (step-by-step with cheap-worker fanout), /adversarial-workflow (4-phase adversarial choreography — spec review, test audit, implementation review, structural gates), /test-integrity-checker (audit tests for LLM patterns where tests bless production bugs instead of catching them, with 1 specialized auditor agent), and /quality-refactor (systematic refactoring to an explicit machine-checked quality bar — one type per file, complexity and size bounds, dead-code removal — with a zero-dependency scanner and a ratcheting baseline).",
+      "description": "Lock DoD proofs in MCP storage with anti-cheat verification. Ships 7 skills: /interview (structured requirements with adversarial spec review), /ratchet (multi-step problem solving with verification gates), /clean-house (hunt duplicate/obsolete implementations), /step-by-step (multi-step sequential execution with 2 specialized agents), /cheap-step (step-by-step with cheap-worker fanout), /adversarial-workflow (4-phase adversarial choreography - spec review, test audit, implementation review, structural gates), and /test-integrity-checker (audit tests for LLM patterns where tests bless production bugs instead of catching them, with 1 specialized auditor agent).",
       "source": "./packages/dod-guard",
       "category": "productivity"
     },
@@ -29,6 +29,12 @@
       "name": "gitevo",
       "description": "Evolutionary git branching for LLM agents — checkpoint, spawn parallel exploration branches, learn from failures, merge winners, clean artifacts. evo_export_lessons bridges to obsidian-rag for persistent memory.",
       "source": "./packages/gitevo",
+      "category": "productivity"
+    },
+    {
+      "name": "quality-guard",
+      "description": "Structural code quality gate. A PostToolUse hook ratchets every write against a recorded baseline, so existing debt is allowed but making it worse is not. Ships 1 skill: /quality-refactor (systematic refactoring to an explicit machine-checked quality bar - one type per file, complexity and size bounds, dead-code removal - with a zero-dependency scanner and a ratcheting baseline).",
+      "source": "./packages/quality-guard",
       "category": "productivity"
     }
   ]

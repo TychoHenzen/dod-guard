@@ -20,9 +20,21 @@ export has callers and looks for them.
 API of a published package, that is the one real exception — mark it and move
 on.
 
+**Non-code references count.** A Godot node connects a script through a
+`.tscn`, and a project file connects a class through a path. The scanner reads
+these manifest files as reference evidence, so a `PlayerController` attached to
+a scene node is live even though no code names it. A hit in a manifest counts
+as a production reference, never a test reference, because scene and config
+wiring is real usage. `MANIFEST_EXTS` in `scripts/lib/config.mjs` lists the
+extensions. Manifests are collected from `--root`, not from the scanned target
+paths, because the scene file that wires a script routinely sits above the
+directory being scanned. `.md` is deliberately not a manifest extension. A doc
+that mentions a class name is not usage, and counting it would hide real dead
+code.
+
 **False positives:** symbols reached by reflection, dependency injection by
-string name, dynamic `import()`, or a plugin registry. Check before deleting a
-symbol whose name appears in a config file or a decorator.
+string name, or dynamic `import()`. Check before deleting a symbol whose name
+appears in a decorator or in a file type the manifest list does not cover.
 
 ---
 
@@ -48,16 +60,31 @@ string. Rare.
 **Detects:** an export with zero references from non-test files and at least
 one from a test file.
 
-**Why hard:** this is the most expensive kind of dead code, because it comes
-with tests that make it look alive. The tests pass, the coverage number is
-good, and none of it runs in production.
+**Why it matters:** this is the most expensive kind of dead code, because it
+comes with tests that make it look alive. The tests pass, the coverage number
+is good, and none of it runs in production.
+
+**Why this one only warns:** two different things look identical here. One is a
+production symbol that only tests call. The other is a test-support symbol that
+only tests are ever supposed to call. A fixture builder, a fake, or a scenario
+harness has exactly the same reference graph as real dead code. When the rule
+was an error it marked whole test harnesses for deletion. It now warns, and the
+ratchet still stops the count from rising.
+
+**Declare your harness directories.** Pass `--test-path=<fragment>` once per
+directory that holds test-support code the built-in patterns miss, for example
+`--test-path=Scenario/`. A file whose relative path contains the fragment
+counts as test code, so its exports are never subjects of this rule. The
+built-in patterns already cover `test`, `tests`, `__tests__`, `testing`,
+`fixtures`, `harness`, `mocks`, `stubs`, and the `.test.` and `.spec.` name
+forms.
 
 **Fix:** delete the symbol and its tests together. If the logic is genuinely
 needed but only reachable through a larger unit, test it through that unit
-instead — that is the test you actually wanted.
+instead. That is the test you actually wanted.
 
 **Exception:** a symbol exported purely as a seam for dependency injection.
-That is a real pattern; note it and keep it.
+That is a real pattern. Note it and keep it.
 
 ---
 
