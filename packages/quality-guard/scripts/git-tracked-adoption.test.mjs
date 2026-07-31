@@ -95,6 +95,94 @@ test("a tracked file the baseline already knows still blocks on a regression", (
   rmSync(root, { recursive: true, force: true });
 });
 
+test(
+  "an additive edit on a tracked, baseline-unseen file does not report its pre-existing "
+    + "violations as new (Case 5)",
+  () => {
+    const root = tempRepo();
+    // Build a file that mirrors the reported shape. It has 66 plain lines,
+    // three over-length lines (line-length), then a 68-line Expand()
+    // function (function-length) the edit never touched. Padding pushes it
+    // past the file-length bound. An additive edit to this file would leave
+    // every one of these violations exactly as they already are at HEAD. A
+    // baseline that has never scanned the file must adopt them. It must not
+    // report them as regressions from zero.
+    const lines = [];
+    for (let i = 0; i < 66; i++) lines.push(`const filler${i} = ${i};`);
+    for (let i = 0; i < 3; i++) lines.push(`const longLine${i} = "${"a".repeat(130)}";`);
+    lines.push("function Expand() {");
+    for (let i = 0; i < 65; i++) lines.push(`  const step${i} = ${i};`);
+    lines.push("  return step0;");
+    lines.push("}");
+    while (lines.length < 588) lines.push(`const pad${lines.length} = 0;`);
+    const filePath = join(root, "additive.js");
+    writeFileSync(filePath, `${lines.join("\n")}\n`);
+    const baselinePath = writeBaselineFile(root, [], {});
+
+    const code = gate(fakeInput(filePath), filePath, {
+      readBaseline, compareToBaseline, writeBaseline, isTracked: () => true,
+    });
+
+    assert.equal(
+      code,
+      0,
+      "pre-existing line-length, file-length and function-length violations on an unseen "
+        + "tracked file must not block",
+    );
+    const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
+    assert.ok(baseline.files.includes("additive.js"), "the file must be adopted into the baseline");
+    assert.equal(
+      baseline.counts["additive.js::line-length"],
+      3,
+      "all three pre-existing line-length violations are recorded, not blocked as new regressions",
+    );
+    assert.equal(baseline.counts["additive.js::file-length"], 1);
+    assert.equal(baseline.counts["additive.js::function-length"], 1);
+
+    rmSync(root, { recursive: true, force: true });
+  },
+);
+
+test(
+  "a pure deletion on a tracked, baseline-unseen file that still trips the file-length "
+    + "bound is adopted, not blocked (Case 2)",
+  () => {
+    const root = tempRepo();
+    // Reported shape: a deletion removed a 41-line duplicate helper, taking the
+    // file from 539 lines to 498. That deletion also removed the file's one
+    // complexity violation outright. What remains is a file-length violation,
+    // since 498 is still over the 300-line hard bound. 498 also exceeds the
+    // 450-line new-file ceiling (300 * 1.5). A gate that still routes an unseen
+    // tracked file through the new-file ceiling blocks this pure improvement.
+    const filePath = writeTargetFile(root, "case2.js", 498);
+    const baselinePath = writeBaselineFile(root, [], {});
+
+    const code = gate(fakeInput(filePath), filePath, {
+      readBaseline, compareToBaseline, writeBaseline, isTracked: () => true,
+    });
+
+    assert.equal(
+      code,
+      0,
+      "a pure deletion that shrinks a tracked file and removes a violation must never block",
+    );
+    const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
+    assert.ok(baseline.files.includes("case2.js"), "the file must be adopted into the baseline");
+    assert.equal(
+      baseline.counts["case2.js::file-length"],
+      1,
+      "the surviving file-length violation is recorded once",
+    );
+    assert.equal(
+      baseline.counts["case2.js::complexity"],
+      undefined,
+      "the removed complexity violation must not be recorded",
+    );
+
+    rmSync(root, { recursive: true, force: true });
+  },
+);
+
 test("git unavailable or failing falls back to today's new-file behaviour", () => {
   const root = tempRepo();
   const filePath = writeTargetFile(root, "big.js", OVER_CEILING_LINES);

@@ -119,7 +119,14 @@ The CLI exists so `verify_cmd` / `fitness_cmd` in evomcp can gate on a DoD subtr
 | `cheap-step` | Step-by-step with evomcp cheap-worker fanout |
 | `adversarial-workflow` | 4-phase adversarial choreography (spec review, test audit, implementation review, structural gates) |
 | `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |
+| `blind-rewrite` | Delete an implementation, rebuild it from a contract a fresh agent gets without seeing the original, then gate the result against the deleted code |
 
 ## Lessons
 
+- [LESSON] Similarity thresholds need calibration against real file pairs before
+  they ship. A 4-gram overlap limit picked by taste (0.25) failed a genuine
+  reimplementation at 0.41, because typed languages share a large syntactic floor.
+  Measuring unrelated pairs, a real rewrite, and a renamed copy gave the separation
+  the guess did not. Longest shared token run separated them best: 10 to 13
+  unrelated, 25 rewritten, 209 renamed. Discovered while building `blind-rewrite`.
 - [LESSON] `mock.module` + ESM dynamic import: `mock.module("node:child_process", ...)` MUST run before the module under test is imported. Use dynamic `import()` in `before` hooks after `mock.module` registration. The `--experimental-test-module-mocks` flag is required on Node 22.

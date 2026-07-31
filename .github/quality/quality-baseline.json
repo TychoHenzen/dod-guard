@@ -2,9 +2,20 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-07-30T10:31:56.539Z",
-  "total": 868,
+  "total": 892,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/match-rate.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/match-rate.test.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/metric-stats.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/overlap-metrics.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/overlap-metrics.test.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/sample-guard.test.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/score-overlap.test.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/text-tokens.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/text-tokens.test.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/overlap-scan.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/overlap-scan.test.mjs",
     "packages/dod-guard/src/author.ts",
     "packages/dod-guard/src/checker-vcs.test.ts",
     "packages/dod-guard/src/checker.test.ts",
@@ -519,6 +530,14 @@
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::else-branch": 1,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
     "packages/evomcp/src/degenerate.ts::todo-marker": 1,
-    "packages/quality-guard/scripts/git-tracked-adoption.test.mjs::file-length": 1
+    "packages/quality-guard/scripts/git-tracked-adoption.test.mjs::file-length": 1,
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/overlap-metrics.test.mjs::file-length": 1,
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/overlap-metrics.test.mjs::line-length": 16,
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/text-tokens.mjs::line-length": 2,
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/text-tokens.test.mjs::line-length": 1,
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/match-rate.test.mjs::line-length": 1,
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/metric-stats.mjs::line-length": 1,
+    "packages/dod-guard/skills/blind-rewrite/scripts/overlap-scan.mjs::unused-local": 1,
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/sample-guard.test.mjs::line-length": 1
   }
 }
