@@ -24,7 +24,9 @@ All commands from the **monorepo root**:
 # Clean build (recommended — removes stale .js from deleted .ts sources)
 npm run clean && npm run build
 
-# Build all packages (tsc)
+# Build all packages (tsc). The root script builds gitevo first, because
+# evomcp imports packages/gitevo/dist and `--workspaces` runs alphabetically.
+
 npm run build -w packages/<name>     # single package
 npm run build                         # all packages
 

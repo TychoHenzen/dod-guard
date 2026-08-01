@@ -573,6 +573,23 @@ function srcToTestFile(srcPath) {
   return null;
 }
 
+/**
+ * Write a run-scoped Stryker config next to the state file.
+ * Copies stryker.config.json and narrows tap.testFiles to the one test file
+ * that covers the mutated source. One broken test then cannot block the other
+ * files. Returns the path to pass to `stryker run`.
+ */
+function writeScopedConfig(testFile) {
+  const base = JSON.parse(readFileSync(join(ROOT, STRIKER_CONFIG), "utf-8"));
+  if (testFile) {
+    base.tap = { ...base.tap, testFiles: [testFile.replace(/\\/g, "/")] };
+  }
+  const outPath = join(DATA_DIR, "stryker.run.json");
+  mkdirSync(DATA_DIR, { recursive: true });
+  writeFileSync(outPath, JSON.stringify(base, null, 2));
+  return ".data/micro-mutations/stryker.run.json";
+}
+
 function pkgFromPath(srcPath) {
   const parts = srcPath.split(/[\\/]/);
   if (parts[0] === "packages" && parts[1]) {
@@ -592,12 +609,9 @@ function runMutation(srcPath) {
   // scope to only the test file matching the mutated source file.
   // Falls back to the full glob if no matching test file exists.
   const testFile = srcToTestFile(srcPath);
-  const testFilesOverride = testFile
-    ? `--testFiles '${testFile.replace(/\\/g, "/")}'`
-    : "";
 
   console.log(`\n=== MUTATING: ${srcPath} (${distPathFwd}) ===`);
-  if (testFilesOverride) {
+  if (testFile) {
     console.log(`  testFiles scoped: ${testFile}`);
   }
 
@@ -639,14 +653,14 @@ function runMutation(srcPath) {
       ? " --incremental --incrementalFile .data/micro-mutations/stryker-incremental.json"
       : "";
 
-    // Stryker CLI dot-notation overrides for nested config
-    const testFileOverride = testFile
-      ? `--tap.testFiles '["${testFile.replace(/\\/g, "/")}"]' --tap.nodeArgs '["--experimental-test-module-mocks"]'`
-      : "";
+    // Stryker exposes no CLI override for plugin options, so `--tap.testFiles`
+    // is rejected as an unknown option. Scope the run by writing a config file
+    // that copies the base config and narrows tap.testFiles instead.
+    const configPath = writeScopedConfig(testFile);
 
     const strykerCmd = [
       "npx stryker run",
-      testFileOverride || STRIKER_CONFIG,
+      configPath,
       `--mutate "${distPathFwd}"`,
       "--concurrency 2",
       "--reporters clear-text,json",

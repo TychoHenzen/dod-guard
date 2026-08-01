@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
+    "build": "npm run build -w packages/gitevo && npm run build --workspaces",
     "test": "npm run test --workspaces",
     "bundle": "npm run bundle --workspaces",
     "build:evomcp": "npm run build -w packages/evomcp && npm run bundle -w packages/evomcp",

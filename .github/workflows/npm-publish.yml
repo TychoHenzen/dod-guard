@@ -58,7 +58,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build -w packages/gitevo   # gitevo must build before evomcp (cross-package dep)
       - run: npm run build
       - run: npm test
       - name: Detect releases
@@ -101,7 +100,6 @@ jobs:
       - name: Lockfile is in sync
         run: git diff --exit-code -- package-lock.json
 
-      - run: npm run build -w packages/gitevo
       - run: npm run build
 
       # Autofix: apply Biome fixes, commit + push if any changes.
@@ -218,7 +216,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build -w packages/gitevo
       - run: npm run build
       - run: npm run bundle
 

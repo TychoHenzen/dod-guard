@@ -44,3 +44,4 @@ reports/
 
 # tighten loop scratch: ledger, quarantine
 .tighten/
+.data/micro-mutations/stryker.run.json
