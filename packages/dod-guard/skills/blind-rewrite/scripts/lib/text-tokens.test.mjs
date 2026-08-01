@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   declarations,
   ngrams,
+  removeTokenRuns,
   significantLines,
   tokenize,
 } from "./text-tokens.mjs";
@@ -62,5 +63,24 @@ describe("declarations", () => {
   it("omits whitelisted names", () => {
     const text = "function findPath(){}\nconst helper = 1;\n";
     assert.deepEqual(declarations(text, ["findPath"]), ["helper"]);
+  });
+});
+
+describe("removeTokenRuns", () => {
+  it("removes every occurrence of a run, not just the first", () => {
+    const tokens = ["a", "b", "c", "x", "a", "b", "c", "y", "a", "b", "c"];
+    const actual = removeTokenRuns(tokens, [["a", "b", "c"]]);
+    assert.deepEqual(actual, ["x", "y"]);
+  });
+
+  it("removes the longer of two overlapping runs first", () => {
+    // "a b" alone would eat the middle of "a b c" if tried first. That
+    // leaves a stray "c" instead of removing the whole three-token run.
+    const tokens = ["a", "b", "c", "z"];
+    const actual = removeTokenRuns(tokens, [
+      ["a", "b", "c"],
+      ["a", "b"],
+    ]);
+    assert.deepEqual(actual, ["z"]);
   });
 });

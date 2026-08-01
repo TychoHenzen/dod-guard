@@ -12,10 +12,16 @@ function rateOf(counts) {
   return counts.matched / counts.total;
 }
 
+// Tokenizes `value` and removes every contract run from the result, so a
+// metric never sees text a contract requires verbatim on both sides.
+function tokensOf(value, settings) {
+  const tokens = text.tokenize(value, settings.whitelist);
+  return text.removeTokenRuns(tokens, settings.contractRuns);
+}
+
 export function gramStats(original, rewrite, settings) {
-  const { whitelist, size } = settings;
-  const source = text.ngrams(text.tokenize(original, whitelist), size);
-  const candidate = text.ngrams(text.tokenize(rewrite, whitelist), size);
+  const source = text.ngrams(tokensOf(original, settings), settings.size);
+  const candidate = text.ngrams(tokensOf(rewrite, settings), settings.size);
   const counts = matchCounts(source, candidate);
   return { rate: rateOf(counts), sample: counts.total };
 }
@@ -39,15 +45,16 @@ function longestRun(left, right) {
   return best;
 }
 
-export function runStats(original, rewrite, whitelist) {
-  const source = text.tokenize(original, whitelist);
-  const candidate = text.tokenize(rewrite, whitelist);
+export function runStats(original, rewrite, settings) {
+  const source = tokensOf(original, settings);
+  const candidate = tokensOf(rewrite, settings);
   return { rate: longestRun(source, candidate), sample: candidate.length };
 }
 
-export function lineStats(original, rewrite, whitelist) {
-  const source = text.significantLines(original, whitelist);
-  const candidate = text.significantLines(rewrite, whitelist);
+export function lineStats(original, rewrite, settings) {
+  const { whitelist, contractRuns } = settings;
+  const source = text.significantLines(original, whitelist, contractRuns);
+  const candidate = text.significantLines(rewrite, whitelist, contractRuns);
   const counts = matchCounts(source, candidate);
   return { rate: rateOf(counts), sample: counts.matched };
 }
@@ -72,8 +79,11 @@ export function orderSimilarity(originalNames, rewriteNames) {
   return lcsLength(originalNames, rewriteNames) / rewriteNames.length;
 }
 
-export function orderStats(original, rewrite, whitelist) {
-  const source = text.declarations(original, whitelist);
-  const candidate = text.declarations(rewrite, whitelist);
+// A declaration a contract introduces is required on both sides, so it is
+// banned from the order metric the same way a whitelisted name is.
+export function orderStats(original, rewrite, settings) {
+  const banned = settings.whitelist.concat(settings.contractNames);
+  const source = text.declarations(original, banned);
+  const candidate = text.declarations(rewrite, banned);
   return { rate: orderSimilarity(source, candidate), sample: candidate.length };
 }

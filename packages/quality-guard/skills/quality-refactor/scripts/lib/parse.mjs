@@ -89,7 +89,10 @@ function classifyBodyChar(code, i, gap) {
   if (code.startsWith("=>", i)) return arrowBody(code, i + 2);
   const ch = code[i];
   if (ch === "{") return isCallGap(gap) ? null : { offset: i, kind: "block" };
-  if (ch === ";" || ch === ")" || ch === "]") return null;
+  // A top-level comma ends the expression. `new Date().toISOString(),` reaches
+  // here, and without this the scan runs on into a later block and reads the
+  // call as a declaration named Date.
+  if (ch === ";" || ch === ")" || ch === "]" || ch === ",") return null;
   return undefined;
 }
 

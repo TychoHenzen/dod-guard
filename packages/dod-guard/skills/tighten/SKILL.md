@@ -202,7 +202,8 @@ Both must pass.
 node "${CLAUDE_PLUGIN_ROOT}/skills/blind-rewrite/scripts/overlap-scan.mjs" \
   --original=.tighten/quarantine/original.txt \
   --rewrite=<new paths> \
-  --whitelist=<boundary names>
+  --whitelist=<boundary names> \
+  --contract-file=<path>
 
 node "${CLAUDE_PLUGIN_ROOT}/../quality-guard/skills/quality-refactor/scripts/quality-scan.mjs" \
   .tighten/quarantine/original.txt --format=units > /tmp/before.json
@@ -220,6 +221,18 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/simplicity-gate.mjs" \
 
 `--after` covers every file the rewrite produced. Splitting one knot into three
 clear modules is a win, and the gate totals them.
+
+Give the overlap gate a `--contract-file` whenever the target is mostly boundary.
+A file that registers tools, or declares routes, or carries the server guard
+pattern, repeats long passages because a rule says it must. The gate cannot tell
+that from copying, so it reports every correct answer as cosmetic. Write the
+required passages into the contract file first. Its format is in the
+`/blind-rewrite` skill.
+
+A worked case sits in the ledger. `packages/dod-guard/src/index.ts` scored
+`run: 96` against a limit of 60 on a genuine rebuild. Three declared passages,
+the guard block, the 12 tool descriptions and one shared schema field list,
+brought it to 57 without moving a threshold.
 
 Scan both sides with the same `--root` and the same rule set. Some rules read
 across files. `dead-export` calls a symbol dead when it cannot see the caller.

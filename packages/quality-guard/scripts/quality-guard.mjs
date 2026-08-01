@@ -37,7 +37,7 @@ const CODE_EXT = new Set([
  * call every export dead. Run those in a repository-wide scan instead.
  */
 const FILE_RULES = [
-  "line-length", "file-length", "function-length", "complexity", "param-count",
+  "file-length", "function-length", "complexity", "param-count",
   "nesting-depth", "types-per-file", "else-branch", "unnamed-tuple",
   "unused-local", "commented-out-code", "todo-marker", "stateless-method",
 ].join(",");

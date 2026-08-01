@@ -4,14 +4,20 @@
 // The writer agent never sees either side of the comparison.
 
 import { readFileSync } from "node:fs";
+import { resolveOptions } from "./lib/contract-file.mjs";
 import { scoreOverlap } from "./lib/overlap-metrics.mjs";
 
 const USAGE = [
   "Usage: node overlap-scan.mjs --original=<paths> --rewrite=<paths>",
-  "                             [--whitelist=a,b,c] [--ngram-size=4] [--json]",
+  "                             [--whitelist=a,b,c] [--contract-file=<path>]",
+  "                             [--ngram-size=4] [--json]",
   "",
   "Paths are comma separated. Whitelist holds contract-boundary names that are",
   "expected to be identical: exported symbols, error strings, serialized keys.",
+  "--contract-file holds one required-verbatim contract string per line (text",
+  "a client reads word for word, so matching it is not evidence of copying).",
+  "Blank and #-comment lines are skipped; every contract string is stripped",
+  "from both sides, longest first, before any metric runs.",
   "",
   "Exit codes: 0 rewritten, 1 cosmetic, 3 usage error.",
 ].join("\n");
@@ -34,15 +40,6 @@ function readAll(paths) {
     .filter(Boolean)
     .map((path) => readFileSync(path.trim(), "utf8"))
     .join("\n");
-}
-
-function buildOptions(args) {
-  const whitelist = (args.whitelist ?? "").split(",").filter(Boolean);
-  const options = { whitelist: whitelist.map((name) => name.trim()) };
-  if (args["ngram-size"]) {
-    options.ngramSize = Number(args["ngram-size"]);
-  }
-  return options;
 }
 
 function formatMetric(result, key) {
@@ -72,9 +69,16 @@ function main(argv) {
     process.stderr.write(`${USAGE}\n`);
     return 3;
   }
+  let options;
+  try {
+    options = resolveOptions(args);
+  } catch (err) {
+    process.stderr.write(`Cannot read contract file: ${err.message}\n`);
+    return 3;
+  }
   const original = readAll(args.original);
   const rewrite = readAll(args.rewrite);
-  const result = scoreOverlap(original, rewrite, buildOptions(args));
+  const result = scoreOverlap(original, rewrite, options);
   report(result, Boolean(args.json));
   return result.verdict === "cosmetic" ? 1 : 0;
 }

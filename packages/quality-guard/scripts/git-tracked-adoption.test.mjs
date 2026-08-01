@@ -79,12 +79,13 @@ test("negative control: the same file, same metrics, but untracked, is blocked",
 
 test("a tracked file the baseline already knows still blocks on a regression", () => {
   const root = tempRepo();
-  // line-length violations scale with the number of over-long lines, so five
-  // of them reads as a real regression against a baseline that recorded four.
-  const overLongLine = `const x = "${"a".repeat(130)}";\n`;
+  // todo-marker violations scale with the number of markers, so five of them
+  // reads as a real regression against a baseline that recorded four. The hook
+  // leaves line-length to the formatter, so it cannot carry this test.
+  const marked = "// TODO: left behind\n";
   const filePath = join(root, "known.js");
-  writeFileSync(filePath, overLongLine.repeat(5));
-  writeBaselineFile(root, ["known.js"], { "known.js::line-length": 4 });
+  writeFileSync(filePath, marked.repeat(5));
+  writeBaselineFile(root, ["known.js"], { "known.js::todo-marker": 4 });
 
   const code = gate(fakeInput(filePath), filePath, {
     readBaseline, compareToBaseline, writeBaseline, isTracked: () => true,
@@ -126,17 +127,16 @@ test(
     assert.equal(
       code,
       0,
-      "pre-existing line-length, file-length and function-length violations on an unseen "
+      "pre-existing file-length and function-length violations on an unseen "
         + "tracked file must not block",
     );
     const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
     assert.ok(baseline.files.includes("additive.js"), "the file must be adopted into the baseline");
     assert.equal(
-      baseline.counts["additive.js::line-length"],
-      3,
-      "all three pre-existing line-length violations are recorded, not blocked as new regressions",
+      baseline.counts["additive.js::file-length"],
+      1,
+      "the pre-existing file-length violation is recorded, not blocked as a new regression",
     );
-    assert.equal(baseline.counts["additive.js::file-length"], 1);
     assert.equal(baseline.counts["additive.js::function-length"], 1);
 
     rmSync(root, { recursive: true, force: true });

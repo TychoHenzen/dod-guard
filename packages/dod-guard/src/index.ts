@@ -287,7 +287,12 @@ async function main(): Promise<void> {
 if (process.argv[1] === _filename) {
   const argv = process.argv.slice(2);
   if (isCliInvocation(argv)) {
-    runCli(argv).then((code) => process.exit(code));
+    runCli(argv)
+      .then((code) => process.exit(code))
+      .catch((err) => {
+        process.stderr.write(`dod-guard CLI failed: ${err}\n`);
+        process.exit(3);
+      });
   } else {
     main().catch((err) => {
       process.stderr.write(`dod-guard MCP server failed: ${err}\n`);

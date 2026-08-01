@@ -137,11 +137,26 @@ Score the result against the deleted original.
 node "${CLAUDE_PLUGIN_ROOT}/skills/blind-rewrite/scripts/overlap-scan.mjs" \
   --original=.blind/original.txt \
   --rewrite=<new path> \
-  --whitelist=<boundary names, comma separated>
+  --whitelist=<boundary names, comma separated> \
+  --contract-file=<path>
 ```
 
 Exit 0 means rewritten. Exit 1 means cosmetic. The whitelist holds boundary names,
 which are required to be identical and therefore exempt from every metric.
+
+The whitelist takes single names. A contract often requires whole passages, and
+those need `--contract-file`. Write one contract string per line, or a JSON array
+of strings when an entry spans several lines. Blank lines are skipped, and a line
+starting with `#` is a comment. Matching happens on the token stream, so an entry
+still matches when the two sides differ in whitespace or comments.
+
+Reach for it when the target is mostly boundary. A file that registers tools, or
+declares routes, or holds the server guard pattern every server in the repository
+shares, reproduces long passages by obligation. Without the flag no correct answer
+can pass, since the gate reads required text as copied text. Declare each required
+passage, then read the result. A rewrite that passes only because the contract file
+grew to cover the whole file has proved nothing. Keep each entry to text you can
+point at a rule for.
 
 | Metric | Fails when | Minimum evidence |
 |---|---|---|

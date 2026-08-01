@@ -34,6 +34,22 @@ function walk(dir) {
   return out;
 }
 
+/**
+ * A test file for `foo.ts` is `foo.test.ts`, or `foo.<qualifier>.test.ts` for a
+ * suite that tests the module some other way. `index.characterization.test.ts`
+ * drives `index.ts` through its own protocol rather than by import, and that is
+ * coverage the plain name cannot express.
+ */
+function hasTestFile(file) {
+  const stem = file.slice(0, -".ts".length);
+  const dir = dirname(file);
+  const prefix = `${stem.split(/[/\\]/).pop()}.`;
+  return readdirSync(dir).some((entry) => {
+    if (!entry.startsWith(prefix) || !entry.endsWith(".test.ts")) return false;
+    return existsSync(join(dir, entry));
+  });
+}
+
 function untestedSources() {
   const packagesDir = join(ROOT, "packages");
   const gaps = [];
@@ -41,7 +57,7 @@ function untestedSources() {
     for (const file of walk(join(packagesDir, pkg, "src"))) {
       if (!file.endsWith(".ts") || file.endsWith(".test.ts")) continue;
       if (EXEMPT.has(file.split(/[/\\]/).pop())) continue;
-      if (existsSync(file.replace(/\.ts$/, ".test.ts"))) continue;
+      if (hasTestFile(file)) continue;
       gaps.push(relative(ROOT, file).split("\\").join("/"));
     }
   }
