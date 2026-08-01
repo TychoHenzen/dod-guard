@@ -2984,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve4.call(this, root, ref);
+      let _sch = resolve3.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3011,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve4(root, ref) {
+    function resolve3(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3642,7 +3642,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve4(baseURI, relativeURI, options) {
+    function resolve3(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse3(baseURI, schemelessOptions), parse3(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
@@ -3906,7 +3906,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize: normalize2,
-      resolve: resolve4,
+      resolve: resolve3,
       resolveComponent,
       equal,
       serialize,
@@ -19098,7 +19098,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
+        await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -19115,7 +19115,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve3, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19193,7 +19193,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve4(parseResult.data);
+            resolve3(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19454,12 +19454,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve3, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve4, interval);
+      const timeoutId = setTimeout(resolve3, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20550,7 +20550,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
+      await new Promise((resolve3) => setTimeout(resolve3, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21214,12 +21214,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve4) => {
+    return new Promise((resolve3) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve4();
+        resolve3();
       } else {
-        this._stdout.once("drain", resolve4);
+        this._stdout.once("drain", resolve3);
       }
     });
   }
@@ -21526,7 +21526,7 @@ async function spawnClaude(prompt, opts) {
     ...opts.env
   };
   const args = ["-p"];
-  return new Promise((resolve4) => {
+  return new Promise((resolve3) => {
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -21564,7 +21564,7 @@ async function spawnClaude(prompt, opts) {
           }
         }, 2e3);
         cleanup();
-        resolve4({
+        resolve3({
           output: `${stdout}
 ${stderr}`,
           exitCode: -1,
@@ -21584,7 +21584,7 @@ ${stderr}`,
         settled = true;
         clearTimeout(timer);
         cleanup();
-        resolve4({
+        resolve3({
           output: stdout + (stderr ? `
 ${stderr}` : ""),
           exitCode: code ?? -1,
@@ -21598,7 +21598,7 @@ ${stderr}` : ""),
         settled = true;
         clearTimeout(timer);
         cleanup();
-        resolve4({
+        resolve3({
           output: `Failed to spawn claude: ${err.message}`,
           exitCode: -1,
           durationMs: Date.now() - t0,
@@ -23480,11 +23480,11 @@ function readTargetFiles(cwd, patterns) {
     }
     try {
       const dir = path5.dirname(fullPath);
-      const basename3 = path5.basename(fullPath);
+      const basename2 = path5.basename(fullPath);
       if (fs5.existsSync(dir)) {
         const entries = fs5.readdirSync(dir);
         for (const entry of entries) {
-          if (matchSimple(entry, basename3)) {
+          if (matchSimple(entry, basename2)) {
             const filePath = path5.join(dir, entry);
             if (fs5.statSync(filePath).isFile()) {
               files.push({
@@ -23679,117 +23679,73 @@ function orchestratorSummary(state) {
   return lines.join("\n");
 }
 
-// src/solve.ts
-import { execSync as execSync5 } from "node:child_process";
-import * as fs7 from "node:fs";
-import * as path7 from "node:path";
+// src/attempt-result.ts
+var SAMPLE_CHARS = 300;
+function blankResult(plan) {
+  return {
+    diagnostic: {
+      lineage_id: `strategy-${plan.index}`,
+      strategy: plan.label,
+      timed_out: false,
+      claude_exit_code: 0,
+      claude_no_output: false,
+      claude_output_sample: "",
+      repair_attempts: 0,
+      final_status: "failed"
+    },
+    branch: `solve-strategy-${plan.index}`,
+    diff: "",
+    passed: false,
+    report: "",
+    output: "",
+    exitCode: -1
+  };
+}
+function markSpawnFailed(state) {
+  state.diagnostic.claude_exit_code = -1;
+  state.diagnostic.claude_no_output = true;
+  state.diagnostic.final_status = "failed";
+  return state;
+}
+function markNoOutput(state) {
+  state.diagnostic.claude_no_output = true;
+  state.diagnostic.final_status = "no_output";
+  return state;
+}
+function applyVerification(state, outcome) {
+  state.passed = outcome.passed;
+  state.exitCode = outcome.exitCode;
+  state.output = outcome.output;
+  state.report = outcome.report;
+  const diagnostic = state.diagnostic;
+  diagnostic.verify_failed = !outcome.passed;
+  diagnostic.verify_exit_code = outcome.exitCode;
+  diagnostic.verify_output_sample = outcome.output.slice(0, SAMPLE_CHARS);
+}
 
-// src/dedup.ts
-function deduplicatePlans(plans) {
-  const kept = [];
-  const seen = /* @__PURE__ */ new Set();
-  for (const plan of plans) {
-    const sig = normalizeForDedup(plan.summary);
-    if (seen.has(sig)) continue;
-    let isDuplicate = false;
-    for (const existing of kept) {
-      if (isTooSimilar(plan.summary, existing.summary)) {
-        isDuplicate = true;
-        break;
-      }
-    }
-    if (!isDuplicate) {
-      seen.add(sig);
-      kept.push(plan);
-    }
+// src/solve-git.ts
+import { execSync as execSync5 } from "node:child_process";
+var GIT_TIMEOUT_MS = 1e4;
+function checkoutBranch(cwd, branch) {
+  try {
+    execSync5(`git checkout ${branch}`, { cwd, timeout: GIT_TIMEOUT_MS, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
   }
-  return kept;
 }
-function normalizeForDedup(text) {
-  return text.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
-}
-function isTooSimilar(a, b) {
-  const tokensA = tokenize(a);
-  const tokensB = tokenize(b);
-  if (tokensA.length === 0 || tokensB.length === 0) return false;
-  const shorter = tokensA.length <= tokensB.length ? tokensA : tokensB;
-  const longer = tokensA.length > tokensB.length ? tokensA : tokensB;
-  const longerSet = new Set(longer);
-  let overlap = 0;
-  for (const t of shorter) {
-    if (longerSet.has(t)) overlap++;
+function captureDiff(cwd, range) {
+  try {
+    return String(execSync5(`git diff ${range}`, { cwd, encoding: "utf-8", timeout: GIT_TIMEOUT_MS }) ?? "");
+  } catch {
+    return "";
   }
-  const ratio = overlap / shorter.length;
-  return ratio > 0.65;
 }
-var STOP_WORDS = /* @__PURE__ */ new Set([
-  "the",
-  "a",
-  "an",
-  "is",
-  "are",
-  "was",
-  "were",
-  "be",
-  "been",
-  "being",
-  "have",
-  "has",
-  "had",
-  "do",
-  "does",
-  "did",
-  "will",
-  "would",
-  "could",
-  "should",
-  "may",
-  "might",
-  "can",
-  "shall",
-  "to",
-  "of",
-  "in",
-  "for",
-  "on",
-  "with",
-  "at",
-  "by",
-  "from",
-  "as",
-  "into",
-  "through",
-  "during",
-  "before",
-  "after",
-  "and",
-  "but",
-  "or",
-  "nor",
-  "not",
-  "so",
-  "yet",
-  "both",
-  "this",
-  "that",
-  "these",
-  "those",
-  "it",
-  "its",
-  "we",
-  "they",
-  "them",
-  "their",
-  "our",
-  "my",
-  "your",
-  "he",
-  "she",
-  "his",
-  "her"
-]);
-function tokenize(text) {
-  return text.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((t) => t.length > 2 && !STOP_WORDS.has(t));
+function commitCandidate(cwd, message) {
+  try {
+    commitOrNoop(cwd, message);
+  } catch {
+  }
 }
 
 // src/feedback.ts
@@ -23969,6 +23925,421 @@ function fallbackDiagnostic(raw, gateType) {
     message: raw.slice(0, MAX_FEEDBACK_CHARS),
     context: "",
     oracle_type: gateType
+  };
+}
+
+// src/solve-files.ts
+import * as fs7 from "node:fs";
+import * as path7 from "node:path";
+
+// src/solve-glob.ts
+var REGEX_SPECIALS = /[.+^${}()|\\]/g;
+var GLOB_TOKENS = /\*\*\/|\*\*|\*|\?|[^*?]+/g;
+var DIFF_HEADER = /^diff --git a\/(.+?) b\/(.+?)$/gm;
+function translateToken(token) {
+  if (token === "**/") return "(?:[^/]*/)*";
+  if (token === "**") return ".*";
+  if (token === "*") return "[^/]*";
+  if (token === "?") return "[^/]";
+  return token.replace(REGEX_SPECIALS, "\\$&");
+}
+function matchGlob(filePath, pattern) {
+  if (!pattern) return false;
+  const tokens = pattern.match(GLOB_TOKENS) ?? [];
+  const body = tokens.map(translateToken).join("");
+  try {
+    return new RegExp(`^${body}$`).test(filePath);
+  } catch {
+    return false;
+  }
+}
+function filesMatchGlob(diff, patterns) {
+  if (!(patterns?.length && diff.trim())) return [];
+  const touched = /* @__PURE__ */ new Set();
+  for (const match of diff.matchAll(DIFF_HEADER)) {
+    const file = match[2].trim();
+    if (file) touched.add(file);
+  }
+  return [...touched].filter((file) => !patterns.some((p) => matchGlob(file, p)));
+}
+
+// src/solve-files.ts
+var SKIP_DIRS = /* @__PURE__ */ new Set(["node_modules", ".git", "dist", "coverage", ".evo"]);
+var MAX_FILES = 20;
+var MAX_DEPTH = 6;
+var MAX_FILE_CHARS = 4e3;
+function patternRoot(pattern) {
+  const segments = pattern.split("/");
+  const wildcard = segments.findIndex((s) => /[*?]/.test(s));
+  const prefix = wildcard === -1 ? segments.slice(0, -1) : segments.slice(0, wildcard);
+  return prefix.join("/");
+}
+function listFiles(root, dir, depth) {
+  if (depth > MAX_DEPTH) return [];
+  const entries = fs7.readdirSync(dir, { withFileTypes: true });
+  const found = [];
+  for (const entry of entries) {
+    if (entry.name.startsWith(".") || SKIP_DIRS.has(entry.name)) continue;
+    const full = path7.join(dir, entry.name);
+    if (entry.isDirectory()) found.push(...listFiles(root, full, depth + 1));
+    if (entry.isFile()) found.push(path7.relative(root, full).split(path7.sep).join("/"));
+  }
+  return found;
+}
+function isWildcard(pattern) {
+  return /[*?]/.test(pattern);
+}
+function namedPaths(cwd, patterns) {
+  const found = [];
+  for (const pattern of patterns) {
+    if (isWildcard(pattern)) continue;
+    try {
+      if (fs7.statSync(path7.join(cwd, pattern)).isFile()) found.push(pattern);
+    } catch {
+    }
+  }
+  return found;
+}
+function candidatePaths(cwd, patterns) {
+  const roots = new Set(patterns.filter(isWildcard).map(patternRoot));
+  const found = new Set(namedPaths(cwd, patterns));
+  for (const rel of roots) {
+    try {
+      for (const file of listFiles(cwd, path7.join(cwd, rel), 0)) found.add(file);
+    } catch {
+    }
+  }
+  return [...found];
+}
+function readAllowedFiles(cwd, patterns) {
+  if (!patterns?.length) return [];
+  const matched = candidatePaths(cwd, patterns).filter((f) => patterns.some((p) => matchGlob(f, p)));
+  const files = [];
+  for (const rel of matched.slice(0, MAX_FILES)) {
+    try {
+      files.push({ path: rel, content: fs7.readFileSync(path7.join(cwd, rel), "utf-8").slice(0, MAX_FILE_CHARS) });
+    } catch {
+    }
+  }
+  return files;
+}
+
+// src/solve-context.ts
+var DESCRIPTION_CHARS = 200;
+var LAYER_CACHE = /* @__PURE__ */ new WeakMap();
+function goalWithContext(spec) {
+  if (!spec.context) return spec.goal;
+  return `${spec.goal}
+
+Additional context: ${spec.context}`;
+}
+function buildLayers(spec) {
+  const factSheet = generateFactSheet(spec.cwd);
+  const targets = makeTargetFiles(readAllowedFiles(spec.cwd, spec.allowed_files));
+  return {
+    goal: goalWithContext(spec),
+    targetFiles: targets,
+    constraints: factSheet ? { lintRules: "", conventions: factSheet, typeConfig: "" } : void 0
+  };
+}
+function baseLayers(spec) {
+  const cached2 = LAYER_CACHE.get(spec);
+  if (cached2) return cached2;
+  const layers = buildLayers(spec);
+  LAYER_CACHE.set(spec, layers);
+  return layers;
+}
+function baseContext(spec) {
+  return assembleContext(baseLayers(spec));
+}
+function signaturesOf(attempts) {
+  const found = [];
+  for (const attempt of attempts) {
+    if (!attempt.failureSignature) continue;
+    found.push({
+      hash: attempt.failureSignature,
+      description: attempt.summary.slice(0, DESCRIPTION_CHARS),
+      count: 1
+    });
+  }
+  return found;
+}
+function repairContext(spec, attempts) {
+  const signatures = signaturesOf(attempts);
+  return assembleContext({
+    ...baseLayers(spec),
+    priorAttempts: attempts.length > 0 ? attempts : void 0,
+    failureSignatures: signatures.length > 0 ? signatures : void 0
+  });
+}
+
+// src/solve-lineage.ts
+var SUMMARY_CHARS = 500;
+function openLineage(plan, session, state) {
+  const lineage = {
+    plan,
+    session,
+    state,
+    summaries: [],
+    history: []
+  };
+  recordTry(lineage);
+  return lineage;
+}
+function recordTry(lineage) {
+  const { state, plan, session } = lineage;
+  const signature = hashFailure(state.output, session.spec.cwd);
+  lineage.history.push(signature);
+  lineage.summaries.push({
+    strategy: plan.label,
+    outcome: "failed",
+    summary: state.output.slice(0, SUMMARY_CHARS),
+    failureSignature: signature
+  });
+}
+
+// src/solve-signals.ts
+var RETRY_RUNGS = /* @__PURE__ */ new Set(["retry", "resample"]);
+function failureMode(signals) {
+  if (signals.stuck) return "stuck";
+  if (signals.oscillating) return "oscillating";
+  if (signals.noProgress) return "noProgress";
+  return "unknown";
+}
+function readSignals(state, history) {
+  const signals = computeFailureSignals(history);
+  const diagnostic = state.diagnostic;
+  diagnostic.signature_history = { signatures: [...history], ...signals };
+  diagnostic.failure_mode = failureMode(signals);
+  return signals;
+}
+function canContinue(decision) {
+  if (decision.action === "abort") return false;
+  return RETRY_RUNGS.has(decision.state.currentRung);
+}
+
+// src/solve-verify.ts
+function formatGate(result) {
+  const label = result.passed ? "PASSED" : "FAILED";
+  return `- ${result.gate}: ${label} (${result.elapsed_ms}ms)`;
+}
+function formatFailures(results) {
+  return results.filter((r) => !r.passed).map((r) => `=== FAILED: ${r.gate} ===
+${r.diagnostics}`).join("\n\n");
+}
+async function runGateVerification(spec) {
+  const runner = new GateRunner({
+    build_cmd: spec.build_cmd,
+    test_cmd: spec.test_cmd,
+    lint_cmd: spec.lint_cmd,
+    verify_cmd: spec.verify_cmd
+  });
+  const results = await runner.runAll(spec.cwd);
+  const report = results.map(formatGate).join("\n");
+  const output = formatFailures(results);
+  if (!output) return { passed: true, exitCode: 0, output: "", report };
+  const full = `${report}
+
+${output}`;
+  return { passed: false, exitCode: 1, output, report: full };
+}
+async function runVerification(spec) {
+  const gated = spec.build_cmd || spec.test_cmd || spec.lint_cmd;
+  if (gated) return runGateVerification(spec);
+  const verdict = toVerdict(runCommand(spec.verify_cmd, spec.cwd));
+  const label = verdict.passed ? "PASSED" : "FAILED";
+  const head = `- verify: ${label} (exit=${verdict.exit_code})`;
+  return {
+    passed: verdict.passed,
+    exitCode: verdict.exit_code,
+    output: verdict.output,
+    report: `${head}
+
+${verdict.output}`
+  };
+}
+
+// src/solve-worker.ts
+var FIRST_TIMEOUT_MS = 3e5;
+var REPAIR_TIMEOUT_MS = 18e4;
+var SILENT = {
+  output: "",
+  exitCode: -1,
+  durationMs: 0,
+  timedOut: false
+};
+async function spawnWorker(prompt, session, timeoutMs) {
+  const { spec } = session;
+  return spawnClaude(prompt, {
+    cwd: spec.cwd,
+    model: spec.model,
+    apiKey: spec.api_key,
+    useProxy: session.proxyReady,
+    timeoutMs
+  }).catch(() => ({ ...SILENT }));
+}
+
+// src/solve-repair.ts
+async function runRepair(lineage) {
+  const { plan, session, state } = lineage;
+  const { spec } = session;
+  const round = state.diagnostic.repair_attempts;
+  const diagnostics = compileFeedback(state.output, spec.cwd, "verify");
+  session.onProgress?.(`  [${plan.index + 1}] repair ${round}: ${diagnostics.length} diag`);
+  const context = repairContext(spec, lineage.summaries);
+  const prompt = repairPrompt(spec.goal, diagnostics, round, context);
+  const worker = await spawnWorker(prompt, session, REPAIR_TIMEOUT_MS);
+  if (worker.timedOut) {
+    state.diagnostic.timed_out = true;
+    state.diagnostic.final_status = "timed_out";
+    return false;
+  }
+  commitCandidate(spec.cwd, `solve strategy ${plan.index} repair ${round}`);
+  state.diff = captureDiff(spec.cwd, `${session.rootBranch}...${state.branch}`);
+  applyVerification(state, await runVerification(spec));
+  return true;
+}
+async function tryOneRepair(lineage) {
+  const { state } = lineage;
+  state.diagnostic.repair_attempts++;
+  if (!await runRepair(lineage)) return false;
+  if (!state.passed) return true;
+  state.diagnostic.final_status = "passed";
+  return false;
+}
+async function repairLineage(plan, session, state) {
+  const lineage = openLineage(plan, session, state);
+  let ladder = createEscalationState();
+  while (!session.budgetExhausted) {
+    const signals = {
+      ...readSignals(state, lineage.history),
+      budgetExhausted: session.budgetExhausted,
+      timeExhausted: false
+    };
+    const decision = evaluateEscalation(recordFailure(ladder), signals);
+    ladder = decision.state;
+    if (!canContinue(decision)) {
+      state.diagnostic.final_status = "stuck";
+      return;
+    }
+    if (!await tryOneRepair(lineage)) return;
+    recordTry(lineage);
+  }
+}
+
+// src/solve-attempt.ts
+var CHECKPOINT_NAME = "solve";
+var WORKER_SAMPLE_CHARS = 500;
+async function startBranch(state, session) {
+  session.onProgress?.(`  spawning branch ${state.branch}`);
+  try {
+    await spawnCandidate(CHECKPOINT_NAME, state.branch, session.spec.cwd);
+  } catch (err) {
+    session.onProgress?.(`  branch failed: ${String(err).slice(0, 120)}`);
+    return false;
+  }
+  return checkoutBranch(session.spec.cwd, state.branch);
+}
+function recordWorker(state, worker) {
+  const diagnostic = state.diagnostic;
+  diagnostic.claude_exit_code = worker.exitCode;
+  diagnostic.claude_output_sample = worker.output.slice(0, WORKER_SAMPLE_CHARS);
+  if (worker.timedOut) {
+    diagnostic.timed_out = true;
+    diagnostic.final_status = "timed_out";
+    return false;
+  }
+  if (worker.output.trim()) return true;
+  markNoOutput(state);
+  return false;
+}
+async function gradeCandidate(plan, session, state) {
+  const { spec } = session;
+  commitCandidate(spec.cwd, `solve strategy ${plan.index}`);
+  state.diff = captureDiff(spec.cwd, `${session.rootBranch}...${state.branch}`);
+  session.onProgress?.(`  [${plan.index + 1}] Verifying ${state.branch}`);
+  applyVerification(state, await runVerification(spec));
+  if (!state.passed) return repairLineage(plan, session, state);
+  state.diagnostic.final_status = "passed";
+  session.onProgress?.(`  [${plan.index + 1}] PASSED`);
+}
+async function attemptBody(plan, session) {
+  const state = blankResult(plan);
+  if (!await startBranch(state, session)) return markSpawnFailed(state);
+  const worker = await spawnWorker(plan.prompt, session, FIRST_TIMEOUT_MS);
+  if (!recordWorker(state, worker)) return state;
+  await gradeCandidate(plan, session, state);
+  return state;
+}
+async function runAttempt(plan, session) {
+  const costBefore = session.proxyReady ? await getProxyCost() : null;
+  const failed = () => markNoOutput(blankResult(plan));
+  const state = await attemptBody(plan, session).catch(failed);
+  state.diagnostic.lineage_tokens = await proxyTokenDelta(costBefore);
+  const status = state.diagnostic.final_status;
+  session.onProgress?.(`  [${plan.index + 1}] completed: ${status}`);
+  return state;
+}
+
+// src/solve-report.ts
+var BEST_OUTPUT_CHARS = 2e3;
+var REJECTION_CHARS = 500;
+var CLOSING = "Escalate to Claude: solve the specific failing assertion directly.";
+function dominantSignature(attempts) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const attempt of attempts) {
+    const history = attempt.diagnostic.signature_history?.signatures ?? [];
+    for (const signature of history) {
+      counts.set(signature, (counts.get(signature) ?? 0) + 1);
+    }
+  }
+  let best = "unknown";
+  let bestCount = 0;
+  for (const [signature, count] of counts) {
+    if (count <= bestCount) continue;
+    best = signature;
+    bestCount = count;
+  }
+  return best;
+}
+function leastBad(attempts) {
+  const graded = attempts.filter((a) => a.exitCode >= 0);
+  const byExit = (a, b) => a.exitCode - b.exitCode || b.diff.length - a.diff.length;
+  return [...graded].sort(byExit)[0];
+}
+function buildSummary(attempts, signature, rejections) {
+  const repairs = attempts.reduce((n, a) => n + a.diagnostic.repair_attempts, 0);
+  const parts = [
+    `${attempts.length} lineage(s) ran and none produced a verified patch.`,
+    `Most frequent failure signature: ${signature}.`,
+    `Repair tries: ${repairs}.`
+  ];
+  if (rejections.length > 0) {
+    const detail = rejections.join("; ").slice(0, REJECTION_CHARS);
+    parts.push(`Degenerate rejections (${rejections.length}): ${detail}`);
+  }
+  parts.push(CLOSING);
+  return parts.join(" ");
+}
+function buildEscalation(attempts, rejections) {
+  const signature = dominantSignature(attempts);
+  const best = leastBad(attempts);
+  return {
+    failure_signature: signature,
+    best_partial_patch: best?.diff,
+    best_output: best?.output.slice(0, BEST_OUTPUT_CHARS),
+    lineages_attempted: attempts.length,
+    summary: buildSummary(attempts, signature, rejections),
+    lineage_diagnostics: attempts.map((a) => a.diagnostic)
+  };
+}
+function checkpointFailure(cause) {
+  const why = `Failed to create gitevo checkpoint: ${cause}.`;
+  return {
+    failure_signature: "checkpoint_failed",
+    lineages_attempted: 0,
+    summary: `No attempt ran. ${why} ${CLOSING}`,
+    lineage_diagnostics: []
   };
 }
 
@@ -24158,725 +24529,358 @@ function pickBestByComposite(scores) {
   return bestBranch;
 }
 
-// src/solve.ts
-var DEFAULT_N = 5;
-var DEFAULT_TIMEOUT_MS2 = 3e5;
-var REPAIR_TIMEOUT_MS = 18e4;
-async function mapConcurrent2(items, limit, fn) {
-  const results = new Array(items.length);
-  const queue = items.map((_, i) => i);
-  const worker = async () => {
-    while (queue.length > 0) {
-      const idx = queue.shift();
-      if (idx === void 0) return;
-      results[idx] = await fn(items[idx], idx);
-    }
-  };
-  const count = Math.min(limit, items.length);
-  await Promise.all(Array.from({ length: count }, () => worker()));
-  return results;
+// src/solve-abandon.ts
+async function abandonBranch(branch, reason, cwd) {
+  if (!checkoutBranch(cwd, branch)) return;
+  await abandonLoser(branch, reason, cwd).catch(() => void 0);
 }
-function captureBranchDiff(rootBranch, strategyBranch, cwd) {
-  try {
-    const diff = execSync5(`git diff ${rootBranch}...${strategyBranch}`, {
-      cwd,
-      encoding: "utf-8",
-      timeout: 1e4
-    });
-    return diff || "";
-  } catch {
-    return "";
-  }
+async function discardAttempt(attempt, session) {
+  const { lineage_id, final_status, repair_attempts } = attempt.diagnostic;
+  const reason = `${lineage_id}: ${final_status} after ${repair_attempts} repair try(s)`;
+  await abandonBranch(attempt.branch, reason, session.spec.cwd);
 }
-function captureDiff(cwd) {
-  try {
-    const diff = execSync5("git diff HEAD", { cwd, encoding: "utf-8", timeout: 1e4 });
-    return diff || null;
-  } catch {
-    return null;
-  }
-}
-function detectScalarFitness(cmd, cwd) {
-  try {
-    const result = runCommand(cmd, cwd, 3e4);
-    if (result.exitCode !== 0) return false;
-    const score = extractScore(result.output);
-    return score !== null;
-  } catch {
-    return false;
-  }
-}
-function matchGlob(filePath, pattern) {
-  let regex = "";
-  let i = 0;
-  while (i < pattern.length) {
-    const ch = pattern[i];
-    if (ch === "*" && i + 1 < pattern.length && pattern[i + 1] === "*") {
-      i += 2;
-      if (i < pattern.length && pattern[i] === "/") {
-        regex += "(.+/)?";
-        i++;
-      } else {
-        regex += ".*";
-      }
-    } else if (ch === "*") {
-      regex += "[^/]*";
-      i++;
-    } else if (ch === "?") {
-      regex += "[^/]";
-      i++;
-    } else if (/[.+^${}()|\\]/.test(ch)) {
-      regex += `\\${ch}`;
-      i++;
-    } else {
-      regex += ch;
-      i++;
-    }
-  }
-  try {
-    return new RegExp(`^${regex}$`).test(filePath);
-  } catch {
-    return false;
-  }
-}
-function filesMatchGlob(diff, patterns) {
-  if (!patterns || patterns.length === 0) return [];
-  const filePaths = [];
-  const diffRe = /^diff --git a\/(.+?) b\/(.+?)$/gm;
-  for (const match of diff.matchAll(diffRe)) {
-    const bPath = match[2];
-    if (bPath && !filePaths.includes(bPath)) filePaths.push(bPath);
-  }
-  const violating = [];
-  for (const fp of filePaths) {
-    const matched = patterns.some((p) => matchGlob(fp, p));
-    if (!matched) violating.push(fp);
-  }
-  return violating;
-}
-function findFilesMatchingGlob(rootDir, pattern) {
-  const results = [];
-  if (pattern.includes("**")) {
-    const prefix = pattern.split("/**")[0];
-    const baseDir = path7.resolve(rootDir, prefix);
-    const _suffix = pattern.slice(prefix.length + 3);
-    if (fs7.existsSync(baseDir) && fs7.statSync(baseDir).isDirectory()) {
-      walkDir(baseDir, (filePath) => {
-        const rel = path7.relative(rootDir, filePath).replace(/\\/g, "/");
-        if (matchGlob(rel, pattern)) {
-          results.push(filePath);
-        }
-      });
-    }
-  } else {
-    const fullPath = path7.resolve(rootDir, pattern);
-    if (fs7.existsSync(fullPath) && fs7.statSync(fullPath).isFile()) {
-      results.push(fullPath);
-    } else {
-      const dir = path7.dirname(fullPath);
-      const basename3 = path7.basename(fullPath);
-      if (fs7.existsSync(dir) && fs7.statSync(dir).isDirectory()) {
-        for (const entry of fs7.readdirSync(dir)) {
-          if (matchGlob(entry, basename3)) {
-            const fp = path7.join(dir, entry);
-            if (fs7.statSync(fp).isFile()) results.push(fp);
-          }
-        }
-      }
-    }
-  }
-  return results;
-}
-function walkDir(dir, cb) {
-  try {
-    for (const entry of fs7.readdirSync(dir)) {
-      const fp = path7.join(dir, entry);
-      if (fs7.statSync(fp).isDirectory()) {
-        walkDir(fp, cb);
-      } else {
-        cb(fp);
-      }
-    }
-  } catch {
-  }
-}
-async function runVerification(spec, cwd) {
-  if (spec.build_cmd || spec.test_cmd || spec.lint_cmd) {
-    const gateRunner = new GateRunner({
-      build_cmd: spec.build_cmd,
-      test_cmd: spec.test_cmd,
-      lint_cmd: spec.lint_cmd,
-      verify_cmd: spec.verify_cmd
-    });
-    const gateResults = await gateRunner.runAll(cwd);
-    const allPassed = gateResults.every((r) => r.passed);
-    const output = gateResults.filter((r) => !r.passed).map((r) => `=== FAILED: ${r.gate} ===
-${r.diagnostics}`).join("\n\n");
-    return {
-      verdict: {
-        passed: allPassed,
-        exit_code: allPassed ? 0 : 1,
-        output,
-        duration_ms: gateResults.reduce((s, r) => s + r.elapsed_ms, 0)
-      },
-      gateResults
-    };
-  }
-  const raw = runCommand(spec.verify_cmd, cwd);
-  return { verdict: toVerdict(raw) };
-}
-async function solve(spec, onProgress) {
-  const startTime = Date.now();
-  const stats = {
-    plans_sampled: 0,
-    plans_deduped: 0,
-    candidates_generated: 0,
-    tokens_consumed: -1,
-    duration_ms: 0,
-    model: spec.model ?? "deepseek-v4-pro[1m]"
-  };
-  const proxyReady = await ensureProxy();
-  if (!proxyReady) {
-    onProgress?.("WARNING: deepclaude proxy not running. Attempting direct mode with DEEPSEEK_API_KEY...");
-  }
-  const numParallel = spec.fanout ?? DEFAULT_N;
-  let budget = createBudgetState({
-    implement: { tokenLimit: spec.budget_tokens ?? 1e5 },
-    total: { tokenLimit: spec.budget_tokens ?? 1e5 }
-  });
-  const emittedBudgetWarnings = /* @__PURE__ */ new Set();
-  const lineageEscStates = /* @__PURE__ */ new Map();
-  let totalLineageTokens = -1;
-  const strategyPlans = [];
-  for (let i = 0; i < numParallel; i++) {
-    strategyPlans.push({
-      id: `strategy-${i}`,
-      summary: STRATEGIES[i % STRATEGIES.length]
-    });
-  }
-  stats.plans_sampled = strategyPlans.length;
-  const dedupedPlans = deduplicatePlans(strategyPlans);
-  stats.plans_deduped = dedupedPlans.length;
-  onProgress?.("Creating solve checkpoint...");
-  try {
-    evo_checkpoint("solve", "solve attempt checkpoint", spec.cwd);
-  } catch (err) {
-    onProgress?.(`Failed to create solve checkpoint: ${err} \u2014 aborting`);
-    return {
-      outcome: "escalate",
-      escalation: {
-        failure_signature: "checkpoint_failed",
-        lineages_attempted: 0,
-        lineage_diagnostics: [],
-        summary: `Failed to create gitevo checkpoint: ${err}`
-      },
-      stats
-    };
-  }
-  const rootBranch = getRootBranch(spec.cwd);
-  const targetContents = [];
-  if (spec.allowed_files && spec.allowed_files.length > 0) {
-    for (const pattern of spec.allowed_files) {
-      try {
-        const found = findFilesMatchingGlob(spec.cwd, pattern);
-        for (const fp of found) {
-          targetContents.push({
-            path: path7.relative(spec.cwd, fp),
-            content: fs7.readFileSync(fp, "utf-8")
-          });
-        }
-      } catch {
-      }
-    }
-  }
-  const factSheet = generateFactSheet(spec.cwd);
-  const goalWithCtx = spec.context ? `${spec.goal}
 
-Additional context: ${spec.context}` : spec.goal;
-  const baseLayers = {
-    goal: goalWithCtx,
-    targetFiles: targetContents.length > 0 ? targetContents : void 0,
-    constraints: factSheet ? { lintRules: "", conventions: factSheet, typeConfig: "" } : void 0
+// src/solve-select.ts
+function toBranch(attempt) {
+  return {
+    name: attempt.branch,
+    diff: attempt.diff,
+    score: 1,
+    verificationReport: attempt.report
   };
-  const baseCuratedContext = assembleContext(baseLayers);
-  const strategies = strategyPrompts(spec.goal, dedupedPlans.length, baseCuratedContext);
-  onProgress?.(
-    `Spawning ${strategies.length} git branches (${stats.plans_sampled} plans sampled, ${stats.plans_deduped} after dedup)...`
-  );
-  const candidates = [];
-  const passingBranches = [];
-  const degenerateRejections = [];
-  const failureSignatures = /* @__PURE__ */ new Set();
-  const lineageSignatureHistory = /* @__PURE__ */ new Map();
-  const diagnostics = [];
-  const slots = [];
-  for (let i = 0; i < strategies.length; i++) {
-    const branchName = `solve-strategy-${i}`;
-    const stratLabel = STRATEGY_LABELS[i % STRATEGY_LABELS.length];
-    const costBeforeLineage = proxyReady ? await getProxyCost() : null;
-    onProgress?.(`  [${i + 1}] spawning branch '${branchName}' (${stratLabel})...`);
-    try {
-      await spawnCandidate("solve", branchName, spec.cwd);
-    } catch (_err) {
-      onProgress?.(`  [${i + 1}] branch spawn failed \u2014 skipping`);
-      diagnostics.push({
-        lineage_id: `strategy-${i}`,
-        strategy: stratLabel,
-        timed_out: false,
-        claude_exit_code: -1,
-        claude_no_output: true,
-        claude_output_sample: "",
-        repair_attempts: 0,
-        final_status: "failed"
-      });
-      const delta0 = await proxyTokenDelta(costBeforeLineage);
-      if (delta0 > 0) {
-        const di = diagnostics[diagnostics.length - 1];
-        di.lineage_tokens = delta0;
-        totalLineageTokens = totalLineageTokens < 0 ? delta0 : totalLineageTokens + delta0;
-      }
-      continue;
-    }
-    slots.push({
-      index: i,
-      branchName,
-      stratLabel,
-      prompt: strategies[i],
-      costBeforeLineage,
-      spawnResult: null
-    });
-  }
-  const concurrency = Math.min(slots.length, 4);
-  onProgress?.(`Running ${slots.length} strategies with concurrency ${concurrency}...`);
-  await mapConcurrent2(slots, concurrency, async (slot) => {
-    try {
-      execSync5(`git checkout ${slot.branchName}`, { cwd: spec.cwd, timeout: 1e4, stdio: "ignore" });
-    } catch {
-      onProgress?.(`  [${slot.index + 1}] checkout failed \u2014 skipping`);
-      slot.spawnResult = null;
-      return;
-    }
-    onProgress?.(`  [${slot.index + 1}] running strategy: ${slot.stratLabel}...`);
-    const r = await spawnClaude(slot.prompt, {
-      cwd: spec.cwd,
-      model: spec.model,
-      apiKey: spec.api_key,
-      useProxy: proxyReady,
-      timeoutMs: DEFAULT_TIMEOUT_MS2
-    });
-    slot.spawnResult = r;
+}
+async function pickWinner(survivors, session) {
+  if (survivors.length === 1) return { winner: survivors[0] };
+  const branches = survivors.map(toBranch);
+  const result = await compareBranches(branches, {
+    cwd: session.spec.cwd,
+    model: session.spec.model,
+    apiKey: session.spec.api_key,
+    useProxy: session.proxyReady
   });
-  for (let idx = 0; idx < slots.length; idx++) {
-    const slot = slots[idx];
-    const { index: i, branchName, stratLabel, costBeforeLineage } = slot;
-    const r = slot.spawnResult;
-    const recordTokenDelta = async () => {
-      const delta = await proxyTokenDelta(costBeforeLineage);
-      if (delta > 0) {
-        const di = diagnostics.find((d) => d.lineage_id === `strategy-${i}`);
-        if (di) di.lineage_tokens = delta;
-        totalLineageTokens = totalLineageTokens < 0 ? delta : totalLineageTokens + delta;
-      }
-    };
-    if (!r) {
-      await recordTokenDelta();
-      continue;
-    }
-    const hasOutput = r.output.trim().length > 0;
-    if (r.timedOut) {
-      onProgress?.(`  [${i + 1}] timed out \u2014 abandoning`);
-      diagnostics.push({
-        lineage_id: `strategy-${i}`,
-        strategy: stratLabel,
-        timed_out: true,
-        claude_exit_code: r.exitCode,
-        claude_no_output: !hasOutput,
-        claude_output_sample: r.output.slice(0, 500),
-        repair_attempts: 0,
-        final_status: "timed_out"
-      });
-      await abandonLoser(branchName, `timed out`, spec.cwd).catch(() => {
-      });
-      await recordTokenDelta();
-      continue;
-    }
-    if (!hasOutput) {
-      onProgress?.(`  [${i + 1}] no output from claude -p (exit ${r.exitCode}) \u2014 abandoning`);
-      diagnostics.push({
-        lineage_id: `strategy-${i}`,
-        strategy: stratLabel,
-        timed_out: false,
-        claude_exit_code: r.exitCode,
-        claude_no_output: true,
-        claude_output_sample: "",
-        repair_attempts: 0,
-        final_status: "no_output"
-      });
-      await abandonLoser(branchName, `no output from claude -p`, spec.cwd).catch(() => {
-      });
-      await recordTokenDelta();
-      continue;
-    }
-    try {
-      execSync5(`git checkout ${branchName}`, { cwd: spec.cwd, timeout: 1e4, stdio: "ignore" });
-    } catch {
-      onProgress?.(`  [${i + 1}] checkout for commit failed \u2014 skipping`);
-      await recordTokenDelta();
-      continue;
-    }
-    const commitResult = commitOrNoop(spec.cwd, `solve strategy ${i}`);
-    const candidate = {
-      plan_id: `strategy-${i}`,
-      patch: commitResult.committed ? captureBranchDiff(rootBranch, branchName, spec.cwd) : "",
-      repair_count: 0,
-      status: "verifying"
-    };
-    candidates.push(candidate);
-    stats.candidates_generated++;
-    const { verdict, gateResults } = await runVerification(spec, spec.cwd);
-    candidate.verdict = verdict;
-    if (gateResults) candidate.gateResults = gateResults;
-    if (verdict.exit_code === 0) {
-      candidate.status = "passed";
-      const branchDiff = captureBranchDiff(rootBranch, branchName, spec.cwd);
-      const degenerateReport = detectDegenerate(branchDiff);
-      if (isDegenerateReject(degenerateReport)) {
-        candidate.status = "degenerate";
-        candidate.degenerate_signals = degenerateReport.findings.map((f) => ({
-          type: f.type,
-          severity: f.severity,
-          message: f.message,
-          file: f.file,
-          line: f.line
-        }));
-        degenerateRejections.push(`${branchName}: ${degenerateReport.summary}`);
-        onProgress?.(`  [${i + 1}] PASSED verify but REJECTED by degenerate detection: ${degenerateReport.summary}`);
-        execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
-        await recordTokenDelta();
-        continue;
-      }
-      if (spec.allowed_files && spec.allowed_files.length > 0) {
-        const violating = filesMatchGlob(branchDiff, spec.allowed_files);
-        if (violating.length > 0) {
-          candidate.status = "degenerate";
-          degenerateRejections.push(`${branchName}: touches files outside allowed_files: ${violating.join(", ")}`);
-          onProgress?.(`  [${i + 1}] PASSED verify but touches files outside allowed_files: ${violating.join(", ")}`);
-          execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
-          await recordTokenDelta();
-          continue;
-        }
-      }
-      passingBranches.push({
-        name: branchName,
-        diff: branchDiff,
-        score: 1,
-        verificationReport: verdict.output
-      });
-      onProgress?.(`  [${i + 1}] PASSED in ${r.durationMs}ms! (collecting, ${passingBranches.length} so far)`);
-      execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
-      await recordTokenDelta();
-      continue;
-    }
-    candidate.status = "failed";
-    candidate.failure_signature = hashFailure(verdict.output, spec.cwd);
-    failureSignatures.add(candidate.failure_signature);
-    onProgress?.(`  [${i + 1}] failed (exit ${verdict.exit_code}): ${verdict.output.slice(0, 120)}`);
-    diagnostics.push({
-      lineage_id: `strategy-${i}`,
-      strategy: stratLabel,
-      timed_out: false,
-      claude_exit_code: r.exitCode,
-      claude_no_output: false,
-      claude_output_sample: r.output.slice(0, 500),
-      verify_failed: true,
-      verify_exit_code: verdict.exit_code,
-      verify_output_sample: verdict.output.slice(0, 300),
-      repair_attempts: 0,
-      final_status: "failed"
-    });
-    const repairAttempts = [
-      {
-        strategy: stratLabel,
-        outcome: "failed",
-        summary: (candidate.verdict?.output ?? "").slice(0, 500),
-        failureSignature: candidate.failure_signature
-      }
-    ];
-    const sigHistory = [];
-    if (candidate.failure_signature) {
-      sigHistory.push(candidate.failure_signature);
-    }
-    lineageSignatureHistory.set(candidate.plan_id, sigHistory);
-    let escState = createEscalationState();
-    lineageEscStates.set(candidate.plan_id, escState);
-    let repair = 1;
-    let repairActive = true;
-    let escDecision = { action: "continue", reason: "starting", state: escState };
-    while (repairActive && !budget.exhausted) {
-      onProgress?.(`    Repair attempt ${repair} for ${candidate.plan_id}...`);
-      const diag = diagnostics.find((d) => d.lineage_id === candidate.plan_id);
-      if (diag) diag.repair_attempts = repair;
-      const failureSigs = [];
-      for (const a of repairAttempts) {
-        if (a.failureSignature) {
-          failureSigs.push({ hash: a.failureSignature, description: a.summary.slice(0, 200), count: 1 });
-        }
-      }
-      const repairLayers = {
-        ...baseLayers,
-        priorAttempts: repairAttempts.length > 0 ? repairAttempts : void 0,
-        failureSignatures: failureSigs.length > 0 ? failureSigs : void 0
-      };
-      const repairCtx = assembleContext(repairLayers);
-      const failOutput = candidate.verdict?.output ?? "";
-      const feedback = compileFeedback(failOutput, spec.cwd, "verify");
-      const prompt = repairPrompt(spec.goal, feedback, repair, repairCtx);
-      const repairResult = await spawnClaude(prompt, {
-        cwd: spec.cwd,
-        model: spec.model,
-        apiKey: spec.api_key,
-        useProxy: proxyReady,
-        timeoutMs: REPAIR_TIMEOUT_MS
-      });
-      if (repairResult.timedOut) {
-        onProgress?.(`      -> timed out`);
-        if (diag) diag.final_status = "timed_out";
-        break;
-      }
-      const repairCommitResult = commitOrNoop(spec.cwd, `solve strategy ${i} repair ${repair}`);
-      stats.candidates_generated++;
-      const { verdict: repairVerdict, gateResults: repairGateResults } = await runVerification(spec, spec.cwd);
-      candidate.verdict = repairVerdict;
-      if (repairGateResults) candidate.gateResults = repairGateResults;
-      candidate.repair_count = repair;
-      candidate.patch = repairCommitResult.committed ? captureBranchDiff(rootBranch, branchName, spec.cwd) : "";
-      if (repairVerdict.exit_code === 0) {
-        candidate.status = "passed";
-        if (diag) {
-          diag.final_status = "passed";
-          diag.verify_exit_code = 0;
-          diag.verify_output_sample = repairVerdict.output.slice(0, 300);
-        }
-        const branchDiff = captureBranchDiff(rootBranch, branchName, spec.cwd);
-        const degenerateReport = detectDegenerate(branchDiff);
-        if (isDegenerateReject(degenerateReport)) {
-          candidate.status = "degenerate";
-          candidate.degenerate_signals = degenerateReport.findings.map((f) => ({
-            type: f.type,
-            severity: f.severity,
-            message: f.message,
-            file: f.file,
-            line: f.line
-          }));
-          degenerateRejections.push(`${branchName}: ${degenerateReport.summary}`);
-          onProgress?.(
-            `      -> REPAIR ${repair} PASSED verify but REJECTED by degenerate detection: ${degenerateReport.summary}`
-          );
-          execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
-          await recordTokenDelta();
-          break;
-        }
-        if (spec.allowed_files && spec.allowed_files.length > 0) {
-          const violating = filesMatchGlob(branchDiff, spec.allowed_files);
-          if (violating.length > 0) {
-            candidate.status = "degenerate";
-            degenerateRejections.push(`${branchName}: touches files outside allowed_files: ${violating.join(", ")}`);
-            onProgress?.(`      -> REPAIR ${repair} touches files outside allowed_files: ${violating.join(", ")}`);
-            execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
-            await recordTokenDelta();
-            break;
-          }
-        }
-        passingBranches.push({
-          name: branchName,
-          diff: branchDiff,
-          score: 1,
-          verificationReport: repairVerdict.output
-        });
-        onProgress?.(`      -> REPAIR ${repair} PASSED! (collecting, ${passingBranches.length} so far)`);
-        execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
-        await recordTokenDelta();
-        break;
-      }
-      const sig = hashFailure(repairVerdict.output, spec.cwd);
-      sigHistory.push(sig);
-      const b5Signals = computeFailureSignals(sigHistory);
-      if (diag) {
-        diag.signature_history = {
-          signatures: [...sigHistory],
-          stuck: b5Signals.stuck,
-          oscillating: b5Signals.oscillating,
-          noProgress: b5Signals.noProgress
-        };
-        if (b5Signals.stuck) diag.failure_mode = "stuck";
-        else if (b5Signals.oscillating) diag.failure_mode = "oscillating";
-        else if (b5Signals.noProgress) diag.failure_mode = "noProgress";
-      }
-      escState = recordFailure(escState);
-      const triggerSignals = {
-        stuck: b5Signals.stuck,
-        oscillating: b5Signals.oscillating,
-        noProgress: b5Signals.noProgress,
-        budgetExhausted: budget.exhausted,
-        timeExhausted: false
-      };
-      escDecision = evaluateEscalation(escState, triggerSignals);
-      escState = escDecision.state;
-      lineageEscStates.set(candidate.plan_id, escState);
-      for (const w of budget.warnings) {
-        const wkey = `${w.stage}:${w.threshold}`;
-        if (!emittedBudgetWarnings.has(wkey)) {
-          emittedBudgetWarnings.add(wkey);
-          onProgress?.(`      ! Budget: ${w.stage} at ${w.threshold}% (${w.resource})`);
-        }
-      }
-      if (escDecision.action === "continue") {
-        candidate.failure_signature = sig;
-        failureSignatures.add(sig);
-        repairAttempts.push({
-          strategy: stratLabel,
-          outcome: "failed",
-          summary: repairVerdict.output.slice(0, 500),
-          failureSignature: sig
-        });
-        repair++;
-        onProgress?.(`      -> still failing: ${repairVerdict.output.slice(0, 100)}`);
-        continue;
-      }
-      onProgress?.(`      -> ${escDecision.reason}`);
-      if (escDecision.action === "escalate" && escDecision.nextRung === "stronger-model") {
-        const currentModel = spec.model ?? "";
-        if (!(currentModel.includes("sonnet") || currentModel.includes("opus"))) {
-          onProgress?.(`      Stronger model requested but no alternative configured -- aborting lineage`);
-        }
-      }
-      if (escDecision.action === "escalate" && escDecision.nextRung === "resample") {
-        candidate.failure_signature = sig;
-        failureSignatures.add(sig);
-        repairAttempts.push({
-          strategy: stratLabel,
-          outcome: "failed",
-          summary: repairVerdict.output.slice(0, 500),
-          failureSignature: sig
-        });
-        repair++;
-        onProgress?.(`      Resampling (new approach) for ${candidate.plan_id}`);
-        continue;
-      }
-      if (diag) {
-        diag.final_status = "stuck";
-        diag.verify_exit_code = repairVerdict.exit_code;
-        diag.verify_output_sample = repairVerdict.output.slice(0, 300);
-      }
-      repairActive = false;
-      break;
-    }
-    onProgress?.(`  [${i + 1}] abandoning '${branchName}'`);
-    const abandonReason = budget.exhausted ? `strategy ${i}: budget exhausted after ${escState.totalAttempts} attempts` : `strategy ${i}: escalated to ${escState.currentRung} after ${escState.totalAttempts} attempts`;
-    await abandonLoser(branchName, abandonReason, spec.cwd).catch(() => {
-    });
-    await recordTokenDelta();
-    const budgetDiag = diagnostics.find((d) => d.lineage_id === candidate.plan_id);
-    const tDelta = budgetDiag?.lineage_tokens ?? 0;
-    if (tDelta > 0) {
-      budget = recordAttempt(budget, "implement", tDelta, Date.now() - startTime);
-      for (const w of budget.warnings) {
-        const wkey = `${w.stage}:${w.threshold}`;
-        if (!emittedBudgetWarnings.has(wkey)) {
-          emittedBudgetWarnings.add(wkey);
-          onProgress?.(`   Budget: ${w.stage} at ${w.threshold}% (${w.resource})`);
-        }
-      }
-    }
+  const found = survivors.find((s) => s.branch === result.winner);
+  return { winner: found ?? survivors[0], verdict: result.verdict ?? void 0 };
+}
+async function selectWinner(survivors, session) {
+  const cwd = session.spec.cwd;
+  const { winner, verdict } = await pickWinner(survivors, session);
+  for (const loser of survivors) {
+    if (loser === winner) continue;
+    await abandonBranch(loser.branch, `judge selected ${winner.branch}`, cwd);
   }
-  stats.duration_ms = Date.now() - startTime;
-  stats.tokens_consumed = totalLineageTokens;
-  onProgress?.(budgetSummary(budget));
-  if (passingBranches.length === 0) {
-    const sigCounts = /* @__PURE__ */ new Map();
-    for (const c of candidates) {
-      if (c.failure_signature) {
-        sigCounts.set(c.failure_signature, (sigCounts.get(c.failure_signature) ?? 0) + 1);
-      }
-    }
-    const dominantSig = [...sigCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-    const bestCandidate = candidates.filter((c) => c.verdict).sort((a, b) => (a.verdict?.exit_code ?? 1) - (b.verdict?.exit_code ?? 1))[0];
-    const escalation = {
-      failure_signature: dominantSig?.[0] ?? "unknown",
-      best_partial_patch: bestCandidate?.patch,
-      best_output: bestCandidate?.verdict?.output?.slice(0, 2e3),
-      lineages_attempted: strategies.length,
-      lineage_diagnostics: diagnostics,
-      summary: [
-        `${strategies.length} strategies attempted (${stats.plans_sampled} sampled, ${stats.plans_deduped} after dedup), ${stats.candidates_generated} candidates generated.`,
-        `Best exit code: ${bestCandidate?.verdict?.exit_code ?? "N/A"}`,
-        dominantSig ? `${dominantSig[1]} lineages hit same failure pattern.` : "No common failure pattern.",
-        "Escalate to Claude: solve the specific failing assertion directly."
-      ].join(" ")
-    };
-    if (degenerateRejections.length > 0) {
-      const degeneratMsg = `Degenerate rejections (${degenerateRejections.length}): ${degenerateRejections.join("; ")}`;
-      escalation.summary += ` ${degeneratMsg}`;
-    }
-    onProgress?.(`Escalating: ${escalation.summary}`);
+  const fresh = captureDiff(cwd, `${session.rootBranch}...${winner.branch}`);
+  checkoutBranch(cwd, session.rootBranch);
+  await adoptWinner(winner.branch, cwd);
+  checkoutBranch(cwd, session.rootBranch);
+  return { winner, verdict, patch: fresh || winner.diff };
+}
+
+// src/solve-finish.ts
+function refusals(run) {
+  return run.rejections.length > 0 ? run.rejections : void 0;
+}
+async function finalize(run, session) {
+  run.stats.duration_ms = Date.now() - run.startedAt;
+  if (run.survivors.length === 0) {
     return {
       outcome: "escalate",
-      escalation,
-      stats,
-      degenerate_rejections: degenerateRejections.length > 0 ? degenerateRejections : void 0
+      escalation: buildEscalation(run.attempts, run.rejections),
+      degenerate_rejections: refusals(run),
+      stats: run.stats
     };
   }
-  if (passingBranches.length === 1) {
-    const winner2 = passingBranches[0].name;
-    onProgress?.(`Single passing candidate '${winner2}' \u2014 adopting directly`);
-    await adoptWinner(winner2, spec.cwd);
-    return {
-      outcome: "pass",
-      patch: captureDiff(spec.cwd) ?? passingBranches[0].diff,
-      verification_report: passingBranches[0].verificationReport,
-      stats,
-      degenerate_rejections: degenerateRejections.length > 0 ? degenerateRejections : void 0
-    };
-  }
-  onProgress?.(`${passingBranches.length} candidates passed \u2014 running LLM judge...`);
-  const judgeResult = await compareBranches(passingBranches, {
-    cwd: spec.cwd,
-    model: spec.model,
-    apiKey: spec.api_key,
-    useProxy: proxyReady
-  });
-  const winner = judgeResult.winner;
-  if (!winner) {
-    onProgress?.("Judge returned no winner \u2014 adopting first passing candidate");
-    const first = passingBranches[0];
-    await adoptWinner(first.name, spec.cwd);
-    return {
-      outcome: "pass",
-      patch: captureDiff(spec.cwd) ?? first.diff,
-      verification_report: first.verificationReport,
-      stats,
-      degenerate_rejections: degenerateRejections.length > 0 ? degenerateRejections : void 0
-    };
-  }
-  for (const pb of passingBranches) {
-    if (pb.name !== winner) {
-      execSync5(`git checkout ${pb.name}`, { cwd: spec.cwd, stdio: "ignore" });
-      await abandonLoser(pb.name, `judge selected ${winner}`, spec.cwd).catch(() => {
-      });
-    }
-  }
-  execSync5(`git checkout ${rootBranch}`, { cwd: spec.cwd, stdio: "ignore" });
-  await adoptWinner(winner, spec.cwd);
-  const winningBranch = passingBranches.find((pb) => pb.name === winner);
-  onProgress?.(`Winner: '${winner}'${judgeResult.fallback ? " (fallback scoring)" : " (LLM judge)"}`);
+  const selection = await selectWinner(run.survivors, session);
+  session.onProgress?.(`Adopted ${selection.winner.branch}.`);
   return {
     outcome: "pass",
-    patch: captureDiff(spec.cwd) ?? winningBranch?.diff ?? "",
-    verification_report: winningBranch?.verificationReport,
-    judge_verdict: judgeResult.verdict ?? void 0,
-    stats,
-    degenerate_rejections: degenerateRejections.length > 0 ? degenerateRejections : void 0
+    patch: selection.patch,
+    verification_report: selection.winner.report,
+    judge_verdict: selection.verdict,
+    degenerate_rejections: refusals(run),
+    stats: run.stats
   };
+}
+
+// src/solve-run.ts
+var DEFAULT_BUDGET_TOKENS = 1e5;
+var DEFAULT_MODEL = "deepseek-v4-pro[1m]";
+var TOKENS_UNMEASURED = -1;
+function createRun(spec) {
+  const limit = spec.budget_tokens ?? DEFAULT_BUDGET_TOKENS;
+  return {
+    attempts: [],
+    survivors: [],
+    rejections: [],
+    warned: /* @__PURE__ */ new Set(),
+    budget: createBudgetState({
+      implement: { tokenLimit: limit },
+      total: { tokenLimit: limit }
+    }),
+    stats: {
+      plans_sampled: 0,
+      plans_deduped: 0,
+      candidates_generated: 0,
+      tokens_consumed: TOKENS_UNMEASURED,
+      duration_ms: 0,
+      model: spec.model ?? DEFAULT_MODEL
+    },
+    startedAt: Date.now()
+  };
+}
+
+// src/solve-screen.ts
+function screenCandidate(attempt, spec) {
+  const id = attempt.diagnostic.lineage_id;
+  const report = detectDegenerate(attempt.diff);
+  if (isDegenerateReject(report)) {
+    return `${id} rejected as degenerate: ${report.summary}`;
+  }
+  const outside = filesMatchGlob(attempt.diff, spec.allowed_files ?? []);
+  if (outside.length > 0) {
+    return `${id} rejected, outside allowed_files: ${outside.join(", ")}`;
+  }
+  return null;
+}
+
+// src/solve-ledger.ts
+function recordCost(run, attempt, elapsedMs) {
+  const delta = attempt.diagnostic.lineage_tokens ?? TOKENS_UNMEASURED;
+  if (delta > 0) {
+    const sofar = Math.max(run.stats.tokens_consumed, 0);
+    run.stats.tokens_consumed = sofar + delta;
+  }
+  const spend = Math.max(delta, 0);
+  run.budget = recordAttempt(run.budget, "implement", spend, elapsedMs);
+}
+function screenAttempt(run, attempt, spec) {
+  if (!attempt.passed) return false;
+  const rejection = screenCandidate(attempt, spec);
+  if (!rejection) {
+    run.survivors.push(attempt);
+    return true;
+  }
+  run.rejections.push(rejection);
+  attempt.diagnostic.final_status = "failed";
+  return false;
+}
+function emitBudgetWarnings(run, onProgress) {
+  for (const warning of run.budget.warnings) {
+    const key = `${warning.stage}:${warning.threshold}`;
+    if (run.warned.has(key)) continue;
+    run.warned.add(key);
+    const at = `${warning.threshold}% (${warning.resource})`;
+    onProgress?.(`  Budget: ${warning.stage} at ${at}`);
+  }
+}
+
+// src/solve-loop.ts
+function markBudget(run, session) {
+  if (!run.budget.exhausted || session.budgetExhausted) return;
+  session.budgetExhausted = true;
+  session.onProgress?.("Budget exhausted. Repairs stop, first tries go on.");
+}
+async function runOne(plan, session, run) {
+  const startedAt = Date.now();
+  const attempt = await runAttempt(plan, session);
+  run.attempts.push(attempt);
+  run.stats.candidates_generated += 1 + attempt.diagnostic.repair_attempts;
+  recordCost(run, attempt, Date.now() - startedAt);
+  const survived = screenAttempt(run, attempt, session.spec);
+  if (!survived) await discardAttempt(attempt, session);
+  emitBudgetWarnings(run, session.onProgress);
+  markBudget(run, session);
+}
+async function runAttempts(plans, session, run) {
+  for (const plan of plans) {
+    await runOne(plan, session, run);
+  }
+}
+
+// src/dedup.ts
+function deduplicatePlans(plans) {
+  const kept = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const plan of plans) {
+    const sig = normalizeForDedup(plan.summary);
+    if (seen.has(sig)) continue;
+    let isDuplicate = false;
+    for (const existing of kept) {
+      if (isTooSimilar(plan.summary, existing.summary)) {
+        isDuplicate = true;
+        break;
+      }
+    }
+    if (!isDuplicate) {
+      seen.add(sig);
+      kept.push(plan);
+    }
+  }
+  return kept;
+}
+function normalizeForDedup(text) {
+  return text.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+function isTooSimilar(a, b) {
+  const tokensA = tokenize(a);
+  const tokensB = tokenize(b);
+  if (tokensA.length === 0 || tokensB.length === 0) return false;
+  const shorter = tokensA.length <= tokensB.length ? tokensA : tokensB;
+  const longer = tokensA.length > tokensB.length ? tokensA : tokensB;
+  const longerSet = new Set(longer);
+  let overlap = 0;
+  for (const t of shorter) {
+    if (longerSet.has(t)) overlap++;
+  }
+  const ratio = overlap / shorter.length;
+  return ratio > 0.65;
+}
+var STOP_WORDS = /* @__PURE__ */ new Set([
+  "the",
+  "a",
+  "an",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "have",
+  "has",
+  "had",
+  "do",
+  "does",
+  "did",
+  "will",
+  "would",
+  "could",
+  "should",
+  "may",
+  "might",
+  "can",
+  "shall",
+  "to",
+  "of",
+  "in",
+  "for",
+  "on",
+  "with",
+  "at",
+  "by",
+  "from",
+  "as",
+  "into",
+  "through",
+  "during",
+  "before",
+  "after",
+  "and",
+  "but",
+  "or",
+  "nor",
+  "not",
+  "so",
+  "yet",
+  "both",
+  "this",
+  "that",
+  "these",
+  "those",
+  "it",
+  "its",
+  "we",
+  "they",
+  "them",
+  "their",
+  "our",
+  "my",
+  "your",
+  "he",
+  "she",
+  "his",
+  "her"
+]);
+function tokenize(text) {
+  return text.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((t) => t.length > 2 && !STOP_WORDS.has(t));
+}
+
+// src/solve-plan.ts
+function samplePlans(count) {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `plan-${i}`,
+    summary: STRATEGIES[i % STRATEGIES.length]
+  }));
+}
+function buildPlans(spec, count) {
+  const sampled = samplePlans(count);
+  const kept = deduplicatePlans(sampled);
+  const prompts = strategyPrompts(goalWithContext(spec), count, baseContext(spec));
+  return kept.map((plan, index) => {
+    const origin = sampled.indexOf(plan);
+    return {
+      index,
+      label: STRATEGY_LABELS[origin % STRATEGY_LABELS.length],
+      prompt: prompts[origin]
+    };
+  });
+}
+
+// src/solve.ts
+var DEFAULT_FANOUT = 5;
+var SCALAR_PROBE_TIMEOUT_MS = 3e4;
+var CAUSE_CHARS = 200;
+function detectScalarFitness(cmd, cwd) {
+  try {
+    const result = runCommand(cmd, cwd, SCALAR_PROBE_TIMEOUT_MS);
+    if (result.exitCode !== 0) return false;
+    return extractScore(result.output) !== null;
+  } catch {
+    return false;
+  }
+}
+async function createCheckpoint(spec, onProgress) {
+  try {
+    await evo_checkpoint(CHECKPOINT_NAME, "before the solve fanout", spec.cwd);
+    return null;
+  } catch (err) {
+    const cause = String(err).slice(0, CAUSE_CHARS);
+    onProgress?.(`Checkpoint failed: ${cause}`);
+    return cause;
+  }
+}
+function abortWithoutCheckpoint(run, cause) {
+  run.stats.duration_ms = Date.now() - run.startedAt;
+  return {
+    outcome: "escalate",
+    escalation: checkpointFailure(cause),
+    stats: run.stats
+  };
+}
+function openSession(spec, proxyReady, onProgress) {
+  if (!proxyReady) {
+    onProgress?.("WARNING: the deepclaude proxy is down. Trying direct mode.");
+  }
+  return {
+    spec,
+    rootBranch: getRootBranch(spec.cwd),
+    proxyReady,
+    budgetExhausted: false,
+    onProgress
+  };
+}
+async function solve(spec, onProgress) {
+  const run = createRun(spec);
+  const cause = await createCheckpoint(spec, onProgress);
+  if (cause) return abortWithoutCheckpoint(run, cause);
+  const session = openSession(spec, await ensureProxy(), onProgress);
+  const sampled = spec.fanout ?? DEFAULT_FANOUT;
+  const plans = buildPlans(spec, sampled);
+  run.stats.plans_sampled = sampled;
+  run.stats.plans_deduped = plans.length;
+  onProgress?.(`Testing ${plans.length} approach(es), one at a time.`);
+  await runAttempts(plans, session, run);
+  onProgress?.(budgetSummary(run.budget));
+  return finalize(run, session);
 }
 
 // src/orchestrate.ts

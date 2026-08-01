@@ -513,7 +513,7 @@ describe("solve", () => {
   });
 });
 
-// â”€â”€ detectScalarFitness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- detectScalarFitness
 
 describe("detectScalarFitness", () => {
   let detectScalarFitness: any;
@@ -557,90 +557,7 @@ describe("detectScalarFitness", () => {
   });
 });
 
-// â”€â”€ matchGlob / filesMatchGlob â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-describe("matchGlob", () => {
-  let matchGlob: any;
-
-  before(async () => {
-    const mod = await import("./solve.js");
-    matchGlob = mod.matchGlob;
-  });
-
-  it("exact match", () => assert.equal(matchGlob("src/foo.ts", "src/foo.ts"), true));
-  it("mismatch", () => assert.equal(matchGlob("src/foo.js", "src/foo.ts"), false));
-  it("* matches within dir", () => assert.equal(matchGlob("src/foo.ts", "src/*.ts"), true));
-  it("* does not cross dir boundary", () => assert.equal(matchGlob("src/sub/foo.ts", "src/*.ts"), false));
-  it("** matches across dirs", () => assert.equal(matchGlob("src/sub/foo.ts", "src/**/*.ts"), true));
-  it("** at root", () => assert.equal(matchGlob("src/foo.ts", "**/*.ts"), true));
-  it("? matches single char", () => assert.equal(matchGlob("src/foo.ts", "src/fo?.ts"), true));
-  it("? matches single char only", () => assert.equal(matchGlob("src/foox.ts", "src/fo?.ts"), false));
-  it("multiple segments", () => {
-    assert.equal(matchGlob("a/b/c.ts", "a/**/c.ts"), true);
-    assert.equal(matchGlob("a/b/d.ts", "a/**/c.ts"), false);
-  });
-  it("empty pattern", () => assert.equal(matchGlob("src/foo.ts", ""), false));
-});
-
-describe("filesMatchGlob", () => {
-  let filesMatchGlob: any;
-
-  before(async () => {
-    const mod = await import("./solve.js");
-    filesMatchGlob = mod.filesMatchGlob;
-  });
-
-  const sampleDiff = [
-    "diff --git a/src/app.ts b/src/app.ts",
-    "index abc..def 100644",
-    "--- a/src/app.ts",
-    "+++ b/src/app.ts",
-    "@@ -1,0 +1,2 @@",
-    "+const x = 1;",
-    "diff --git a/src/utils/helper.ts b/src/utils/helper.ts",
-    "--- a/src/utils/helper.ts",
-    "+++ b/src/utils/helper.ts",
-    "@@ -1,0 +1,2 @@",
-    "+export const help = true;",
-    "diff --git a/package.json b/package.json",
-    "--- a/package.json",
-    "+++ b/package.json",
-    "@@ -1,0 +1,2 @@",
-    '+  "version": "2.0.0"',
-  ].join("\n");
-
-  it("returns empty when all files match patterns", () => {
-    const v = filesMatchGlob(sampleDiff, ["src/**/*.ts", "package.json"]);
-    assert.deepEqual(v, []);
-  });
-
-  it("returns violating file when pattern doesn't match", () => {
-    const v = filesMatchGlob(sampleDiff, ["src/**/*.ts"]);
-    assert.deepEqual(v, ["package.json"]);
-  });
-
-  it("returns empty with no patterns", () => {
-    const v = filesMatchGlob(sampleDiff, []);
-    assert.deepEqual(v, []);
-  });
-
-  it("matches all when pattern is **/*", () => {
-    const v = filesMatchGlob(sampleDiff, ["**/*"]);
-    assert.deepEqual(v, []);
-  });
-
-  it("reports multiple violations", () => {
-    const v = filesMatchGlob(sampleDiff, ["src/app.ts"]);
-    assert.deepEqual(v.sort(), ["package.json", "src/utils/helper.ts"]);
-  });
-
-  it("handles empty diff", () => {
-    const v = filesMatchGlob("", ["src/**/*.ts"]);
-    assert.deepEqual(v, []);
-  });
-});
-
-// â”€â”€ Allowed files enforcement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Allowed files enforcement
 
 describe("allowed_files enforcement", () => {
   let solve: any;

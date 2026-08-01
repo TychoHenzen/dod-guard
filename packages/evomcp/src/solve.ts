@@ -18,8 +18,6 @@ import { createRun, type SolveRun } from "./solve-run.js";
 import type { SolveSession } from "./solve-session.js";
 import type { SolveResult, TaskSpec } from "./types.js";
 
-export { filesMatchGlob, matchGlob } from "./solve-glob.js";
-
 const DEFAULT_FANOUT = 5;
 const SCALAR_PROBE_TIMEOUT_MS = 30_000;
 const CAUSE_CHARS = 200;

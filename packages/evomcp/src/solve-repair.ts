@@ -8,7 +8,7 @@
 
 import type { AttemptResult } from "./attempt-result.js";
 import { applyVerification } from "./attempt-result.js";
-import { createEscalationState, evaluateEscalation, recordFailure } from "./escalation.js";
+import { createEscalationState, evaluateEscalation, recordFailure, type TriggerSignals } from "./escalation.js";
 import { compileFeedback } from "./feedback.js";
 import { repairPrompt } from "./prompts.js";
 import { repairContext } from "./solve-context.js";
@@ -60,7 +60,11 @@ export async function repairLineage(plan: SolvePlan, session: SolveSession, stat
   let ladder = createEscalationState();
 
   while (!session.budgetExhausted) {
-    const signals = readSignals(state, lineage.history);
+    const signals: TriggerSignals = {
+      ...readSignals(state, lineage.history),
+      budgetExhausted: session.budgetExhausted,
+      timeExhausted: false,
+    };
     const decision = evaluateEscalation(recordFailure(ladder), signals);
     ladder = decision.state;
 

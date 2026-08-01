@@ -17,8 +17,6 @@ describe("readSignals", () => {
       stuck: false,
       oscillating: false,
       noProgress: false,
-      budgetExhausted: false,
-      timeExhausted: false,
     });
     assert.equal(attempt.diagnostic.failure_mode, "unknown");
   });
@@ -69,10 +67,9 @@ describe("readSignals", () => {
     assert.equal(attempt.diagnostic.failure_mode, "stuck");
   });
 
-  it("never claims the budget or the clock ran out, because it cannot know", () => {
+  it("reports the failure shape only, because it sees no budget or clock", () => {
     const signals = readSignals(state(), ["a", "a", "a"]);
-    assert.equal(signals.budgetExhausted, false);
-    assert.equal(signals.timeExhausted, false);
+    assert.deepEqual(Object.keys(signals).sort(), ["noProgress", "oscillating", "stuck"]);
   });
 
   it("records the signals next to the history it read them from", () => {

@@ -63,7 +63,7 @@ DeepSeek has an `/anthropic` endpoint that speaks the Anthropic Messages API. By
 11. Refusal filters after a pass: the degenerate gate, then the allowed_files check. Every refusal is reported
 12. Every non-surviving attempt is checked out and abandoned, so the branch is reverted and the reason reaches the gitevo memory bus
 13. One survivor is adopted directly. Several go through the judge, which scores on correctness, clarity, efficiency and maintainability
-14. All attempts fail, so the run returns an escalation report with per-lineage diagnostics and degenerate rejections
+14. When every attempt fails, the run returns an escalation report with per-lineage diagnostics and degenerate rejections
 
 ### Evolve flow
 1. Auto-dispatch: strategy: "auto" inspects verify_cmd for scalar fitness → routes here; "evolve" → here directly
