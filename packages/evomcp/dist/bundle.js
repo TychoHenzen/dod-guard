@@ -12776,10 +12776,10 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
     const shape = def.shape;
     const propValues = {};
     for (const key in shape) {
-      const field = shape[key]._zod;
-      if (field.values) {
+      const field2 = shape[key]._zod;
+      if (field2.values) {
         propValues[key] ?? (propValues[key] = /* @__PURE__ */ new Set());
-        for (const v of field.values)
+        for (const v of field2.values)
           propValues[key].add(v);
       }
     }
@@ -20593,11 +20593,11 @@ var McpServer = class {
       return EMPTY_COMPLETION_RESULT;
     }
     const promptShape = getObjectShape(prompt.argsSchema);
-    const field = promptShape?.[request.params.argument.name];
-    if (!isCompletable(field)) {
+    const field2 = promptShape?.[request.params.argument.name];
+    if (!isCompletable(field2)) {
       return EMPTY_COMPLETION_RESULT;
     }
-    const completer = getCompleter(field);
+    const completer = getCompleter(field2);
     if (!completer) {
       return EMPTY_COMPLETION_RESULT;
     }
@@ -20870,8 +20870,8 @@ var McpServer = class {
     };
     this._registeredPrompts[name] = registeredPrompt;
     if (argsSchema) {
-      const hasCompletable = Object.values(argsSchema).some((field) => {
-        const inner = field instanceof ZodOptional ? field._def?.innerType : field;
+      const hasCompletable = Object.values(argsSchema).some((field2) => {
+        const inner = field2 instanceof ZodOptional ? field2._def?.innerType : field2;
         return isCompletable(inner);
       });
       if (hasCompletable) {
@@ -21080,9 +21080,9 @@ function promptArgumentsFromSchema(schema) {
   const shape = getObjectShape(schema);
   if (!shape)
     return [];
-  return Object.entries(shape).map(([name, field]) => {
-    const description = getSchemaDescription(field);
-    const isOptional = isSchemaOptional(field);
+  return Object.entries(shape).map(([name, field2]) => {
+    const description = getSchemaDescription(field2);
+    const isOptional = isSchemaOptional(field2);
     return {
       name,
       description,
@@ -25078,128 +25078,133 @@ async function orchestrateSolve(spec, onProgress) {
 }
 
 // src/render.ts
-function formatSolveResult(result) {
-  if (result.outcome === "pass") {
-    return [
-      "## Solve: PASSED",
-      "",
-      "### Patch",
-      "```",
-      result.patch?.slice(0, 5e3) ?? "(no patch)",
-      "```",
-      "",
-      "### Verification",
-      "```",
-      result.verification_report?.slice(0, 3e3) ?? "(no report)",
-      "```",
-      "",
-      "### Stats",
-      `- Plans: ${result.stats.plans_sampled}`,
-      `- Candidates: ${result.stats.candidates_generated}`,
-      result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
-      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-      result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
-      `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
-      `- Model: ${result.stats.model}`
-    ].join("\n");
-  }
-  const diagLines = [];
-  if (result.escalation?.lineage_diagnostics && result.escalation.lineage_diagnostics.length > 0) {
-    diagLines.push("### Lineage Diagnostics", "");
-    for (const d of result.escalation.lineage_diagnostics) {
-      const statusEmoji = d.final_status === "passed" ? "\u2705" : d.final_status === "failed" ? "\u274C" : d.final_status === "stuck" ? "\u{1F501}" : d.final_status === "no_output" ? "\u{1F92B}" : "\u23F1\uFE0F";
-      diagLines.push(
-        `| ${statusEmoji} | ${d.lineage_id} | ${d.strategy} | repairs=${d.repair_attempts} | ${d.timed_out ? "TIMED OUT" : d.claude_no_output ? `NO OUTPUT (exit=${d.claude_exit_code})` : `verify_exit=${d.verify_exit_code ?? "N/A"}`} |`
-      );
-      if (d.claude_no_output) {
-        diagLines.push(`  \u26A0\uFE0F \`claude -p\` produced NO output \u2014 proxy or API key issue?`);
-      } else if (d.timed_out) {
-        diagLines.push(`  \u26A0\uFE0F \`claude -p\` timed out \u2014 increase timeout or simplify task`);
-      }
-    }
-    diagLines.push("");
-  }
+var NA = "N/A";
+var FIELD_LIMIT = 8e3;
+function truncate(text) {
+  if (text.length <= FIELD_LIMIT) return text;
+  return `${text.slice(0, FIELD_LIMIT)}
+... [truncated, ${text.length} chars total]`;
+}
+function field(label, value, placeholder) {
+  const text = value === void 0 ? placeholder : truncate(value);
+  return `${label}: ${text}`;
+}
+function formatTokens(tokens) {
+  if (tokens < 0) return `Tokens: ${NA}`;
+  return `Tokens: ${tokens} (approximate)`;
+}
+function formatDuration(ms) {
+  return `Duration: ${(ms / 1e3).toFixed(1)}s`;
+}
+function formatStats(stats) {
   return [
-    "## Solve: ESCALATED",
-    "",
-    "All lineages exhausted. Requires smarter model intervention.",
-    "",
-    "### Escalation Report",
-    `- Lineages attempted: ${result.escalation?.lineages_attempted}`,
-    `- Failure signature: ${result.escalation?.failure_signature}`,
-    `- Summary: ${result.escalation?.summary}`,
-    ...diagLines,
-    "### Best Partial Output",
-    "```",
-    result.escalation?.best_output?.slice(0, 2e3) ?? "(none)",
-    "```",
-    "",
-    "### Stats",
-    `- Plans: ${result.stats.plans_sampled}`,
-    `- Candidates: ${result.stats.candidates_generated}`,
-    result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
-    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-    result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
-    `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
-    `- Model: ${result.stats.model}`,
-    "",
-    "ACTION: Claude should inspect the failure signature and solve the stuck sub-problem directly, then re-invoke solve with revised context."
+    "## Stats",
+    `Plans sampled: ${stats.plans_sampled}`,
+    `Candidates generated: ${stats.candidates_generated}`,
+    formatTokens(stats.tokens_consumed),
+    formatDuration(stats.duration_ms),
+    `Model: ${stats.model}`
   ].join("\n");
+}
+function formatDegenerate(rejections) {
+  if (!rejections || rejections.length === 0) return "";
+  return `Degenerate rejections: ${rejections.length}`;
+}
+function verifyExitLine(code) {
+  return code === void 0 ? `verify_exit=${NA}` : `verify_exit=${code}`;
+}
+function statusMarkers(d) {
+  if (d.final_status === "no_output") {
+    return [`NO OUTPUT (claude_exit_code=${d.claude_exit_code})`, "Hint: check the proxy or API key."];
+  }
+  if (d.final_status === "timed_out") {
+    return ["TIMED OUT", "Hint: increase timeout to avoid recurring stalls."];
+  }
+  return [];
+}
+function verifyExitLines(d) {
+  if (d.final_status === "timed_out" || d.final_status === "no_output") return [];
+  return [verifyExitLine(d.verify_exit_code)];
+}
+function formatDiagnostic(d) {
+  return [
+    `Lineage: ${d.lineage_id} (${d.strategy})`,
+    `Repair attempts: ${d.repair_attempts}`,
+    ...verifyExitLines(d),
+    ...statusMarkers(d)
+  ].join("\n");
+}
+function formatLineageDiagnostics(diags) {
+  if (!diags || diags.length === 0) return "";
+  return ["## Lineage Diagnostics", ...diags.map(formatDiagnostic)].join("\n\n");
+}
+function formatEscalation(esc2) {
+  const lines = [
+    `Failure signature: ${esc2.failure_signature}`,
+    `Summary: ${esc2.summary}`,
+    `Lineages attempted: ${esc2.lineages_attempted}`,
+    field("Best output", esc2.best_output, "(no patch)")
+  ];
+  const diagnostics = formatLineageDiagnostics(esc2.lineage_diagnostics);
+  if (diagnostics) lines.push(diagnostics);
+  return lines.join("\n\n");
+}
+function formatSolvePass(result) {
+  const lines = [
+    "# Solve: PASSED",
+    field("Patch", result.patch, "(no patch)"),
+    field("Verification Report", result.verification_report, "(no report)")
+  ];
+  const degenerate = formatDegenerate(result.degenerate_rejections);
+  if (degenerate) lines.push(degenerate);
+  lines.push(formatStats(result.stats));
+  return lines.join("\n\n");
+}
+function formatSolveEscalate(result) {
+  const lines = ["# Solve: ESCALATED"];
+  if (result.escalation) lines.push(formatEscalation(result.escalation));
+  lines.push(formatStats(result.stats));
+  return lines.join("\n\n");
+}
+function formatSolveResult(result) {
+  return result.outcome === "pass" ? formatSolvePass(result) : formatSolveEscalate(result);
+}
+function formatPercentage(improvement, baseline) {
+  if (baseline === 0) return NA;
+  return `${(improvement / Math.abs(baseline) * 100).toFixed(1)}%`;
+}
+function formatFitnessRow(entry) {
+  return `| ${entry.generation} | ${entry.best_score} | ${entry.mean_score} |`;
+}
+function formatFitnessHistory(history) {
+  if (history.length === 0) return "## Fitness History\n(no generations recorded)";
+  return ["## Fitness History", ...history.map(formatFitnessRow)].join("\n");
 }
 function formatEvolveResult(result) {
   const improvement = result.baseline_score - result.best_score;
-  const pct = result.baseline_score !== 0 ? (improvement / Math.abs(result.baseline_score) * 100).toFixed(1) : "N/A";
+  const pct = formatPercentage(improvement, result.baseline_score);
   return [
-    "## Evolve: COMPLETE",
-    "",
-    "### Results",
-    `- Baseline: ${result.baseline_score.toFixed(2)}`,
-    `- Final: ${result.best_score.toFixed(2)}`,
-    `- Improvement: ${improvement.toFixed(2)} (${pct}%)`,
-    "",
-    "### Fitness History",
-    "| Gen | Best | Mean |",
-    "|-----|------|------|",
-    ...result.fitness_history.map(
-      (h) => `| ${h.generation} | ${h.best_score.toFixed(2)} | ${h.mean_score.toFixed(2)} |`
-    ),
-    "",
-    "### Best Patch",
-    "```diff",
-    result.best_patch.slice(0, 5e3),
-    "```",
-    "",
-    "### Verification",
-    "```",
-    result.verification_report.slice(0, 3e3),
-    "```",
-    "",
-    "### Stats",
-    `- Candidates: ${result.stats.candidates_generated}`,
-    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-    result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
-    `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
-    `- Model: ${result.stats.model}`
-  ].join("\n");
+    "# Evolve: COMPLETE",
+    `Improvement: ${improvement.toFixed(1)} (${pct})`,
+    field("Best Patch", result.best_patch, "(no patch)"),
+    field("Verification Report", result.verification_report, "(no report)"),
+    formatFitnessHistory(result.fitness_history),
+    formatStats(result.stats)
+  ].join("\n\n");
+}
+function formatNestedSolve(solveResult) {
+  if (!solveResult || solveResult.outcome !== "pass") return "";
+  return [
+    "## Solve Patch",
+    field("Patch", solveResult.patch, "(no patch)"),
+    field("Verification Report", solveResult.verification_report, "(no report)")
+  ].join("\n\n");
 }
 function formatOrchestrateResult(result) {
-  return [
-    `## Orchestrate: ${result.outcome.toUpperCase()}`,
-    "",
-    result.summary,
-    "",
-    ...result.solveResult && result.solveResult.outcome === "pass" ? [
-      "### Solve Patch",
-      "```",
-      result.solveResult.patch?.slice(0, 2e3) ?? "(no patch)",
-      "```",
-      "",
-      "### Verification",
-      "```",
-      result.solveResult.verification_report?.slice(0, 1e3) ?? "(no report)",
-      "```"
-    ] : []
-  ].join("\n");
+  const lines = [`# Orchestrate: ${result.outcome.toUpperCase()}`, `Summary: ${result.summary}`];
+  const nested = formatNestedSolve(result.solveResult);
+  if (nested) lines.push(nested);
+  return lines.join("\n\n");
 }
 
 // src/index.ts

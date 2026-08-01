@@ -169,6 +169,20 @@ describe("formatSolveResult, lineage diagnostics per final_status branch", () =>
     assert.match(text, /proxy or API key/i);
   });
 
+  it("timed_out lineage hides a verify exit code left over from an earlier round", () => {
+    const text = render(diag({ final_status: "timed_out", timed_out: true, verify_exit_code: 1 }));
+    assert.match(text, /TIMED OUT/);
+    assert.doesNotMatch(text, /verify_exit=\d/);
+  });
+
+  it("no_output lineage hides a verify exit code left over from an earlier round", () => {
+    const text = render(
+      diag({ final_status: "no_output", claude_no_output: true, claude_exit_code: 7, verify_exit_code: 1 }),
+    );
+    assert.match(text, /NO OUTPUT/);
+    assert.doesNotMatch(text, /verify_exit=\d/);
+  });
+
   it("timed_out lineage flags the timeout", () => {
     const text = render(diag({ final_status: "timed_out", timed_out: true }));
     assert.match(text, /TIMED OUT/);

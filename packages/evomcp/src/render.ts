@@ -1,153 +1,161 @@
-import type { evolve } from "./evolve.js";
-import type { orchestrateSolve } from "./orchestrate.js";
-import type { solve } from "./solve.js";
+/**
+ * Pure text formatters for the MCP tool results. No I/O, no network, no
+ * subprocess. Every field that can be missing or oversized routes through
+ * one of `field`, `formatStats`, or `formatLineageDiagnostics` so the rule
+ * is written once and applied everywhere it is needed.
+ */
 
-// ── Formatting ─────────────────────────────────────────────────────────
+import type { OrchestrateResult } from "./orchestrate.js";
+import type { EscalationReport, EvolveResult, LineageDiagnostic, RunStats, SolveResult } from "./types.js";
 
-export function formatSolveResult(result: Awaited<ReturnType<typeof solve>>): string {
-  if (result.outcome === "pass") {
-    return [
-      "## Solve: PASSED",
-      "",
-      "### Patch",
-      "```",
-      result.patch?.slice(0, 5000) ?? "(no patch)",
-      "```",
-      "",
-      "### Verification",
-      "```",
-      result.verification_report?.slice(0, 3000) ?? "(no report)",
-      "```",
-      "",
-      "### Stats",
-      `- Plans: ${result.stats.plans_sampled}`,
-      `- Candidates: ${result.stats.candidates_generated}`,
-      result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
-      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-      result.stats.tokens_consumed >= 0
-        ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers"
-        : "",
-      `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
-      `- Model: ${result.stats.model}`,
-    ].join("\n");
-  }
+const NA = "N/A";
+const FIELD_LIMIT = 8000;
 
-  const diagLines: string[] = [];
-  if (result.escalation?.lineage_diagnostics && result.escalation.lineage_diagnostics.length > 0) {
-    diagLines.push("### Lineage Diagnostics", "");
-    for (const d of result.escalation.lineage_diagnostics) {
-      const statusEmoji =
-        d.final_status === "passed"
-          ? "✅"
-          : d.final_status === "failed"
-            ? "❌"
-            : d.final_status === "stuck"
-              ? "🔁"
-              : d.final_status === "no_output"
-                ? "🤫"
-                : "⏱️";
-      diagLines.push(
-        `| ${statusEmoji} | ${d.lineage_id} | ${d.strategy} | repairs=${d.repair_attempts} | ${d.timed_out ? "TIMED OUT" : d.claude_no_output ? `NO OUTPUT (exit=${d.claude_exit_code})` : `verify_exit=${d.verify_exit_code ?? "N/A"}`} |`,
-      );
-      if (d.claude_no_output) {
-        diagLines.push(`  ⚠️ \`claude -p\` produced NO output — proxy or API key issue?`);
-      } else if (d.timed_out) {
-        diagLines.push(`  ⚠️ \`claude -p\` timed out — increase timeout or simplify task`);
-      }
-    }
-    diagLines.push("");
-  }
+function truncate(text: string): string {
+  if (text.length <= FIELD_LIMIT) return text;
+  return `${text.slice(0, FIELD_LIMIT)}\n... [truncated, ${text.length} chars total]`;
+}
 
+function field(label: string, value: string | undefined, placeholder: string): string {
+  const text = value === undefined ? placeholder : truncate(value);
+  return `${label}: ${text}`;
+}
+
+function formatTokens(tokens: number): string {
+  if (tokens < 0) return `Tokens: ${NA}`;
+  return `Tokens: ${tokens} (approximate)`;
+}
+
+function formatDuration(ms: number): string {
+  return `Duration: ${(ms / 1000).toFixed(1)}s`;
+}
+
+function formatStats(stats: RunStats): string {
   return [
-    "## Solve: ESCALATED",
-    "",
-    "All lineages exhausted. Requires smarter model intervention.",
-    "",
-    "### Escalation Report",
-    `- Lineages attempted: ${result.escalation?.lineages_attempted ?? "(none)"}`,
-    `- Failure signature: ${result.escalation?.failure_signature ?? "(none)"}`,
-    `- Summary: ${result.escalation?.summary ?? "(none)"}`,
-    ...diagLines,
-    "### Best Partial Output",
-    "```",
-    result.escalation?.best_output?.slice(0, 2000) ?? "(none)",
-    "```",
-    "",
-    "### Stats",
-    `- Plans: ${result.stats.plans_sampled}`,
-    `- Candidates: ${result.stats.candidates_generated}`,
-    result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
-    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-    result.stats.tokens_consumed >= 0
-      ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers"
-      : "",
-    `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
-    `- Model: ${result.stats.model}`,
-    "",
-    "ACTION: Claude should inspect the failure signature and solve the stuck sub-problem directly, then re-invoke solve with revised context.",
+    "## Stats",
+    `Plans sampled: ${stats.plans_sampled}`,
+    `Candidates generated: ${stats.candidates_generated}`,
+    formatTokens(stats.tokens_consumed),
+    formatDuration(stats.duration_ms),
+    `Model: ${stats.model}`,
   ].join("\n");
 }
 
-export function formatEvolveResult(result: Awaited<ReturnType<typeof evolve>>): string {
+function formatDegenerate(rejections: string[] | undefined): string {
+  if (!rejections || rejections.length === 0) return "";
+  return `Degenerate rejections: ${rejections.length}`;
+}
+
+function verifyExitLine(code: number | undefined): string {
+  return code === undefined ? `verify_exit=${NA}` : `verify_exit=${code}`;
+}
+
+function statusMarkers(d: LineageDiagnostic): string[] {
+  if (d.final_status === "no_output") {
+    return [`NO OUTPUT (claude_exit_code=${d.claude_exit_code})`, "Hint: check the proxy or API key."];
+  }
+  if (d.final_status === "timed_out") {
+    return ["TIMED OUT", "Hint: increase timeout to avoid recurring stalls."];
+  }
+  return [];
+}
+
+// A timed out or silent round ran no verification, so any exit code on the
+// diagnostic came from an earlier round. Showing it beside the marker reads as
+// the result of the round that actually failed, so it stays out.
+function verifyExitLines(d: LineageDiagnostic): string[] {
+  if (d.final_status === "timed_out" || d.final_status === "no_output") return [];
+  return [verifyExitLine(d.verify_exit_code)];
+}
+
+function formatDiagnostic(d: LineageDiagnostic): string {
+  return [
+    `Lineage: ${d.lineage_id} (${d.strategy})`,
+    `Repair attempts: ${d.repair_attempts}`,
+    ...verifyExitLines(d),
+    ...statusMarkers(d),
+  ].join("\n");
+}
+
+function formatLineageDiagnostics(diags: LineageDiagnostic[] | undefined): string {
+  if (!diags || diags.length === 0) return "";
+  return ["## Lineage Diagnostics", ...diags.map(formatDiagnostic)].join("\n\n");
+}
+
+function formatEscalation(esc: EscalationReport): string {
+  const lines = [
+    `Failure signature: ${esc.failure_signature}`,
+    `Summary: ${esc.summary}`,
+    `Lineages attempted: ${esc.lineages_attempted}`,
+    field("Best output", esc.best_output, "(no patch)"),
+  ];
+  const diagnostics = formatLineageDiagnostics(esc.lineage_diagnostics);
+  if (diagnostics) lines.push(diagnostics);
+  return lines.join("\n\n");
+}
+
+function formatSolvePass(result: SolveResult): string {
+  const lines = [
+    "# Solve: PASSED",
+    field("Patch", result.patch, "(no patch)"),
+    field("Verification Report", result.verification_report, "(no report)"),
+  ];
+  const degenerate = formatDegenerate(result.degenerate_rejections);
+  if (degenerate) lines.push(degenerate);
+  lines.push(formatStats(result.stats));
+  return lines.join("\n\n");
+}
+
+function formatSolveEscalate(result: SolveResult): string {
+  const lines = ["# Solve: ESCALATED"];
+  if (result.escalation) lines.push(formatEscalation(result.escalation));
+  lines.push(formatStats(result.stats));
+  return lines.join("\n\n");
+}
+
+export function formatSolveResult(result: SolveResult): string {
+  return result.outcome === "pass" ? formatSolvePass(result) : formatSolveEscalate(result);
+}
+
+function formatPercentage(improvement: number, baseline: number): string {
+  if (baseline === 0) return NA;
+  return `${((improvement / Math.abs(baseline)) * 100).toFixed(1)}%`;
+}
+
+function formatFitnessRow(entry: { generation: number; best_score: number; mean_score: number }): string {
+  return `| ${entry.generation} | ${entry.best_score} | ${entry.mean_score} |`;
+}
+
+function formatFitnessHistory(history: EvolveResult["fitness_history"]): string {
+  if (history.length === 0) return "## Fitness History\n(no generations recorded)";
+  return ["## Fitness History", ...history.map(formatFitnessRow)].join("\n");
+}
+
+export function formatEvolveResult(result: EvolveResult): string {
   const improvement = result.baseline_score - result.best_score;
-  const pct = result.baseline_score !== 0 ? ((improvement / Math.abs(result.baseline_score)) * 100).toFixed(1) : "N/A";
-
+  const pct = formatPercentage(improvement, result.baseline_score);
   return [
-    "## Evolve: COMPLETE",
-    "",
-    "### Results",
-    `- Baseline: ${result.baseline_score.toFixed(2)}`,
-    `- Final: ${result.best_score.toFixed(2)}`,
-    `- Improvement: ${improvement.toFixed(2)} (${pct}%)`,
-    "",
-    "### Fitness History",
-    "| Gen | Best | Mean |",
-    "|-----|------|------|",
-    ...result.fitness_history.map(
-      (h) => `| ${h.generation} | ${h.best_score.toFixed(2)} | ${h.mean_score.toFixed(2)} |`,
-    ),
-    "",
-    "### Best Patch",
-    "```diff",
-    result.best_patch.slice(0, 5000),
-    "```",
-    "",
-    "### Verification",
-    "```",
-    result.verification_report.slice(0, 3000),
-    "```",
-    "",
-    "### Stats",
-    `- Candidates: ${result.stats.candidates_generated}`,
-    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-    result.stats.tokens_consumed >= 0
-      ? "  ⚠ Cost is approximate — proxy counter is global and may include other consumers"
-      : "",
-    `- Duration: ${(result.stats.duration_ms / 1000).toFixed(1)}s`,
-    `- Model: ${result.stats.model}`,
-  ].join("\n");
+    "# Evolve: COMPLETE",
+    `Improvement: ${improvement.toFixed(1)} (${pct})`,
+    field("Best Patch", result.best_patch, "(no patch)"),
+    field("Verification Report", result.verification_report, "(no report)"),
+    formatFitnessHistory(result.fitness_history),
+    formatStats(result.stats),
+  ].join("\n\n");
 }
 
-// ── Formatting ─────────────────────────────────────────────────────────
-
-export function formatOrchestrateResult(result: Awaited<ReturnType<typeof orchestrateSolve>>): string {
+function formatNestedSolve(solveResult: SolveResult | undefined): string {
+  if (!solveResult || solveResult.outcome !== "pass") return "";
   return [
-    `## Orchestrate: ${result.outcome.toUpperCase()}`,
-    "",
-    result.summary,
-    "",
-    ...(result.solveResult && result.solveResult.outcome === "pass"
-      ? [
-          "### Solve Patch",
-          "```",
-          result.solveResult.patch?.slice(0, 2000) ?? "(no patch)",
-          "```",
-          "",
-          "### Verification",
-          "```",
-          result.solveResult.verification_report?.slice(0, 1000) ?? "(no report)",
-          "```",
-        ]
-      : []),
-  ].join("\n");
+    "## Solve Patch",
+    field("Patch", solveResult.patch, "(no patch)"),
+    field("Verification Report", solveResult.verification_report, "(no report)"),
+  ].join("\n\n");
+}
+
+export function formatOrchestrateResult(result: OrchestrateResult): string {
+  const lines = [`# Orchestrate: ${result.outcome.toUpperCase()}`, `Summary: ${result.summary}`];
+  const nested = formatNestedSolve(result.solveResult);
+  if (nested) lines.push(nested);
+  return lines.join("\n\n");
 }
