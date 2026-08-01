@@ -175,7 +175,33 @@ Dispatch the integrity auditor against the test file and its production code.
 
 #### Step 1.1: Identify Targets
 
-If the user specified files, use those. Otherwise, find them:
+If the user specified files, use those. Otherwise, prefer evidence over guessing.
+
+**Preferred: the mutation queue.** A surviving mutant is proof of this skill's
+core problem. The production code changed and every test still passed. When the
+repository runs mutation testing, that record already names the weakest test
+files, ranked. In this monorepo:
+
+```bash
+node scripts/mutation-queue.mjs        # writes .data/micro-mutations/queue.json
+```
+
+Each queue entry holds:
+
+| Field | Meaning |
+|-------|---------|
+| `source` / `test` | The audit unit. A null `test` means no test file exists at all. |
+| `score` | Survivors weighted by how few mutants the tests killed. Higher is more suspect. |
+| `summary` | Raw killed / survived / timeout counts. |
+| `hotspots` | Source lines with the most surviving mutants, and which mutators lived there. |
+| `stale` | The survivor record predates the current build, so line numbers are unreliable. Re-run `scripts/micro-mutations.mjs` before trusting `hotspots`. |
+
+Work the queue in order. Audit the highest-scoring entry whose `stale` flag is
+false. A `test: null` entry needs tests written, not audited, so report it and
+move to the next entry.
+
+**Fallback: no mutation data.** When the repository runs no mutation testing, or
+the user points at a specific area, find the pairs by hand:
 
 ```bash
 # Find test files
@@ -212,9 +238,22 @@ Agent(
 
     For each finding, cite exact file:line. Be specific about what's wrong and
     what the correct expected value SHOULD be.
+
+    [When a mutation queue entry exists, append:]
+
+    Mutation testing already proved these source lines are unverified. Each one
+    was changed and the whole test suite still passed. Start there, and for each
+    line state which test was supposed to catch the change and why it did not:
+
+    [paste the entry's hotspots as: line N - K survivors - mutators]
   """
 )
 ```
+
+**Why the hotspots matter:** a surviving mutant is not a hint, it is a
+counter-example. A weak assertion the auditor merely suspects is arguable. A
+line where `EqualityOperator` was flipped and every test still passed is
+settled. Rank findings that sit on a hotspot line above findings that do not.
 
 **Model diversity note:** If a different model wrote the tests, use a different
 model for the auditor. If the same model wrote both code and tests, the auditor
@@ -364,8 +403,14 @@ confirm the test fails. Remove the bug after verification.
 # 4. Run the rewritten test — MUST pass
 ```
 
-At minimum, verify one critical finding this way. If the rewritten test doesn't
+At minimum, verify one critical finding this way. If the rewritten test does not
 fail against a known bug, the rewrite is wrong.
+
+**When the finding came from a mutation hotspot, do not invent a bug.** The
+queue entry already names one that the old tests missed. Apply that exact
+mutation at that line, confirm the rewritten test now fails, then revert. This
+turns the verification from a plausible bug into the specific bug the suite let
+through.
 
 #### Step 3.2: Run Full Test Suite
 
