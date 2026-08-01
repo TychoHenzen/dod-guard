@@ -58,5 +58,15 @@
     "at": "2026-08-01T17:29:21.034Z",
     "acknowledged": true,
     "acknowledgement": "Reviewed: every waived character is a real em dash (U+2014) inside an MCP tool description or response string. The previous implementation shipped the same bytes, a client reads them, and the 52-case oracle asserts them. No waived character sits in prose or a comment."
+  },
+  {
+    "file": "packages/evomcp/src/render.ts",
+    "reasons": [
+      "C:\\Users\\siriu\\mcp-servers\\dod-guard\\packages\\evomcp\\src\\render.ts:28: ERROR [punctuation] em dash is banned on this machine, it corrupts on re-encode. Use -.\nC:\\Users\\siriu\\mcp-servers\\dod-guard\\packages\\evomcp\\src\\render.ts:53: ERROR [punctuation] em dash is banned on this machine, it corrupts on re-encode. Use -.\nC:\\Users\\siriu\\mcp-servers\\dod-guard\\packages\\evomcp\\src\\render.ts:55: ERROR [punctuation] em dash is banned on this machine, it corrupts on re-encode. Use -.\nC:\\Users\\siriu\\mcp-servers\\dod-guard\\packages\\evomcp\\src\\render.ts:82: ERROR [punctuation] em dash is banned on this machine, it corrupts on re-encode. Use -.\nC:\\Users\\siriu\\mcp-servers\\dod-guard\\packages\\evomcp\\src\\render.ts:124: ERROR [punctuation] em dash is banned on this machine, it corrupts on re-encode. Use -."
+    ],
+    "exempt": false,
+    "at": "2026-08-01T19:08:05.367Z",
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: render.ts was created by moving three functions out of index.ts byte for byte. The complexity, the long lines and the em dashes all came with the move, and editing them would have made the move something other than a move. The blind rewrite that follows is what removes them."
   }
 ]

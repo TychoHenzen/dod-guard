@@ -25077,6 +25077,131 @@ async function orchestrateSolve(spec, onProgress) {
   };
 }
 
+// src/render.ts
+function formatSolveResult(result) {
+  if (result.outcome === "pass") {
+    return [
+      "## Solve: PASSED",
+      "",
+      "### Patch",
+      "```",
+      result.patch?.slice(0, 5e3) ?? "(no patch)",
+      "```",
+      "",
+      "### Verification",
+      "```",
+      result.verification_report?.slice(0, 3e3) ?? "(no report)",
+      "```",
+      "",
+      "### Stats",
+      `- Plans: ${result.stats.plans_sampled}`,
+      `- Candidates: ${result.stats.candidates_generated}`,
+      result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
+      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
+      result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
+      `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
+      `- Model: ${result.stats.model}`
+    ].join("\n");
+  }
+  const diagLines = [];
+  if (result.escalation?.lineage_diagnostics && result.escalation.lineage_diagnostics.length > 0) {
+    diagLines.push("### Lineage Diagnostics", "");
+    for (const d of result.escalation.lineage_diagnostics) {
+      const statusEmoji = d.final_status === "passed" ? "\u2705" : d.final_status === "failed" ? "\u274C" : d.final_status === "stuck" ? "\u{1F501}" : d.final_status === "no_output" ? "\u{1F92B}" : "\u23F1\uFE0F";
+      diagLines.push(
+        `| ${statusEmoji} | ${d.lineage_id} | ${d.strategy} | repairs=${d.repair_attempts} | ${d.timed_out ? "TIMED OUT" : d.claude_no_output ? `NO OUTPUT (exit=${d.claude_exit_code})` : `verify_exit=${d.verify_exit_code ?? "N/A"}`} |`
+      );
+      if (d.claude_no_output) {
+        diagLines.push(`  \u26A0\uFE0F \`claude -p\` produced NO output \u2014 proxy or API key issue?`);
+      } else if (d.timed_out) {
+        diagLines.push(`  \u26A0\uFE0F \`claude -p\` timed out \u2014 increase timeout or simplify task`);
+      }
+    }
+    diagLines.push("");
+  }
+  return [
+    "## Solve: ESCALATED",
+    "",
+    "All lineages exhausted. Requires smarter model intervention.",
+    "",
+    "### Escalation Report",
+    `- Lineages attempted: ${result.escalation?.lineages_attempted}`,
+    `- Failure signature: ${result.escalation?.failure_signature}`,
+    `- Summary: ${result.escalation?.summary}`,
+    ...diagLines,
+    "### Best Partial Output",
+    "```",
+    result.escalation?.best_output?.slice(0, 2e3) ?? "(none)",
+    "```",
+    "",
+    "### Stats",
+    `- Plans: ${result.stats.plans_sampled}`,
+    `- Candidates: ${result.stats.candidates_generated}`,
+    result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
+    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
+    result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
+    `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
+    `- Model: ${result.stats.model}`,
+    "",
+    "ACTION: Claude should inspect the failure signature and solve the stuck sub-problem directly, then re-invoke solve with revised context."
+  ].join("\n");
+}
+function formatEvolveResult(result) {
+  const improvement = result.baseline_score - result.best_score;
+  const pct = result.baseline_score !== 0 ? (improvement / Math.abs(result.baseline_score) * 100).toFixed(1) : "N/A";
+  return [
+    "## Evolve: COMPLETE",
+    "",
+    "### Results",
+    `- Baseline: ${result.baseline_score.toFixed(2)}`,
+    `- Final: ${result.best_score.toFixed(2)}`,
+    `- Improvement: ${improvement.toFixed(2)} (${pct}%)`,
+    "",
+    "### Fitness History",
+    "| Gen | Best | Mean |",
+    "|-----|------|------|",
+    ...result.fitness_history.map(
+      (h) => `| ${h.generation} | ${h.best_score.toFixed(2)} | ${h.mean_score.toFixed(2)} |`
+    ),
+    "",
+    "### Best Patch",
+    "```diff",
+    result.best_patch.slice(0, 5e3),
+    "```",
+    "",
+    "### Verification",
+    "```",
+    result.verification_report.slice(0, 3e3),
+    "```",
+    "",
+    "### Stats",
+    `- Candidates: ${result.stats.candidates_generated}`,
+    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
+    result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
+    `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
+    `- Model: ${result.stats.model}`
+  ].join("\n");
+}
+function formatOrchestrateResult(result) {
+  return [
+    `## Orchestrate: ${result.outcome.toUpperCase()}`,
+    "",
+    result.summary,
+    "",
+    ...result.solveResult && result.solveResult.outcome === "pass" ? [
+      "### Solve Patch",
+      "```",
+      result.solveResult.patch?.slice(0, 2e3) ?? "(no patch)",
+      "```",
+      "",
+      "### Verification",
+      "```",
+      result.solveResult.verification_report?.slice(0, 1e3) ?? "(no report)",
+      "```"
+    ] : []
+  ].join("\n");
+}
+
 // src/index.ts
 var _pkg = JSON.parse(
   readFileSync8(path8.join(path8.dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf-8")
@@ -25273,130 +25398,7 @@ server.tool("status", "Check if the deepclaude proxy is running and ready.", {},
     ]
   };
 });
-function formatSolveResult(result) {
-  if (result.outcome === "pass") {
-    return [
-      "## Solve: PASSED",
-      "",
-      "### Patch",
-      "```",
-      result.patch?.slice(0, 5e3) ?? "(no patch)",
-      "```",
-      "",
-      "### Verification",
-      "```",
-      result.verification_report?.slice(0, 3e3) ?? "(no report)",
-      "```",
-      "",
-      "### Stats",
-      `- Plans: ${result.stats.plans_sampled}`,
-      `- Candidates: ${result.stats.candidates_generated}`,
-      result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
-      `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-      result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
-      `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
-      `- Model: ${result.stats.model}`
-    ].join("\n");
-  }
-  const diagLines = [];
-  if (result.escalation?.lineage_diagnostics && result.escalation.lineage_diagnostics.length > 0) {
-    diagLines.push("### Lineage Diagnostics", "");
-    for (const d of result.escalation.lineage_diagnostics) {
-      const statusEmoji = d.final_status === "passed" ? "\u2705" : d.final_status === "failed" ? "\u274C" : d.final_status === "stuck" ? "\u{1F501}" : d.final_status === "no_output" ? "\u{1F92B}" : "\u23F1\uFE0F";
-      diagLines.push(
-        `| ${statusEmoji} | ${d.lineage_id} | ${d.strategy} | repairs=${d.repair_attempts} | ${d.timed_out ? "TIMED OUT" : d.claude_no_output ? `NO OUTPUT (exit=${d.claude_exit_code})` : `verify_exit=${d.verify_exit_code ?? "N/A"}`} |`
-      );
-      if (d.claude_no_output) {
-        diagLines.push(`  \u26A0\uFE0F \`claude -p\` produced NO output \u2014 proxy or API key issue?`);
-      } else if (d.timed_out) {
-        diagLines.push(`  \u26A0\uFE0F \`claude -p\` timed out \u2014 increase timeout or simplify task`);
-      }
-    }
-    diagLines.push("");
-  }
-  return [
-    "## Solve: ESCALATED",
-    "",
-    "All lineages exhausted. Requires smarter model intervention.",
-    "",
-    "### Escalation Report",
-    `- Lineages attempted: ${result.escalation?.lineages_attempted}`,
-    `- Failure signature: ${result.escalation?.failure_signature}`,
-    `- Summary: ${result.escalation?.summary}`,
-    ...diagLines,
-    "### Best Partial Output",
-    "```",
-    result.escalation?.best_output?.slice(0, 2e3) ?? "(none)",
-    "```",
-    "",
-    "### Stats",
-    `- Plans: ${result.stats.plans_sampled}`,
-    `- Candidates: ${result.stats.candidates_generated}`,
-    result.degenerate_rejections?.length ? `- Degenerate rejections: ${result.degenerate_rejections.length}` : "",
-    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-    result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
-    `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
-    `- Model: ${result.stats.model}`,
-    "",
-    "ACTION: Claude should inspect the failure signature and solve the stuck sub-problem directly, then re-invoke solve with revised context."
-  ].join("\n");
-}
-function formatEvolveResult(result) {
-  const improvement = result.baseline_score - result.best_score;
-  const pct = result.baseline_score !== 0 ? (improvement / Math.abs(result.baseline_score) * 100).toFixed(1) : "N/A";
-  return [
-    "## Evolve: COMPLETE",
-    "",
-    "### Results",
-    `- Baseline: ${result.baseline_score.toFixed(2)}`,
-    `- Final: ${result.best_score.toFixed(2)}`,
-    `- Improvement: ${improvement.toFixed(2)} (${pct}%)`,
-    "",
-    "### Fitness History",
-    "| Gen | Best | Mean |",
-    "|-----|------|------|",
-    ...result.fitness_history.map(
-      (h) => `| ${h.generation} | ${h.best_score.toFixed(2)} | ${h.mean_score.toFixed(2)} |`
-    ),
-    "",
-    "### Best Patch",
-    "```diff",
-    result.best_patch.slice(0, 5e3),
-    "```",
-    "",
-    "### Verification",
-    "```",
-    result.verification_report.slice(0, 3e3),
-    "```",
-    "",
-    "### Stats",
-    `- Candidates: ${result.stats.candidates_generated}`,
-    `- Tokens: ${result.stats.tokens_consumed >= 0 ? String(result.stats.tokens_consumed) : "N/A (direct)"}`,
-    result.stats.tokens_consumed >= 0 ? "  \u26A0 Cost is approximate \u2014 proxy counter is global and may include other consumers" : "",
-    `- Duration: ${(result.stats.duration_ms / 1e3).toFixed(1)}s`,
-    `- Model: ${result.stats.model}`
-  ].join("\n");
-}
 var _filename = fileURLToPath(import.meta.url);
-function formatOrchestrateResult(result) {
-  return [
-    `## Orchestrate: ${result.outcome.toUpperCase()}`,
-    "",
-    result.summary,
-    "",
-    ...result.solveResult && result.solveResult.outcome === "pass" ? [
-      "### Solve Patch",
-      "```",
-      result.solveResult.patch?.slice(0, 2e3) ?? "(no patch)",
-      "```",
-      "",
-      "### Verification",
-      "```",
-      result.solveResult.verification_report?.slice(0, 1e3) ?? "(no report)",
-      "```"
-    ] : []
-  ].join("\n");
-}
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
