@@ -7,7 +7,7 @@ const candidate = (file, rules, extra = {}) => ({
   rules,
   hasOracle: false,
   ...extra,
-  churn: { touches: 0, fixes: 0, ...extra.churn },
+  churn: { returns: 0, fixReturns: 0, ...extra.churn },
 });
 
 const order = (...candidates) =>
@@ -51,22 +51,22 @@ describe("rankCandidates", () => {
 
   it("ranks a churned file above an identical quiet one", () => {
     const quiet = candidate("a.ts", { complexity: 4 });
-    const churn = { touches: 20 };
+    const churn = { returns: 20 };
     const busy = candidate("b.ts", { complexity: 4 }, { churn });
     assert.deepEqual(order(quiet, busy), ["b.ts", "a.ts"]);
   });
 
-  it("weighs a fix commit above an ordinary commit", () => {
-    const plain = { churn: { touches: 4 } };
+  it("weighs a return that fixed something above an ordinary return", () => {
+    const plain = { churn: { returns: 4 } };
     const features = candidate("a.ts", { complexity: 4 }, plain);
-    const churn = { touches: 4, fixes: 4 };
+    const churn = { returns: 4, fixReturns: 4 };
     const patched = candidate("b.ts", { complexity: 4 }, { churn });
     assert.deepEqual(order(features, patched), ["b.ts", "a.ts"]);
   });
 
-  // Otherwise one file with hundreds of commits owns every slot in the queue.
+  // Otherwise one file with hundreds of returns owns every slot in the queue.
   it("lets a much worse tangle outrank a much busier file", () => {
-    const loud = { churn: { touches: 200 } };
+    const loud = { churn: { returns: 200 } };
     const busy = candidate("a.ts", { complexity: 1 }, loud);
     const knotted = candidate("b.ts", { complexity: 40 });
     assert.deepEqual(order(busy, knotted), ["b.ts", "a.ts"]);
@@ -84,7 +84,7 @@ describe("rankCandidates", () => {
   });
 
   it("drops a candidate whose violations are all formatting", () => {
-    const churn = { touches: 50 };
+    const churn = { returns: 50 };
     const flat = candidate("a.ts", { "line-length": 90 }, { churn });
     assert.deepEqual(rankCandidates([flat]), []);
     assert.deepEqual(rankCandidates([]), []);

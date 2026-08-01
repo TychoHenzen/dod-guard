@@ -14,7 +14,7 @@ function entry(file, score) {
     file,
     score,
     rules: { complexity: 3 },
-    churn: { touches: 4, fixes: 2 },
+    churn: { returns: 4, fixReturns: 2 },
     hasOracle: true,
     status: "pending",
     attempts: 0,

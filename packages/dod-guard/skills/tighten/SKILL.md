@@ -2,8 +2,8 @@
 name: tighten
 description: >-
   Autonomous loop that removes accidental complexity one target at a time. Ranks
-  the repository by structural violations joined against git fix-churn, then runs
-  a blind rewrite of the worst target: an intent analyst separates necessary
+  the repository by structural violations joined against git return-churn, then
+  runs a blind rewrite of the worst target: an intent analyst separates necessary
   complexity from accidental, a blind author rebuilds from the contract, and two
   gates check that the result is both different and smaller. One target per
   invocation, so a loop driver can call it until the queue empties. TRIGGER when:
@@ -101,9 +101,15 @@ or from another tool.
 
 The ranking joins two signals. Structural violations say where the complexity
 is. Git churn says where it came from. Complexity nothing ever had to patch is
-usually essential, because the problem is hard. Complexity that keeps attracting
-fix commits grew by patching, and that is the kind this loop removes. Formatting
-rules score zero, so a file full of long lines never reaches the queue.
+usually essential, because the problem is hard. Complexity the work keeps
+returning to grew by patching, and that is the kind this loop removes.
+Formatting rules score zero, so a file full of long lines never reaches the
+queue.
+
+Churn counts return visits, not commits. Commits that land close together are
+one piece of work, however many there are, so building a file in six commits
+scores as quiet. A new session starts when five other commits land in between,
+or when two weeks pass. Returns that carried a fix commit weigh heaviest.
 
 A reseed merges. It refreshes every score and keeps every recorded result, so a
 target that already resisted two cycles does not come back.

@@ -15,31 +15,44 @@ function git(cwd, ...args) {
 
 function commit(dir, subject, file, body) {
   mkdirSync(join(dir, "src"), { recursive: true });
-  writeFileSync(join(dir, file), body);
+  writeFileSync(join(dir, file), `${body}\n`);
   git(dir, "add", "-A");
   git(dir, "commit", "-m", subject);
 }
 
-// A repository where one file was patched twice and another was written once.
+// A repository with one file the work kept returning to, one file built in a
+// single burst of commits, and one file written once.
 function makeRepo() {
   const dir = mkdtempSync(join(tmpdir(), "tighten-"));
   git(dir, "init", "-q");
   git(dir, "config", "user.email", "t@example.com");
   git(dir, "config", "user.name", "Test");
-  commit(dir, "feat: add router", "src/router.ts", "one\n");
-  commit(dir, "fix: trailing slash", "src/router.ts", "two\n");
-  commit(dir, "fix: empty path", "src/router.ts", "three\n");
-  commit(dir, "feat: add store", "src/store.ts", "one\n");
-  writeFileSync(join(dir, "src", "router.test.ts"), "test\n");
-  git(dir, "add", "-A");
-  git(dir, "commit", "-m", "test: router");
+  commit(dir, "feat: add router", "src/router.ts", "one");
+  commit(dir, "test: router", "src/router.test.ts", "test");
+  commit(dir, "feat: add burst", "src/burst.ts", "one");
+  commit(dir, "fix: burst trailing slash", "src/burst.ts", "two");
+  commit(dir, "fix: burst empty path", "src/burst.ts", "three");
+  commit(dir, "feat: add wander", "src/wander.ts", "one");
+  elsewhere(dir, 0);
+  commit(dir, "fix: wander trailing slash", "src/wander.ts", "two");
+  elsewhere(dir, 1);
+  commit(dir, "fix: wander empty path", "src/wander.ts", "three");
   return dir;
+}
+
+// Six commits on other files. They put a gap between two visits to one file,
+// which is what turns a second visit into a return.
+function elsewhere(dir, round) {
+  for (let i = 0; i < 6; i += 1) {
+    commit(dir, `chore: other ${round}.${i}`, `src/other${round}${i}.ts`, "x");
+  }
 }
 
 const UNITS = {
   units: [
     { file: "src/router.ts", rules: { complexity: 3 } },
-    { file: "src/store.ts", rules: { complexity: 3 } },
+    { file: "src/burst.ts", rules: { complexity: 3 } },
+    { file: "src/wander.ts", rules: { complexity: 3 } },
     { file: "src/quiet.ts", rules: { "line-length": 40 } },
   ],
 };
@@ -58,6 +71,12 @@ function readLedger(dir) {
   return JSON.parse(readFileSync(join(dir, ".tighten", "ledger.json"), "utf8"));
 }
 
+function entriesByFile(dir) {
+  return Object.fromEntries(
+    readLedger(dir).entries.map((entry) => [entry.file, entry]),
+  );
+}
+
 describe("seed-ledger CLI", () => {
   it("exits 3 and prints usage when --units is missing", () => {
     const result = spawnSync(process.execPath, [SEED], { encoding: "utf8" });
@@ -65,13 +84,13 @@ describe("seed-ledger CLI", () => {
     assert.match(result.stderr, /Usage: node seed-ledger\.mjs/);
   });
 
-  it("ranks the fix-churned file above the quiet one", () => {
+  it("ranks the file the work returned to above a single burst", () => {
     const dir = makeRepo();
     assert.equal(seed(dir).status, 0);
     const ledger = readLedger(dir);
     assert.deepEqual(
       ledger.entries.map((entry) => entry.file),
-      ["src/router.ts", "src/store.ts"],
+      ["src/wander.ts", "src/router.ts", "src/burst.ts"],
     );
   });
 
@@ -82,27 +101,38 @@ describe("seed-ledger CLI", () => {
     assert.ok(!files.includes("src/quiet.ts"));
   });
 
-  it("records the churn it measured from git", () => {
+  it("records the returns it measured from git", () => {
     const dir = makeRepo();
     seed(dir);
-    const [router] = readLedger(dir).entries;
-    assert.deepEqual(router.churn, { touches: 3, fixes: 2 });
+    const byFile = entriesByFile(dir);
+    assert.deepEqual(byFile["src/wander.ts"].churn, {
+      returns: 2,
+      fixReturns: 2,
+    });
+  });
+
+  it("scores three commits in a row as no churn", () => {
+    const dir = makeRepo();
+    seed(dir);
+    assert.deepEqual(entriesByFile(dir)["src/burst.ts"].churn, {
+      returns: 0,
+      fixReturns: 0,
+    });
   });
 
   it("marks a file with a sibling test as having an oracle", () => {
     const dir = makeRepo();
     seed(dir);
-    const entries = readLedger(dir).entries;
-    const byFile = Object.fromEntries(entries.map((e) => [e.file, e]));
+    const byFile = entriesByFile(dir);
     assert.equal(byFile["src/router.ts"].hasOracle, true);
-    assert.equal(byFile["src/store.ts"].hasOracle, false);
+    assert.equal(byFile["src/burst.ts"].hasOracle, false);
   });
 
   it("starts every entry pending", () => {
     const dir = makeRepo();
     seed(dir);
     const statuses = readLedger(dir).entries.map((entry) => entry.status);
-    assert.deepEqual(statuses, ["pending", "pending"]);
+    assert.deepEqual(statuses, ["pending", "pending", "pending"]);
   });
 
   it("keeps recorded history when it reseeds", () => {
@@ -116,15 +146,15 @@ describe("seed-ledger CLI", () => {
       JSON.stringify(ledger, null, 2),
     );
     seed(dir);
-    const [router] = readLedger(dir).entries;
-    assert.equal(router.status, "resistant");
-    assert.equal(router.attempts, 2);
+    const [wander] = readLedger(dir).entries;
+    assert.equal(wander.status, "resistant");
+    assert.equal(wander.attempts, 2);
   });
 
   it("reports the counts it wrote", () => {
     const dir = makeRepo();
     const result = seed(dir);
-    assert.match(result.stdout, /targets: 2/);
-    assert.match(result.stdout, /pending: 2 accepted: 0 resistant: 0/);
+    assert.match(result.stdout, /targets: 3/);
+    assert.match(result.stdout, /pending: 3 accepted: 0 resistant: 0/);
   });
 });

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// One invocation of the tighten skill handles one target. This prints which one.
+// One invocation of the tighten skill handles one target. This prints it.
 //
 // The exit code is the loop's stop signal. A driver that must read prose to
 // learn whether work remains will get it wrong. Exit 4 means the queue is
@@ -24,8 +24,8 @@ function describe(entry, counts) {
   return [
     `file: ${entry.file}`,
     `score: ${entry.score.toFixed(1)}`,
-    `churn: ${entry.churn.touches} commits, ${entry.churn.fixes} fixes`,
-    `oracle: ${entry.hasOracle ? "existing tests" : "none, characterize first"}`,
+    `churn: ${entry.churn.returns} returns, ${entry.churn.fixReturns} fixed`,
+    `oracle: ${entry.hasOracle ? "existing tests" : "none, characterize"}`,
     `attempt: ${entry.attempts + 1} of ${MAX_ATTEMPTS}`,
     `rules: ${rules}`,
     `remaining: ${counts.pending}`,
@@ -50,7 +50,8 @@ function main(argv) {
     process.stdout.write(` resistant: ${counts.resistant}\n`);
     return 4;
   }
-  const text = args.json ? JSON.stringify(entry, null, 2) : describe(entry, counts);
+  const json = () => JSON.stringify(entry, null, 2);
+  const text = args.json ? json() : describe(entry, counts);
   process.stdout.write(`${text}\n`);
   return 0;
 }

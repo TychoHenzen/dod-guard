@@ -5,9 +5,10 @@
 // a nested branch is a sign that somebody added a path instead of changing one.
 // Only the second kind scores.
 //
-// Churn: a hard problem produces complex code once. An accidental knot produces
-// complex code and then keeps attracting fix commits. Complexity plus fix churn
-// is the strongest evidence available without reading the file.
+// Churn: a hard problem produces complex code once, in one stretch of work. An
+// accidental knot keeps pulling the work back, one return visit after another.
+// Complexity plus return churn is the strongest evidence available without
+// reading the file.
 
 const RULE_WEIGHT = {
   complexity: 3,
@@ -45,10 +46,10 @@ export function tangleScore(rules) {
   return total;
 }
 
-// Sublinear on purpose. One file with 300 commits should outrank a quiet one,
-// but it should not own every slot in the ledger forever.
-function churnFactor({ touches, fixes }) {
-  return 1 + Math.log2(1 + touches) + 2 * Math.log2(1 + fixes);
+// Sublinear on purpose. One file the work returned to 30 times should outrank a
+// quiet one, but it should not own every slot in the ledger forever.
+function churnFactor({ returns, fixReturns }) {
+  return 1 + Math.log2(1 + returns) + 2 * Math.log2(1 + fixReturns);
 }
 
 function scoreCandidate({ rules, churn, hasOracle }) {

@@ -3,8 +3,8 @@
 //
 // Structural violations alone rank badly: they put the hardest code first, and
 // hard code is often complex for a good reason. Joining them against git churn
-// separates the two. Complexity that keeps attracting fix commits is the
-// accidental kind, and that is what this loop exists to remove.
+// separates the two. Complexity the work keeps returning to is the accidental
+// kind, and that is what this loop exists to remove.
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -23,7 +23,7 @@ const USAGE = [
   "  --since=<when>    git log window (default '6 months ago')",
   "  --root=<dir>      repository root the unit paths are relative to",
   "",
-  "Merges into an existing ledger, so a reseed keeps what the loop already tried.",
+  "Merges into an existing ledger. A reseed keeps what the loop already tried.",
   "Exit codes: 0 written, 3 usage error.",
 ].join("\n");
 
@@ -51,7 +51,7 @@ function toCandidates(units, churn, root) {
   return units.map((unit) => ({
     file: unit.file,
     rules: unit.rules ?? {},
-    churn: churn[unit.file] ?? { touches: 0, fixes: 0 },
+    churn: churn[unit.file] ?? { returns: 0, fixReturns: 0 },
     hasOracle: hasOracle(unit.file, exists),
   }));
 }
@@ -81,7 +81,8 @@ function main(argv) {
   const counts = summarize(ledger);
   process.stdout.write(`ledger: ${path}\n`);
   process.stdout.write(`targets: ${ledger.entries.length}\n`);
-  process.stdout.write(`pending: ${counts.pending} accepted: ${counts.accepted}`);
+  process.stdout.write(`pending: ${counts.pending}`);
+  process.stdout.write(` accepted: ${counts.accepted}`);
   process.stdout.write(` resistant: ${counts.resistant}\n`);
   return 0;
 }

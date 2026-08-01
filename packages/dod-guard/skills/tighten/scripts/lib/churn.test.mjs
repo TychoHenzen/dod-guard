@@ -2,43 +2,88 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { parseChurn } from "./churn.mjs";
 
-// Shape of `git log --name-only --format=%x00%s`: a NUL starts each commit,
-// then the subject, a blank line, and the paths the commit touched.
-function commit(subject, ...paths) {
-  return `\0${subject}\n\n${paths.join("\n")}\n`;
+const DAY = 24 * 60 * 60;
+const START = 1_700_000_000;
+const FILE = "src/router.ts";
+
+// Shape of `git log --name-only --format=%x00%ct %s`: a NUL starts each commit,
+// then the time and subject, a blank line, and the paths the commit touched.
+const commit = (subject, ...paths) => ({ subject, paths });
+
+// git log prints newest first, so the list reads oldest first here and gets
+// reversed. `day` spaces the commits in calendar time as well as in order.
+function log(commits, { day = 0 } = {}) {
+  return commits
+    .map(({ subject, paths }, index) => {
+      const time = START + index * day * DAY;
+      return `\0${time} ${subject}\n\n${paths.join("\n")}\n`;
+    })
+    .reverse()
+    .join("");
 }
 
-const LOG = [
-  commit("feat: add router", "src/router.ts", "src/index.ts"),
-  commit("fix: router drops trailing slash", "src/router.ts"),
-  commit("fix(router): handle empty path", "src/router.ts"),
-  commit("docs: readme", "README.md"),
-].join("");
+// Twelve commits elsewhere. The work left this file and came back after them.
+const AWAY = Array.from({ length: 12 }, (_, i) =>
+  commit(`chore: ${i}`, `src/other${i}.ts`),
+);
+
+const add = commit("feat: add router", FILE);
+const grow = commit("feat: router mounts children", FILE);
+const fix = commit("fix: router drops trailing slash", FILE);
 
 describe("parseChurn", () => {
-  it("counts how many commits touched each path", () => {
-    const churn = parseChurn(LOG);
-    assert.equal(churn["src/router.ts"].touches, 3);
-    assert.equal(churn["src/index.ts"].touches, 1);
+  it("counts a burst of commits on one file as no churn", () => {
+    const churn = parseChurn(log([add, grow, fix, grow, fix, grow]));
+    assert.deepEqual(churn[FILE], { returns: 0, fixReturns: 0 });
   });
 
-  it("counts fix commits separately from every other commit", () => {
-    const churn = parseChurn(LOG);
-    assert.equal(churn["src/router.ts"].fixes, 2);
-    assert.equal(churn["src/index.ts"].fixes, 0);
+  it("counts a file the work keeps coming back to", () => {
+    const churn = parseChurn(log([add, ...AWAY, grow, ...AWAY, grow]));
+    assert.deepEqual(churn[FILE], { returns: 2, fixReturns: 0 });
   });
 
-  it("treats revert and hotfix subjects as fixes", () => {
-    const log =
-      commit("revert: undo the cache layer", "src/cache.ts") +
-      commit("hotfix: null guard", "src/cache.ts");
-    assert.equal(parseChurn(log)["src/cache.ts"].fixes, 2);
+  it("counts a return that carried a fix", () => {
+    const churn = parseChurn(log([add, ...AWAY, fix, ...AWAY, grow]));
+    assert.deepEqual(churn[FILE], { returns: 2, fixReturns: 1 });
+  });
+
+  it("counts a session once however many commits it took", () => {
+    const churn = parseChurn(log([add, ...AWAY, fix, fix, fix]));
+    assert.deepEqual(churn[FILE], { returns: 1, fixReturns: 1 });
+  });
+
+  it("does not count a fix in the session that introduced the file", () => {
+    assert.deepEqual(parseChurn(log([add, fix]))[FILE], {
+      returns: 0,
+      fixReturns: 0,
+    });
+  });
+
+  it("treats a long calendar gap as a return in a quiet repository", () => {
+    const revert = commit("revert: undo the route table", FILE);
+    const churn = parseChurn(log([add, revert], { day: 30 }));
+    assert.deepEqual(churn[FILE], { returns: 1, fixReturns: 1 });
+  });
+
+  it("treats hotfix and patch subjects as fixes", () => {
+    const hotfix = commit("hotfix: null guard", FILE);
+    const patch = commit("patch: null guard", FILE);
+    for (const repair of [hotfix, patch]) {
+      const churn = parseChurn(log([add, ...AWAY, repair]));
+      assert.equal(churn[FILE].fixReturns, 1);
+    }
+  });
+
+  it("scores each path in a commit separately", () => {
+    const both = commit("feat: add router", FILE, "src/index.ts");
+    const churn = parseChurn(log([both, ...AWAY, fix]));
+    assert.deepEqual(churn[FILE], { returns: 1, fixReturns: 1 });
+    assert.deepEqual(churn["src/index.ts"], { returns: 0, fixReturns: 0 });
   });
 
   it("ignores a commit that changed no files", () => {
-    const log =
-      commit("chore: empty commit") + commit("feat: real", "src/a.ts");
-    assert.deepEqual(Object.keys(parseChurn(log)), ["src/a.ts"]);
+    const empty = commit("chore: empty commit");
+    assert.deepEqual(Object.keys(parseChurn(log([empty, add]))), [FILE]);
   });
 
   it("returns an empty record for empty output", () => {
@@ -46,13 +91,7 @@ describe("parseChurn", () => {
   });
 
   it("does not read a subject line as a path", () => {
-    const log = commit("src/router.ts", "src/a.ts");
-    assert.deepEqual(Object.keys(parseChurn(log)), ["src/a.ts"]);
-  });
-
-  it("counts a path once per commit even when two commits share a subject", () => {
-    const log =
-      commit("fix: a", "src/a.ts") + commit("fix: a", "src/a.ts");
-    assert.equal(parseChurn(log)["src/a.ts"].touches, 2);
+    const churn = parseChurn(log([commit(FILE, "src/a.ts")]));
+    assert.deepEqual(Object.keys(churn), ["src/a.ts"]);
   });
 });

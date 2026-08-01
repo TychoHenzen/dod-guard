@@ -13,7 +13,7 @@ const ranked = (file, score) => ({
   file,
   score,
   rules: { complexity: 2 },
-  churn: { touches: 3, fixes: 1 },
+  churn: { returns: 3, fixReturns: 1 },
   hasOracle: true,
 });
 
