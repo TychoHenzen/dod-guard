@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "default",
-  "createdAt": "2026-08-01T08:32:48.130Z",
-  "total": 853,
+  "createdAt": "2026-08-01T12:44:59.033Z",
+  "total": 852,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/match-rate.mjs",
@@ -482,7 +482,6 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.mjs::file-length": 1,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::file-length": 1,
     "packages/quality-guard/src/index.ts::file-length": 1,
-    "packages/dod-guard/skills/tighten/scripts/lib/churn.mjs::complexity": 1,
     "packages/dod-guard/skills/tighten/scripts/seed-ledger.mjs::complexity": 1,
     "packages/dod-guard/skills/tighten/scripts/simplicity-gate.mjs::complexity": 1,
     "packages/dod-guard/src/command-check.ts::complexity": 5,
