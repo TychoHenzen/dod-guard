@@ -49,3 +49,6 @@ reports/
 
 # step-by-step session state: plan + progress log
 .step-session/
+
+# blind-rewrite scratch: quarantined original
+.blind/
