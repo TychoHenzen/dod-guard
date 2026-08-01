@@ -1,10 +1,16 @@
 # Source files with no matching .test.ts. Ratcheted by scripts/ci/check-tests-present.mjs.
 # This list may shrink, never grow. The one exception is extraction: splitting a
-# file that is already on this list moves its entry onto the pieces, because the
-# split added no untested behavior. The 11 src/mcp entries came out of
-# src/index.ts that way, and index.characterization.test.ts now covers all of
-# them through the MCP protocol.
+# file moves its entry onto the pieces, because the split added no untested
+# behavior. A suite named <stem>.<qualifier>.test.ts counts as coverage.
+#
+# The 11 src/mcp entries came out of src/index.ts, and
+# index.characterization.test.ts covers them through the MCP protocol.
+# checker-leaves.ts came out of checker.ts, and checker.scope.test.ts and
+# checker-vcs.test.ts drive it through checkDocument. checker-result.ts
+# declares one interface and holds no behavior.
 packages/dod-guard/src/author.ts
+packages/dod-guard/src/checker-leaves.ts
+packages/dod-guard/src/checker-result.ts
 packages/dod-guard/src/mcp/dod-adversarial-gate.ts
 packages/dod-guard/src/mcp/dod-amend.ts
 packages/dod-guard/src/mcp/dod-check.ts

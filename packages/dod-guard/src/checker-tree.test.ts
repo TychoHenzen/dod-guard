@@ -7,7 +7,7 @@ import {
   findNodeByPath,
   hasDraftNodes,
   isBranchLocked,
-} from "./checker.js";
+} from "./checker-tree.js";
 import type { Amendment, TaskNode } from "./types.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────

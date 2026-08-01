@@ -21134,9 +21134,59 @@ var StdioServerTransport = class {
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 
-// src/checker.ts
-import { exec } from "node:child_process";
-import { promisify as promisify2 } from "node:util";
+// src/checker-tree.ts
+function isLeaf(node) {
+  return !node.children || node.children.length === 0;
+}
+function hasDraftNodes(nodes) {
+  return nodes.some((node) => isLeaf(node) ? node.refinement === "draft" : hasDraftNodes(node.children ?? []));
+}
+function isBranchLocked(nodes) {
+  return !hasDraftNodes(nodes);
+}
+function countDraftNodes(nodes) {
+  return nodes.reduce((sum, node) => {
+    if (isLeaf(node)) return sum + (node.refinement === "draft" ? 1 : 0);
+    return sum + countDraftNodes(node.children ?? []);
+  }, 0);
+}
+function toIndex(segment) {
+  const idx = Number(segment);
+  return Number.isInteger(idx) ? idx : null;
+}
+function findNodeByPath(nodes, path7) {
+  if (!path7) return null;
+  const segments = path7.split(".").filter((s) => s !== "children");
+  let current = nodes;
+  let node = null;
+  for (const segment of segments) {
+    const idx = toIndex(segment);
+    if (idx === null || !current || idx < 0 || idx >= current.length) return null;
+    node = current[idx];
+    current = node.children;
+  }
+  return node;
+}
+function countNodeAmendments(amendments, nodePath) {
+  return amendments.filter((a) => a.node_path === nodePath && (a.action === "modified" || a.action === "refined")).length;
+}
+function checkAmendGate(amendments, resolvedPath, amendJustification) {
+  const count = countNodeAmendments(amendments, resolvedPath);
+  if (count < 3 || amendJustification) return null;
+  return `This node has been amended ${count} times. Provide amend_justification explaining why further amendments are needed.`;
+}
+function collectDraftLeaves(nodes, parentPath) {
+  const out = [];
+  nodes.forEach((node, i) => {
+    const path7 = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    if (!isLeaf(node)) {
+      out.push(...collectDraftLeaves(node.children ?? [], path7));
+    } else if (node.refinement === "draft") {
+      out.push({ node, node_path: path7 });
+    }
+  });
+  return out;
+}
 
 // src/evaluate-proof.ts
 import { execFile } from "node:child_process";
@@ -21388,241 +21438,157 @@ function computeProofFingerprint(roots) {
   return createHash("sha256").update(data).digest("hex");
 }
 
-// src/checker.ts
-var execAsync = promisify2(exec);
-function nodeDraftOrDescendant(node) {
-  if (node.children && node.children.length > 0) return hasDraftNodes(node.children);
-  return node.refinement === "draft";
+// src/checker-leaves.ts
+function isInScope(path7, nodePath) {
+  if (nodePath === void 0) return true;
+  return path7 === nodePath || path7.startsWith(`${nodePath}.`);
 }
-function hasDraftNodes(nodes) {
-  return nodes.some(nodeDraftOrDescendant);
+function toCarriedStatus(status) {
+  if (status === "pending" || status === "draft") return "skipped";
+  return status;
 }
-function traverseNodePath(nodes, parts, depth) {
-  if (depth >= parts.length) return null;
-  const segment = parts[depth];
-  if (segment === "children") return traverseNodePath(nodes, parts, depth + 1);
-  const idx = Number(segment);
-  if (!Number.isInteger(idx) || idx < 0 || idx >= nodes.length) return null;
-  const node = nodes[idx];
-  const isLast = depth === parts.length - 1 || depth === parts.length - 2 && parts[parts.length - 1] === "children";
-  if (isLast) return node;
-  if (!node.children) return null;
-  return traverseNodePath(node.children, parts, depth + 1);
-}
-function findNodeByPath(nodes, path7) {
-  if (!path7) return null;
-  return traverseNodePath(nodes, path7.split("."), 0);
-}
-function isBranchLocked(nodes) {
-  return !hasDraftNodes(nodes);
-}
-function countNodeDrafts(node) {
-  if (node.children && node.children.length > 0) return countDraftNodes(node.children);
-  return node.refinement === "draft" ? 1 : 0;
-}
-function countDraftNodes(nodes) {
-  return nodes.reduce((sum, node) => sum + countNodeDrafts(node), 0);
-}
-function countNodeAmendments(amendments, nodePath) {
-  return amendments.filter((a) => a.node_path === nodePath && (a.action === "modified" || a.action === "refined")).length;
-}
-function checkAmendGate(amendments, resolvedPath, amendJustification) {
-  const amendCount = countNodeAmendments(amendments, resolvedPath);
-  if (amendCount >= 3 && !amendJustification) {
-    return `This node has been amended ${amendCount} times. Provide amend_justification explaining why further amendments are needed.`;
-  }
-  return null;
-}
-function collectAllConcreteLeaves(nodes, parentPath, out) {
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-    if (node.children && node.children.length > 0) {
-      collectAllConcreteLeaves(node.children, currentPath, out);
-    } else if (node.refinement === "concrete") {
-      out.push({ node, node_path: currentPath });
-    }
-  }
-}
-function partitionLeaves(roots, targetPath) {
-  if (!targetPath) {
-    const allLeaves2 = [];
-    collectAllConcreteLeaves(roots, "", allLeaves2);
-    return { inScope: allLeaves2, outOfScope: [] };
-  }
-  const target = findNodeByPath(roots, targetPath);
-  if (!target) return { inScope: [], outOfScope: [] };
-  const inScope = [];
-  if (target.children) {
-    flattenTargetLeaves(target.children, targetPath, inScope);
-  } else if (target.refinement === "concrete") {
-    inScope.push({ node: target, node_path: targetPath });
-  }
-  const allLeaves = flattenConcreteLeaves(roots);
-  const inScopePaths = new Set(inScope.map((l) => l.node_path));
-  const outOfScope = allLeaves.filter((l) => !inScopePaths.has(l.node_path));
-  return { inScope, outOfScope };
-}
-function flattenTargetLeaves(nodes, parentPath, out) {
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    const currentPath = `${parentPath}.children.${i}`;
-    if (node.children && node.children.length > 0) {
-      flattenTargetLeaves(node.children, currentPath, out);
-    } else if (node.refinement === "concrete") {
-      out.push({ node, node_path: currentPath });
-    }
-  }
-}
-function carryForwardNode(node, node_path) {
+function carryForward(node, node_path) {
   return {
     node_path,
     id: node.id,
     title: node.title,
     description: node.description ?? node.intent ?? node.title,
-    status: node.last_status === "pending" || node.last_status === "draft" ? "skipped" : node.last_status,
+    status: toCarriedStatus(node.last_status),
     command: node.command ?? "",
     output: node.last_output
   };
 }
-function addDraftLeafResults(nodes, parentPath, out) {
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-    if (node.children && node.children.length > 0) {
-      addDraftLeafResults(node.children, currentPath, out);
-    } else if (node.refinement === "draft") {
-      out.push({
-        node_path: currentPath,
-        id: node.id,
-        title: node.title,
-        description: node.intent ?? node.title,
-        status: "draft",
-        command: "",
-        output: "DRAFT \u2014 refine with dod_refine before this proof can be verified."
-      });
-    }
+async function runOne(node, node_path, cwd, amendments, adversarialGates) {
+  node.amend_count = countNodeAmendments(amendments, node_path);
+  const opts = { adversarial_gates: adversarialGates };
+  const result = await executeProof(node, cwd, opts);
+  result.node_path = node_path;
+  result.description = node.description ?? node.intent ?? node.title;
+  return result;
+}
+async function runConcreteLeaves(roots, cwd, amendments, adversarialGates, nodePath) {
+  const leaves = flattenConcreteLeaves(roots);
+  const entries = [];
+  for (const { node, node_path } of leaves) {
+    const result = isInScope(node_path, nodePath) ? await runOne(node, node_path, cwd, amendments, adversarialGates) : carryForward(node, node_path);
+    entries.push({ node, node_path, result });
+  }
+  return entries;
+}
+
+// src/checker-summary.ts
+function buildSummary(overall, counts) {
+  const draftNote = counts.draft > 0 ? `, ${counts.draft} draft(s) pending` : "";
+  return `${overall.toUpperCase()}: ${counts.pass}/${counts.total} proof(s) passed${draftNote}.`;
+}
+
+// src/checker-verdict.ts
+function computeOverall(v) {
+  if (v.tampered) return "fail";
+  if (v.scoped) return "incomplete";
+  if (v.draftCount > 0) return "incomplete";
+  if (v.stuck) return "stuck";
+  if (v.anyFail) return "fail";
+  if (v.dirty && !v.allowDirtyPass) return "pass_dirty";
+  return "pass";
+}
+
+// src/checker-vcs.ts
+import { exec } from "node:child_process";
+import { promisify as promisify2 } from "node:util";
+var execP = promisify2(exec);
+async function captureVcsState(cwd) {
+  try {
+    const commit = await execP("git rev-parse HEAD", { cwd });
+    const status = await execP("git status --porcelain", { cwd });
+    return {
+      is_git_repo: true,
+      checked_commit: commit.stdout.trim(),
+      checked_dirty: status.stdout.trim().length > 0
+    };
+  } catch {
+    return { is_git_repo: false };
   }
 }
-function carryForwardDrafts(nodes, parentPath, targetPath, out) {
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-    const isUnderTarget = currentPath === targetPath || currentPath.startsWith(`${targetPath}.`);
-    if (node.children && node.children.length > 0) {
-      if (isUnderTarget) continue;
-      carryForwardDrafts(node.children, currentPath, targetPath, out);
-    } else if (node.refinement === "draft" && !isUnderTarget) {
-      out.push({
-        node_path: currentPath,
-        id: node.id,
-        title: node.title,
-        description: node.intent ?? node.title,
-        status: "draft",
-        command: "",
-        output: "DRAFT \u2014 refine with dod_refine before this proof can be verified."
-      });
-    }
-  }
-}
-async function checkDocument(doc, cwdOverride, opts) {
-  const cwd = cwdOverride ?? doc.cwd;
-  const targetPath = opts?.nodePath;
-  const { inScope, outOfScope } = partitionLeaves(doc.roots, targetPath);
-  const draftCount = countDraftNodes(doc.roots);
-  const leafResults = [];
-  if (targetPath) {
-    for (const { node, node_path } of outOfScope) {
-      leafResults.push(carryForwardNode(node, node_path));
-    }
-    carryForwardDrafts(doc.roots, "", targetPath, leafResults);
-  }
-  let checkedCommit;
-  let checkedDirty;
-  let isGitRepo;
-  if (!targetPath) {
-    try {
-      const { stdout: commitOut } = await execAsync("git rev-parse HEAD", { cwd });
-      checkedCommit = commitOut.trim();
-      isGitRepo = true;
-      const { stdout: statusOut } = await execAsync("git status --porcelain", { cwd });
-      checkedDirty = statusOut.trim().length > 0;
-    } catch {
-      isGitRepo = false;
-    }
-  }
-  let anyFail = false;
-  let stuckTriggered = false;
-  const proofOpts = {
-    adversarial_gates: doc.adversarial_gates ?? []
-  };
-  for (const { node, node_path } of inScope) {
-    node.amend_count = countNodeAmendments(doc.amendments, node_path);
-  }
-  for (const { node, node_path } of inScope) {
-    const result = await executeProof(node, cwd, proofOpts);
-    result.node_path = node_path;
-    leafResults.push(result);
-    if (result.status === "fail" && !node.advisory) {
-      anyFail = true;
-      if ((node.amend_count ?? 0) >= 3) {
-        stuckTriggered = true;
-      }
-    }
-  }
-  if (!targetPath) {
-    addDraftLeafResults(doc.roots, "", leafResults);
-  }
-  const proofFingerprint = computeProofFingerprint(doc.roots);
-  const tampered = !!(doc.proof_fingerprint && doc.proof_fingerprint !== proofFingerprint);
-  let overall;
-  if (tampered) {
-    overall = "fail";
-  } else if (targetPath) {
-    overall = "incomplete";
-  } else if (draftCount > 0) {
-    overall = "incomplete";
-  } else if (stuckTriggered) {
-    overall = "stuck";
-  } else if (anyFail) {
-    overall = "fail";
-  } else {
-    overall = "pass";
-  }
-  if (overall === "pass" && checkedDirty && !doc.allow_dirty_pass) {
-    overall = "pass_dirty";
-  }
-  const concreteTotal = leafResults.filter((r) => r.status !== "draft").length;
-  const passCount = leafResults.filter((r) => r.status === "pass").length;
-  let baseSummary;
-  if (tampered) {
-    baseSummary = `TAMPER DETECTED \u2014 proof-set fingerprint mismatch (store edited outside dod_amend). Verdict forced to FAIL.`;
-  } else if (stuckTriggered) {
-    const stuckNodes = inScope.filter(({ node }) => (node.amend_count ?? 0) >= 3 && node.last_status === "fail").map(({ node }) => `"${node.title}" (${node.amend_count} amendments)`).join(", ");
-    baseSummary = `STUCK \u2014 ${stuckNodes}: node(s) failing after 3+ amendment cycles. The approach itself may be wrong. Re-read the original requirements. Consider re-speccing the affected nodes with a different architectural approach rather than further parameter tuning.`;
-  } else if (targetPath) {
-    baseSummary = `SCOPED (node "${targetPath}"): run a full dod_check to verify completion. ${passCount}/${concreteTotal} proofs pass.`;
-  } else {
-    baseSummary = `${passCount}/${concreteTotal} concrete proofs pass${draftCount > 0 ? `, ${draftCount} draft node(s) not verified` : ""}`;
-  }
-  const guidance = [];
-  if (!targetPath && draftCount > 0) {
-    guidance.push(`${draftCount} draft node(s) \u2014 refine with dod_refine, then re-run dod_check.`);
-  }
-  const summary = guidance.length > 0 ? [baseSummary, "", ...guidance].join("\n") : baseSummary;
+
+// src/checker.ts
+function draftResult(node, node_path) {
   return {
-    overall,
-    leaves: leafResults,
-    summary,
+    node_path,
+    id: node.id,
+    title: node.title,
+    description: node.description ?? node.intent ?? node.title,
+    status: "draft",
+    command: node.command ?? ""
+  };
+}
+function isUnderScope(path7, nodePath) {
+  if (nodePath === void 0) return false;
+  return path7 === nodePath || path7.startsWith(`${nodePath}.`);
+}
+function isNonAdvisoryFail(entry) {
+  return entry.result.status === "fail" && !entry.node.advisory;
+}
+function isStuck(entry) {
+  const amended = (entry.node.amend_count ?? 0) >= 3;
+  return isNonAdvisoryFail(entry) && amended;
+}
+function countLeafStatuses(leaves) {
+  const draft = leaves.filter((l) => l.status === "draft").length;
+  const pass = leaves.filter((l) => l.status === "pass").length;
+  return { pass, total: leaves.length - draft, draft };
+}
+async function gatherVcs(scoped, cwd) {
+  return scoped ? {} : captureVcsState(cwd);
+}
+function computeVerdict(doc, entries, scoped, vcs) {
+  const computedFingerprint = computeProofFingerprint(doc.roots);
+  const stored = doc.proof_fingerprint;
+  const tampered = stored !== void 0 && stored !== computedFingerprint;
+  const draftCount = countDraftNodes(doc.roots);
+  const overall = computeOverall({
+    tampered,
+    scoped,
+    draftCount,
+    stuck: entries.some(isStuck),
+    anyFail: entries.some(isNonAdvisoryFail),
+    dirty: vcs.checked_dirty === true,
+    allowDirtyPass: doc.allow_dirty_pass === true
+  });
+  return { overall, tampered, computedFingerprint, draftCount };
+}
+async function checkDocument(doc, cwdOverride, opts = {}) {
+  const cwd = cwdOverride ?? doc.cwd;
+  const { nodePath, summary } = opts;
+  const scoped = nodePath !== void 0;
+  const entries = await runConcreteLeaves(
+    doc.roots,
+    cwd,
+    doc.amendments,
+    doc.adversarial_gates ?? [],
+    nodePath
+  );
+  const vcs = await gatherVcs(scoped, cwd);
+  const draftEntries = collectDraftLeaves(doc.roots).filter(
+    ({ node_path }) => !isUnderScope(node_path, scoped ? nodePath : void 0)
+  );
+  const drafts = draftEntries.map(
+    ({ node, node_path }) => draftResult(node, node_path)
+  );
+  const leaves = [...entries.map((e) => e.result), ...drafts];
+  const verdict = computeVerdict(doc, entries, scoped, vcs);
+  const counts = countLeafStatuses(leaves);
+  return {
+    overall: verdict.overall,
+    leaves,
+    summary: buildSummary(verdict.overall, counts),
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    proof_fingerprint: proofFingerprint,
-    draft_count: draftCount,
-    summary_mode: opts?.summary === true ? true : void 0,
-    ...targetPath ? { scoped: true, ran_node_path: targetPath } : {},
-    ...tampered ? { tampered: true } : {},
-    checked_commit: checkedCommit,
-    checked_dirty: checkedDirty,
-    is_git_repo: isGitRepo
+    proof_fingerprint: verdict.computedFingerprint,
+    draft_count: verdict.draftCount,
+    ...scoped ? { scoped: true, ran_node_path: nodePath } : {},
+    ...verdict.tampered ? { tampered: true } : {},
+    summary_mode: summary === true ? true : void 0,
+    ...vcs
   };
 }
 
@@ -21727,8 +21693,8 @@ function proofMark(status) {
 }
 function renderNode(node, depth, lines) {
   const indent = "  ".repeat(depth);
-  const isLeaf = !node.children || node.children.length === 0;
-  if (isLeaf) {
+  const isLeaf2 = !node.children || node.children.length === 0;
+  if (isLeaf2) {
     renderLeaf(node, indent, lines);
   } else {
     renderGroup(node, depth, indent, lines);
@@ -21857,8 +21823,8 @@ function renderMarkdown(doc) {
   l.push("<definition_of_done>");
   for (let i = 0; i < doc.roots.length; i++) {
     const root = doc.roots[i];
-    const isLeaf = !root.children || root.children.length === 0;
-    if (isLeaf) {
+    const isLeaf2 = !root.children || root.children.length === 0;
+    if (isLeaf2) {
       l.push("");
       renderLeaf(root, "", l);
     } else {

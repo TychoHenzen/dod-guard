@@ -1,6 +1,6 @@
 import * as assert from "node:assert/strict";
 import { after, before, describe, it, mock } from "node:test";
-import type { DodDocument, TaskNode } from "./types.js";
+import type { AdversarialGate, DodDocument, TaskNode } from "./types.js";
 
 // This file hosts mocked async checkDocument cases. node:child_process is
 // mocked via mock.module, the same pattern checker-vcs.test.ts uses.
@@ -120,5 +120,82 @@ describe("checkDocument scoped carry-forward and advisory verdict", () => {
     const advisoryResult = res.leaves.find((l) => l.id === advisoryLeaf.id);
     assert.equal(advisoryResult?.status, "fail");
     assert.notEqual(res.overall, "fail");
+  });
+
+  it("an adversarial leaf passes when its phase gate is GO", async () => {
+    const { checkDocument } = await import("./checker.js");
+
+    const gatedLeaf = concLeaf(
+      nid(),
+      "Gated",
+      "gate-check-cmd",
+      "checks phase 1 gate",
+      { type: "adversarial", value: 1 },
+    );
+    const gate: AdversarialGate = {
+      phase: 1,
+      timestamp: "2026-01-01T00:00:00.000Z",
+      verdict: "GO",
+      lenses: [],
+      critical_count: 0,
+      major_count: 0,
+      minor_count: 0,
+      summary: "clean",
+    };
+
+    const doc = makeDoc([gatedLeaf], { adversarial_gates: [gate] });
+    const res = await checkDocument(doc);
+
+    const gatedResult = res.leaves.find((l) => l.id === gatedLeaf.id);
+    assert.equal(gatedResult?.status, "pass");
+    assert.equal(res.overall, "pass");
+  });
+
+  it("an adversarial leaf fails with no recorded gate", async () => {
+    const { checkDocument } = await import("./checker.js");
+
+    const gatedLeaf = concLeaf(
+      nid(),
+      "Ungated",
+      "gate-check-cmd",
+      "checks phase 1 gate",
+      { type: "adversarial", value: 1 },
+    );
+
+    const doc = makeDoc([gatedLeaf]);
+    const res = await checkDocument(doc);
+
+    const gatedResult = res.leaves.find((l) => l.id === gatedLeaf.id);
+    assert.equal(gatedResult?.status, "fail");
+    assert.equal(res.overall, "fail");
+  });
+
+  it("a scoped group's own draft is not reported in leaves", async () => {
+    const { checkDocument } = await import("./checker.js");
+
+    const innerConcrete = concLeaf(
+      nid(),
+      "InnerConcrete",
+      "inner-cmd",
+      "runs inside group",
+    );
+    const innerDraft = draftLeaf(nid(), "InnerDraft");
+    const group: TaskNode = {
+      id: nid(),
+      title: "Group",
+      refinement: "concrete",
+      children: [innerConcrete, innerDraft],
+      last_status: "pending",
+    };
+
+    const doc = makeDoc([group]);
+    const res = await checkDocument(doc, undefined, { nodePath: "0" });
+
+    const draftPath = "0.children.1";
+    const draftResult = res.leaves.find((l) => l.node_path === draftPath);
+    assert.equal(draftResult, undefined);
+    const concretePath = "0.children.0";
+    const concreteResult = res.leaves.find((l) => l.node_path === concretePath);
+    assert.equal(concreteResult?.status, "pass");
   });
 });

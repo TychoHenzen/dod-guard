@@ -1,4 +1,4 @@
-// This file contains only type definitions — types are inert at runtime.
+// This file contains only type definitions - types are inert at runtime.
 
 export interface Predicate {
   type:
@@ -13,22 +13,22 @@ export interface Predicate {
     | "holdout"
     | "convergence";
   value?: number | string;
-  /** Override the default 120s command timeout (ms). Slow tools like Stryker need up to 600s. */
+  /** Override the default 120s timeout (ms). Slow tools need up to 600s. */
   timeout_ms?: number;
 }
 
 /**
- * Proof category — classifies what kind of verification a proof provides.
+ * Proof category - classifies what kind of check a proof gives.
  * "behavioral" = proves correct behavior (test, integration_behavioral).
- * "wiring" = proves the change is connected to the real system (integration_wiring).
+ * "wiring" = proves the change is wired to the real system.
  * "other" = catch-all.
- * "test_audit" = adversarial test verification gate (Phase 2 holdout contracts).
+ * "test_audit" = adversarial test check gate (Phase 2 holdout contracts).
  */
 export type ProofCategory = "behavioral" | "wiring" | "other" | "test_audit";
 
 /**
- * Adversarial gate verdict — computed from aggregated lens findings.
- * GO = proceed to next phase. REVISE = fix issues and re-run. STOP = fatal blocker.
+ * Adversarial gate verdict - built from the lens findings.
+ * GO = go on. REVISE = fix issues and re-run. STOP = fatal blocker.
  */
 export type AdversarialVerdict = "GO" | "REVISE" | "STOP";
 
@@ -38,19 +38,19 @@ export type AdversarialVerdict = "GO" | "REVISE" | "STOP";
  */
 export interface AdversarialFinding {
   severity: "critical" | "major" | "minor" | "blocker";
-  /** Which requirement/node this finding targets (optional for systemic findings). */
+  /** Which requirement/node this finding targets (blank for systemic). */
   target?: string;
   /** Concrete problem description. */
   problem: string;
-  /** Suggested fix — actionable, not abstract. */
+  /** Suggested fix - actionable, not abstract. */
   suggestion?: string;
-  /** Execution-based evidence: file:line + failing command. Required for non-blocker findings. */
+  /** file:line + failing command. Required for non-blocker findings. */
   evidence?: string;
 }
 
 /**
  * Result from a single adversarial lens.
- * mandatory_minimum_met = false if the lens found nothing (rubber-stamp detection).
+ * mandatory_minimum_met = false if the lens found nothing (rubber-stamp).
  */
 export interface AdversarialLensResult {
   lens: string;
@@ -59,7 +59,7 @@ export interface AdversarialLensResult {
 }
 
 /**
- * A recorded adversarial gate — checkpoint between workflow phases.
+ * A recorded adversarial gate - checkpoint between workflow phases.
  * A DoD cannot progress to phase N+1 until phase N's gate is GO.
  */
 export interface AdversarialGate {
@@ -80,12 +80,12 @@ export type ProofStatus = "draft" | "pending" | "pass" | "fail" | "skipped";
  * Uniform recursive node type replacing the old Step/Proof split.
  *
  * A TaskNode is EITHER:
- * - A **task group** (has `children`) — further decomposition into sub-tasks.
+ * - A **task group** (has `children`) - further split into sub-tasks.
  * - A **leaf proof** (no `children`, `refinement` determines state):
  *   - `draft`: intent-only placeholder, not yet ready to verify.
- *   - `concrete`: has `command`, `predicate`, `description` — ready to execute.
+ *   - `concrete`: has `command`, `predicate`, `description` - ready to run.
  *
- * Decompose until each leaf is "pure" — one atomic, independently verifiable
+ * Decompose until each leaf is "pure" - one atomic, independently checkable
  * behavior. A branch is "locked" when `hasDraftNodes(subtree) === false`.
  * Locking is computed, never stored.
  */
@@ -93,9 +93,9 @@ export interface TaskNode {
   id: string;
   title: string;
   refinement: ProofRefinement;
-  /** Required when draft: what behavior this node will eventually prove. Cleared on refine. */
+  /** Required when draft: behavior this node will prove. Cleared on refine. */
   intent?: string;
-  /** Present → task group (internal node, further decomposition). Absent → leaf. */
+  /** Present = task group (more decomposition). Absent = leaf. */
   children?: TaskNode[];
   // Leaf proof fields (only meaningful when refinement === "concrete"):
   command?: string;
@@ -103,7 +103,7 @@ export interface TaskNode {
   description?: string;
   category?: ProofCategory;
   advisory?: boolean;
-  /** Number of times this node has been amended (derived from audit trail at check time). */
+  /** Times this node has been amended (from audit trail at check time). */
   amend_count?: number;
   // Runtime state:
   last_status: ProofStatus;
@@ -125,6 +125,14 @@ export interface Amendment {
   justification?: string;
 }
 
+/** Fixed-priority check verdict. See computeOverall() in checker-verdict.ts. */
+export type CheckOverall =
+  | "pass"
+  | "fail"
+  | "incomplete"
+  | "pass_dirty"
+  | "stuck";
+
 export interface DodDocument {
   id: string;
   title: string;
@@ -133,30 +141,33 @@ export interface DodDocument {
   cwd: string;
   markdown_path: string;
   created_at: string;
-  /** Path the doc was imported from (undefined for author-created DoDs). */
+  /** Path the doc was imported from (unset for author-created DoDs). */
   import_source?: string;
-  /** Human has confirmed imported commands are safe to execute (default false for imports, true for author-created). */
+  /** Human confirmed imported commands are safe (default false for
+   * imports, true for author-created). */
   execution_confirmed?: boolean;
-  /** Work type: "minimal" = no behavioral predicate requirement (advisory only). "bug"/"general" = at least one behavioral predicate required. */
+  /** Work type: "minimal" = no behavioral predicate needed (advisory
+   * only). "bug"/"general" = at least one behavioral predicate needed. */
   type?: "bug" | "general" | "minimal";
-  /** When true, a full check with dirty working tree can still PASS (default false = strict). */
+  /** When true, a dirty working tree can still PASS (default strict). */
   allow_dirty_pass?: boolean;
   sections: DodSections;
-  /** Root-level task nodes — the top of the decomposition tree. */
+  /** Root-level task nodes - the top of the decomposition tree. */
   roots: TaskNode[];
   /**
-   * SHA256 hash of all concrete leaf proofs (command | predicate type | predicate value).
-   * Recomputes on every mutation (create, refine, amend, add/remove node).
-   * Draft nodes excluded — nothing to hash. Grows as leaves are refined.
-   * Checked for tamper detection on every dod_check.
+   * SHA256 hash of all concrete leaf proofs (command | predicate type |
+   * predicate value). Recomputes on every mutation (create, refine, amend,
+   * add/remove node). Draft nodes excluded - nothing to hash. Grows as
+   * leaves are refined. Checked for tamper detection on every dod_check.
    */
   proof_fingerprint?: string;
   amendments: Amendment[];
-  /** Adversarial gate checkpoints — one per phase. Phase N+1 cannot execute until phase N gate is GO. */
+  /** Adversarial gate checkpoints, one per phase. Phase N+1 cannot run
+   * until phase N's gate is GO. */
   adversarial_gates?: AdversarialGate[];
   last_check?: {
     timestamp: string;
-    overall: "pass" | "fail" | "incomplete" | "pass_dirty" | "stuck";
+    overall: CheckOverall;
     summary: string;
   };
 }
@@ -172,23 +183,23 @@ export interface DodSections {
 
 export interface CheckResult {
   /**
-   * "incomplete" is reserved for scoped runs AND runs with draft nodes present.
-   * Only a full (unscoped) run with zero drafts yields "pass"/"fail"/"pass_dirty".
-   * "pass_dirty" = all proofs pass but the working tree has uncommitted changes.
+   * "incomplete" is reserved for scoped runs AND runs with draft nodes.
+   * Only a full (unscoped) run with zero drafts yields "pass"/"fail"/
+   * "pass_dirty". "pass_dirty" = all proofs pass but the tree is dirty.
    */
-  overall: "pass" | "fail" | "incomplete" | "pass_dirty" | "stuck";
+  overall: CheckOverall;
   leaves: LeafResult[];
   summary: string;
   timestamp: string;
   proof_fingerprint: string;
-  /** Number of draft leaves skipped (not executed). >0 means overall "incomplete". */
+  /** Draft leaves skipped (not run). >0 means overall "incomplete". */
   draft_count: number;
-  /** True when only a subtree was executed (`dod_check --node-path ...`); others carried. */
+  /** True when only a subtree ran (`dod_check --node-path ...`). */
   scoped?: boolean;
-  /** The node path that was freshly executed on a scoped run. */
+  /** The node path that was freshly run on a scoped run. */
   ran_node_path?: string;
-  /** True when the recomputed proof-set fingerprint differs from the stored one
-   * (store edited outside dod_amend). Forces overall to "fail". */
+  /** True when the recomputed proof-set fingerprint differs from the
+   * stored one (store edited outside dod_amend). Forces overall "fail". */
   tampered?: boolean;
   /** When true: format output in summary mode (collapse unchanged drafts). */
   summary_mode?: boolean;
@@ -212,6 +223,6 @@ export interface LeafResult {
   error?: string;
   exit_code?: number;
   duration_ms?: number;
-  /** When a behavioral predicate fails, a specific diagnosis of what went wrong. */
+  /** When a behavioral predicate fails, a diagnosis of what went wrong. */
   diagnosis?: string;
 }
