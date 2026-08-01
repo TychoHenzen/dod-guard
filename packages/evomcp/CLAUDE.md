@@ -32,7 +32,7 @@ DeepSeek has an `/anthropic` endpoint that speaks the Anthropic Messages API. By
 | `index.ts` | MCP server entry: tool registration (solve, evolve, orchestrate, status), Zod schemas, result formatters, auto-dispatch routing |
 | `types.ts` | All TypeScript types/interfaces (includes GateResult, Diagnostic, OracleResult, JudgeVerdict, OrchestrateSpec) |
 | `agent.ts` | Spawn `claude -p` subprocesses (prompt via stdin), proxy health, API key resolution, SHA-256 failure hashing, signal computation, memory bus integration |
-| `solve.ts` | Best-of-N solver: budget+escalation gates → dedup → context assembly → parallel fanout (cap 4) → verify → feedback repair → degenerate gate → judge. Per-lineage token tracking + signature history. |
+| `solve.ts` | Best-of-N solver entry: checkpoint gate, session setup, budget summary. The work is split across `solve-plan`, `solve-loop`, `solve-attempt`, `solve-worker`, `solve-verify`, `solve-repair`, `solve-screen`, `solve-ledger`, `solve-select`, `solve-report` and `solve-finish`. Attempts run one at a time, because they share one working directory. |
 | `evolve.ts` | Evolutionary optimizer: budget+escalation gates → context assembly → parallel mutations per generation → fitness → degenerate gate → elites. Per-lineage token tracking. |
 | `orchestrate.ts` | Full playbook driver: walks SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE via orchestrator state machine. Human gates for SPEC/TEST_AUTHOR/REVIEW. |
 | `git-helpers.ts` | Shared git utilities: `commitOrNoop` (guarded add+commit), `getRootBranch` (dynamic master/main/trunk/develop detection) |
@@ -50,20 +50,20 @@ DeepSeek has an `/anthropic` endpoint that speaks the Anthropic Messages API. By
 | `orchestrator.ts` | Deterministic stage state machine: SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE. Per-stage entry/exit gates. Playbook loader. Wired as top-level `orchestrate` tool. |
 
 ### Solve flow
-1. Auto-dispatch: `strategy: "auto"` inspects verify_cmd for scalar fitness → routes to evolve; `"best-of-n"` → solve; `"evolve"` → evolve
-2. Budget + escalation state initialized (budget_tokens honored)
-3. Pre-fanout dedup: strategy descriptions deduplicated via token-overlap heuristic
-4. Context assembly: 7-layer CuratedContext per strategy (GOAL→STRATEGY→TARGETS→DEPS→CONSTRAINTS→ATTEMPTS→FAILURES) with SHA-256 cache
-5. Optional gates (lint_cmd → build_cmd → test_cmd) — fail fast before fanout
-6. Phase 1 (serial): spawn N git branches via gitevo
-7. Phase 2 (parallel, cap 4): checkout + spawnClaude (prompt via stdin), per-lineage token tracking
-8. Phase 3 (serial per lineage): commitOrNoop, capture real diff (git diff root...branch), verify against verify_cmd
-9. Failed candidates: structured feedback via compileFeedback → repair loop with escalation (retry→resample→re-decompose→stronger-model→human, replacing hardcoded MAX_REPAIRS=3)
+1. Auto-dispatch. `strategy: "auto"` inspects verify_cmd for scalar fitness and routes to evolve. `"best-of-n"` routes to solve. `"evolve"` routes to evolve
+2. Checkpoint first. A gitevo checkpoint that fails aborts the run before any attempt, with `failure_signature: "checkpoint_failed"`
+3. Budget + escalation state initialized (budget_tokens honored)
+4. Pre-fanout dedup: strategy descriptions deduplicated via token-overlap heuristic
+5. Context assembly: CuratedContext per strategy, with the layers built once per spec
+6. Attempts run **one at a time**. All attempts share one working directory, so two of them cannot each hold it checked out to their own branch
+7. Each attempt: spawn a gitevo branch, check it out, spawnClaude (prompt via stdin), commitOrNoop, capture the diff against the root branch, verify. The token spend is measured exactly once per attempt, including attempts that timed out or produced nothing
+8. Verification runs GateRunner (lint, then build, then test, then verify) when any gate command is set, otherwise verify_cmd alone
+9. A failed candidate gets structured feedback via compileFeedback, then a repair loop driven by the escalation ladder. The budget stops retries, not first attempts
 10. Stuck/oscillating detection via SHA-256 per-lineage signature history
-11. Degenerate gate: reject candidates hardcoding outputs, deleting assertions, etc. after passing verify_cmd
-12. Multi-candidate judge scores winners on correctness, clarity, efficiency, maintainability
-13. Returns first passing patch + verification report + judge verdict + budget summary
-14. All lineages fail → escalation report with per-lineage diagnostics + degenerate rejections
+11. Refusal filters after a pass: the degenerate gate, then the allowed_files check. Every refusal is reported
+12. Every non-surviving attempt is checked out and abandoned, so the branch is reverted and the reason reaches the gitevo memory bus
+13. One survivor is adopted directly. Several go through the judge, which scores on correctness, clarity, efficiency and maintainability
+14. All attempts fail, so the run returns an escalation report with per-lineage diagnostics and degenerate rejections
 
 ### Evolve flow
 1. Auto-dispatch: strategy: "auto" inspects verify_cmd for scalar fitness → routes here; "evolve" → here directly

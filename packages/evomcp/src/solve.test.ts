@@ -13,6 +13,7 @@ let spawnClaudeEmptyOutput = false;
 let costSnapshotCalls = 0;
 const repairPromptCalls: any[][] = [];
 let mockDiffOutput: string | null = null;
+let checkpointFails = false;
 
 mock.module("./agent.js", {
   namedExports: {
@@ -33,10 +34,6 @@ mock.module("./agent.js", {
       const noProgress = recent.length >= k && recentUnique.size === recent.length;
       return { stuck, oscillating, noProgress };
     }),
-    repairPrompt: mock.fn((task: string, diagnostics: any[], attempt: number) => {
-      repairPromptCalls.push([task, diagnostics, attempt]);
-      return `repair|${task}|${attempt}|diags=${diagnostics.length}`;
-    }),
     runCommand: mock.fn((_cmd: string, _cwd: string) => ({
       output: verifyOutput,
       exitCode: verifyExitCode,
@@ -51,7 +48,6 @@ mock.module("./agent.js", {
         timedOut: spawnClaudeTimedOut,
       };
     }),
-    strategyPrompts: mock.fn((_task: string, n: number) => Array.from({ length: n }, (_, i) => `strategy-${i}`)),
     toVerdict: mock.fn((r: any) => ({
       passed: r.exitCode === 0,
       exit_code: r.exitCode,
@@ -88,6 +84,21 @@ mock.module("./agent.js", {
   },
 });
 
+// solve imports its prompt builders from ./prompts.js, so the recording
+// wrapper has to live there. Everything else stays the real implementation,
+// which keeps the dedup test honest about the real STRATEGIES list.
+const realPrompts = await import("./prompts.js");
+
+mock.module("./prompts.js", {
+  namedExports: {
+    ...realPrompts,
+    repairPrompt: mock.fn((task: string, diagnostics: any[], attempt: number) => {
+      repairPromptCalls.push([task, diagnostics, attempt]);
+      return realPrompts.repairPrompt(task, diagnostics, attempt);
+    }),
+  },
+});
+
 mock.module("node:child_process", {
   namedExports: {
     execSync: mock.fn((cmd: string, _opts?: any) => {
@@ -105,7 +116,10 @@ mock.module("node:child_process", {
 
 mock.module("../../gitevo/dist/operations.js", {
   namedExports: {
-    evo_checkpoint: mock.fn(async (_name: string, _desc: string) => ({})),
+    evo_checkpoint: mock.fn(async (_name: string, _desc: string) => {
+      if (checkpointFails) throw new Error("checkpoint refused: dirty tree");
+      return {};
+    }),
   },
 });
 
@@ -170,9 +184,28 @@ describe("solve", () => {
     costSnapshotCalls = 0;
     repairPromptCalls.length = 0;
     mockDiffOutput = null;
+    checkpointFails = false;
   }
 
-  // ── Phase 1: First strategy passes → immediate return ───────────────────
+  // ── Checkpoint gate: no restore point, no attempts ──────────────────────
+
+  it("escalates with no attempt when the checkpoint fails", async () => {
+    reset();
+    checkpointFails = true;
+
+    const spec = { goal: "fix", verify_cmd: "test", cwd: process.cwd() };
+    const result = await solve(spec);
+    checkpointFails = false;
+
+    assert.equal(result.outcome, "escalate");
+    assert.equal(result.escalation.failure_signature, "checkpoint_failed");
+    assert.equal(result.escalation.lineages_attempted, 0);
+    assert.deepEqual(result.escalation.lineage_diagnostics, []);
+    assert.equal(result.stats.candidates_generated, 0);
+    assert.ok(result.stats.duration_ms >= 0);
+  });
+
+  // ── Phase 1: First strategy passes, so the run can return ───────────────
 
   it("first strategy passes verification immediately", async () => {
     reset();
