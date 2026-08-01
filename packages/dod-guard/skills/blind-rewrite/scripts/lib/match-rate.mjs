@@ -26,11 +26,3 @@ export function matchCounts(sourceItems, candidateItems) {
   }
   return { matched, total: candidateItems.length };
 }
-
-export function matchRate(sourceItems, candidateItems) {
-  const { matched, total } = matchCounts(sourceItems, candidateItems);
-  if (total === 0) {
-    return 0;
-  }
-  return matched / total;
-}

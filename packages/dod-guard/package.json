@@ -1,7 +1,7 @@
 {
   "name": "dod-guard",
-  "version": "2.15.0",
-  "description": "Anti-cheat Definition of Done verification with locked proofs. Claude Code plugin with MCP server and 8 skills: /interview, /ratchet, /clean-house, /step-by-step, /cheap-step, /adversarial-workflow, /test-integrity-checker, and /blind-rewrite.",
+  "version": "2.16.0",
+  "description": "Anti-cheat Definition of Done verification with locked proofs. Claude Code plugin with MCP server and 9 skills: /interview, /ratchet, /clean-house, /step-by-step, /cheap-step, /adversarial-workflow, /test-integrity-checker, /blind-rewrite, and /tighten.",
   "type": "module",
   "main": "dist/bundle.js",
   "bin": {

@@ -3,12 +3,7 @@
 // convergence, not copying, so the caller needs the sample size to judge it.
 
 import { matchCounts } from "./match-rate.mjs";
-import {
-  declarations,
-  ngrams,
-  significantLines,
-  tokenize,
-} from "./text-tokens.mjs";
+import * as text from "./text-tokens.mjs";
 
 function rateOf(counts) {
   if (counts.total === 0) {
@@ -19,8 +14,8 @@ function rateOf(counts) {
 
 export function gramStats(original, rewrite, settings) {
   const { whitelist, size } = settings;
-  const source = ngrams(tokenize(original, whitelist), size);
-  const candidate = ngrams(tokenize(rewrite, whitelist), size);
+  const source = text.ngrams(text.tokenize(original, whitelist), size);
+  const candidate = text.ngrams(text.tokenize(rewrite, whitelist), size);
   const counts = matchCounts(source, candidate);
   return { rate: rateOf(counts), sample: counts.total };
 }
@@ -45,14 +40,14 @@ function longestRun(left, right) {
 }
 
 export function runStats(original, rewrite, whitelist) {
-  const source = tokenize(original, whitelist);
-  const candidate = tokenize(rewrite, whitelist);
+  const source = text.tokenize(original, whitelist);
+  const candidate = text.tokenize(rewrite, whitelist);
   return { rate: longestRun(source, candidate), sample: candidate.length };
 }
 
 export function lineStats(original, rewrite, whitelist) {
-  const source = significantLines(original, whitelist);
-  const candidate = significantLines(rewrite, whitelist);
+  const source = text.significantLines(original, whitelist);
+  const candidate = text.significantLines(rewrite, whitelist);
   const counts = matchCounts(source, candidate);
   return { rate: rateOf(counts), sample: counts.matched };
 }
@@ -78,7 +73,7 @@ export function orderSimilarity(originalNames, rewriteNames) {
 }
 
 export function orderStats(original, rewrite, whitelist) {
-  const source = declarations(original, whitelist);
-  const candidate = declarations(rewrite, whitelist);
+  const source = text.declarations(original, whitelist);
+  const candidate = text.declarations(rewrite, whitelist);
   return { rate: orderSimilarity(source, candidate), sample: candidate.length };
 }

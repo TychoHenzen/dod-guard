@@ -41,3 +41,6 @@ reports/
 
 # quality-guard: the one-shot gate waiver. It must never be committed.
 .quality-skip
+
+# tighten loop scratch: ledger, quarantine
+.tighten/

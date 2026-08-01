@@ -2,14 +2,12 @@
 // shares long token runs, whole lines, or declaration order with the original
 // is a paraphrase and not a rewrite. These metrics make that machine-checkable.
 
-import { matchRate } from "./match-rate.mjs";
 import {
   gramStats,
   lineStats,
   orderStats,
   runStats,
 } from "./metric-stats.mjs";
-import { ngrams, significantLines } from "./text-tokens.mjs";
 
 export { orderSimilarity } from "./metric-stats.mjs";
 
@@ -19,16 +17,6 @@ const DEFAULT_THRESHOLDS = { run: 60, ngram: 0.65, lines: 0.35, order: 0.5 };
 
 // Below these sample sizes a metric reports its value but never fails the gate.
 const MIN_SAMPLES = { run: 0, ngram: 20, lines: 3, order: 4 };
-
-export function ngramOverlap(originalTokens, rewriteTokens, size = 4) {
-  const source = ngrams(originalTokens, size);
-  return matchRate(source, ngrams(rewriteTokens, size));
-}
-
-export function identicalLineRate(original, rewrite, whitelist = []) {
-  const source = significantLines(original, whitelist);
-  return matchRate(source, significantLines(rewrite, whitelist));
-}
 
 function resolveSettings(options) {
   const { whitelist = [], ngramSize = 4, thresholds = {} } = options;

@@ -120,6 +120,7 @@ The CLI exists so `verify_cmd` / `fitness_cmd` in evomcp can gate on a DoD subtr
 | `adversarial-workflow` | 4-phase adversarial choreography (spec review, test audit, implementation review, structural gates) |
 | `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |
 | `blind-rewrite` | Delete an implementation, rebuild it from a contract a fresh agent gets without seeing the original, then gate the result against the deleted code |
+| `tighten` | Autonomous blind-rewrite loop against accidental complexity. One target per invocation, ranked by structural violations times git fix-churn, gated on both difference and reduction |
 
 ## Lessons
 
@@ -129,4 +130,14 @@ The CLI exists so `verify_cmd` / `fitness_cmd` in evomcp can gate on a DoD subtr
   Measuring unrelated pairs, a real rewrite, and a renamed copy gave the separation
   the guess did not. Longest shared token run separated them best: 10 to 13
   unrelated, 25 rewritten, 209 renamed. Discovered while building `blind-rewrite`.
+- [LESSON] `quality-scan --baseline=<path>` writes to that path. It adopts every
+  file the baseline has never seen. Point a local check at a copy, never at the
+  tracked `.github/quality/quality-baseline.json`. Comparing against a baseline
+  your own earlier run rewrote reports phantom regressions and hides real ones.
+  Discovered while adding the `tighten` skill, after chasing 12 regressions that
+  were an artifact of the mutated file.
+- [LESSON] The quality baseline at HEAD can disagree with a clean scan of HEAD.
+  Before you fix a reported regression, check whether it survives with your own
+  change removed. Three `blind-rewrite` regressions reproduced with the whole
+  `tighten` directory moved aside, so they predate that work.
 - [LESSON] `mock.module` + ESM dynamic import: `mock.module("node:child_process", ...)` MUST run before the module under test is imported. Use dynamic `import()` in `before` hooks after `mock.module` registration. The `--experimental-test-module-mocks` flag is required on Node 22.
