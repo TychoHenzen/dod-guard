@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-01T20:23:55.460Z",
-  "total": 973,
+  "total": 994,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs",
@@ -116,6 +116,7 @@
     "packages/evomcp/src/degenerate.ts",
     "packages/evomcp/src/escalation.test.ts",
     "packages/evomcp/src/escalation.ts",
+    "packages/evomcp/src/evolve.gaps.test.ts",
     "packages/evomcp/src/evolve.test.ts",
     "packages/evomcp/src/evolve.ts",
     "packages/evomcp/src/feedback.test.ts",
@@ -705,6 +706,8 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.mjs::else-branch": 3,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::else-branch": 1,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/evomcp/src/evolve.gaps.test.ts::line-length": 20,
+    "packages/evomcp/src/evolve.gaps.test.ts::file-length": 1
   }
 }

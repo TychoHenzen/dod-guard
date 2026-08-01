@@ -24,8 +24,6 @@ export interface TaskSpec {
   model?: string;
   /** API key for DeepSeek. Falls back to DEEPSEEK_API_KEY env var. */
   api_key?: string;
-  /** Base URL override for DeepSeek-compatible API. */
-  api_base?: string;
   /** Shell command for build step (runs before verify_cmd). */
   build_cmd?: string;
   /** Shell command for test step (runs before verify_cmd). */
@@ -156,8 +154,8 @@ export interface LineageDiagnostic {
 export interface RunStats {
   /** Number of plans sampled. */
   plans_sampled: number;
-  /** Number after dedup. */
-  plans_deduped: number;
+  /** Number after dedup. Unset when the strategy performs no plan dedup. */
+  plans_deduped?: number;
   /** Total candidates generated (including repairs). */
   candidates_generated: number;
   /** Total DeepSeek API tokens consumed. */
@@ -227,16 +225,12 @@ export interface EvolveSpec {
   model?: string;
   /** API key override. */
   api_key?: string;
-  /** API base override. */
-  api_base?: string;
   /** Shell command for build step (runs before fitness_cmd). */
   build_cmd?: string;
   /** Shell command for test step (runs before fitness_cmd). */
   test_cmd?: string;
   /** Shell command for lint step (runs before fitness_cmd). */
   lint_cmd?: string;
-  /** Shell command for mutation testing (Phase 2). */
-  mutation_cmd?: string;
 }
 
 export interface EvolveResult {

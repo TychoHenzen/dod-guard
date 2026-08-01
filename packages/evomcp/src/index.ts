@@ -49,7 +49,6 @@ const TaskSpecSchema = z.object({
   budget_tokens: z.number().optional().describe("Maximum DeepSeek API tokens to spend (default ~100k)"),
   fanout: z.number().optional().describe("Number of parallel claude -p instances (default 5, max 16)"),
   allowed_files: z.array(z.string()).optional().describe("Files the solver is allowed to modify (glob patterns)"),
-  api_base: z.string().optional().describe("Base URL override for DeepSeek-compatible API"),
   strategy: z
     .enum(["auto", "best-of-n", "evolve"])
     .optional()
@@ -84,7 +83,6 @@ const EvolveSpecSchema = z.object({
   build_cmd: z.string().optional().describe("Build command. Runs as gate during fitness evaluation."),
   test_cmd: z.string().optional().describe("Test command. Runs as gate during fitness evaluation."),
   lint_cmd: z.string().optional().describe("Lint command. Runs as first gate during fitness evaluation."),
-  mutation_cmd: z.string().optional().describe("Mutation testing command (e.g. 'npx stryker run')."),
 });
 
 // ── solve tool ──────────────────────────────────────────────────────
@@ -126,7 +124,6 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
         context: spec.context,
         model: spec.model,
         api_key: spec.api_key,
-        api_base: spec.api_base,
         build_cmd: spec.build_cmd,
         test_cmd: spec.test_cmd,
         lint_cmd: spec.lint_cmd,
