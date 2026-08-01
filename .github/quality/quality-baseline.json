@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-01T19:35:45.092Z",
-  "total": 954,
+  "total": 967,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs",
@@ -49,6 +49,7 @@
     "packages/dod-guard/skills/tighten/scripts/simplicity-gate.test.mjs",
     "packages/dod-guard/src/author.ts",
     "packages/dod-guard/src/checker-vcs.test.ts",
+    "packages/dod-guard/src/checker.scope.test.ts",
     "packages/dod-guard/src/checker.test.ts",
     "packages/dod-guard/src/checker.ts",
     "packages/dod-guard/src/cli.test.ts",
@@ -686,6 +687,9 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.mjs::else-branch": 3,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::else-branch": 1,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/dod-guard/src/checker.scope.test.ts::line-length": 11,
+    "packages/dod-guard/src/checker.scope.test.ts::file-length": 1,
+    "packages/dod-guard/src/checker.scope.test.ts::param-count": 1
   }
 }
