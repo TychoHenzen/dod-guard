@@ -12,8 +12,6 @@ import type { MemoryEntry, VaultInfo } from "./types.js";
 // ── Helpers (injected from index.ts) ────────────────────────────────────
 
 interface RegisterOptions {
-  /** Returns the currently selected vault, throwing if none selected. */
-  getVault: () => VaultInfo;
   /** Returns the selected vault (async) with polling for concurrent selection. */
   waitForVault: () => Promise<VaultInfo>;
   /** Returns the Singleton embedder, lazy-loading if needed (null if unavailable). */
@@ -24,6 +22,15 @@ interface RegisterOptions {
   setSelectPromise: (p: Promise<void>) => void;
   /** Updates the module-level selectedVault so guards pass after selection. */
   setSelectedVault: (v: VaultInfo) => void;
+}
+
+/** Shared MCP error response for a note-path catch block: "not found" vs. action-specific. */
+function noteErrorResponse(err: unknown, path: string, action: string) {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes("ENOENT") || msg.includes("not found")) {
+    return { content: [{ type: "text" as const, text: `Note not found: ${path}` }], isError: true };
+  }
+  return { content: [{ type: "text" as const, text: `Error ${action}: ${msg}` }], isError: true };
 }
 
 export function registerTools(server: McpServer, opts: RegisterOptions) {
@@ -105,7 +112,7 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         resolveSelect?.();
 
         const emb = await getEmbedder();
-        const _idxMsg = await indexVault(vault.path, vault.name, store, emb);
+        await indexVault(vault.path, vault.name, store, emb);
         const status = store.getIndexStatus(vault.name);
         return {
           content: [
@@ -195,11 +202,7 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         ];
         return { content: [{ type: "text", text: lines.join("\n") }] };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("ENOENT") || msg.includes("not found")) {
-          return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
-        }
-        return { content: [{ type: "text", text: `Error reading note: ${msg}` }], isError: true };
+        return noteErrorResponse(err, path, "reading note");
       }
     },
   );
@@ -255,11 +258,7 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
           ],
         };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("ENOENT") || msg.includes("not found")) {
-          return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
-        }
-        return { content: [{ type: "text", text: `Error reading links: ${msg}` }], isError: true };
+        return noteErrorResponse(err, path, "reading links");
       }
     },
   );
@@ -464,6 +463,17 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
     return { content: [{ type: "text", text: out }] };
   });
 
+  /** Index a just-written note so it's immediately searchable. Logs and swallows failure. */
+  const indexAfterWrite = async (vault: VaultInfo, path: string) => {
+    try {
+      const emb = await getEmbedder();
+      const { indexNote } = await import("./indexer.js");
+      await indexNote(vault.path, vault.name, path, store, emb);
+    } catch (idxErr) {
+      console.error("obsidian-rag: create_note indexNote error", idxErr);
+    }
+  };
+
   // ── create_note ───────────────────────────────────────────────────
   server.tool(
     "create_note",
@@ -509,14 +519,7 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
             );
           }
         }
-        // Index the note so it's immediately searchable
-        try {
-          const emb = await getEmbedder();
-          const { indexNote } = await import("./indexer.js");
-          await indexNote(vault.path, vault.name, path, store, emb);
-        } catch (idxErr) {
-          console.error("obsidian-rag: create_note indexNote error", idxErr);
-        }
+        await indexAfterWrite(vault, path);
         return { content: [{ type: "text", text: `✅ ${append ? "Updated" : "Created"} note: \`${path}\`` }] };
       } catch {
         const { readNote, writeNote } = await import("./vault.js");
@@ -534,14 +537,7 @@ export function registerTools(server: McpServer, opts: RegisterOptions) {
         if (tags) fm.tags = tags;
         fm.modified = new Date().toISOString();
         await writeNote(vault.path, path, fm, finalContent);
-        // Index the note so it's immediately searchable
-        try {
-          const emb = await getEmbedder();
-          const { indexNote } = await import("./indexer.js");
-          await indexNote(vault.path, vault.name, path, store, emb);
-        } catch (idxErr) {
-          console.error("obsidian-rag: create_note indexNote error", idxErr);
-        }
+        await indexAfterWrite(vault, path);
         return { content: [{ type: "text", text: `✅ ${append ? "Updated" : "Created"} note: \`${path}\`` }] };
       }
     },

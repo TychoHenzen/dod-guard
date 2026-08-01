@@ -306,7 +306,6 @@ describe("create_note auto-indexing", () => {
     const vault = { name: "cli-test-vault", path: join(testDbDir, "cli-test-vault") };
     const { registerTools } = await import("./tools.js");
     registerTools(mockServer, {
-      getVault: () => vault,
       waitForVault: async () => vault,
       getEmbedder: async () => null,
       store,
@@ -338,7 +337,6 @@ describe("create_note auto-indexing", () => {
     const vault = { name: "fs-test-vault", path: join(testDbDir, "fs-test-vault") };
     const { registerTools } = await import("./tools.js");
     registerTools(mockServer, {
-      getVault: () => vault,
       waitForVault: async () => vault,
       getEmbedder: async () => null,
       store,
@@ -387,7 +385,6 @@ describe("reindex background embed", () => {
     const fakeEmbedder = { embed: async (_t: string) => [0.1], embedBatch: async (_t: string[]) => [[0.1]] };
     const { registerTools } = await import("./tools.js");
     registerTools(mockServer, {
-      getVault: () => vault,
       waitForVault: async () => vault,
       getEmbedder: async () => fakeEmbedder,
       store,
@@ -413,7 +410,6 @@ describe("reindex background embed", () => {
     const vault = { name: "reindex-noembed-vault", path: join(testDbDir, "reindex-noembed-vault") };
     const { registerTools } = await import("./tools.js");
     registerTools(mockServer, {
-      getVault: () => vault,
       waitForVault: async () => vault,
       getEmbedder: async () => null,
       store,

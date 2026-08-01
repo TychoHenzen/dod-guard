@@ -43,11 +43,6 @@ let _selectPromise: Promise<void> | null = null;
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-function vaultGuard(): VaultInfo {
-  if (!selectedVault) throw new Error("No vault selected. Use vault_select first.");
-  return selectedVault;
-}
-
 /** Await selection if in progress, then guard. Returns last vault path when available. */
 async function waitForVault(): Promise<VaultInfo> {
   if (selectedVault) return selectedVault;
@@ -118,7 +113,6 @@ async function main() {
 
   // Tools (extracted to tools.ts)
   registerTools(server, {
-    getVault: vaultGuard,
     waitForVault,
     getEmbedder,
     store,

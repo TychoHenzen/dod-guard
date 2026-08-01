@@ -25633,6 +25633,13 @@ var Store = class {
 // src/tools.ts
 import { existsSync as existsSync4 } from "node:fs";
 import { basename as basename2, join as join4 } from "node:path";
+function noteErrorResponse(err, path, action) {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes("ENOENT") || msg.includes("not found")) {
+    return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
+  }
+  return { content: [{ type: "text", text: `Error ${action}: ${msg}` }], isError: true };
+}
 function registerTools(server, opts) {
   const { waitForVault: waitForVault2, getEmbedder: getEmbedder2, store: store2, setSelectPromise, setSelectedVault } = opts;
   server.tool("vault_list", "List all known Obsidian vaults. Requires Obsidian app running.", {}, async () => {
@@ -25706,7 +25713,7 @@ CLI status: ${cliOk ? "\u2705 available" : "\u274C not found"}`
         setSelectedVault(vault);
         resolveSelect?.();
         const emb = await getEmbedder2();
-        const _idxMsg = await indexVault2(vault.path, vault.name, store2, emb);
+        await indexVault2(vault.path, vault.name, store2, emb);
         const status = store2.getIndexStatus(vault.name);
         return {
           content: [
@@ -25794,11 +25801,7 @@ ${lines.join("\n\n")}` }] };
         ];
         return { content: [{ type: "text", text: lines.join("\n") }] };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("ENOENT") || msg.includes("not found")) {
-          return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
-        }
-        return { content: [{ type: "text", text: `Error reading note: ${msg}` }], isError: true };
+        return noteErrorResponse(err, path, "reading note");
       }
     }
   );
@@ -25855,11 +25858,7 @@ ${bw.join("\n")}`
           ]
         };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("ENOENT") || msg.includes("not found")) {
-          return { content: [{ type: "text", text: `Note not found: ${path}` }], isError: true };
-        }
-        return { content: [{ type: "text", text: `Error reading links: ${msg}` }], isError: true };
+        return noteErrorResponse(err, path, "reading links");
       }
     }
   );
@@ -26044,6 +26043,15 @@ ${lines.join("\n\n")}` }] };
     }
     return { content: [{ type: "text", text: out }] };
   });
+  const indexAfterWrite = async (vault, path) => {
+    try {
+      const emb = await getEmbedder2();
+      const { indexNote: indexNote2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
+      await indexNote2(vault.path, vault.name, path, store2, emb);
+    } catch (idxErr) {
+      console.error("obsidian-rag: create_note indexNote error", idxErr);
+    }
+  };
   server.tool(
     "create_note",
     "Create or update a note in the vault.",
@@ -26088,13 +26096,7 @@ ${lines.join("\n\n")}` }] };
             );
           }
         }
-        try {
-          const emb = await getEmbedder2();
-          const { indexNote: indexNote2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
-          await indexNote2(vault.path, vault.name, path, store2, emb);
-        } catch (idxErr) {
-          console.error("obsidian-rag: create_note indexNote error", idxErr);
-        }
+        await indexAfterWrite(vault, path);
         return { content: [{ type: "text", text: `\u2705 ${append ? "Updated" : "Created"} note: \`${path}\`` }] };
       } catch {
         const { readNote: readNote2, writeNote: writeNote2 } = await Promise.resolve().then(() => (init_vault(), vault_exports));
@@ -26113,13 +26115,7 @@ ${content}`;
         if (tags) fm.tags = tags;
         fm.modified = (/* @__PURE__ */ new Date()).toISOString();
         await writeNote2(vault.path, path, fm, finalContent);
-        try {
-          const emb = await getEmbedder2();
-          const { indexNote: indexNote2 } = await Promise.resolve().then(() => (init_indexer(), indexer_exports));
-          await indexNote2(vault.path, vault.name, path, store2, emb);
-        } catch (idxErr) {
-          console.error("obsidian-rag: create_note indexNote error", idxErr);
-        }
+        await indexAfterWrite(vault, path);
         return { content: [{ type: "text", text: `\u2705 ${append ? "Updated" : "Created"} note: \`${path}\`` }] };
       }
     }
@@ -26145,10 +26141,6 @@ var PKG = (() => {
 var selectedVault = null;
 var embedder = null;
 var _selectPromise = null;
-function vaultGuard() {
-  if (!selectedVault) throw new Error("No vault selected. Use vault_select first.");
-  return selectedVault;
-}
 async function waitForVault() {
   if (selectedVault) return selectedVault;
   const lastPath = store.getLastVaultPath();
@@ -26201,7 +26193,6 @@ async function main() {
     version: PKG.version
   });
   registerTools(server, {
-    getVault: vaultGuard,
     waitForVault,
     getEmbedder,
     store,
