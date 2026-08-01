@@ -1,236 +1,159 @@
+/**
+ * dod-guard MCP server: 12 thin tool adapters over the modules in this
+ * directory, plus the stdio-vs-CLI entry point split.
+ */
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  StdioServerTransport,
+} from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { formatCheckResult, updateDocFromCheckResult, writeMarkdown } from "./author.js";
-import { checkAmendGate, checkDocument, countDraftNodes, findNodeByPath } from "./checker.js";
 import { isCliInvocation, runCli } from "./cli.js";
-import { findMissingTools, isPlaceholderCommand } from "./command-check.js";
-import { computeProofFingerprint, flattenConcreteLeaves } from "./fingerprint.js";
-import { buildImportGateInfo } from "./import-gate.js";
-import { parseMarkdown } from "./parser.js";
-import { PredicateSchema, ProofCategorySchema, SectionsSchema, TaskNodeInputSchema } from "./schemas.js";
-import * as store from "./store.js";
+import { handleDodAdversarialGate } from "./mcp/dod-adversarial-gate.js";
+import { handleDodAmend } from "./mcp/dod-amend.js";
+import { handleDodCheck } from "./mcp/dod-check.js";
+import { handleDodImport } from "./mcp/dod-import.js";
+import { handleDodList } from "./mcp/dod-list.js";
+import { handleDodRemoveNode } from "./mcp/dod-remove-node.js";
+import { handleDodStatus } from "./mcp/dod-status.js";
+import { handleDodStoreMigrate } from "./mcp/dod-store-migrate.js";
+import { handleDodTree } from "./mcp/dod-tree.js";
+import { run, text } from "./mcp/resolve.js";
+import {
+  PredicateSchema,
+  ProofCategorySchema,
+  SectionsSchema,
+  TaskNodeInputSchema,
+} from "./schemas.js";
 import { handleDodAddNode } from "./tools/dod-add-node.js";
 import { handleDodCreate } from "./tools/dod-create.js";
 import { handleDodRefine } from "./tools/dod-refine.js";
-import { checkCommandsForOs, findNodeById, formatMissingTools, formatTree } from "./tree-utils.js";
-import type { DodDocument, Predicate, TaskNode } from "./types.js";
 
-// Read from package.json so the reported version can never drift from the published one.
-const _pkg = JSON.parse(
-  readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf-8"),
-);
+const _dirname = path.dirname(fileURLToPath(import.meta.url));
+const _pkgPath = path.join(_dirname, "..", "package.json");
+const _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 
-const server = new McpServer({
-  name: "dod-guard",
-  version: _pkg.version,
-});
+const server = new McpServer({ name: "dod-guard", version: _pkg.version });
 
-// ── dod_create ──────────────────────────────────────────────────────
+const REJECT_DOD_ID = [
+  "ERROR: dod_create creates NEW DoDs. To update an existing DoD,",
+  "use dod_amend for individual proofs or dod_check to verify.",
+  "The dod_id parameter is not accepted here",
+  "— it's only for dod_check, dod_amend, and other update tools.",
+].join(" ");
+
+const CREATE_DESC = [
+  "Create a new DoD document with recursive TaskNode tree.",
+  "Nodes can be draft (intent-only) or concrete (with proof commands).",
+  "Proof commands run on the HOST OS",
+  "— write them for that OS (e.g. on Windows use findstr/type/dir,",
+  "not grep/cat/ls). Stores proof commands canonically in MCP storage",
+  "— editing the rendered markdown cannot weaken verification.",
+].join(" ");
+
+const CHECK_DESC = [
+  "Verify a DoD's concrete proofs from canonical storage,",
+  "mark pass/fail, update the markdown, and return a verdict.",
+  "Draft nodes are reported but skipped.",
+  "Overall 'incomplete' while any drafts exist.",
+  "Pass `nodePath` to verify only a subtree (fast iteration);",
+  "scoped runs return INCOMPLETE and never PASS.",
+  "Use `dod_tree` to discover current node paths before scoping.",
+].join(" ");
+
+const REFINE_DESC = [
+  "Refine a draft TaskNode. Two modes:",
+  "'concretize'",
+  "— supply a proof command/predicate/description",
+  "(draft leaf → concrete proof).",
+  "'subdivide'",
+  "— split into child subtasks",
+  "(draft leaf → task group with draft children).",
+  "Only works on draft leaves (no children, refinement=draft).",
+].join(" ");
+
+const AMEND_DESC = [
+  "Modify a concrete proof's command, predicate, or description",
+  "with a mandatory audit trail.",
+  "Use when requirements change and an original proof becomes unreasonable.",
+  "Resets the proof to pending.",
+  "Pass node_path='*' to bulk-amend all concrete leaves",
+  "(e.g. 'change all exit_code predicates to explicit value: 0').",
+].join(" ");
+
+const GATE_DESC = [
+  "Record an adversarial gate verdict for a DoD phase.",
+  "The skill orchestrator dispatches review subagents (lenses),",
+  "collects findings, computes the GO/REVISE/STOP verdict,",
+  "and records it here.",
+  "A DoD cannot progress to phase N+1 until phase N's gate is GO.",
+].join(" ");
 
 server.tool(
   "dod_create",
-  "Create a new DoD document with recursive TaskNode tree. Nodes can be draft (intent-only) or concrete (with proof commands). Proof commands run on the HOST OS — write them for that OS (e.g. on Windows use findstr/type/dir, not grep/cat/ls). Stores proof commands canonically in MCP storage — editing the rendered markdown cannot weaken verification.",
+  CREATE_DESC,
   {
-    title: z.string().describe("Feature/plan title"),
-    goal: z.string().describe("One-sentence goal"),
-    type: z
-      .enum(["bug", "general", "minimal"])
-      .describe("Work type. 'minimal' = advisory-only. 'general'/'bug' = behavioral predicates recommended."),
-    cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
-    markdown_path: z.string().describe("Where to write the DoD markdown file (absolute path)"),
+    title: z.string(),
+    goal: z.string(),
+    type: z.enum(["bug", "general", "minimal"]),
+    cwd: z.string(),
+    markdown_path: z.string(),
     sections: SectionsSchema,
-    roots: z
-      .array(TaskNodeInputSchema)
-      .describe(
-        "Root-level task nodes forming the decomposition tree. Task groups have children. Draft leaves have intent. Concrete leaves have command+predicate+description+category.",
-      ),
-    dod_id: z
-      .string()
-      .optional()
-      .describe("REJECTED: dod_create creates new DoDs. Use dod_amend to update an existing one."),
+    roots: z.array(TaskNodeInputSchema),
+    dod_id: z.string().optional(),
   },
   async (params) => {
-    if (params.dod_id) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: "ERROR: dod_create creates NEW DoDs. To update an existing DoD, use dod_amend for individual proofs or dod_check to verify. The dod_id parameter is not accepted here — it's only for dod_check, dod_amend, and other update tools.",
-          },
-        ],
-      };
-    }
-    const result = await handleDodCreate(params as any);
-    return { content: [{ type: "text" as const, text: result }] };
+    if (params.dod_id) return text(REJECT_DOD_ID);
+    return run(() => handleDodCreate(params));
   },
 );
-
-// Import gate helper lives in import-gate.ts — shared with the CLI.
-export { buildImportGateInfo } from "./import-gate.js";
-
-// ── dod_check ───────────────────────────────────────────────────────
 
 server.tool(
   "dod_check",
-  "Verify a DoD's concrete proofs from canonical storage, mark pass/fail, update the markdown, and return a verdict. Draft nodes are reported but skipped. Overall 'incomplete' while any drafts exist. Pass `nodePath` to verify only a subtree (fast iteration); scoped runs return INCOMPLETE and never PASS. Use `dod_tree` to discover current node paths before scoping.",
+  CHECK_DESC,
   {
-    dod_id: z.string().optional().describe("DoD ID (from dod_create or dod_list)"),
-    path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
-    cwd_override: z.string().optional().describe("Override working directory for this check run"),
-    nodePath: z
-      .string()
-      .optional()
-      .describe(
-        "Dot-separated path to a subtree (e.g. '0.children.1') to verify in isolation. Omit to run the full check.",
-      ),
-    summary: z
-      .boolean()
-      .optional()
-      .describe(
-        "Collapse unchanged draft nodes into a single count line. Use for large DoDs where drafts dominate the output.",
-      ),
-    confirm_import: z
-      .boolean()
-      .optional()
-      .describe(
-        "For imported DoDs: confirm that proof commands are safe to execute. Sets execution_confirmed=true and proceeds.",
-      ),
+    dod_id: z.string().optional(),
+    path: z.string().optional(),
+    cwd_override: z.string().optional(),
+    nodePath: z.string().optional(),
+    summary: z.boolean().optional(),
+    confirm_import: z.boolean().optional(),
   },
-  async ({ dod_id, path: mdPath, cwd_override, nodePath, summary, confirm_import }) => {
-    let doc: DodDocument | null = null;
-    if (dod_id) doc = await store.load(dod_id);
-    else if (mdPath) doc = await store.findByPath(mdPath);
-
-    if (!doc) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `ERROR: DoD not found. ${dod_id ? `ID "${dod_id}" not in store.` : `No DoD registered for path "${mdPath}".`}\nUse dod_list to see tracked DoDs, or dod_import to register an existing file.`,
-          },
-        ],
-      };
-    }
-
-    if (nodePath && !findNodeByPath(doc.roots, nodePath)) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `ERROR: nodePath "${nodePath}" not found in this DoD. Use dod_check without nodePath to see the tree structure.`,
-          },
-        ],
-      };
-    }
-
-    // ── Import gate: block execution for unconfirmed imported DoDs ──
-    const gateInfo = buildImportGateInfo(doc);
-    if (gateInfo.blocked && !confirm_import) {
-      const cmdLines = gateInfo.commandList.map(
-        (c, i) => `${i + 1}. "${c.title}"\n   Command: \`${c.command}\`\n   Description: ${c.description}`,
-      );
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: [
-              "## Import Gate: Execution Not Confirmed",
-              "",
-              `This DoD was imported from "${doc.import_source}" and has NOT been confirmed for execution.`,
-              `${gateInfo.executableCount} executable proof(s) would be run:`,
-              "",
-              ...cmdLines,
-              "",
-              "Review the commands above. To confirm and proceed, re-run dod_check with confirm_import:true.",
-              "Once confirmed, subsequent checks will execute normally.",
-            ].join("\n"),
-          },
-        ],
-      };
-    }
-
-    if (confirm_import && doc.import_source) {
-      doc.execution_confirmed = true;
-      await store.save(doc);
-      await writeMarkdown(doc);
-    }
-
-    const result = await checkDocument(doc, cwd_override, { nodePath, summary });
-
-    if (!doc.proof_fingerprint && result.proof_fingerprint) {
-      doc.proof_fingerprint = result.proof_fingerprint;
-    }
-
-    updateDocFromCheckResult(doc, result);
-    await store.save(doc);
-    await writeMarkdown(doc);
-
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: formatCheckResult(result),
-        },
-      ],
-    };
-  },
+  async (params) => run(() => handleDodCheck(params)),
 );
-
-// ── dod_refine ──────────────────────────────────────────────────────
 
 server.tool(
   "dod_refine",
-  "Refine a draft TaskNode. Two modes: 'concretize' — supply a proof command/predicate/description (draft leaf → concrete proof). 'subdivide' — split into child subtasks (draft leaf → task group with draft children). Only works on draft leaves (no children, refinement=draft).",
+  REFINE_DESC,
   {
-    dod_id: z.string().describe("DoD ID"),
-    node_path: z.string().describe("Dot-separated path to the draft leaf, e.g. '0.children.1'"),
-    node_id: z.string().optional().describe("Stable node ID (alternative to node_path — survives tree mutations)"),
-    mode: z
-      .enum(["concretize", "subdivide"])
-      .default("concretize")
-      .describe("'concretize' (default): supply proof command/predicate. 'subdivide': split into child draft nodes."),
-    // concretize mode params
-    command: z.string().optional().describe("(concretize) The shell command to run for verification"),
-    predicate: PredicateSchema.optional().describe("(concretize) What to evaluate about the command's output"),
-    description: z.string().optional().describe("(concretize) Human-readable description of what this proof checks"),
-    category: ProofCategorySchema.optional().describe("(concretize) Baseline category"),
+    dod_id: z.string(),
+    node_path: z.string(),
+    node_id: z.string().optional(),
+    mode: z.enum(["concretize", "subdivide"]).optional().default("concretize"),
+    command: z.string().optional(),
+    predicate: PredicateSchema.optional(),
+    description: z.string().optional(),
+    category: ProofCategorySchema.optional(),
     advisory: z.boolean().optional(),
-    // subdivide mode params
     children: z
-      .array(
-        z.object({
-          title: z.string(),
-          intent: z.string(),
-        }),
-      )
-      .optional()
-      .describe("(subdivide) Child draft nodes — each becomes a draft leaf under the new task group"),
+      .array(z.object({ title: z.string(), intent: z.string() }))
+      .optional(),
   },
-  async (params) => {
-    const result = await handleDodRefine(params as any);
-    return { content: [{ type: "text" as const, text: result }] };
-  },
+  async (params) => run(() => handleDodRefine(params)),
 );
-
-// ── dod_add_node ────────────────────────────────────────────────────
 
 server.tool(
   "dod_add_node",
-  "Add a new TaskNode (draft or concrete) as a child of an existing task group, or at root level.",
+  "Add a new TaskNode (draft or concrete) as a child of an existing " +
+    "task group, or at root level.",
   {
-    dod_id: z.string().describe("DoD ID"),
-    parent_path: z.string().describe("Dot-separated path to parent task group, or empty string to add at root level"),
-    parent_id: z
-      .string()
-      .optional()
-      .describe("Stable node ID of parent (alternative to parent_path — survives tree mutations)"),
+    dod_id: z.string(),
+    parent_path: z.string(),
+    parent_id: z.string().optional(),
     title: z.string(),
-    refinement: z.enum(["draft", "concrete"]).default("draft"),
+    refinement: z.enum(["draft", "concrete"]).optional().default("draft"),
     intent: z.string().optional(),
     command: z.string().optional(),
     predicate: PredicateSchema.optional(),
@@ -238,125 +161,19 @@ server.tool(
     category: ProofCategorySchema.optional(),
     advisory: z.boolean().optional(),
   },
-  async (params) => {
-    try {
-      const result = await handleDodAddNode(params as any);
-      return { content: [{ type: "text" as const, text: result.message }] };
-    } catch (err) {
-      return { content: [{ type: "text" as const, text: err instanceof Error ? err.message : String(err) }] };
-    }
-  },
+  async (params) => run(async () => (await handleDodAddNode(params)).message),
 );
-
-// ── dod_remove_node ─────────────────────────────────────────────────
 
 server.tool(
   "dod_remove_node",
   "Remove a TaskNode and all its descendants from the DoD tree.",
   {
-    dod_id: z.string().describe("DoD ID"),
-    node_path: z.string().describe("Dot-separated path to the node to remove"),
-    node_id: z.string().optional().describe("Stable node ID (alternative to node_path — survives tree mutations)"),
+    dod_id: z.string(),
+    node_path: z.string(),
+    node_id: z.string().optional(),
   },
-  async ({ dod_id, node_path: nodePath, node_id: nodeId }) => {
-    const doc = await store.load(dod_id);
-    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
-
-    // Resolve node_id to path (stable across tree mutations)
-    const resolvedPath = nodeId
-      ? (() => {
-          const found = findNodeById(doc.roots, nodeId);
-          if (!found) return null;
-          return found.path;
-        })()
-      : nodePath;
-    if (resolvedPath === null)
-      return { content: [{ type: "text" as const, text: `ERROR: node not found by id "${nodeId}".` }] };
-
-    // Find parent and index
-    const parts = resolvedPath.split(".");
-    const lastPart = parts[parts.length - 1];
-    if (lastPart === "children")
-      return { content: [{ type: "text" as const, text: "ERROR: path must target a node, not 'children'." }] };
-
-    const childIdx = Number.parseInt(lastPart, 10);
-    if (Number.isNaN(childIdx))
-      return { content: [{ type: "text" as const, text: `ERROR: invalid path "${nodePath}".` }] };
-
-    if (parts.length === 1) {
-      // Root level
-      if (childIdx < 0 || childIdx >= doc.roots.length) {
-        return {
-          content: [
-            { type: "text" as const, text: `ERROR: root index ${childIdx} out of range (0-${doc.roots.length - 1}).` },
-          ],
-        };
-      }
-      const removed = doc.roots.splice(childIdx, 1)[0];
-      doc.amendments.push({
-        timestamp: new Date().toISOString(),
-        node_path: resolvedPath,
-        action: "removed",
-        old_value: { title: removed.title, refinement: removed.refinement },
-        reason: `Removed node: ${removed.title}`,
-      });
-
-      doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
-      await store.save(doc);
-      await writeMarkdown(doc);
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Removed root node "${removed.title}" (${removed.refinement}) and all descendants.`,
-          },
-        ],
-      };
-    }
-
-    // Nested: find the parent
-    const parentPath = parts.slice(0, -1).join(".");
-    const parent = findNodeByPath(doc.roots, parentPath);
-    if (!parent?.children) {
-      return { content: [{ type: "text" as const, text: `ERROR: parent not found at "${parentPath}".` }] };
-    }
-
-    if (childIdx < 0 || childIdx >= parent.children.length) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `ERROR: child index ${childIdx} out of range (0-${parent.children.length - 1}).`,
-          },
-        ],
-      };
-    }
-
-    const removed = parent.children.splice(childIdx, 1)[0];
-
-    doc.amendments.push({
-      timestamp: new Date().toISOString(),
-      node_path: resolvedPath,
-      action: "removed",
-      old_value: { title: removed.title, refinement: removed.refinement },
-      reason: `Removed node: ${removed.title}`,
-    });
-
-    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
-
-    await store.save(doc);
-    await writeMarkdown(doc);
-
-    return {
-      content: [
-        { type: "text" as const, text: `Removed node "${removed.title}" (${removed.refinement}) and all descendants.` },
-      ],
-    };
-  },
+  async (params) => run(() => handleDodRemoveNode(params)),
 );
-
-// ── dod_status ──────────────────────────────────────────────────────
 
 server.tool(
   "dod_status",
@@ -365,686 +182,102 @@ server.tool(
     dod_id: z.string().optional(),
     path: z.string().optional(),
   },
-  async ({ dod_id, path: mdPath }) => {
-    let doc: DodDocument | null = null;
-    if (dod_id) doc = await store.load(dod_id);
-    else if (mdPath) doc = await store.findByPath(mdPath);
-
-    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
-
-    if (!doc.last_check) {
-      return {
-        content: [{ type: "text" as const, text: `DoD "${doc.title}" has never been checked. Run dod_check first.` }],
-      };
-    }
-
-    const concreteLeaves = flattenConcreteLeaves(doc.roots);
-    const draftCount = countDraftNodes(doc.roots);
-    const passed = concreteLeaves.filter(
-      (l) => l.node.last_status === "pass" || l.node.last_status === "skipped",
-    ).length;
-
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: [
-            `DoD: ${doc.title}`,
-            `ID: ${doc.id}`,
-            `Last check: ${doc.last_check.timestamp}`,
-            `Overall: ${doc.last_check.overall.toUpperCase()}`,
-            `Concrete proofs: ${passed}/${concreteLeaves.length} pass${draftCount > 0 ? `, ${draftCount} draft node(s)` : ""}`,
-            "",
-            `Summary: ${doc.last_check.summary}`,
-          ].join("\n"),
-        },
-      ],
-    };
-  },
+  async (params) => run(() => handleDodStatus(params)),
 );
-
-// ── dod_tree ────────────────────────────────────────────────────────
 
 server.tool(
   "dod_tree",
-  "Display the full TaskNode tree with stable IDs, current paths, titles, and statuses. Read-only structural dump — no proof execution. Use to discover node paths without running dod_check. Accepts optional dod_id/path to select the DoD, and optional node_id/node_path to scope the view to a subtree.",
+  "Display the full TaskNode tree with stable IDs, current paths, " +
+    "titles, and statuses. Read-only structural dump " +
+    "— no proof execution. Use to discover node paths without " +
+    "running dod_check. Accepts optional dod_id/path to select the DoD, " +
+    "and optional node_id/node_path to scope the view to a subtree.",
   {
-    dod_id: z.string().optional().describe("DoD ID"),
-    path: z.string().optional().describe("Markdown file path — resolves to DoD by path if no ID given"),
-    node_id: z.string().optional().describe("Scope tree view to this node's subtree (by stable ID)"),
-    node_path: z.string().optional().describe("Scope tree view to this node's subtree (by path)"),
+    dod_id: z.string().optional(),
+    path: z.string().optional(),
+    node_id: z.string().optional(),
+    node_path: z.string().optional(),
   },
-  async ({ dod_id, path: mdPath, node_id: scopeId, node_path: scopePath }) => {
-    const doc = dod_id ? await store.load(dod_id) : mdPath ? await store.findByPath(mdPath) : null;
-    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found. Provide dod_id or path." }] };
-
-    const text = formatTree(doc.roots, {
-      title: doc.title,
-      id: doc.id,
-      scopeId,
-      scopePath,
-    });
-
-    return { content: [{ type: "text" as const, text }] };
-  },
+  async (params) => run(() => handleDodTree(params)),
 );
-
-// ── dod_amend ───────────────────────────────────────────────────────
 
 server.tool(
   "dod_amend",
-  "Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Use when requirements change and an original proof becomes unreasonable. Resets the proof to pending. Pass node_path='*' to bulk-amend all concrete leaves (e.g. 'change all exit_code predicates to explicit value: 0').",
+  AMEND_DESC,
   {
-    dod_id: z.string().describe("DoD ID"),
-    node_path: z
-      .string()
-      .describe("Dot-separated path to the concrete leaf node, or '*' for all concrete leaves (bulk amend)"),
-    node_id: z
-      .string()
-      .optional()
-      .describe(
-        "Stable node ID (alternative to node_path — survives tree mutations). Incompatible with '*' and '__meta__'.",
-      ),
+    dod_id: z.string(),
+    node_path: z.string(),
+    node_id: z.string().optional(),
     new_command: z.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: z.string().optional(),
-    reason: z.string().describe("Why this amendment is needed — logged permanently"),
-    amend_justification: z
-      .string()
-      .optional()
-      .describe(
-        "Required when this node has been amended 3+ times, or when the change weakens a proof threshold (e.g. increasing limits, removing checks). Explains why further loosening is necessary.",
-      ),
+    reason: z.string(),
+    amend_justification: z.string().optional(),
   },
-  async ({
-    dod_id,
-    node_path: nodePath,
-    node_id: nodeId,
-    new_command,
-    new_predicate,
-    new_description,
-    reason,
-    amend_justification,
-  }) => {
-    const doc = await store.load(dod_id);
-    if (!doc) return { content: [{ type: "text" as const, text: "ERROR: DoD not found." }] };
-
-    // node_id incompatible with special paths
-    if (nodeId && nodePath === "*") {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `ERROR: node_id is incompatible with node_path="${nodePath}". Use one or the other.`,
-          },
-        ],
-      };
-    }
-
-    // Wildcard: apply to all concrete leaves
-    if (nodePath === "*") {
-      const leaves = flattenConcreteLeaves(doc.roots);
-      if (leaves.length === 0) {
-        return {
-          content: [{ type: "text" as const, text: "ERROR: no concrete leaves to amend. Refine drafts first." }],
-        };
-      }
-
-      // Validate commands against OS
-      if (new_command !== undefined) {
-        const missing = await findMissingTools([new_command], doc.cwd);
-        if (missing.length > 0) {
-          return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
-        }
-      }
-
-      let amendedCount = 0;
-
-      // Amend gate check for bulk: check each leaf and collect gate failures
-      const gateFailures: string[] = [];
-      for (const { node, node_path: leafPath } of leaves) {
-        const gateErr = checkAmendGate(doc.amendments, leafPath, amend_justification);
-        if (gateErr) gateFailures.push(`${leafPath} ("${node.title}"): ${gateErr}`);
-      }
-      if (gateFailures.length > 0) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `ERROR: Bulk amend gate blocked for ${gateFailures.length} leaf/leaves:\n${gateFailures.join("\n")}`,
-            },
-          ],
-        };
-      }
-
-      for (const { node, node_path: leafPath } of leaves) {
-        const oldSnap = {
-          command: node.command,
-          predicate: node.predicate ? { ...node.predicate } : undefined,
-          description: node.description,
-        };
-        if (new_command !== undefined) node.command = new_command;
-        if (new_predicate !== undefined) node.predicate = new_predicate as Predicate;
-        if (new_description !== undefined) node.description = new_description;
-        node.last_status = "pending";
-
-        doc.amendments.push({
-          timestamp: new Date().toISOString(),
-          node_path: leafPath,
-          action: "modified",
-          old_value: oldSnap as Partial<TaskNode>,
-          new_value: {
-            command: node.command,
-            predicate: node.predicate ? { ...node.predicate } : undefined,
-            description: node.description,
-          },
-          reason,
-          justification: amend_justification,
-        });
-        amendedCount++;
-      }
-
-      doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
-      await store.save(doc);
-      await writeMarkdown(doc);
-
-      const changes: string[] = [];
-      if (new_command !== undefined) changes.push(`command → \`${new_command}\``);
-      if (new_predicate !== undefined) changes.push(`predicate → ${new_predicate.type}`);
-      if (new_description !== undefined) changes.push("description updated");
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: [
-              `Bulk amend: ${amendedCount} concrete proof(s) updated.`,
-              "",
-              `Changes: ${changes.join(", ")}`,
-              `Reason: ${reason}`,
-              "",
-              "All statuses reset to pending. Run dod_check to re-verify.",
-            ].join("\n"),
-          },
-        ],
-      };
-    }
-
-    // Resolve node — node_id takes precedence (stable across tree mutations)
-    let resolvedPath = nodePath;
-    let node: TaskNode | null = null;
-    if (nodeId) {
-      const found = findNodeById(doc.roots, nodeId);
-      if (!found) return { content: [{ type: "text" as const, text: `ERROR: node not found by id "${nodeId}".` }] };
-      node = found.node;
-      resolvedPath = found.path;
-    } else {
-      node = findNodeByPath(doc.roots, nodePath);
-    }
-
-    if (!node) return { content: [{ type: "text" as const, text: `ERROR: node not found at path "${nodePath}".` }] };
-    if (node.refinement !== "concrete") {
-      return {
-        content: [{ type: "text" as const, text: `ERROR: node is a draft. Use dod_refine to concretize it first.` }],
-      };
-    }
-
-    // Validate command against OS
-    const _effectivePredicate = (new_predicate ?? node.predicate) as Predicate;
-    const effectiveCommand = new_command ?? node.command ?? "";
-    if (effectiveCommand.trim() !== "") {
-      const missing = await findMissingTools([effectiveCommand], doc.cwd);
-      if (missing.length > 0) {
-        return { content: [{ type: "text" as const, text: formatMissingTools(missing) }] };
-      }
-    }
-
-    // Amend gate: reject excessive tuning or strength reduction without justification
-    const gateError = checkAmendGate(doc.amendments, resolvedPath, amend_justification);
-    if (gateError) {
-      return { content: [{ type: "text" as const, text: `ERROR: ${gateError}` }] };
-    }
-
-    const oldSnapshot = {
-      command: node.command,
-      predicate: node.predicate ? { ...node.predicate } : undefined,
-      description: node.description,
-    };
-
-    if (new_command !== undefined) node.command = new_command;
-    if (new_predicate !== undefined) node.predicate = new_predicate as Predicate;
-    if (new_description !== undefined) node.description = new_description;
-    node.last_status = "pending";
-
-    doc.amendments.push({
-      timestamp: new Date().toISOString(),
-      node_path: resolvedPath,
-      action: "modified",
-      old_value: oldSnapshot as Partial<TaskNode>,
-      new_value: {
-        command: node.command,
-        predicate: node.predicate ? { ...node.predicate } : undefined,
-        description: node.description,
-      },
-      reason,
-      justification: amend_justification,
-    });
-
-    doc.proof_fingerprint = computeProofFingerprint(doc.roots) || undefined;
-
-    await store.save(doc);
-    await writeMarkdown(doc);
-
-    const placeholderWarn = isPlaceholderCommand(effectiveCommand)
-      ? [
-          "",
-          "⚠️  PLACEHOLDER PROOF: This command always exits 0 — it provides zero verification.",
-          "Replace with a real verification command before considering this DoD complete.",
-        ]
-      : [];
-
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: [
-            "Proof amended and logged.",
-            "",
-            `Node: ${node.title}`,
-            `Old command: \`${oldSnapshot.command}\``,
-            `New command: \`${node.command}\``,
-            `Reason: ${reason}`,
-            ...placeholderWarn,
-            "",
-            "Status reset to pending. Run dod_check to re-verify.",
-          ].join("\n"),
-        },
-      ],
-    };
-  },
+  async (params) => run(() => handleDodAmend(params)),
 );
 
-// ── dod_list ────────────────────────────────────────────────────────
-
-server.tool("dod_list", "List all tracked DoD documents with their last check status.", {}, async () => {
-  const docs = await store.listAll();
-  if (docs.length === 0) {
-    return {
-      content: [{ type: "text" as const, text: "No DoD documents tracked. Use dod_create or dod_import to add one." }],
-    };
-  }
-
-  const lines = docs.map((d) => {
-    const status = d.last_check?.overall?.toUpperCase() ?? "UNCHECKED";
-
-    // Handle legacy format (steps array instead of roots)
-    if (!(d.roots && Array.isArray(d.roots))) {
-      const legacyCount = (d as any).steps?.length ?? 0;
-      return [
-        `• ${d.title}`,
-        `  ID: ${d.id}`,
-        `  Path: ${d.markdown_path}`,
-        `  Status: LEGACY — ${legacyCount} step(s) in old format. Run dod_store_migrate to upgrade.`,
-      ].join("\n");
-    }
-
-    const rootCount = d.roots.length;
-    const concreteCount = flattenConcreteLeaves(d.roots).length;
-    const draftCount = countDraftNodes(d.roots);
-    const draftTag = draftCount > 0 ? ` (${draftCount} draft)` : "";
-    return [
-      `• ${d.title}`,
-      `  ID: ${d.id}`,
-      `  Path: ${d.markdown_path}`,
-      `  Status: ${status} | ${rootCount} roots, ${concreteCount} concrete proofs${draftTag}`,
-      `  Last check: ${d.last_check?.timestamp ?? "never"}`,
-    ].join("\n");
-  });
-
-  return { content: [{ type: "text" as const, text: lines.join("\n\n") }] };
-});
-
-// ── dod_import ──────────────────────────────────────────────────────
+server.tool(
+  "dod_list",
+  "List all tracked DoD documents with their last check status.",
+  {},
+  async () => run(() => handleDodList()),
+);
 
 server.tool(
   "dod_import",
-  "Import an existing DoD markdown file into canonical MCP storage. Parses hierarchical tree structure from author.ts output format (<!--p:...--> metadata) or hand-written markdown (leaves become drafts).",
+  "Import an existing DoD markdown file into canonical MCP storage. " +
+    "Parses hierarchical tree structure from author.ts output format " +
+    "(<!--p:...--> metadata) or hand-written markdown " +
+    "(leaves become drafts).",
   {
-    path: z.string().describe("Absolute path to the existing DoD markdown file"),
-    cwd: z.string().describe("Working directory for running proof commands (absolute path)"),
+    path: z.string(),
+    cwd: z.string(),
   },
-  async ({ path: mdPath, cwd }) => {
-    const existing = await store.findByPath(mdPath);
-    if (existing) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Already tracked as "${existing.title}" (ID: ${existing.id}). Use dod_check to verify.`,
-          },
-        ],
-      };
-    }
-
-    try {
-      const parsed = await parseMarkdown(mdPath);
-      const resolvedCwd = path.resolve(cwd);
-
-      const osError = await checkCommandsForOs(parsed.roots, resolvedCwd);
-      if (osError) return { content: [{ type: "text" as const, text: osError }] };
-
-      const id = store.generateId();
-      const fingerprint = computeProofFingerprint(parsed.roots);
-
-      const executableConcrete = flattenConcreteLeaves(parsed.roots).filter(
-        ({ node }) => node.command && node.predicate,
-      );
-
-      const doc: DodDocument = {
-        id,
-        title: parsed.title,
-        goal: parsed.goal,
-        date: parsed.date || new Date().toISOString().split("T")[0],
-        cwd: resolvedCwd,
-        markdown_path: path.resolve(mdPath),
-        created_at: new Date().toISOString(),
-        import_source: path.resolve(mdPath),
-        execution_confirmed: false,
-        sections: parsed.sections,
-        roots: parsed.roots,
-        proof_fingerprint: fingerprint || undefined,
-        amendments: [],
-      };
-
-      await store.save(doc);
-
-      const concreteCount = flattenConcreteLeaves(parsed.roots).length;
-      const draftCount = countDraftNodes(parsed.roots);
-
-      const explicitPredicateMsg =
-        concreteCount > 0 && draftCount > 0
-          ? `${concreteCount} proof(s) imported with explicit predicates, ${draftCount} imported as drafts (predicates could not be determined — use dod_refine to concretize them).`
-          : concreteCount > 0
-            ? `${concreteCount} proof(s) imported with explicit predicates from author.ts metadata.`
-            : `${draftCount} node(s) imported as drafts (no explicit predicate metadata — use dod_refine to concretize them).`;
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: [
-              "DoD imported.",
-              "",
-              `ID: ${id}`,
-              `Title: ${doc.title}`,
-              `Roots: ${doc.roots.length}`,
-              `Concrete proofs: ${concreteCount}`,
-              `Draft nodes: ${draftCount}`,
-              `Cwd: ${resolvedCwd}`,
-              "",
-              explicitPredicateMsg,
-              "",
-              executableConcrete.length > 0
-                ? `Imported DoD has ${executableConcrete.length} executable proof(s). Commands have NOT been reviewed for safety.`
-                : "",
-              "Run dod_check with confirm_import:true to confirm execution, or review the command list first.",
-            ]
-              .filter(Boolean)
-              .join("\n"),
-          },
-        ],
-      };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("dod-guard: dod_import parse failed", { err: msg });
-      return { content: [{ type: "text" as const, text: `ERROR parsing markdown: ${msg}` }] };
-    }
-  },
+  async (params) => run(() => handleDodImport(params)),
 );
-
-// ── dod_store_migrate ───────────────────────────────────────────────
 
 server.tool(
   "dod_store_migrate",
-  "Migrate legacy DoD documents from the old 'steps' format to the current 'roots' TaskNode tree format. Idempotent — already-migrated docs are skipped. Run this once to upgrade all legacy docs.",
+  "Migrate legacy DoD documents from the old 'steps' format to the " +
+    "current 'roots' TaskNode tree format. Idempotent " +
+    "— already-migrated docs are skipped. " +
+    "Run this once to upgrade all legacy docs.",
   {
-    dod_id: z.string().optional().describe("Migrate a single DoD by ID. Omit to migrate ALL legacy docs."),
-    dry_run: z.boolean().optional().default(false).describe("Preview what would change without writing to disk."),
+    dod_id: z.string().optional(),
+    dry_run: z.boolean().optional().default(false),
   },
-  async ({ dod_id, dry_run }) => {
-    if (dod_id) {
-      const doc = await store.loadRaw(dod_id);
-      if (!doc) {
-        return { content: [{ type: "text" as const, text: `ERROR: DoD "${dod_id}" not found.` }] };
-      }
-      if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `"${(doc as any).title}" is already in the current format — no migration needed.`,
-            },
-          ],
-        };
-      }
-      const legacySteps = (doc as any).steps;
-      if (!(legacySteps && Array.isArray(legacySteps))) {
-        return {
-          content: [{ type: "text" as const, text: `"${(doc as any).title}" has no steps or roots — cannot migrate.` }],
-        };
-      }
-
-      if (dry_run) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: [
-                `DRY RUN — would migrate: "${(doc as any).title}"`,
-                `  ${legacySteps.length} step(s) → task groups`,
-                `  ${legacySteps.reduce((sum: number, s: any) => sum + (s.proofs?.length ?? 0), 0)} proof(s) → concrete leaves`,
-              ].join("\n"),
-            },
-          ],
-        };
-      }
-
-      const migrated = await store.migrateDoc(doc as any);
-      if (migrated) {
-        await store.save(doc as any);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Migrated: "${(doc as any).title}" → ${(doc.roots ?? []).length} root task group(s). Run dod_check to verify.`,
-            },
-          ],
-        };
-      }
-      return { content: [{ type: "text" as const, text: "No changes made." }] };
-    }
-
-    // Bulk migration: all legacy docs
-    const allDocs = await store.listAllRaw();
-    const legacyDocs = allDocs.filter(
-      (d: any) =>
-        (d as any).steps && (!((d as any).roots && Array.isArray((d as any).roots)) || (d as any).roots.length === 0),
-    );
-
-    if (legacyDocs.length === 0) {
-      return {
-        content: [{ type: "text" as const, text: "No legacy documents found — all docs are in the current format." }],
-      };
-    }
-
-    if (dry_run) {
-      let totalSteps = 0;
-      let totalProofs = 0;
-      for (const d of legacyDocs) {
-        totalSteps += (d as any).steps?.length ?? 0;
-        totalProofs += (d as any).steps?.reduce((sum: number, s: any) => sum + (s.proofs?.length ?? 0), 0) ?? 0;
-      }
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: [
-              `DRY RUN — would migrate ${legacyDocs.length} document(s):`,
-              `  ${totalSteps} step(s) → task groups`,
-              `  ${totalProofs} proof(s) → concrete leaves`,
-              "",
-              "Run without dry_run to apply.",
-            ].join("\n"),
-          },
-        ],
-      };
-    }
-
-    let migrated = 0;
-    let skipped = 0;
-    for (const d of legacyDocs) {
-      const changed = await store.migrateDoc(d as any);
-      if (changed) migrated++;
-      else skipped++;
-    }
-
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: [
-            `Migration complete: ${migrated} migrated, ${skipped} skipped.`,
-            "",
-            "Run dod_list to see updated documents.",
-          ].join("\n"),
-        },
-      ],
-    };
-  },
+  async (params) => run(() => handleDodStoreMigrate(params)),
 );
 
-// ── dod_adversarial_gate ──────────────────────────────────────────────
+const FINDING_SCHEMA = z.object({
+  severity: z.enum(["critical", "major", "minor", "blocker"]),
+  target: z.string().optional(),
+  problem: z.string(),
+  suggestion: z.string().optional(),
+  evidence: z.string().optional(),
+});
+
+const LENS_SCHEMA = z.object({
+  lens: z.string(),
+  findings: z.array(FINDING_SCHEMA),
+  mandatory_minimum_met: z.boolean(),
+});
 
 server.tool(
   "dod_adversarial_gate",
-  "Record an adversarial gate verdict for a DoD phase. The skill orchestrator dispatches review subagents (lenses), collects findings, computes the GO/REVISE/STOP verdict, and records it here. A DoD cannot progress to phase N+1 until phase N's gate is GO.",
+  GATE_DESC,
   {
-    dod_id: z.string().describe("DoD ID"),
-    phase: z.number().min(1).max(4).describe("Phase number (1=Spec, 2=Test, 3=Implement, 4=Cleanup)"),
-    verdict: z.enum(["GO", "REVISE", "STOP"]).describe("Gate verdict"),
-    lenses: z
-      .array(
-        z.object({
-          lens: z.string().describe("Lens name (e.g. 'Security', 'Coverage')"),
-          findings: z
-            .array(
-              z.object({
-                severity: z.enum(["critical", "major", "minor", "blocker"]).describe("Finding severity"),
-                target: z.string().optional().describe("Which requirement/node this finding targets"),
-                problem: z.string().describe("Concrete problem description"),
-                suggestion: z.string().optional().describe("Suggested fix"),
-                evidence: z.string().optional().describe("Execution-based evidence: file:line + failing command"),
-              }),
-            )
-            .describe("Findings from this lens"),
-          mandatory_minimum_met: z.boolean().describe("Did this lens meet its mandatory minimum findings?"),
-        }),
-      )
-      .describe("Results from each adversarial lens"),
-    summary: z.string().describe("One-line summary of the gate result"),
+    dod_id: z.string(),
+    phase: z.number().min(1).max(4),
+    verdict: z.enum(["GO", "REVISE", "STOP"]),
+    lenses: z.array(LENS_SCHEMA),
+    summary: z.string(),
   },
-  async ({ dod_id, phase, verdict, lenses, summary }) => {
-    const doc = await store.load(dod_id);
-    if (!doc) {
-      return { content: [{ type: "text" as const, text: `ERROR: DoD "${dod_id}" not found.` }] };
-    }
-
-    const gate: import("./types.js").AdversarialGate = {
-      phase: phase as 1 | 2 | 3 | 4,
-      timestamp: new Date().toISOString(),
-      verdict,
-      lenses: lenses.map((l) => ({
-        lens: l.lens,
-        findings: l.findings.map((f) => ({
-          severity: f.severity as "critical" | "major" | "minor" | "blocker",
-          target: f.target,
-          problem: f.problem,
-          suggestion: f.suggestion,
-          evidence: f.evidence,
-        })),
-        mandatory_minimum_met: l.mandatory_minimum_met,
-      })),
-      critical_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "critical").length, 0),
-      major_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "major").length, 0),
-      minor_count: lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === "minor").length, 0),
-      summary,
-    };
-
-    const gates = doc.adversarial_gates ?? [];
-
-    // Validate phase progression: phase N requires GO on all prior phases
-    for (let p = 1; p < phase; p++) {
-      const priorGate = gates.find((g) => g.phase === p);
-      if (priorGate?.verdict !== "GO") {
-        const phaseNames = ["", "Spec", "Test", "Implement", "Cleanup"];
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text:
-                `ERROR: Cannot record Phase ${phase} gate — Phase ${p} (${phaseNames[p]}) ` +
-                `is ${priorGate ? priorGate.verdict : "PENDING"}. ` +
-                `All prior phases must be GO before advancing.`,
-            },
-          ],
-        };
-      }
-    }
-
-    const existingIdx = gates.findIndex((g) => g.phase === phase);
-    if (existingIdx >= 0) {
-      gates[existingIdx] = gate;
-    } else {
-      gates.push(gate);
-    }
-    doc.adversarial_gates = gates;
-    await store.save(doc);
-
-    // Gate status check: validate progression
-    const gateStatusLines: string[] = [];
-    for (let p = 1; p <= 4; p++) {
-      const g = gates.find((gg) => gg.phase === p);
-      if (g) {
-        const emoji = g.verdict === "GO" ? "✅" : g.verdict === "STOP" ? "🛑" : "🔄";
-        gateStatusLines.push(
-          `  Phase ${p} (${["", "Spec", "Test", "Implement", "Cleanup"][p]}): ${emoji} ${g.verdict} — ${g.summary}`,
-        );
-      } else {
-        gateStatusLines.push(`  Phase ${p} (${["", "Spec", "Test", "Implement", "Cleanup"][p]}): ⬜ PENDING`);
-      }
-    }
-
-    return {
-      content: [
-        {
-          type: "text" as const,
-          text: [
-            `Adversarial gate recorded: Phase ${phase} — ${verdict}`,
-            `  Critical: ${gate.critical_count}, Major: ${gate.major_count}, Minor: ${gate.minor_count}`,
-            `  Summary: ${summary}`,
-            "",
-            "Gate status for all phases:",
-            ...gateStatusLines,
-          ].join("\n"),
-        },
-      ],
-    };
-  },
+  async (params) => run(() => handleDodAdversarialGate(params)),
 );
 
 const _filename = fileURLToPath(import.meta.url);
-
-// ── Start (only when run directly, not when imported by tests) ─────────
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
@@ -1053,17 +286,9 @@ async function main(): Promise<void> {
 
 if (process.argv[1] === _filename) {
   const argv = process.argv.slice(2);
-
   if (isCliInvocation(argv)) {
-    // `dod-guard check ...` — run once, exit with a verdict code.
-    runCli(argv)
-      .then((code) => process.exit(code))
-      .catch((err) => {
-        process.stderr.write(`dod-guard CLI failed: ${err}\n`);
-        process.exit(3);
-      });
+    runCli(argv).then((code) => process.exit(code));
   } else {
-    // No args — this is an MCP stdio launch.
     main().catch((err) => {
       process.stderr.write(`dod-guard MCP server failed: ${err}\n`);
       process.exit(1);

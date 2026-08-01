@@ -829,6 +829,46 @@ test("dod_amend refuses to touch a draft node", async () => {
   }
 });
 
+test("dod_amend refuses a new_command whose tool is missing on this OS", async () => {
+  const s = startServer();
+  try {
+    await s.init();
+    const { id } = await createDod(s, s.storeDir, { roots: [passingLeaf("p")] });
+    const result = s.text(
+      await s.callTool("dod_amend", {
+        dod_id: id,
+        node_path: "0",
+        new_command: "totally-fake-tool-xyz-123",
+        reason: "why",
+      }),
+    );
+    assert.match(result, /ERROR: 1 proof command\(s\) invoke tool\(s\) not available/);
+    assert.match(result, /totally-fake-tool-xyz-123/);
+  } finally {
+    s.stop();
+  }
+});
+
+test("dod_amend node_path=* refuses a new_command whose tool is missing on this OS", async () => {
+  const s = startServer();
+  try {
+    await s.init();
+    const { id } = await createDod(s, s.storeDir, { roots: [passingLeaf("p")] });
+    const result = s.text(
+      await s.callTool("dod_amend", {
+        dod_id: id,
+        node_path: "*",
+        new_command: "totally-fake-tool-xyz-123",
+        reason: "bulk",
+      }),
+    );
+    assert.match(result, /ERROR: 1 proof command\(s\) invoke tool\(s\) not available/);
+    assert.match(result, /totally-fake-tool-xyz-123/);
+  } finally {
+    s.stop();
+  }
+});
+
 test("dod_amend success resets the leaf to pending", async () => {
   const s = startServer();
   try {
@@ -958,6 +998,28 @@ test("dod_list shows an unchecked DoD's title, id, and counts", async () => {
   }
 });
 
+test("dod_list survives one legacy doc and still lists every other document", async () => {
+  const s = startServer();
+  try {
+    await s.init();
+    const legacyId = "legacy-doc-1";
+    const legacyDoc = legacyDocFixture(legacyId, s.storeDir);
+    const legacyPath = join(s.storeDir, `${legacyId}.json`);
+    writeFileSync(legacyPath, JSON.stringify(legacyDoc, null, 2), "utf-8");
+
+    const { id } = await createDod(s, s.storeDir, { title: "Current Doc" });
+
+    const result = s.text(await s.callTool("dod_list", {}));
+    assert.doesNotMatch(result, /^ERROR:/);
+    assert.match(result, /Legacy Doc/);
+    assert.match(result, /Status: LEGACY/);
+    assert.match(result, /Current Doc/);
+    assert.match(result, new RegExp(`ID: ${id}`));
+  } finally {
+    s.stop();
+  }
+});
+
 // ── dod_import ──────────────────────────────────────────────────────
 
 test("dod_import parses a markdown DoD into a new document", async () => {
@@ -972,6 +1034,34 @@ test("dod_import parses a markdown DoD into a new document", async () => {
     assert.match(result, /DoD imported\./);
     assert.match(result, /Concrete proofs: 1/);
     assert.match(result, /Draft nodes: 0/);
+  } finally {
+    s.stop();
+  }
+});
+
+test("dod_import refuses a command whose tool is missing on this OS", async () => {
+  const s = startServer();
+  try {
+    await s.init();
+    const mdPath = join(s.storeDir, "bad-import.md");
+    const md = [
+      "# Bad Import",
+      "",
+      "## Definition of Done",
+      "",
+      "<definition_of_done>",
+      "",
+      '- [ ] Proof: `totally-fake-tool-xyz-123` → Sample proof ' +
+        '<!--p:{"type":"exit_code","value":0}-->',
+      "",
+      "</definition_of_done>",
+      "",
+    ].join("\n");
+    writeFileSync(mdPath, md, "utf-8");
+
+    const result = s.text(await s.callTool("dod_import", { path: mdPath, cwd: s.storeDir }));
+    assert.match(result, /ERROR: 1 proof command\(s\) invoke tool\(s\) not available/);
+    assert.match(result, /totally-fake-tool-xyz-123/);
   } finally {
     s.stop();
   }
