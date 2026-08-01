@@ -120,13 +120,19 @@ mock.module("./gitevo-integration.js", {
 mock.module("./gates.js", {
   namedExports: {
     GateRunner: class {
-      async run(cmds: Record<string, string>) {
-        return Object.entries(cmds).map(([gate]) => ({
-          gate,
-          passed: true,
-          diagnostics: "ok",
-          elapsed_ms: 0,
-        }));
+      config: Record<string, string | undefined>;
+      constructor(config: Record<string, string | undefined>) {
+        this.config = config;
+      }
+      async runAll(_cwd: string) {
+        return ["lint", "build", "test", "verify"]
+          .filter((gate) => this.config[`${gate}_cmd`])
+          .map((gate) => ({
+            gate,
+            passed: true,
+            diagnostics: "ok",
+            elapsed_ms: 0,
+          }));
       }
     },
   },
@@ -134,10 +140,10 @@ mock.module("./gates.js", {
 
 mock.module("./judge.js", {
   namedExports: {
-    compareBranches: mock.fn(async (_branches: any[], _task: string) => ({
-      winner_branch: "branch-0",
-      scores: {},
-      rationale: "mock verdict",
+    compareBranches: mock.fn(async (branches: any[], _opts: any) => ({
+      verdict: null,
+      winner: branches[0]?.name ?? null,
+      fallback: false,
     })),
   },
 });
