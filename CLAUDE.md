@@ -86,7 +86,7 @@ updated `package-lock.json` with the new package.
 |-----|-------------------|
 | `build-test` | tsc, `npm test`, and `detect-releases.mjs`, which decides what publishes |
 | `plugin-config` | `validate-plugins.mjs` — see below |
-| `static-analysis` | Biome (autofix + strict), coverage thresholds, and three ratchets |
+| `static-analysis` | Biome (autofix + strict) and four ratchets |
 | `package-integrity` | `check-pack.mjs` (every skill, agent and hook target is in the tarball; no `src/` or `node_modules`) and `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) |
 
 `validate-plugins.mjs` checks, all hard-fail:
@@ -106,10 +106,28 @@ That last one matters because **the marketplace installs from git, not npm** —
 | structural quality | `quality-baseline.json` | more violations of a rule in a file than before (`quality-scan.mjs`, all rules except line-length — Biome owns that) |
 | test presence | `untested-sources.txt` | a new `src/*.ts` has no `*.test.ts` |
 | advisories | `audit-baseline.json` | a new high/critical advisory in production dependencies |
+| coverage | `coverage-baseline.json` | a package covers less than it did (`check-coverage.mjs`, statements, branches, functions and lines, 0.25 point slack) |
 
 Existing debt is allowed; making it worse is not. When a ratchet improves, CI rewrites the baseline in the same commit as the Biome autofixes, so the bar can only rise. To rebaseline by hand: `node scripts/ci/<script>.mjs --write-baseline`.
 
 The quality baseline records **which files it scanned**, not only their counts. A file the baseline has never seen is adopted at its current counts — written into the baseline by that same run and picked up by the autofix commit — instead of failing as a jump from zero. Otherwise every file created or extracted in a commit would fail the ratchet, and because the gate failed the tighten step would be skipped, leaving CI red until someone rebaselined by hand. A file is ratcheted normally from the run after it is adopted.
+
+The coverage ratchet measures the compiled output, not the sources. c8 matches
+`--include` against the files it loads, which are `packages/<pkg>/dist/**/*.js`.
+The report names `src/*.ts` only after it remaps through the source map. An
+include written against `src` matches nothing, and c8 enforces no threshold when
+nothing matches, so the gate passes at 0 percent while measuring nothing. That is
+what the old uniform 90 percent gate did for every package.
+
+Anything that runs a package in a child process has to let it exit on its own. A
+killed process never writes its V8 coverage file. `index.characterization.test.ts`
+closes stdin and waits, which is why `index.ts` and everything under `src/mcp/`
+counts at all.
+
+A package the coverage baseline has never seen is adopted at whatever the run
+measured, the same way the quality baseline adopts a new file. The numbers move
+with the platform, because a `process.platform` branch only runs on one of them.
+So the baseline ships empty and the first CI run fills it in from the runner.
 
 Gate scripts live in `scripts/ci/` and all run locally with no arguments (except `check-pack`/`smoke-bundle`, which take a package name). Run them before pushing a release.
 

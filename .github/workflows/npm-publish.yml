@@ -8,7 +8,7 @@
 # Gates, in the order they can stop a release:
 #   build-test        compile + unit tests + which versions are unpublished
 #   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency
-#   static-analysis   Biome, coverage, and three ratchets (quality, test presence, advisories)
+#   static-analysis   Biome plus four ratchets (quality, test presence, advisories, coverage)
 #   package-integrity what npm would publish, and whether that bundle actually speaks MCP
 #
 # The ratchets compare against baselines in .github/quality/. Existing debt is
@@ -153,9 +153,19 @@ jobs:
         if: steps.audit.outcome == 'success'
         run: grep -q "fixed:" audit-report.txt && node scripts/ci/check-audit.mjs --write-baseline || true
 
+      - name: Coverage ratchet (per package)
+        id: coverage
+        continue-on-error: true
+        run: |
+          node scripts/ci/check-coverage.mjs | tee coverage-report.txt
+          exit "${PIPESTATUS[0]}"
+      - name: Tighten coverage baseline
+        if: steps.coverage.outcome == 'success'
+        run: grep -qE "improved:|adopted:" coverage-report.txt && node scripts/ci/check-coverage.mjs --write-baseline || true
+
       - name: Commit & push autofixes and tightened baselines
         run: |
-          rm -f quality-report.txt tests-present.txt audit-report.txt
+          rm -f quality-report.txt tests-present.txt audit-report.txt coverage-report.txt
           if ! git diff --exit-code --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -168,30 +178,6 @@ jobs:
       - name: Biome strict check
         run: npx @biomejs/biome check packages/*/src/ scripts/ci/ --max-diagnostics=200 --no-errors-on-unmatched
 
-      # Coverage thresholds — fail if any package drops below 90% statements
-      - name: Coverage gate (≥90% statements)
-        run: |
-          echo "=== Coverage gate (≥90% statements) ==="
-          FAILED=""
-          for pkg in dod-guard evomcp gitevo obsidian-rag quality-guard; do
-            echo "--- $pkg ---"
-            npx c8 --include="packages/$pkg/src/*.ts" \
-                   --exclude="packages/$pkg/src/*.test.ts" \
-                   --exclude="packages/$pkg/src/types.ts" \
-                   --exclude="packages/$pkg/src/constants.ts" \
-                   --statements 90 \
-                   --branches 70 \
-                   --functions 80 \
-                   --lines 90 \
-                   --reporter=text \
-                   node --experimental-test-module-mocks --test "packages/$pkg/dist/*.test.js" || FAILED="$FAILED $pkg"
-          done
-          if [ -n "$FAILED" ]; then
-            echo "COVERAGE GATE FAILED for:$FAILED"
-            exit 1
-          fi
-          echo "All packages pass coverage gate."
-
       # Ratchets run with continue-on-error so baselines still get pushed; enforce here.
       - name: Enforce ratchet outcomes
         run: |
@@ -199,6 +185,7 @@ jobs:
           if [ "${{ steps.quality.outcome }}" = "failure" ]; then FAILED="$FAILED structural-quality"; fi
           if [ "${{ steps.tests-present.outcome }}" = "failure" ]; then FAILED="$FAILED test-presence"; fi
           if [ "${{ steps.audit.outcome }}" = "failure" ]; then FAILED="$FAILED advisories"; fi
+          if [ "${{ steps.coverage.outcome }}" = "failure" ]; then FAILED="$FAILED coverage"; fi
           if [ -n "$FAILED" ]; then
             echo "RATCHET FAILED for:$FAILED — see the step logs above"
             exit 1

@@ -30,6 +30,16 @@ const FAIL_CMD = 'node -e "process.exit(1)"';
 const DIST_INDEX = fileURLToPath(new URL("./index.js", import.meta.url));
 const PROTOCOL_VERSION = "2025-06-18";
 const TIMEOUT_MS = 15_000;
+// How long to wait for the server to exit after stdin closes, before killing.
+const SHUTDOWN_MS = 5_000;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    // unref, or every server that already exited still holds the event loop
+    // open for the rest of the window.
+    setTimeout(resolve, ms).unref();
+  });
+}
 // Built from a code point, not typed literally. This file stays plain
 // ASCII. A raw em dash byte gets mangled by this machine's re-encoding.
 const DASH = String.fromCharCode(0x2014);
@@ -49,7 +59,7 @@ interface Harness {
   request: (method: string, params: Record<string, unknown>) => Promise<JsonRpcResponse>;
   callTool: (name: string, args: Record<string, unknown>) => Promise<any>;
   text: (result: any) => string;
-  stop: () => void;
+  stop: () => Promise<void>;
 }
 
 function startServer(): Harness {
@@ -136,8 +146,15 @@ function startServer(): Harness {
     return (result.content ?? []).map((c: { text: string }) => c.text).join("\n");
   }
 
-  function stop(): void {
-    child.kill();
+  // Closing stdin ends the stdio transport, so the server returns from main
+  // and exits on its own. A kill() would work too, but a killed process never
+  // writes its V8 coverage file, and this suite is the only thing that drives
+  // index.ts and everything under mcp/. SIGTERM threw all of that away.
+  async function stop(): Promise<void> {
+    const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+    child.stdin.end();
+    await Promise.race([exited, delay(SHUTDOWN_MS)]);
+    if (child.exitCode === null && child.signalCode === null) child.kill();
     rmSync(storeDir, { recursive: true, force: true });
   }
 
@@ -294,7 +311,7 @@ test("tools/list returns exactly the 12 documented tools", async () => {
       assert.ok(tools.includes(name), `missing tool ${name}`);
     }
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -312,7 +329,7 @@ test("dod_create success reports id, roots, and proof counts", async () => {
     assert.match(text, /Concrete proofs: 1/);
     assert.match(text, /Draft nodes: 1/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -335,7 +352,7 @@ test("dod_create rejects a caller-supplied dod_id", async () => {
     assert.match(text, /^ERROR: dod_create creates NEW DoDs\./);
     assert.match(text, /dod_id parameter is not accepted here/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -347,7 +364,7 @@ test("dod_create warns when a non-minimal DoD has no behavioral proof", async ()
     const { text } = await createDod(s, s.storeDir, { roots: [wiringLeaf] });
     assert.match(text, /No behavioral predicate proofs/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -375,7 +392,7 @@ test("dod_create rejects a command whose tool is missing on this OS", async () =
     assert.match(created, /ERROR: 1 proof command\(s\) invoke tool\(s\) not available/);
     assert.match(created, /totally-fake-tool-xyz-123/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -390,7 +407,7 @@ test("dod_check reports not found for an unknown dod_id", async () => {
     assert.match(text, /^ERROR:/);
     assert.match(text, /not found/i);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -403,7 +420,7 @@ test("dod_check on a passing concrete leaf returns PASS", async () => {
     const text = s.text(result);
     assert.match(text, /## DoD Check Result: PASS/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -416,7 +433,7 @@ test("dod_check on a passing run reports the proof fingerprint", async () => {
     const text = s.text(result);
     assert.match(text, /\*\*Proof fingerprint:\*\*/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -429,7 +446,7 @@ test("dod_check on a failing concrete leaf returns FAIL", async () => {
     const text = s.text(result);
     assert.match(text, /## DoD Check Result: FAIL/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -444,7 +461,7 @@ test("dod_check stays INCOMPLETE while a draft node remains", async () => {
     const text = s.text(result);
     assert.match(text, /## DoD Check Result: INCOMPLETE/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -457,7 +474,7 @@ test("dod_check with an unknown nodePath is rejected", async () => {
     const text = s.text(result);
     assert.match(text, /ERROR: nodePath "9\.children\.9" not found in this DoD\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -478,7 +495,7 @@ test("a scoped dod_check never returns PASS even for a passing subtree", async (
     assert.match(scoped, /## DoD Check Result: INCOMPLETE/);
     assert.match(scoped, /Scoped run/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -499,7 +516,7 @@ test("dod_check on an imported DoD blocks until confirm_import", async () => {
     const confirmed = s.text(await s.callTool("dod_check", { dod_id: id, confirm_import: true }));
     assert.match(confirmed, /## DoD Check Result: PASS/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -520,7 +537,7 @@ test("dod_check forces FAIL when the store was edited outside dod_amend", async 
     assert.match(second, /## DoD Check Result: FAIL/);
     assert.match(second, /TAMPER DETECTED/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -546,7 +563,7 @@ test("dod_check reports STUCK after 3 amendments on a still-failing leaf", async
     assert.match(result, /## DoD Check Result: STUCK/);
     assert.match(result, new RegExp(`STUCK ${DASH} approach may be wrong`));
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -570,7 +587,7 @@ test("dod_refine concretize turns a draft leaf concrete", async () => {
     assert.match(result, /Node refined: "d" is now concrete\./);
     assert.match(result, /All nodes are now concrete/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -592,7 +609,7 @@ test("dod_refine subdivide turns a draft leaf into a group of drafts", async () 
     );
     assert.match(result, /is now a task group with 2 child draft\(s\)/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -612,7 +629,7 @@ test("dod_refine refuses a node that is already concrete", async () => {
     );
     assert.match(result, /is already concrete\. Use dod_amend to modify\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -634,7 +651,7 @@ test("dod_add_node adds a draft node at root level", async () => {
     );
     assert.match(result, /Node "new-draft" \(draft\) added at path "1"\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -653,7 +670,7 @@ test("dod_add_node refuses a draft node with no intent", async () => {
     );
     assert.match(result, /ERROR: draft nodes require an intent/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -673,7 +690,7 @@ test("dod_add_node refuses a concrete node whose parent is a leaf", async () => 
     );
     assert.match(result, new RegExp(`is a leaf ${DASH} cannot add children\\.`));
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -689,7 +706,7 @@ test("dod_remove_node removes a root node and its descendants", async () => {
     const result = s.text(await s.callTool("dod_remove_node", { dod_id: id, node_path: "1" }));
     assert.match(result, /Removed root node "d" \(draft\) and all descendants\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -701,7 +718,7 @@ test("dod_remove_node rejects an out-of-range root index", async () => {
     const result = s.text(await s.callTool("dod_remove_node", { dod_id: id, node_path: "5" }));
     assert.match(result, /ERROR: root index 5 out of range \(0-0\)\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -713,7 +730,7 @@ test("dod_remove_node on an unknown dod_id reports not found", async () => {
     assert.match(result, /^ERROR:/);
     assert.match(result, /not found/i);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -727,7 +744,7 @@ test("dod_status before any check tells the caller to run dod_check", async () =
     const result = s.text(await s.callTool("dod_status", { dod_id: id }));
     assert.match(result, /has never been checked\. Run dod_check first\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -741,7 +758,7 @@ test("dod_status after a passing check reports overall PASS", async () => {
     assert.match(result, /Overall: PASS/);
     assert.match(result, /Concrete proofs: 1\/1 pass/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -755,7 +772,7 @@ test("dod_tree on an unknown dod reports not found", async () => {
     assert.match(result, /^ERROR:/);
     assert.match(result, /not found/i);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -771,7 +788,7 @@ test("dod_tree lists node counts and per-node markers", async () => {
     assert.match(result, /PROOF: "p"/);
     assert.match(result, /DRAFT: "d"/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -791,7 +808,7 @@ test("dod_amend on an unknown dod reports not found", async () => {
     assert.match(result, /^ERROR:/);
     assert.match(result, /not found/i);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -810,7 +827,7 @@ test("dod_amend refuses to touch a draft node", async () => {
     );
     assert.match(result, /ERROR: node is a draft\. Use dod_refine to concretize it first\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -830,7 +847,7 @@ test("dod_amend refuses a new_command whose tool is missing on this OS", async (
     assert.match(result, /ERROR: 1 proof command\(s\) invoke tool\(s\) not available/);
     assert.match(result, /totally-fake-tool-xyz-123/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -850,7 +867,7 @@ test("dod_amend node_path=* refuses a new_command whose tool is missing on this 
     assert.match(result, /ERROR: 1 proof command\(s\) invoke tool\(s\) not available/);
     assert.match(result, /totally-fake-tool-xyz-123/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -870,7 +887,7 @@ test("dod_amend success resets the leaf to pending", async () => {
     assert.match(result, /Proof amended and logged\./);
     assert.match(result, /Status reset to pending\. Run dod_check to re-verify\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -890,7 +907,7 @@ test("dod_amend blocks a 4th amendment without a justification", async () => {
     );
     assert.match(fourth, /has been amended 3 times\. Provide amend_justification/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -911,7 +928,7 @@ test("dod_amend allows the 4th amendment when justified", async () => {
     );
     assert.match(fourth, /Proof amended and logged\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -930,7 +947,7 @@ test("dod_amend node_path=* on an all-draft doc reports nothing to amend", async
     );
     assert.match(result, /ERROR: no concrete leaves to amend\. Refine drafts first\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -949,7 +966,7 @@ test("dod_amend node_id is rejected together with node_path=*", async () => {
     );
     assert.match(result, /node_id is incompatible with node_path="\*"/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -962,7 +979,7 @@ test("dod_list reports no DoDs tracked on an empty store", async () => {
     const result = s.text(await s.callTool("dod_list", {}));
     assert.match(result, /^No DoD documents tracked\. Use dod_create or dod_import to add one\.$/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -979,7 +996,7 @@ test("dod_list shows an unchecked DoD's title, id, and counts", async () => {
     assert.match(result, new RegExp(`ID: ${id}`));
     assert.match(result, /Status: UNCHECKED \| 2 roots, 1 concrete proofs \(1 draft\)/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1001,7 +1018,7 @@ test("dod_list survives one legacy doc and still lists every other document", as
     assert.match(result, /Current Doc/);
     assert.match(result, new RegExp(`ID: ${id}`));
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1020,7 +1037,7 @@ test("dod_import parses a markdown DoD into a new document", async () => {
     assert.match(result, /Concrete proofs: 1/);
     assert.match(result, /Draft nodes: 0/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1047,7 +1064,7 @@ test("dod_import refuses a command whose tool is missing on this OS", async () =
     assert.match(result, /ERROR: 1 proof command\(s\) invoke tool\(s\) not available/);
     assert.match(result, /totally-fake-tool-xyz-123/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1063,7 +1080,7 @@ test("dod_import on an already-tracked path reports it is already tracked", asyn
     const second = s.text(await s.callTool("dod_import", importArgs));
     assert.match(second, /Already tracked as/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1077,7 +1094,7 @@ test("dod_store_migrate on an unknown dod_id reports not found", async () => {
     assert.match(result, /^ERROR:/);
     assert.match(result, /not found/i);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1090,7 +1107,7 @@ test("dod_store_migrate on a current-format doc says no migration needed", async
     const notNeeded = `already in the current format ${DASH} no migration needed\\.`;
     assert.match(result, new RegExp(notNeeded));
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1103,7 +1120,7 @@ test("dod_store_migrate bulk run finds nothing when no legacy docs exist", async
     const noLegacy = `No legacy documents found ${DASH} all docs are in the current format\\.`;
     assert.match(result, new RegExp(noLegacy));
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1120,7 +1137,7 @@ test("dod_store_migrate converts a legacy steps-format store file", async () => 
     const result = s.text(await s.callTool("dod_store_migrate", migrateArgs));
     assert.match(result, /Migrated: "Legacy Doc" → 1 root task group\(s\)\./);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1146,7 +1163,7 @@ test("dod_adversarial_gate on an unknown dod reports not found", async () => {
     assert.match(result, /^ERROR:/);
     assert.match(result, /not found/i);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1169,7 +1186,7 @@ test("dod_adversarial_gate records a GO verdict for phase 1", async () => {
     assert.match(result, new RegExp(spec1));
     assert.match(result, /Phase 2 \(Test\): .* PENDING/);
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1190,7 +1207,7 @@ test("dod_adversarial_gate refuses phase 2 while phase 1 is still pending", asyn
     const pending = `ERROR: Cannot record Phase 2 gate ${DASH} Phase 1 \\(Spec\\) is PENDING\\.`;
     assert.match(result, new RegExp(pending));
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1218,7 +1235,7 @@ test("dod_adversarial_gate refuses phase 2 when phase 1 was REVISE", async () =>
     const revise = `ERROR: Cannot record Phase 2 gate ${DASH} Phase 1 \\(Spec\\) is REVISE\\.`;
     assert.match(result, new RegExp(revise));
   } finally {
-    s.stop();
+    await s.stop();
   }
 });
 
@@ -1249,6 +1266,6 @@ test("dod_adversarial_gate allows phase 2 once phase 1 is GO", async () => {
     assert.match(result, new RegExp(spec2));
     assert.match(result, new RegExp(test2));
   } finally {
-    s.stop();
+    await s.stop();
   }
 });

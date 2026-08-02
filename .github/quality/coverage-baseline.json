@@ -1,0 +1,4 @@
+{
+  "note": "Coverage each package holds today. A drop below its own number fails CI. Empty on purpose: the numbers depend on which platform-specific branches run, so the first CI run records them from the runner rather than from a developer machine.",
+  "packages": {}
+}
