@@ -33,6 +33,7 @@ const TIMEOUT_MS = 15_000;
 // Built from a code point, not typed literally. This file stays plain
 // ASCII. A raw em dash byte gets mangled by this machine's re-encoding.
 const DASH = String.fromCharCode(0x2014);
+const ARROW = String.fromCharCode(0x2192);
 
 let nextId = 1;
 
@@ -187,7 +188,7 @@ function writeImportFixture(mdPath: string, title: string): void {
     "",
     "<definition_of_done>",
     "",
-    "- [ ] Proof: `exit /b 0` → Sample proof " + '<!--p:{"type":"exit_code","value":0}-->',
+    `- [ ] Proof: \`${PASS_CMD}\` ${ARROW} Sample proof <!--p:{"type":"exit_code","value":0}-->`,
     "",
     "</definition_of_done>",
     "",
