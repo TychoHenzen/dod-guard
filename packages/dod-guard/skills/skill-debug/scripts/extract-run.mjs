@@ -5,7 +5,7 @@
 // instead costs more context than the run being debugged. It also feeds the
 // model its own reasoning back, which then reads as fact.
 
-import { numberArg, parseArgs } from "./lib/args.mjs";
+import { numberArg, parseArgs } from "../../../lib/args.mjs";
 import { normalizeSkill } from "./lib/invocations.mjs";
 import { readRecords } from "./lib/records.mjs";
 import { renderTrace } from "./lib/render.mjs";

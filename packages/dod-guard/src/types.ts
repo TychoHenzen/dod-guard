@@ -126,12 +126,7 @@ export interface Amendment {
 }
 
 /** Fixed-priority check verdict. See computeOverall() in checker-verdict.ts. */
-export type CheckOverall =
-  | "pass"
-  | "fail"
-  | "incomplete"
-  | "pass_dirty"
-  | "stuck";
+export type CheckOverall = "pass" | "fail" | "incomplete" | "pass_dirty" | "stuck";
 
 export interface DodDocument {
   id: string;

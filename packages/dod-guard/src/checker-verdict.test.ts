@@ -7,7 +7,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { type VerdictInput, computeOverall } from "./checker-verdict.js";
+import { computeOverall, type VerdictInput } from "./checker-verdict.js";
 
 function input(overrides: Partial<VerdictInput> = {}): VerdictInput {
   return {

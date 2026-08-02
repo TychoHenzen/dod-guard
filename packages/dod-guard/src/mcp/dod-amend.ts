@@ -47,10 +47,7 @@ function resolveTarget(doc: DodDocument, params: AmendParams): { node: TaskNode;
 }
 
 /** Refuse a non-empty command that names a tool absent on this OS. */
-async function rejectMissingTools(
-  command: string,
-  cwd: string,
-): Promise<string | null> {
+async function rejectMissingTools(command: string, cwd: string): Promise<string | null> {
   if (command.trim() === "") return null;
   const missing = await findMissingTools([command], cwd);
   return missing.length > 0 ? formatMissingTools(missing) : null;

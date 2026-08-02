@@ -158,3 +158,34 @@ test("checkDuplication does not flag files with no shared block", () => {
   const violations = checkDuplication([c, d], config);
   assert.equal(violations.length, 0);
 });
+
+test("checkDuplication ignores a shared import block", () => {
+  const imports = [
+    'import { a } from "./a.js";',
+    'import { b } from "./b.js";',
+    'import { c } from "./c.js";',
+    'import { d } from "./d.js";',
+    'export { e } from "./e.js";',
+    'export { f } from "./f.js";',
+  ];
+  const c = { rel: "src/c.ts", lines: [...imports, "const one = 1;"] };
+  const d = { rel: "src/d.ts", lines: [...imports, "const two = 2;"] };
+  const config = buildConfig("default");
+  assert.equal(checkDuplication([c, d], config).length, 0);
+});
+
+test("checkDuplication still flags shared code that sits under shared imports", () => {
+  const shared = [
+    'import { a } from "./a.js";',
+    "const one = 1;",
+    "const two = 2;",
+    "const three = 3;",
+    "const four = 4;",
+    "const five = 5;",
+    "const six = 6;",
+  ];
+  const c = { rel: "src/c.ts", lines: [...shared] };
+  const d = { rel: "src/d.ts", lines: [...shared] };
+  const config = buildConfig("default");
+  assert.equal(checkDuplication([c, d], config).length, 2);
+});

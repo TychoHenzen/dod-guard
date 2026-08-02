@@ -2,12 +2,7 @@
 import { countNodeAmendments } from "./checker-tree.js";
 import { executeProof } from "./evaluate-proof.js";
 import { flattenConcreteLeaves } from "./fingerprint.js";
-import type {
-  AdversarialGate,
-  Amendment,
-  LeafResult,
-  TaskNode,
-} from "./types.js";
+import type { AdversarialGate, Amendment, LeafResult, TaskNode } from "./types.js";
 
 export interface ConcreteEntry {
   node: TaskNode;

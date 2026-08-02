@@ -10,7 +10,7 @@
 // original, one over what replaced it.
 
 import { readFileSync } from "node:fs";
-import { parseArgs } from "./lib/ledger-file.mjs";
+import { parseArgs } from "../../../lib/args.mjs";
 import { aggregate, judgeSimplicity } from "./lib/simplicity.mjs";
 
 const USAGE = [

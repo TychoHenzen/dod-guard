@@ -6,7 +6,7 @@
 // text, and only the second of those is worth editing a SKILL.md over.
 
 import { readFileSync } from "node:fs";
-import { numberArg, parseArgs } from "./lib/args.mjs";
+import { numberArg, parseArgs } from "../../../lib/args.mjs";
 import { normalizeSkill } from "./lib/invocations.mjs";
 import { parseRecords } from "./lib/records.mjs";
 import { renderRunIndex } from "./lib/render.mjs";

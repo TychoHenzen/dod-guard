@@ -25193,7 +25193,7 @@ function formatEvolveResult(result) {
   ].join("\n\n");
 }
 function formatNestedSolve(solveResult) {
-  if (!solveResult || solveResult.outcome !== "pass") return "";
+  if (solveResult?.outcome !== "pass") return "";
   return [
     "## Solve Patch",
     field("Patch", solveResult.patch, "(no patch)"),

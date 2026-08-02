@@ -4,7 +4,7 @@
  */
 import { writeMarkdown } from "../author.js";
 import * as store from "../store.js";
-import type { AdversarialGate, AdversarialLensResult, AdversarialVerdict, DodDocument } from "../types.js";
+import type { AdversarialGate, AdversarialLensResult, AdversarialVerdict } from "../types.js";
 import { isDocError, resolveDoc } from "./resolve.js";
 
 interface GateParams {
@@ -36,18 +36,15 @@ export async function handleDodAdversarialGate(params: GateParams): Promise<stri
 
   const header = `Adversarial gate recorded: Phase ${params.phase} — ${params.verdict}`;
   const counts =
-    `Critical: ${newGate.critical_count}, ` +
-    `Major: ${newGate.major_count}, Minor: ${newGate.minor_count}`;
+    `Critical: ${newGate.critical_count}, ` + `Major: ${newGate.major_count}, Minor: ${newGate.minor_count}`;
   const summaryLine = `Summary: ${params.summary}`;
-  return [header, counts, summaryLine, "", ...formatPhaseStatuses(gates)].join(
-    "\n",
-  );
+  return [header, counts, summaryLine, "", ...formatPhaseStatuses(gates)].join("\n");
 }
 
 function findBlockingPhase(gates: AdversarialGate[], phase: number): { phase: number; verdict: string } | null {
   for (let p = 1; p < phase; p++) {
     const g = gates.find((x) => x.phase === p);
-    if (!g || g.verdict !== "GO") return { phase: p, verdict: g ? g.verdict : "PENDING" };
+    if (g?.verdict !== "GO") return { phase: p, verdict: g ? g.verdict : "PENDING" };
   }
   return null;
 }
@@ -56,10 +53,7 @@ function countBySeverity(lenses: AdversarialLensResult[], severity: string): num
   return lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === severity).length, 0);
 }
 
-function recordGate(
-  gates: AdversarialGate[],
-  params: GateParams,
-): AdversarialGate {
+function recordGate(gates: AdversarialGate[], params: GateParams): AdversarialGate {
   const newGate: AdversarialGate = {
     phase: params.phase as 1 | 2 | 3 | 4,
     timestamp: new Date().toISOString(),

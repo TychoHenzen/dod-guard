@@ -125,13 +125,10 @@ describe("checkDocument scoped carry-forward and advisory verdict", () => {
   it("an adversarial leaf passes when its phase gate is GO", async () => {
     const { checkDocument } = await import("./checker.js");
 
-    const gatedLeaf = concLeaf(
-      nid(),
-      "Gated",
-      "gate-check-cmd",
-      "checks phase 1 gate",
-      { type: "adversarial", value: 1 },
-    );
+    const gatedLeaf = concLeaf(nid(), "Gated", "gate-check-cmd", "checks phase 1 gate", {
+      type: "adversarial",
+      value: 1,
+    });
     const gate: AdversarialGate = {
       phase: 1,
       timestamp: "2026-01-01T00:00:00.000Z",
@@ -154,13 +151,10 @@ describe("checkDocument scoped carry-forward and advisory verdict", () => {
   it("an adversarial leaf fails with no recorded gate", async () => {
     const { checkDocument } = await import("./checker.js");
 
-    const gatedLeaf = concLeaf(
-      nid(),
-      "Ungated",
-      "gate-check-cmd",
-      "checks phase 1 gate",
-      { type: "adversarial", value: 1 },
-    );
+    const gatedLeaf = concLeaf(nid(), "Ungated", "gate-check-cmd", "checks phase 1 gate", {
+      type: "adversarial",
+      value: 1,
+    });
 
     const doc = makeDoc([gatedLeaf]);
     const res = await checkDocument(doc);
@@ -173,12 +167,7 @@ describe("checkDocument scoped carry-forward and advisory verdict", () => {
   it("a scoped group's own draft is not reported in leaves", async () => {
     const { checkDocument } = await import("./checker.js");
 
-    const innerConcrete = concLeaf(
-      nid(),
-      "InnerConcrete",
-      "inner-cmd",
-      "runs inside group",
-    );
+    const innerConcrete = concLeaf(nid(), "InnerConcrete", "inner-cmd", "runs inside group");
     const innerDraft = draftLeaf(nid(), "InnerDraft");
     const group: TaskNode = {
       id: nid(),

@@ -10,8 +10,8 @@
 
 import * as assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { formatOrchestrateResult } from "./render.js";
 import type { OrchestrateResult } from "./orchestrate.js";
+import { formatOrchestrateResult } from "./render.js";
 import type { RunStats } from "./types.js";
 
 function stats(overrides: Partial<RunStats> = {}): RunStats {

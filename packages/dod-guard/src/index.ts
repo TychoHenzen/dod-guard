@@ -6,9 +6,7 @@ import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  StdioServerTransport,
-} from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { isCliInvocation, runCli } from "./cli.js";
 import { handleDodAdversarialGate } from "./mcp/dod-adversarial-gate.js";
@@ -21,12 +19,7 @@ import { handleDodStatus } from "./mcp/dod-status.js";
 import { handleDodStoreMigrate } from "./mcp/dod-store-migrate.js";
 import { handleDodTree } from "./mcp/dod-tree.js";
 import { run, text } from "./mcp/resolve.js";
-import {
-  PredicateSchema,
-  ProofCategorySchema,
-  SectionsSchema,
-  TaskNodeInputSchema,
-} from "./schemas.js";
+import { PredicateSchema, ProofCategorySchema, SectionsSchema, TaskNodeInputSchema } from "./schemas.js";
 import { handleDodAddNode } from "./tools/dod-add-node.js";
 import { handleDodCreate } from "./tools/dod-create.js";
 import { handleDodRefine } from "./tools/dod-refine.js";
@@ -137,17 +130,14 @@ server.tool(
     description: z.string().optional(),
     category: ProofCategorySchema.optional(),
     advisory: z.boolean().optional(),
-    children: z
-      .array(z.object({ title: z.string(), intent: z.string() }))
-      .optional(),
+    children: z.array(z.object({ title: z.string(), intent: z.string() })).optional(),
   },
   async (params) => run(() => handleDodRefine(params)),
 );
 
 server.tool(
   "dod_add_node",
-  "Add a new TaskNode (draft or concrete) as a child of an existing " +
-    "task group, or at root level.",
+  "Add a new TaskNode (draft or concrete) as a child of an existing " + "task group, or at root level.",
   {
     dod_id: z.string(),
     parent_path: z.string(),
@@ -217,11 +207,8 @@ server.tool(
   async (params) => run(() => handleDodAmend(params)),
 );
 
-server.tool(
-  "dod_list",
-  "List all tracked DoD documents with their last check status.",
-  {},
-  async () => run(() => handleDodList()),
+server.tool("dod_list", "List all tracked DoD documents with their last check status.", {}, async () =>
+  run(() => handleDodList()),
 );
 
 server.tool(

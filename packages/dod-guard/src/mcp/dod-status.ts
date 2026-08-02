@@ -20,9 +20,7 @@ export async function handleDodStatus(params: StatusParams): Promise<string> {
   }
 
   const leaves = flattenConcreteLeaves(doc.roots);
-  const passCount = leaves.filter(
-    (l) => l.node.last_status === "pass" || l.node.last_status === "skipped",
-  ).length;
+  const passCount = leaves.filter((l) => l.node.last_status === "pass" || l.node.last_status === "skipped").length;
   const draftCount = countDraftNodes(doc.roots);
   const draftClause = draftCount > 0 ? `, ${draftCount} draft node(s)` : "";
 

@@ -128,6 +128,12 @@ export function checkReachability(files, scans, config, manifests = []) {
 /** Lines that carry no meaning on their own and would create noise hits. */
 const TRIVIAL_LINE = /^[\s{}()[\];,]*$/;
 const COMMENT_LINE = /^\s*(\/\/|#|\*|\/\*)/;
+/**
+ * An import is forced by the language, not chosen by a design. Two modules
+ * that pull the same names are not duplicated logic. Every MCP entry point
+ * in this monorepo opens with the same six lines.
+ */
+const IMPORT_LINE = /^\s*(import|export)\b[^;]*\bfrom\b/;
 /** Distinct lines a window needs before it counts as real duplication. */
 const MIN_DISTINCT_LINES = 4;
 
@@ -137,7 +143,10 @@ const MIN_DISTINCT_LINES = 4;
  * produces a flood of false duplicates.
  */
 function normalizeLines(file) {
-  return file.lines.map((line) => (COMMENT_LINE.test(line) ? "" : line.trim().replace(/\s+/g, " ")));
+  return file.lines.map((line) => {
+    if (COMMENT_LINE.test(line) || IMPORT_LINE.test(line)) return "";
+    return line.trim().replace(/\s+/g, " ");
+  });
 }
 
 function windowsOf(file) {

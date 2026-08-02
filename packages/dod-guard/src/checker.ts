@@ -3,6 +3,8 @@
 // checker-vcs.ts, checker-verdict.ts, checker-summary.ts and
 // checker-result.ts for the pieces this composes.
 import { type ConcreteEntry, runConcreteLeaves } from "./checker-leaves.js";
+import type { Verdict } from "./checker-result.js";
+import { buildSummary } from "./checker-summary.js";
 import {
   checkAmendGate,
   collectDraftLeaves,
@@ -12,29 +14,12 @@ import {
   hasDraftNodes,
   isBranchLocked,
 } from "./checker-tree.js";
-import type { Verdict } from "./checker-result.js";
-import { buildSummary } from "./checker-summary.js";
+import { captureVcsState, type VcsState } from "./checker-vcs.js";
 import { computeOverall } from "./checker-verdict.js";
-import {
-  captureVcsState,
-  type VcsState,
-} from "./checker-vcs.js";
 import { computeProofFingerprint } from "./fingerprint.js";
-import type {
-  CheckResult,
-  DodDocument,
-  LeafResult,
-  TaskNode,
-} from "./types.js";
+import type { CheckResult, DodDocument, LeafResult, TaskNode } from "./types.js";
 
-export {
-  checkAmendGate,
-  countDraftNodes,
-  countNodeAmendments,
-  findNodeByPath,
-  hasDraftNodes,
-  isBranchLocked,
-};
+export { checkAmendGate, countDraftNodes, countNodeAmendments, findNodeByPath, hasDraftNodes, isBranchLocked };
 
 export interface CheckOptions {
   nodePath?: string;
@@ -66,27 +51,17 @@ function isStuck(entry: ConcreteEntry): boolean {
   return isNonAdvisoryFail(entry) && amended;
 }
 
-function countLeafStatuses(
-  leaves: LeafResult[],
-): { pass: number; total: number; draft: number } {
+function countLeafStatuses(leaves: LeafResult[]): { pass: number; total: number; draft: number } {
   const draft = leaves.filter((l) => l.status === "draft").length;
   const pass = leaves.filter((l) => l.status === "pass").length;
   return { pass, total: leaves.length - draft, draft };
 }
 
-async function gatherVcs(
-  scoped: boolean,
-  cwd: string,
-): Promise<Partial<VcsState>> {
+async function gatherVcs(scoped: boolean, cwd: string): Promise<Partial<VcsState>> {
   return scoped ? {} : captureVcsState(cwd);
 }
 
-function computeVerdict(
-  doc: DodDocument,
-  entries: ConcreteEntry[],
-  scoped: boolean,
-  vcs: Partial<VcsState>,
-): Verdict {
+function computeVerdict(doc: DodDocument, entries: ConcreteEntry[], scoped: boolean, vcs: Partial<VcsState>): Verdict {
   const computedFingerprint = computeProofFingerprint(doc.roots);
   const stored = doc.proof_fingerprint;
   const tampered = stored !== undefined && stored !== computedFingerprint;
@@ -112,20 +87,12 @@ export async function checkDocument(
   const { nodePath, summary } = opts;
   const scoped = nodePath !== undefined;
 
-  const entries = await runConcreteLeaves(
-    doc.roots,
-    cwd,
-    doc.amendments,
-    doc.adversarial_gates ?? [],
-    nodePath,
-  );
+  const entries = await runConcreteLeaves(doc.roots, cwd, doc.amendments, doc.adversarial_gates ?? [], nodePath);
   const vcs = await gatherVcs(scoped, cwd);
   const draftEntries = collectDraftLeaves(doc.roots).filter(
     ({ node_path }) => !isUnderScope(node_path, scoped ? nodePath : undefined),
   );
-  const drafts = draftEntries.map(
-    ({ node, node_path }) => draftResult(node, node_path),
-  );
+  const drafts = draftEntries.map(({ node, node_path }) => draftResult(node, node_path));
   const leaves = [...entries.map((e) => e.result), ...drafts];
 
   const verdict = computeVerdict(doc, entries, scoped, vcs);

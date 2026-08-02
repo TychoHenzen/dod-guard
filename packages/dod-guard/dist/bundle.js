@@ -21482,17 +21482,6 @@ function buildSummary(overall, counts) {
   return `${overall.toUpperCase()}: ${counts.pass}/${counts.total} proof(s) passed${draftNote}.`;
 }
 
-// src/checker-verdict.ts
-function computeOverall(v) {
-  if (v.tampered) return "fail";
-  if (v.scoped) return "incomplete";
-  if (v.draftCount > 0) return "incomplete";
-  if (v.stuck) return "stuck";
-  if (v.anyFail) return "fail";
-  if (v.dirty && !v.allowDirtyPass) return "pass_dirty";
-  return "pass";
-}
-
 // src/checker-vcs.ts
 import { exec } from "node:child_process";
 import { promisify as promisify2 } from "node:util";
@@ -21509,6 +21498,17 @@ async function captureVcsState(cwd) {
   } catch {
     return { is_git_repo: false };
   }
+}
+
+// src/checker-verdict.ts
+function computeOverall(v) {
+  if (v.tampered) return "fail";
+  if (v.scoped) return "incomplete";
+  if (v.draftCount > 0) return "incomplete";
+  if (v.stuck) return "stuck";
+  if (v.anyFail) return "fail";
+  if (v.dirty && !v.allowDirtyPass) return "pass_dirty";
+  return "pass";
 }
 
 // src/checker.ts
@@ -21561,20 +21561,12 @@ async function checkDocument(doc, cwdOverride, opts = {}) {
   const cwd = cwdOverride ?? doc.cwd;
   const { nodePath, summary } = opts;
   const scoped = nodePath !== void 0;
-  const entries = await runConcreteLeaves(
-    doc.roots,
-    cwd,
-    doc.amendments,
-    doc.adversarial_gates ?? [],
-    nodePath
-  );
+  const entries = await runConcreteLeaves(doc.roots, cwd, doc.amendments, doc.adversarial_gates ?? [], nodePath);
   const vcs = await gatherVcs(scoped, cwd);
   const draftEntries = collectDraftLeaves(doc.roots).filter(
     ({ node_path }) => !isUnderScope(node_path, scoped ? nodePath : void 0)
   );
-  const drafts = draftEntries.map(
-    ({ node, node_path }) => draftResult(node, node_path)
-  );
+  const drafts = draftEntries.map(({ node, node_path }) => draftResult(node, node_path));
   const leaves = [...entries.map((e) => e.result), ...drafts];
   const verdict = computeVerdict(doc, entries, scoped, vcs);
   const counts = countLeafStatuses(leaves);
@@ -22720,7 +22712,7 @@ async function run(handler) {
   }
 }
 async function resolveDoc2(dodId, mdPath) {
-  if (!dodId && !mdPath) {
+  if (!(dodId || mdPath)) {
     return "ERROR: no dod_id or path given, DoD not found.";
   }
   const doc = dodId ? await load(dodId) : await findByPath(mdPath);
@@ -22756,14 +22748,12 @@ async function handleDodAdversarialGate(params) {
   const header = `Adversarial gate recorded: Phase ${params.phase} \u2014 ${params.verdict}`;
   const counts = `Critical: ${newGate.critical_count}, Major: ${newGate.major_count}, Minor: ${newGate.minor_count}`;
   const summaryLine = `Summary: ${params.summary}`;
-  return [header, counts, summaryLine, "", ...formatPhaseStatuses(gates)].join(
-    "\n"
-  );
+  return [header, counts, summaryLine, "", ...formatPhaseStatuses(gates)].join("\n");
 }
 function findBlockingPhase(gates, phase) {
   for (let p = 1; p < phase; p++) {
     const g = gates.find((x) => x.phase === p);
-    if (!g || g.verdict !== "GO") return { phase: p, verdict: g ? g.verdict : "PENDING" };
+    if (g?.verdict !== "GO") return { phase: p, verdict: g ? g.verdict : "PENDING" };
   }
   return null;
 }
@@ -23168,9 +23158,7 @@ function formatLegacyBlock(raw) {
   const n = Array.isArray(raw.steps) ? raw.steps.length : 0;
   const status = `${n} step(s) in old format.`;
   const hint = "Run dod_store_migrate to upgrade.";
-  return [raw.title, `ID: ${raw.id}`, `Status: LEGACY | ${status} ${hint}`].join(
-    "\n"
-  );
+  return [raw.title, `ID: ${raw.id}`, `Status: LEGACY | ${status} ${hint}`].join("\n");
 }
 function formatDocBlock(doc) {
   const concrete = flattenConcreteLeaves(doc.roots).length;
@@ -23262,9 +23250,7 @@ async function handleDodStatus(params) {
     return `DoD "${doc.title}" has never been checked. Run dod_check first.`;
   }
   const leaves = flattenConcreteLeaves(doc.roots);
-  const passCount = leaves.filter(
-    (l) => l.node.last_status === "pass" || l.node.last_status === "skipped"
-  ).length;
+  const passCount = leaves.filter((l) => l.node.last_status === "pass" || l.node.last_status === "skipped").length;
   const draftCount = countDraftNodes(doc.roots);
   const draftClause = draftCount > 0 ? `, ${draftCount} draft node(s)` : "";
   return [
@@ -23288,7 +23274,7 @@ async function migrateOne(dodId, dryRun) {
   const raw = await loadRaw(dodId);
   if (!raw) return `ERROR: DoD "${dodId}" not found.`;
   if (isLegacyFormat(raw)) return migrateRawDoc(raw, dryRun);
-  if (!hasNonEmptyArray(raw.steps) && !hasNonEmptyArray(raw.roots)) {
+  if (!(hasNonEmptyArray(raw.steps) || hasNonEmptyArray(raw.roots))) {
     return `"${raw.title}" has no steps or roots \u2014 cannot migrate.`;
   }
   return `"${raw.title}" is already in the current format \u2014 no migration needed.`;

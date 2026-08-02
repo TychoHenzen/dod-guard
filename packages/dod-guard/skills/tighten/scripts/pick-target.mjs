@@ -5,7 +5,8 @@
 // learn whether work remains will get it wrong. Exit 4 means the queue is
 // empty, so the loop stops calling.
 
-import { openLedger, parseArgs } from "./lib/ledger-file.mjs";
+import { parseArgs } from "../../../lib/args.mjs";
+import { openLedger } from "./lib/ledger-file.mjs";
 import { MAX_ATTEMPTS, nextTarget, summarize } from "./lib/ledger.mjs";
 
 const USAGE = [

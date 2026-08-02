@@ -26,15 +26,3 @@ export function writeLedgerFile(path, ledger) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(ledger, null, 2)}\n`);
 }
-
-export function parseArgs(argv) {
-  const args = {};
-  for (const item of argv) {
-    const match = /^--([\w-]+)(?:=(.*))?$/.exec(item);
-    if (!match) {
-      return null;
-    }
-    args[match[1]] = match[2] ?? "true";
-  }
-  return args;
-}

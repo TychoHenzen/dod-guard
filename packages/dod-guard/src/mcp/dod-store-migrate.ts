@@ -27,7 +27,7 @@ async function migrateOne(dodId: string, dryRun: boolean): Promise<string> {
   const raw = await store.loadRaw(dodId);
   if (!raw) return `ERROR: DoD "${dodId}" not found.`;
   if (isLegacyFormat(raw)) return migrateRawDoc(raw, dryRun);
-  if (!hasNonEmptyArray(raw.steps) && !hasNonEmptyArray(raw.roots)) {
+  if (!(hasNonEmptyArray(raw.steps) || hasNonEmptyArray(raw.roots))) {
     return `"${raw.title}" has no steps or roots — cannot migrate.`;
   }
   return `"${raw.title}" is already in the current format — no migration needed.`;

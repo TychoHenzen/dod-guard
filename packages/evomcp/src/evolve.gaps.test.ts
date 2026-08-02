@@ -13,8 +13,7 @@
  */
 
 import * as assert from "node:assert/strict";
-import { before, beforeEach, describe, it } from "node:test";
-import { mock } from "node:test";
+import { beforeEach, describe, it, mock } from "node:test";
 
 // ── Mock state ────────────────────────────────────────────────────────────
 
@@ -110,7 +109,12 @@ mock.module("./convergence.js", {
       converged: convergenceRecommendation === "stop",
       stagnated: false,
       oscillating: false,
-      convergence: { converged: convergenceRecommendation === "stop", similarity: 0, threshold: 0.1, reason: convergenceReason },
+      convergence: {
+        converged: convergenceRecommendation === "stop",
+        similarity: 0,
+        threshold: 0.1,
+        reason: convergenceReason,
+      },
       stagnation: {
         stagnated: false,
         generations_without_improvement: 0,
@@ -201,7 +205,11 @@ describe("evolve gaps", () => {
       population_size: 1,
     });
 
-    assert.equal(r.best_patch, "evolve-gen0-candidate0", "run should still report the winning branch despite adopt failure");
+    assert.equal(
+      r.best_patch,
+      "evolve-gen0-candidate0",
+      "run should still report the winning branch despite adopt failure",
+    );
   });
 
   // 4. Mutation calls run under a concurrency cap.

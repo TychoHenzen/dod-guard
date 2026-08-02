@@ -45,7 +45,7 @@ function hasTestFile(file) {
   const dir = dirname(file);
   const prefix = `${stem.split(/[/\\]/).pop()}.`;
   return readdirSync(dir).some((entry) => {
-    if (!entry.startsWith(prefix) || !entry.endsWith(".test.ts")) return false;
+    if (!(entry.startsWith(prefix) && entry.endsWith(".test.ts"))) return false;
     return existsSync(join(dir, entry));
   });
 }

@@ -48,11 +48,10 @@ interface Harness {
 function startServer(): Harness {
   const storeDir = mkdtempSync(join(tmpdir(), "dod-guard-char-"));
   const env = { ...process.env, DOD_STORE_DIR: storeDir };
-  const child: ChildProcessWithoutNullStreams = spawn(
-    process.execPath,
-    [DIST_INDEX],
-    { env, stdio: ["pipe", "pipe", "pipe"] },
-  );
+  const child: ChildProcessWithoutNullStreams = spawn(process.execPath, [DIST_INDEX], {
+    env,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
 
   const waiters = new Map<number, (msg: JsonRpcResponse) => void>();
   let buffer = "";
@@ -88,10 +87,7 @@ function startServer(): Harness {
     child.stdin.write(`${JSON.stringify(message)}\n`);
   }
 
-  function request(
-    method: string,
-    params: Record<string, unknown>,
-  ): Promise<JsonRpcResponse> {
+  function request(method: string, params: Record<string, unknown>): Promise<JsonRpcResponse> {
     const id = nextId++;
     const promise = new Promise<JsonRpcResponse>((resolvePromise, rejectPromise) => {
       waiters.set(id, resolvePromise);
@@ -121,10 +117,7 @@ function startServer(): Harness {
     notify("notifications/initialized");
   }
 
-  async function callTool(
-    name: string,
-    args: Record<string, unknown>,
-  ): Promise<any> {
+  async function callTool(name: string, args: Record<string, unknown>): Promise<any> {
     const res = await request("tools/call", { name, arguments: args });
     if (res.error) {
       throw new Error(`tools/call ${name} failed: ${JSON.stringify(res.error)}`);
@@ -188,8 +181,7 @@ function writeImportFixture(mdPath: string, title: string): void {
     "",
     "<definition_of_done>",
     "",
-    '- [ ] Proof: `exit /b 0` → Sample proof ' +
-      '<!--p:{"type":"exit_code","value":0}-->',
+    "- [ ] Proof: `exit /b 0` → Sample proof " + '<!--p:{"type":"exit_code","value":0}-->',
     "",
     "</definition_of_done>",
     "",
@@ -237,11 +229,7 @@ function extractId(responseText: string): string {
   return m[1];
 }
 
-async function amendThreeTimes(
-  s: Harness,
-  id: string,
-  command: string,
-): Promise<void> {
+async function amendThreeTimes(s: Harness, id: string, command: string): Promise<void> {
   for (let i = 0; i < 3; i++) {
     await s.callTool("dod_amend", {
       dod_id: id,
@@ -494,18 +482,14 @@ test("dod_check on an imported DoD blocks until confirm_import", async () => {
     const mdPath = join(s.storeDir, "imported.md");
     writeImportFixture(mdPath, "Import Test");
 
-    const imported = s.text(
-      await s.callTool("dod_import", { path: mdPath, cwd: s.storeDir }),
-    );
+    const imported = s.text(await s.callTool("dod_import", { path: mdPath, cwd: s.storeDir }));
     const id = extractId(imported);
 
     const blocked = s.text(await s.callTool("dod_check", { dod_id: id }));
     assert.match(blocked, /## Import Gate: Execution Not Confirmed/);
     assert.match(blocked, /1 executable proof\(s\) would be run/);
 
-    const confirmed = s.text(
-      await s.callTool("dod_check", { dod_id: id, confirm_import: true }),
-    );
+    const confirmed = s.text(await s.callTool("dod_check", { dod_id: id, confirm_import: true }));
     assert.match(confirmed, /## DoD Check Result: PASS/);
   } finally {
     s.stop();
@@ -695,9 +679,7 @@ test("dod_remove_node removes a root node and its descendants", async () => {
     const { id } = await createDod(s, s.storeDir, {
       roots: [passingLeaf("p"), draftLeaf("d")],
     });
-    const result = s.text(
-      await s.callTool("dod_remove_node", { dod_id: id, node_path: "1" }),
-    );
+    const result = s.text(await s.callTool("dod_remove_node", { dod_id: id, node_path: "1" }));
     assert.match(result, /Removed root node "d" \(draft\) and all descendants\./);
   } finally {
     s.stop();
@@ -709,9 +691,7 @@ test("dod_remove_node rejects an out-of-range root index", async () => {
   try {
     await s.init();
     const { id } = await createDod(s, s.storeDir, { roots: [passingLeaf("p")] });
-    const result = s.text(
-      await s.callTool("dod_remove_node", { dod_id: id, node_path: "5" }),
-    );
+    const result = s.text(await s.callTool("dod_remove_node", { dod_id: id, node_path: "5" }));
     assert.match(result, /ERROR: root index 5 out of range \(0-0\)\./);
   } finally {
     s.stop();
@@ -722,9 +702,7 @@ test("dod_remove_node on an unknown dod_id reports not found", async () => {
   const s = startServer();
   try {
     await s.init();
-    const result = s.text(
-      await s.callTool("dod_remove_node", { dod_id: "no-such-id", node_path: "0" }),
-    );
+    const result = s.text(await s.callTool("dod_remove_node", { dod_id: "no-such-id", node_path: "0" }));
     assert.match(result, /^ERROR:/);
     assert.match(result, /not found/i);
   } finally {
@@ -1051,8 +1029,7 @@ test("dod_import refuses a command whose tool is missing on this OS", async () =
       "",
       "<definition_of_done>",
       "",
-      '- [ ] Proof: `totally-fake-tool-xyz-123` → Sample proof ' +
-        '<!--p:{"type":"exit_code","value":0}-->',
+      "- [ ] Proof: `totally-fake-tool-xyz-123` → Sample proof " + '<!--p:{"type":"exit_code","value":0}-->',
       "",
       "</definition_of_done>",
       "",
@@ -1089,9 +1066,7 @@ test("dod_store_migrate on an unknown dod_id reports not found", async () => {
   const s = startServer();
   try {
     await s.init();
-    const result = s.text(
-      await s.callTool("dod_store_migrate", { dod_id: "no-such-id" }),
-    );
+    const result = s.text(await s.callTool("dod_store_migrate", { dod_id: "no-such-id" }));
     assert.match(result, /^ERROR:/);
     assert.match(result, /not found/i);
   } finally {
@@ -1118,8 +1093,7 @@ test("dod_store_migrate bulk run finds nothing when no legacy docs exist", async
     await s.init();
     await createDod(s, s.storeDir);
     const result = s.text(await s.callTool("dod_store_migrate", {}));
-    const noLegacy =
-      `No legacy documents found ${DASH} all docs are in the current format\\.`;
+    const noLegacy = `No legacy documents found ${DASH} all docs are in the current format\\.`;
     assert.match(result, new RegExp(noLegacy));
   } finally {
     s.stop();
@@ -1206,8 +1180,7 @@ test("dod_adversarial_gate refuses phase 2 while phase 1 is still pending", asyn
         summary: "tests look fine",
       }),
     );
-    const pending =
-      `ERROR: Cannot record Phase 2 gate ${DASH} Phase 1 \\(Spec\\) is PENDING\\.`;
+    const pending = `ERROR: Cannot record Phase 2 gate ${DASH} Phase 1 \\(Spec\\) is PENDING\\.`;
     assert.match(result, new RegExp(pending));
   } finally {
     s.stop();
@@ -1235,8 +1208,7 @@ test("dod_adversarial_gate refuses phase 2 when phase 1 was REVISE", async () =>
         summary: "tests look fine",
       }),
     );
-    const revise =
-      `ERROR: Cannot record Phase 2 gate ${DASH} Phase 1 \\(Spec\\) is REVISE\\.`;
+    const revise = `ERROR: Cannot record Phase 2 gate ${DASH} Phase 1 \\(Spec\\) is REVISE\\.`;
     assert.match(result, new RegExp(revise));
   } finally {
     s.stop();

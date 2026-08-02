@@ -11,9 +11,7 @@ function formatLegacyBlock(raw: RawDoc): string {
   const n = Array.isArray(raw.steps) ? raw.steps.length : 0;
   const status = `${n} step(s) in old format.`;
   const hint = "Run dod_store_migrate to upgrade.";
-  return [raw.title, `ID: ${raw.id}`, `Status: LEGACY | ${status} ${hint}`].join(
-    "\n",
-  );
+  return [raw.title, `ID: ${raw.id}`, `Status: LEGACY | ${status} ${hint}`].join("\n");
 }
 
 function formatDocBlock(doc: DodDocument): string {

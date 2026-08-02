@@ -25,7 +25,7 @@ export async function run(handler: () => Promise<string>): Promise<ReturnType<ty
 
 /** Resolve a document by dod_id or markdown path. Returns an ERROR: string on failure. */
 export async function resolveDoc(dodId?: string, mdPath?: string): Promise<DodDocument | string> {
-  if (!dodId && !mdPath) {
+  if (!(dodId || mdPath)) {
     return "ERROR: no dod_id or path given, DoD not found.";
   }
   const doc = dodId ? await store.load(dodId) : await store.findByPath(mdPath as string);

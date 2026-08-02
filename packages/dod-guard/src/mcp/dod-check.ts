@@ -55,9 +55,7 @@ async function applyImportGate(doc: DodDocument, confirmed: boolean): Promise<st
   return null;
 }
 
-function formatCommandLine(
-  c: { title: string; command: string; description: string },
-): string {
+function formatCommandLine(c: { title: string; command: string; description: string }): string {
   return `- ${c.title}: \`${c.command}\` - ${c.description}`;
 }
 

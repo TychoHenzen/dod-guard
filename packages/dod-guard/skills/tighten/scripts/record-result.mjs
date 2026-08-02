@@ -5,7 +5,8 @@
 // next invocation, with no memory that it already failed. That is the one bug
 // that turns this loop into an infinite one.
 
-import { openLedger, parseArgs, writeLedgerFile } from "./lib/ledger-file.mjs";
+import { parseArgs } from "../../../lib/args.mjs";
+import { openLedger, writeLedgerFile } from "./lib/ledger-file.mjs";
 import { recordResult } from "./lib/ledger.mjs";
 
 // No status for "we decided not to try". Every picked target gets a rewrite,

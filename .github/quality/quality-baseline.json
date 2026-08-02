@@ -5,6 +5,7 @@
   "total": 1015,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
+    "packages/dod-guard/lib/args.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/match-rate.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/match-rate.test.mjs",
