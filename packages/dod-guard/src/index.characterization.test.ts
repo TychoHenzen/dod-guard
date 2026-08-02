@@ -21,6 +21,12 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+// Proof commands run on the host OS, so a `exit /b 0` written for cmd.exe
+// exits 2 under /bin/sh. `node` is on PATH on both, and dod_create rejects a
+// command whose first name it cannot find, which rules out shell builtins.
+const PASS_CMD = 'node -e "process.exit(0)"';
+const FAIL_CMD = 'node -e "process.exit(1)"';
+
 const DIST_INDEX = fileURLToPath(new URL("./index.js", import.meta.url));
 const PROTOCOL_VERSION = "2025-06-18";
 const TIMEOUT_MS = 15_000;
@@ -147,7 +153,7 @@ function passingLeaf(title = "leaf") {
   return {
     title,
     refinement: "concrete" as const,
-    command: "exit /b 0",
+    command: PASS_CMD,
     predicate: { type: "exit_code", value: 0 },
     description: `${title} description`,
     category: "behavioral" as const,
@@ -158,7 +164,7 @@ function failingLeaf(title = "leaf") {
   return {
     title,
     refinement: "concrete" as const,
-    command: "exit /b 1",
+    command: FAIL_CMD,
     predicate: { type: "exit_code", value: 0 },
     description: `${title} description`,
     category: "behavioral" as const,
@@ -217,7 +223,7 @@ function legacyProofFixture() {
   return {
     id: "proof-1",
     title: "proof-1",
-    command: "exit /b 0",
+    command: PASS_CMD,
     predicate: { type: "exit_code", value: 0 },
     description: "legacy proof",
   };
@@ -528,7 +534,7 @@ test("dod_check reports STUCK after 3 amendments on a still-failing leaf", async
         await s.callTool("dod_amend", {
           dod_id: id,
           node_path: "0",
-          new_command: "exit /b 1",
+          new_command: FAIL_CMD,
           reason: `tuning attempt ${i}`,
         }),
       );
@@ -555,7 +561,7 @@ test("dod_refine concretize turns a draft leaf concrete", async () => {
         dod_id: id,
         node_path: "0",
         mode: "concretize",
-        command: "exit /b 0",
+        command: PASS_CMD,
         predicate: { type: "exit_code", value: 0 },
         description: "now concrete",
       }),
@@ -599,7 +605,7 @@ test("dod_refine refuses a node that is already concrete", async () => {
         dod_id: id,
         node_path: "0",
         mode: "concretize",
-        command: "exit /b 0",
+        command: PASS_CMD,
         predicate: { type: "exit_code", value: 0 },
       }),
     );
@@ -797,7 +803,7 @@ test("dod_amend refuses to touch a draft node", async () => {
       await s.callTool("dod_amend", {
         dod_id: id,
         node_path: "0",
-        new_command: "exit /b 0",
+        new_command: PASS_CMD,
         reason: "why",
       }),
     );
@@ -856,7 +862,7 @@ test("dod_amend success resets the leaf to pending", async () => {
       await s.callTool("dod_amend", {
         dod_id: id,
         node_path: "0",
-        new_command: "exit /b 0",
+        new_command: PASS_CMD,
         reason: "requirements changed",
       }),
     );
@@ -872,12 +878,12 @@ test("dod_amend blocks a 4th amendment without a justification", async () => {
   try {
     await s.init();
     const { id } = await createDod(s, s.storeDir, { roots: [passingLeaf("p")] });
-    await amendThreeTimes(s, id, "exit /b 0");
+    await amendThreeTimes(s, id, PASS_CMD);
     const fourth = s.text(
       await s.callTool("dod_amend", {
         dod_id: id,
         node_path: "0",
-        new_command: "exit /b 0",
+        new_command: PASS_CMD,
         reason: "edit 4",
       }),
     );
@@ -892,12 +898,12 @@ test("dod_amend allows the 4th amendment when justified", async () => {
   try {
     await s.init();
     const { id } = await createDod(s, s.storeDir, { roots: [passingLeaf("p")] });
-    await amendThreeTimes(s, id, "exit /b 0");
+    await amendThreeTimes(s, id, PASS_CMD);
     const fourth = s.text(
       await s.callTool("dod_amend", {
         dod_id: id,
         node_path: "0",
-        new_command: "exit /b 0",
+        new_command: PASS_CMD,
         reason: "edit 4",
         amend_justification: "requirements changed again, verified with user",
       }),
@@ -917,7 +923,7 @@ test("dod_amend node_path=* on an all-draft doc reports nothing to amend", async
       await s.callTool("dod_amend", {
         dod_id: id,
         node_path: "*",
-        new_command: "exit /b 0",
+        new_command: PASS_CMD,
         reason: "bulk",
       }),
     );
