@@ -1,0 +1,1293 @@
+{
+  "source": "packages/evomcp/src/degenerate.ts",
+  "date": "2026-08-02T08:57:36.541Z",
+  "summary": {
+    "total": 477,
+    "killed": 300,
+    "survived": 160,
+    "timeout": 0,
+    "unviable": 17
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "16",
+      "mutator": "MethodExpression",
+      "replacement": "diff",
+      "dist_line": 43,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "17",
+      "mutator": "OptionalChaining",
+      "replacement": "diff.trim",
+      "dist_line": 43,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "24",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 54,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "23",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 54,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "25",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 54,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "26",
+      "mutator": "MethodExpression",
+      "replacement": "findings",
+      "dist_line": 57,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "28",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 57,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "35",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 60,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "39",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 62,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "40",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 62,
+      "dist_col": 71
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "41",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 62,
+      "dist_col": 91
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "44",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 63,
+      "dist_col": 108
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "56",
+      "mutator": "Regex",
+      "replacement": "/expect\\([^)]*\\([\"']([^\"']+)[\"']\\)[)]*\\)\\.(?:toBe|toEqual|toBeTruthy|toStrictEqual)\\([\"']\\1[\"']\\)/",
+      "dist_line": 80,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "74",
+      "mutator": "Regex",
+      "replacement": "/assert(?:Equal|Eq|StrictEqual)\\([^,]+\\((\\d+(?:\\.\\d+)?)\\)\\S*,\\s*\\1\\)/",
+      "dist_line": 92,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "75",
+      "mutator": "Regex",
+      "replacement": "/assert(?:Equal|Eq|StrictEqual)\\([^,]+\\((\\d+(?:\\.\\d+)?)\\)\\s*,\\s\\1\\)/",
+      "dist_line": 92,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "91",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 118,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "104",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 128,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "113",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 136,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "114",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 137,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "115",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 137,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "118",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 154,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "120",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:catch|except)\\s\\(?\\s*\\w+(?:Error|Exception)\\b/",
+      "dist_line": 154,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "124",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:catch|except)\\s*\\(?\\S*\\w+(?:Error|Exception)\\b/",
+      "dist_line": 154,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "132",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:catch|except)\\s*\\(?\\s*(?:Exception|BaseException|Throwable|Error|\\.\\.\\.|e)\\s*\\)?\\s*[:{]\\s*/",
+      "dist_line": 159,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "133",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:catch|except)\\s\\(?\\s*(?:Exception|BaseException|Throwable|Error|\\.\\.\\.|e)\\s*\\)?\\s*[:{]\\s*$/",
+      "dist_line": 159,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "137",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:catch|except)\\s*\\(?\\S*(?:Exception|BaseException|Throwable|Error|\\.\\.\\.|e)\\s*\\)?\\s*[:{]\\s*$/",
+      "dist_line": 159,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "139",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:catch|except)\\s*\\(?\\s*(?:Exception|BaseException|Throwable|Error|\\.\\.\\.|e)\\S*\\)?\\s*[:{]\\s*$/",
+      "dist_line": 159,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "145",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:catch|except)\\s*\\(?\\s*(?:Exception|BaseException|Throwable|Error|\\.\\.\\.|e)\\s*\\)?\\s*[:{]\\S*$/",
+      "dist_line": 159,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "152",
+      "mutator": "EqualityOperator",
+      "replacement": "addedBroad >= 0",
+      "dist_line": 163,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "151",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 163,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "163",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 169,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "166",
+      "mutator": "EqualityOperator",
+      "replacement": "addedBroad >= 2",
+      "dist_line": 174,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "174",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 180,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "180",
+      "mutator": "EqualityOperator",
+      "replacement": "addedLines.length <= MIN_DIFF_LENGTH_FOR_DENSITY",
+      "dist_line": 194,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "185",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\stype:\\s*ignore|#\\s*noqa|#\\s*pylint:\\s*disable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "186",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\S*type:\\s*ignore|#\\s*noqa|#\\s*pylint:\\s*disable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "187",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\s*type:\\signore|#\\s*noqa|#\\s*pylint:\\s*disable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "188",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\s*type:\\S*ignore|#\\s*noqa|#\\s*pylint:\\s*disable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "190",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\s*type:\\s*ignore|#\\S*noqa|#\\s*pylint:\\s*disable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "189",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\s*type:\\s*ignore|#\\snoqa|#\\s*pylint:\\s*disable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "192",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\s*type:\\s*ignore|#\\s*noqa|#\\S*pylint:\\s*disable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "191",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\s*type:\\s*ignore|#\\s*noqa|#\\spylint:\\s*disable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "193",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\s*type:\\s*ignore|#\\s*noqa|#\\s*pylint:\\sdisable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "194",
+      "mutator": "Regex",
+      "replacement": "/(?:@ts-ignore|@ts-expect-error|#\\s*type:\\s*ignore|#\\s*noqa|#\\s*pylint:\\S*disable|#\\[allow\\()/",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "200",
+      "mutator": "EqualityOperator",
+      "replacement": "density >= TYPE_IGNORE_DENSITY_THRESHOLD",
+      "dist_line": 203,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "207",
+      "mutator": "ArithmeticOperator",
+      "replacement": "density / 100",
+      "dist_line": 207,
+      "dist_col": 100
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "208",
+      "mutator": "ArithmeticOperator",
+      "replacement": "TYPE_IGNORE_DENSITY_THRESHOLD / 100",
+      "dist_line": 207,
+      "dist_col": 133
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "209",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 208,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "210",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 212,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "212",
+      "mutator": "EqualityOperator",
+      "replacement": "suppressCount >= 0",
+      "dist_line": 212,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "218",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 216,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "219",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 217,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "225",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:eslint-disable(?:-next-line)|biome-ignore|ruff:\\s*noqa|pylint:\\s*disable=|noinspection|#\\[allow\\()/",
+      "dist_line": 231,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "226",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:eslint-disable(?:-next-line)?|biome-ignore|ruff:\\snoqa|pylint:\\s*disable=|noinspection|#\\[allow\\()/",
+      "dist_line": 231,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "228",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:eslint-disable(?:-next-line)?|biome-ignore|ruff:\\s*noqa|pylint:\\sdisable=|noinspection|#\\[allow\\()/",
+      "dist_line": 231,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "234",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 235,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "235",
+      "mutator": "MethodExpression",
+      "replacement": "text.trim()",
+      "dist_line": 235,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "236",
+      "mutator": "MethodExpression",
+      "replacement": "text",
+      "dist_line": 235,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "241",
+      "mutator": "EqualityOperator",
+      "replacement": "addedLines.length <= MIN_DIFF_LENGTH_FOR_DENSITY",
+      "dist_line": 249,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "243",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "dist_line": 252,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "244",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:\\/\\/|#|--|;)\\s*\\w/",
+      "dist_line": 254,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "246",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:\\/\\/|#|--|;)\\s*\\w/",
+      "dist_line": 254,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "247",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:\\/\\/|#|--|;)\\s\\w/",
+      "dist_line": 254,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "249",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:\\/\\/|#|--|;)\\s*\\W/",
+      "dist_line": 254,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "258",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 257,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "273",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "dist_line": 271,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "275",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 276,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "276",
+      "mutator": "EqualityOperator",
+      "replacement": "runCount > 3",
+      "dist_line": 276,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "286",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\S*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\s*\\(\\s*\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "288",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\S*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\s*\\(\\s*\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "294",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\S*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\s*\\(\\s*\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "295",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s(?:async\\s*)?(?:\\(\\s*\\)|function\\s*\\(\\s*\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "298",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s)?(?:\\(\\s*\\)|function\\s*\\(\\s*\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "301",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\S*\\)|function\\s*\\(\\s*\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "303",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\S*\\(\\s*\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "302",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\s\\(\\s*\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "304",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\s*\\(\\s\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "305",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\s*\\(\\S*\\))\\s*=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "306",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\s*\\(\\s*\\))\\s=>(?:\\s*{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "308",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\s*\\(\\s*\\))\\s*=>(?:\\s{\\s*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "311",
+      "mutator": "Regex",
+      "replacement": "/\\b(?:test|it|describe)\\s*\\(\\s*[\"'][^\"']+[\"']\\s*,\\s*(?:async\\s*)?(?:\\(\\s*\\)|function\\s*\\(\\s*\\))\\s*=>(?:\\s*{\\S*})/",
+      "dist_line": 294,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "319",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 300,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "338",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 329,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "339",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 329,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "341",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 342,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "343",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 348,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "344",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 349,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "347",
+      "mutator": "Regex",
+      "replacement": "/\\+\\+\\+\\s+b\\/(.+)$/",
+      "dist_line": 353,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "348",
+      "mutator": "Regex",
+      "replacement": "/^\\+\\+\\+\\s+b\\/(.+)/",
+      "dist_line": 353,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "349",
+      "mutator": "Regex",
+      "replacement": "/^\\+\\+\\+\\sb\\/(.+)$/",
+      "dist_line": 353,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "356",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s-\\d+(?:,\\d+)?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "355",
+      "mutator": "Regex",
+      "replacement": "/@@\\s+-\\d+(?:,\\d+)?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "358",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-\\d(?:,\\d+)?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "360",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-\\d+(?:,\\d+)\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "361",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-\\d+(?:,\\d)?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "363",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-\\d+(?:,\\d+)?\\s\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "365",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-\\d+(?:,\\d+)?\\s+\\+(\\d)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "367",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-\\d+(?:,\\d+)?\\s+\\+(\\d+)(?:,(\\d+))\\s+@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "368",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-\\d+(?:,\\d+)?\\s+\\+(\\d+)(?:,(\\d))?\\s+@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "370",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-\\d+(?:,\\d+)?\\s+\\+(\\d+)(?:,(\\d+))?\\s@@/",
+      "dist_line": 360,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "381",
+      "mutator": "MethodExpression",
+      "replacement": "raw.endsWith(\"+++\")",
+      "dist_line": 366,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "386",
+      "mutator": "UpdateOperator",
+      "replacement": "lineNum--",
+      "dist_line": 368,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "388",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 370,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "391",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 370,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "392",
+      "mutator": "LogicalOperator",
+      "replacement": "raw.startsWith(\"-\") && raw.startsWith(\"@@\")",
+      "dist_line": 370,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "393",
+      "mutator": "MethodExpression",
+      "replacement": "raw.endsWith(\"-\")",
+      "dist_line": 370,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "395",
+      "mutator": "MethodExpression",
+      "replacement": "raw.endsWith(\"@@\")",
+      "dist_line": 370,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "400",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 381,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "401",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 382,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "404",
+      "mutator": "Regex",
+      "replacement": "/\\+\\+\\+\\s+b\\/(.+)$/",
+      "dist_line": 385,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "405",
+      "mutator": "Regex",
+      "replacement": "/^\\+\\+\\+\\s+b\\/(.+)/",
+      "dist_line": 385,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "406",
+      "mutator": "Regex",
+      "replacement": "/^\\+\\+\\+\\sb\\/(.+)$/",
+      "dist_line": 385,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "412",
+      "mutator": "Regex",
+      "replacement": "/@@\\s+-(\\d+)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "413",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s-(\\d+)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "414",
+      "mutator": "Regex",
+      "replacement": "/^@@\\S+-(\\d+)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "415",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "416",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\D+)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "417",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "418",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d))?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "419",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\D+))?\\s+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "420",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))?\\s\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "421",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))?\\S+\\+(\\d+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "422",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))?\\s+\\+(\\d)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "423",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))?\\s+\\+(\\D+)(?:,(\\d+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "424",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\d+))\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "425",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\d))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "426",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\D+))?\\s+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "427",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\d+))?\\s@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "428",
+      "mutator": "Regex",
+      "replacement": "/^@@\\s+-(\\d+)(?:,(\\d+))?\\s+\\+(\\d+)(?:,(\\d+))?\\S+@@/",
+      "dist_line": 391,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "430",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 392,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "431",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 392,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "438",
+      "mutator": "MethodExpression",
+      "replacement": "raw.endsWith(\"---\")",
+      "dist_line": 397,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "442",
+      "mutator": "MethodExpression",
+      "replacement": "raw",
+      "dist_line": 398,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "443",
+      "mutator": "UpdateOperator",
+      "replacement": "lineNum--",
+      "dist_line": 399,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "444",
+      "mutator": "BooleanLiteral",
+      "replacement": "raw.startsWith(\"+\") || raw.startsWith(\"@@\")",
+      "dist_line": 401,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "445",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 401,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "446",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 401,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "447",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 401,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "448",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 401,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "449",
+      "mutator": "LogicalOperator",
+      "replacement": "raw.startsWith(\"+\") && raw.startsWith(\"@@\")",
+      "dist_line": 401,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "450",
+      "mutator": "MethodExpression",
+      "replacement": "raw.endsWith(\"+\")",
+      "dist_line": 401,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "451",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 401,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "452",
+      "mutator": "MethodExpression",
+      "replacement": "raw.endsWith(\"@@\")",
+      "dist_line": 401,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "453",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 401,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "454",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 401,
+      "dist_col": 66
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "455",
+      "mutator": "UpdateOperator",
+      "replacement": "lineNum--",
+      "dist_line": 402,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "457",
+      "mutator": "Regex",
+      "replacement": "/\\.test\\.tsx?/",
+      "dist_line": 411,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "458",
+      "mutator": "Regex",
+      "replacement": "/\\.test\\.tsx$/",
+      "dist_line": 411,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "459",
+      "mutator": "Regex",
+      "replacement": "/\\.spec\\.tsx?/",
+      "dist_line": 412,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "460",
+      "mutator": "Regex",
+      "replacement": "/\\.spec\\.tsx$/",
+      "dist_line": 412,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "461",
+      "mutator": "Regex",
+      "replacement": "/\\.test\\.jsx?/",
+      "dist_line": 413,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "462",
+      "mutator": "Regex",
+      "replacement": "/\\.test\\.jsx$/",
+      "dist_line": 413,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "463",
+      "mutator": "Regex",
+      "replacement": "/\\.spec\\.jsx?/",
+      "dist_line": 414,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "464",
+      "mutator": "Regex",
+      "replacement": "/\\.spec\\.jsx$/",
+      "dist_line": 414,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "465",
+      "mutator": "Regex",
+      "replacement": "/\\.test\\.py/",
+      "dist_line": 415,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "466",
+      "mutator": "Regex",
+      "replacement": "/\\.spec\\.py/",
+      "dist_line": 416,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "467",
+      "mutator": "Regex",
+      "replacement": "/\\.test\\.rs/",
+      "dist_line": 417,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "468",
+      "mutator": "Regex",
+      "replacement": "/\\.test\\.go/",
+      "dist_line": 418,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "469",
+      "mutator": "Regex",
+      "replacement": "/\\/tests\\//",
+      "dist_line": 420,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/evomcp/dist/degenerate.js",
+      "id": "473",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 427,
+      "dist_col": 9
+    }
+  ]
+}

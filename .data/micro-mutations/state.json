@@ -1,22 +1,5 @@
 {
   "files": {
-    "packages/dod-guard/src/assertions.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 319,
-        "caught": 89,
-        "missed": 215,
-        "timeout": 0,
-        "unviable": 15,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 172,
-      "error_count": 0,
-      "recent_commits": 6,
-      "fingerprint": "6bc3d4cbddb55c246ae5e522ad8960e17fe25b5ea68bf287dd936c2d9b953e43",
-      "dirty": true
-    },
     "packages/dod-guard/src/author.ts": {
       "last_tested": "2026-07-12",
       "last_result": {
@@ -28,45 +11,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 286,
+      "lines": 229,
       "error_count": 1,
-      "recent_commits": 7,
+      "recent_commits": 12,
       "fingerprint": "0c084824b2f862dbcb3f32c41b448d08e140181a3243d861761ce4214e386512",
       "dirty": true
-    },
-    "packages/dod-guard/src/baseline.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 126,
-        "caught": 68,
-        "missed": 58,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 207,
-      "error_count": 0,
-      "recent_commits": 6,
-      "fingerprint": "8e27fff5a8772fc05e0820f36d98fc30f848a78875014aa53b0403ad7b2e1bc2",
-      "dirty": true
-    },
-    "packages/dod-guard/src/brevity.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 366,
-        "caught": 153,
-        "missed": 143,
-        "timeout": 0,
-        "unviable": 70,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 399,
-      "error_count": 0,
-      "recent_commits": 3,
-      "fingerprint": "bdf0748f75fafb28db5dbbd1da013513da00251ae9efefdb7485089e96f9c2c7",
-      "dirty": false
     },
     "packages/dod-guard/src/checker.ts": {
       "last_tested": "2026-07-20",
@@ -79,9 +28,9 @@
         "status": "error",
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/checker.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
-      "lines": 446,
+      "lines": 100,
       "error_count": 5,
-      "recent_commits": 11,
+      "recent_commits": 19,
       "fingerprint": "6289e671303c1ff8868507b301d00d36a0e333a6ca4911e59b70b91456fba20a",
       "dirty": true
     },
@@ -96,9 +45,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 396,
+      "lines": 297,
       "error_count": 1,
-      "recent_commits": 8,
+      "recent_commits": 11,
       "fingerprint": "750f8afb33939b533f26adc3f1992e288c8e41c7c511a4db65b6f25fe9fe1c1b",
       "dirty": true
     },
@@ -113,28 +62,11 @@
         "status": "error",
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/evaluate-proof.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
-      "lines": 656,
+      "lines": 297,
       "error_count": 4,
-      "recent_commits": 9,
+      "recent_commits": 18,
       "fingerprint": "07e6176530f6d5613f27bd15ba6c351ce8dc993492da0eaf4de3f784dd1ee215",
       "dirty": true
-    },
-    "packages/dod-guard/src/find-functions.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 830,
-        "caught": 412,
-        "missed": 391,
-        "timeout": 10,
-        "unviable": 17,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 474,
-      "error_count": 0,
-      "recent_commits": 3,
-      "fingerprint": "1a4ae153bfd18e0f640c371f1a507c384f3aea7034073bf1101ed510b9cf28c2",
-      "dirty": false
     },
     "packages/dod-guard/src/format-result.ts": {
       "last_tested": "2026-07-12",
@@ -147,9 +79,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 108,
+      "lines": 87,
       "error_count": 0,
-      "recent_commits": 3,
+      "recent_commits": 7,
       "fingerprint": "f74b06547eff7e738f0bc0942adf33929e736e194ee08254ae626281815aff0d",
       "dirty": true
     },
@@ -164,61 +96,10 @@
         "status": "error",
         "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
       },
-      "lines": 956,
+      "lines": 264,
       "error_count": 9,
-      "recent_commits": 22,
+      "recent_commits": 35,
       "fingerprint": "9a2c95705a747f21b973dda9612648d169d07dbfb0ccde5ea61510b7eeee3524",
-      "dirty": true
-    },
-    "packages/dod-guard/src/manual.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 44,
-        "caught": 28,
-        "missed": 12,
-        "timeout": 0,
-        "unviable": 4,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 72,
-      "error_count": 1,
-      "recent_commits": 2,
-      "fingerprint": "a77b10121febf95f49627e078cbbd4155b7163e3f734e24ca184acaa06d1069a",
-      "dirty": false
-    },
-    "packages/dod-guard/src/notify.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 29,
-        "caught": 0,
-        "missed": 8,
-        "timeout": 0,
-        "unviable": 21,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 36,
-      "error_count": 1,
-      "recent_commits": 2,
-      "fingerprint": "72391f63530cc3f0a21d95024ae0d372c63dd5492e2c45f98491787c605b0707",
-      "dirty": false
-    },
-    "packages/dod-guard/src/observability.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 951,
-        "caught": 417,
-        "missed": 453,
-        "timeout": 11,
-        "unviable": 70,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 656,
-      "error_count": 0,
-      "recent_commits": 7,
-      "fingerprint": "1c2ecb748cad0e703309a52e4970b4d1bd80b5f755f25d4a4da6bea279d5269c",
       "dirty": true
     },
     "packages/dod-guard/src/parser.ts": {
@@ -232,28 +113,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 294,
+      "lines": 221,
       "error_count": 0,
-      "recent_commits": 4,
+      "recent_commits": 6,
       "fingerprint": "5bdf64657fd3152e54664190ddd8c76708719e1381bbe98bf02695e5c59103dd",
-      "dirty": false
-    },
-    "packages/dod-guard/src/regression.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 25,
-        "caught": 21,
-        "missed": 4,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 25,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "9ca8e519663e741736ead8fb3cadc0d99847e3fa93ad457c5e857fe69715d917",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/store.ts": {
       "last_tested": "2026-07-12",
@@ -266,28 +130,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 181,
+      "lines": 168,
       "error_count": 1,
-      "recent_commits": 5,
+      "recent_commits": 6,
       "fingerprint": "e0bc2f1aace91683444dc302375e3d38f2aa8d90677abb42cb0f7fed1f732444",
-      "dirty": false
-    },
-    "packages/dod-guard/src/test-metrics.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 1999,
-        "caught": 298,
-        "missed": 1323,
-        "timeout": 1,
-        "unviable": 377,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 971,
-      "error_count": 1,
-      "recent_commits": 4,
-      "fingerprint": "14337edbe489d587c9c1a368a8934d44b78596fee4093b68232485f28ce54eb9",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/tools/dod-add-node.ts": {
       "last_tested": "2026-07-12",
@@ -300,9 +147,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 111,
+      "lines": 105,
       "error_count": 1,
-      "recent_commits": 3,
+      "recent_commits": 7,
       "fingerprint": "4c2535c388693bb9e03a38a54446c4701d0e8baf9aca9c7aff7351c5b88421bf",
       "dirty": true
     },
@@ -317,9 +164,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 93,
+      "lines": 78,
       "error_count": 0,
-      "recent_commits": 5,
+      "recent_commits": 8,
       "fingerprint": "c97873a412122c5f865e2abb0bd2545a392fd2dee8524df3846c3c8ed8b813ac",
       "dirty": true
     },
@@ -334,9 +181,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 160,
+      "lines": 143,
       "error_count": 1,
-      "recent_commits": 6,
+      "recent_commits": 9,
       "fingerprint": "2d704212a94e21a4788bd61969d60a402f5449ec3c6896de320ee1c7f20798d6",
       "dirty": true
     },
@@ -351,9 +198,9 @@
         "status": "error",
         "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/tree-utils.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new Con"
       },
-      "lines": 350,
+      "lines": 249,
       "error_count": 2,
-      "recent_commits": 10,
+      "recent_commits": 14,
       "fingerprint": "a4ab4d99751cd602dadb8757408320ae86bac1b305c187fbf4d374b420840d18",
       "dirty": true
     },
@@ -368,9 +215,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 458,
+      "lines": 516,
       "error_count": 0,
-      "recent_commits": 6,
+      "recent_commits": 11,
       "fingerprint": "86922aedbb839b3d30e8bc8ffbe8425cae925be46ed85747d1c911048eb2b8e9",
       "dirty": true
     },
@@ -402,9 +249,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 290,
+      "lines": 524,
       "error_count": 0,
-      "recent_commits": 9,
+      "recent_commits": 14,
       "fingerprint": "9e02850252ccfbf468bd91c487ad2457d88b9bc7f02fbad178e8561b30b0ddcd",
       "dirty": true
     },
@@ -419,9 +266,9 @@
         "status": "error",
         "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/evomcp/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigError"
       },
-      "lines": 296,
+      "lines": 249,
       "error_count": 2,
-      "recent_commits": 13,
+      "recent_commits": 21,
       "fingerprint": "6d047d5428d46161faa359ac25ed744e65b97dee4bd891321b2de2b6a06afd37",
       "dirty": true
     },
@@ -436,9 +283,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 274,
+      "lines": 82,
       "error_count": 0,
-      "recent_commits": 9,
+      "recent_commits": 15,
       "fingerprint": "e8b0f022e2e27d53a467bc61b35772f00bbd44362b73d5c85474ba72b7496bed",
       "dirty": true
     },
@@ -453,9 +300,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 183,
+      "lines": 226,
       "error_count": 1,
-      "recent_commits": 10,
+      "recent_commits": 13,
       "fingerprint": "137f0919203407e74720b94cdaa1a57b13badded990af1b8ec49c4694e7511c9",
       "dirty": true
     },
@@ -470,9 +317,9 @@
         "status": "error",
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/gitevo/dist/operations.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/gitevo/dist/operations.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
-      "lines": 602,
+      "lines": 715,
       "error_count": 2,
-      "recent_commits": 9,
+      "recent_commits": 16,
       "fingerprint": "a38bcd89c9bebf7da13be49d8d48a7f5c61484f1ad6acb22acd618f61d29448e",
       "dirty": true
     },
@@ -504,9 +351,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 180,
+      "lines": 150,
       "error_count": 1,
-      "recent_commits": 16,
+      "recent_commits": 18,
       "fingerprint": "d6012124fd0b6a43c1be30679a44d454dfa79d888cd68e5abe2f83ae63bca643",
       "dirty": true
     },
@@ -521,9 +368,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 157,
+      "lines": 233,
       "error_count": 1,
-      "recent_commits": 6,
+      "recent_commits": 8,
       "fingerprint": "e72925cbffe54106b4e553e2a0ea83160fdc5e32b0583b257a01bf51c15d3d01",
       "dirty": true
     },
@@ -538,11 +385,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 134,
+      "lines": 149,
       "error_count": 0,
-      "recent_commits": 4,
+      "recent_commits": 6,
       "fingerprint": "62e226761a950ee1d12b0bcdde2439f13aaf8dc8745e0df138b66028e7d4ff26",
-      "dirty": false
+      "dirty": true
     },
     "packages/obsidian-rag/src/store.ts": {
       "last_tested": "2026-07-19",
@@ -555,9 +402,9 @@
         "status": "error",
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/store.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/store.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
-      "lines": 344,
+      "lines": 427,
       "error_count": 3,
-      "recent_commits": 11,
+      "recent_commits": 13,
       "fingerprint": "f88ef5f1028864002a0e5f41712cf2d4a380999684100d7db8865d09b90f1384",
       "dirty": true
     },
@@ -572,9 +419,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 487,
+      "lines": 506,
       "error_count": 1,
-      "recent_commits": 8,
+      "recent_commits": 11,
       "fingerprint": "b7e8e55d02252d2fdac12b47f51741804e571ef9c4a448df62e9978e249a5568",
       "dirty": true
     },
@@ -589,22 +436,586 @@
         "status": "error",
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/vault.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/vault.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
-      "lines": 185,
+      "lines": 187,
       "error_count": 2,
-      "recent_commits": 12,
+      "recent_commits": 13,
       "fingerprint": "c2f04ed6bb692695c2f335c348e8991b4b5b10203697984d4927e848cfdcebc7",
+      "dirty": true
+    },
+    "packages/dod-guard/src/checker-leaves.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 60,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/checker-result.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 9,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/checker-summary.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 6,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/checker-tree.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 67,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/checker-vcs.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 23,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/checker-verdict.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 21,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/cli.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 222,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/fingerprint.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 50,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/import-gate.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 29,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/dod-adversarial-gate.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 73,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/dod-amend.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 125,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/dod-check.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 68,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/dod-import.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 49,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/dod-list.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 34,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/dod-remove-node.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 48,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/dod-status.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 28,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/dod-store-migrate.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 61,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/dod-tree.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 22,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/locate-node.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 30,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp/resolve.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 43,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/snapshot.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 78,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/attempt-result.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 75,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/budget.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 238,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/context.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 331,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/convergence.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 244,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/degenerate.ts": {
+      "last_tested": "2026-08-02",
+      "last_result": {
+        "total": 477,
+        "caught": 300,
+        "missed": 160,
+        "timeout": 0,
+        "unviable": 17,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 461,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "bead6bc11b39f177a5f018ac41b317df619d6e2168b45d1f4e88825afa65881d",
+      "dirty": false
+    },
+    "packages/evomcp/src/escalation.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 217,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/feedback.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 281,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/gates.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 199,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/git-helpers.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 43,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/gitevo-integration.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 100,
+      "error_count": 0,
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/judge.ts": {
+      "last_tested": "2026-08-02",
+      "last_result": {
+        "total": 307,
+        "caught": 136,
+        "missed": 91,
+        "timeout": 2,
+        "unviable": 78,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 301,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "16dc1fa3d9b3f872d2538f0a55934edd61787243c9fb2ea47b08f1c81c46a7dd",
+      "dirty": false
+    },
+    "packages/evomcp/src/orchestrate.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 252,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/orchestrator.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 301,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/prompts.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 235,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/render.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 138,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-abandon.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 28,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-attempt.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 72,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-context.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 69,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-files.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 80,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-finish.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 36,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-git.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 35,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-glob.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 51,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-ledger.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 48,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-lineage.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 47,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-loop.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 39,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-plan.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 41,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-repair.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 70,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-report.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 75,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-run.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 49,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-screen.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 27,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-select.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 64,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-session.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 18,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-signals.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 40,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-verify.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 64,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/evomcp/src/solve-worker.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 29,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/gitevo/src/memory.ts": {
+      "last_tested": "2026-08-02",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run .data/micro-mutations/stryker.run.json --mutate \"packages/gitevo/dist/memory.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    t"
+      },
+      "lines": 301,
+      "error_count": 1,
+      "recent_commits": 5,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/index.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 116,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/scanner.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 68,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/skips.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 42,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     }
   },
   "cumulative": {
-    "total_mutants": 14397,
-    "caught": 4849,
-    "missed": 5380,
-    "timeout": 65,
-    "unviable": 4103,
-    "error": 42,
-    "runs": 86,
-    "files_tested": 86
+    "total_mutants": 15181,
+    "caught": 5285,
+    "missed": 5631,
+    "timeout": 67,
+    "unviable": 4198,
+    "error": 43,
+    "runs": 89,
+    "files_tested": 89
   },
   "runs": [
     {
@@ -1809,6 +2220,48 @@
         "unviable": 0,
         "status": "error",
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/vault.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/vault.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
+      }
+    },
+    {
+      "date": "2026-08-02",
+      "commit": "1136c4034cde739a4dcc1edc6b282876b0473777",
+      "file": "packages/gitevo/src/memory.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run .data/micro-mutations/stryker.run.json --mutate \"packages/gitevo/dist/memory.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    t"
+      }
+    },
+    {
+      "date": "2026-08-02",
+      "commit": "1136c4034cde739a4dcc1edc6b282876b0473777",
+      "file": "packages/evomcp/src/judge.ts",
+      "result": {
+        "total": 307,
+        "caught": 136,
+        "missed": 91,
+        "timeout": 2,
+        "unviable": 78,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-02",
+      "commit": "1136c4034cde739a4dcc1edc6b282876b0473777",
+      "file": "packages/evomcp/src/degenerate.ts",
+      "result": {
+        "total": 477,
+        "caught": 300,
+        "missed": 160,
+        "timeout": 0,
+        "unviable": 17,
+        "status": "ok",
+        "error": null
       }
     }
   ]

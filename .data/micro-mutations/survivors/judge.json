@@ -1,0 +1,741 @@
+{
+  "source": "packages/evomcp/src/judge.ts",
+  "date": "2026-08-02T08:56:56.553Z",
+  "summary": {
+    "total": 307,
+    "killed": 136,
+    "survived": 91,
+    "timeout": 2,
+    "unviable": 78
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "2",
+      "mutator": "MethodExpression",
+      "replacement": "output",
+      "dist_line": 28,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "3",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 29,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "5",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 31,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "6",
+      "mutator": "MethodExpression",
+      "replacement": "output.replace(/```(?:json)?\\s*/gi, \"\").replace(/\\s*```/g, \"\")",
+      "dist_line": 38,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "7",
+      "mutator": "Regex",
+      "replacement": "/```(?:json)\\s*/gi",
+      "dist_line": 39,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "8",
+      "mutator": "Regex",
+      "replacement": "/```(?:json)?\\s/gi",
+      "dist_line": 39,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "9",
+      "mutator": "Regex",
+      "replacement": "/```(?:json)?\\S*/gi",
+      "dist_line": 39,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 39,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "11",
+      "mutator": "Regex",
+      "replacement": "/\\s```/g",
+      "dist_line": 40,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "12",
+      "mutator": "Regex",
+      "replacement": "/\\S*```/g",
+      "dist_line": 40,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 40,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "14",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 42,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "15",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 42,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "17",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 42,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "16",
+      "mutator": "EqualityOperator",
+      "replacement": "cleaned === trimmed",
+      "dist_line": 42,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "19",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 45,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "18",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 43,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "21",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 54,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "20",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 45,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "29",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 71,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "30",
+      "mutator": "LogicalOperator",
+      "replacement": "typeof raw !== \"object\" && raw === null",
+      "dist_line": 71,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "31",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 71,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "34",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 71,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "38",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 74,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "43",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 76,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "44",
+      "mutator": "LogicalOperator",
+      "replacement": "typeof v.scores !== \"object\" && v.scores === null",
+      "dist_line": 76,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "45",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 76,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "48",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 76,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "52",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 78,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "58",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 81,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "59",
+      "mutator": "LogicalOperator",
+      "replacement": "typeof dims !== \"object\" && dims === null",
+      "dist_line": 81,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "60",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 81,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "63",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 81,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "67",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 84,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "72",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 86,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "77",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 88,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "90",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 101,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "92",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "dist_line": 101,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "96",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= text.length",
+      "dist_line": 106,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "101",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 108,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "105",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 112,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "109",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 112,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "113",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 116,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "115",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 116,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "116",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 116,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "117",
+      "mutator": "BooleanLiteral",
+      "replacement": "inString",
+      "dist_line": 117,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "119",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 120,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "142",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\scorrectness[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+clarity[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+efficiency[=:]\\s*(\\d+(?:\\.\\d+)?)",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "147",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\s*correctness[=:]\\s*(\\d(?:\\.\\d+)?)[,\\s]+clarity[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+efficiency[=:]\\s*(\\d+(?:\\.\\d+)?)",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "150",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\s*correctness[=:]\\s*(\\d+(?:\\.\\d)?)[,\\s]+clarity[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+efficiency[=:]\\s*(\\d+(?:\\.\\d+)?)",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "158",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\s*correctness[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+clarity[=:]\\s*(\\d(?:\\.\\d+)?)[,\\s]+efficiency[=:]\\s*(\\d+(?:\\.\\d+)?)",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "161",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\s*correctness[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+clarity[=:]\\s*(\\d+(?:\\.\\d)?)[,\\s]+efficiency[=:]\\s*(\\d+(?:\\.\\d+)?)",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "169",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\s*correctness[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+clarity[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+efficiency[=:]\\s*(\\d(?:\\.\\d+)?)",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "172",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\s*correctness[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+clarity[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+efficiency[=:]\\s*(\\d+(?:\\.\\d)?)",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "180",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\s*correctness[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+clarity[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+efficiency[=:]\\s*(\\d+(?:\\.\\d+)?",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "183",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\s*correctness[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+clarity[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+efficiency[=:]\\s*(\\d+(?:\\.\\d+)?",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "184",
+      "mutator": "Regex",
+      "replacement": "/([\\w./-]+):\\s*correctness[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+clarity[=:]\\s*(\\d+(?:\\.\\d+)?)[,\\s]+efficiency[=:]\\s*(\\d+(?:\\.\\d+)?",
+      "dist_line": 140,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "192",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s(?:branch|is|:)\\s*[\"']?([\\w./-]+)[\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "193",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\S*(?:branch|is|:)\\s*[\"']?([\\w./-]+)[\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "194",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s*(?:branch|is|:)\\s[\"']?([\\w./-]+)[\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "195",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s*(?:branch|is|:)\\S*[\"']?([\\w./-]+)[\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "196",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s*(?:branch|is|:)\\s*[\"']([\\w./-]+)[\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "197",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s*(?:branch|is|:)\\s*[^\"']?([\\w./-]+)[\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "198",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s*(?:branch|is|:)\\s*[\"']?([\\w./-])[\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "199",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s*(?:branch|is|:)\\s*[\"']?([^\\w./-]+)[\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "200",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s*(?:branch|is|:)\\s*[\"']?([\\W./-]+)[\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "201",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s*(?:branch|is|:)\\s*[\"']?([\\w./-]+)[\"']/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "202",
+      "mutator": "Regex",
+      "replacement": "/(?:winner|best|winning)\\s*(?:branch|is|:)\\s*[\"']?([\\w./-]+)[^\"']?/i",
+      "dist_line": 154,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "203",
+      "mutator": "LogicalOperator",
+      "replacement": "winnerMatch?.[1] && \"\"",
+      "dist_line": 155,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "205",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 155,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "207",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 156,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "210",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 156,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "211",
+      "mutator": "LogicalOperator",
+      "replacement": "winnerBranch || branchScores[winnerBranch]",
+      "dist_line": 156,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "216",
+      "mutator": "Regex",
+      "replacement": "/(?:rationale|reason|explanation)[:\\S]\\s*(.+?)(?:\\n\\n|\\n#|$)/is",
+      "dist_line": 161,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "215",
+      "mutator": "Regex",
+      "replacement": "/(?:rationale|reason|explanation)[^:\\s]\\s*(.+?)(?:\\n\\n|\\n#|$)/is",
+      "dist_line": 161,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "218",
+      "mutator": "Regex",
+      "replacement": "/(?:rationale|reason|explanation)[:\\s]\\S*(.+?)(?:\\n\\n|\\n#|$)/is",
+      "dist_line": 161,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "217",
+      "mutator": "Regex",
+      "replacement": "/(?:rationale|reason|explanation)[:\\s]\\s(.+?)(?:\\n\\n|\\n#|$)/is",
+      "dist_line": 161,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "219",
+      "mutator": "Regex",
+      "replacement": "/(?:rationale|reason|explanation)[:\\s]\\s*(.)(?:\\n\\n|\\n#|$)/is",
+      "dist_line": 161,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "220",
+      "mutator": "Regex",
+      "replacement": "/(?:rationale|reason|explanation)[:\\s]\\s*(.+?)(?:\\n\\n|\\n#)/is",
+      "dist_line": 161,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "221",
+      "mutator": "LogicalOperator",
+      "replacement": "rationaleMatch?.[1]?.trim() && \"\"",
+      "dist_line": 162,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "222",
+      "mutator": "MethodExpression",
+      "replacement": "rationaleMatch?.[1]",
+      "dist_line": 162,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "223",
+      "mutator": "OptionalChaining",
+      "replacement": "rationaleMatch?.[1].trim",
+      "dist_line": 162,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "225",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 162,
+      "dist_col": 54
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "295",
+      "mutator": "ArithmeticOperator",
+      "replacement": "dims.correctness * DIMENSION_WEIGHTS.correctness + dims.clarity * DIMENSION_WEIGHTS.clarity + dims.efficiency * DIMENSIO",
+      "dist_line": 272,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "296",
+      "mutator": "ArithmeticOperator",
+      "replacement": "dims.correctness * DIMENSION_WEIGHTS.correctness + dims.clarity * DIMENSION_WEIGHTS.clarity - dims.efficiency * DIMENSIO",
+      "dist_line": 272,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "297",
+      "mutator": "ArithmeticOperator",
+      "replacement": "dims.correctness * DIMENSION_WEIGHTS.correctness - dims.clarity * DIMENSION_WEIGHTS.clarity",
+      "dist_line": 272,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "298",
+      "mutator": "ArithmeticOperator",
+      "replacement": "dims.correctness / DIMENSION_WEIGHTS.correctness",
+      "dist_line": 272,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "299",
+      "mutator": "ArithmeticOperator",
+      "replacement": "dims.clarity / DIMENSION_WEIGHTS.clarity",
+      "dist_line": 273,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "300",
+      "mutator": "ArithmeticOperator",
+      "replacement": "dims.efficiency / DIMENSION_WEIGHTS.efficiency",
+      "dist_line": 274,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "301",
+      "mutator": "ArithmeticOperator",
+      "replacement": "dims.maintainability / DIMENSION_WEIGHTS.maintainability",
+      "dist_line": 275,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/judge.js",
+      "id": "304",
+      "mutator": "EqualityOperator",
+      "replacement": "composite >= bestComposite",
+      "dist_line": 276,
+      "dist_col": 13
+    }
+  ]
+}
