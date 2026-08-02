@@ -74,6 +74,10 @@ replaces anchoring as the main risk, so spend the effort on the census.
 Name the shape. State the seam. When the seam does not exist, run shape B now and
 return here afterwards.
 
+Classifying is the only judgment this phase makes. It never decides whether the
+rewrite is worth doing. A caller who asked for a blind rewrite has already made
+that call, and reading the code cannot overturn it. See rule 8.
+
 ### Phase 1: Preflight leak sweep
 Find every other copy of the target. The author holds a Read tool, so a copy on
 disk defeats the blindfold.
@@ -204,6 +208,9 @@ The third case is a result, not a failure. Say so plainly when the evidence poin
 there. Learning that the old design was right costs two dispatches and settles a
 question that otherwise stays open.
 
+Reaching that reading needs two completed rewrites. It is what the measurements
+say afterwards, never a prediction that saves you from running them.
+
 ## Rules
 
 1. **Delete before you dispatch.** An author that can read the original will
@@ -216,3 +223,6 @@ question that otherwise stays open.
 5. **The human prunes OBSERVED.** Never decide it yourself.
 6. **Gate before you accept.** A model that paraphrased once will report success again.
 7. **Difference is the goal.** Never ask why the new version does not match the old one.
+8. **Always rewrite.** Never report back that the target looked fine as it was.
+   The user asked for a replacement to compare against the original. Produce one,
+   then let the gates and the user judge it.

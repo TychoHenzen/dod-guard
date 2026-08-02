@@ -134,10 +134,16 @@ Dispatch `intent-analyst` against the target. It returns the goal, the minimum
 necessary path, the ESSENTIAL and ACCIDENTAL and UNKNOWN split, and a complexity
 budget.
 
-On a verdict of `mostly-essential`, stop the cycle. Record the target as
-`skipped` with that reason. This is a result, not a failure. It says the
-complexity in that file came from the problem, and a rewrite has nothing to
-remove.
+Its verdict is a prediction about how much headroom the target has. Record it
+and carry on. A verdict of `mostly-essential` narrows the budget. It never ends
+the cycle.
+
+The rewrite runs on every target the ledger hands you. Nothing here decides in
+advance that a rewrite is unnecessary. Reading the code cannot settle that
+question. The analyst reads the very implementation it judges. A verdict that
+the code is already minimal is therefore the circular conclusion this loop
+exists to test. The gates in Phase 8 settle it instead, by measuring a rewrite
+that exists.
 
 ## Phase 3: Oracle
 
@@ -279,6 +285,13 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/record-result.mjs" \
 is closed. Two failures mean the contract is incomplete, the seam is wrong, or
 the current design is correct and the author keeps arriving at it.
 
+That last reading is the only honest way to conclude a target did not need a
+rewrite. It costs two cycles and rests on two measured attempts. Write it into
+the reason when the evidence points there, and say so in the report. A target
+the analyst called `mostly-essential` that then resists twice has confirmed the
+prediction. One that yields a smaller version has refuted it, which is the whole
+reason the prediction never gets to stop the cycle.
+
 The recording step is not optional on any path. An attempt the ledger never
 hears about is an attempt the loop repeats forever.
 
@@ -294,4 +307,7 @@ Report the target, the verdict, the two gate numbers, and the queue depth.
 5. **Never rewrite without an oracle.** Write one first.
 6. **Both gates or no accept.** Different is not enough. Smaller is not enough.
 7. **Never work on master.** Commit to the working branch, and never push.
-8. **Mostly-essential is a success.** Some complexity earned its place.
+8. **Never skip a target.** Every picked target gets a rewrite. A prediction
+   that the code is already minimal is a note in the ledger, never an exit.
+9. **Only a measured cycle may clear a target.** "This did not need a rewrite"
+   is a conclusion from two failed attempts, never a plan.

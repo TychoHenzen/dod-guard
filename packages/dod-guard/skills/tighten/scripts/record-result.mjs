@@ -8,13 +8,15 @@
 import { openLedger, parseArgs, writeLedgerFile } from "./lib/ledger-file.mjs";
 import { recordResult } from "./lib/ledger.mjs";
 
-const STATUSES = ["accepted", "resistant", "skipped", "pending"];
+// No status for "we decided not to try". Every picked target gets a rewrite,
+// so a target only ever leaves the queue on a measured result.
+const STATUSES = ["accepted", "resistant", "pending"];
 
 const USAGE = [
   "Usage: node record-result.mjs --file=<path> --status=<status> [options]",
   "",
   `  --status=<s>      one of ${STATUSES.join(", ")}`,
-  "  --reason=<text>   why, required for resistant and skipped",
+  "  --reason=<text>   why, required for resistant",
   "  --commit=<sha>    the commit that holds the accepted rewrite",
   "  --after=<score>   tangle score the simplicity gate measured after",
   "  --ledger=<path>   ledger file (default .tighten/ledger.json)",
@@ -37,8 +39,8 @@ function invalid(args) {
   if (!args?.file || !STATUSES.includes(args.status)) {
     return "file and a known status are required";
   }
-  if (["resistant", "skipped"].includes(args.status) && !args.reason) {
-    return `--reason is required for ${args.status}`;
+  if (args.status === "resistant" && !args.reason) {
+    return "--reason is required for resistant";
   }
   return null;
 }

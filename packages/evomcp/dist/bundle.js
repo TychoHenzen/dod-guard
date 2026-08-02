@@ -25224,7 +25224,6 @@ var TaskSpecSchema = external_exports.object({
   budget_tokens: external_exports.number().optional().describe("Maximum DeepSeek API tokens to spend (default ~100k)"),
   fanout: external_exports.number().optional().describe("Number of parallel claude -p instances (default 5, max 16)"),
   allowed_files: external_exports.array(external_exports.string()).optional().describe("Files the solver is allowed to modify (glob patterns)"),
-  api_base: external_exports.string().optional().describe("Base URL override for DeepSeek-compatible API"),
   strategy: external_exports.enum(["auto", "best-of-n", "evolve"]).optional().default("auto").describe("Strategy hint. 'auto' inspects verify_cmd for scalar output \u2192 evolve, else best-of-n"),
   context: external_exports.string().optional().describe("Relevant context: file snippets, existing test output, constraints"),
   model: external_exports.string().optional().describe("Model override (default: deepseek-v4-pro[1m])"),
@@ -25248,8 +25247,7 @@ var EvolveSpecSchema = external_exports.object({
   api_key: external_exports.string().optional().describe("DeepSeek API key"),
   build_cmd: external_exports.string().optional().describe("Build command. Runs as gate during fitness evaluation."),
   test_cmd: external_exports.string().optional().describe("Test command. Runs as gate during fitness evaluation."),
-  lint_cmd: external_exports.string().optional().describe("Lint command. Runs as first gate during fitness evaluation."),
-  mutation_cmd: external_exports.string().optional().describe("Mutation testing command (e.g. 'npx stryker run').")
+  lint_cmd: external_exports.string().optional().describe("Lint command. Runs as first gate during fitness evaluation.")
 });
 server.tool(
   "solve",
@@ -25285,7 +25283,6 @@ Requires: deepclaude proxy on 127.0.0.1:3200 (or DEEPSEEK_API_KEY env var).`,
         context: spec.context,
         model: spec.model,
         api_key: spec.api_key,
-        api_base: spec.api_base,
         build_cmd: spec.build_cmd,
         test_cmd: spec.test_cmd,
         lint_cmd: spec.lint_cmd,

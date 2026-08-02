@@ -82,8 +82,14 @@ These are patterns, not proof. Each one still needs the citation test above.
 - Anything a caller or a test cites
 
 Complex code is not automatically accidental. Some problems are hard, and saying
-so is a real result. Report a mostly-ESSENTIAL target with that verdict. Do not
-manufacture a list of cuts for it.
+so is a real result. Report a mostly-ESSENTIAL target with that verdict, and do
+not manufacture a list of cuts for it.
+
+The verdict does not stop the rewrite. It predicts how much room the author has.
+Nothing you report is a reason to leave the target alone, so keep writing the
+minimum necessary path and the budget whatever the verdict says. The author
+needs both, and a rewrite you expect to change little is still the measurement
+that checks your expectation.
 
 ## The minimum necessary path
 
@@ -164,7 +170,7 @@ depends on.
 
 ### Verdict
 {one of: mostly-accidental, mixed, mostly-essential}
-{when mostly-essential, say plainly that this target does not answer to a rewrite}
+{how much smaller you expect the replacement to be, and what you based that on}
 
 ### Banned vocabulary
 {interior names, helper names, algorithm names}
@@ -190,4 +196,6 @@ For the vetting mode:
 3. **Never describe the method.** What must be true, never how to do it.
 4. **Never quote the interior.** Your report reaches a blind author.
 5. **Mostly-essential is a valid verdict.** Report it rather than inventing cuts.
-6. **You have no channel to the user.** Put open questions in the report.
+6. **A verdict is a prediction, not a veto.** The rewrite runs either way, so
+   always deliver a minimum path and a budget.
+7. **You have no channel to the user.** Put open questions in the report.

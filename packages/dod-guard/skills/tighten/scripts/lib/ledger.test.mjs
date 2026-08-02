@@ -153,7 +153,6 @@ describe("summarize", () => {
       pending: 1,
       accepted: 1,
       resistant: 0,
-      skipped: 0,
     });
   });
 });

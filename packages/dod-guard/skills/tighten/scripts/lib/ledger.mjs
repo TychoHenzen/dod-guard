@@ -1,6 +1,6 @@
 // The ledger is the loop's whole memory. Each invocation of the skill runs one
-// target and exits, so nothing survives in context. What the loop already tried,
-// what it accepted, and what resisted two cycles all live here.
+// target and exits, so nothing survives in context. What the loop already
+// tried, what it accepted, and what resisted two cycles all live here.
 //
 // A reseed must not erase that history. Otherwise the loop re-picks a target it
 // already failed twice, every time somebody refreshes the scores.
@@ -34,8 +34,8 @@ export function buildLedger(ranked, meta = {}) {
   };
 }
 
-// Ranking is fresh, history is not. The new scan decides which files are in the
-// ledger and what they score. The old ledger decides what already happened to them.
+// Ranking is fresh, history is not. The new scan decides which files are in
+// the ledger and what they score. The old ledger says what happened to them.
 export function mergeLedger(ledger, ranked) {
   const known = new Map(ledger.entries.map((entry) => [entry.file, entry]));
   const entries = ranked.map((candidate) => {
@@ -77,7 +77,7 @@ export function recordResult(ledger, file, result) {
 }
 
 export function summarize(ledger) {
-  const counts = { pending: 0, accepted: 0, resistant: 0, skipped: 0 };
+  const counts = { pending: 0, accepted: 0, resistant: 0 };
   for (const entry of ledger.entries) {
     counts[entry.status] += 1;
   }

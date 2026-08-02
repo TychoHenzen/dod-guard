@@ -74,7 +74,7 @@ Exit codes: `0` pass · `1` a proof failed (or tampered/stuck) · `2` an unscope
 
 ## Skills
 
-The plugin ships eight skills and nine specialized agents.
+The plugin ships eleven skills and fifteen specialized agents.
 
 | Skill | Use it for |
 |---|---|
@@ -85,7 +85,11 @@ The plugin ships eight skills and nine specialized agents.
 | [`/adversarial-workflow`](#adversarial-workflow) | Gated 4-phase review on non-trivial features |
 | [`/clean-house`](#clean-house) | Hunting duplicate and obsolete implementations |
 | [`/test-integrity-checker`](#test-integrity-checker) | Tests that bless bugs instead of catching them |
-| [`/quality-refactor`](#quality-refactor) | Refactoring to an explicit, machine-checked quality bar |
+| [`/blind-rewrite`](#blind-rewrite) | A rewrite that keeps coming back as a renamed variable |
+| [`/tighten`](#tighten) | Removing accidental complexity on a loop, one target at a time |
+| [`/doc-reconcile`](#doc-reconcile) | Documents that contradict each other |
+| [`/skill-debug`](#skill-debug) | A skill that does not do what its SKILL.md says |
+| [`/quality-refactor`](#quality-refactor) | Refactoring to an explicit, machine-checked quality bar (ships in quality-guard) |
 
 ### `/interview`
 
@@ -135,6 +139,30 @@ Aggressively hunts down duplicate and obsolete implementations using git archaeo
 
 Triggers: "clean house", "dedupe", "clean up old versions", "remove dead implementations", "consolidate duplicates", "debloat".
 
+### `/blind-rewrite`
+
+Replaces an implementation by deleting it first, then rebuilding it from a contract that a fresh agent receives without ever seeing the old code. Fixes the failure where a model asked for a complete rewrite returns a renamed variable. Ships `blind-contract-extractor`, `blind-writer` and `blind-gap-auditor`, plus `overlap-scan.mjs`, a gate that scores the result against the deleted original and rejects paraphrase.
+
+Triggers: "rewrite this properly", "complete rewrite", "no cosmetic changes", "swap this library", or a rewrite that came back as a cosmetic edit.
+
+### `/tighten`
+
+An autonomous loop that removes accidental complexity one target per invocation. It ranks the repository by structural violations joined against git return-churn, then blind-rewrites the worst target. Ships `intent-analyst`, which separates necessary complexity from accidental, and `characterization-writer`, which builds an oracle when the target has none. Two gates must pass: the result has to be different, and it has to be smaller.
+
+Triggers: "tighten the codebase", "remove accidental complexity", or wiring the skill into `/loop`.
+
+### `/doc-reconcile`
+
+Finds documents that contradict each other, dates each conflicting claim from its real edit history, and deletes the older side when the dating is decisive. Ships the `doc-conflict-judge` agent.
+
+Triggers: "which doc is right", "the docs contradict each other", "remove outdated docs".
+
+### `/skill-debug`
+
+Debugs a skill from the sessions that ran it. `find-runs.mjs` locates every recent run in the session transcripts. `extract-run.mjs` compacts one run into a numbered trace of what the agent actually did. The skill then aligns that trace against what the SKILL.md required and reports each divergence with its cause. Every proposed edit cites a step number from a real run, so no skill gets rewritten from taste.
+
+Triggers: "debug this skill", "why did /x do that", "the skill ignored its own steps".
+
 ### `/quality-refactor`
 
 Systematic refactoring to an explicit, machine-checked quality bar: one type per file, files under 300 lines, cyclomatic complexity under 10, at most 7 parameters, no unnamed tuples, guard clauses instead of `else`, free functions instead of stateless methods, and aggressive removal of dead, test-only, duplicate, and compatibility-shim code.
@@ -181,7 +209,7 @@ External dependencies, all optional:
 | `clean-house` | code-review-graph (dead-symbol scan), jscpd (duplication) | git archaeology and grep only |
 | `quality-refactor` | none — the scanner is zero-dependency | — |
 
-All eight skills and nine agents ship inside the plugin. No manual installation.
+All eleven skills and fifteen agents ship inside the plugin. No manual installation.
 
 ## How it works
 

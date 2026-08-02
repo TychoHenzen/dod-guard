@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Monorepo overview
 
-npm workspaces monorepo with four MCP server plugins for Claude Code, distributed via git-based marketplace + npm. Each package ships as a single `dist/bundle.js` (esbuild).
+npm workspaces monorepo with five MCP server plugins for Claude Code, distributed via git-based marketplace + npm. Each package ships as a single `dist/bundle.js` (esbuild).
 
 | Package | npm name | Purpose |
 |---------|----------|---------|
-| `dod-guard` | `dod-guard` | Anti-cheat DoD verification with behavioral predicates. Ships `/interview`, `/ratchet`, `/clean-house`, `/step-by-step`, `/cheap-step`, `/adversarial-workflow`, `/test-integrity-checker`, `/doc-reconcile` skills. |
+| `dod-guard` | `dod-guard` | Anti-cheat DoD verification with behavioral predicates. Ships `/interview`, `/ratchet`, `/clean-house`, `/step-by-step`, `/cheap-step`, `/adversarial-workflow`, `/test-integrity-checker`, `/blind-rewrite`, `/tighten`, `/doc-reconcile`, `/skill-debug` skills. |
 | `quality-guard` | `quality-guard` | Structural quality gate: MCP tools, a PostToolUse ratchet hook, and the `/quality-refactor` skill with its scanner. |
 | `evomcp` | `evomcp` | Cascade solver: cheap-model fanout (best-of-N + repair chains) + scalar-fitness evolution. |
 | `gitevo` | `gitevo` | Evolutionary git branching for LLM agents. Checkpoint, spawn, learn, abandon, adopt. |
@@ -68,7 +68,7 @@ The correct flow:
 
 **Do not create release tags by hand.** `detect-releases.mjs` compares each `package.json` version against the registry; the tag is written afterwards as a record of what shipped. A version bump that lands on master will publish — there is no opt-out, so keep the bump out of the commit until you mean it.
 
-**Marketplace**: Update `.claude-plugin/marketplace.json` in each package when adding/removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes all four plugins for the git-based marketplace.
+**Marketplace**: Update `.claude-plugin/marketplace.json` in each package when adding/removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes all five plugins for the git-based marketplace.
 
 **CI behavior** (`.github/workflows/npm-publish.yml`):
 - Push to `master` → every gate below runs
@@ -117,7 +117,7 @@ Gate scripts live in `scripts/ci/` and all run locally with no arguments (except
 
 ### MCP server guard pattern
 
-All four MCP servers use the same guard so tests can import the server module without starting stdio:
+All five MCP servers use the same guard so tests can import the server module without starting stdio:
 
 ```typescript
 import { fileURLToPath } from "node:url";
