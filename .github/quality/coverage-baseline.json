@@ -1,4 +1,35 @@
 {
-  "note": "Coverage each package holds today. A drop below its own number fails CI. Empty on purpose: the numbers depend on which platform-specific branches run, so the first CI run records them from the runner rather than from a developer machine.",
-  "packages": {}
+  "note": "Coverage each package holds today. A drop below its own number fails CI.",
+  "packages": {
+    "dod-guard": {
+      "statements": 86.8,
+      "branches": 76.85,
+      "functions": 91.56,
+      "lines": 86.8
+    },
+    "evomcp": {
+      "statements": 95.29,
+      "branches": 88.77,
+      "functions": 96.71,
+      "lines": 95.29
+    },
+    "gitevo": {
+      "statements": 88.78,
+      "branches": 77.01,
+      "functions": 91.83,
+      "lines": 88.78
+    },
+    "obsidian-rag": {
+      "statements": 75.41,
+      "branches": 78.29,
+      "functions": 91.78,
+      "lines": 75.41
+    },
+    "quality-guard": {
+      "statements": 84.86,
+      "branches": 87.8,
+      "functions": 87.5,
+      "lines": 84.86
+    }
+  }
 }
