@@ -721,13 +721,21 @@
       "dirty": true
     },
     "packages/evomcp/src/gitevo-integration.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-03",
+      "last_result": {
+        "total": 31,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 31,
+        "status": "ok",
+        "error": null
+      },
       "lines": 100,
       "error_count": 0,
       "recent_commits": 4,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "831486cbbb804c303fbd26be3b796c7964be1e82d8de93a00f1f45b60cbf3a43",
+      "dirty": false
     },
     "packages/evomcp/src/judge.ts": {
       "last_tested": "2026-08-02",
@@ -747,13 +755,21 @@
       "dirty": false
     },
     "packages/evomcp/src/orchestrate.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-03",
+      "last_result": {
+        "total": 215,
+        "caught": 121,
+        "missed": 85,
+        "timeout": 3,
+        "unviable": 6,
+        "status": "ok",
+        "error": null
+      },
       "lines": 252,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "dc63e513621e4ea11afe4da4100d31f867db0f35723c6464f419426e14f34964",
+      "dirty": false
     },
     "packages/evomcp/src/orchestrator.ts": {
       "last_tested": null,
@@ -765,13 +781,21 @@
       "dirty": true
     },
     "packages/evomcp/src/prompts.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-03",
+      "last_result": {
+        "total": 169,
+        "caught": 59,
+        "missed": 105,
+        "timeout": 1,
+        "unviable": 4,
+        "status": "ok",
+        "error": null
+      },
       "lines": 235,
       "error_count": 0,
       "recent_commits": 3,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "c9cefa0301eb849e01ef5d7c6eccc5b3d6c4a4ed1b9cf8eafc9b5dcc17071d39",
+      "dirty": false
     },
     "packages/evomcp/src/render.ts": {
       "last_tested": null,
@@ -1008,14 +1032,14 @@
     }
   },
   "cumulative": {
-    "total_mutants": 15181,
-    "caught": 5285,
-    "missed": 5631,
-    "timeout": 67,
-    "unviable": 4198,
+    "total_mutants": 15596,
+    "caught": 5465,
+    "missed": 5821,
+    "timeout": 71,
+    "unviable": 4239,
     "error": 43,
-    "runs": 89,
-    "files_tested": 89
+    "runs": 92,
+    "files_tested": 92
   },
   "runs": [
     {
@@ -2260,6 +2284,48 @@
         "missed": 160,
         "timeout": 0,
         "unviable": 17,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-03",
+      "commit": "5f262ba39df89bcd8a894d642af1bfd5faff4bc4",
+      "file": "packages/evomcp/src/prompts.ts",
+      "result": {
+        "total": 169,
+        "caught": 59,
+        "missed": 105,
+        "timeout": 1,
+        "unviable": 4,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-03",
+      "commit": "5f262ba39df89bcd8a894d642af1bfd5faff4bc4",
+      "file": "packages/evomcp/src/gitevo-integration.ts",
+      "result": {
+        "total": 31,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 31,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-03",
+      "commit": "5f262ba39df89bcd8a894d642af1bfd5faff4bc4",
+      "file": "packages/evomcp/src/orchestrate.ts",
+      "result": {
+        "total": 215,
+        "caught": 121,
+        "missed": 85,
+        "timeout": 3,
+        "unviable": 6,
         "status": "ok",
         "error": null
       }

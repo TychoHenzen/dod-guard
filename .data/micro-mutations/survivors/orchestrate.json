@@ -1,0 +1,693 @@
+{
+  "source": "packages/evomcp/src/orchestrate.ts",
+  "date": "2026-08-03T10:25:53.763Z",
+  "summary": {
+    "total": 215,
+    "killed": 121,
+    "survived": 85,
+    "timeout": 3,
+    "unviable": 6
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "8",
+      "mutator": "BooleanLiteral",
+      "replacement": "state.completed",
+      "dist_line": 23,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "9",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 23,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "10",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 23,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "11",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 23,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "12",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 24,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 26,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "14",
+      "mutator": "LogicalOperator",
+      "replacement": "adv.gate.enterBlockReason && \"Blocked by gate\"",
+      "dist_line": 27,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 34,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 41,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 42,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "26",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 43,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "32",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 48,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "33",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 49,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "38",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 55,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "39",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 56,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "45",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 61,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "46",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 62,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "51",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 68,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "52",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 69,
+      "dist_col": 55
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "55",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 71,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "57",
+      "mutator": "EqualityOperator",
+      "replacement": "solveResult.stats.tokens_consumed >= 0",
+      "dist_line": 71,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "68",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 77,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "70",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 86,
+      "dist_col": 57
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "71",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 86,
+      "dist_col": 64
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "72",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 86,
+      "dist_col": 71
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "73",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 86,
+      "dist_col": 102
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "76",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 90,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "80",
+      "mutator": "LogicalOperator",
+      "replacement": "solveResult.escalation?.summary && \"Solve escalation — all lineages exhausted\"",
+      "dist_line": 92,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "82",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 92,
+      "dist_col": 80
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "86",
+      "mutator": "LogicalOperator",
+      "replacement": "solveResult.escalation?.summary && \"Solve escalation\"",
+      "dist_line": 97,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "88",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 97,
+      "dist_col": 69
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "107",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 115,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "113",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 123,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "116",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 128,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "117",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 129,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "118",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 130,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "124",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 135,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "125",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 136,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "130",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 143,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "131",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 144,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "137",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 149,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "138",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 150,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "142",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 156,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "152",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 160,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "157",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 165,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "160",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 170,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "165",
+      "mutator": "MethodExpression",
+      "replacement": "result.output",
+      "dist_line": 174,
+      "dist_col": 90
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "166",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 175,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "169",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 180,
+      "dist_col": 54
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "173",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 184,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "174",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + stageStart",
+      "dist_line": 185,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "175",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + startTime",
+      "dist_line": 192,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "179",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 194,
+      "dist_col": 74
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "181",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 197,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "182",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 198,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "183",
+      "mutator": "ArithmeticOperator",
+      "replacement": "totalMs * 1000",
+      "dist_line": 198,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "184",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 199,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "186",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 201,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "187",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 202,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "188",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 202,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "189",
+      "mutator": "EqualityOperator",
+      "replacement": "s.status !== \"passed\"",
+      "dist_line": 202,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "190",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 202,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "191",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 202,
+      "dist_col": 54
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "192",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 202,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "193",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 202,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "194",
+      "mutator": "EqualityOperator",
+      "replacement": "s.status !== \"failed\"",
+      "dist_line": 202,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "195",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 202,
+      "dist_col": 76
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "196",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 202,
+      "dist_col": 87
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "197",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 202,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "198",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 202,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "199",
+      "mutator": "EqualityOperator",
+      "replacement": "s.status !== \"human_gate\"",
+      "dist_line": 202,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "200",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 202,
+      "dist_col": 109
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "201",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 202,
+      "dist_col": 124
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "203",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 203,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "204",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 204,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "205",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 204,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "206",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 205,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "207",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 206,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "208",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 206,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "209",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 207,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "210",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 208,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "211",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 208,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "212",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 209,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "214",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 212,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrate.js",
+      "id": "213",
+      "mutator": "ArithmeticOperator",
+      "replacement": "s.ms * 1000",
+      "dist_line": 209,
+      "dist_col": 35
+    }
+  ]
+}
