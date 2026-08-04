@@ -1,541 +1,164 @@
 ---
 name: cheap-step
 description: >-
-  Execute multi-step plans where each atomic step is implemented by cheap-worker
-  fanout (evomcp solve → DeepSeek) and verified by the host model. Host model
-  formulates specs, reviews results, and fixes failures the cheap workers can't
-  crack. Same discipline as step-by-step but implementation runs on the cheap
-  API — 90%+ of work costs pennies, host model only touches the hard 10%.
-  TRIGGER when: plan has 5+ steps, user says "cheap step", "offload to deepseek",
-  "use cheap model for this", "delegate the grunt work", or wants step-by-step
-  execution without burning host-model tokens on routine implementation.
-argument-hint: "[plan file or task description]"
+  Run a confirmed multi-step plan exactly as /dod-guard:step-by-step does, with
+  one substitution: each step's implementation goes to the evomcp solve tool,
+  which runs cheap DeepSeek workers, instead of to a dispatched host agent. You
+  still write the spec and still run the verification. TRIGGER when: a plan has
+  5 or more steps and you want implementation to run on the cheap backend, or
+  the user says "cheap step", "offload to deepseek", "use the cheap model for
+  this", or "delegate the grunt work".
+argument-hint: "[plan file, .step-session/steps.json, or the plan just confirmed]"
 ---
 
-# Cheap-Step: Host Formulates → Cheap Workers Implement → Host Verifies
+# Cheap step
 
-Step-by-step's atomic discipline but each step's implementation runs on cheap
-workers via evomcp solve. Host model writes the spec, verifies the result, and
-only touches code directly when cheap workers fail after feedback+retry.
+This skill is a delta over `/dod-guard:step-by-step`. Read that skill now and
+run it. Everything in it holds here.
 
-## Why This Exists
+## What you inherit
 
-Step-by-step already solves the context-pressure problem (fresh subagent per
-step), but every subagent runs on whatever model the host session runs on.
+You inherit the whole base discipline. That covers splitting the plan and
+getting approval. It covers the session files at `.step-session/steps.json`
+and `.step-session/progress.log`, and every field name in them. It covers the
+staleness checks, dependency order, and the four statuses. It covers the
+verdict gate, the repair cap, and the record-and-flush step. It covers the
+closing integration run and the final report.
 
-The cascade strategy proved that cheap workers with a good verifier can handle
-~90% of implementation work. The remaining ~10% needs the host model's
-judgment.
+Do not restate any of it. When you need a rule from that list, read the base.
 
-**Which benefit you actually get depends on your host model — check this first:**
+One thing changes. Where the base dispatches an agent with the Task tool, you
+call the evomcp `solve` tool instead. You still write the instruction, you
+still run `verify_cmd` yourself, and you still decide the verdict.
 
-| Host session runs on | What cheap-step buys you |
-|----------------------|--------------------------|
-| A premium model (Claude via Anthropic) | Both cost AND structure. A 20-step plan drops from ~$2–5 of host tokens to well under $1, because implementation moves to the cheap backend. |
-| A cheap model already (session proxied to DeepSeek) | Structure only, **not** cost — workers and host are the same backend, so there is no arbitrage. What you still gain: evomcp's fanout (N diverse attempts instead of one), automatic repair chains with structured feedback, the degenerate-pattern gate, and a host/worker split that keeps the orchestrator's context clean. |
+Before you start, call the evomcp `status` tool. If the proxy is not running
+and no key is configured, say so and run the base instead.
 
-If you are on a cheap host and want *only* cost savings, cheap-step is the wrong
-tool — use `/dod-guard:step-by-step`, which has the same discipline without the
-evomcp round-trip. Choose cheap-step for the fanout and the repair loop, not for
-a cost delta that isn't there. Every cost figure below assumes a premium host;
-ignore them on a cheap host.
+`solve`, `evolve`, `orchestrate` and `status` are MCP tools. Never put one in
+a shell command or a `bash` fence. It is the same trap as `dod_check` against
+`dod-guard check`. The first is an MCP tool name. The second is the CLI.
 
-**Cheap-step combines both insights:**
+## When the trade pays, and which steps qualify
 
-```
-Step 1: Host writes spec → evomcp solve (DeepSeek) → Host verifies ✓
-Step 2: Host writes spec → evomcp solve (DeepSeek) → Host verifies ✗
-         → Feedback + retry (DeepSeek) → Host verifies ✓
-Step 3: Host writes spec → evomcp solve (DeepSeek) → Host verifies ✗
-         → Feedback + retry (DeepSeek) → Still ✗
-         → Host fixes directly (only this step)
-...
-Step 20: Host writes spec → evomcp solve (DeepSeek) → Host verifies ✓
-```
+The saving is arbitrage between host tokens and backend tokens. A spec the
+worker can act on costs host tokens up front. That overhead buys nothing on a
+cheap host model. Run the base instead in that case.
 
-**Cost reality (premium host only):** 20 steps where 18 pass on first try, 1
-passes on retry, 1 needs host fix ≈ $0.50–1.00 total. Same work with all-host
-subagents ≈ $2–5. On a cheap host these two numbers converge — see the table
-above.
+Record the choice per step in `steps.json` as `mode`, valued `cheap` or
+`host-only`. That is the only field you add. Rename nothing else.
 
-Independent of host model: the orchestrator's context stays lean because it
-never holds implementation details, only specs and verification results.
+| Step | `mode` | Why |
+|---|---|---|
+| `verify_surface` is `visual` or `gameplay` | `host-only` | The worker cannot look at rendered output. |
+| The step turns on a design or architecture call | `host-only` | That judgement is not delegable. |
+| The step touches auth, secrets, crypto, permissions, or input the network reaches | `host-only` | A passing test does not prove this class safe. |
+| The step lists more than 3 files, or its check runs a whole suite | split it, or `host-only` | Too wide to state fully in a spec the worker cannot query. |
+| Everything else | `cheap` | A narrow command can prove it. |
 
-**The hard-10% guarantee:** The cascade strategy predicts ~10% of sub-problems
-will be too hard for cheap workers. Cheap-step budgets for this: every step has
-a fallback path. The host model NEVER spends tokens on work a cheap worker
-could do, but ALWAYS catches what cheap workers can't.
+Report the `mode` split when the base asks the user to approve the plan. The
+user should see how many steps go to the cheap backend before the run starts.
 
-## When to Use
+Secure the working tree before the first dispatch. `solve` creates branches and
+checks them out in this directory, and it discards the attempts that lose.
+Commit or stash anything you are not willing to lose.
 
-- Multi-step plan where steps are well-specified and verifiable
-- Routine implementation work (CRUD, wiring, config, mechanical refactors)
-- Tasks where you'd normally use step-by-step but want lower cost
-- Any plan where >60% of steps are "implement X following pattern Y"
-- User says "offload this to deepseek" or "use cheap model"
+Two keys hold the same paths and are not the same key. `allowed_files` is the
+`solve` spec field. `files` is the session step field.
 
-## When NOT to Use
+## Settle every question before you write a spec
 
-- 1–3 trivial steps — overhead of evomcp solve > benefit; just do it
-- Steps requiring deep architectural decisions (host model should think, not verify)
-- Tasks with no machine-checkable verification per step (can't write verify_cmd)
-- First-time project setup with no existing test/lint/build harness
-- Security-sensitive code where cheap-model errors are unacceptable even with verification
-- Steps where the spec is harder to write than the implementation
+The base can dispatch a step and get `AMBIGUOUS` back, because its agents have
+a report format for that. A `solve` worker has no such channel. It cannot ask.
+It will pick a reading and build it.
 
-## Pre-Flight
+1. Re-read the step description and name every point where two readings fit.
+2. Ask the user with AskUserQuestion, one question per point.
+3. Write each answer into the step `description` in `steps.json`.
+4. Append the answer to `progress.log`, so a retry never re-asks.
 
-1. **Backend alive:** `evomcp status` → RUNNING. If not, report and stop.
-2. **evomcp tools available:** `solve` tool must be registered. If not, this skill can't work.
-3. **Git clean or checkpointed:** evomcp solve creates branches. Dirty tree without
-   a checkpoint = risk of lost work. Run `evo_checkpoint "pre-cheap-step"` first.
-   **If gitevo is unavailable**, degrade rather than skip: commit the current
-   state (or `git stash`) before starting, and again before each solve. Report
-   the degradation to the user — checkpointing is not optional, only the tool is.
+Confirm the check is stable too. Run `verify_cmd` twice before you dispatch. A
+worker cannot second-guess a flaky command. It will chase the noise and burn
+the whole retry budget. Replace a flaky command with a narrow stable one, or
+move that step to `host-only`.
 
-## Process
+## Write the spec
 
-### Phase 0: Decompose
+`solve` takes exactly one argument, named `spec`. Never pass loose keyword
+arguments. Required fields are `goal`, `verify_cmd` and `cwd`. Optional fields
+are `budget_tokens`, `fanout`, `allowed_files`, `strategy` (`"auto"`,
+`"best-of-n"` or `"evolve"`), `context`, `model`, `api_key`, `build_cmd`,
+`test_cmd`, `lint_cmd` and `held_out_tests`.
 
-Read the plan or task list. Ensure each step is **atomic** and **verifiable** —
-every step must have a clear verify_cmd the host can run after implementation.
+The spec is the worker's whole world. Write it this way:
 
-**Critical difference from step-by-step:** steps must be sized for cheap-worker
-success. Cheap workers do best with:
-- Clear input/output contracts
-- Existing patterns to follow (not novel architecture)
-- Single-file or 2–3 file changes
-- Specific, scoped verify commands (5–20 tests, not 500)
+1. State the observable outcome in `goal`, never the method.
+2. Point `verify_cmd` at the narrowest command that exits non-zero on failure.
+3. Name one existing file to copy the pattern from in `context`, plus the
+   constraints. One paragraph, not a dumped file.
+4. List every file the worker may touch in `allowed_files`.
+5. Set `cwd` to the session `cwd`, as an absolute path.
+6. Set `budget_tokens` per step. Left out, it defaults to about 100k, which is
+   far more than one atomic step needs. An uncapped step spends the saving
+   this skill exists to produce.
 
-If a step is too big for cheap workers, split it. If it requires architectural
-novelty, mark it `host-only` — the host model implements these steps directly.
+For a step proved by a DoD subtree, `verify_cmd` uses the CLI:
+`dod-guard check --dod-id=<id> --node-path=0.children.1 --quiet`. Exit `0`
+passes. Exit `1` means a proof failed, or the document is tampered or stuck.
+Exit `2` means drafts remain on an unscoped run. Exit `3` is a usage error. A
+scoped run exits `0` when its own subtree passes, which is what makes a subtree
+usable here.
 
-Write `.cheap-step/steps.json` before dispatching step 1, and rewrite it after
-every gate decision:
 ```json
 {
-  "goal": "One-line goal",
-  "cwd": "/absolute/path/to/project",
-  "plan_source": "/absolute/path/to/plan.md",
-  "plan_mtime": "2026-07-27T11:00:00+02:00",
-  "steps": [
-    {
-      "id": "S01",
-      "title": "Add user model validation",
-      "description": "Add validate() method to User model that checks email format and password length...",
-      "verify_cmd": "npm test -- --testNamePattern='user validation'",
-      "allowed_files": ["src/models/user.ts", "src/models/user.test.ts"],
-      "context": "User model is at src/models/user.ts, uses zod for validation...",
-      "mode": "cheap",
-      "verify_surface": "code",
-      "deps": [],
-      "status": "pending"
-    },
-    {
-      "id": "S02",
-      "title": "Design auth middleware architecture",
-      "description": "Design the auth middleware chain — this is architectural, host does it...",
-      "mode": "host-only",
-      "verify_surface": "code",
-      "deps": [],
-      "status": "pending"
-    }
-  ]
+  "goal": "TokenBucket.take(n) returns false once the bucket is empty and true again after one refill interval",
+  "verify_cmd": "npx vitest run src/limiter.test.ts",
+  "cwd": "/absolute/path/to/repo",
+  "allowed_files": ["src/limiter.ts"],
+  "context": "src/limiter.test.ts already exists and is red. Copy the timer handling in src/backoff.ts. Use a monotonic clock. Add no dependencies.",
+  "strategy": "best-of-n",
+  "fanout": 4,
+  "budget_tokens": 30000,
+  "build_cmd": "npm run build"
 }
 ```
 
-**Step modes:**
-- `cheap` — evomcp solve → verify → feedback/retry → host fallback
-- `host-only` — host model implements directly (like step-by-step's step-implementer)
-
-**verify_surface tags** (same taxonomy as step-by-step):
-
-| verify_surface | Meaning | Cheap-worker viable? |
-|----------------|---------|---------------------|
-| `code` | Logic, algorithms, data flow, API | Yes — verify_cmd covers it |
-| `visual` | Rendering, UI, graphics, layout | No — mark as `host-only`. Cheap workers cannot see. |
-| `gameplay` | Game behavior, physics, interaction | No — mark as `host-only`. Cheap workers cannot playtest. |
-| `config` | Config files, env vars, dependencies | Yes — parse/start checks |
-| `structural` | Refactors, renames, file moves | Yes — verify_cmd + diff review |
-
-**Visual/gameplay steps MUST be `host-only`.** Cheap workers (DeepSeek via evomcp) cannot visually verify output. They will substitute "build passes" for verification — the exact pattern that caused 80% of dod-guard breakdown events. The host model must implement these steps directly and apply manual verification.
-
-Report step count and mode breakdown to user. Flag any step >3 files or with
-verify_cmd running >50 tests — these will likely need decomposition.
-
-### Phase 1: Execute — One Step at a Time
-
-For each step in dependency order:
-
-#### 1.0 Ambiguity gate — before writing any spec
-
-Ask: does this step's description determine exactly one implementation, or could
-two reasonable readings produce materially different code?
-
-If it's underdetermined, do NOT write a spec around your best guess. Cheap
-workers cannot ask, and fanout will confidently produce N variants of the wrong
-thing — the failure mode is not "no answer," it's "5 lineages that all pass a
-verify_cmd written against the wrong interpretation."
-
-Resolve it with the user via `AskUserQuestion`, using the competing readings as
-options. Batch multiple ambiguities into one interaction. Record the answer in
-`.cheap-step/decisions.json` and fold it into the spec's `context` so no worker
-has to infer it. Never re-ask a resolved question.
-
-This is cascade's U1, applied per step. Ambiguity is an authority gap — no model
-at any tier is entitled to decide it, and no amount of fanout budget substitutes
-for one question.
-
-#### 1.1 Cheap steps: Write spec + dispatch
-
-Write a tight evomcp solve spec for this ONE step:
-
-```
-Goal: [exact step description — paste from plan, don't paraphrase]
-Verify: [verify_cmd from plan]
-Allowed files: [from plan]
-Context: [patterns to follow, interfaces to implement, constraints]
-Fanout: 3–5 (narrow scope = fewer strategies needed)
-Budget: ~30K tokens per step (small scope = small budget)
-```
-
-The spec quality determines worker success rate. Bad spec = wasted fanout.
-
-Key spec-writing rules:
-1. **verify_cmd must be specific.** Not `npm test` — `npm test -- --testNamePattern="user validation"`
-2. **allowed_files constrains search.** Workers explore less, hit more.
-3. **context includes patterns.** "Follow the validation pattern in src/models/product.ts" — workers copy patterns well.
-4. **One concern per spec.** If the step description has "and" in it, split.
-
-#### 1.2 Dispatch to evomcp
-
-```
-evomcp solve spec={goal, verify_cmd, allowed_files, context, fanout: 3, budget_tokens: 30000}
-```
-
-The host model goes quiet during solve. All worker token burning happens inside
-evomcp, invisible to this context.
-
-#### 1.3 Host verifies result
-
-If evomcp returns PASS:
-1. **Read the diff.** Not optional. Check for: actually solves the step (read
-   the verification report), degenerate patterns (hardcoded outputs, deleted
-   assertions, swallowed errors, commented-out code), allowed_files respected,
-   no scope creep into other steps' territory.
-2. **Re-run verify_cmd yourself.** Workers can be optimistic.
-3. **Run broader tests if relevant.** The verify_cmd is scoped — make sure
-   nothing else broke: `npm test -- --testNamePattern="user"` (broader but not full suite).
-4. **Degenerate pattern or scope violation?** Reject, feed back, retry (1.4).
-5. **Clean?** Mark step `completed`, apply patch, move on.
-
-**Passing-but-suspicious rule:** If the patch passes verify but contains
-something questionable (overly clever, wrong pattern, touches unexpected files),
-that's a judgment call only the host can make. Reject with specific feedback.
-
-#### 1.4 Failed? Feedback + retry
-
-If evomcp returns ESCALATED or the host rejects a passing patch:
-
-1. **Read the escalation report or host notes.** What failed? Single assertion?
-   Pattern mismatch? Scope violation?
-2. **Write structured feedback.** Not "fix it" — specific:
-   ```
-   FAILURE: User validation test expects ValidationError to include field name,
-   but implementation throws generic Error.
-   FIX: Throw new ValidationError(`Invalid ${field}: ${value}`) instead of
-   throw new Error('Invalid').
-   PATTERN: See src/models/product.ts:42 for the correct ValidationError usage.
-   ```
-3. **Re-dispatch with feedback as context:**
-   ```
-   evomcp solve spec={same goal, same verify_cmd, context: original context + feedback}
-   ```
-4. **Max 2 retries per step.** Same feedback → same result. If the second retry
-   fails with the same signature, the step is in the hard 10%.
-
-#### 1.5 Host fallback (hard 10%)
-
-If a cheap step fails after 2 retries:
-
-1. **Read the best partial attempt.** evomcp's escalation report includes the
-   best candidate — often 80% correct.
-2. **Identify the specific blocking issue.** It's usually ONE thing: one
-   assertion, one edge case, one pattern the cheap model doesn't grasp.
-3. **Fix directly.** Host model implements the fix. This is the ONLY time the
-   host model touches implementation code in cheap-step.
-4. **Run verify_cmd.** Confirm the fix works.
-5. **Mark step `completed-host-fallback`.** Track these — if >30% of steps need
-   host fallback, the task is too complex for cheap-step; escalate to user.
-
-**Host fallback is EXPECTED.** The cascade strategy predicts ~10% of nodes need
-it. It's not a failure of cheap-step — it's the system working as designed. The
-host model's judgment applied to exactly the 10% that needed it, and the other
-90% cost pennies.
-
-#### 1.6 Host-only steps
-
-For steps marked `host-only`:
-1. Dispatch `step-implementer` agent (from step-by-step) OR implement directly.
-2. Same verification gate as cheap steps.
-3. These steps burn host-model tokens — that's intentional. They're the steps
-   where judgment matters more than cost.
-
-#### 1.7 Compact
-
-Update progress. Strip all implementation details from context. Keep only what
-the NEXT step needs: "S03 depends on User.validate() from S01
-(src/models/user.ts, added in cheap pass)."
-
-### Phase 2: Integration Check
-
-After ALL steps complete:
-1. Run full test suite (`npm test`)
-2. Run lint/build
-3. Check for cross-step issues (inconsistent patterns, import conflicts, style drift)
-4. Report summary with cost breakdown:
-   ```
-   Steps: 20 total
-     Cheap-pass (1st try):  15
-     Cheap-pass (retry):     3
-     Host-fallback:          1  (S07: auth middleware — cheap model couldn't
-                                  handle token refresh edge case)
-     Host-only:              1  (S02: architecture design)
-   Estimated cost: ~$0.60 (workers) + ~$0.30 (host fallback step)
-   vs. all-host step-by-step: ~$3.00
-   ```
-5. Present commit message (do NOT auto-commit)
-
-## Spec-Writing Reference
-
-Good specs make cheap workers succeed. Bad specs waste fanout budget.
-
-### verify_cmd patterns
-
-```bash
-# Good — specific test pattern
-npm test -- --testNamePattern="user model validation"
-
-# Good — dod-guard DoD subtree (CLI, not the MCP tool name)
-dod-guard check --dod-id=abc123 --node-path=0.children.2 --quiet
-
-# Good — targeted lint
-npx biome check src/models/user.ts
-
-# Bad — too broad (500 tests = noise)
-npm test
-
-# Bad — no exit code signal
-npm test -- --reporter=verbose | grep "PASS"  # always exits 0
-```
-
-### Context patterns
-
-```
-# Good — points to existing pattern
-Follow the validation pattern in src/models/product.ts:
-- validate() returns ValidationResult
-- throws ValidationError with field name and message
-- called in constructor before any mutations
-
-# Good — specific constraint
-The User class already exists. Add validate() method only — do NOT refactor
-the constructor or change the field types.
-
-# Bad — vague
-Add validation to the user model. Make it good.
-
-# Bad — too much
-[entire file content of 5 unrelated files]
-```
-
-### Step sizing
-
-| Step characteristic | Cheap-worker success rate |
-|---------------------|--------------------------|
-| 1 file, 1 function | ~95% |
-| 1 file, multiple functions | ~85% |
-| 2–3 files, clear pattern | ~75% |
-| 2–3 files, novel logic | ~60% |
-| 4+ files | ~40% — split further |
-| New file from scratch | ~80% (needs pattern reference) |
-| Refactor existing | ~70% (needs before/after examples) |
-
-If a step's estimated success rate is <60%, either split it or mark it
-`host-only`.
-
-## Rules (ABSOLUTE — no exceptions)
-
-1. **ONE STEP PER SOLVE CALL.** Never batch two steps into one evomcp solve.
-   The verify_cmd must be step-specific.
-
-2. **VERIFY EVERY RESULT.** Read the diff. Re-run the verify_cmd. No "evomcp
-   said it passes."
-
-3. **FEEDBACK IS SPECIFIC.** "Fix the validation" → wasted retry. "Throw
-   ValidationError with field name, see product.ts:42" → fixed in one shot.
-
-4. **MAX 2 RETRIES.** Same failure signature after 2 retries → host fallback.
-   Don't retry hoping the cheap model gets lucky.
-
-5. **HOST FALLBACK IS TARGETED.** Fix ONLY the specific blocking issue. Don't
-   rewrite the whole step — the cheap worker's 80% solution is good enough.
-
-6. **NEVER SKIP VERIFICATION.** Even on host-only steps. Even on "trivial"
-   steps. Run the command.
-
-7. **KEEP ORCHESTRATOR LEAN.** After step completes, flush everything except
-   what the next step depends on. This is the same mechanism as step-by-step.
-
-8. **TRACK FALLBACK RATE.** If >30% of cheap steps need host fallback, stop and
-   tell the user. The task is too complex for cheap-step — either the specs are
-   bad or the steps need decomposition. Don't silently burn retries.
-
-9. **COST IS NOT THE GOAL.** Correctness is the goal. Cheap workers are a means,
-   not an end. Never accept a wrong result because "it was cheap."
-
-10. **CHECKPOINT BEFORE EACH SOLVE.** `evo_checkpoint "pre-S{N}"` — one
-    command, zero cost, infinite regret prevention. No gitevo? Plain `git
-    commit` or `git stash` instead. The checkpoint is mandatory; the tool isn't.
-
-15. **AMBIGUITY GOES TO THE USER, NOT TO FANOUT.** Cheap workers cannot ask.
-    An underdetermined spec produces N confident implementations of the wrong
-    thing, all passing a verify_cmd you wrote against your own guess. Resolve
-    with AskUserQuestion at 1.0, before any budget burns.
-
-11. **HOST-ONLY MEANS HOST-ONLY.** Don't try evomcp solve "just to see" on a
-    step you marked host-only. Those steps exist because you judged the cheap
-    model can't handle them. Trust your judgment.
-
-12. **BACKEND IS OPAQUE.** Never name, tune for, or debug the worker backend
-    from this skill. If evomcp solve returns no output, report `evomcp status`
-    to the user and stop. Backend health is not this skill's job.
-
-13. **VISUAL/GAMEPLAY = HOST-ONLY.** Never dispatch a step tagged `visual` or
-    `gameplay` to cheap workers. They cannot see. They will substitute "build
-    passes" for verification. This pattern caused 8 of 10 dod-guard breakdown
-    events. Mark these steps `host-only` during decomposition.
-
-14. **SAME APPROACH, SAME FAILURE.** If a cheap step fails 2 retries with the
-    same failure signature, the approach is wrong — not the parameters. Don't
-    retry a third time with the same strategy. Host fallback with a DIFFERENT
-    approach, or re-spec the step.
-
-## Anti-Patterns
-
-| Temptation | Correct Response |
-|------------|------------------|
-| "Steps 3 and 4 are small, I'll combine them into one solve" | NO. One solve per step. Always. |
-| "The spec is obvious, I'll skip writing context" | NO. Context = pattern references. Cheap workers need them. |
-| "evomcp passed, I'll skip reading the diff" | NO. Read every diff. Cheap models cheat unintentionally. |
-| "This step failed twice, let me try a third time" | NO. Host fallback. Same signature → same result. |
-| "I'll mark this as cheap even though it's architectural" | NO. Architecture = host-only. Cheap workers copy patterns, don't design them. |
-| "The host fallback rate is 40% but the steps are small" | 40% is too high. Stop — the task isn't suitable. Tell the user. |
-| "I'll skip the checkpoint, it's just one step" | One command. Zero cost. |
-| "Let me run the full test suite after every step" | NO. Scoped verify_cmd is enough per step. Full suite at integration check. |
-| "This failed because the verify_cmd is flaky, let me just mark it pass" | NO. Fix the flaky test first. Flaky verify poisons the whole workflow. |
-| "This visual change passes build, it's verified" | NO. Build ≠ visual verification. Visual/gameplay steps are host-only for a reason. |
-| "The cheap worker says the UI looks correct" | NO. Cheap workers cannot see. They report code output, not visual output. |
-| "Same approach but different parameters, third retry" | NO. Max 2 retries with same approach. Third retry needs approach pivot. |
-
-## Session Files
-
-`.cheap-step/` survives compaction:
-```
-.cheap-step/
-├── steps.json       # Plan with per-step status, mode, verify_cmd
-├── progress.log     # One line per step: ✓ S01 (cheap) | ✗ S03 (retry 1/2) | ⚑ S07 (host-fallback) | ◆ S02 (host-only) | ? S04 (ambiguity resolved)
-├── decisions.json   # Ambiguity questions asked + user answers (never re-ask)
-└── specs/           # Saved evomcp specs per step (for debugging failures)
-    ├── S01-spec.json
-    └── S03-spec.json
-```
-
-Write `steps.json` and `progress.log` on EVERY gate decision, not at the end. A
-session file written only at the end is a session file that never survives the
-crash it exists for.
-
-### Staleness Detection (check BEFORE resuming)
-
-On skill start, if `.cheap-step/steps.json` exists, run these checks BEFORE
-resuming. Staleness is the norm — plans change between sessions, old plans
-finish, context shifts. Silently resuming a stale session is WORSE than starting
-fresh, because you execute the wrong steps against a plan nobody asked for.
-
-First match wins:
-
-1. **ALL STEPS DONE** — every step is `completed`, `skipped`, or `host-fallback`
-   → STALE. Overwrite. Log: "Previous plan complete — overwriting."
-2. **GOAL MISMATCH** — `goal` doesn't match the plan you were just handed
-   → STALE. Overwrite. Log: "Goal mismatch — overwriting stale session."
-3. **PLAN SOURCE CHANGED** — `plan_source` exists and that file's mtime is newer
-   than the stored `plan_mtime` → STALE. Overwrite.
-   Log: "Plan source modified — overwriting stale session."
-4. **ALL CHECKS PASS** — fresh for this plan. Resume from the first pending step.
-
-**Never silently resume a stale session.** If you are unsure whether it's stale,
-it is. Ask: "Does this goal match what we're doing NOW?" If no → overwrite.
-
-## Failure Recovery
-
-- **evomcp backend down** → `evomcp status`, report to user, stop. Backend health
-  is not this skill's job.
-- **Step fails 2 retries** → host fallback. Fix the specific blocking issue.
-- **Host fallback rate >30%** → report to user: steps, failure signatures, recommendation
-  (decompose differently, switch to all-host step-by-step, or adjust specs).
-- **Context lost mid-execution** → read `.cheap-step/progress.log`, resume from first
-  pending step.
-- **Verify flaky** → fix flakiness BEFORE retrying. Flaky verify poisons the
-  feedback loop — cheap workers can't distinguish "I broke it" from "it was broken."
-- **Plan needs change** → update steps.json, note in progress.log, continue.
-
-## Integration Points
-
-### evomcp
-Primary execution engine. Every cheap step dispatches `evomcp solve`. The skill
-assumes evomcp is installed and the deepclaude proxy is running.
-
-### dod-guard
-Preferred verify_cmd format. DoD subtrees give multi-layer verification
-(lint+build+test) in one command:
-```
-dod-guard check --dod-id=abc123 --node-path=0.children.2 --quiet
-```
-The shell command is `dod-guard check`. `dod_check` is the MCP tool name and is
-not executable from a shell — a verify_cmd using it never runs a check. Exit
-codes: `0` pass · `1` proof failed · `2` drafts remain (full runs only) · `3`
-usage error. Discover node paths with `dod-guard tree --dod-id=<id>`.
-
-### gitevo
-```
-evo_checkpoint "pre-cheap-step"              # before starting
-evo_checkpoint "pre-S{N}"                    # before each solve
-evo_checkpoint "post-S{N}"                   # after each passing step
-evo_learn "CHEAP_STEP_FALLBACK: S{N} — {failure signature} → {fix summary}"
-evo_learn "CHEAP_STEP_PATTERN: {task type} — {what worked} — {spec pattern}"
-```
-
-### step-by-step
-Host-only steps can dispatch `step-implementer` agent. The two skills share the
-atomic-step discipline — cheap-step just routes implementation to evomcp instead
-of Anthropic subagents.
-
-## Quick Reference
-
-```bash
-# Pre-flight
-evomcp status
-evo_checkpoint "pre-cheap-step"
-
-# Dispatch a cheap step
-evomcp solve '{"spec": {"goal": "...", "verify_cmd": "npm test -- --testNamePattern=\"...\"", "cwd": "...", "allowed_files": ["src/models/user.ts"], "fanout": 3, "budget_tokens": 30000, "context": "Follow pattern in src/models/product.ts..."}}'
-
-# After step passes
-evo_checkpoint "post-S{N}"
-evo_learn "CHEAP_STEP_PATTERN: ..."
-
-# Host fallback (when cheap workers fail)
-# 1. Read best partial from escalation report
-# 2. Fix the specific blocking assertion
-# 3. Run verify_cmd to confirm
-```
+A weak spec says `goal: "fix rate limiting"`, sets `verify_cmd` to the whole
+suite, leaves `context` empty, and omits `allowed_files`. The worker then
+guesses the behavior, reads failures it did not cause, and edits any file.
+
+## Check the work, then retry or take the step yourself
+
+Run `verify_cmd` yourself from `cwd`. Then read the diff. A passing command
+plus an unread diff is not a verified step. A cheap worker can pass a narrow
+check by degenerate means. Look for all five:
+
+1. A special case that matches the test input.
+2. A weakened or deleted assertion.
+3. A file edited outside `allowed_files`.
+4. A catch block that swallows the error and returns a default.
+5. Commented-out code where the failure was.
+
+A narrow `verify_cmd` proves the step and nothing around it. So after the diff
+reads clean, run the build and the tests for the modules this step touched.
+Waiting for the base's closing run buries the breakage many steps deep.
+
+On failure, never re-send the same spec. Add what failed and what the attempt
+got wrong.
+
+- Vague: "that did not work, try again".
+- Specific: "take(0) returned false. The test asserts true for a zero-cost
+  draw. Do not change the test. The bug is the `<=` in the capacity check."
+
+Allow two retries. If the second fails, do the step on the host yourself. Read
+whatever partial work came back first, then dispatch through the base's normal
+agent table. Set `status` to `completed` and leave `mode` as `cheap`. Append a
+line to `progress.log` saying the host finished it. Invent no new status value.
+
+Count those lines as you go. Once more than 30 in every 100 cheap steps end on
+the host, stop. This plan does not suit cheap workers. Say so, and finish the
+run under the base.
+
+A `solve` call can also fail because the backend died mid-run. Two failures
+that never reached a verify result mean the proxy, not the plan. Call `status`
+again. If it is down, tell the user at once and switch to the base. Do not
+grind through the rest of the plan on the host without saying so.
