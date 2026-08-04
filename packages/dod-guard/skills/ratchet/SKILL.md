@@ -1,898 +1,182 @@
 ---
 name: ratchet
-description: >
-  Unified ratcheting workflow that combines dod-guard (verification gates), gitevo (evolutionary branching),
-  evomcp (cascade solver), obsidian-rag (learning persistence), and code-review-graph (impact analysis)
-  to reliably solve complex multi-sub-problems. Two-phase: interactive setup (triage + requirements + DoD + user lock-in),
-  then autonomous /loop execution (one sub-problem per iteration, ratchet gates every cycle).
-  Use when facing non-trivial problems with unknown unknowns, multiple interdependent sub-problems,
-  or when a single-shot approach would waste tokens on wrong approaches.
-  Trigger: "solve with ratchet", "ratchet this", "complex problem", "multi-step solution", "ratcheting workflow".
+description: Execute an existing Definition of Done autonomously, one sub-problem per loop iteration, until a full dod_check passes. Use when a problem has interdependent sub-problems, unknown unknowns, or real regression risk, and a single-shot attempt would waste tokens on wrong approaches. It needs a dod_id that already exists. It does not gather requirements and it does not build the DoD tree. Every iteration proves one sub-problem and then re-runs the whole document, so earlier work cannot silently break. It captures branches with gitevo and persists lessons at the end. Triggers - "solve with ratchet", "ratchet this", "ratcheting workflow", "run the DoD autonomously", "loop until the DoD passes".
 ---
 
-# Ratchet — Unified Ratcheting Workflow
+# Ratchet
 
-## Overview
+## 1. Routing
 
-Two-phase workflow for complex multi-sub-problem work. A ratchet only moves forward — each iteration must pass ALL previous verification gates plus any new ones. dod-guard enforces this; the other tools accelerate exploration, capture learning, and minimize token spend.
+Decide in the first two minutes.
 
-**Phase A (Setup — this session, interactive):** Triage → research → requirements via AskUserQuestion → DoD tree → adversarial spec review (5 lenses) → baseline check → gitevo init → **user lock-in gate**. You do not write a single line of implementation code in Phase A.
+| What you have | Where it goes |
+|---|---|
+| No `dod_id` yet | `/dod-guard:interview` first, then return here |
+| A linear plan, or fewer than 5 steps | `/dod-guard:step-by-step` |
+| A linear plan you want run by cheap workers | `/dod-guard:cheap-step` |
+| Quality or security gates needed at each stage | `/dod-guard:adversarial-workflow` |
+| Interdependent sub-problems plus regression risk | stay here |
 
-**Phase B (Execution — /loop dynamic, autonomous):** User runs `/loop dod-guard:ratchet phase-b` (bare `/loop` shows usage — always include a prompt argument). The agent then self-paces via `ScheduleWakeup`, processing one sub-problem per iteration. Each iteration: refine drafts → implement → scoped dod_check → full regression check → learn → checkpoint → schedule next wakeup. Loop terminates via `ScheduleWakeup(stop=true)` when dod_check returns PASS, or when escalated for manual intervention.
+`/dod-guard:interview` owns requirements, the tree, the company baseline, the
+five-lens review, `dod_create`, and the pre-code baseline run. Never redo any of
+that here. If the tree looks wrong, send the user back to that skill.
 
-**Announce at start:** "Using the ratchet workflow — Phase A: requirements gathering + DoD creation (no code yet). Phase B: autonomous /loop execution with ratchet gates every cycle."
+## 2. Setup
 
-### How /loop Actually Works
+Run these before any autonomous execution. Read-only work and checkpoints only.
 
-Critical mechanics — the skill's Phase B design depends on these:
+1. Call `memory_recall` with the problem in your own words to find prior attempts.
+2. Call `evo_lessons` to read what earlier branches learned about this code.
+3. Call `get_impact_radius_tool` on the modules the DoD names, to see the blast
+   radius. Call `get_minimal_context_tool` for the files you will edit.
+4. Call `dod_tree` with the `dod_id` and read every node. Call `dod_status` for
+   the last recorded verdict, and `evo_summary` if a run started earlier.
+5. Probe which servers answer. Call `status()` for evomcp and `dod_list()` for
+   dod-guard. Tell the user what is missing and read section 7 for what that
+   costs. Never degrade in silence.
+6. Name the sub-problems. Each one is a task group in the existing tree, with a
+   `node_path` you can pass to a scoped check.
+7. Order the sub-problems by dependency. A group whose output another group
+   consumes goes first. Record the order as a numbered list.
+8. Call `evo_init`, then `evo_checkpoint` with a name like `baseline` and a
+   description of the starting state.
+9. Show the user the ordered list and ask for approval.
 
-- **Context accumulates across iterations.** `/loop` runs in the current conversation — each iteration sees the full history of every previous iteration. Context is NOT fresh per cycle. This is beneficial for ratchet: the agent remembers which sub-problems are done, what approaches were tried, and what lessons were learned. But it means the prompt stays lean (one sub-problem at a time) to avoid context bloat.
-- **Iterations never overlap.** If Claude is mid-response when a scheduled wakeup fires, the prompt waits until the current turn completes. No concurrent execution, no catch-up for missed intervals. A sub-problem that takes 12 minutes delays the next iteration — it doesn't queue backlogged fires.
-- **Self-paced loops (/loop dynamic):** The agent controls pacing via `ScheduleWakeup`. To end the loop, call `ScheduleWakeup(stop=true)`. If an iteration ends without calling ScheduleWakeup at all, a ~20-minute fallback fires once, then the loop dies. We use explicit `stop=true` for clean termination — never rely on the fallback.
-- **ScheduleWakeup delays are real, not nominal.** `delaySeconds: 60` means the next iteration fires ~60 seconds after the current turn ends. There's no jitter on self-paced wakeups (jitter only applies to fixed-interval CronCreate loops). Pick delays that match what you're waiting for: 60-120s when actively working through sub-problems, 300s+ when waiting on external state (CI, user input).
-- **Fixed-interval loops (/loop 5m):** These are cron-backed and CAN be killed by the agent via `CronDelete`. But they have deterministic jitter (up to half the interval for sub-hourly) and auto-expire after 7 days. We don't use this mode — ratchet uses self-paced dynamic exclusively.
+Do not start Phase B until the user approves the order. State the count of
+sub-problems, the first one you will attempt, and the branch name you will use.
 
-## When to Use vs Not Use
+### Proof commands run on the host OS
 
-### Use ratchet when:
+You will author commands in step 2 of the iteration. Write them for the machine
+this runs on, not for a generic shell.
 
-- Problem has 2+ sub-problems with dependencies between them
-- Unknown unknowns — you'd burn tokens guessing at the solution
-- Regression risk is real — later changes could break earlier work
-- Worth the setup cost (10-15 min) for cheaper, safer execution
-- Cross-session memory would help future similar problems
+On Windows, use `findstr` rather than `grep`, and write backslash paths.
+cmd.exe does not expand file globs. dod-guard expands directory globs such as
+`packages/*/` on Windows, but never file globs, so write file paths in full.
 
-### Skip ratchet when:
+Prefer `exit_code` over `output_contains` for a test runner. Node's TAP output
+carries no "tests pass" string, so a substring match there passes or fails for
+the wrong reason.
 
-- Single straightforward change (one file, one function)
-- Already have a complete DoD from /interview — hand it to /dod-guard:step-by-step instead
-- Trivial config change, typo fix, or mechanical rename
-- You're in a hurry and accept the regression risk
+## 3. Phase B: the loop
 
-**If unsure, use the triage gate (A.1).** It costs 2-3 questions and tells you whether to proceed or downgrade.
+Start `/loop` with the iteration prompt as its argument. A bare `/loop` only
+prints usage and never enters dynamic mode.
 
-## The Five Tools
+Each iteration handles exactly one sub-problem and then calls `ScheduleWakeup`
+to queue the next one. Iterations never overlap, so never schedule two. Context
+carries forward across iterations, so record decisions in the conversation
+rather than re-deriving them.
 
-| Tool | Role in Ratchet |
-|------|-----------------|
-| **dod-guard** | The ratchet teeth. DoD proofs that ALL must pass. Cryptographic fingerprinting prevents tampering. |
-| **gitevo** | Evolutionary branching. Spawn per-sub-problem, capture learnings, abandon dead ends, adopt winners. |
-| **evomcp** | Cascade solver. Cheap model (DeepSeek) fanout → verify → repair → escalate only stuck nodes to Claude. |
-| **obsidian-rag** | Cross-session memory. Persist learnings, recall past approaches, avoid repeating mistakes. |
-| **code-review-graph** | Impact analysis. Understand blast radius before changes, verify no surprising coupling after. |
+Set `delaySeconds` between 60 and 120 while you are working sub-problems. Set
+300 or more when you are waiting on something outside the repository. An
+iteration that ends without calling `ScheduleWakeup` gets one fallback wakeup
+after roughly 20 minutes, and then the loop dies. Always schedule.
 
-## Core Principle: The Ratchet
+To end the loop deliberately, call `ScheduleWakeup` with `stop=true`.
 
-```
-Ratchet tooth = dod-guard concrete proof node.
-dod_check verifies ALL teeth every run.
-Passing tooth stays passed (fingerprint detects tampering).
-New teeth can only be ADDED — never removed without audit trail (dod_amend).
-```
+The rule that makes this a ratchet: an iteration is finished only when the
+scoped subtree passes and a full unscoped `dod_check` still passes. Never accept
+a green subtree while another subtree has regressed.
 
-A problem is "solved" when `dod_check` (no nodePath) returns `PASS` with zero draft nodes.
+## 4. The iteration prompt
 
----
-
-# Phase A: Setup & Lock-In (Interactive)
-
-**Iron rule: Do NOT write implementation code in Phase A.** This phase is research, questions, DoD creation, and user confirmation. Code happens in Phase B.
-
-## A.1 Triage Gate — Is This a Ratchet Problem?
-
-Before investing in a full DoD, ask 2-3 scoping questions via AskUserQuestion:
-
-### Question 1: Complexity
-
-> "How many distinct sub-problems does this break into? (e.g., 'add auth' = password hashing + login endpoint + session management + integration = 4)"
-
-Options: "1 (single change)", "2-3", "4-6", "7+ (complex)"
-
-If "1": suggest downgrading. Stop and offer: "This looks like a single change. Use /interview to pin requirements, then /dod-guard:step-by-step to execute — faster than a full ratchet. Continue with ratchet anyway?"
-
-### Question 2: Dependencies
-
-> "Do sub-problems depend on each other, or are they independent?"
-
-Options: "Sequential (B needs A first)", "Mostly independent (parallelizable)", "Mixed", "Unsure"
-
-This determines execution order in Phase B. Sequential = one branch, process in order. Independent = parallel evomcp solves possible.
-
-### Question 3: Verification Surface
-
-> "What's the primary verification surface?"
-
-Options: "Tests + lint + format (code quality)", "Runtime behavior (API responses, CLI output, UI)", "Performance metrics", "Mixed — all of the above"
-
-This determines which predicate types and baseline categories apply.
-
-### Triage Outcome
-
-After 2-3 questions, decide:
-- **Full ratchet**: 2+ sub-problems, dependencies, non-trivial verification → continue to A.2
-- **Ratchet-lite**: 2-3 sub-problems, mostly independent, but still want ratchet guarantees → continue but skip evomcp, implement directly
-- **Downgrade**: Recommend /interview + /dod-guard:step-by-step instead, user confirms
-
-Report the triage decision before proceeding.
-
-## A.2 Context & Recall
-
-Before requirements gathering, research the codebase and recall past learnings.
-
-### A.2.1 Impact Analysis (code-review-graph)
-
-If the codebase has a built graph:
+Pass this block forward on every cycle. Fill the two placeholders first.
 
 ```
-mcp__code-review-graph__get_minimal_context_tool(task="<one-line goal>")
+Sub-problem: <title and node_path from the approved order>
+DoD: <dod_id>
+
+1. Call evo_spawn with the last good checkpoint name and a new_branch named
+   after this sub-problem. Work only on that branch.
+2. Call dod_tree with the dod_id and this node_path. Read every leaf under it.
+   Concretize any draft leaf that is now writable with dod_refine, using
+   mode "concretize" for a proof or mode "subdivide" for children. Leave any
+   draft whose intent starts with MANUAL: alone.
+3. Implement the sub-problem. Write the failing test first when a leaf carries
+   a tdd predicate.
+4. Verify the subtree:
+   dod-guard check --dod-id=<dod_id> --node-path=<node_path> --quiet
+   Exit 0 passes. Exit 1 means a proof failed. Exit 2 means drafts remain.
+   Exit 3 means you wrote the command wrong.
+5. On exit 1 or 2, repair and re-run step 4. Cap this at 3 repair attempts.
+6. Run the project formatter over the changed files. A stale format reads as a
+   regression in the next step.
+7. Run the regression check: dod_check with the dod_id and no nodePath. Any
+   leaf outside this sub-problem that now fails is a regression. Fix the
+   regression before anything else. It never justifies changing that leaf.
+8. Call evo_checkpoint with the sub-problem name and what changed.
+9. Call evo_learn with one sentence on what worked or what failed.
+10. Call ScheduleWakeup for the next sub-problem in the approved order.
+
+Stop conditions, checked in this order:
+- Every concrete leaf passes and only MANUAL: drafts remain: go to section 6.
+  dod_check reports INCOMPLETE here, not PASS. That is the success state.
+- A proof is failing after 3 repair attempts: escalate, see section 5.
+- dod_check reports STUCK: escalate, see section 5.
+- The approved order is exhausted and a concrete leaf still fails: escalate.
+- Three sub-problems in a row escalated with no progress: stop the loop and
+  hand the whole problem back to the user.
+
+If the approach itself is wrong rather than merely stuck, call evo_abandon
+with the checkpoint and a reason, then move to the next sub-problem.
+
+Escalation trigger: you are about to weaken a command, loosen a predicate,
+delete an assertion, or mark a leaf advisory to make it pass. Stop instead and
+escalate.
 ```
 
-For complex problems, follow up with:
-
-```
-mcp__code-review-graph__detect_changes_tool  (if changes already exist)
-mcp__code-review-graph__get_impact_radius_tool  (blast radius)
-mcp__code-review-graph__list_flows_tool(sort_by="criticality")  (critical paths)
-```
-
-### A.2.2 Recall Past Approaches (obsidian-rag)
-
-```
-mcp__plugin_obsidian-rag_obsidian-rag__memory_recall(query="<problem domain>")
-mcp__plugin_gitevo_gitevo__evo_lessons()  (if prior ratchet run exists)
-```
-
-### A.2.3 Codebase Research
-
-- Explore agent to find related code, patterns, tests
-- Check for prior art in the codebase
-- Identify language, test framework, build system
-- Check docs/plans/ for existing specs
-
-## A.3 Requirements Gathering
-
-Ask questions **one at a time** via AskUserQuestion. Each question should be specific, informed by A.2 research, and unambiguous.
-
-### Question Categories
-
-Work through these as relevant:
-
-- **Purpose** — What problem does this solve? Who is it for?
-- **Inputs/Outputs** — What data goes in? What comes out? What format?
-- **Behavior** — Happy path? Error behavior? Edge cases?
-- **Constraints** — Performance? Compatibility? Security? Scope boundaries?
-- **Integration** — How does this connect to existing code? What contracts?
-- **Verification** — How do we know it's correct? What's the acceptance criteria?
-
-### Minimum Questions by Scope
-
-| Estimated scope (from A.1+A.2) | Minimum clarifying questions |
-|--------------------------------|------------------------------|
-| Small — 1-3 files, one component/layer | 2-3 |
-| Medium — 4-8 files, or 2+ layers | 4-5 |
-| Large — 9+ files, or 3+ projects/layers | 6+ |
-
-The floor is a minimum, not a target. Keep asking if ambiguities remain.
-
-### Red Flags — Ask More If:
-
-- You're about to write "TBD" in requirements
-- You have competing interpretations of a requirement
-- You don't know what error behavior should be
-- Scope boundary is unclear
-- You haven't discussed how to verify correctness
-- You've asked fewer questions than the scope floor
-
-## A.4 Build the DoD Tree
-
-Based on the requirements from A.3, construct a hierarchical TaskNode tree.
-
-### Minimum Tree Structure
-
-```
-roots:
-  "Code Quality" (task group) — concrete
-    - Lint
-    - Format
-    - Full test suite
-
-  "<Feature Work>" (task group) — mix of concrete + draft
-    - Sub-problem A (task group)
-      - Concrete proofs (known upfront)
-      - Draft proofs (implementation-dependent)
-    - Sub-problem B (task group)
-      - ...
-
-  "Integration" (task group)
-    - Wiring proof (concrete)
-    - Behavioral proof (draft)
-
-  "Manual Verification" (task group)
-    - Draft: "MANUAL: code review"
-    - Draft: "MANUAL: walkthrough — run app, verify end to end"
-```
-
-Human-verified steps are **draft leaves** with a `MANUAL:` intent. There is no
-`manual` predicate or category — drafts hold the DoD at INCOMPLETE until a human
-signs off, which is exactly the semantic you want.
-
-### TaskNode Rules
-
-- **Task group** — has `children`, represents a sub-goal. Decompose until children are pure leaves.
-- **Draft leaf** — `refinement: "draft"`, has `intent`. Use when implementation-dependent.
-- **Concrete leaf** — `refinement: "concrete"`, has `command`, `predicate`, `description`, `category`. Use when known upfront.
-- **3 levels max** — roots → 2-4 task groups per root → leaves.
-- **Draft only when genuinely unresolved.** If the proof command, predicate, and description are known at create time, make it concrete. Drafts exist to stop the LLM from guessing when circumstances are unclear — they're not a quota to fill. Use drafts when there's uncertainty or ambiguity about approach.
-
-### Sub-Problem Identification
-
-Each **task group under Feature Work** that has draft nodes is a sub-problem for Phase B. Name them clearly — these become branch names and loop iteration targets.
-
-## A.5 Adversarial Spec Review
-
-Attack the DoD tree before calling `dod_create`. Dispatch the five shipped lens
-agents in parallel — each gets the spec and tree, never your reasoning:
-
-| Lens | subagent_type | Attack surface |
-|------|---------------|----------------|
-| Security | `dod-guard:adversarial-security` | STRIDE risks, trust boundaries, injection, authZ gaps |
-| Assumptions | `dod-guard:adversarial-spec-reviewer` | Implicit assumptions about codebase, users, environment |
-| Testability | `dod-guard:adversarial-spec-reviewer` | Requirements with no falsifiable behavioral proof |
-| Consistency | `dod-guard:adversarial-spec-reviewer` | Contradictions, scope drift from the original ask |
-| Implementability | `dod-guard:adversarial-spec-reviewer` | Architectural fit, missing deps, undefined seams |
-
-Each lens must return ≥1 finding or `NO_FINDINGS: [specific justification]`. A
-bare "no issues" is an invalid verdict — re-dispatch.
-
-Verdict: **GO** (0 critical, ≤2 major) · **REVISE** (1+ critical or 3+ major —
-fix the spec, re-run, max 3 cycles) · **STOP** (blocker — escalate to the user).
-
-Present findings to the user. Accept, reject, or modify each. Collect
-`skip_reasons` for every concern consciously dismissed. After `dod_create`
-succeeds in A.6, record the verdict with
-`dod_adversarial_gate(dod_id, phase: 1, verdict, lenses, summary)`.
-
-**This replaced an older "contrarian" pass** that argued for adding `mutation`,
-`streamline`, `complexity`, `coverage`, and `duplication` proofs. Those predicates
-and categories were deleted from dod-guard — it is behavioral predicates only.
-Do not ask for them; `dod_create` rejects them. Valid predicate types are the 7
-behavioral (`exit_code`, `exit_code_not`, `output_contains`,
-`output_not_contains`, `output_matches`, `output_not_matches`, `tdd`) plus 3 gate
-types (`adversarial`, `holdout`, `convergence`). Valid categories are
-`behavioral`, `wiring`, `test_audit`, `other`.
-
-## A.6 Create DoD & Baseline Check
-
-### A.6.1 Create DoD
-
-```
-mcp__plugin_dod-guard_dod-guard__dod_create(
-  title="<Feature Name>",
-  goal="<One sentence>",
-  type="general",
-  cwd="<Absolute project root>",
-  markdown_path="<Absolute path to docs/plans/YYYY-MM-DD-<slug>.md>",
-  sections={
-    "requirements": "<Markdown requirements from A.3>",
-    "research_notes": "<Key findings from A.2>",
-    "decisions": "<Design decisions from A.3 questions>",
-    "open_questions": "<Deferred items>",
-    "open_risks": "<Known risks>"
-  },
-  roots=[<tree from A.4>],
-  skip_reasons={<from A.5>}
-)
-```
-
-### A.6.2 Baseline Check
-
-**Immediately run dod_check** — before any implementation:
-
-```
-mcp__plugin_dod-guard_dod-guard__dod_check(dod_id="<id>")
-```
-
-Check:
-- Concrete proofs that SHOULD fail (TDD red phase, grep for nonexistent code) → expected
-- Concrete proofs that error (command not found, bad path) → fix via dod_amend NOW
-- Concrete proofs that PASS before code exists → suspect, strengthen or convert to draft
-- Draft nodes listed → confirms tree structure
-
-**Do NOT proceed to A.7 until baseline runs clean** (all errors fixed, only expected failures remain).
-
-## A.7 Initialize Evolution (gitevo)
-
-```
-mcp__plugin_gitevo_gitevo__evo_init()
-mcp__plugin_gitevo_gitevo__evo_checkpoint(
-  name="baseline",
-  description="Initial state before ratchet run. DoD: <dod_id>"
-)
-```
-
-If gitevo unavailable: skip. Use git branches manually. Note the degradation.
-
-## A.8 User Confirmation Gate
-
-Present the final setup summary and **require explicit user confirmation** before proceeding:
-
-```markdown
-## Ratchet Setup Complete
-
-**DoD ID:** <id>
-**Goal:** <one sentence>
-**Sub-problems:** <N> (<list with dependencies>)
-
-**Phase B will:**
-1. Process sub-problems in dependency order
-2. Each iteration: implement → scoped dod_check → full regression check
-3. Cascade solve with evomcp for suitable sub-problems
-4. Escalate stuck sub-problems for manual intervention
-5. Terminate when full dod_check returns PASS
-
-**Estimated iterations:** <N to N*3>
-**Tools available:** evomcp (<yes/no>), gitevo (<yes/no>), obsidian-rag (<yes/no>), code-review-graph (<yes/no>)
-
-**Ready to begin Phase B execution?**
-```
-
-User must explicitly confirm. If they identify gaps, return to A.3.
-
----
-
-# Phase B: Execution Loop (/loop dynamic)
-
-Phase B runs autonomously via `/loop` (dynamic mode — no fixed interval). Each loop iteration processes one sub-problem, verifies ratchet integrity, and schedules the next wakeup.
-
-## B.1 Entering Loop Dynamic Mode
-
-After user confirms in A.8, tell the user: **"Phase A complete. Run `/loop dod-guard:ratchet phase-b` to begin Phase B autonomous execution."**
-
-The user runs `/loop dod-guard:ratchet phase-b` — bare `/loop` without a prompt argument shows usage info and does NOT enter dynamic mode. Always provide a prompt argument.
-
-### First Iteration (Bootstrapping)
-
-On the first iteration after `/loop` is invoked, the agent:
-
-1. Reads `dod_status(dod_id="<id>")` — confirms which proofs exist and their state
-2. Reads `evo_summary()` if gitevo available
-3. Identifies the first sub-problem (earliest in dependency order)
-4. Proceeds to the per-iteration process (B.4)
-5. Ends the iteration with `ScheduleWakeup(delaySeconds=60, reason="next sub-problem: <name>")`
-
-### The Iteration Prompt (Internal)
-
-Each `ScheduleWakeup` call passes this prompt — the agent's internal instructions for every iteration:
-
-```
-Ratchet Phase B — DoD: <dod_id> | CWD: <cwd> | Sub-problem: <current>
-
-Process ONE sub-problem this iteration. ONE. Not two, not "also this other thing."
-The entire loop is designed so a weak model doing one small thing perfectly 100 times
-outperforms a strong model doing everything at once and cutting corners.
-
-## Anti-Laziness Hard Rules
-
-These exist because every LLM tries to "finish fast" when a task looks big. That is
-EXACTLY the wrong instinct here. Read before every iteration:
-
-1. ONE SUB-PROBLEM PER ITERATION. If you even THINK about doing two, stop. You have
-   literally unlimited iterations. There is no rush.
-
-2. dod_check IS THE ONLY SOURCE OF TRUTH. If dod_check doesn't pass, you're NOT done.
-   No amount of "this looks right" or "the tests pass locally" matters. dod_check is
-   the ratchet. No other metric.
-
-3. COST DOES NOT MATTER. You are running on DeepSeek. A billion tokens costs <$5.
-   Spending 20 iterations on a sub-problem costs ~$0.10. The user paid more for the
-   electricity to run this loop than you will ever cost in API tokens. Never optimize
-   for token spend.
-
-4. THERE IS NO SESSION LIMIT. This loop runs forever until the work is done or the
-   user stops it. You will not time out. You will not hit a rate limit. You will not
-   be "too slow." The loop runs for however many iterations the work needs.
-
-5. NEVER SKIP THE REGRESSION CHECK. Step 5 (full dod_check) is MANDATORY after every
-   sub-problem. Even if you're "sure nothing broke." Even if the sub-problem was
-   "trivial." The ratchet exists because you're wrong about that sometimes.
-
-6. NEVER SILENTLY DEGRADE. If a proof fails and you can't fix it, ESCALATE. Do not
-   mark it advisory. Do not dod_amend it to be weaker. Do not convert it to manual.
-   Escalate so the human can decide.
-
-7. "TRIVIAL" IS A RED FLAG. If you catch yourself thinking "this is trivial, I'll
-   just do it and the next sub-problem too" — STOP. That's the laziness instinct
-   talking. One per iteration. Always.
-
-## On Entry
-1. dod_status(dod_id="<dod_id>") — what passes/fails/has drafts
-2. Identify next unsatisfied sub-problem in dependency order
-3. Skip sub-problems whose dependencies aren't yet passing
-
-## Sub-Problem Queue
-<list: name, nodePath, dependency, status>
-
-## Process (one sub-problem, one iteration)
-
-0. FORMAT: Run `biome check --write` on changed files BEFORE dod_check. Biome format/lint errors in full dod_check runs catch stale state that scoped runs miss.
-1. REFINE: dod_refine any draft nodes in this subtree to concrete
-2. SPAWN: evo_spawn("baseline" or last checkpoint, "ratchet/<slug>")
-3. IMPLEMENT: cascade (evomcp solve) or direct. See cascade-vs-direct rules.
-4. VERIFY: dod_check(nodePath=<path>) → all concrete proofs in subtree pass
-5. REGRESSION: dod_check (full, no nodePath) → ANY regression = fix NOW
-6. LEARN: evo_learn + evo_checkpoint
-7. SCHEDULE: ScheduleWakeup for next iteration or termination
-
-## Cascade vs Direct
-- evomcp solve: self-contained, 3+ proofs, working proxy
-- Direct: trivial (1-2 lines), deep architecture knowledge, evomcp unavailable
-
-## Escalation
-If sub-problem fails after direct implementation: record what was tried (evo_learn),
-present to user with options (different approach / guidance / skip). Do NOT silently
-skip or loop on failure.
-
-## Termination (call ScheduleWakeup(stop=true) when)
-1. dod_check (full) = PASS → SUCCESS
-2. dod_check (full) = INCOMPLETE (all automated pass, manuals remain) → list manuals
-3. 3 consecutive escalations without progress → present escalation report
-4. User intervened to stop
-
-## On Success
-evo_adopt → tighten (optional dod_add_node) → evo_export_lessons → memory_save →
-evo_finish → ScheduleWakeup(stop=true)
-```
-
-The prompt is the same every iteration — context accumulates so the agent knows where it is in the queue. The prompt stays lean (~1K tokens) so it doesn't dominate the growing context window.
-
-## B.2 Anti-Laziness Architecture
-
-The ratchet skill is designed to counter a fundamental LLM failure mode: **when a task looks too large, the model cuts corners to "finish faster."** This is rational behavior for most LLM tasks (finish = lower cost, fewer turns) but completely wrong for ratchet-style work. The entire point of the ratchet is to turn one big scary task into many small mechanical steps so a weak model like DeepSeek can deliver high-quality results through sheer iteration count.
-
-### The Cost Reality
-
-| Metric | Value |
-|--------|-------|
-| DeepSeek input | ~$0.27 / million tokens |
-| DeepSeek output | ~$1.10 / million tokens |
-| 1 BILLION tokens | ~$5 |
-| Typical ratchet iteration | ~20K tokens → ~$0.02 |
-| Full ratchet run (50 iterations) | ~$1 |
-
-**You cannot spend meaningful money here.** The user's electricity to run this loop costs more per hour than you will ever spend in API tokens. If you find yourself thinking "this is taking too many iterations" — that thought is the laziness instinct. There is no "too many iterations."
-
-### Why the Loop Design Fights Laziness
-
-The loop is structured to make laziness physically impossible:
-
-1. **One sub-problem per iteration** — the agent cannot "do everything at once" because the prompt explicitly says ONE. And there's always a next iteration. The queue gives permission to stop after one.
-
-2. **dod_check gates every iteration** — the agent cannot "mark it done and move on" because dod_check is a machine gate. It either passes or it doesn't. There's no faking it.
-
-3. **Full regression check after every sub-problem** — the agent cannot "assume B didn't break A." The ratchet verifies it. Every time.
-
-4. **Unlimited iterations** — the loop has no max count. There is no pressure to finish in N turns because N doesn't exist. The loop runs until the work is done, period.
-
-5. **Self-pacing** — the agent controls when the next iteration fires. If an iteration takes 30 minutes of work, that's fine. ScheduleWakeup just schedules the next one. No queue backs up. No timeout fires.
-
-6. **Escalation instead of silent degradation** — when stuck, the agent must escalate to the human. It cannot quietly weaken proofs, skip steps, or mark failures as advisory to make dod_check pass.
-
-### Signs of Laziness (Escalate If You See These)
-
-| Symptom | What It Looks Like | Reality |
-|---------|-------------------|---------|
-| Combining sub-problems | "I'll do A and B together to save time" | There is nothing to save. Each costs $0.02. |
-| Skipping regression check | "This was trivial, full check is overkill" | The regressions you catch are NEVER the ones you expected |
-| Premature "it works" | "Tests pass locally, we're good" | dod_check is the only truth. Nothing else counts. |
-| Weakening proofs | "That proof is too strict, let me dod_amend it" | dod_amend requires a reason the user approved. Amending to pass = cheating. |
-| Marking as advisory | "This failure is just advisory, it's fine" | Advisory is set at dod_create, not discovered during execution. |
-| Rushing to termination | "Let me finish the last 2 sub-problems in this iteration" | ScheduleWakeup takes 60 seconds. Wait for it. |
-
-### The Core Mantra (Read Every Iteration)
-
-> **There is no "too long." There is no "too expensive." There is no "too many iterations." There is only "dod_check doesn't pass yet." The ratchet doesn't care how many cycles it takes. It only cares that every tooth is locked.**
-
-## B.3 /loop Context Management
-
-Context accumulates across iterations (see "How /loop Actually Works" in Overview). After 5+ sub-problems, the conversation may be long. Strategies:
-
-- **Lean iteration prompt** — the prompt above is ~1K tokens. The bloat comes from dod_check output and implementation details, not the prompt.
-- **Subagent delegation** — for research-heavy sub-problems, spawn an Explore agent. The one-line result lands in main context instead of full file dumps.
-- **Scoped dod_check output** — `--nodePath` runs produce shorter output than full checks. Use scoped during implementation, full only for regression gate.
-- **Accept the accumulation** — ratchet NEEDS context. The agent must remember which sub-problems are done and what approaches were tried. Context is working memory, not waste.
-
-## B.4 Loop Iteration Logic (Quick Reference)
-
-```
-LOOP ITERATION:
-  dod_status() → find next sub-problem with unsatisfied proofs
-  ↓
-  Has draft nodes? → dod_refine them
-  ↓
-  Cascade or direct? → implement
-  ↓
-  dod_check(nodePath=X) → subtree must pass
-  ↓
-  dod_check (full) → REGRESSION? fix it NOW
-  ↓
-  evo_learn + evo_checkpoint
-  ↓
-  More sub-problems? → ScheduleWakeup(60-120s)
-  All done? → termination sequence
-  Stuck? → escalate to user
-```
-
-## B.5 Sub-Problem Execution Detail
-
-### Cascade Solve (evomcp)
-
-When using evomcp solve:
-
-1. N parallel `claude -p` instances (DeepSeek), each with different strategy
-2. Each implements a candidate solution
-3. Verify each candidate against `dod-guard check --node-path=X --quiet` (shell)
-4. Failed candidates get up to 3 repair iterations with failure feedback
-5. Stuck detection: same failure after repair → kill lineage
-6. First passing candidate → return patch + verification report
-7. All lineages fail → return escalation report
-
-### Direct Implementation
-
-When implementing directly:
-
-1. Read relevant source files
-2. Implement the change
-3. Run scoped dod_check
-4. If fail: read failure output, fix, re-run (max 3 attempts)
-5. If still failing after 3 attempts → escalate (same as cascade escalation)
-
-### Handling Escalations
-
-When a sub-problem escalates (all approaches failed):
-
-1. **Read the escalation report** — the failure signature tells you what's stuck
-2. **Identify the barrier** — missing dependency? wrong architecture? test infrastructure gap?
-3. **Fix directly** — this is the 5% that needs expensive model
-4. **Verify** with dod_check(nodePath=X)
-5. **Learn the lesson** — evo_learn with root cause, not just "it failed"
-
-```
-mcp__plugin_gitevo_gitevo__evo_learn(
-  content="Sub-problem <name>: ESCALATED. Failure signature: <sig>. Root cause: <why>. Fix: <what Claude did>"
-)
-```
-
-If the direction is fundamentally wrong (not stuck — invalid approach):
-
-```
-mcp__plugin_gitevo_gitevo__evo_abandon(
-  checkpoint="baseline",
-  reason="<why this approach was wrong>"
-)
-```
-
-## B.6 Termination: Adopt, Tighten, Persist
-
-When full dod_check returns PASS or INCOMPLETE (all automated pass):
-
-### Adopt
-```
-mcp__plugin_gitevo_gitevo__evo_adopt(branch="ratchet/<slug>")
-```
-
-### Tighten (Optional)
-Add regression proofs for edge cases discovered during cascade:
-
-```
-mcp__plugin_dod-guard_dod-guard__dod_add_node(
-  dod_id="<id>", parent_path="<path>", title="<new proof>",
-  refinement="concrete", command="<command>",
-  predicate={"type": "<type>", "value": <value>},
-  description="<description>", category="<category>"
-)
-```
-
-### Persist
-```
-mcp__plugin_gitevo_gitevo__evo_export_lessons()
-```
-→ For each lesson: `memory_save(id, title, description, content, type="project", metadata={...})`
-
-Also save final verdict:
-```
-mcp__plugin_obsidian-rag_obsidian-rag__memory_save(
-  id="ratchet-<slug>-verdict",
-  title="Ratchet verdict: <DoD title>",
-  description="Full ratchet run completed. Verdict: <PASS|FAIL|INCOMPLETE>",
-  content="<summary of sub-problems, escalations, key learnings>",
-  type="project",
-  metadata={"dod_id": "<id>", "date": "<date>", "sub_problems": <N>, "escalated": <M>}
-)
-```
-
-### Cleanup
-```
-mcp__plugin_gitevo_gitevo__evo_finish()
-```
-**Irreversible** — only after confirming final state is correct.
-
----
-
-## Tool Availability & Degradation
-
-Check at Phase A.2 and report:
-
-```
-mcp__plugin_evomcp_evomcp__status()     # deepclaude proxy running?
-mcp__plugin_dod-guard_dod-guard__dod_list()  # dod-guard connected?
-```
-
-| Tool Missing | Degradation |
-|-------------|-------------|
-| evomcp | Phase B uses direct implementation only. Slower but still ratchets. |
-| gitevo | Skip A.7 + git branching in B. Use git manually. Lose structured lesson capture. |
-| obsidian-rag | Skip persistence. Lessons lost across sessions. Ratchet still works within session. |
-| code-review-graph | Skip A.2.1 impact analysis. Use grep/glob for manual assessment. |
-
-**Minimum viable ratchet:** dod-guard alone. Create DoD (Phase A), implement sub-problems sequentially with dod_check after each (Phase B direct). No cascade, no branching, no persistence — but still a ratchet.
-
----
-
-## Platform Notes
-
-### Windows (cmd.exe)
-
-- **Globs not expanded by cmd.exe.** `packages/*/src/` in a command string is passed literally to the tool. Use explicit paths or tools that handle their own globbing (e.g. Biome). dod-guard's `dod_create` now warns when glob wildcards are detected.
-- **Use backslashes for findstr paths.** `findstr /C:"pattern" packages\dod-guard\src\file.ts` not forward slashes.
-- **Node test runner** outputs TAP format — never contains the string "tests pass". Use `exit_code` predicate for test commands, never `output_contains`.
-- **Proof commands run on the host OS.** Write them for Windows (`findstr`, `type`, `dir`, `del`), not Unix (`grep`, `cat`, `ls`, `rm`). dod-guard validates tool availability at create time.
-
-### code-review-graph dead_code
-
-- **~50% false positive rate** on `refactor_tool(mode="dead_code")`. Graph parser flags file-level constants used within the same file, and cannot distinguish internal module use from export-only. Always `grep` for the symbol before deleting anything flagged as dead.
-
-### Biome --unsafe
-
-- `biome check --write` skips "unsafe" fixes like unused import removal (Biome classifies import removal as unsafe since it can cause side-effect losses). Use `biome check --write --unsafe` for full cleanup after code extraction. Consider running `--write` without `--unsafe` first, review the output, then add `--unsafe` for import cleanup.
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Why Wrong | Do Instead |
-|-------------|-----------|------------|
-| Writing code before user confirms A.8 | Defeats the lock-in — user hasn't approved the plan | No code until Phase B |
-| Skipping triage (A.1) | Full ratchet on a 1-line change wastes 10 min of setup | Triage first, downgrade if appropriate |
-| Asking zero requirements questions | "Build X" without clarification = wrong X gets built | Minimum 2-3 AskUserQuestion calls |
-| Skipping baseline check (A.6.2) | Broken proofs discovered late, wasted work | Always baseline check before A.7 |
-| Running full dod_check on every cascade attempt | Slow — runs all proofs when only one subtree changed | Scoped `--nodePath=X` during implementation, full check after |
-| evomcp solve without dod-guard verify_cmd | No ratchet — solution quality unverified | Always use dod_check as verify_cmd |
-| Not capturing lessons on escalation | Same failure repeats next session | Always evo_learn + memory_save on escalation |
-| Manual-only DoD (no concrete machine proofs) | Nothing to ratchet against | Minimum: lint, format, full test suite, and a `wiring`-category integration proof |
-| Running cascade on trivial sub-problems | Wastes tokens on fanout for 1-line fixes | Direct implementation for trivial nodes |
-| Adopting before full dod_check | Merges code that breaks other sub-problems | Full dod_check before any evo_adopt |
-| Skipping regression check (full dod_check after each sub-problem) | Sub-problem B breaks sub-problem A silently | Full dod_check after EVERY sub-problem |
-| Not tightening ratchet after success | Same problem class will need same effort next time | Add regression proofs after solving |
-| Continuing loop after 3 escalations | Infinite loop burning tokens | Stop and present escalation report |
-| Skipping evo_finish cleanup | Orphaned branches and tags accumulate | Clean up after verified PASS |
-| Forgetting to dod_refine drafts before cascade | Cascade agents can't verify draft nodes | All nodes in sub-problem's subtree must be concrete before evomcp solve |
-
----
-
-## Integration with Existing Skills
-
-| Phase | Skill/Tool | How |
-|-------|-----------|-----|
-| Triage (A.1) | — (built-in AskUserQuestion) | Scope the problem |
-| Research (A.2) | Explore agent, code-review-graph, obsidian-rag | Codebase context + past learnings |
-| Requirements (A.3) | `dod-guard:interview` patterns | Structured questioning → DoD tree |
-| Contrarian (A.5) | `dod-guard:interview` contrarian pattern | Push for max proof coverage |
-| Test audit | `dod-guard:adversarial-workflow` (Phase 2) | Coverage, falsifiability, and edge-case audit of the test suite |
-| Implementation review | `dod-guard:adversarial-workflow` (Phase 3) | Saboteur / new-hire / spec-auditor pass over the diff |
-| Code review | `/code-review` | Review diffs between checkpoints |
-| Pre-PR review | `/pre-pr-review` | Check for LLM-isms before adopting |
-
----
-
-## Quick Reference: MCP Tool Calls
-
-### dod-guard
-```
-dod_create(title, goal, type, cwd, markdown_path, sections, roots, skip_reasons?)
-dod_check(dod_id?, path?, cwd_override?, nodePath?)
-dod_refine(dod_id, node_path, mode, command?, predicate?, description?, category?, children?)
-dod_add_node(dod_id, parent_path, title, refinement?, intent?, command?, predicate?, ...)
-dod_amend(dod_id, node_path, reason, new_command?, new_predicate?, new_description?)
-dod_status(dod_id?, path?)
-dod_tree(dod_id?, path?, node_path?)
-dod_adversarial_gate(dod_id, phase, verdict, lenses, summary)
-dod_list()
-
-# From a shell (e.g. an evomcp verify_cmd) use the CLI — `dod_check` is an MCP
-# tool name and is NOT executable from a shell:
-#   dod-guard check --dod-id=<id> --node-path=<path> --quiet
-#   exit 0 pass | 1 proof failed | 2 drafts remain | 3 usage error
-```
-
-### gitevo
-```
-evo_init()
-evo_checkpoint(name, description)
-evo_spawn(checkpoint_name, new_branch)
-evo_learn(content)
-evo_lessons()
-evo_export_lessons()
-evo_abandon(checkpoint?, reason?)
-evo_adopt(branch)
-evo_diff(checkpoint_a, checkpoint_b)
-evo_summary()
-evo_checkpoints()
-evo_branches()
-evo_finish()
-```
-
-### evomcp
-```
-solve(spec: {goal, verify_cmd, cwd, allowed_files?, fanout?, budget_tokens?,
-             strategy?, context?, build_cmd?, test_cmd?, lint_cmd?, held_out_tests?})
-evolve(spec: {goal, fitness_cmd, cwd, target_files, generations?, population_size?, ...})
-orchestrate(spec)   # full SPEC→TEST_AUTHOR→IMPLEMENT→HARDEN→REVIEW→MERGE playbook
-status()
-```
-
-### obsidian-rag
-```
-memory_save(id, title, description, content, type?, metadata?)
-memory_recall(query, limit?)
-memory_list()
-vault_select(name)
-search_notes(query, limit?, kind?)
-```
-
-### code-review-graph
-```
-get_minimal_context_tool(task, changed_files?, repo_root?, base?)
-detect_changes_tool(base?, changed_files?, include_source?, max_depth?)
-get_impact_radius_tool(changed_files?, max_depth?, repo_root?, base?)
-get_review_context_tool(changed_files?, max_depth?, include_source?)
-list_flows_tool(sort_by?, limit?, kind?)
-```
-
----
-
-## Example: Full Ratchet Run
-
-**Problem:** "Add rate limiting to the login endpoint"
-
-### Phase A: Setup
-
-```
-A.1 TRIAGE:
-  Q1: "How many sub-problems?" → 3 (middleware, wiring, config)
-  Q2: "Dependencies?" → Sequential (wiring needs middleware)
-  Q3: "Verification surface?" → Tests + runtime behavior
-  Verdict: Full ratchet. 3 sub-problems, sequential.
-
-A.2 CONTEXT:
-  memory_recall("rate limiting login") → no prior memories
-  get_minimal_context_tool("add rate limiting to login") → 3 communities, 12 flows
-  Explore agent → src/auth/routes.ts, src/auth/middleware/, tests/auth/
-
-A.3 REQUIREMENTS:
-  Q: "Rate limit window?" → 5 req/min per IP (Recommended: sliding window)
-  Q: "Response on limit?" → 429 with Retry-After header
-  Q: "Configuration mechanism?" → Environment variable, default 5/min
-  Q: "Scope?" → Login endpoint only, not whole app
-
-A.4 DOD TREE:
-  roots:
-    "Code Quality" (task group)
-      - Lint (concrete)
-      - Format (concrete)
-      - Full test suite (concrete)
-    "Rate Limiting" (task group)
-      "Middleware" (task group)
-        - Draft: "tracks IP requests with sliding window"
-        - Draft: "returns 429 when limit exceeded"
-      "Wiring" (task group)
-        - Draft: "middleware applied to POST /login route"
-      "Configuration" (task group)
-        - Draft: "reads RATE_LIMIT_MAX from env, defaults to 5"
-    "Integration" (task group)
-      - Wiring: grep for middleware registration (concrete)
-      - Draft: "curl login returns 429 after 5 rapid requests"
-    "Manual Verification" (task group)
-      - Draft: "MANUAL: code review"
-      - Draft: "MANUAL: walkthrough"
-
-  Sub-problems: A=Middleware, B=Wiring, C=Config. Order: A → B → C.
-  (Integration depends on all three, runs last.)
-
-A.5 CONTRARIAN:
-  → MUST ADD: observability (log rate limit hits), performance (benchmark latency)
-  → SKIP: mutation (middleware logic simple), streamline (greenfield)
-  User accepts both additions.
-
-A.6 CREATE + BASELINE:
-  dod_create → DoD ID: abc123, 4 roots, 14 concrete proofs, 6 draft nodes
-  dod_check baseline → 8 concrete pass (lint/format/tests),
-                        6 concrete expected-fail (grep/tdd for new code)
-
-A.7 GIT EVO:
-  evo_init()
-  evo_checkpoint(name="baseline", description="Before rate limiting. DoD: abc123")
-
-A.8 CONFIRMATION:
-  "Ratchet Setup Complete. 3 sub-problems (Middleware → Wiring → Config).
-   14 concrete proofs, 6 drafts. evomcp: yes, gitevo: yes.
-   Ready to begin Phase B execution?"
-  User: "Yes, proceed."
-```
-
-### Phase B: /loop Execution
-
-```
-ITERATION 1 — Sub-problem A: Middleware
-  dod_refine drafts → concrete proofs for sliding window + 429 response
-  evo_spawn("baseline", "ratchet/middleware")
-  evomcp_solve(goal="Implement rate limiter middleware...",
-               verify_cmd="dod-guard check --dod-id=abc123 --node-path=1.children.0 --quiet", ...)
-  → PASSED after 2 repair iterations
-  dod_check(nodePath=1.children.0) → 4/4 concrete pass
-  dod_check (full) → no regressions
-  evo_learn("Middleware: in-memory Map with sliding window. 2nd repair fixed boundary bug.")
-  evo_checkpoint("middleware-solved", "Middleware passes scoped check.")
-  ScheduleWakeup(60s, "next: Wiring")
-
-ITERATION 2 — Sub-problem B: Wiring
-  dod_refine draft → concrete: "grep 'rateLimiter' src/auth/routes.ts"
-  evo_spawn("middleware-solved", "ratchet/wiring")
-  evomcp_solve(...) → ESCALATED: all 6 lineages failed
-  // Claude inspects: project uses non-standard middleware chain, not Express-style
-  // Claude implements directly: registers middleware in custom chain
-  dod_check(nodePath=1.children.1) → PASS
-  dod_check (full) → no regressions
-  evo_learn("ESCALATED: non-standard middleware chain. Claude fixed by reading router code.")
-  evo_checkpoint("wiring-solved", "Wiring passes. Direct implementation after escalation.")
-  ScheduleWakeup(60s, "next: Config")
-
-ITERATION 3 — Sub-problem C: Config
-  dod_refine draft → concrete: "node -e 'process.env.RATE_LIMIT_MAX=10; require(...)'"
-  Direct implementation (trivial — one env var read)
-  dod_check(nodePath=1.children.2) → PASS
-  dod_check (full) → no regressions
-  evo_learn("Config: process.env.RATE_LIMIT_MAX || 5. Trivial.")
-  evo_checkpoint("config-solved", "Config passes.")
-
-ITERATION 4 — Integration + Termination
-  (Integration drafts auto-refined during prior iterations as code was written)
-  dod_check (full) → PASS (20/20 concrete proofs, 0 drafts)
-  evo_adopt("ratchet/middleware")
-  dod_add_node(performance regression proof — latency < 5ms)
-  dod_check → PASS
-  evo_export_lessons() → 3 lessons → memory_save each
-  memory_save final verdict
-  evo_finish()
-  ScheduleWakeup(stop=true)
-
-Report: "Ratchet complete. DoD abc123: PASS. 3 sub-problems solved, 1 escalated (wiring), 3 lessons saved."
-```
-
----
-
-## Common Mistakes
-
-- **Skipping triage** — full ratchet setup for a typo fix = 10 min wasted. Always triage.
-- **Zero requirements questions** — "build X" without clarification = wrong X. Minimum 2-3 questions.
-- **Writing code in Phase A** — defeats the lock-in. No implementation until Phase B.
-- **Not confirming at A.8** — user must approve the plan before autonomous execution begins.
-- **Running full dod_check on every cascade attempt** — use scoped `--nodePath` during implementation. Full check after each sub-problem completes.
-- **Skipping regression check (full dod_check after each sub-problem)** — sub-problem B WILL break sub-problem A eventually. Catch it immediately.
-- **Not reading escalation reports** — the failure signature tells you exactly what's stuck.
-- **Skipping learn on successes** — "it worked" is not a lesson. Capture WHY and what approach succeeded.
-- **Parallelizing dependent sub-problems** — if B depends on A, don't spawn both simultaneously.
-- **Ratchet without teeth** — a DoD with only manual proofs has nothing to ratchet against.
-- **Not tightening after success** — add regression proofs for edge cases discovered during cascade.
-- **Using evomcp for trivial sub-problems** — a 3-line config change doesn't need 6 parallel DeepSeek instances.
-- **Forgetting to dod_refine drafts before cascade** — cascade agents can't verify draft nodes.
-- **Continuing loop after repeated escalations** — 3 consecutive failures without progress = stop and report.
+## 5. When a sub-problem will not pass
+
+Cap repair attempts at 3 per sub-problem. After the third, stop and report to
+the user. Give the sub-problem name, the failing leaf, the exact command output,
+the three approaches you tried, and what you believe the real obstacle is.
+
+Never make a check pass by weakening it. `dod_amend` exists for a proof that was
+authored wrong, not for a proof that is inconvenient. It requires `reason`, and
+after a node has been amended three times you must also pass
+`amend_justification`. dod-guard returns a STUCK verdict on a node amended three
+or more times, which overrides a pass. Treat STUCK as a signal that the approach
+is wrong, re-read the requirements, and ask the user.
+
+There is no human-verification predicate. A step only a person can judge stays a
+draft leaf whose `intent` starts with `MANUAL:`. Collect those and hand them to
+the user at the end.
+
+## 6. Finish
+
+Finish when every concrete leaf passes. A DoD built the intended way always
+carries `MANUAL:` drafts, so `dod_check` returns INCOMPLETE rather than PASS,
+and the CLI exits 2. Read that as done, not as a failure. Only a failing
+concrete leaf, which exits 1, blocks the finish.
+
+1. Add a regression proof for each edge case the run turned up. Call
+   `dod_add_node` with the `parent_path` and a `refinement` of `"concrete"`.
+   This is how the ratchet gains a tooth from what the run learned.
+2. Call `evo_adopt` with the winning branch, then `evo_finish`.
+3. Call `evo_export_lessons`, then `memory_save` with `type: "project"` and the
+   exported content.
+4. Report the passing leaf count, the branches you abandoned, and every
+   `MANUAL:` leaf the user still owes.
+5. Call `ScheduleWakeup` with `stop=true`.
+
+## 7. Missing servers
+
+dod-guard alone is enough to run this skill. Each other server buys one named
+behavior, and its absence narrows the run without stopping it.
+
+| Server absent | What you lose, and what to do |
+|---|---|
+| gitevo | No branches and no checkpoints. Work on the current branch and commit after each sub-problem. |
+| obsidian-rag | No recall and no persistence. Skip setup steps 1 and finish step 2. |
+| code-review-graph | No impact analysis. Read callers and tests by hand in setup step 3. |
+| evomcp | No fanout. Implement each sub-problem directly. |
+
+When evomcp is present and a sub-problem has a clean scoped check, delegate it.
+Call `solve` with one `spec` object: `{goal, verify_cmd, cwd}`, where
+`verify_cmd` is the CLI form
+`dod-guard check --dod-id=<id> --node-path=<path> --quiet`. Add `strategy` as
+`"auto"`, `"best-of-n"`, or `"evolve"`, plus `budget_tokens` and `fanout` when
+you want to bound the run. Use `evolve` with `{goal, fitness_cmd, cwd,
+target_files}` only for a numeric score you want to push. Both are one object,
+never loose arguments.
