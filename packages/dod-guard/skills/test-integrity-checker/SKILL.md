@@ -1,557 +1,232 @@
 ---
 name: test-integrity-checker
 description: >-
-  Detects and fixes LLM-written tests that bless production code bugs instead of
-  catching them. Audits for logic mirroring (test reimplements same algorithm as
-  code), output blessing (assertion values derived from buggy output), weak
-  assertions (toBeDefined/toBeTruthy), mock-everything vacuously-passing tests,
-  symmetry/inverse tests that cancel shared bugs, and missing negative/edge case
-  coverage. Fixes tests to assert against known-correct expected values, not
-  against what the code happens to produce. TRIGGER when: user says "check my
-  tests", "are these tests real", "test integrity", "audit tests", "tests might
-  be wrong", "review tests for bugs", "LLM wrote these tests", "test cop",
-  "test bullshit detector", "verify test correctness", or describes suspecting
-  tests were written to fit the code rather than the spec.
-argument-hint: "[test file(s) or directory]"
-compatibility: language-agnostic (works with any test framework)
+  Audit a test file for tests written to match the implementation instead of a
+  specification, then repair them. Use when the user says the tests may have
+  been written to fit the code rather than a spec. Use it when the user asks
+  you to check my tests, audit tests, review tests for bugs, or verify test
+  correctness. Use it when the user asks whether these tests are real, says the
+  tests might be wrong, or says a model wrote them. Use it when the user does
+  not trust tests that pass, or calls for the test cop or the test bullshit
+  detector. Use it when tests assert only toBeDefined or toBeTruthy, when every
+  dependency is mocked, when a round trip is the only check, or when no test
+  covers a negative case. The skill both finds these tests and repairs them.
+argument-hint: [test file or directory to audit]
 ---
 
-# Test Integrity Checker
+# Test integrity checker
 
-## Overview
+A model that read the code before it wrote the tests asserts whatever the code
+produced. Where the code returns 42 and the specification says 24, the test
+asserts 42. It passes forever and catches nothing. A test whose expected value
+would have to change once somebody fixes the bug is a second copy of that bug.
 
-LLMs write tests that fit production code. Given buggy code that returns 42
-when it should return 24, the LLM writes `expect(result).toBe(42)`. Its tests
-never catch bugs because they were written against the same buggy output.
+You detect none of this yourself. A shipped agent does the reading. Your work
+is everything around that dispatch. Pick the target. Hand the agent evidence it
+cannot see. Judge the reply. Repair the tests. Prove one repair catches a real
+bug. Lock the result.
 
-This skill audits tests for that pattern — and fixes the ones that fail.
+Say at the start that you are auditing test integrity, and that you are
+checking whether the tests catch bugs or bless them.
 
-**Core insight:** A good test asserts against a known-correct expected value
-derived from the spec, not against whatever the implementation happens to
-produce. A test whose expected value would change if you fixed a bug in the
-code is not a test — it's a second copy of the bug.
+Four kinds of work do not need this skill. Tests written before the
+implementation are safe, because their author never watched the code run. Tests
+written by a party other than the implementer are safe for the same reason.
+Code with no logic to get wrong has nothing to bless. A snapshot file is its
+own category. Every snapshot value is copied from output by design, so an audit
+returns nothing but false criticals on one.
 
-**Announce at start:** "Auditing test integrity — checking that tests catch
-bugs, not bless them."
+Stop here when the project already has a verified specification. Stop too when
+somebody wrote the requirements down. Auditing tests against the code they came
+from answers a weaker question than auditing them against the requirement. Send
+that work to `/dod-guard:adversarial-workflow` and tell it to start at phase 2,
+its test audit.
 
-## When to Use vs Skip
+Use `rg` for every scan rather than `grep` or `findstr`. It behaves the same on
+Windows and on POSIX. One caution: `rg --files` prints the native path
+separator, so match a single path segment.
 
-### Use when:
+## Choosing what to audit
 
-- An LLM wrote both the implementation AND the tests (same model saw same bugs)
-- Tests were written AFTER the implementation (author saw the output)
-- Tests pass but you don't trust them
-- Suspiciously high coverage with suspiciously simple tests
-- Tests that all follow the same pattern (LLM template repetition)
-- You found a bug that should have been caught by tests but wasn't
-- Code review flags "tests look auto-generated"
+When the user names files, audit those.
 
-### Skip when:
+Otherwise prefer recorded evidence over a guess. A surviving mutant is proof of
+this exact problem. Somebody changed a line of production code and the whole
+suite still passed. In this repository, `node scripts/mutation-queue.mjs`
+writes `.data/micro-mutations/queue.json`, a ranked list of the weakest test
+files. That script lives at the root of this repository only. It does not ship
+inside the plugin or the npm package. A reader working in another repository
+has no such command unless that repository runs its own mutation testing.
 
-- Tests were written RED (before implementation, author never saw the code work)
-- Tests were written by a different person/LLM than the implementation
-- You have a verified spec/requirements to compare against (use adversarial-workflow Phase 2 instead)
-- Trivial getters/setters with no logic to get wrong
-- Test file is clearly a snapshot test (snapshot testing is its own category)
+The file is shaped `{ "generated": ..., "queue": [ ... ] }`. One entry looks
+like this.
 
-## The Problem: How LLM Tests Go Wrong
-
-### Pattern 1: Output Blessing
-
-```
-1. LLM implements buggy code
-2. LLM runs code, sees output "foo: 42, bar: 7"
-3. LLM writes: expect(result).toBe("foo: 42, bar: 7")
-4. Test passes. Bug persists forever.
-```
-
-The LLM didn't compute the correct answer. It observed the output and blessed it.
-
-### Pattern 2: Logic Mirroring
-
-```typescript
-// Production code (buggy — off-by-one)
-function average(nums: number[]): number {
-  let sum = 0;
-  for (let i = 0; i < nums.length; i++) {  // < not <= — last element skipped
-    sum += nums[i];
-  }
-  return sum / nums.length;
+```json
+{
+  "source": "packages/dod-guard/src/checker.ts",
+  "test": "packages/dod-guard/src/checker.test.ts",
+  "date": "2026-07-30T09:12:00.000Z",
+  "summary": { "total": 41, "killed": 18, "survived": 11, "timeout": 0, "unviable": 12 },
+  "score": 7,
+  "stale": false,
+  "unmapped": 0,
+  "hotspots": [{ "line": 214, "count": 3, "mutators": ["EqualityOperator", "ConditionalExpression"] }]
 }
-
-// Test (same bug, different syntax)
-test("average", () => {
-  const nums = [1, 2, 3, 4];
-  let sum = 0;
-  for (let i = 0; i < nums.length; i++) {
-    sum += nums[i];
-  }
-  const expected = sum / nums.length;  // computes 2.5, same as buggy code
-  expect(average(nums)).toBe(expected);
-});
 ```
 
-The test computes expected value using the SAME algorithm. If the algorithm is
-wrong, both produce the same wrong answer. The test verifies nothing.
+Three fields change what you do.
 
-### Pattern 3: Weak Assertions
+- `score` ranks the entries. Work the highest first.
+- `stale: true` means the survivor record predates the current build. Its line
+  numbers cannot be trusted. Re-run `scripts/micro-mutations.mjs` before you
+  use that entry's `hotspots`.
+- `test: null` means no test file exists at all. That unit needs tests written,
+  not audited. Report it and move to the next entry.
 
-```typescript
-expect(result).toBeDefined();           // passes for ANY return value
-expect(result).toBeTruthy();            // passes for anything non-null/non-zero/non-empty
-expect(result).toBeInstanceOf(Array);   // passes for [] or [wrong, data]
-expect(result.length).toBeGreaterThan(0); // passes for [garbage]
-expect(func).not.toThrow();             // passes if it returns garbage instead of crashing
+With no mutation data, pair the files by hand. Name the capitalized variants
+too, because a case-sensitive filesystem hides them otherwise.
+
 ```
-
-These tests provide false confidence. They check that code "did something" but
-never verify it did the RIGHT thing.
-
-### Pattern 4: Mock Everything
-
-```typescript
-test("processOrder", async () => {
-  const mockDb = { save: vi.fn().mockResolvedValue({ id: 1 }) };
-  const mockPayment = { charge: vi.fn().mockResolvedValue({ status: "ok" }) };
-  const mockEmail = { send: vi.fn().mockResolvedValue(true) };
-
-  await processOrder(order, mockDb, mockPayment, mockEmail);
-
-  expect(mockDb.save).toHaveBeenCalled();     // tests that mocks were called
-  expect(mockPayment.charge).toHaveBeenCalled();
-  expect(mockEmail.send).toHaveBeenCalled();
-});
-```
-
-Every dependency is mocked. The test verifies that code called its dependencies.
-It does NOT verify that the right data flowed between them, that error states
-are handled, or that the output is correct. If the code passes `undefined` to
-`mockDb.save`, the test still passes.
-
-### Pattern 5: Symmetry/Inverse Testing
-
-```typescript
-test("serialize-roundtrip", () => {
-  const input = { name: "test", value: 42 };
-  const serialized = serialize(input);
-  const deserialized = deserialize(serialized);
-  expect(deserialized).toEqual(input);  // passes even if both functions share bugs
-});
-```
-
-If `serialize` drops fields and `deserialize` fills them with defaults,
-round-trip passes but data is lost. If both functions share an encoding bug
-(off-by-one on a delimiter), round-trip passes with wrong data.
-
-### Pattern 6: Happy-Path-Only
-
-A test file with 15 tests, all of which test normal inputs producing normal
-outputs. Zero tests for: empty input, null/undefined, maximum values, invalid
-types, error conditions, concurrent access, or partial failure.
-
-### Pattern 7: Copy-Paste Parameterization
-
-```typescript
-// Every test is the same template with different values
-test.each([
-  [1, 2, 3],
-  [4, 5, 9],
-  [0, 0, 0],
-  [-1, 1, 0],
-])("add(%i, %i) = %i", (a, b, expected) => {
-  expect(add(a, b)).toBe(expected);
-});
-```
-
-The test cases were likely generated by asking the LLM "give me test cases."
-The LLM picks obvious values that any implementation (buggy or not) would pass.
-Missing: overflow, NaN, Infinity, large numbers, mixed types.
-
-## The Three Phases
-
-### Phase 1: AUDIT — Detect Integrity Problems
-
-Dispatch the integrity auditor against the test file and its production code.
-
-#### Step 1.1: Identify Targets
-
-If the user specified files, use those. Otherwise, prefer evidence over guessing.
-
-**Preferred: the mutation queue.** A surviving mutant is proof of this skill's
-core problem. The production code changed and every test still passed. When the
-repository runs mutation testing, that record already names the weakest test
-files, ranked. In this monorepo:
-
-```bash
-node scripts/mutation-queue.mjs        # writes .data/micro-mutations/queue.json
-```
-
-Each queue entry holds:
-
-| Field | Meaning |
-|-------|---------|
-| `source` / `test` | The audit unit. A null `test` means no test file exists at all. |
-| `score` | Survivors weighted by how few mutants the tests killed. Higher is more suspect. |
-| `summary` | Raw killed / survived / timeout counts. |
-| `hotspots` | Source lines with the most surviving mutants, and which mutators lived there. |
-| `stale` | The survivor record predates the current build, so line numbers are unreliable. Re-run `scripts/micro-mutations.mjs` before trusting `hotspots`. |
-
-Work the queue in order. Audit the highest-scoring entry whose `stale` flag is
-false. A `test: null` entry needs tests written, not audited, so report it and
-move to the next entry.
-
-**Fallback: no mutation data.** When the repository runs no mutation testing, or
-the user points at a specific area, find the pairs by hand:
-
-```bash
-# Find test files
 rg --files -g "*test*" -g "*spec*" -g "*Test*" -g "*Spec*" | sort
-
-# For each test file, find its production code
-# Look at imports, file naming conventions, or ask user
 ```
 
-Group test files with their production code. Each group becomes one audit unit.
+Sorting keeps a repeated run picking the same unit. Match each test file to its
+production file through its imports or the project's naming convention. Each
+pair is one audit unit.
 
-#### Step 1.2: Dispatch Auditor
+## Sending the audit
 
-For each test + production code pair, dispatch the integrity auditor:
+Dispatch one audit unit per call, one production file paired with one test
+file. Use this exact agent name.
 
 ```
-Agent(
-  subagent_type: "dod-guard:test-integrity-auditor",
-  model: "sonnet",
-  prompt: """
-    Audit this test file for integrity problems. The production code is at
-    [production_file_path]. The test file is at [test_file_path].
-
-    Read BOTH files completely before evaluating.
-
-    Check for these patterns:
-    1. Logic mirroring — test computes expected values using same algorithm as production code
-    2. Output blessing — assertion values that match the buggy output
-    3. Weak assertions — toBeDefined, toBeTruthy, toBeInstanceOf, not.toThrow, length > 0
-    4. Mock-everything — all dependencies mocked, tests verify calls not correctness
-    5. Symmetry/inverse tests — round-trip tests that cancel shared bugs
-    6. Happy-path-only — zero negative/edge/error tests
-    7. Copy-paste parameterization — auto-generated test cases with obvious values only
-
-    For each finding, cite exact file:line. Be specific about what's wrong and
-    what the correct expected value SHOULD be.
-
-    [When a mutation queue entry exists, append:]
-
-    Mutation testing already proved these source lines are unverified. Each one
-    was changed and the whole test suite still passed. Start there, and for each
-    line state which test was supposed to catch the change and why it did not:
-
-    [paste the entry's hotspots as: line N - K survivors - mutators]
-  """
-)
+subagent_type: "dod-guard:test-integrity-auditor"
+prompt: production file <path>
+        test file <path>
+        These lines were changed and the whole suite still passed. Start there.
+        For each one, name the test that was meant to catch the change, and say
+        why it did not.
+        line 214, 3 survivors, EqualityOperator and ConditionalExpression
 ```
 
-**Why the hotspots matter:** a surviving mutant is not a hint, it is a
-counter-example. A weak assertion the auditor merely suspects is arguable. A
-line where `EqualityOperator` was flipped and every test still passed is
-settled. Rank findings that sit on a hotspot line above findings that do not.
+That agent already carries its persona and its detection guidance for every
+pattern. It also sets the severity for each one, how many findings it owes, and
+the format of its reply. Never restate any of that. Carry the two file paths
+and, when a queue entry exists, that entry's hotspot lines. Render each hotspot
+as a line number, a survivor count, and the mutator names. The agent knows
+nothing about mutation testing. Those lines, and the ask attached to them, are
+the one thing it cannot reach on its own.
 
-**Model diversity note:** If a different model wrote the tests, use a different
-model for the auditor. If the same model wrote both code and tests, the auditor
-MUST be a different model (same-model review is rubber-stamp). Follow the
-model-diversity routing table from adversarial-workflow/SKILL.md.
+`subagent_type` names an agent, never a model. The model is a separate `model`
+parameter on the same call. An auditor sharing a model with whoever wrote the
+tests shares its blind spots, so the two must differ. The table that maps an
+author model to a reviewer model lives in `adversarial-workflow/SKILL.md`
+beside this file. Read the route there. When two distinct models are not
+reachable, say so in the report and do not claim the audit was independent.
+Then check the auditor before you trust it. Take one finding and work out its
+correct expected value by hand. An auditor reviewing its own work fails that
+check, and the whole reply is then suspect.
 
-If model diversity is unavailable, flag it in the audit report and run extra
-verification on findings (manually compute correct expected values for at least
-one finding to calibrate).
+## Reading what comes back
 
-#### Step 1.3: Severity Classification
+The agent replies with findings, or with one line starting `NO_FINDINGS:` and a
+reason. A reply carrying neither is not a result. Dispatch that unit again.
 
-| Severity | Pattern | Why |
-|----------|---------|-----|
-| **critical** | Logic mirroring | Test literally cannot catch bugs in the algorithm |
-| **critical** | Output blessing | Test was calibrated to buggy output |
-| **major** | Mock-everything | Tests verify infrastructure, not behavior |
-| **major** | Happy-path-only (core logic) | No edge/error coverage on critical path |
-| **minor** | Weak assertions | Low confidence but not actively wrong |
-| **minor** | Symmetry/inverse tests | Only wrong if both sides share bugs |
-| **minor** | Happy-path-only (auxiliary) | Edge case gaps in non-critical code |
-| **info** | Copy-paste parameterization | Weak coverage, not actively wrong |
+Each finding carries its own `SEVERITY`, one of `critical`, `major`, `minor`,
+or `info`. Each finding also carries its own `PATTERN`, one of
+`logic-mirroring`, `output-blessing`, `weak-assertions`, `mock-everything`,
+`symmetry-inverse`, `happy-path-only`, or `copy-paste-parameterization`. Those
+names belong to the agent. Pass them into your report unchanged.
 
-### Phase 2: FIX — Rewrite Compromised Tests
+The reply closes with a verdict line.
 
-For each confirmed finding, rewrite the test to assert against known-correct
-values.
+| Verdict | Meaning | What the run owes next |
+|---|---|---|
+| `INTEGRITY_FAIL` | at least one critical finding | These tests cannot catch bugs as they stand. Repair every critical finding before the unit is done. |
+| `INTEGRITY_WEAK` | no critical finding, at least one major | Repair the major findings, or report each one you leave alone. |
+| `INTEGRITY_PASS` | neither of the above | Record the result and take the next unit. |
 
-#### Fixing Logic Mirroring
+Rank the findings before you edit anything. A finding sitting on a hotspot line
+outranks one that does not. A weak assertion the agent merely suspects is
+arguable. A line where a real change was made and every test still passed is
+settled, because it is a counter-example rather than a suspicion.
 
-Replace computed expected values with hardcoded correct values:
+## Repairing a test
 
-```typescript
-// BEFORE (logic mirroring — computes expected using same algorithm)
-test("average", () => {
-  const nums = [1, 2, 3, 4];
-  let sum = 0;
-  for (let i = 0; i < nums.length; i++) sum += nums[i];
-  const expected = sum / nums.length;
-  expect(average(nums)).toBe(expected);
-});
+Every repaired test must assert a value obtained from somewhere other than the
+implementation under test. Four sources qualify. Compute the value by hand from
+the specification. Compute it a second way that shares no structure with the
+implementation. Take a standard test vector for the domain. Read it from a
+separate reference implementation.
 
-// AFTER (hardcoded correct expected value)
-test("average", () => {
-  expect(average([1, 2, 3, 4])).toBe(2.5);  // (1+2+3+4)/4 = 2.5
-});
+When you cannot establish the correct value, report the finding unfixed and
+leave the assertion alone. A test rewritten around a second guess is worse than
+the one it replaced. Add a TODO comment above it naming the finding, so the
+next reader sees the problem after your report is gone.
+
+Two repairs need a prescription the agent does not give. For a test that mocks
+every dependency, assert on the data passed to the mocks. Another option is one
+test that runs against real or realistic dependencies. For a test that only
+checks a value surviving a round trip, add an assertion in one direction
+against a known value.
+
+Keep the tests that were already asserting correct values. Not every test in a
+suspect file is wrong, and rewriting a correct test gains nothing.
+
+Work one test file through to the end before you start another.
+
+## Proving the repair
+
+At least one repaired test per unit has to be shown failing against a real
+defect. Confirm the working tree is clean first, because this is the one step
+that edits production code on purpose. Break the production code. Run the test
+and confirm it fails. Revert the code. Run the test again and confirm it
+passes.
+
+When the finding came from a hotspot, do not invent a defect. The queue entry
+already names the mutators that survived at that line. Apply that recorded
+change instead. The proof then covers the exact bug the suite let through
+rather than a plausible one.
+
+Afterwards the whole suite must pass. Measured coverage must not fall. A drop
+means a repair took a code path out of testing. Read the test and coverage
+commands out of the project rather than assuming a package manager.
+
+## Locking a corrected test
+
+dod-guard can hold a corrected test against later weakening by fingerprinting
+it. Do this for every test whose correct value you established by hand, whose
+defect proof passed, and which covers logic worth protecting. Skip it for the
+rest. Locking a trivial test produces noise and protects nothing.
+
+Call `dod_create` and give it a concrete leaf like the one below. The `holdout`
+predicate compares the command's trimmed output against the stored digest,
+ignoring case. It reports a weakened or removed test by name when the two
+differ. The surrounding arguments belong to `/dod-guard:interview`.
+
+```json
+{
+  "title": "rate limiter tests keep their hand-computed expectations",
+  "refinement": "concrete",
+  "command": "node -e \"const crypto = require('crypto'); const fs = require('fs'); const content = fs.readFileSync('<test file path>', 'utf8'); const hash = crypto.createHash('sha256').update(content).digest('hex'); console.log(hash);\"",
+  "predicate": { "type": "holdout", "value": "<the digest>" },
+  "description": "Fails once somebody weakens or deletes a corrected assertion",
+  "category": "test_audit"
+}
 ```
 
-The correct expected value comes from:
-1. Manual computation from the spec
-2. A different computational approach (e.g., use `reduce` if implementation uses `for` loop)
-3. Known test vectors (standard test cases for the domain)
-4. A reference implementation (different library, different language, or online calculator)
+Both `title` and `refinement` are load-bearing. `title` is required, so the
+call is rejected without it. `refinement` defaults to `draft` on a leaf, and a
+draft carries no command, so the fingerprint would never be checked and the DoD
+would report incomplete forever.
 
-**If you cannot determine the correct expected value,** flag this. A test
-rewritten with another wrong value is worse than the original.
+Reproduce that command exactly, including its escaping. It is verified to run
+under the Windows shell dod-guard uses.
 
-#### Fixing Output Blessing
+## Reporting
 
-Replace observed-output values with spec-derived values:
-
-```typescript
-// BEFORE (blesses whatever the code outputs)
-test("formatUser", () => {
-  expect(formatUser(user)).toBe("John (ID: 42, active)");  // matches buggy code
-});
-
-// AFTER (spec says: "Name (ID: N, STATUS)" where STATUS is "active" or "inactive")
-test("formatUser", () => {
-  expect(formatUser(activeUser)).toBe("John (ID: 42, active)");
-});
-```
-
-If the output format is underspecified, flag it — you can't verify correctness
-of an underspecified format.
-
-#### Fixing Weak Assertions
-
-Replace with specific value assertions:
-
-```typescript
-// BEFORE
-expect(result).toBeDefined();
-expect(result).toBeTruthy();
-
-// AFTER
-expect(result).toEqual({ name: "John", role: "admin", permissions: ["read", "write"] });
-```
-
-If the correct return value is unknown (no spec), the test itself is unfixable.
-Flag it and add a TODO.
-
-#### Fixing Mock-Everything
-
-Two strategies:
-
-1. **Add integration-level assertions** — after mock calls, verify the data
-   passed to mocks is correct:
-   ```typescript
-   expect(mockDb.save).toHaveBeenCalledWith({
-     id: order.id,
-     items: order.items.map(i => ({ name: i.name, price: i.price })),
-     total: 29.97,
-   });
-   ```
-
-2. **Add at least one integration test** — a test that uses real dependencies
-   (or realistic fakes) and verifies end-to-end behavior.
-
-#### Fixing Symmetry/Inverse Tests
-
-Add one-directional assertions that verify against known values:
-
-```typescript
-// Keep the round-trip test as a sanity check, ADD directional assertions
-test("serialize produces correct format", () => {
-  expect(serialize({ name: "test", value: 42 }))
-    .toBe('{"name":"test","value":42}');
-});
-
-test("deserialize produces correct object", () => {
-  expect(deserialize('{"name":"test","value":42}'))
-    .toEqual({ name: "test", value: 42 });
-});
-```
-
-#### Fixing Happy-Path-Only
-
-Add tests for:
-- Empty/null/undefined inputs
-- Boundary values (0, -1, MAX_INT, empty string, max length)
-- Error conditions (invalid types, missing required fields)
-- Edge cases specific to the domain
-
-### Phase 3: VERIFY — Confirm Fixes Are Real
-
-#### Step 3.1: Verify Rewritten Tests Fail Against Buggy Code
-
-For each rewritten test, temporarily inject a bug in the production code and
-confirm the test fails. Remove the bug after verification.
-
-```bash
-# Example: verify test catches off-by-one in average()
-# 1. Change `i < nums.length` to `i <= nums.length` in production
-# 2. Run the rewritten test — MUST fail
-# 3. Revert the change
-# 4. Run the rewritten test — MUST pass
-```
-
-At minimum, verify one critical finding this way. If the rewritten test does not
-fail against a known bug, the rewrite is wrong.
-
-**When the finding came from a mutation hotspot, do not invent a bug.** The
-queue entry already names one that the old tests missed. Apply that exact
-mutation at that line, confirm the rewritten test now fails, then revert. This
-turns the verification from a plausible bug into the specific bug the suite let
-through.
-
-#### Step 3.2: Run Full Test Suite
-
-```bash
-npm test  # or equivalent
-```
-
-All original tests must still pass. Rewritten tests must pass.
-
-#### Step 3.3: Line-Coverage Comparison
-
-```bash
-# Before and after coverage
-npm test -- --coverage  # or equivalent
-```
-
-Coverage should not decrease. If it does, the rewrite dropped coverage of a code
-path — restore it.
-
-#### Step 3.4: Report
-
-```markdown
-## Test Integrity Audit — Complete
-
-### Audited
-- `src/utils/math.ts` + `src/utils/math.test.ts` (3 tests, 2 findings)
-- `src/auth/login.ts` + `src/auth/login.test.ts` (8 tests, 1 finding)
-
-### Fixed
-| # | File | Severity | Pattern | Fix |
-|---|------|----------|---------|-----|
-| 1 | math.test.ts:12 | critical | Logic mirroring | Hardcoded expected value 2.5 |
-| 2 | math.test.ts:28 | major | Weak assertion | Assert specific array contents |
-| 3 | login.test.ts:45 | major | Mock-everything | Added data verification on mock calls |
-
-### Flagged (unfixed)
-| # | File | Severity | Pattern | Why unfixed |
-|---|------|----------|---------|-------------|
-| 4 | math.test.ts:35 | minor | Happy-path-only | Needs spec for edge case behavior |
-
-### Before → After
-- Tests audited: 11
-- Integrity problems found: 4 (1 critical, 2 major, 1 minor)
-- Fixed: 3
-- Flagged for follow-up: 1
-- Injected-bug verification: ✅ (1 critical finding verified)
-- Test suite: ✅ PASS
-- Coverage: 89% → 89% (unchanged)
-```
-
-## Rules
-
-| Rule | Rationale |
-|------|-----------|
-| **Verify at least one critical fix against injected bug** | Proves the rewrite actually catches bugs. Without this, you've just rewritten the test to fit the same code a different way. |
-| **Don't rewrite if you can't determine correct value** | A wrong expected value is worse than a mirrored one. Flag and move on. |
-| **Keep original tests that are actually correct** | Not every test is wrong. Don't "fix" tests that were already asserting correct values. |
-| **One test file at a time** | Audit → fix → verify per file. Don't batch unrelated test files. |
-| **Coverage must not decrease** | If a rewrite drops coverage, you removed a code path from testing. |
-| **Read both files completely before auditing** | Skimming misses the logic mirroring that spans both files. |
-| **Cite file:line on every finding** | "This test looks weak" without evidence is rejected. |
-
-## Integration with dod-guard
-
-After fixing tests, create a DoD with holdout proofs to prevent regression:
-
-```
-dod_create(
-  title: "test integrity holdout gates for <component>",
-  goal: "Prevent test weakening — lock corrected test assertions as holdout proofs",
-  type: "general",
-  cwd: "<project root>",
-  markdown_path: "<project root>/.dod/test-integrity-<component>.md",
-  sections: {
-    requirements: "Rewritten tests must maintain their corrected assertions",
-  },
-  roots: [
-    {
-      title: "Holdout gates",
-      refinement: "draft",
-      intent: "Holdout proofs lock the corrected test fingerprints",
-      children: [
-        {
-          title: "<test name> assertion integrity",
-          refinement: "concrete",
-          command: "node -e \"const crypto = require('crypto'); const fs = require('fs'); const content = fs.readFileSync('<test file path>', 'utf8'); const hash = crypto.createHash('sha256').update(content).digest('hex'); console.log(hash);\"",
-          predicate: { type: "output_contains", value: "<SHA-256 of corrected test>" },
-          description: "Verify corrected test assertions haven't been weakened",
-          category: "behavioral"
-        }
-      ]
-    }
-  ]
-)
-```
-
-The holdout proof fingerprints the test file content. If a future LLM weakens
-the test back to `expect(result).toBeDefined()`, the fingerprint changes and
-the holdout fails.
-
-**Important:** Only create holdout proofs for tests where:
-- The correct expected value was manually verified
-- The injected-bug verification confirmed the test catches bugs
-- The test covers non-trivial logic
-
-Don't holdout-lock trivial tests — it creates noise without protection.
-
-## Shipped Agents
-
-| Agent | File | Purpose |
-|-------|------|---------|
-| `test-integrity-auditor` | `agents/test-integrity-auditor.md` | Audits test files for logic mirroring, output blessing, weak assertions, mock-everything, symmetry/inverse tests, and missing edge coverage |
-
-## Quick Reference: Detection Commands
-
-### Find weak assertions
-```bash
-rg -n "toBeDefined|toBeTruthy|toBeFalsy|toBeInstanceOf|not\.toThrow|toBeNull|toBeUndefined" -g "*test*" -g "*spec*" --no-heading
-```
-
-### Find mock-everything tests (jest/vitest)
-```bash
-rg -n "vi\.fn\(\)|jest\.fn\(\)|mockResolvedValue|mockReturnValue" -g "*test*" -g "*spec*" --no-heading
-```
-
-### Find test files with no negative assertions
-```bash
-# Tests with toThrow or rejects — these have SOME error testing
-# Tests without them likely have NO error testing
-rg -L "toThrow|rejects|error|invalid|empty|null|undefined" -g "*test*" -g "*spec*"
-```
-
-### Find test files where all tests use .each (auto-generated template)
-```bash
-rg -l "test\.each|it\.each|describe\.each" -g "*test*" -g "*spec*"
-```
-
-## Platform Notes
-
-- `rg` is cross-platform (Windows Git Bash + POSIX). Prefer it over `grep`/`findstr`.
-- Test runner commands depend on the project. Auto-detect from package.json scripts.
-- Path separators: `/` works in Git Bash and `rg` on all platforms.
-- The injected-bug verification (Phase 3) uses `Edit` to temporarily break code,
-  then reverts. Confirm the working tree is clean before starting.
+Name every unit you audited. Give each repaired test with its pattern and its
+severity as the agent wrote them. List every finding you left unfixed and say
+why. State the outcome of the defect proof and the result of the full suite.
+Give coverage before and after. Name every unit where model diversity was out
+of reach.
