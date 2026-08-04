@@ -132,7 +132,9 @@ You have a task
 
 ### `/dod-guard:ratchet` — Unified Ratcheting Workflow
 
-**What it does:** Two-phase workflow for complex multi-sub-problem work. Phase A (interactive): triage → research → requirements → DoD → contrarian review → baseline check → user lock-in. Phase B (autonomous loop): one sub-problem per iteration, full regression check every cycle, ratchet gates prevent regressions ahead.
+**What it does:** Executes a DoD that already exists, one sub-problem per loop iteration. Setup (interactive): route, recall prior attempts, order the sub-problems by dependency, checkpoint, and get the user to approve the order. Phase B (autonomous loop): one sub-problem per iteration, full regression check every cycle, so earlier work cannot silently break.
+
+**It does not build the DoD.** Requirements, the tree, the company baseline, the five-lens review, and `dod_create` all live in `/dod-guard:interview`. Run that first, then bring the `dod_id` here.
 
 **When to use:**
 - Problem has 2+ sub-problems with dependencies between them
@@ -299,7 +301,7 @@ All dod-guard skills use these MCP tools under the hood. You rarely need to call
 
 | Tool | Purpose | Called by |
 |------|---------|-----------|
-| `dod_create` | Build new DoD with TaskNode tree | interview, ratchet (Phase A) |
+| `dod_create` | Build new DoD with TaskNode tree | interview |
 | `dod_check` | Run proofs, get pass/fail/stuck verdict | All skills |
 | `dod_refine` | Draft → concrete or subdivide | step-by-step, cheap-step, ratchet |
 | `dod_amend` | Modify concrete proof (audit trail) | All skills (when requirements change) |

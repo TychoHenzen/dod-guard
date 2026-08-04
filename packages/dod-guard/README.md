@@ -129,7 +129,7 @@ Triggers: "audit my tests", "are these tests real", "tests pass but the bug ship
 
 ### `/ratchet`
 
-Unified ratcheting workflow combining dod-guard, gitevo, evomcp, obsidian-rag, and code-review-graph. Two-phase: interactive setup (triage + requirements + DoD + user lock-in), then autonomous /loop execution with verification gates every cycle. For complex multi-sub-problem work.
+Executes an existing DoD autonomously, combining dod-guard, gitevo, evomcp, obsidian-rag, and code-review-graph. Two-phase: interactive setup (route + recall + sub-problem ordering + user lock-in), then autonomous /loop execution with verification gates every cycle. For complex multi-sub-problem work. Build the DoD with `/interview` first.
 
 Triggers: "solve with ratchet", "ratchet this", "complex problem", "multi-step solution".
 
