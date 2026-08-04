@@ -1,0 +1,341 @@
+{
+  "source": "packages/evomcp/src/render.ts",
+  "date": "2026-08-04T09:22:44.888Z",
+  "summary": {
+    "total": 171,
+    "killed": 130,
+    "survived": 41,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "3",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 10,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "4",
+      "mutator": "EqualityOperator",
+      "replacement": "text.length < FIELD_LIMIT",
+      "dist_line": 10,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 12,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "16",
+      "mutator": "EqualityOperator",
+      "replacement": "tokens <= 0",
+      "dist_line": 19,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 28,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "29",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 34,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "37",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 38,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "41",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 42,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "43",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 42,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "62",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 51,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "73",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 58,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "78",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 64,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "79",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 67,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "85",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 70,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "87",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 71,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "89",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 72,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "90",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 72,
+      "dist_col": 76
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "96",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 79,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "98",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 82,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "100",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 84,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "104",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 89,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "106",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 90,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "108",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 93,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "110",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 96,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "116",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 103,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "133",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 117,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "135",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 118,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "137",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 119,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "138",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 119,
+      "dist_col": 74
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "144",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 127,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "145",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 127,
+      "dist_col": 48
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "146",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 128,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "147",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 128,
+      "dist_col": 66
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "148",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 131,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "155",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 135,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "157",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 137,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "158",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 138,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "160",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 139,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "162",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 140,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "168",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 145,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/render.js",
+      "id": "170",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 147,
+      "dist_col": 23
+    }
+  ]
+}

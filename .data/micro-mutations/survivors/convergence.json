@@ -1,0 +1,317 @@
+{
+  "source": "packages/evomcp/src/convergence.ts",
+  "date": "2026-08-04T09:22:10.190Z",
+  "summary": {
+    "total": 157,
+    "killed": 113,
+    "survived": 38,
+    "timeout": 6,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "2",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 13,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "13",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 23,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "23",
+      "mutator": "ArithmeticOperator",
+      "replacement": "sumSqDiff * values.length",
+      "dist_line": 30,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "31",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 49,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "43",
+      "mutator": "EqualityOperator",
+      "replacement": "similarity > threshold",
+      "dist_line": 61,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "46",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 67,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "47",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 68,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "55",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 88,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "63",
+      "mutator": "EqualityOperator",
+      "replacement": "history[i].best_score >= overallBest",
+      "dist_line": 95,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "66",
+      "mutator": "ArithmeticOperator",
+      "replacement": "history.length - 1 + bestIndex",
+      "dist_line": 100,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "67",
+      "mutator": "ArithmeticOperator",
+      "replacement": "history.length + 1",
+      "dist_line": 100,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "74",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 109,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "75",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 110,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "78",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 124,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "81",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 124,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "84",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 127,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "85",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 129,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "86",
+      "mutator": "MethodExpression",
+      "replacement": "history",
+      "dist_line": 133,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "89",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 136,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "91",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= scores.length",
+      "dist_line": 137,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "96",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i + 1",
+      "dist_line": 138,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "97",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 141,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "104",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= deltas.length",
+      "dist_line": 142,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "110",
+      "mutator": "EqualityOperator",
+      "replacement": "deltas[i - 1] * deltas[i] > 0",
+      "dist_line": 143,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "112",
+      "mutator": "ArithmeticOperator",
+      "replacement": "deltas[i - 1] / deltas[i]",
+      "dist_line": 143,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "113",
+      "mutator": "ArithmeticOperator",
+      "replacement": "i + 1",
+      "dist_line": 143,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "116",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 149,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "118",
+      "mutator": "EqualityOperator",
+      "replacement": "history.length >= 0",
+      "dist_line": 149,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "128",
+      "mutator": "EqualityOperator",
+      "replacement": "history[i].best_score <= min",
+      "dist_line": 153,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "127",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 153,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "130",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 155,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "132",
+      "mutator": "EqualityOperator",
+      "replacement": "history[i].best_score >= max",
+      "dist_line": 155,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "134",
+      "mutator": "ArithmeticOperator",
+      "replacement": "max + min",
+      "dist_line": 158,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "137",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 162,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "138",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 165,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "139",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 166,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "141",
+      "mutator": "LogicalOperator",
+      "replacement": "opts?.convergenceThreshold && DEFAULT_CONVERGENCE_THRESHOLD",
+      "dist_line": 178,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/convergence.js",
+      "id": "143",
+      "mutator": "LogicalOperator",
+      "replacement": "opts?.patience && DEFAULT_PATIENCE",
+      "dist_line": 179,
+      "dist_col": 22
+    }
+  ]
+}

@@ -641,13 +641,21 @@
       "dirty": true
     },
     "packages/evomcp/src/budget.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-04",
+      "last_result": {
+        "total": 168,
+        "caught": 131,
+        "missed": 36,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      },
       "lines": 238,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "c5ffec626083074f9edde182b99febb8481dee2d9210719ad38d42b2b97dc321",
+      "dirty": false
     },
     "packages/evomcp/src/context.ts": {
       "last_tested": null,
@@ -659,13 +667,21 @@
       "dirty": true
     },
     "packages/evomcp/src/convergence.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-04",
+      "last_result": {
+        "total": 157,
+        "caught": 113,
+        "missed": 38,
+        "timeout": 6,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 244,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "e8767b021449a679951c8df93f40c3e4065759c70fc72a97e6c3aefbfd67af53",
+      "dirty": false
     },
     "packages/evomcp/src/degenerate.ts": {
       "last_tested": "2026-08-02",
@@ -798,13 +814,21 @@
       "dirty": false
     },
     "packages/evomcp/src/render.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-04",
+      "last_result": {
+        "total": 171,
+        "caught": 130,
+        "missed": 41,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 138,
       "error_count": 0,
       "recent_commits": 3,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "00efc047b72d40ae397bf096bb82c2224bd8e16044940d4c1156a3931a254b90",
+      "dirty": false
     },
     "packages/evomcp/src/solve-abandon.ts": {
       "last_tested": null,
@@ -1032,14 +1056,14 @@
     }
   },
   "cumulative": {
-    "total_mutants": 15596,
-    "caught": 5465,
-    "missed": 5821,
-    "timeout": 71,
-    "unviable": 4239,
+    "total_mutants": 16092,
+    "caught": 5839,
+    "missed": 5936,
+    "timeout": 77,
+    "unviable": 4240,
     "error": 43,
-    "runs": 92,
-    "files_tested": 92
+    "runs": 95,
+    "files_tested": 95
   },
   "runs": [
     {
@@ -2326,6 +2350,48 @@
         "missed": 85,
         "timeout": 3,
         "unviable": 6,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-04",
+      "commit": "f7ed3e1a55c29e84e0e07ebd5532657a8b9883c5",
+      "file": "packages/evomcp/src/convergence.ts",
+      "result": {
+        "total": 157,
+        "caught": 113,
+        "missed": 38,
+        "timeout": 6,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-04",
+      "commit": "f7ed3e1a55c29e84e0e07ebd5532657a8b9883c5",
+      "file": "packages/evomcp/src/budget.ts",
+      "result": {
+        "total": 168,
+        "caught": 131,
+        "missed": 36,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-04",
+      "commit": "f7ed3e1a55c29e84e0e07ebd5532657a8b9883c5",
+      "file": "packages/evomcp/src/render.ts",
+      "result": {
+        "total": 171,
+        "caught": 130,
+        "missed": 41,
+        "timeout": 0,
+        "unviable": 0,
         "status": "ok",
         "error": null
       }

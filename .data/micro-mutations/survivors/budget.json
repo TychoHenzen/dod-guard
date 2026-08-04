@@ -1,0 +1,301 @@
+{
+  "source": "packages/evomcp/src/budget.ts",
+  "date": "2026-08-04T09:22:20.096Z",
+  "summary": {
+    "total": 168,
+    "killed": 131,
+    "survived": 36,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "2",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 17,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "5",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 20,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "14",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 33,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "46",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 107,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "48",
+      "mutator": "EqualityOperator",
+      "replacement": "budget.tokenLimit >= 0",
+      "dist_line": 107,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "51",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 108,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "53",
+      "mutator": "EqualityOperator",
+      "replacement": "budget.timeLimitMs >= 0",
+      "dist_line": 108,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "63",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 121,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "66",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 123,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "68",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 123,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "69",
+      "mutator": "ArithmeticOperator",
+      "replacement": "frac / 100",
+      "dist_line": 126,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "71",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 132,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "72",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 132,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "78",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 136,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "81",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 137,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "83",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 139,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "117",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 163,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "119",
+      "mutator": "EqualityOperator",
+      "replacement": "state.stages[stage].tokenLimit >= 0",
+      "dist_line": 163,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "121",
+      "mutator": "ArithmeticOperator",
+      "replacement": "state.consumption[stage].tokensUsed * state.stages[stage].tokenLimit",
+      "dist_line": 163,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "122",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 164,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "123",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 164,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "124",
+      "mutator": "EqualityOperator",
+      "replacement": "state.stages[stage].timeLimitMs >= 0",
+      "dist_line": 164,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "125",
+      "mutator": "EqualityOperator",
+      "replacement": "state.stages[stage].timeLimitMs <= 0",
+      "dist_line": 164,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "126",
+      "mutator": "ArithmeticOperator",
+      "replacement": "state.consumption[stage].timeUsedMs * state.stages[stage].timeLimitMs",
+      "dist_line": 165,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "128",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 168,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "131",
+      "mutator": "EqualityOperator",
+      "replacement": "tokenFrac > value",
+      "dist_line": 168,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "134",
+      "mutator": "EqualityOperator",
+      "replacement": "timeFrac > value",
+      "dist_line": 168,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "155",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 192,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "157",
+      "mutator": "EqualityOperator",
+      "replacement": "edges >= 0",
+      "dist_line": 192,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "161",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 196,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "162",
+      "mutator": "MethodExpression",
+      "replacement": "Math.max(fraction, 1.0)",
+      "dist_line": 197,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "163",
+      "mutator": "ArithmeticOperator",
+      "replacement": "clamped / 10",
+      "dist_line": 198,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "164",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 + filled",
+      "dist_line": 199,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "165",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 200,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "166",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 200,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/budget.js",
+      "id": "167",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 200,
+      "dist_col": 37
+    }
+  ]
+}
