@@ -231,7 +231,7 @@ the stored baseline differ. Author both steps with identical commands.
 | **Coverage** | Python / coverage.py | `python -m pytest --cov=src` | `TOTAL[^0-9]*([0-9]+)%` | **false** |
 | **Coverage** | Rust / tarpaulin | `cargo tarpaulin --print-summary` | `([0-9.]+)%\s*coverage` | **false** |
 | **Coverage** | .NET / coverlet | `dotnet test /p:CollectCoverage=true` | `Total[^0-9]*([0-9.]+)%` | **false** |
-| **Duplication** | any / jscpd | `npx jscpd src --reporters json --silent` | `"percentage":\s*([0-9.]+)` | true |
+| **Duplication** | any / jscpd | `npx jscpd src --min-tokens 50 --silent` | `\(([0-9.]+)%\) duplicated` | true |
 | **Duplication** | Python / pylint | `pylint --disable=all --enable=duplicate-code src` | `([0-9.]+)\s*%\s*duplicated` | true |
 
 Notes:
