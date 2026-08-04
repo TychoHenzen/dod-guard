@@ -127,105 +127,16 @@ A proof must verify **correctness**, not mere **presence**. Ranked weakest → s
 
 Every step must carry at least one strong proof. Nothing checks this for you. `dod_create` warns only when the whole DoD has no `behavioral` leaf, so a single strong proof anywhere silences it for every weak step in the tree.
 
-### Mutation testing — the strongest test-quality proof
+Presence proofs must match a signature or a word boundary, never a bare
+substring. `findstr "TryStopTracking"` matches both `TryStopTracking(dossierId)`
+and `TryStopTracking(dossierId, clientId)`, so it reports a false positive. Use
+`grep -w`, or `findstr /R` with anchors.
 
-`test` and `tdd` prove the suite runs and was red-first, but a passing suite can still kill
-**zero** bugs. The `mutation` predicate closes that gap: it runs a mutation tool (cargo-mutants /
-mutmut / Stryker), parses the surviving (un-killed) mutant count, and passes iff survivors `<= N`
-(default `0`). Output it cannot parse FAILs (fail-safe — never auto-passes).
+## The advisory tier
 
-- **Optional, not mandatory.** A DoD with no `mutation` proof gets a soft, non-blocking warning
-  (like the `tdd`-absent warning) — it is **never** added to the hard-mandatory categories and
-  never blocks `dod_create`.
-- **Scope to critical logic / changed functions.** Don't mutate the whole codebase; use each
-  tool's changed-set mode (see [language-commands.md](language-commands.md), Mutation Testing).
-- **When to add one:** complex branching, money/permission/validation logic, or anywhere "the
-  tests are green" is not enough assurance that real defects would be caught.
+A proof may set `advisory: true`. A failing advisory proof is reported loudly as
+a warning, and it does not fail its step or the overall verdict. Use it for a
+check worth watching that should not break the build.
 
-### Streamline — proving old code was removed
-
-When revising existing functionality, Claude and other LLMs tend to keep old implementations
-alongside new ones "for backward compatibility" — creating bloat, complexity, and future
-confusion risk where later sessions modify the **old** code path instead of the new one.
-The `streamline` predicate closes this gap: it proves **absence**, not presence.
-
-- **Command:** a search for old symbols/patterns (e.g. `rg "oldFunctionName" src/`,
-  `grep -rw "deprecated_handler" src/`, `findstr /R "OldClass\b" src\*.py`).
-- **Semantics:** PASSES when the search finds nothing (exit 1 — old code fully removed).
-  FAILS when matches are found (exit 0 — old code remains). FAILS on tool errors (exit >1 —
-  fail-safe, never auto-passes).
-- **`value`:** max allowed remaining references (default `0`). Set to N for gradual cleanup
-  where N references are acceptable during a transition.
-- **Optional, not mandatory.** A DoD with no `streamline` proof gets a soft, non-blocking
-  warning (like `mutation`) — it is **never** added to the hard-mandatory categories and
-  never blocks `dod_create`.
-- **When to add one:** any step that revises or replaces an existing function, module, class,
-  or code path. The streamline proof names the old symbols and proves they were removed.
-
-### Observability — proving code is debuggable
-
-Claude-generated code routinely ships without logging, instrumentation, or any way to
-diagnose failures in production. The `observability` predicate closes this gap: it scans
-changed source files and proves they are instrumented for debugging.
-
-- **Command:** identifies the files to scan — typically `git diff --name-only HEAD~1 -- '*.ts' '*.py'` or a test command that references source files (e.g. `python -m pytest tests/test_module.py`).
-- **Semantics:** statically analyzes each source file for:
-  1. **Log statements** — `console.*`, `logger.*`, `log!()`, `logging.*`, etc. (per-language).
-  2. **Error handlers** — `catch`, `except`, `Err(_)` blocks — with at least one log statement inside.
-  3. **Anti-patterns:**
-     - Empty catch (`catch { }`, `except: pass`)
-     - Swallowed errors (catch block with return/continue but no log or rethrow)
-     - Bare static log messages (`console.error("failed")` — no variable interpolation)
-- **PASS:** at least `value` log statements found, every error handler is logged, and no anti-patterns detected.
-- **FAIL:** insufficient log statements, unlogged error handlers, or anti-patterns — with explicit file:line details.
-- **`value`:** minimum log statement count expected (default `1`).
-- **Optional, not mandatory.** A DoD with no `observability` proof gets a soft, non-blocking
-  warning (like `mutation` and `streamline`) — it is **never** added to the hard-mandatory categories and
-  never blocks `dod_create`.
-- **When to add one:** any step that changes source code. The observability proof names the changed files and proves they are instrumented.
-- **Advisory tier:** observability proofs are NOT advisory — failures fail the step. If you add one, it's expected to pass.
-- **File discovery:** The engine extracts file paths from the command tokens (e.g. test file arguments)
-  AND from the command's stdout (e.g. `git diff --name-only` output). If no source files are found,
-  the proof fails with an explicit reason.
-
-Supported languages: JavaScript/TypeScript, Python, Rust, C#.
-
-**Precision:** presence/removal proofs must match **signatures or word boundaries**, not bare substrings. `findstr "TryStopTracking"` matches both `TryStopTracking(dossierId)` and `TryStopTracking(dossierId, clientId)` — a false positive. Use `grep -w` / `findstr /R` with anchors.
-
-### Non-regression over absolutes — the `regression` predicate
-
-Absolute quality targets ("coverage must be ≥ 90%", "this endpoint must respond in < 50ms")
-make **impossible goals** on real brownfield code: the baseline is already below the target, so
-the proof can never pass and the DoD is dead on arrival. The same delta philosophy that governs
-lint and format applies to every numeric quality metric: **prove the change does not regress vs a
-captured baseline, never that it meets an absolute.**
-
-The `regression` predicate encodes this. It is **two-phase**, keyed by whether a baseline has been
-captured (the exact mirror of how `tdd` keys on `seen_failing`):
-
-1. **Capture step (pre-change).** An early, ordered step runs the metric command on the
-   PRE-change code. The predicate extracts the number N0 (via the optional `extract` regex's
-   capture group 1, else the last number in stdout), stores it on the proof, and **PASSes** with a
-   "baseline captured" note. The engine never manipulates the target repo's git state — capture
-   relies on this step running before the change lands.
-2. **Compare step (post-change).** Later runs extract N1 and compare:
-   - `lower_is_better: true` (default — perf, complexity, duplication): pass iff `N1 <= N0*(1+tol)`.
-   - `lower_is_better: false` (coverage): pass iff `N1 >= N0*(1-tol)`.
-
-`tol` is the predicate `value` (a fraction, e.g. `0.10` for ±10%). Output with no parseable number
-**FAILs** (fail-safe — a regression proof never auto-passes on unparseable output).
-
-### The advisory tier
-
-A proof may set `advisory: true`: a failing advisory proof is reported **loudly as a warning** but
-does **not** fail its step or the overall verdict. This is what makes a non-regression metric safe
-to gate on without turning a noisy benchmark into a hard build-breaker.
-
-- `regression` proofs **default to advisory.** Set `advisory: false` to make one a hard SLA gate.
-- The advisory flag and `lower_is_better` are part of the **proof fingerprint**, so a hard gate
-  cannot be silently downgraded to advisory, nor the compare direction quietly flipped, without
-  tamper detection firing.
-- **Optional, never mandatory.** The `performance`/`complexity`/`coverage`/`duplication` categories
-  are never added to the hard-mandatory set and never block `dod_create`.
-
-See [language-commands.md](language-commands.md) (Regression Metrics) for per-language commands.
+The advisory flag is part of the proof fingerprint, so a hard gate cannot be
+quietly downgraded to advisory without tamper detection firing.
