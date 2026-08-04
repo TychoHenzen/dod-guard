@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-02T08:22:32.321Z",
-  "total": 965,
+  "total": 970,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -202,6 +202,16 @@
     "packages/evomcp/src/types.ts",
     "packages/gitevo/esbuild.config.mjs",
     "packages/gitevo/scripts/bootstrap-deps.js",
+    "packages/gitevo/src/evo-config.test.ts",
+    "packages/gitevo/src/evo-config.ts",
+    "packages/gitevo/src/evo-error.test.ts",
+    "packages/gitevo/src/evo-error.ts",
+    "packages/gitevo/src/evo-git.test.ts",
+    "packages/gitevo/src/evo-git.ts",
+    "packages/gitevo/src/evo-lessons.test.ts",
+    "packages/gitevo/src/evo-lessons.ts",
+    "packages/gitevo/src/evo-safety.test.ts",
+    "packages/gitevo/src/evo-safety.ts",
     "packages/gitevo/src/index.test.ts",
     "packages/gitevo/src/index.ts",
     "packages/gitevo/src/memory.test.ts",
@@ -724,6 +734,11 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.mjs::else-branch": 3,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::else-branch": 1,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/gitevo/src/evo-git.ts::file-length": 1,
+    "packages/gitevo/src/evo-safety.ts::file-length": 1,
+    "packages/gitevo/src/evo-safety.ts::else-branch": 1,
+    "packages/gitevo/src/evo-git.test.ts::file-length": 1,
+    "packages/gitevo/src/evo-safety.test.ts::file-length": 1
   }
 }

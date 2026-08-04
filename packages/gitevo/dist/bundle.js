@@ -2232,8 +2232,8 @@ var require_resolve = __commonJS({
       }
       return count;
     }
-    function getFullPath(resolver, id = "", normalize2) {
-      if (normalize2 !== false)
+    function getFullPath(resolver, id = "", normalize3) {
+      if (normalize3 !== false)
         id = normalizeId(id);
       const p = resolver.parse(id);
       return _getFullPath(resolver, p);
@@ -2894,9 +2894,9 @@ var require_compile = __commonJS({
       if (_sch)
         return _sch;
       const rootId = (0, resolve_1.getFullPath)(this.opts.uriResolver, sch.root.baseId);
-      const { es5, lines } = this.opts.code;
+      const { es5, lines: lines2 } = this.opts.code;
       const { ownProperties } = this.opts;
-      const gen = new codegen_1.CodeGen(this.scope, { es5, lines, ownProperties });
+      const gen = new codegen_1.CodeGen(this.scope, { es5, lines: lines2, ownProperties });
       let _ValidationError;
       if (sch.$async) {
         _ValidationError = gen.scopeValue("Error", {
@@ -2981,7 +2981,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3008,7 +3008,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3226,8 +3226,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path4) {
-      let input = path4;
+    function removeDotSegments(path7) {
+      let input = path7;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3479,8 +3479,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path4, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path4 && path4 !== "/" ? path4 : void 0;
+        const [path7, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path7 && path7 !== "/" ? path7 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3629,7 +3629,7 @@ var require_fast_uri = __commonJS({
     "use strict";
     var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, escapePreservingEscapes, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
-    function normalize2(uri, options) {
+    function normalize3(uri, options) {
       if (typeof uri === "string") {
         uri = /** @type {T} */
         normalizeString(uri, options);
@@ -3639,55 +3639,55 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve(baseURI, relativeURI, options) {
+    function resolve2(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse3(baseURI, schemelessOptions), parse3(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative2, options, skipNormalization) {
+    function resolveComponent(base, relative3, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative2 = parse3(serialize(relative2, options), options);
+        relative3 = parse3(serialize(relative3, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative2.scheme) {
-        target.scheme = relative2.scheme;
-        target.userinfo = relative2.userinfo;
-        target.host = relative2.host;
-        target.port = relative2.port;
-        target.path = removeDotSegments(relative2.path || "");
-        target.query = relative2.query;
+      if (!options.tolerant && relative3.scheme) {
+        target.scheme = relative3.scheme;
+        target.userinfo = relative3.userinfo;
+        target.host = relative3.host;
+        target.port = relative3.port;
+        target.path = removeDotSegments(relative3.path || "");
+        target.query = relative3.query;
       } else {
-        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
-          target.userinfo = relative2.userinfo;
-          target.host = relative2.host;
-          target.port = relative2.port;
-          target.path = removeDotSegments(relative2.path || "");
-          target.query = relative2.query;
+        if (relative3.userinfo !== void 0 || relative3.host !== void 0 || relative3.port !== void 0) {
+          target.userinfo = relative3.userinfo;
+          target.host = relative3.host;
+          target.port = relative3.port;
+          target.path = removeDotSegments(relative3.path || "");
+          target.query = relative3.query;
         } else {
-          if (!relative2.path) {
+          if (!relative3.path) {
             target.path = base.path;
-            if (relative2.query !== void 0) {
-              target.query = relative2.query;
+            if (relative3.query !== void 0) {
+              target.query = relative3.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative2.path[0] === "/") {
-              target.path = removeDotSegments(relative2.path);
+            if (relative3.path[0] === "/") {
+              target.path = removeDotSegments(relative3.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative2.path;
+                target.path = "/" + relative3.path;
               } else if (!base.path) {
-                target.path = relative2.path;
+                target.path = relative3.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative3.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative2.query;
+            target.query = relative3.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3695,7 +3695,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative2.fragment;
+      target.fragment = relative3.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3902,8 +3902,8 @@ var require_fast_uri = __commonJS({
     }
     var fastUri = {
       SCHEMES,
-      normalize: normalize2,
-      resolve,
+      normalize: normalize3,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -4043,8 +4043,8 @@ var require_core = __commonJS({
         this._loading = {};
         this._cache = /* @__PURE__ */ new Map();
         opts = this.opts = { ...opts, ...requiredOptions(opts) };
-        const { es5, lines } = this.opts.code;
-        this.scope = new codegen_2.ValueScope({ scope: {}, prefixes: EXT_SCOPE_NAMES, es5, lines });
+        const { es5, lines: lines2 } = this.opts.code;
+        this.scope = new codegen_2.ValueScope({ scope: {}, prefixes: EXT_SCOPE_NAMES, es5, lines: lines2 });
         this.logger = getLogger(opts.logger);
         const formatOpt = opts.validateFormats;
         opts.validateFormats = false;
@@ -6879,12 +6879,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs3, exportName) {
+    function addFormats(ajv, list, fs6, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs3[f]);
+        ajv.addFormat(f, fs6[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -6893,8 +6893,8 @@ var require_dist = __commonJS({
 });
 
 // src/index.ts
-import { readFileSync as readFileSync3 } from "node:fs";
-import * as path3 from "node:path";
+import { readFileSync as readFileSync4 } from "node:fs";
+import * as path6 from "node:path";
 import { fileURLToPath } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
@@ -7375,8 +7375,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path4, errorMaps, issueData } = params;
-  const fullPath = [...path4, ...issueData.path || []];
+  const { data, path: path7, errorMaps, issueData } = params;
+  const fullPath = [...path7, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7492,11 +7492,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path4, key) {
+  constructor(parent, value, path7, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path4;
+    this._path = path7;
     this._key = key;
   }
   get path() {
@@ -11133,10 +11133,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path4) {
-  if (!path4)
+function getElementAtPath(obj, path7) {
+  if (!path7)
     return obj;
-  return path4.reduce((acc, key) => acc?.[key], obj);
+  return path7.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11456,11 +11456,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path4, issues) {
+function prefixIssues(path7, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path4);
+    iss.path.unshift(path7);
     return iss;
   });
 }
@@ -12108,9 +12108,9 @@ var Doc = class {
       return;
     }
     const content = arg;
-    const lines = content.split("\n").filter((x) => x);
-    const minIndent = Math.min(...lines.map((x) => x.length - x.trimStart().length));
-    const dedented = lines.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
+    const lines2 = content.split("\n").filter((x) => x);
+    const minIndent = Math.min(...lines2.map((x) => x.length - x.trimStart().length));
+    const dedented = lines2.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
     for (const line of dedented) {
       this.content.push(line);
     }
@@ -12119,8 +12119,8 @@ var Doc = class {
     const F = Function;
     const args = this?.args;
     const content = this?.content ?? [``];
-    const lines = [...content.map((x) => `  ${x}`)];
-    return new F(...args, lines.join("\n"));
+    const lines2 = [...content.map((x) => `  ${x}`)];
+    return new F(...args, lines2.join("\n"));
   }
 };
 
@@ -14871,11 +14871,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path4) {
-  if (path4.length === 0) {
+function getDotPath(path7) {
+  if (path7.length === 0) {
     return "object root";
   }
-  return path4.reduce((acc, seg, index) => {
+  return path7.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -19004,7 +19004,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -19021,7 +19021,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19099,7 +19099,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve(parseResult.data);
+            resolve2(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19360,12 +19360,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve, interval);
+      const timeoutId = setTimeout(resolve2, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20456,7 +20456,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21120,12 +21120,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve) => {
+    return new Promise((resolve2) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve();
+        resolve2();
       } else {
-        this._stdout.once("drain", resolve);
+        this._stdout.once("drain", resolve2);
       }
     });
   }
@@ -21286,7 +21286,7 @@ function migrateLessons(cwd) {
   if (!content) {
     return 0;
   }
-  const lines = content.split("\n").filter((l) => l.trim());
+  const lines2 = content.split("\n").filter((l) => l.trim());
   const db = getMemoryDb(resolvedCwd);
   const insert = db.prepare(
     `INSERT INTO messages (type, scope, content, metadata, branch, timestamp)
@@ -21295,7 +21295,7 @@ function migrateLessons(cwd) {
   const timestamp = (/* @__PURE__ */ new Date()).toISOString();
   let count = 0;
   const tx = db.transaction(() => {
-    for (const line of lines) {
+    for (const line of lines2) {
       try {
         const entry = JSON.parse(line);
         const metadata = JSON.stringify({ migratedFrom: "lessons.jsonl", originalTimestamp: entry.timestamp ?? null });
@@ -21311,581 +21311,452 @@ function migrateLessons(cwd) {
 }
 
 // src/operations.ts
-import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import * as fs5 from "node:fs";
+import * as path5 from "node:path";
+
+// src/evo-config.ts
 import * as fs2 from "node:fs";
 import * as path2 from "node:path";
+function defaults() {
+  return {
+    sourceExtensions: [".ts", ".js", ".mjs", ".json", ".md", ".yml", ".yaml"],
+    buildLayouts: ["packages/*/dist/", "dist/"],
+    skipStaleCheck: false
+  };
+}
+function loadConfig(cwd) {
+  const file = path2.join(cwd, ".evo", "config.json");
+  if (!fs2.existsSync(file)) return defaults();
+  try {
+    const parsed = JSON.parse(fs2.readFileSync(file, "utf-8"));
+    return { ...defaults(), ...parsed };
+  } catch {
+    return defaults();
+  }
+}
+
+// src/evo-error.ts
 var EvoError = class extends Error {
   constructor(message) {
     super(message);
     this.name = "EvoError";
   }
 };
+
+// src/evo-git.ts
+import { spawnSync } from "node:child_process";
+import * as fs3 from "node:fs";
+import * as path3 from "node:path";
+var NO_REPO = "Not a git repository. Run 'git init' first.";
+var NO_EVO = "GitEvo not initialized. Run evo_init first.";
+var ROOT_CANDIDATES = ["main", "master", "trunk"];
 function git(args, cwd) {
-  const result = spawnSync("git", args, {
-    cwd,
-    encoding: "utf-8",
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: 3e4
-  });
-  if (result.error) {
-    throw new EvoError(result.error.message);
-  }
-  if (result.status !== 0) {
-    const errMsg = (result.stderr || "").trim() || (result.stdout || "").trim();
-    throw new EvoError(errMsg);
-  }
+  const result = spawnSync("git", args, { cwd, encoding: "utf-8", timeout: 6e4 });
+  if (result.error) throw new EvoError(`git could not run: ${result.error.message}`);
+  if (result.status !== 0) throw new EvoError(`git ${args.join(" ")} failed: ${complaint(result)}`);
   return (result.stdout || "").trim();
 }
-function gitOrNull(args, cwd) {
+function complaint(result) {
+  return (result.stderr || "").trim() || (result.stdout || "").trim();
+}
+function gitTry(args, cwd) {
   try {
     return git(args, cwd);
   } catch {
     return null;
   }
 }
-function getRepo(cwdOverride) {
-  let toplevel;
-  try {
-    toplevel = git(["rev-parse", "--show-toplevel"], cwdOverride);
-  } catch {
-    throw new EvoError("Not a git repository. Run 'git init' first.");
-  }
-  let rootBranch = "main";
-  const heads = git(["branch", "--format=%(refname:short)"], toplevel).split("\n");
-  for (const name of ["main", "master", "trunk"]) {
-    if (heads.includes(name)) {
-      rootBranch = name;
-      break;
-    }
-  }
-  return { cwd: toplevel, rootBranch };
+function lines(output) {
+  return output.split("\n").filter((line) => line.trim().length > 0);
 }
-function currentBranch(cwd) {
-  return git(["branch", "--show-current"], cwd);
+function resolveRoot(cwd) {
+  const top = gitTry(["rev-parse", "--show-toplevel"], cwd ?? process.cwd());
+  if (top === null) throw new EvoError(NO_REPO);
+  return path3.normalize(top);
 }
-function isDirty2(cwd) {
-  const status = git(["status", "--porcelain"], cwd);
-  const lines = status.split("\n").filter((l) => l.trim() && !l.startsWith("??"));
-  return lines.length > 0;
+function initializedRoot(cwd) {
+  const root = resolveRoot(cwd);
+  if (!fs3.existsSync(path3.join(root, ".evo"))) throw new EvoError(NO_EVO);
+  return root;
 }
-function filesRemovedByCheckout(targetRef, cwd) {
-  try {
-    git(["rev-parse", "--verify", targetRef], cwd);
-  } catch {
-    throw new EvoError(`target ref '${targetRef}' does not exist`);
-  }
-  const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
-  return diff.split("\n").filter(Boolean);
+function statusLines(root) {
+  return lines(git(["status", "--porcelain", "-uall"], root));
 }
-function untrackedSourceFiles(cwd, config2) {
-  const cfg = config2 ?? loadConfig(cwd);
-  const escapedExts = cfg.sourceExtensions.map((e) => e.replace(/\./g, "\\."));
-  const extPattern = new RegExp(`(${escapedExts.join("|")})$`);
-  const status = git(["status", "--porcelain"], cwd);
-  return status.split("\n").filter((l) => l.startsWith("??")).map((l) => l.slice(3).trim()).filter((f) => extPattern.test(f));
+function activeBranch(root) {
+  return git(["branch", "--show-current"], root) || "HEAD";
 }
-function staleDistFiles(cwd, config2) {
-  const cfg = config2 ?? loadConfig(cwd);
-  if (cfg.skipStaleCheck) return [];
-  const hasTs = cfg.sourceExtensions.includes(".ts");
+function branchNames(root) {
+  return lines(git(["branch", "--format=%(refname:short)"], root));
+}
+function branchExists(root, name) {
+  return branchNames(root).includes(name);
+}
+function rootBranchOf(root) {
+  const names = branchNames(root);
+  return ROOT_CANDIDATES.find((candidate) => names.includes(candidate)) ?? activeBranch(root);
+}
+function evoTags(root) {
+  return lines(git(["tag", "-l", "evo-*"], root));
+}
+function tagDescription(root, tag) {
+  const raw = gitTry(["tag", "-l", "--format=%(objecttype)|%(contents)", tag], root) ?? "";
+  const [kind, ...rest] = raw.split("|");
+  return kind === "tag" ? rest.join("|").trim() : "";
+}
+function setAside(root, status) {
+  if (status.length === 0) return false;
+  return !git(["stash", "push", "-u", "-m", "gitevo auto-stash"], root).includes("No local changes");
+}
+function restoreAside(root, held) {
+  if (!held) return "";
+  if (gitTry(["stash", "pop"], root) !== null) return "";
+  return "Auto-stash could not be reapplied. The changes are recoverable: run 'git stash pop'.";
+}
+
+// src/evo-lessons.ts
+import { createHash } from "node:crypto";
+function recordLesson(root, branch, content) {
+  writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } }, root);
+}
+function lessonsOf(root) {
+  const found = queryMessages({ type: "INSIGHT", limit: 1e3 }, root);
+  return found.sort((a, b) => a.timestamp === b.timestamp ? b.id - a.id : b.timestamp.localeCompare(a.timestamp));
+}
+function evo_learn(content, repoOverride) {
+  const root = initializedRoot(repoOverride?.cwd);
+  const branch = activeBranch(root);
+  recordLesson(root, branch, content);
+  return `Lesson recorded on branch '${branch}'.`;
+}
+function evo_lessons() {
+  const lessons = lessonsOf(initializedRoot());
+  if (lessons.length === 0) return "No lessons recorded.";
+  return lessons.map((l, i) => `[${i + 1}] ${l.timestamp} (${l.branch}): ${l.content}`).join("\n");
+}
+function evo_export_lessons() {
+  return JSON.stringify(lessonsOf(initializedRoot()).map(toMemoryEntry), null, 2);
+}
+function toMemoryEntry(lesson) {
+  const seed = `${lesson.content}|${lesson.branch}|${lesson.timestamp}`;
+  return {
+    id: `gitevo-${createHash("sha256").update(seed).digest("hex").slice(0, 12)}`,
+    title: lesson.content.slice(0, 80),
+    description: `GitEvo lesson from branch '${lesson.branch}'`,
+    content: lesson.content,
+    type: "feedback",
+    metadata: { source: "gitevo", branch: lesson.branch, timestamp: lesson.timestamp }
+  };
+}
+
+// src/evo-safety.ts
+import * as fs4 from "node:fs";
+import * as path4 from "node:path";
+var COMPILED_FROM = {
+  ".js": [".ts", ".tsx"],
+  ".mjs": [".mts", ".ts"],
+  ".cjs": [".cts", ".ts"]
+};
+function evaluateMove(scope) {
+  const here = listTree(scope.root, "HEAD");
+  const there = listTree(scope.root, scope.target);
+  const dirs = buildDirs(scope);
+  const outside = (file) => !inBuildDir(scope.root, dirs, file);
+  const known = new Set([...here, ...untracked(scope.status)].map((file) => path4.basename(file)));
+  return [
+    report(
+      `Tracked source files that ${scope.target} does not have:`,
+      missingSources(scope, here, there).filter(outside)
+    ),
+    report("Uncommitted files that look like source:", untrackedSources(scope).filter(outside)),
+    report("Build output with no surviving source:", staleOutputs(scope, dirs, known))
+  ].filter((finding) => finding.length > 0);
+}
+function missingSources(scope, here, there) {
+  const gone = here.filter((file) => !there.includes(file));
+  return gone.filter((file) => isSource(file, scope.config));
+}
+function inBuildDir(root, dirs, file) {
+  return dirs.some((dir) => file.startsWith(`${relative2(root, dir)}/`));
+}
+function guardMove(scope, force) {
+  const findings = evaluateMove(scope);
+  if (findings.length === 0) return "";
+  const detail = findings.join("\n\n");
+  if (force) return detail;
+  throw new EvoError(`${detail}
+
+Nothing was changed. Pass force=true to move anyway.`);
+}
+function listTree(root, ref) {
+  const out = gitTry(["ls-tree", "-r", "--name-only", ref], root);
+  if (out === null) throw new EvoError(`Reference '${ref}' not found.`);
+  return out.split("\n").filter((line) => line.length > 0);
+}
+function isSource(file, config2) {
+  return config2.sourceExtensions.includes(path4.extname(file));
+}
+function changed(status) {
+  return status.map((line) => line.slice(3).split(" -> ").pop() ?? "").filter((file) => file.length > 0);
+}
+function untracked(status) {
+  return changed(status.filter((line) => line.startsWith("??")));
+}
+function untrackedSources(scope) {
+  return untracked(scope.status).filter((file) => isSource(file, scope.config));
+}
+function staleOutputs(scope, dirs, known) {
+  if (scope.config.skipStaleCheck) return [];
   const stale = [];
-  function scan(dir) {
-    if (!fs2.existsSync(dir)) return;
-    for (const entry of fs2.readdirSync(dir, { withFileTypes: true })) {
-      const full = path2.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === "node_modules") continue;
-        scan(full);
-      } else if (entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
-        if (entry.name.endsWith(".test.js") && !hasTs) continue;
-        const tsFile = full.replace(/\.js$/, ".ts");
-        if (!fs2.existsSync(tsFile)) {
-          stale.push(path2.relative(cwd, full));
-        }
-      }
-    }
-  }
-  for (const layout of cfg.buildLayouts) {
-    const normalized = layout.replace(/\//g, path2.sep).replace(/[/\\]$/, "");
-    if (normalized.includes("*")) {
-      const starIdx = normalized.indexOf("*");
-      const beforeStar = normalized.slice(0, starIdx);
-      const afterStar = normalized.slice(starIdx + 1);
-      const parentDir = path2.join(cwd, beforeStar);
-      if (fs2.existsSync(parentDir)) {
-        for (const entry of fs2.readdirSync(parentDir, { withFileTypes: true })) {
-          if (entry.isDirectory()) {
-            scan(path2.join(parentDir, entry.name, afterStar));
-          }
-        }
-      }
-    } else {
-      scan(path2.join(cwd, normalized));
+  for (const dir of dirs) {
+    for (const file of walkFiles(dir)) {
+      if (isStale(file, known, scope.config.sourceExtensions)) stale.push(relative2(scope.root, file));
     }
   }
   return stale;
 }
-function preflightCheckoutSafety(targetRef, cwd, config2) {
-  const cfg = config2 ?? loadConfig(cwd);
-  const warnings = [];
-  const untracked = untrackedSourceFiles(cwd, cfg);
-  if (untracked.length > 0) {
-    warnings.push(
-      `Untracked source files (would persist but risk loss if directory removed):
-${untracked.map((f) => `  \u2022 ${f}`).join("\n")}`
-    );
+function isStale(file, known, extensions) {
+  const extension = path4.extname(file);
+  const sources = COMPILED_FROM[extension] ?? [];
+  const stem = path4.basename(file, extension);
+  if (!worthChecking(stem, sources, extensions)) return false;
+  return !sources.some((candidate) => known.has(`${stem}${candidate}`));
+}
+function worthChecking(stem, sources, extensions) {
+  if (sources.length === 0) return false;
+  if (!isTest(stem)) return true;
+  return sources.some((candidate) => extensions.includes(candidate));
+}
+function isTest(stem) {
+  return stem.endsWith(".test") || stem.endsWith(".spec");
+}
+function buildDirs(scope) {
+  return scope.config.buildLayouts.flatMap((layout) => expand(scope.root, layout)).filter(isDir);
+}
+function expand(root, layout) {
+  let here = [root];
+  for (const segment of layout.split("/").filter((part) => part.length > 0)) {
+    here = here.flatMap((base) => segment === "*" ? childDirs(base) : [path4.join(base, segment)]);
   }
-  const removed = filesRemovedByCheckout(targetRef, cwd);
-  const sourceRemoved = removed.filter((f) => /\.ts$/.test(f) && !f.includes("dist/"));
-  if (sourceRemoved.length > 0) {
-    warnings.push(
-      `Source files in HEAD NOT in '${targetRef}' \u2014 WILL BE DELETED by checkout:
-${sourceRemoved.map((f) => `  \u2022 ${f}`).join("\n")}
-Commit or stash these before spawning.`
-    );
+  return here;
+}
+function childDirs(base) {
+  if (!isDir(base)) return [];
+  return fs4.readdirSync(base).map((entry) => path4.join(base, entry)).filter(isDir);
+}
+function isDir(target) {
+  return fs4.existsSync(target) && fs4.statSync(target).isDirectory();
+}
+function walkFiles(dir) {
+  const found = [];
+  for (const entry of fs4.readdirSync(dir, { withFileTypes: true })) {
+    const full = path4.join(dir, entry.name);
+    if (entry.name === "node_modules") continue;
+    if (entry.isDirectory()) found.push(...walkFiles(full));
+    else found.push(full);
   }
-  const stale = staleDistFiles(cwd, cfg);
-  if (stale.length > 0) {
-    warnings.push(
-      `Stale dist/*.js without matching .ts source:
-${stale.map((f) => `  \u2022 ${f}`).join("\n")}
-These will survive checkout \u2014 clean with 'npm run clean && npm run build'.`
-    );
-  }
-  if (warnings.length === 0) return null;
-  return warnings.join("\n\n");
+  return found;
 }
-function tagsWithPrefix(prefix, cwd) {
-  const output = gitOrNull(["tag", "-l", `${prefix}*`], cwd) || "";
-  if (!output) return [];
-  return output.split("\n").filter(Boolean);
+function relative2(root, file) {
+  return path4.relative(root, file).split(path4.sep).join("/");
 }
-function hasTag(tag, cwd) {
-  return tagsWithPrefix(tag, cwd).includes(tag);
+function report(headline, files) {
+  if (files.length === 0) return "";
+  return [headline, ...files.map((file) => `  - ${file}`)].join("\n");
 }
-function getTagMessage(tag, cwd) {
-  try {
-    const msg = git(["tag", "-l", `--format=%(contents)`, tag], cwd);
-    return msg.trim() || "(no description)";
-  } catch {
-    return "(no description)";
-  }
-}
-function evoPaths(cwd) {
-  const evoDir = path2.join(cwd, ".evo");
-  return {
-    evoDir,
-    lessonsFile: path2.join(evoDir, "lessons.jsonl")
-  };
-}
-function requireInit(cwd) {
-  const paths = evoPaths(cwd);
-  if (!fs2.existsSync(paths.evoDir)) {
-    throw new EvoError("GitEvo not initialized. Run evo_init first.");
-  }
-  return paths;
-}
-function loadConfig(cwd) {
-  const configPath = path2.join(cwd, ".evo", "config.json");
-  const defaults = {
-    sourceExtensions: [".ts", ".js", ".mjs", ".json", ".md", ".yml", ".yaml"],
-    buildLayouts: ["packages/*/dist/", "dist/"],
-    skipStaleCheck: false
-  };
-  if (!fs2.existsSync(configPath)) return defaults;
-  try {
-    const user = JSON.parse(fs2.readFileSync(configPath, "utf-8"));
-    return { ...defaults, ...user };
-  } catch {
-    return defaults;
-  }
-}
+
+// src/operations.ts
+var DEAD = "evo-dead-";
 function evo_init() {
-  const { cwd } = getRepo();
-  const paths = evoPaths(cwd);
-  fs2.mkdirSync(paths.evoDir, { recursive: true });
-  try {
-    migrateLessons(cwd);
-  } catch {
-  }
-  fs2.writeFileSync(paths.lessonsFile, "", "utf-8");
-  const gitignore = path2.join(cwd, ".gitignore");
-  const evoEntry = ".evo/\n";
-  if (fs2.existsSync(gitignore)) {
-    const content = fs2.readFileSync(gitignore, "utf-8");
-    if (!content.includes(".evo/")) {
-      fs2.appendFileSync(gitignore, evoEntry);
-    }
-  } else {
-    fs2.writeFileSync(gitignore, evoEntry);
-  }
-  try {
-    git(["tag", "-d", "evo-root"], cwd);
-  } catch {
-  }
-  git(["tag", "-a", "evo-root", "-m", "GitEvo root checkpoint"], cwd);
+  const root = resolveRoot();
+  const evoDir = path5.join(root, ".evo");
+  fs5.mkdirSync(evoDir, { recursive: true });
+  excludeEvoDir(root);
+  keepRecords(() => migrateLessons(root));
+  fs5.writeFileSync(path5.join(evoDir, "lessons.jsonl"), "");
+  git(["tag", "-f", "-a", "evo-root", "-m", "root checkpoint"], root);
   return "GitEvo initialized. Root checkpoint tagged as evo-root.";
 }
+function excludeEvoDir(root) {
+  const gitDir = path5.resolve(root, git(["rev-parse", "--git-common-dir"], root));
+  const file = path5.join(gitDir, "info", "exclude");
+  fs5.mkdirSync(path5.dirname(file), { recursive: true });
+  const current = fs5.existsSync(file) ? fs5.readFileSync(file, "utf-8") : "";
+  if (current.split(/\r?\n/).some((line) => line.trim() === ".evo/")) return;
+  fs5.appendFileSync(file, current === "" || current.endsWith("\n") ? ".evo/\n" : "\n.evo/\n");
+}
 function evo_checkpoint(name, description, cwdOverride) {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
-  let stashed = false;
-  if (isDirty2(cwd)) {
-    git(["stash", "push", "-m", `gitevo: auto-stash before checkpoint '${name}'`], cwd);
-    git(["stash", "apply"], cwd);
-    git(["add", "-A"], cwd);
-    git(["commit", "-m", `gitevo: WIP checkpoint '${name}'`], cwd);
-    stashed = true;
+  const root = initializedRoot(cwdOverride);
+  const head = git(["rev-parse", "HEAD"], root);
+  const dirty = statusLines(root).length > 0;
+  if (dirty) {
+    git(["add", "-A"], root);
+    git(["commit", "--no-verify", "-m", `WIP checkpoint: ${name}`], root);
   }
-  const tagName = `evo-${name}`;
-  try {
-    git(["tag", "-d", tagName], cwd);
-  } catch {
-  }
-  git(["tag", "-a", tagName, "-m", description], cwd);
-  if (stashed) {
-    try {
-      git(["reset", "--soft", "HEAD~1"], cwd);
-      git(["reset", "HEAD", "."], cwd);
-      git(["stash", "drop"], cwd);
-    } catch {
-      return `Checkpoint '${name}' created, but the WIP commit could not be cleanly undone \u2014 your changes are in the stash. Run 'git stash pop' to recover them.`;
-    }
-  }
-  try {
-    const branch = currentBranch(cwd);
-    recordCheckpoint(tagName, branch, description, cwd);
-  } catch {
-  }
+  git(["tag", "-f", "-a", `evo-${name}`, "-m", description], root);
+  if (dirty) git(["reset", "--mixed", head], root);
+  keepRecords(() => recordCheckpoint(`evo-${name}`, activeBranch(root), description, root));
   return `Checkpoint '${name}' created.`;
 }
-function evo_learn(content, repoOverride) {
-  const repo = repoOverride ?? getRepo();
-  const { cwd } = repo;
-  requireInit(cwd);
-  const branch = currentBranch(cwd);
-  writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } }, cwd);
-  return `Lesson recorded on branch '${branch}'.`;
-}
-function evo_lessons() {
-  const { cwd } = getRepo();
-  requireInit(cwd);
-  try {
-    const results = queryMessages({ type: "INSIGHT", limit: 100 }, cwd);
-    if (results.length > 0) {
-      return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.branch}): ${m.content}`).join("\n");
-    }
-  } catch {
-  }
-  return "No lessons recorded.";
-}
-function evo_export_lessons() {
-  const { cwd } = getRepo();
-  requireInit(cwd);
-  try {
-    const results = queryMessages({ type: "INSIGHT", limit: 100 }, cwd);
-    if (results.length === 0) {
-      return JSON.stringify([]);
-    }
-    const lessons = results.map((m) => ({
-      id: `gitevo-${lessonHash(m.content, m.branch, m.timestamp)}`,
-      title: m.content.slice(0, 80),
-      description: `GitEvo lesson from branch '${m.branch}'`,
-      content: m.content,
-      type: "feedback",
-      metadata: {
-        source: "gitevo",
-        branch: m.branch,
-        timestamp: m.timestamp
-      }
-    }));
-    return JSON.stringify(lessons, null, 2);
-  } catch {
-    return JSON.stringify([]);
-  }
-}
-function lessonHash(content, branch, timestamp) {
-  const input = `${content}|${branch}|${timestamp}`;
-  return createHash("sha256").update(input).digest("hex").slice(0, 12);
-}
 function evo_spawn(checkpoint_name, new_branch, force, cwdOverride) {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
-  const tagName = `evo-${checkpoint_name}`;
-  if (!hasTag(tagName, cwd)) {
-    const available = tagsWithPrefix("evo-", cwd).join(", ");
-    throw new EvoError(
-      `Checkpoint '${checkpoint_name}' not found. Available: ${available || "none"}. Run evo_checkpoints to list.`
-    );
-  }
-  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  if (branches.includes(new_branch)) {
-    throw new EvoError(`Branch '${new_branch}' already exists.`);
-  }
-  const wasDirty = isDirty2(cwd);
-  let stashed = false;
-  if (wasDirty) {
-    git(["stash", "push", "-m", "gitevo: auto-stash before spawn"], cwd);
-    stashed = true;
-  }
-  const safetyWarnings = preflightCheckoutSafety(tagName, cwd);
-  if (safetyWarnings && !force) {
-    if (stashed) {
-      try {
-        git(["stash", "pop"], cwd);
-      } catch {
-      }
-    }
-    throw new EvoError(
-      `SAFETY CHECK FAILED \u2014 checkout to '${tagName}' would lose data:
-
-${safetyWarnings}
-
-Pass force=true to proceed anyway (you accept the risk of data loss).`
-    );
-  }
-  git(["checkout", "-b", new_branch, tagName], cwd);
-  if (stashed) {
-    try {
-      git(["stash", "pop"], cwd);
-    } catch {
-      return `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'. Auto-stash could not be reapplied \u2014 your changes are in the stash. Run git stash pop manually.`;
-    }
-  }
-  try {
-    recordBranch(new_branch, "active", `evo-${checkpoint_name}`, void 0, cwd);
-  } catch {
-  }
-  const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
-  if (force && safetyWarnings) {
-    return `${spawnMsg}
-
-\u26A0\uFE0F FORCED \u2014 safety checks bypassed:
-
-${safetyWarnings}`;
-  }
-  return spawnMsg;
+  const root = initializedRoot(cwdOverride);
+  const tag = `evo-${checkpoint_name}`;
+  if (!evoTags(root).includes(tag)) throw new EvoError(unknownCheckpoint(root, checkpoint_name));
+  if (branchExists(root, new_branch)) throw new EvoError(`Branch '${new_branch}' already exists.`);
+  const status = statusLines(root);
+  const notes = guardMove({ root, target: tag, status, config: loadConfig(root) }, force);
+  const held = setAside(root, status);
+  git(["checkout", "-b", new_branch, tag], root);
+  const trouble = restoreAside(root, held);
+  keepRecords(() => recordBranch(new_branch, "active", tag, void 0, root));
+  return joinReport(`Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`, [notes, trouble]);
 }
-function evo_checkpoints(cwdOverride) {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
-  const tags = tagsWithPrefix("evo-", cwd);
-  if (tags.length === 0) return "No checkpoints found.";
-  const timestampMap = getCheckpointTimestamps(cwd);
-  tags.sort((a, b) => {
-    const ta = timestampMap.get(a) ?? "";
-    const tb = timestampMap.get(b) ?? "";
-    return tb.localeCompare(ta) || b.localeCompare(a);
-  });
-  const lines = tags.map((t) => {
-    const desc = getTagMessage(t, cwd);
-    return `  ${t}: ${desc}`;
-  });
-  return `Checkpoints:
-${lines.join("\n")}`;
-}
-function evo_branches(cwdOverride) {
-  const { cwd, rootBranch } = getRepo(cwdOverride);
-  requireInit(cwd);
-  const defaultNames = /* @__PURE__ */ new Set(["master", "main", "trunk"]);
-  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  const attempts = branches.filter((b) => b && !defaultNames.has(b) && b !== rootBranch);
-  if (attempts.length === 0) return "No attempt branches.";
-  return `Branches:
-  ${attempts.sort().join("\n  ")}`;
+function unknownCheckpoint(root, name) {
+  const available = markNames(root);
+  const listed = available.length > 0 ? available.join(", ") : "none";
+  return `Checkpoint '${name}' not found. Available: ${listed}. Run evo_checkpoints to list.`;
 }
 function evo_abandon(checkpoint, reason, force, cwdOverride) {
-  const { cwd, rootBranch } = getRepo(cwdOverride);
-  requireInit(cwd);
-  let stashed = false;
-  let stashPopWarning = "";
-  if (isDirty2(cwd)) {
-    git(["stash", "push", "-m", "gitevo: auto-stash before abandon"], cwd);
-    stashed = true;
-  }
-  const branchName = currentBranch(cwd);
-  let targetRef;
-  let targetDesc;
+  const root = initializedRoot(cwdOverride);
+  const branch = activeBranch(root);
+  const target = abandonTarget(root, branch, checkpoint);
+  const status = statusLines(root);
+  const notes = guardMove({ root, target: target.ref, status, config: loadConfig(root) }, force);
+  const held = setAside(root, status);
+  const dead = git(["rev-parse", "HEAD"], root);
+  git(["reset", "--hard", target.ref], root);
+  git(["tag", "-f", "-a", `${DEAD}${branch}`, "-m", reason ?? "abandoned", dead], root);
+  keepRecords(() => recordBranch(branch, "dead", void 0, void 0, root));
+  if (reason) keepRecords(() => recordLesson(root, branch, `[ABANDON] ${reason}`));
+  return joinReport(`Branch '${branch}' abandoned. Reverted to ${target.label}.`, [notes, heldNote(held)]);
+}
+function abandonTarget(root, branch, checkpoint) {
   if (checkpoint) {
-    const tagName = `evo-${checkpoint}`;
-    if (!hasTag(tagName, cwd)) {
-      if (stashed) {
-        try {
-          git(["stash", "pop"], cwd);
-        } catch {
-          stashPopWarning = " Could not restore auto-stashed changes \u2014 they remain in the stash.";
-        }
-      }
-      throw new EvoError(`Checkpoint '${checkpoint}' not found.${stashPopWarning}`);
-    }
-    targetRef = tagName;
-    targetDesc = `checkpoint '${checkpoint}'`;
-  } else {
-    const spawnPoint = getBranchSpawnPoint(branchName, cwd);
-    if (spawnPoint) {
-      targetRef = spawnPoint;
-      targetDesc = `spawn checkpoint '${spawnPoint}'`;
-    } else {
-      targetRef = "HEAD~1";
-      targetDesc = "parent commit";
-    }
+    if (!evoTags(root).includes(`evo-${checkpoint}`)) throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
+    return { ref: `evo-${checkpoint}`, label: `checkpoint '${checkpoint}'` };
   }
-  const safetyWarnings = preflightCheckoutSafety(targetRef, cwd);
-  if (safetyWarnings && !force) {
-    if (stashed) {
-      try {
-        git(["stash", "pop"], cwd);
-      } catch {
-        stashPopWarning = " Could not restore auto-stashed changes \u2014 they remain in the stash.";
-      }
-    }
-    throw new EvoError(
-      `SAFETY CHECK FAILED \u2014 reset to '${targetRef}' would lose data:
-
-${safetyWarnings}
-
-Pass force=true to proceed anyway (you accept the risk of data loss).${stashPopWarning}`
-    );
-  }
-  try {
-    recordBranch(branchName, "dead", void 0, void 0, cwd);
-  } catch {
-  }
-  git(["reset", "--hard", targetRef], cwd);
-  const deadTag = `evo-dead-${branchName}`;
-  try {
-    git(["tag", "-d", deadTag], cwd);
-  } catch {
-  }
-  git(["tag", "-a", deadTag, "-m", `Abandoned branch '${branchName}'`], cwd);
-  if (reason) {
-    evo_learn(`[ABANDON] ${reason}`, { cwd, rootBranch });
-  }
-  const abandonMsg = `Branch '${branchName}' abandoned. Reverted to ${targetDesc}.${stashed ? " Auto-stashed dirty changes \u2014 run git stash pop to recover." : ""}`;
-  if (force && safetyWarnings) {
-    return `${abandonMsg}
-
-\u26A0\uFE0F FORCED \u2014 safety checks bypassed:
-
-${safetyWarnings}`;
-  }
-  return abandonMsg;
+  const spawn = keepRecords(() => getBranchSpawnPoint(branch, root));
+  if (spawn) return { ref: spawn, label: `spawn checkpoint '${spawn}'` };
+  return { ref: "HEAD~1", label: "the previous commit" };
 }
-function evo_diff(checkpoint_a, checkpoint_b, cwdOverride) {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
-  const tagA = `evo-${checkpoint_a}`;
-  const tagB = `evo-${checkpoint_b}`;
-  for (const tag of [tagA, tagB]) {
-    if (!hasTag(tag, cwd)) {
-      throw new EvoError(`Checkpoint '${tag}' not found.`);
-    }
-  }
-  const diff = git(["diff", tagA, tagB], cwd);
-  return diff || "No differences between checkpoints.";
+function heldNote(held) {
+  if (!held) return "";
+  return "Uncommitted changes were set aside. They are recoverable: run 'git stash pop'.";
 }
-function evo_summary(cwdOverride) {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
-  const active = currentBranch(cwd);
-  const allTags = tagsWithPrefix("evo-", cwd);
-  const checkpoints = allTags.filter((t) => !t.startsWith("evo-dead-") && t !== "evo-adopted");
-  let lessonCount = 0;
-  try {
-    lessonCount = countMessages("INSIGHT", cwd);
-  } catch {
-    lessonCount = 0;
-  }
-  const deadBranches = allTags.filter((t) => t.startsWith("evo-dead-")).map((t) => t.slice("evo-dead-".length));
-  const adopted = hasTag("evo-adopted", cwd);
+function evo_checkpoints() {
+  const root = initializedRoot();
+  const tags = evoTags(root);
+  if (tags.length === 0) return "No checkpoints found.";
+  const times = keepRecords(() => getCheckpointTimestamps(root)) ?? /* @__PURE__ */ new Map();
+  const newestFirst = [...tags].sort((a, b) => (times.get(b) ?? "").localeCompare(times.get(a) ?? ""));
+  const shown = newestFirst.map((tag) => `  ${tag}: ${tagDescription(root, tag) || "(no description)"}`);
+  return ["Checkpoints:", ...shown].join("\n");
+}
+function evo_branches() {
+  const root = initializedRoot();
+  const skip = keepBranches(root);
+  const attempts = branchNames(root).filter((name) => !skip.has(name));
+  if (attempts.length === 0) return "No attempt branches.";
+  return ["Branches:", ...attempts.map((name) => `  ${name}`)].join("\n");
+}
+function keepBranches(root) {
+  return /* @__PURE__ */ new Set(["main", "master", "trunk", rootBranchOf(root)]);
+}
+function evo_diff(checkpoint_a, checkpoint_b) {
+  const root = initializedRoot();
+  const from = requireTag(root, `evo-${checkpoint_a}`);
+  const to = requireTag(root, `evo-${checkpoint_b}`);
+  return git(["diff", from, to], root) || "No differences between checkpoints.";
+}
+function requireTag(root, tag) {
+  if (!evoTags(root).includes(tag)) throw new EvoError(`Checkpoint '${tag}' not found.`);
+  return tag;
+}
+function evo_summary() {
+  const root = initializedRoot();
+  const tags = evoTags(root);
+  const dead = tags.filter((tag) => tag.startsWith(DEAD)).map((tag) => tag.slice(DEAD.length));
+  const marks = tags.filter((tag) => !tag.startsWith(DEAD) && tag !== "evo-adopted");
   return [
-    `Active branch: ${active}`,
-    `Checkpoints: ${checkpoints.length}`,
-    `Lessons: ${lessonCount}`,
-    `Dead branches: ${deadBranches.length}${deadBranches.length > 0 ? ` (${deadBranches.join(", ")})` : ""}`,
-    `Adopted: ${adopted ? "yes" : "no"}`
+    `Active branch: ${activeBranch(root)}`,
+    `Checkpoints: ${marks.length}`,
+    `Lessons: ${keepRecords(() => countMessages("INSIGHT", root)) ?? 0}`,
+    deadLine(dead),
+    `Adopted: ${tags.includes("evo-adopted") ? "yes" : "no"}`
   ].join("\n");
 }
+function deadLine(dead) {
+  if (dead.length === 0) return "Dead branches: 0";
+  return `Dead branches: ${dead.length} (${dead.join(", ")})`;
+}
+function markNames(root) {
+  return evoTags(root).filter((tag) => !tag.startsWith(DEAD) && tag !== "evo-adopted").map((tag) => tag.slice("evo-".length));
+}
 function evo_adopt(branch, cwdOverride) {
-  const { cwd, rootBranch } = getRepo(cwdOverride);
-  requireInit(cwd);
-  if (isDirty2(cwd)) {
+  const root = initializedRoot(cwdOverride);
+  if (trackedChanges(root).length > 0) {
     throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
   }
-  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  if (!branches.includes(branch)) {
-    throw new EvoError(`Branch '${branch}' not found.`);
-  }
-  const originalBranch = currentBranch(cwd);
-  if (originalBranch !== rootBranch) {
-    git(["checkout", rootBranch], cwd);
-  }
-  try {
-    git(["merge", branch, "--no-edit"], cwd);
-  } catch (_err) {
-    let conflictFiles = [];
-    try {
-      const output = gitOrNull(["diff", "--name-only", "--diff-filter=U"], cwd);
-      if (output) conflictFiles = output.split("\n").filter(Boolean);
-    } catch {
-    }
-    try {
-      git(["merge", "--abort"], cwd);
-    } catch {
-    }
-    const fileList = conflictFiles.length > 0 ? `: ${conflictFiles.join(", ")}` : "";
-    throw new EvoError(`adopt failed: merge conflicts${fileList}; resolve manually or abandon the branch`);
-  }
-  try {
-    git(["tag", "-d", "evo-adopted"], cwd);
-  } catch {
-  }
-  git(["tag", "-a", "evo-adopted", "-m", `Adopted branch '${branch}' into ${rootBranch}`], cwd);
-  try {
-    recordBranch(branch, "adopted", void 0, void 0, cwd);
-  } catch {
-  }
-  return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
+  if (!branchExists(root, branch)) throw new EvoError(`Branch '${branch}' not found.`);
+  const target = rootBranchOf(root);
+  git(["checkout", target], root);
+  mergeOrAbort(root, branch);
+  git(["tag", "-f", "-a", "evo-adopted", "-m", `adopted ${branch}`], root);
+  keepRecords(() => recordBranch(branch, "adopted", void 0, void 0, root));
+  return `Branch '${branch}' merged into '${target}' and tagged evo-adopted.`;
 }
-function evo_finish(cwdOverride) {
-  const { cwd, rootBranch } = getRepo(cwdOverride);
-  requireInit(cwd);
-  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  const current = currentBranch(cwd);
-  if (current !== rootBranch) {
-    try {
-      evo_adopt(current);
-    } catch (err) {
-      throw new EvoError(`Finish failed: internal adopt failed \u2014 ${err.message}`);
-    }
+function trackedChanges(root) {
+  return statusLines(root).filter((line) => !line.startsWith("??"));
+}
+function mergeOrAbort(root, branch) {
+  if (gitTry(["merge", "--no-ff", "-m", `evo adopt ${branch}`, branch], root) !== null) return;
+  const conflicted = gitTry(["diff", "--name-only", "--diff-filter=U"], root) ?? "";
+  gitTry(["merge", "--abort"], root);
+  const files = conflicted.split("\n").filter((line) => line.trim().length > 0);
+  const named = files.length > 0 ? `: ${files.join(", ")}` : "";
+  throw new EvoError(`adopt failed: merge conflicts${named}; resolve manually or abandon the branch`);
+}
+function evo_finish() {
+  const root = initializedRoot();
+  const target = rootBranchOf(root);
+  if (activeBranch(root) !== target) adoptInto(root, activeBranch(root));
+  dropEvoTags(root);
+  dropSideBranches(root, keepBranches(root));
+  closeMemoryDb(root);
+  fs5.rmSync(path5.join(root, ".evo"), { recursive: true, force: true });
+  return `Evolution complete. All artifacts cleaned. Root branch: ${target}.`;
+}
+function adoptInto(root, branch) {
+  try {
+    evo_adopt(branch, root);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new EvoError(`Finish failed: internal adopt failed - ${message}`);
   }
-  const allEvoTags = tagsWithPrefix("evo-", cwd);
-  for (const tag of allEvoTags) {
-    try {
-      git(["tag", "-d", tag], cwd);
-    } catch {
-    }
+}
+function dropEvoTags(root) {
+  const tags = evoTags(root);
+  if (tags.length === 0) return;
+  git(["tag", "-d", ...tags], root);
+}
+function dropSideBranches(root, keep) {
+  const others = branchNames(root).filter((name) => !keep.has(name));
+  if (others.length === 0) return;
+  gitTry(["branch", "-D", ...others], root);
+}
+function joinReport(headline, extras) {
+  return [headline, ...extras.filter((extra) => extra.length > 0)].join("\n\n");
+}
+function keepRecords(reach) {
+  try {
+    return reach();
+  } catch {
+    return void 0;
   }
-  const defaultNames = /* @__PURE__ */ new Set(["master", "main", "trunk"]);
-  for (const branch of branches) {
-    if (branch === rootBranch || defaultNames.has(branch)) continue;
-    try {
-      git(["branch", "-D", branch], cwd);
-    } catch {
-    }
-  }
-  closeMemoryDb(cwd);
-  const paths = evoPaths(cwd);
-  if (fs2.existsSync(paths.evoDir)) {
-    fs2.rmSync(paths.evoDir, { recursive: true, force: true });
-  }
-  return `Evolution complete. All artifacts cleaned. Root branch: ${rootBranch}.`;
 }
 
 // src/index.ts
-var _dirname = path3.dirname(fileURLToPath(import.meta.url));
-var _pkg = JSON.parse(readFileSync3(path3.join(_dirname, "..", "package.json"), "utf-8"));
+var _dirname = path6.dirname(fileURLToPath(import.meta.url));
+var _pkg = JSON.parse(readFileSync4(path6.join(_dirname, "..", "package.json"), "utf-8"));
 var server = new McpServer({
   name: "gitevo",
   version: _pkg.version
@@ -22024,14 +21895,14 @@ function formatMemoryStats() {
   const db = getMemoryDb();
   const total = db.prepare("SELECT COUNT(*) as count FROM messages").get().count;
   const byType = db.prepare("SELECT type, COUNT(*) as count FROM messages GROUP BY type ORDER BY count DESC").all();
-  const lines = [`Total messages: ${total}`];
+  const lines2 = [`Total messages: ${total}`];
   if (byType.length > 0) {
-    lines.push("By type:");
+    lines2.push("By type:");
     for (const row of byType) {
-      lines.push(`  ${row.type}: ${row.count}`);
+      lines2.push(`  ${row.type}: ${row.count}`);
     }
   }
-  return lines.join("\n");
+  return lines2.join("\n");
 }
 server.tool(
   "evo_memory_query",

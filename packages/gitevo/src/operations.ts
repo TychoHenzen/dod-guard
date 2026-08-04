@@ -1,835 +1,288 @@
 /**
- * GitEvo operations — evolutionary git branching for LLM agents.
+ * gitevo operations: mark a point in a repository's history, branch from that
+ * mark to try something, throw the attempt away or keep it, record what was
+ * learned.
  *
- * Core workflow:
- *   init → checkpoint → spawn → (work) → learn → checkpoint → (loop)
- *   abandon (dead end) → revert to checkpoint
- *   adopt (winner) → merge to root
- *   finish → merge all, clean artifacts
- *
- * All git operations use execSync. All .evo/ state stored in .evo/ directory.
- * Lessons stored as JSONL in .evo/lessons.jsonl, exportable to obsidian-rag.
+ * Every operation resolves the git top level first, so state lands in
+ * <top level>/.evo whatever directory the caller runs from. Every success is a
+ * human readable string, every refusal an EvoError. Git effects happen before
+ * the durable record is written, so a failed write never undoes them.
  */
 
-import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { loadConfig } from "./evo-config.js";
+import { EvoError } from "./evo-error.js";
+import {
+  activeBranch,
+  branchExists,
+  branchNames,
+  evoTags,
+  git,
+  gitTry,
+  initializedRoot,
+  resolveRoot,
+  restoreAside,
+  rootBranchOf,
+  setAside,
+  statusLines,
+  tagDescription,
+} from "./evo-git.js";
+import { recordLesson } from "./evo-lessons.js";
+import { guardMove } from "./evo-safety.js";
 import {
   closeMemoryDb,
   countMessages,
   getBranchSpawnPoint,
   getCheckpointTimestamps,
   migrateLessons,
-  queryMessages,
   recordBranch,
   recordCheckpoint,
-  writeMessage,
 } from "./memory.js";
 
-// ── Error types ───────────────────────────────────────────────────────
+export { type EvoConfig, loadConfig } from "./evo-config.js";
+export { EvoError } from "./evo-error.js";
+export { evo_export_lessons, evo_learn, evo_lessons } from "./evo-lessons.js";
 
-export class EvoError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EvoError";
-  }
-}
+const DEAD = "evo-dead-";
 
-// ── Git helpers ───────────────────────────────────────────────────────
+// ── Initializing ──────────────────────────────────────────────────────
 
-function git(args: string[], cwd?: string): string {
-  const result = spawnSync("git", args, {
-    cwd,
-    encoding: "utf-8",
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: 30_000,
-  });
-
-  if (result.error) {
-    throw new EvoError(result.error.message);
-  }
-
-  if (result.status !== 0) {
-    const errMsg = (result.stderr || "").trim() || (result.stdout || "").trim();
-    throw new EvoError(errMsg);
-  }
-
-  return (result.stdout || "").trim();
-}
-
-function gitOrNull(args: string[], cwd?: string): string | null {
-  try {
-    return git(args, cwd);
-  } catch {
-    return null;
-  }
-}
-
-function getRepo(cwdOverride?: string): { cwd: string; rootBranch: string } {
-  let toplevel: string;
-  try {
-    toplevel = git(["rev-parse", "--show-toplevel"], cwdOverride);
-  } catch {
-    throw new EvoError("Not a git repository. Run 'git init' first.");
-  }
-
-  // Detect root branch
-  let rootBranch = "main";
-  const heads = git(["branch", "--format=%(refname:short)"], toplevel).split("\n");
-  for (const name of ["main", "master", "trunk"]) {
-    if (heads.includes(name)) {
-      rootBranch = name;
-      break;
-    }
-  }
-  return { cwd: toplevel, rootBranch };
-}
-
-function currentBranch(cwd: string): string {
-  return git(["branch", "--show-current"], cwd);
-}
-
-function isDirty(cwd: string): boolean {
-  const status = git(["status", "--porcelain"], cwd);
-  // Only count tracked file modifications, not untracked files
-  const lines = status.split("\n").filter((l) => l.trim() && !l.startsWith("??"));
-  return lines.length > 0;
-}
-
-/** Files that exist in HEAD but would be removed by switching to targetRef. */
-function filesRemovedByCheckout(targetRef: string, cwd: string): string[] {
-  // Validate ref exists first — don't silently return [] on git errors
-  try {
-    git(["rev-parse", "--verify", targetRef], cwd);
-  } catch {
-    throw new EvoError(`target ref '${targetRef}' does not exist`);
-  }
-  // --name-only --diff-filter=D: files deleted going from HEAD to targetRef
-  // (i.e., files present in HEAD but not in targetRef)
-  const diff = git(["diff", "--name-only", "--diff-filter=D", "HEAD", targetRef], cwd);
-  return diff.split("\n").filter(Boolean);
-}
-
-/** Untracked source files at risk of being clobbered by checkout. */
-function untrackedSourceFiles(cwd: string, config?: EvoConfig): string[] {
-  const cfg = config ?? loadConfig(cwd);
-  const escapedExts = cfg.sourceExtensions.map((e) => e.replace(/\./g, "\\."));
-  const extPattern = new RegExp(`(${escapedExts.join("|")})$`);
-  const status = git(["status", "--porcelain"], cwd);
-  return status
-    .split("\n")
-    .filter((l) => l.startsWith("??"))
-    .map((l) => l.slice(3).trim())
-    .filter((f) => extPattern.test(f));
-}
-
-/** Stale dist/*.js files with no matching .ts source — compilation artifacts. */
-function staleDistFiles(cwd: string, config?: EvoConfig): string[] {
-  const cfg = config ?? loadConfig(cwd);
-  if (cfg.skipStaleCheck) return [];
-
-  const hasTs = cfg.sourceExtensions.includes(".ts");
-  const stale: string[] = [];
-
-  function scan(dir: string): void {
-    if (!fs.existsSync(dir)) return;
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === "node_modules") continue;
-        scan(full);
-      } else if (entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
-        // Skip .test.js in JS-only repos — hand-written .test.js is normal there
-        if (entry.name.endsWith(".test.js") && !hasTs) continue;
-
-        // Check if matching .ts source exists
-        const tsFile = full.replace(/\.js$/, ".ts");
-        if (!fs.existsSync(tsFile)) {
-          stale.push(path.relative(cwd, full));
-        }
-      }
-    }
-  }
-
-  // Use config.buildLayouts for scanning
-  for (const layout of cfg.buildLayouts) {
-    const normalized = layout.replace(/\//g, path.sep).replace(/[/\\]$/, "");
-    if (normalized.includes("*")) {
-      const starIdx = normalized.indexOf("*");
-      const beforeStar = normalized.slice(0, starIdx);
-      const afterStar = normalized.slice(starIdx + 1);
-      const parentDir = path.join(cwd, beforeStar);
-      if (fs.existsSync(parentDir)) {
-        for (const entry of fs.readdirSync(parentDir, { withFileTypes: true })) {
-          if (entry.isDirectory()) {
-            scan(path.join(parentDir, entry.name, afterStar));
-          }
-        }
-      }
-    } else {
-      scan(path.join(cwd, normalized));
-    }
-  }
-
-  return stale;
-}
-
-/**
- * Pre-flight safety check for operations that switch branches/tags.
- * Detects:
- *  (a) untracked source files that checkout might clobber
- *  (b) files committed in HEAD that would be removed by the target ref
- *  (c) stale dist/*.js without matching .ts source
- *
- * Returns null if safe, or a diagnostic message string if risks found.
- */
-function preflightCheckoutSafety(targetRef: string, cwd: string, config?: EvoConfig): string | null {
-  const cfg = config ?? loadConfig(cwd);
-  const warnings: string[] = [];
-
-  const untracked = untrackedSourceFiles(cwd, cfg);
-  if (untracked.length > 0) {
-    warnings.push(
-      `Untracked source files (would persist but risk loss if directory removed):\n${untracked.map((f) => `  • ${f}`).join("\n")}`,
-    );
-  }
-
-  const removed = filesRemovedByCheckout(targetRef, cwd);
-  const sourceRemoved = removed.filter((f) => /\.ts$/.test(f) && !f.includes("dist/"));
-  if (sourceRemoved.length > 0) {
-    warnings.push(
-      `Source files in HEAD NOT in '${targetRef}' — WILL BE DELETED by checkout:\n${sourceRemoved.map((f) => `  • ${f}`).join("\n")}\nCommit or stash these before spawning.`,
-    );
-  }
-
-  const stale = staleDistFiles(cwd, cfg);
-  if (stale.length > 0) {
-    warnings.push(
-      `Stale dist/*.js without matching .ts source:\n${stale.map((f) => `  • ${f}`).join("\n")}\nThese will survive checkout — clean with 'npm run clean && npm run build'.`,
-    );
-  }
-
-  if (warnings.length === 0) return null;
-  return warnings.join("\n\n");
-}
-
-function tagsWithPrefix(prefix: string, cwd: string): string[] {
-  const output = gitOrNull(["tag", "-l", `${prefix}*`], cwd) || "";
-  if (!output) return [];
-  return output.split("\n").filter(Boolean);
-}
-
-function hasTag(tag: string, cwd: string): boolean {
-  return tagsWithPrefix(tag, cwd).includes(tag);
-}
-
-function getTagMessage(tag: string, cwd: string): string {
-  try {
-    // git tag -l --format='%(contents)' <tag> returns annotation body
-    const msg = git(["tag", "-l", `--format=%(contents)`, tag], cwd);
-    return msg.trim() || "(no description)";
-  } catch {
-    return "(no description)";
-  }
-}
-
-// ── .evo/ path helpers ────────────────────────────────────────────────
-
-interface EvoPaths {
-  evoDir: string;
-  lessonsFile: string;
-}
-
-function evoPaths(cwd: string): EvoPaths {
-  const evoDir = path.join(cwd, ".evo");
-  return {
-    evoDir,
-    lessonsFile: path.join(evoDir, "lessons.jsonl"),
-  };
-}
-
-function requireInit(cwd: string): EvoPaths {
-  const paths = evoPaths(cwd);
-  if (!fs.existsSync(paths.evoDir)) {
-    throw new EvoError("GitEvo not initialized. Run evo_init first.");
-  }
-  return paths;
-}
-
-// ── EvoConfig ──────────────────────────────────────────────────────────
-
-export interface EvoConfig {
-  sourceExtensions: string[];
-  buildLayouts: string[];
-  skipStaleCheck: boolean;
-}
-
-export function loadConfig(cwd: string): EvoConfig {
-  const configPath = path.join(cwd, ".evo", "config.json");
-  const defaults: EvoConfig = {
-    sourceExtensions: [".ts", ".js", ".mjs", ".json", ".md", ".yml", ".yaml"],
-    buildLayouts: ["packages/*/dist/", "dist/"],
-    skipStaleCheck: false,
-  };
-  if (!fs.existsSync(configPath)) return defaults;
-  try {
-    const user = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    return { ...defaults, ...user };
-  } catch {
-    return defaults;
-  }
-}
-
-// ── Operations ────────────────────────────────────────────────────────
-
-/**
- * Initialize GitEvo in the current repo.
- *
- * Creates .evo/ directory with lessons.jsonl. Tags HEAD as evo-root.
- * Re-running resets: clears lessons, re-tags root.
- */
 export function evo_init(): string {
-  const { cwd } = getRepo();
-  const paths = evoPaths(cwd);
-
-  // Create .evo/ directory
-  fs.mkdirSync(paths.evoDir, { recursive: true });
-
-  // Migrate existing lessons BEFORE clearing (prevents data loss on re-init)
-  try {
-    migrateLessons(cwd);
-  } catch {}
-
-  // Clear/create lessons.jsonl (AFTER migration)
-  fs.writeFileSync(paths.lessonsFile, "", "utf-8");
-
-  // Ensure .evo/ is gitignored
-  const gitignore = path.join(cwd, ".gitignore");
-  const evoEntry = ".evo/\n";
-  if (fs.existsSync(gitignore)) {
-    const content = fs.readFileSync(gitignore, "utf-8");
-    if (!content.includes(".evo/")) {
-      fs.appendFileSync(gitignore, evoEntry);
-    }
-  } else {
-    fs.writeFileSync(gitignore, evoEntry);
-  }
-
-  // Force re-tag evo-root
-  try {
-    git(["tag", "-d", "evo-root"], cwd);
-  } catch {
-    /* tag didn't exist */
-  }
-  git(["tag", "-a", "evo-root", "-m", "GitEvo root checkpoint"], cwd);
-
+  const root = resolveRoot();
+  const evoDir = path.join(root, ".evo");
+  fs.mkdirSync(evoDir, { recursive: true });
+  excludeEvoDir(root);
+  keepRecords(() => migrateLessons(root));
+  fs.writeFileSync(path.join(evoDir, "lessons.jsonl"), "");
+  git(["tag", "-f", "-a", "evo-root", "-m", "root checkpoint"], root);
   return "GitEvo initialized. Root checkpoint tagged as evo-root.";
 }
 
-/**
- * Tag HEAD as evo-{name} with description. Refuses if working tree has
- * modified tracked files.
- */
+/** Ignore .evo/ per repository, which leaves the working tree untouched. */
+function excludeEvoDir(root: string): void {
+  const gitDir = path.resolve(root, git(["rev-parse", "--git-common-dir"], root));
+  const file = path.join(gitDir, "info", "exclude");
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const current = fs.existsSync(file) ? fs.readFileSync(file, "utf-8") : "";
+  if (current.split(/\r?\n/).some((line) => line.trim() === ".evo/")) return;
+  fs.appendFileSync(file, current === "" || current.endsWith("\n") ? ".evo/\n" : "\n.evo/\n");
+}
+
+// ── Marking a point ───────────────────────────────────────────────────
+
 export function evo_checkpoint(name: string, description: string, cwdOverride?: string): string {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
-
-  // Auto-stash if dirty — create a WIP commit so the checkpoint tag captures
-  // uncommitted work, then soft-reset to restore the dirty working tree.
-  let stashed = false;
-  if (isDirty(cwd)) {
-    git(["stash", "push", "-m", `gitevo: auto-stash before checkpoint '${name}'`], cwd);
-    git(["stash", "apply"], cwd);
-    git(["add", "-A"], cwd);
-    git(["commit", "-m", `gitevo: WIP checkpoint '${name}'`], cwd);
-    stashed = true;
+  const root = initializedRoot(cwdOverride);
+  const head = git(["rev-parse", "HEAD"], root);
+  const dirty = statusLines(root).length > 0;
+  if (dirty) {
+    git(["add", "-A"], root);
+    git(["commit", "--no-verify", "-m", `WIP checkpoint: ${name}`], root);
   }
-
-  const tagName = `evo-${name}`;
-  try {
-    git(["tag", "-d", tagName], cwd);
-  } catch {
-    /* doesn't exist */
-  }
-  git(["tag", "-a", tagName, "-m", description], cwd);
-
-  // Undo the WIP commit and restore exact dirty working tree state
-  if (stashed) {
-    try {
-      git(["reset", "--soft", "HEAD~1"], cwd);
-      git(["reset", "HEAD", "."], cwd);
-      git(["stash", "drop"], cwd);
-    } catch {
-      return `Checkpoint '${name}' created, but the WIP commit could not be cleanly undone — your changes are in the stash. Run 'git stash pop' to recover them.`;
-    }
-  }
-
-  try {
-    const branch = currentBranch(cwd);
-    recordCheckpoint(tagName, branch, description, cwd);
-  } catch {
-    /* memory failure shouldn't break git tag */
-  }
-
+  git(["tag", "-f", "-a", `evo-${name}`, "-m", description], root);
+  if (dirty) git(["reset", "--mixed", head], root);
+  keepRecords(() => recordCheckpoint(`evo-${name}`, activeBranch(root), description, root));
   return `Checkpoint '${name}' created.`;
 }
 
-/**
- * Append a lesson to the SQLite memory bus with timestamp and branch.
- */
-export function evo_learn(content: string, repoOverride?: { cwd: string; rootBranch: string }): string {
-  const repo = repoOverride ?? getRepo();
-  const { cwd } = repo;
-  requireInit(cwd);
+// ── Branching and rewinding ───────────────────────────────────────────
 
-  const branch = currentBranch(cwd);
-  writeMessage("INSIGHT", content, { branch, metadata: { source: "evo_learn" } }, cwd);
-
-  return `Lesson recorded on branch '${branch}'.`;
-}
-
-/**
- * Return all lessons from the SQLite memory bus, newest first.
- * Output format: numbered list with timestamp, branch, content.
- */
-export function evo_lessons(): string {
-  const { cwd } = getRepo();
-  requireInit(cwd);
-
-  try {
-    const results = queryMessages({ type: "INSIGHT", limit: 100 }, cwd);
-    if (results.length > 0) {
-      return results.map((m, i) => `[${i + 1}] ${m.timestamp} (${m.branch}): ${m.content}`).join("\n");
-    }
-  } catch {
-    /* fall through */
-  }
-
-  return "No lessons recorded.";
-}
-
-/**
- * Return all lessons as raw JSON array, newest first.
- * Structured for obsidian-rag memory_save import.
- */
-export function evo_export_lessons(): string {
-  const { cwd } = getRepo();
-  requireInit(cwd);
-
-  try {
-    const results = queryMessages({ type: "INSIGHT", limit: 100 }, cwd);
-    if (results.length === 0) {
-      return JSON.stringify([]);
-    }
-
-    const lessons = results.map((m) => ({
-      id: `gitevo-${lessonHash(m.content, m.branch, m.timestamp)}`,
-      title: m.content.slice(0, 80),
-      description: `GitEvo lesson from branch '${m.branch}'`,
-      content: m.content,
-      type: "feedback",
-      metadata: {
-        source: "gitevo",
-        branch: m.branch,
-        timestamp: m.timestamp,
-      },
-    }));
-
-    return JSON.stringify(lessons, null, 2);
-  } catch {
-    return JSON.stringify([]);
-  }
-}
-
-function _slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 50);
-}
-
-function lessonHash(content: string, branch: string, timestamp: string): string {
-  const input = `${content}|${branch}|${timestamp}`;
-  return createHash("sha256").update(input).digest("hex").slice(0, 12);
-}
-
-/**
- * Create a new branch from a checkpoint tag and check it out.
- * Auto-stashes dirty tracked changes before spawning, then pops them on the new branch.
- * If stash pop fails (merge conflict), the stash is left in place with a warning.
- */
 export function evo_spawn(checkpoint_name: string, new_branch: string, force?: boolean, cwdOverride?: string): string {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
-
-  const tagName = `evo-${checkpoint_name}`;
-  if (!hasTag(tagName, cwd)) {
-    const available = tagsWithPrefix("evo-", cwd).join(", ");
-    throw new EvoError(
-      `Checkpoint '${checkpoint_name}' not found. Available: ${available || "none"}. Run evo_checkpoints to list.`,
-    );
-  }
-
-  // Verify branch doesn't exist
-  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  if (branches.includes(new_branch)) {
-    throw new EvoError(`Branch '${new_branch}' already exists.`);
-  }
-
-  // Auto-stash if dirty
-  const wasDirty = isDirty(cwd);
-  let stashed = false;
-  if (wasDirty) {
-    git(["stash", "push", "-m", "gitevo: auto-stash before spawn"], cwd);
-    stashed = true;
-  }
-
-  // Pre-flight safety: detect files at risk before checkout
-  const safetyWarnings = preflightCheckoutSafety(tagName, cwd);
-  if (safetyWarnings && !force) {
-    // Pop stash if we stashed
-    if (stashed) {
-      try {
-        git(["stash", "pop"], cwd);
-      } catch {
-        /* leave in stash */
-      }
-    }
-    throw new EvoError(
-      `SAFETY CHECK FAILED — checkout to '${tagName}' would lose data:\n\n${safetyWarnings}\n\n` +
-        `Pass force=true to proceed anyway (you accept the risk of data loss).`,
-    );
-  }
-
-  // Create branch from tag and checkout
-  git(["checkout", "-b", new_branch, tagName], cwd);
-
-  // Pop stash on the new branch
-  if (stashed) {
-    try {
-      git(["stash", "pop"], cwd);
-    } catch {
-      return `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'. Auto-stash could not be reapplied — your changes are in the stash. Run git stash pop manually.`;
-    }
-  }
-
-  try {
-    recordBranch(new_branch, "active", `evo-${checkpoint_name}`, undefined, cwd);
-  } catch {
-    /* memory failure shouldn't break git ops */
-  }
-
-  const spawnMsg = `Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`;
-  if (force && safetyWarnings) {
-    return `${spawnMsg}\n\n⚠️ FORCED — safety checks bypassed:\n\n${safetyWarnings}`;
-  }
-  return spawnMsg;
+  const root = initializedRoot(cwdOverride);
+  const tag = `evo-${checkpoint_name}`;
+  if (!evoTags(root).includes(tag)) throw new EvoError(unknownCheckpoint(root, checkpoint_name));
+  if (branchExists(root, new_branch)) throw new EvoError(`Branch '${new_branch}' already exists.`);
+  const status = statusLines(root);
+  const notes = guardMove({ root, target: tag, status, config: loadConfig(root) }, force);
+  const held = setAside(root, status);
+  git(["checkout", "-b", new_branch, tag], root);
+  const trouble = restoreAside(root, held);
+  keepRecords(() => recordBranch(new_branch, "active", tag, undefined, root));
+  return joinReport(`Spawned branch '${new_branch}' from checkpoint '${checkpoint_name}'.`, [notes, trouble]);
 }
 
-/**
- * List all evo-* tags with descriptions, newest first.
- */
-export function evo_checkpoints(cwdOverride?: string): string {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
-
-  const tags = tagsWithPrefix("evo-", cwd);
-  if (tags.length === 0) return "No checkpoints found.";
-
-  // Sort by checkpoint timestamp (newest first), falling back to tag name for tags not in SQLite
-  const timestampMap = getCheckpointTimestamps(cwd);
-  tags.sort((a, b) => {
-    const ta = timestampMap.get(a) ?? "";
-    const tb = timestampMap.get(b) ?? "";
-    return tb.localeCompare(ta) || b.localeCompare(a);
-  });
-
-  const lines = tags.map((t) => {
-    const desc = getTagMessage(t, cwd);
-    return `  ${t}: ${desc}`;
-  });
-
-  return `Checkpoints:\n${lines.join("\n")}`;
+function unknownCheckpoint(root: string, name: string): string {
+  const available = markNames(root);
+  const listed = available.length > 0 ? available.join(", ") : "none";
+  return `Checkpoint '${name}' not found. Available: ${listed}. Run evo_checkpoints to list.`;
 }
 
-/**
- * List all attempt branches (non-root, non-default).
- */
-export function evo_branches(cwdOverride?: string): string {
-  const { cwd, rootBranch } = getRepo(cwdOverride);
-  requireInit(cwd);
-
-  const defaultNames = new Set(["master", "main", "trunk"]);
-  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  const attempts = branches.filter((b) => b && !defaultNames.has(b) && b !== rootBranch);
-
-  if (attempts.length === 0) return "No attempt branches.";
-
-  return `Branches:\n  ${attempts.sort().join("\n  ")}`;
-}
-
-/**
- * Abandon current branch: tag dead, revert to checkpoint or parent.
- *
- * Tags current branch as evo-dead-{branch}. If checkpoint given, reverts
- * to that checkpoint tag. Otherwise reverts to parent commit (git reset --hard HEAD~1).
- * Optionally records reason as a lesson. Refuses if dirty tree.
- */
 export function evo_abandon(checkpoint?: string, reason?: string, force?: boolean, cwdOverride?: string): string {
-  const { cwd, rootBranch } = getRepo(cwdOverride);
-  requireInit(cwd);
+  const root = initializedRoot(cwdOverride);
+  const branch = activeBranch(root);
+  const target = abandonTarget(root, branch, checkpoint);
+  const status = statusLines(root);
+  const notes = guardMove({ root, target: target.ref, status, config: loadConfig(root) }, force);
+  const held = setAside(root, status);
+  const dead = git(["rev-parse", "HEAD"], root);
+  git(["reset", "--hard", target.ref], root);
+  git(["tag", "-f", "-a", `${DEAD}${branch}`, "-m", reason ?? "abandoned", dead], root);
+  keepRecords(() => recordBranch(branch, "dead", undefined, undefined, root));
+  if (reason) keepRecords(() => recordLesson(root, branch, `[ABANDON] ${reason}`));
+  return joinReport(`Branch '${branch}' abandoned. Reverted to ${target.label}.`, [notes, heldNote(held)]);
+}
 
-  // Auto-stash if dirty
-  let stashed = false;
-  let stashPopWarning = "";
-  if (isDirty(cwd)) {
-    git(["stash", "push", "-m", "gitevo: auto-stash before abandon"], cwd);
-    stashed = true;
-  }
-
-  const branchName = currentBranch(cwd);
-
-  // Determine revert target for safety check
-  let targetRef: string;
-  let targetDesc: string;
+/** Where the rewind lands: the named mark, the spawn point, or one commit back. */
+function abandonTarget(root: string, branch: string, checkpoint?: string): { ref: string; label: string } {
   if (checkpoint) {
-    const tagName = `evo-${checkpoint}`;
-    if (!hasTag(tagName, cwd)) {
-      if (stashed) {
-        try {
-          git(["stash", "pop"], cwd);
-        } catch {
-          stashPopWarning = " Could not restore auto-stashed changes — they remain in the stash.";
-        }
-      }
-      throw new EvoError(`Checkpoint '${checkpoint}' not found.${stashPopWarning}`);
-    }
-    targetRef = tagName;
-    targetDesc = `checkpoint '${checkpoint}'`;
-  } else {
-    const spawnPoint = getBranchSpawnPoint(branchName, cwd);
-    if (spawnPoint) {
-      targetRef = spawnPoint;
-      targetDesc = `spawn checkpoint '${spawnPoint}'`;
-    } else {
-      targetRef = "HEAD~1";
-      targetDesc = "parent commit";
-    }
+    if (!evoTags(root).includes(`evo-${checkpoint}`)) throw new EvoError(`Checkpoint '${checkpoint}' not found.`);
+    return { ref: `evo-${checkpoint}`, label: `checkpoint '${checkpoint}'` };
   }
+  const spawn = keepRecords(() => getBranchSpawnPoint(branch, root));
+  if (spawn) return { ref: spawn, label: `spawn checkpoint '${spawn}'` };
+  return { ref: "HEAD~1", label: "the previous commit" };
+}
 
-  // Pre-flight safety: detect files at risk before hard reset
-  const safetyWarnings = preflightCheckoutSafety(targetRef, cwd);
-  if (safetyWarnings && !force) {
-    if (stashed) {
-      try {
-        git(["stash", "pop"], cwd);
-      } catch {
-        stashPopWarning = " Could not restore auto-stashed changes — they remain in the stash.";
-      }
-    }
-    throw new EvoError(
-      `SAFETY CHECK FAILED — reset to '${targetRef}' would lose data:\n\n${safetyWarnings}\n\n` +
-        `Pass force=true to proceed anyway (you accept the risk of data loss).${stashPopWarning}`,
-    );
-  }
+function heldNote(held: boolean): string {
+  if (!held) return "";
+  return "Uncommitted changes were set aside. They are recoverable: run 'git stash pop'.";
+}
 
-  // Record branch death in memory bus before revert
-  try {
-    recordBranch(branchName, "dead", undefined, undefined, cwd);
-  } catch {
-    /* silent */
-  }
+// ── Listing and reporting ─────────────────────────────────────────────
 
-  // Hard reset to target FIRST — only tag dead after success
-  git(["reset", "--hard", targetRef], cwd);
+export function evo_checkpoints(): string {
+  const root = initializedRoot();
+  const tags = evoTags(root);
+  if (tags.length === 0) return "No checkpoints found.";
+  const times = keepRecords(() => getCheckpointTimestamps(root)) ?? new Map<string, string>();
+  const newestFirst = [...tags].sort((a, b) => (times.get(b) ?? "").localeCompare(times.get(a) ?? ""));
+  const shown = newestFirst.map((tag) => `  ${tag}: ${tagDescription(root, tag) || "(no description)"}`);
+  return ["Checkpoints:", ...shown].join("\n");
+}
 
-  // Tag as dead (only after reset succeeded)
-  const deadTag = `evo-dead-${branchName}`;
-  try {
-    git(["tag", "-d", deadTag], cwd);
-  } catch {}
-  git(["tag", "-a", deadTag, "-m", `Abandoned branch '${branchName}'`], cwd);
-
-  // Optionally record reason as lesson (pass repo info directly — avoid getRepo() post-reset)
-  if (reason) {
-    evo_learn(`[ABANDON] ${reason}`, { cwd, rootBranch });
-  }
-
-  const abandonMsg = `Branch '${branchName}' abandoned. Reverted to ${targetDesc}.${stashed ? " Auto-stashed dirty changes — run git stash pop to recover." : ""}`;
-  if (force && safetyWarnings) {
-    return `${abandonMsg}\n\n⚠️ FORCED — safety checks bypassed:\n\n${safetyWarnings}`;
-  }
-  return abandonMsg;
+export function evo_branches(): string {
+  const root = initializedRoot();
+  const skip = keepBranches(root);
+  const attempts = branchNames(root).filter((name) => !skip.has(name));
+  if (attempts.length === 0) return "No attempt branches.";
+  return ["Branches:", ...attempts.map((name) => `  ${name}`)].join("\n");
 }
 
 /**
- * Return git diff between two checkpoint tags.
+ * Branches gitevo never lists as an attempt and never deletes.
+ *
+ * The conventional names are all kept, not only the one this repository uses,
+ * because a repository can carry more than one long lived branch.
  */
-export function evo_diff(checkpoint_a: string, checkpoint_b: string, cwdOverride?: string): string {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
-
-  const tagA = `evo-${checkpoint_a}`;
-  const tagB = `evo-${checkpoint_b}`;
-
-  for (const tag of [tagA, tagB]) {
-    if (!hasTag(tag, cwd)) {
-      throw new EvoError(`Checkpoint '${tag}' not found.`);
-    }
-  }
-
-  const diff = git(["diff", tagA, tagB], cwd);
-  return diff || "No differences between checkpoints.";
+function keepBranches(root: string): Set<string> {
+  return new Set(["main", "master", "trunk", rootBranchOf(root)]);
 }
 
-/**
- * Return overview: active branch, checkpoint count, lesson count,
- * dead branches, adopted state.
- */
-export function evo_summary(cwdOverride?: string): string {
-  const { cwd } = getRepo(cwdOverride);
-  requireInit(cwd);
+export function evo_diff(checkpoint_a: string, checkpoint_b: string): string {
+  const root = initializedRoot();
+  const from = requireTag(root, `evo-${checkpoint_a}`);
+  const to = requireTag(root, `evo-${checkpoint_b}`);
+  return git(["diff", from, to], root) || "No differences between checkpoints.";
+}
 
-  const active = currentBranch(cwd);
+function requireTag(root: string, tag: string): string {
+  if (!evoTags(root).includes(tag)) throw new EvoError(`Checkpoint '${tag}' not found.`);
+  return tag;
+}
 
-  // Count checkpoints (evo-* tags, excluding evo-dead-* and evo-adopted)
-  const allTags = tagsWithPrefix("evo-", cwd);
-  const checkpoints = allTags.filter((t) => !t.startsWith("evo-dead-") && t !== "evo-adopted");
-
-  // Count lessons from SQLite
-  let lessonCount = 0;
-  try {
-    lessonCount = countMessages("INSIGHT", cwd);
-  } catch {
-    lessonCount = 0;
-  }
-
-  // Dead branches
-  const deadBranches = allTags.filter((t) => t.startsWith("evo-dead-")).map((t) => t.slice("evo-dead-".length));
-
-  // Adopted
-  const adopted = hasTag("evo-adopted", cwd);
-
+export function evo_summary(): string {
+  const root = initializedRoot();
+  const tags = evoTags(root);
+  const dead = tags.filter((tag) => tag.startsWith(DEAD)).map((tag) => tag.slice(DEAD.length));
+  const marks = tags.filter((tag) => !tag.startsWith(DEAD) && tag !== "evo-adopted");
   return [
-    `Active branch: ${active}`,
-    `Checkpoints: ${checkpoints.length}`,
-    `Lessons: ${lessonCount}`,
-    `Dead branches: ${deadBranches.length}${deadBranches.length > 0 ? ` (${deadBranches.join(", ")})` : ""}`,
-    `Adopted: ${adopted ? "yes" : "no"}`,
+    `Active branch: ${activeBranch(root)}`,
+    `Checkpoints: ${marks.length}`,
+    `Lessons: ${keepRecords(() => countMessages("INSIGHT", root)) ?? 0}`,
+    deadLine(dead),
+    `Adopted: ${tags.includes("evo-adopted") ? "yes" : "no"}`,
   ].join("\n");
 }
 
-/**
- * Merge winning branch into root branch, tag as evo-adopted.
- */
-export function evo_adopt(branch: string, cwdOverride?: string): string {
-  const { cwd, rootBranch } = getRepo(cwdOverride);
-  requireInit(cwd);
+function deadLine(dead: string[]): string {
+  if (dead.length === 0) return "Dead branches: 0";
+  return `Dead branches: ${dead.length} (${dead.join(", ")})`;
+}
 
-  if (isDirty(cwd)) {
+function markNames(root: string): string[] {
+  return evoTags(root)
+    .filter((tag) => !tag.startsWith(DEAD) && tag !== "evo-adopted")
+    .map((tag) => tag.slice("evo-".length));
+}
+
+// ── Keeping and finishing ─────────────────────────────────────────────
+
+export function evo_adopt(branch: string, cwdOverride?: string): string {
+  const root = initializedRoot(cwdOverride);
+  if (trackedChanges(root).length > 0) {
     throw new EvoError("Working tree is dirty. Please commit or stash changes first.");
   }
+  if (!branchExists(root, branch)) throw new EvoError(`Branch '${branch}' not found.`);
+  const target = rootBranchOf(root);
+  git(["checkout", target], root);
+  mergeOrAbort(root, branch);
+  git(["tag", "-f", "-a", "evo-adopted", "-m", `adopted ${branch}`], root);
+  keepRecords(() => recordBranch(branch, "adopted", undefined, undefined, root));
+  return `Branch '${branch}' merged into '${target}' and tagged evo-adopted.`;
+}
 
-  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  if (!branches.includes(branch)) {
-    throw new EvoError(`Branch '${branch}' not found.`);
-  }
+function trackedChanges(root: string): string[] {
+  return statusLines(root).filter((line) => !line.startsWith("??"));
+}
 
-  const originalBranch = currentBranch(cwd);
+function mergeOrAbort(root: string, branch: string): void {
+  if (gitTry(["merge", "--no-ff", "-m", `evo adopt ${branch}`, branch], root) !== null) return;
+  const conflicted = gitTry(["diff", "--name-only", "--diff-filter=U"], root) ?? "";
+  gitTry(["merge", "--abort"], root);
+  const files = conflicted.split("\n").filter((line) => line.trim().length > 0);
+  const named = files.length > 0 ? `: ${files.join(", ")}` : "";
+  throw new EvoError(`adopt failed: merge conflicts${named}; resolve manually or abandon the branch`);
+}
 
-  // Checkout root branch
-  if (originalBranch !== rootBranch) {
-    git(["checkout", rootBranch], cwd);
-  }
+export function evo_finish(): string {
+  const root = initializedRoot();
+  const target = rootBranchOf(root);
+  if (activeBranch(root) !== target) adoptInto(root, activeBranch(root));
+  dropEvoTags(root);
+  dropSideBranches(root, keepBranches(root));
+  closeMemoryDb(root);
+  fs.rmSync(path.join(root, ".evo"), { recursive: true, force: true });
+  return `Evolution complete. All artifacts cleaned. Root branch: ${target}.`;
+}
 
-  // Merge the feature branch — catch merge conflicts gracefully
+function adoptInto(root: string, branch: string): void {
   try {
-    git(["merge", branch, "--no-edit"], cwd);
-  } catch (_err) {
-    // Detect conflicted files before abort
-    let conflictFiles: string[] = [];
-    try {
-      const output = gitOrNull(["diff", "--name-only", "--diff-filter=U"], cwd);
-      if (output) conflictFiles = output.split("\n").filter(Boolean);
-    } catch {
-      /* best-effort */
-    }
-
-    // Abort merge to clean up MERGING state
-    try {
-      git(["merge", "--abort"], cwd);
-    } catch {
-      /* best-effort */
-    }
-
-    const fileList = conflictFiles.length > 0 ? `: ${conflictFiles.join(", ")}` : "";
-    throw new EvoError(`adopt failed: merge conflicts${fileList}; resolve manually or abandon the branch`);
+    evo_adopt(branch, root);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new EvoError(`Finish failed: internal adopt failed - ${message}`);
   }
+}
 
-  // Tag as adopted
-  try {
-    git(["tag", "-d", "evo-adopted"], cwd);
-  } catch {}
-  git(["tag", "-a", "evo-adopted", "-m", `Adopted branch '${branch}' into ${rootBranch}`], cwd);
+function dropEvoTags(root: string): void {
+  const tags = evoTags(root);
+  if (tags.length === 0) return;
+  git(["tag", "-d", ...tags], root);
+}
 
-  try {
-    recordBranch(branch, "adopted", undefined, undefined, cwd);
-  } catch {
-    /* silent */
-  }
+function dropSideBranches(root: string, keep: Set<string>): void {
+  const others = branchNames(root).filter((name) => !keep.has(name));
+  if (others.length === 0) return;
+  gitTry(["branch", "-D", ...others], root);
+}
 
-  return `Branch '${branch}' merged into '${rootBranch}' and tagged evo-adopted.`;
+// ── Shared ────────────────────────────────────────────────────────────
+
+function joinReport(headline: string, extras: string[]): string {
+  return [headline, ...extras.filter((extra) => extra.length > 0)].join("\n\n");
 }
 
 /**
- * Declare current state definitive: merge to root, clean ALL evo artifacts.
+ * Reach the durable record, and let it fail quietly.
  *
- * Deletes all evo-* tags, removes all side branches, removes .evo/ directory.
+ * The git effect a record describes has already happened by the time the record
+ * is written. A store that will not answer must not undo work the caller can
+ * already see in the repository.
  */
-export function evo_finish(cwdOverride?: string): string {
-  const { cwd, rootBranch } = getRepo(cwdOverride);
-  requireInit(cwd);
-
-  const branches = git(["branch", "--format=%(refname:short)"], cwd).split("\n");
-  const current = currentBranch(cwd);
-
-  // If not on root, merge current into root
-  if (current !== rootBranch) {
-    try {
-      evo_adopt(current);
-    } catch (err) {
-      throw new EvoError(`Finish failed: internal adopt failed — ${(err as Error).message}`);
-    }
+function keepRecords<T>(reach: () => T): T | undefined {
+  try {
+    return reach();
+  } catch {
+    return undefined;
   }
-
-  // Delete all evo-* tags
-  const allEvoTags = tagsWithPrefix("evo-", cwd);
-  for (const tag of allEvoTags) {
-    try {
-      git(["tag", "-d", tag], cwd);
-    } catch {}
-  }
-
-  // Delete all side branches except root and defaults
-  const defaultNames = new Set(["master", "main", "trunk"]);
-  for (const branch of branches) {
-    if (branch === rootBranch || defaultNames.has(branch)) continue;
-    try {
-      git(["branch", "-D", branch], cwd);
-    } catch {}
-  }
-
-  // Close SQLite handle before removing .evo/ (Windows: open handle blocks unlink)
-  closeMemoryDb(cwd);
-
-  // Remove .evo/ directory
-  const paths = evoPaths(cwd);
-  if (fs.existsSync(paths.evoDir)) {
-    fs.rmSync(paths.evoDir, { recursive: true, force: true });
-  }
-
-  return `Evolution complete. All artifacts cleaned. Root branch: ${rootBranch}.`;
 }

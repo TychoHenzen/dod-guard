@@ -11,15 +11,20 @@ npm run bundle                   # esbuild bundle for distribution
 
 ## Architecture
 
-gitevo is a lightweight MCP server providing evolutionary git branching for LLM agents. All state lives in `.evo/` directory (SQLite memory bus + lessons.jsonl for legacy migration). All git ops use `execSync`.
+gitevo is a lightweight MCP server providing evolutionary git branching for LLM agents. All state lives in `.evo/` directory (SQLite memory bus + lessons.jsonl for legacy migration). Git runs through `spawnSync` with an argv array, never through a shell, so nothing has to escape anything.
 
 ### Files
 
 | File | Role |
 |------|------|
 | `index.ts` | MCP server entry: 15 tool registrations (incl. evo_memory_query, evo_memory_stats), error wrapping |
-| `operations.ts` | All business logic: init, checkpoint, learn, spawn, abandon, adopt, finish. EvoConfig loader, pre-flight safety checks. Memory bus writes on checkpoints/lessons — SQLite is single source of truth (JSONL only created for legacy migration). |
-| `operations.test.ts` | ~57 tests covering all operations + full integration flow |
+| `operations.ts` | init, checkpoint, spawn, abandon, adopt, finish, and the listing operations. Re-exports the whole boundary, because both callers import `dist/operations.js`. Memory bus writes on checkpoints and branches. SQLite is the single source of truth (JSONL only created for legacy migration). |
+| `evo-error.ts` | `EvoError` alone |
+| `evo-config.ts` | `EvoConfig` and `loadConfig` |
+| `evo-git.ts` | The git process and where the repository lives: root resolution, the init guard, status, branch and tag reads, set-aside and restore |
+| `evo-safety.ts` | What a destructive move would cost, worked out before the move happens |
+| `evo-lessons.ts` | `evo_learn`, `evo_lessons`, `evo_export_lessons`, and the lesson read used by the rest |
+| `operations.test.ts` | ~57 tests covering all operations + full integration flow. Each of the files above has its own suite beside it. |
 | `memory.ts` | SQLite memory bus (better-sqlite3): INSIGHT, FAILURE_SIGNATURE, ELITE_SOLUTION message types. Query by type/scope, countMessages, branch upsert, checkpoint timestamps, spawn-point lookup. WAL mode. |
 
 ### Tools
@@ -60,12 +65,14 @@ evo_init → evo_checkpoint → evo_spawn → (work) → evo_learn → evo_check
 ### Key design decisions
 
 - **Tag names**: evo-{name} for checkpoints, evo-dead-{branch} for abandoned, evo-root for root, evo-adopted for merged winners
-- **WIP checkpoints**: `evo_checkpoint` with dirty tree creates a WIP commit, tags it, then soft-resets to restore dirty state — captures uncommitted work. Clean tree tags HEAD directly. Spawn branches from the captured state.
-- **Auto-stash dirty tree**: spawn and abandon auto-stash before operating, pop after (stash left in place if pop fails). adopt throws on dirty tree.
-- **Pre-flight safety checks**: `evo_spawn` and `evo_abandon` scan for untracked source files, stale dist artifacts, and files in HEAD not in target ref. Configurable via `.evo/config.json` (EvoConfig: sourceExtensions, buildLayouts, skipStaleCheck). `.test.js` not flagged stale in JS-only repos. Refuse with diagnostic unless `force=true`.
+- **WIP checkpoints**: `evo_checkpoint` with dirty tree creates a WIP commit, tags it, then resets back to the captured HEAD. That restores the dirty state and captures uncommitted work. Clean tree tags HEAD directly. Spawn branches from the captured state.
+- **Auto-stash dirty tree**: spawn and abandon stash before operating. Spawn pops after and reports a failed pop. Abandon leaves the stash in place, because restoring dirty edits on top of a rewind contradicts the rewind. A stash that will not run throws, so the destructive move never happens without it. adopt throws on dirty tree.
+- **Safety evaluation**: `evo_spawn` and `evo_abandon` scan for untracked source files, stale build output, and files in HEAD not in the target ref. Build output is reported by its own finding, never by the other two. Configurable via `.evo/config.json` (EvoConfig: sourceExtensions, buildLayouts, skipStaleCheck). `.test.js` not flagged stale in JS-only repos. Refuse with diagnostic unless `force=true`.
+- **Ignoring `.evo/`**: written to `info/exclude` under the common git dir, not to `.gitignore`, so the working tree stays clean and no WIP checkpoint ever commits `memory.db`.
+- **Record store failures never break git**: every memory bus call runs after the git effect it describes. A store that will not answer is swallowed.
 - **Re-running init**: migrates legacy JSONL → SQLite, clears JSONL, re-tags evo-root. SQLite lessons survive re-init (no data loss). Idempotent.
 - **Lesson export**: `evo_export_lessons` reads from SQLite memory bus, outputs obsidian-rag memory_save compatible JSON with SHA-256-based IDs (idempotent re-export). Single source of truth: SQLite.
 - **Branch upsert**: `recordBranch` uses ON CONFLICT(name) DO UPDATE — one row per branch with current status. `evo_abandon` defaults revert target to `spawned_from` checkpoint (read from branches table), not HEAD~1.
 - **Merge conflict handling**: `evo_adopt` detects conflicts, runs `git merge --abort`, throws actionable EvoError with file list. `evo_finish` surfaces internal adopt failures cleanly.
 - **Error handling**: `EvoError` for user-facing errors (init not run, wrong state). Extends Error for clean instanceof checks.
-- **`gitOrNull`**: swallows EvoError, returns null — used for optional queries like tag listing
+- **`gitTry`**: swallows EvoError, returns null. Used for optional queries like tag listing
