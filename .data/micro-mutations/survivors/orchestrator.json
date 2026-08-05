@@ -1,0 +1,293 @@
+{
+  "source": "packages/evomcp/src/orchestrator.ts",
+  "date": "2026-08-05T09:21:11.396Z",
+  "summary": {
+    "total": 175,
+    "killed": 128,
+    "survived": 35,
+    "timeout": 0,
+    "unviable": 12
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 25,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 26,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 28,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 29,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 30,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "28",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 59,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "29",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 60,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "30",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 61,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "31",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 62,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "32",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 68,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "39",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 80,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "41",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 84,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "58",
+      "mutator": "LogicalOperator",
+      "replacement": "state.flags.has(\"tests_locked\") || state.flags.has(\"tests_red\")",
+      "dist_line": 94,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "63",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 97,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "72",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 103,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "81",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 109,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "90",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 115,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "92",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 120,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "119",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 166,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "121",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 166,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "143",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 209,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "144",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 210,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "146",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 211,
+      "dist_col": 75
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "149",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 212,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "147",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 212,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "150",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 213,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "154",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 213,
+      "dist_col": 81
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "155",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 214,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "157",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 214,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "158",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 215,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "159",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 216,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "160",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 217,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "167",
+      "mutator": "MethodExpression",
+      "replacement": "[...state.flags]",
+      "dist_line": 223,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "171",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 227,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/orchestrator.js",
+      "id": "174",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 237,
+      "dist_col": 20
+    }
+  ]
+}

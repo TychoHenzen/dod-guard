@@ -1,0 +1,405 @@
+{
+  "source": "packages/evomcp/src/gates.ts",
+  "date": "2026-08-05T09:20:59.646Z",
+  "summary": {
+    "total": 157,
+    "killed": 108,
+    "survived": 49,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "7",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 32,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 32,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "9",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 33,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 33,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "21",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 53,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "22",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 55,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 57,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "24",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 * 1024 / 1024",
+      "dist_line": 58,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "25",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 / 1024",
+      "dist_line": 58,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "28",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 63,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "29",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + t0",
+      "dist_line": 64,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "31",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 69,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "32",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 70,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "33",
+      "mutator": "MethodExpression",
+      "replacement": "`${stdout}\\n${stderr}`",
+      "dist_line": 71,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "34",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 71,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "37",
+      "mutator": "MethodExpression",
+      "replacement": "combined",
+      "dist_line": 75,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "38",
+      "mutator": "ArithmeticOperator",
+      "replacement": "Date.now() + t0",
+      "dist_line": 76,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "44",
+      "mutator": "OptionalChaining",
+      "replacement": "output.trim",
+      "dist_line": 96,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "49",
+      "mutator": "MethodExpression",
+      "replacement": "rawLine",
+      "dist_line": 101,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "52",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 102,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "53",
+      "mutator": "Regex",
+      "replacement": "/(.+?)\\((\\d+),\\d+\\):\\s+(error|warning)\\s+TS\\d+:\\s+(.+)$/",
+      "dist_line": 106,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "54",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\((\\d+),\\d+\\):\\s+(error|warning)\\s+TS\\d+:\\s+(.+)/",
+      "dist_line": 106,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "58",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\((\\d+),\\d\\):\\s+(error|warning)\\s+TS\\d+:\\s+(.+)$/",
+      "dist_line": 106,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "60",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\((\\d+),\\d+\\):\\s(error|warning)\\s+TS\\d+:\\s+(.+)$/",
+      "dist_line": 106,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "62",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\((\\d+),\\d+\\):\\s+(error|warning)\\sTS\\d+:\\s+(.+)$/",
+      "dist_line": 106,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "66",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\((\\d+),\\d+\\):\\s+(error|warning)\\s+TS\\d+:\\s(.+)$/",
+      "dist_line": 106,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "73",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 114,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "78",
+      "mutator": "Regex",
+      "replacement": "/([^:]+):(\\d+):(\\d+):\\s+(error|warning)\\s+(.+)$/",
+      "dist_line": 122,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "79",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+):\\s+(error|warning)\\s+(.+)/",
+      "dist_line": 122,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "84",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d):\\s+(error|warning)\\s+(.+)$/",
+      "dist_line": 122,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "86",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+):\\s(error|warning)\\s+(.+)$/",
+      "dist_line": 122,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "88",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+):\\s+(error|warning)\\s(.+)$/",
+      "dist_line": 122,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "95",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 130,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "97",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 132,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "98",
+      "mutator": "EqualityOperator",
+      "replacement": "diagnostics.length > 50",
+      "dist_line": 132,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "100",
+      "mutator": "Regex",
+      "replacement": "/([^:]+):(\\d+):(\\d+)\\s+(error|warning|info)\\s+(.+)$/",
+      "dist_line": 138,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "101",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+)\\s+(error|warning|info)\\s+(.+)/",
+      "dist_line": 138,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "108",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+)\\s(error|warning|info)\\s+(.+)$/",
+      "dist_line": 138,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "110",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+)\\s+(error|warning|info)\\s(.+)$/",
+      "dist_line": 138,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "117",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 146,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "118",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 148,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "119",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 148,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "120",
+      "mutator": "EqualityOperator",
+      "replacement": "diagnostics.length > 50",
+      "dist_line": 148,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "121",
+      "mutator": "EqualityOperator",
+      "replacement": "diagnostics.length < 50",
+      "dist_line": 148,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "127",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 155,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "129",
+      "mutator": "MethodExpression",
+      "replacement": "output",
+      "dist_line": 158,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "130",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 159,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "149",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 181,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/gates.js",
+      "id": "151",
+      "mutator": "LogicalOperator",
+      "replacement": "!r.passed || r.diagnostics",
+      "dist_line": 181,
+      "dist_col": 13
+    }
+  ]
+}

@@ -317,9 +317,9 @@
         "status": "error",
         "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/gitevo/dist/operations.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/gitevo/dist/operations.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
       },
-      "lines": 715,
+      "lines": 254,
       "error_count": 2,
-      "recent_commits": 16,
+      "recent_commits": 17,
       "fingerprint": "a38bcd89c9bebf7da13be49d8d48a7f5c61484f1ad6acb22acd618f61d29448e",
       "dirty": true
     },
@@ -658,13 +658,21 @@
       "dirty": false
     },
     "packages/evomcp/src/context.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-05",
+      "last_result": {
+        "total": 277,
+        "caught": 145,
+        "missed": 123,
+        "timeout": 2,
+        "unviable": 7,
+        "status": "ok",
+        "error": null
+      },
       "lines": 331,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "f611a7416253648756759038b508cb807411640324ba62a8871fffbabbe548ae",
+      "dirty": false
     },
     "packages/evomcp/src/convergence.ts": {
       "last_tested": "2026-08-04",
@@ -719,13 +727,21 @@
       "dirty": true
     },
     "packages/evomcp/src/gates.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-05",
+      "last_result": {
+        "total": 157,
+        "caught": 108,
+        "missed": 49,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 199,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "4a398604d5f4f1fc92a8901aec98bc3467c3fac16063188fcc17c7c3cfb0b4f8",
+      "dirty": false
     },
     "packages/evomcp/src/git-helpers.ts": {
       "last_tested": null,
@@ -788,13 +804,21 @@
       "dirty": false
     },
     "packages/evomcp/src/orchestrator.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-05",
+      "last_result": {
+        "total": 175,
+        "caught": 128,
+        "missed": 35,
+        "timeout": 0,
+        "unviable": 12,
+        "status": "ok",
+        "error": null
+      },
       "lines": 301,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "71136a77b914804ffcc42ba2c43040e511e50b5841a523040f95d8d1c760ceb1",
+      "dirty": false
     },
     "packages/evomcp/src/prompts.ts": {
       "last_tested": "2026-08-03",
@@ -1053,17 +1077,62 @@
       "recent_commits": 1,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
+    },
+    "packages/gitevo/src/evo-config.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 32,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/gitevo/src/evo-error.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 12,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/gitevo/src/evo-git.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 92,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/gitevo/src/evo-lessons.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 49,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/gitevo/src/evo-safety.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 147,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     }
   },
   "cumulative": {
-    "total_mutants": 16092,
-    "caught": 5839,
-    "missed": 5936,
-    "timeout": 77,
-    "unviable": 4240,
+    "total_mutants": 16701,
+    "caught": 6220,
+    "missed": 6143,
+    "timeout": 79,
+    "unviable": 4259,
     "error": 43,
-    "runs": 95,
-    "files_tested": 95
+    "runs": 98,
+    "files_tested": 98
   },
   "runs": [
     {
@@ -2392,6 +2461,48 @@
         "missed": 41,
         "timeout": 0,
         "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-05",
+      "commit": "1424d3c1df26ae4e1a0a68dc57061c965687cb15",
+      "file": "packages/evomcp/src/context.ts",
+      "result": {
+        "total": 277,
+        "caught": 145,
+        "missed": 123,
+        "timeout": 2,
+        "unviable": 7,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-05",
+      "commit": "1424d3c1df26ae4e1a0a68dc57061c965687cb15",
+      "file": "packages/evomcp/src/gates.ts",
+      "result": {
+        "total": 157,
+        "caught": 108,
+        "missed": 49,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-05",
+      "commit": "1424d3c1df26ae4e1a0a68dc57061c965687cb15",
+      "file": "packages/evomcp/src/orchestrator.ts",
+      "result": {
+        "total": 175,
+        "caught": 128,
+        "missed": 35,
+        "timeout": 0,
+        "unviable": 12,
         "status": "ok",
         "error": null
       }
