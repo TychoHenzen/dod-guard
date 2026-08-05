@@ -13,7 +13,7 @@ import type { EvoConfig } from "./evo-config.js";
 import { EvoError } from "./evo-error.js";
 import { gitTry } from "./evo-git.js";
 
-export interface MoveScope {
+interface MoveScope {
   root: string;
   target: string;
   status: string[];
@@ -28,7 +28,7 @@ const COMPILED_FROM: Record<string, string[]> = {
 };
 
 /** Every finding about the move, worst case first. Empty means it is safe. */
-export function evaluateMove(scope: MoveScope): string[] {
+function evaluateMove(scope: MoveScope): string[] {
   const here = listTree(scope.root, "HEAD");
   const there = listTree(scope.root, scope.target);
   const dirs = buildDirs(scope);

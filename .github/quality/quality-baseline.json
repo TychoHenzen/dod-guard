@@ -2,16 +2,18 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-02T08:22:32.321Z",
-  "total": 970,
+  "total": 971,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/grade-stats.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/match-rate.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/match-rate.test.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/metric-stats.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/overlap-metrics.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/overlap-metrics.test.mjs",
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/prose-metrics.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/sample-guard.test.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/score-overlap.test.mjs",
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/text-tokens.mjs",
@@ -739,6 +741,7 @@
     "packages/gitevo/src/evo-safety.ts::file-length": 1,
     "packages/gitevo/src/evo-safety.ts::else-branch": 1,
     "packages/gitevo/src/evo-git.test.ts::file-length": 1,
-    "packages/gitevo/src/evo-safety.test.ts::file-length": 1
+    "packages/gitevo/src/evo-safety.test.ts::file-length": 1,
+    "packages/dod-guard/skills/blind-rewrite/scripts/lib/prose-metrics.mjs::file-length": 1
   }
 }

@@ -31,7 +31,7 @@ export function gramStats(original, rewrite, settings) {
 // two better than any rate does. Measured on files in this repository:
 // unrelated pairs score 10 to 13. A real reimplementation of the same seam
 // scores 25. A renamed copy scores 209. An identical file scores 508.
-function longestRun(left, right) {
+export function longestRun(left, right) {
   let best = 0;
   let previous = new Array(right.length + 1).fill(0);
   for (const item of left) {

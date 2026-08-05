@@ -5,7 +5,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { resolveRoot } from "./evo-git.js";
-import { evo_export_lessons, evo_learn, evo_lessons, lessonsOf, recordLesson } from "./evo-lessons.js";
+import { evo_export_lessons, evo_learn, evo_lessons, recordLesson } from "./evo-lessons.js";
 import { closeMemoryDb } from "./memory.js";
 
 let dir = "";
@@ -72,7 +72,7 @@ describe("lessons", () => {
 
   it("truncates a long title at 80 characters", () => {
     recordLesson(root, "side", "x".repeat(200));
-    assert.equal(lessonsOf(root).length, 3);
+    assert.equal(JSON.parse(evo_export_lessons()).length, 3);
     assert.equal(JSON.parse(evo_export_lessons())[0].title.length, 80);
   });
 });

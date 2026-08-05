@@ -2,6 +2,7 @@
 // shares long token runs, whole lines, or declaration order with the original
 // is a paraphrase and not a rewrite. These metrics make that machine-checkable.
 
+import { gradeStats } from "./grade-stats.mjs";
 import {
   gramStats,
   lineStats,
@@ -62,24 +63,8 @@ function collectStats(original, rewrite, settings) {
   };
 }
 
-function isBreached(stats, threshold, minimum) {
-  return stats.sample >= minimum && stats.rate > threshold;
-}
-
 export function scoreOverlap(original, rewrite, options = {}) {
   const settings = resolveSettings(options);
-  const { thresholds } = settings;
   const stats = collectStats(original, rewrite, settings);
-  const metrics = {};
-  const samples = {};
-  const breached = [];
-  for (const key of Object.keys(thresholds)) {
-    metrics[key] = stats[key].rate;
-    samples[key] = stats[key].sample;
-    if (isBreached(stats[key], thresholds[key], MIN_SAMPLES[key])) {
-      breached.push(key);
-    }
-  }
-  const verdict = breached.length === 0 ? "rewritten" : "cosmetic";
-  return { metrics, samples, thresholds, breached, verdict };
+  return gradeStats(stats, settings.thresholds, MIN_SAMPLES);
 }

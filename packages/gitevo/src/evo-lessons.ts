@@ -20,7 +20,7 @@ export function recordLesson(root: string, branch: string, content: string): voi
  * directly and a lesson carried over from the legacy file land under different
  * scopes, and both are lessons.
  */
-export function lessonsOf(root: string): Message[] {
+function lessonsOf(root: string): Message[] {
   const found = queryMessages({ type: "INSIGHT", limit: 1000 }, root);
   return found.sort((a, b) => (a.timestamp === b.timestamp ? b.id - a.id : b.timestamp.localeCompare(a.timestamp)));
 }

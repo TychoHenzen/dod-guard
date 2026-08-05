@@ -7,7 +7,15 @@ import { describe, it } from "node:test";
 import type { EvoConfig } from "./evo-config.js";
 import { EvoError } from "./evo-error.js";
 import { git, statusLines } from "./evo-git.js";
-import { evaluateMove, guardMove, type MoveScope } from "./evo-safety.js";
+import { guardMove } from "./evo-safety.js";
+
+type Scope = Parameters<typeof guardMove>[0];
+
+/** The findings guardMove would report, as the list it built them from. */
+function findingsFor(target: Scope): string[] {
+  const report = guardMove(target, true);
+  return report === "" ? [] : report.split("\n\n");
+}
 
 const CONFIG: EvoConfig = {
   sourceExtensions: [".ts", ".js", ".json"],
@@ -31,21 +39,21 @@ function repo(): string {
   return dir;
 }
 
-function scope(root: string, config: EvoConfig = CONFIG): MoveScope {
+function scope(root: string, config: EvoConfig = CONFIG): Scope {
   return { root, target: "evo-base", status: statusLines(root), config };
 }
 
-describe("evaluateMove", () => {
+describe("guardMove findings", () => {
   it("refuses a destination that does not resolve", () => {
     const root = repo();
     assert.throws(
-      () => evaluateMove({ ...scope(root), target: "evo-nope" }),
+      () => guardMove({ ...scope(root), target: "evo-nope" }),
       (err: Error) => err instanceof EvoError && err.message === "Reference 'evo-nope' not found.",
     );
   });
 
   it("names tracked source the destination does not have", () => {
-    const found = evaluateMove(scope(repo()));
+    const found = findingsFor(scope(repo()));
     assert.equal(found.length, 1);
     assert.ok(found[0].includes("later.ts"));
   });
@@ -54,7 +62,7 @@ describe("evaluateMove", () => {
     const root = repo();
     fs.mkdirSync(path.join(root, "work"));
     fs.writeFileSync(path.join(root, "work", "draft.ts"), "export {};");
-    const found = evaluateMove(scope(root)).filter((f) => f.includes("Uncommitted"));
+    const found = findingsFor(scope(root)).filter((f) => f.includes("Uncommitted"));
     assert.equal(found.length, 1);
     assert.ok(found[0].includes("work/draft.ts"), found[0]);
   });
@@ -63,7 +71,7 @@ describe("evaluateMove", () => {
     const root = repo();
     fs.mkdirSync(path.join(root, "dist"));
     fs.writeFileSync(path.join(root, "dist", "orphan.js"), "");
-    const found = evaluateMove(scope(root)).filter((f) => f.includes("Build output"));
+    const found = findingsFor(scope(root)).filter((f) => f.includes("Build output"));
     assert.equal(found.length, 1);
     assert.ok(found[0].includes("dist/orphan.js"), found[0]);
   });
@@ -72,7 +80,7 @@ describe("evaluateMove", () => {
     const root = repo();
     fs.mkdirSync(path.join(root, "dist"));
     fs.writeFileSync(path.join(root, "dist", "keep.js"), "");
-    assert.equal(evaluateMove(scope(root)).filter((f) => f.includes("Build output")).length, 0);
+    assert.equal(findingsFor(scope(root)).filter((f) => f.includes("Build output")).length, 0);
   });
 
   it("skips the build output finding when the settings say so", () => {
@@ -80,7 +88,7 @@ describe("evaluateMove", () => {
     fs.mkdirSync(path.join(root, "dist"));
     fs.writeFileSync(path.join(root, "dist", "orphan.js"), "");
     const quiet = { ...CONFIG, skipStaleCheck: true };
-    assert.equal(evaluateMove(scope(root, quiet)).filter((f) => f.includes("Build output")).length, 0);
+    assert.equal(findingsFor(scope(root, quiet)).filter((f) => f.includes("Build output")).length, 0);
   });
 
   it("leaves dist alone when no configured source compiles to it", () => {
@@ -88,7 +96,7 @@ describe("evaluateMove", () => {
     fs.mkdirSync(path.join(root, "dist"));
     fs.writeFileSync(path.join(root, "dist", "utils.test.js"), "");
     const jsOnly = { ...CONFIG, sourceExtensions: [".js", ".json"] };
-    assert.deepEqual(evaluateMove(scope(root, jsOnly)), []);
+    assert.deepEqual(findingsFor(scope(root, jsOnly)), []);
   });
 });
 

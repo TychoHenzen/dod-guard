@@ -5,20 +5,21 @@
 
 import { readFileSync } from "node:fs";
 import { resolveOptions } from "./lib/contract-file.mjs";
-import { scoreOverlap } from "./lib/overlap-metrics.mjs";
+import { resolveScorer } from "./lib/score-mode.mjs";
 
 const USAGE = [
   "Usage: node overlap-scan.mjs --original=<paths> --rewrite=<paths>",
-  "                             [--whitelist=a,b,c] [--contract-file=<path>]",
-  "                             [--ngram-size=4] [--json]",
+  "  [--mode=code|prose] [--whitelist=a,b,c] [--contract-file=<path>]",
+  "  [--ngram-size=4] [--json]",
   "",
+  "--mode=code (default) scores declarations/lines; prose scores sentences",
+  "and their order instead, for rewrites with no test harness.",
   "Paths are comma separated. Whitelist holds contract-boundary names that are",
   "expected to be identical: exported symbols, error strings, serialized keys.",
   "--contract-file holds one required-verbatim contract string per line (text",
   "a client reads word for word, so matching it is not evidence of copying).",
-  "Blank and #-comment lines are skipped; every contract string is stripped",
-  "from both sides, longest first, before any metric runs.",
-  "",
+  "Blank/#-comment lines are skipped; every contract string is stripped from",
+  "both sides, longest first, before any metric runs.",
   "Exit codes: 0 rewritten, 1 cosmetic, 3 usage error.",
 ].join("\n");
 
@@ -26,9 +27,7 @@ function parseArgs(argv) {
   const args = {};
   for (const item of argv) {
     const match = /^--([\w-]+)(?:=(.*))?$/.exec(item);
-    if (!match) {
-      return null;
-    }
+    if (!match) return null;
     args[match[1]] = match[2] ?? "true";
   }
   return args;
@@ -57,28 +56,42 @@ function report(result, asJson) {
     return;
   }
   for (const key of Object.keys(result.metrics)) {
-    const line = formatMetric(result, key);
-    process.stdout.write(`${line}\n`);
+    process.stdout.write(`${formatMetric(result, key)}\n`);
   }
   process.stdout.write(`verdict: ${result.verdict}\n`);
 }
 
+function scorerFor(args) {
+  if (!args?.original || !args?.rewrite) return null;
+  return resolveScorer(args.mode ?? "code");
+}
+
+function loadOptions(args) {
+  try {
+    return { options: resolveOptions(args) };
+  } catch (err) {
+    return { error: `Cannot read contract file: ${err.message}` };
+  }
+}
+
+function resolveInputs(args) {
+  const scorer = scorerFor(args);
+  if (!scorer) return { error: USAGE };
+  const loaded = loadOptions(args);
+  if (loaded.error) return loaded;
+  return { scorer, options: loaded.options };
+}
+
 function main(argv) {
   const args = parseArgs(argv);
-  if (!args?.original || !args?.rewrite) {
-    process.stderr.write(`${USAGE}\n`);
-    return 3;
-  }
-  let options;
-  try {
-    options = resolveOptions(args);
-  } catch (err) {
-    process.stderr.write(`Cannot read contract file: ${err.message}\n`);
+  const inputs = resolveInputs(args);
+  if (inputs.error) {
+    process.stderr.write(`${inputs.error}\n`);
     return 3;
   }
   const original = readAll(args.original);
   const rewrite = readAll(args.rewrite);
-  const result = scoreOverlap(original, rewrite, options);
+  const result = inputs.scorer(original, rewrite, inputs.options);
   report(result, Boolean(args.json));
   return result.verdict === "cosmetic" ? 1 : 0;
 }
