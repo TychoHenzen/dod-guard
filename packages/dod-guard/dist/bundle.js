@@ -22479,7 +22479,9 @@ function suggestionFor(tool) {
   return map[tool.toLowerCase()] ?? "";
 }
 async function checkCommandsForOs(roots, cwd) {
-  const commands = flattenConcreteLeaves(roots).filter(({ node }) => node.command && node.predicate).map(({ node }) => node.command);
+  const commands = flattenConcreteLeaves(roots).flatMap(
+    ({ node }) => node.command && node.predicate ? [node.command] : []
+  );
   const missing = await findMissingTools(commands, cwd);
   const lines = [];
   const isWin = process.platform === "win32";

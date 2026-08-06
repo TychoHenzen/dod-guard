@@ -247,9 +247,9 @@ import { findNodeByPath, hasDraftNodes } from "./checker.js";
 import { flattenConcreteLeaves } from "./fingerprint.js";
 
 export async function checkCommandsForOs(roots: TaskNode[], cwd: string): Promise<string | null> {
-  const commands = flattenConcreteLeaves(roots)
-    .filter(({ node }) => node.command && node.predicate)
-    .map(({ node }) => node.command!);
+  const commands = flattenConcreteLeaves(roots).flatMap(({ node }) =>
+    node.command && node.predicate ? [node.command] : [],
+  );
   const missing = await findMissingTools(commands, cwd);
 
   const lines: string[] = [];
