@@ -189,6 +189,21 @@ conventions, and the banned paths. One target per call.
 The budget goes in as a positive target. State the number of decisions the work
 needs and the number of passes over the data. Do not state a method.
 
+**Say how many files the author may write.** One target means one contract, never
+one output file. A large target rebuilt inside the structural bounds needs
+several files, and the deleted path does not have to come back. Say that in the
+briefing every time. An author told nothing about output paths writes the old
+path back, because that is the only path it was given.
+
+Name the directory the new files go in. Never name the files, and never say what
+each one should hold. That is the design, and the design is the author's.
+
+```
+Target directory: {dir}
+Output: as many files as the budget needs. The deleted path <path> need not
+return. Every file you write must meet the structural bounds on its own.
+```
+
 ## Phase 7: Verify
 
 Run the build and the whole suite yourself. The author holds no shell.

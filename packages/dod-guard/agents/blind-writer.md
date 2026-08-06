@@ -61,6 +61,15 @@ Write to these. The orchestrator gates on them.
 - Guard clauses rather than else branches
 - No dead code, no commented-out code, no compatibility shim for the thing you replaced
 
+Every bound applies to each file you write, not to your output as a whole. A
+contract that cannot fit in 100 lines is a contract that needs several files.
+Write them. Put them in the directory the briefing names, and pick the split
+yourself from the contract.
+
+One target per call limits how many contracts you take, never how many files you
+produce. The path that was deleted does not have to come back. Nothing requires
+your work to land where the previous code lived.
+
 ## Report
 
 ```
