@@ -497,13 +497,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/cli.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-06",
+      "last_result": {
+        "total": 204,
+        "caught": 89,
+        "missed": 18,
+        "timeout": 0,
+        "unviable": 97,
+        "status": "ok",
+        "error": null
+      },
       "lines": 222,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "e88146881c71807cd553df056bbc38a4e9df11e04b16816bd159882b56d74104",
+      "dirty": false
     },
     "packages/dod-guard/src/fingerprint.ts": {
       "last_tested": null,
@@ -718,13 +726,21 @@
       "dirty": true
     },
     "packages/evomcp/src/feedback.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-06",
+      "last_result": {
+        "total": 301,
+        "caught": 212,
+        "missed": 87,
+        "timeout": 0,
+        "unviable": 2,
+        "status": "ok",
+        "error": null
+      },
       "lines": 281,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "78a275b8a1499490df2daa1e8b9b36773cd27481bd860385a750131f6a0a4659",
+      "dirty": false
     },
     "packages/evomcp/src/gates.ts": {
       "last_tested": "2026-08-05",
@@ -1115,40 +1131,34 @@
       "dirty": true
     },
     "packages/gitevo/src/evo-safety.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-06",
+      "last_result": {
+        "total": 176,
+        "caught": 127,
+        "missed": 39,
+        "timeout": 0,
+        "unviable": 10,
+        "status": "ok",
+        "error": null
+      },
       "lines": 147,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "6950e6f4e2f8b4a5ff5fc1a741d58f52b8b37361a2cc8295e45f76e881e778a7",
+      "dirty": false
     }
   },
   "cumulative": {
-    "total_mutants": 16701,
-    "caught": 6220,
-    "missed": 6143,
+    "total_mutants": 17382,
+    "caught": 6648,
+    "missed": 6287,
     "timeout": 79,
-    "unviable": 4259,
+    "unviable": 4368,
     "error": 43,
-    "runs": 98,
-    "files_tested": 98
+    "runs": 101,
+    "files_tested": 101
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "d2bf00c0019b2bde26755d556a076cd8896b4705",
-      "file": "packages/dod-guard/src/evaluate-proof.ts",
-      "result": {
-        "total": 740,
-        "caught": 390,
-        "missed": 236,
-        "timeout": 0,
-        "unviable": 114,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "d6b6b1ccf4b2051c7667827f6cef8855e8bc86b1",
@@ -2503,6 +2513,48 @@
         "missed": 35,
         "timeout": 0,
         "unviable": 12,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-06",
+      "commit": "1789f481e237474028c3955a4bdbbd44977bbf1d",
+      "file": "packages/evomcp/src/feedback.ts",
+      "result": {
+        "total": 301,
+        "caught": 212,
+        "missed": 87,
+        "timeout": 0,
+        "unviable": 2,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-06",
+      "commit": "1789f481e237474028c3955a4bdbbd44977bbf1d",
+      "file": "packages/gitevo/src/evo-safety.ts",
+      "result": {
+        "total": 176,
+        "caught": 127,
+        "missed": 39,
+        "timeout": 0,
+        "unviable": 10,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-06",
+      "commit": "1789f481e237474028c3955a4bdbbd44977bbf1d",
+      "file": "packages/dod-guard/src/cli.ts",
+      "result": {
+        "total": 204,
+        "caught": 89,
+        "missed": 18,
+        "timeout": 0,
+        "unviable": 97,
         "status": "ok",
         "error": null
       }

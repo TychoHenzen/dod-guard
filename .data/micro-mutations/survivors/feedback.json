@@ -1,0 +1,709 @@
+{
+  "source": "packages/evomcp/src/feedback.ts",
+  "date": "2026-08-06T09:24:10.160Z",
+  "summary": {
+    "total": 301,
+    "killed": 212,
+    "survived": 87,
+    "timeout": 0,
+    "unviable": 2
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "5",
+      "mutator": "OptionalChaining",
+      "replacement": "raw.trim",
+      "dist_line": 33,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "26",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 64,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "32",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 76,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "33",
+      "mutator": "MethodExpression",
+      "replacement": "output",
+      "dist_line": 76,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "34",
+      "mutator": "OptionalChaining",
+      "replacement": "output.trim",
+      "dist_line": 76,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "39",
+      "mutator": "MethodExpression",
+      "replacement": "rawLine",
+      "dist_line": 81,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "42",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 82,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "43",
+      "mutator": "Regex",
+      "replacement": "/(.+?)\\((\\d+),\\d+\\):\\s+(error|warning)\\s+TS\\d+:\\s+(.+)$/",
+      "dist_line": 86,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "44",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\((\\d+),\\d+\\):\\s+(error|warning)\\s+TS\\d+:\\s+(.+)/",
+      "dist_line": 86,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "50",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\((\\d+),\\d+\\):\\s(error|warning)\\s+TS\\d+:\\s+(.+)$/",
+      "dist_line": 86,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "52",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\((\\d+),\\d+\\):\\s+(error|warning)\\sTS\\d+:\\s+(.+)$/",
+      "dist_line": 86,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "56",
+      "mutator": "Regex",
+      "replacement": "/^(.+?)\\((\\d+),\\d+\\):\\s+(error|warning)\\s+TS\\d+:\\s(.+)$/",
+      "dist_line": 86,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "64",
+      "mutator": "EqualityOperator",
+      "replacement": "diagnostics.length > 100",
+      "dist_line": 90,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "63",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 90,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "66",
+      "mutator": "Regex",
+      "replacement": "/([^:]+):(\\d+):(\\d+):\\s+(error|warning)\\s+(.+)$/",
+      "dist_line": 95,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "67",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+):\\s+(error|warning)\\s+(.+)/",
+      "dist_line": 95,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "72",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d):\\s+(error|warning)\\s+(.+)$/",
+      "dist_line": 95,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "74",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+):\\s(error|warning)\\s+(.+)$/",
+      "dist_line": 95,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "76",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+):\\s+(error|warning)\\s(.+)$/",
+      "dist_line": 95,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "89",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 100,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "90",
+      "mutator": "EqualityOperator",
+      "replacement": "diagnostics.length > 100",
+      "dist_line": 100,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "92",
+      "mutator": "Regex",
+      "replacement": "/([^:]+):(\\d+):(\\d+)\\s+(error|warning|info)\\s+(.+)$/",
+      "dist_line": 106,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "93",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+)\\s+(error|warning|info)\\s+(.+)/",
+      "dist_line": 106,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "98",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d)\\s+(error|warning|info)\\s+(.+)$/",
+      "dist_line": 106,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "100",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+)\\s(error|warning|info)\\s+(.+)$/",
+      "dist_line": 106,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "102",
+      "mutator": "Regex",
+      "replacement": "/^([^:]+):(\\d+):(\\d+)\\s+(error|warning|info)\\s(.+)$/",
+      "dist_line": 106,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "109",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 110,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "110",
+      "mutator": "EqualityOperator",
+      "replacement": "diagnostics.length > 100",
+      "dist_line": 110,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "112",
+      "mutator": "Regex",
+      "replacement": "/\\s*File\\s+\"(.+?)\",\\s+line\\s+(\\d+)/",
+      "dist_line": 115,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "114",
+      "mutator": "Regex",
+      "replacement": "/^\\S*File\\s+\"(.+?)\",\\s+line\\s+(\\d+)/",
+      "dist_line": 115,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "115",
+      "mutator": "Regex",
+      "replacement": "/^\\s*File\\s\"(.+?)\",\\s+line\\s+(\\d+)/",
+      "dist_line": 115,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "118",
+      "mutator": "Regex",
+      "replacement": "/^\\s*File\\s+\"(.+?)\",\\sline\\s+(\\d+)/",
+      "dist_line": 115,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "120",
+      "mutator": "Regex",
+      "replacement": "/^\\s*File\\s+\"(.+?)\",\\s+line\\s(\\d+)/",
+      "dist_line": 115,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "128",
+      "mutator": "Regex",
+      "replacement": "/(?:error|warning)\\[(\\w+)\\]:\\s+(.+)$/",
+      "dist_line": 123,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "129",
+      "mutator": "Regex",
+      "replacement": "/^(?:error|warning)\\[(\\w+)\\]:\\s+(.+)/",
+      "dist_line": 123,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "132",
+      "mutator": "Regex",
+      "replacement": "/^(?:error|warning)\\[(\\w+)\\]:\\s(.+)$/",
+      "dist_line": 123,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "141",
+      "mutator": "Regex",
+      "replacement": "/\\s*-->\\s*(.+?):(\\d+):(\\d+)$/",
+      "dist_line": 130,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "142",
+      "mutator": "Regex",
+      "replacement": "/^\\s*-->\\s*(.+?):(\\d+):(\\d+)/",
+      "dist_line": 130,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "144",
+      "mutator": "Regex",
+      "replacement": "/^\\S*-->\\s*(.+?):(\\d+):(\\d+)$/",
+      "dist_line": 130,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "145",
+      "mutator": "Regex",
+      "replacement": "/^\\s*-->\\s(.+?):(\\d+):(\\d+)$/",
+      "dist_line": 130,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "160",
+      "mutator": "Regex",
+      "replacement": "/(.+?\\.go):(\\d+):(\\d+):\\s+(.+)$/",
+      "dist_line": 140,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "161",
+      "mutator": "Regex",
+      "replacement": "/^(.+?\\.go):(\\d+):(\\d+):\\s+(.+)/",
+      "dist_line": 140,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "167",
+      "mutator": "Regex",
+      "replacement": "/^(.+?\\.go):(\\d+):(\\d+):\\s(.+)$/",
+      "dist_line": 140,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "175",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 144,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "176",
+      "mutator": "EqualityOperator",
+      "replacement": "diagnostics.length > 100",
+      "dist_line": 144,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "178",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:Expected|Received|expect\\(|assert)/",
+      "dist_line": 153,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "180",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:Expected|Received|expect\\(|assert)/",
+      "dist_line": 153,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "187",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 158,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "188",
+      "mutator": "EqualityOperator",
+      "replacement": "diagnostics.length > 100",
+      "dist_line": 158,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "197",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 185,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "198",
+      "mutator": "LogicalOperator",
+      "replacement": "!d.file && d.line <= 0",
+      "dist_line": 185,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "200",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 185,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "201",
+      "mutator": "EqualityOperator",
+      "replacement": "d.line < 0",
+      "dist_line": 185,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "203",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 189,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "208",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 191,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "213",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 195,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "219",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 204,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "232",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 209,
+      "dist_col": 78
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "233",
+      "mutator": "MethodExpression",
+      "replacement": "numbered",
+      "dist_line": 210,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "238",
+      "mutator": "MethodExpression",
+      "replacement": "d.message",
+      "dist_line": 223,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "242",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 237,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "245",
+      "mutator": "LogicalOperator",
+      "replacement": "sevOrder[b.severity] && 99",
+      "dist_line": 238,
+      "dist_col": 53
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "247",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 239,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "249",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 242,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "252",
+      "mutator": "ArithmeticOperator",
+      "replacement": "a.line + b.line",
+      "dist_line": 244,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "255",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 252,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "259",
+      "mutator": "EqualityOperator",
+      "replacement": "currentTokens < 300",
+      "dist_line": 255,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "261",
+      "mutator": "MethodExpression",
+      "replacement": "diagnostics",
+      "dist_line": 258,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "263",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 258,
+      "dist_col": 51
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "262",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 258,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "264",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 258,
+      "dist_col": 51
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "265",
+      "mutator": "EqualityOperator",
+      "replacement": "d.severity === \"info\"",
+      "dist_line": 258,
+      "dist_col": 51
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "266",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 258,
+      "dist_col": 66
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "267",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 259,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "269",
+      "mutator": "EqualityOperator",
+      "replacement": "withoutInfo.length >= 0",
+      "dist_line": 259,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "268",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 259,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "270",
+      "mutator": "EqualityOperator",
+      "replacement": "withoutInfo.length <= 0",
+      "dist_line": 259,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "271",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 259,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "273",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 261,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "274",
+      "mutator": "EqualityOperator",
+      "replacement": "currentTokens < 300",
+      "dist_line": 261,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "283",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 266,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "282",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 266,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "284",
+      "mutator": "EqualityOperator",
+      "replacement": "onlyErrors.length >= 0",
+      "dist_line": 266,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "285",
+      "mutator": "EqualityOperator",
+      "replacement": "onlyErrors.length <= 0",
+      "dist_line": 266,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "286",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 266,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "288",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 268,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/feedback.js",
+      "id": "289",
+      "mutator": "EqualityOperator",
+      "replacement": "currentTokens < 300",
+      "dist_line": 268,
+      "dist_col": 13
+    }
+  ]
+}

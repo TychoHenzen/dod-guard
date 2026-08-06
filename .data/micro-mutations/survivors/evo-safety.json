@@ -1,0 +1,325 @@
+{
+  "source": "packages/gitevo/src/evo-safety.ts",
+  "date": "2026-08-06T09:24:58.585Z",
+  "summary": {
+    "total": 176,
+    "killed": 127,
+    "survived": 39,
+    "timeout": 0,
+    "unviable": 10
+  },
+  "survivors": [
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "4",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 16,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 16,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "7",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 17,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 16,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 17,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 17,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 27,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "19",
+      "mutator": "MethodExpression",
+      "replacement": "missingSources(scope, here, there)",
+      "dist_line": 27,
+      "dist_col": 76
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "38",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 38,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "44",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 45,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "47",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 48,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "57",
+      "mutator": "MethodExpression",
+      "replacement": "out.split(\"\\n\")",
+      "dist_line": 54,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "60",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 54,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "62",
+      "mutator": "EqualityOperator",
+      "replacement": "line.length >= 0",
+      "dist_line": 54,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "66",
+      "mutator": "MethodExpression",
+      "replacement": "status.map(line => line.slice(3).split(\" -> \").pop() ?? \"\")",
+      "dist_line": 60,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "73",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 60,
+      "dist_col": 91
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "75",
+      "mutator": "EqualityOperator",
+      "replacement": "file.length >= 0",
+      "dist_line": 60,
+      "dist_col": 91
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "78",
+      "mutator": "MethodExpression",
+      "replacement": "status",
+      "dist_line": 63,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "81",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 63,
+      "dist_col": 60
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "83",
+      "mutator": "MethodExpression",
+      "replacement": "untracked(scope.status)",
+      "dist_line": 70,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "107",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 100,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "112",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 102,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "114",
+      "mutator": "MethodExpression",
+      "replacement": "sources.every(candidate => extensions.includes(candidate))",
+      "dist_line": 104,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "115",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 104,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "117",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 107,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "121",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 107,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "122",
+      "mutator": "MethodExpression",
+      "replacement": "stem.startsWith(\".spec\")",
+      "dist_line": 107,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "123",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 107,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "129",
+      "mutator": "MethodExpression",
+      "replacement": "layout.split(\"/\")",
+      "dist_line": 114,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "132",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 114,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "134",
+      "mutator": "EqualityOperator",
+      "replacement": "part.length >= 0",
+      "dist_line": 114,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "139",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 115,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "141",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 115,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "155",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 131,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "160",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 134,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "162",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 134,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "164",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 136,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/evo-safety.js",
+      "id": "175",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 149,
+      "dist_col": 67
+    }
+  ]
+}
