@@ -175,9 +175,15 @@ that survives into the contract is an anchor, and it comes back in the output.
 
 ```bash
 mkdir -p .tighten/quarantine
-rtk git show HEAD:<path> > .tighten/quarantine/original.txt
+rtk git show HEAD:<path> > .tighten/quarantine/original<ext>
 rtk git rm <path>
 ```
+
+Preserve the original file extension. A `.rs` file becomes `original.rs`, a
+`.ts` file becomes `original.ts`. The quality scanner detects language from
+the extension. A `.txt` extension reports zero violations because the scanner
+cannot parse it, and every real violation in the replacement reads as a
+regression.
 
 Add the quarantine path to the banned list in every briefing.
 
@@ -221,15 +227,15 @@ Both must pass.
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/blind-rewrite/scripts/overlap-scan.mjs" \
-  --original=.tighten/quarantine/original.txt \
+  --original=.tighten/quarantine/original<ext> \
   --rewrite=<new paths> \
   --whitelist=<boundary names> \
   --contract-file=<path>
 
 node "${CLAUDE_PLUGIN_ROOT}/../quality-guard/skills/quality-refactor/scripts/quality-scan.mjs" \
-  .tighten/quarantine/original.txt --format=units > /tmp/before.json
+  .tighten/quarantine/original<ext> --root=.tighten/quarantine --format=units > /tmp/before.json
 node "${CLAUDE_PLUGIN_ROOT}/../quality-guard/skills/quality-refactor/scripts/quality-scan.mjs" \
-  <new paths> --format=units > /tmp/after.json
+  <new-dir> --root=<new-dir> --format=units > /tmp/after.json
 
 node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/simplicity-gate.mjs" \
   --before=/tmp/before.json --after=/tmp/after.json

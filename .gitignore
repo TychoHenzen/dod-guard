@@ -52,3 +52,6 @@ reports/
 
 # blind-rewrite scratch: quarantined original
 .blind/
+
+# skill-migrate scratch: eval cases, sandboxes, benchmark runs
+.skill-migrate/
