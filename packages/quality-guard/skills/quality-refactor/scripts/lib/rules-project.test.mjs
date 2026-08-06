@@ -10,6 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildConfig } from "./config.mjs";
 import { lineIndex } from "./offsets.mjs";
+import { scanFile } from "./rules-file.mjs";
 import { checkDuplication, checkReachability } from "./rules-project.mjs";
 
 function fileWithCode(rel, code, { isTest = false, lang = "ts" } = {}) {
@@ -19,6 +20,20 @@ function fileWithCode(rel, code, { isTest = false, lang = "ts" } = {}) {
 function scansFor(files) {
   const scans = new Map();
   for (const file of files) scans.set(file.rel, { code: file.source, starts: lineIndex(file.source) });
+  return scans;
+}
+
+function rustFile(rel, code) {
+  return { rel, lang: "rs", isTest: false, source: code, lines: code.split("\n") };
+}
+
+/**
+ * Real `scanFile` output, not the hand-built `scansFor` shape - Rust's
+ * reachability split needs `testRegions`, which only `scanFile` computes.
+ */
+function rustScansFor(files, config) {
+  const scans = new Map();
+  for (const file of files) scans.set(file.rel, scanFile(file, config));
   return scans;
 }
 
@@ -124,6 +139,91 @@ test("checkReachability skips files under isEntryPath and isTest", () => {
   const config = buildConfig("default");
   const violations = checkReachability(files, scansFor(files), config);
   assert.equal(violations.length, 0);
+});
+
+test("checkReachability reports a Rust symbol referenced only from its own #[cfg(test)] module as test-only-export", () => {
+  // "lib.rs" is deliberately avoided - isEntryPath treats it as an entry
+  // point and would skip the file before reachability ever runs.
+  const code = `
+pub fn tally(items: &[u32]) -> u32 {
+    items.iter().sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        assert_eq!(tally(&[]), 0);
+    }
+}
+`;
+  const files = [rustFile("src/stats.rs", code)];
+  const config = buildConfig("default");
+  const violations = checkReachability(files, rustScansFor(files, config), config);
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].rule, "test-only-export");
+  assert.match(violations[0].message, /tally/);
+});
+
+test("checkReachability stays silent on a Rust symbol also referenced from production code in the same file", () => {
+  const code = `
+pub fn tally(items: &[u32]) -> u32 {
+    items.iter().sum()
+}
+
+pub fn run() -> u32 {
+    tally(&[1, 2, 3])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        assert_eq!(tally(&[]), 0);
+    }
+}
+`;
+  const files = [rustFile("src/stats.rs", code)];
+  const config = buildConfig("default");
+  const violations = checkReachability(files, rustScansFor(files, config), config);
+  assert.equal(
+    violations.some((v) => v.message.includes("tally")),
+    false,
+  );
+});
+
+test("checkReachability does not flag a Rust pub fn read only inside another file's format capture", () => {
+  const a = rustFile(
+    "src/stats.rs",
+    `
+pub fn tally(items: &[u32]) -> u32 {
+    items.iter().sum()
+}
+`,
+  );
+  const b = rustFile(
+    "src/report.rs",
+    `
+pub fn show(total: u32) {
+    println!("{tally}");
+}
+`,
+  );
+  const files = [a, b];
+  const config = buildConfig("default");
+  // Before the fix, \`tally\` never appeared in src/report.rs's stripped
+  // code stream - the capture reading it lives entirely inside a blanked
+  // string literal - so referenceCounts saw no production caller anywhere
+  // and reported it dead.
+  const violations = checkReachability(files, rustScansFor(files, config), config);
+  assert.equal(
+    violations.some((v) => v.message.includes("tally")),
+    false,
+  );
 });
 
 test("checkDuplication flags an identical six line block appearing in two files", () => {

@@ -66,6 +66,20 @@ build step. `src/` is TypeScript. Where the server needs a hook constant it
 imports through `scripts/sentinel.d.mts`, and `src/skips.test.ts` asserts that
 both sides still agree on the skip-log path. Do not let that assertion go.
 
+The structural scanner treats every supported language the same way: one
+rule set, run against TypeScript/JavaScript, C#, Rust, Python, Go,
+Java/Kotlin and C/C++ alike. The optional project linter the hook layers on
+top, `scripts/project-linter.mjs`, does not. ESLint and ruff check one file
+directly, so they share the ten-second per-file timeout. Clippy
+(`rust-linter.mjs`) and the `dotnet format` analyzers (`csharp-linter.mjs`)
+have no single-file mode. Both always look at the whole crate or solution, so
+both share a longer sixty-second timeout instead (`linter-timeout.mjs`). Both
+fail open: a timeout, a missing `cargo` or `dotnet` binary, or output that
+will not parse all come back as no findings, never as a blocked write. Both
+also report only diagnostics the project's own configuration rates as an
+error, the same restriction the ESLint branch already applies to rules the
+repository turned on as errors.
+
 ## Rules that bite
 
 - The hook must exit 0 on any internal failure. A broken gate must not stop work.
@@ -78,3 +92,14 @@ both sides still agree on the skip-log path. Do not let that assertion go.
   wires a class usually sits above the scanned subdirectory.
 - Declare harness directories with `--test-path`. Without it the scanner reads
   test-support code as production code that only tests call.
+- `rust-linter.mjs` and `csharp-linter.mjs` only run when the repository root
+  has a `Cargo.toml` or a `.sln`/`.csproj`. Outside one they return no
+  findings, the same as a timeout or a missing binary. A quiet write there is
+  not proof the crate or solution is clean.
+- The fixture corpus at `skills/quality-refactor/scripts/lib/target/` holds
+  one realistic file per supported language, checked by
+  `language-fixtures.test.mjs`. It sits in a directory literally named
+  `target` on purpose: that name is in the scanner's own `IGNORED_DIRS`
+  (`config.mjs`), which is the only reason the corpus never trips the
+  structural ratchet or the per-write hook. Rename the directory and both
+  start scanning deliberately bad fixture code as a real regression.

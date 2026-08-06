@@ -1,7 +1,7 @@
 // Function extraction: signatures, parameter lists, and body spans.
 //
 // Operates on stripped code only (see strip.mjs). This is a heuristic scanner,
-// not a parser — it is tuned to be quiet on false positives rather than to
+// not a parser - it is tuned to be quiet on false positives rather than to
 // achieve full coverage, because a noisy metric gets ignored.
 
 import { lineAt, matchBracket } from "./offsets.mjs";
@@ -40,6 +40,14 @@ const NOT_CALLABLE = new Set([
   "as",
 ]);
 
+/**
+ * Rust receiver forms: `self`, `mut self`, `&self`, `&mut self`, and the
+ * same with an explicit lifetime (`&'a self`, `&'a mut self`). All of them
+ * name the instance the method was called on, not a parameter the caller
+ * supplies, so param-count must not include them.
+ */
+const RUST_SELF_RECEIVER = /^&?\s*(?:'[A-Za-z_]\w*\s+)?(?:mut\s+)?self$/;
+
 /** Split a parameter list on top-level commas. Empty list -> []. */
 function splitParams(text) {
   const params = [];
@@ -57,13 +65,13 @@ function splitParams(text) {
   }
   params.push(current);
   const named = params.map((param) => param.trim());
-  return named.filter((param) => param.length > 0 && param !== "self" && param !== "this");
+  return named.filter((param) => param.length > 0 && param !== "this" && !RUST_SELF_RECEIVER.test(param));
 }
 
 /**
  * Operators that can only appear between a call and a following brace, never
  * between a signature and its body. `byFile.get(key) ?? {}` is a call whose
- * result feeds an object literal — without this it reads as a definition.
+ * result feeds an object literal - without this it reads as a definition.
  */
 const CALL_OPERATORS = /\?\?|\?\.|&&|\|\||(?:^|[^=!<>])=(?:[^>=]|$)/;
 
@@ -137,9 +145,9 @@ function findExpressionEnd(code, from) {
   return code.length - 1;
 }
 
-/** `name(` — plain functions, methods, constructors. */
+/** `name(` - plain functions, methods, constructors. */
 const HEADER_DIRECT = /([A-Za-z_$][\w$]*)\s*(?:<[^<>()]*>)?\s*\(/g;
-/** `const name = (` / `name: (` — arrow functions and function expressions. */
+/** `const name = (` / `name: (` - arrow functions and function expressions. */
 const HEADER_ASSIGNED = /([A-Za-z_$][\w$]*)\s*(?::[^=;{}()]*)?=\s*(?:async\s+)?(?:function\s*)?\(/g;
 
 function extractAt(code, starts, name, openParen, headerStart) {
@@ -180,6 +188,37 @@ function braceLanguageFunctions(code, starts) {
   const found = new Map();
   scanHeaders(code, starts, HEADER_ASSIGNED, found);
   scanHeaders(code, starts, HEADER_DIRECT, found);
+  return [...found.values()].sort((a, b) => a.start - b.start);
+}
+
+/**
+ * `fn name(` - Rust functions and methods. `if`, `while`, `for` and `match`
+ * take no parentheses in Rust, so a trailing method call before their `{`
+ * would otherwise read as a definition (`if path.exists() {`). Anchoring on
+ * the `fn` keyword sidesteps that: only a real declaration has one, and a
+ * closure (`|x| { ... }`) never does. Modifiers such as `pub`, `async`,
+ * `const`, `unsafe` and `extern` may precede `fn`; they need no special
+ * handling because the match starts at `fn` itself.
+ */
+const HEADER_RUST = /\bfn\s+([A-Za-z_]\w*)\s*(?:<[^<>()]*>)?\s*\(/g;
+
+/**
+ * `func name(` or `func (recv Type) name(` - Go functions and methods. Go
+ * has the same parenthesis-free `if`/`for`/`switch` conditions as Rust, so
+ * the same keyword anchor is needed; the optional non-capturing group skips
+ * a method receiver so the captured name is always the function's own name.
+ */
+const HEADER_GO = /\bfunc\s+(?:\([^()]*\)\s+)?([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*\(/g;
+
+function rustFunctions(code, starts) {
+  const found = new Map();
+  scanHeaders(code, starts, HEADER_RUST, found);
+  return [...found.values()].sort((a, b) => a.start - b.start);
+}
+
+function goFunctions(code, starts) {
+  const found = new Map();
+  scanHeaders(code, starts, HEADER_GO, found);
   return [...found.values()].sort((a, b) => a.start - b.start);
 }
 
@@ -225,5 +264,8 @@ function pythonFunctions(code, starts) {
 }
 
 export function findFunctions(code, lang, starts) {
-  return lang === "py" ? pythonFunctions(code, starts) : braceLanguageFunctions(code, starts);
+  if (lang === "py") return pythonFunctions(code, starts);
+  if (lang === "rs") return rustFunctions(code, starts);
+  if (lang === "go") return goFunctions(code, starts);
+  return braceLanguageFunctions(code, starts);
 }

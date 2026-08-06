@@ -2,22 +2,22 @@
 
 One section per scanner rule: what it measures, why the bound is where it is,
 how to fix it, and how it can be wrong. Refactoring names in *italics* are from
-Fowler's catalog — see `catalog.md`.
+Fowler's catalog - see `catalog.md`.
 
 ---
 
-## `dead-export` — exported, never referenced
+## `dead-export` - exported, never referenced
 
 **Detects:** a public symbol with zero references anywhere in the scan outside
 its own file. Entry-point files (`index`, `main`, `mod`, `lib`, `cli`,
 `program`, `app`, `server`, `setup`, `conftest`, `__init__.py`) are exempt.
 
 **Why hard:** dead code is read, maintained, refactored, and reasoned about by
-every future reader, and pays back nothing. It also lies — a reader assumes an
+every future reader, and pays back nothing. It also lies - a reader assumes an
 export has callers and looks for them.
 
 **Fix:** *Remove Dead Code*. Delete the symbol and its tests. If it is a public
-API of a published package, that is the one real exception — mark it and move
+API of a published package, that is the one real exception - mark it and move
 on.
 
 **Non-code references count.** A Godot node connects a script through a
@@ -41,12 +41,21 @@ machine and fail in CI.
 string name, or dynamic `import()`. Check before deleting a symbol whose name
 appears in a decorator or in a file type the manifest list does not cover.
 
+**Rust's own-file test module counts too.** A `#[cfg(test)]` module usually
+sits in the same file as the code it tests. A reference from inside one is
+test evidence, not production evidence, and a reference from outside one in
+that same file is production evidence, the same as a reference from any other
+file. Both directions used to be invisible: the reachability check used to
+skip a symbol's own file outright, so a `pub fn` referenced only by its
+file's own `#[cfg(test)]` module looked entirely unreferenced and reported as
+`dead-export` instead of `test-only-export`.
+
 ---
 
-## `unused-local` — private, never called in its own file
+## `unused-local` - private, never called in its own file
 
 **Detects:** a free function in TypeScript/JavaScript or Rust that has no
-export keyword and appears exactly once in its file — its own definition. Class
+export keyword and appears exactly once in its file - its own definition. Class
 methods are excluded (they can be called through an instance from anywhere).
 
 **Why hard:** in these languages a file is a module, so a non-exported symbol
@@ -55,12 +64,21 @@ heuristic; it is a proof.
 
 **Fix:** *Remove Dead Code*.
 
-**False positives:** functions referenced only inside a template literal or a
-string. Rare.
+**False positives:** functions referenced only inside a plain string
+literal, in any language but Rust. Rare.
+
+**Rust is the opposite risk: a false negative, not a false positive.** Every
+double-quoted Rust string, not only a `format!`/`println!` argument, is
+scanned for `{identifier}` captures, because telling a format-macro argument
+apart from an ordinary string would need a real parse of the call site. A
+name that appears only inside some unrelated plain string, never actually
+interpolated anywhere, reads as a reference and hides the symbol from this
+rule. This can only suppress a real violation, never invent one, so it is
+left as-is rather than fixed.
 
 ---
 
-## `test-only-export` — production code that only tests use
+## `test-only-export` - production code that only tests use
 
 **Detects:** an export with zero references from non-test files and at least
 one from a test file.
@@ -84,6 +102,14 @@ built-in patterns already cover `test`, `tests`, `__tests__`, `testing`,
 `fixtures`, `harness`, `mocks`, `stubs`, and the `.test.` and `.spec.` name
 forms.
 
+**Rust needs no `--test-path` for its own `#[cfg(test)]` module,** because
+that module lives inside the same file as production code, not in a
+separate test file or directory `--test-path` could point at. A `#[cfg(test)]`
+or `#[cfg(all(test, ...))]` block is recognized directly: a reference from
+inside one counts as test evidence for this rule, the same way a whole test
+file's reference does everywhere else. See `dead-export` above for how the
+symbol's own file stopped being skipped for this.
+
 **Fix:** delete the symbol and its tests together. If the logic is genuinely
 needed but only reachable through a larger unit, test it through that unit
 instead. That is the test you actually wanted.
@@ -93,7 +119,7 @@ That is a real pattern. Note it and keep it.
 
 ---
 
-## `duplicate-block` — the same six lines in two places
+## `duplicate-block` - the same six lines in two places
 
 **Detects:** identical windows of six consecutive non-trivial lines, compared
 after whitespace normalization, across all scanned files. Comment lines are
@@ -107,8 +133,7 @@ would have revealed.
 
 **Fix:** *Extract Function*, then *Move Function* if the extracted function has
 a natural home. If the two copies have small differences, *Parameterize
-Function*. If they differ only in a flag, do **not** add a boolean parameter —
-see `else-branch` and *Remove Flag Argument*.
+Function*. If they differ only in a flag, do **not** add a boolean parameter - see `else-branch` and *Remove Flag Argument*.
 
 **When to leave it:** two blocks that are textually identical but conceptually
 unrelated will diverge, and merging them creates coupling. This is a real case
@@ -116,10 +141,10 @@ and it is rarer than it feels. Note it explicitly rather than silently skipping.
 
 ---
 
-## `commented-out-code` — a statement inside a comment
+## `commented-out-code` - a statement inside a comment
 
 **Detects:** a non-doc comment whose text both starts like a statement
-(`if`, `for`, `return`, `const`, `function`, `def`, `public`, `import`, …) and
+(`if`, `for`, `return`, `const`, `function`, `def`, `public`, `import`, ...) and
 ends with a terminator (`; { } [ ] ) ,`). Doc comments are exempt so that prose
 quoting code is not flagged.
 
@@ -131,7 +156,7 @@ message explaining why it left.
 
 ---
 
-## `types-per-file` — one type per file
+## `types-per-file` - one type per file
 
 **Detects:** more than one top-level `class` / `interface` / `enum` / `type` /
 `struct` / `trait` / `record` in one file. Nested types are not counted, and a
@@ -144,7 +169,7 @@ merge conflicts track a single concept.
 
 **Fix:** *Extract Class* into a new file named for the type. Put small related
 types in a sibling directory, not a shared file. A discriminated-union member
-set is the common objection — those still get one file each, plus one file for
+set is the common objection - those still get one file each, plus one file for
 the union.
 
 **Note:** this rule is where LLM-written code fails most consistently, because
@@ -153,7 +178,7 @@ directories are for.
 
 ---
 
-## `file-length` — 100 preferred, 300 hard
+## `file-length` - 100 preferred, 300 hard
 
 **Detects:** total lines, including blanks and comments.
 
@@ -161,27 +186,27 @@ directories are for.
 head. 300 is where a reader stops building a mental model and starts using
 search. Beyond that the file is a directory that forgot to become one.
 
-**Fix:** the split has to follow a real seam — *Extract Class*, *Extract
+**Fix:** the split has to follow a real seam - *Extract Class*, *Extract
 Function* into a new module, or *Split Phase* when the file does two things in
 sequence. If no seam exists, a long cohesive file is better than two files that
 must always change together. Say so and leave it.
 
 ---
 
-## `function-length` — 30 preferred, 60 hard
+## `function-length` - 30 preferred, 60 hard
 
 **Detects:** lines from signature to closing brace (or dedent, in Python).
 
 **Why:** the *Long Method* smell. A function longer than a screen cannot be
 verified by reading; it can only be trusted.
 
-**Fix:** *Extract Function* — but extract a **concept**, not a line range. If
+**Fix:** *Extract Function* - but extract a **concept**, not a line range. If
 you cannot name the extracted function without referring to its position
 ("part two", "step three", "helper"), the split is in the wrong place.
 
 ---
 
-## `complexity` — 5 preferred, 10 hard
+## `complexity` - 5 preferred, 10 hard
 
 **Detects:** cyclomatic complexity, counted as 1 plus each `if`, `for`,
 `while`, `case`, `catch`, `&&`, `||`, `??`, ternary, and (in Rust) `match` arm.
@@ -190,22 +215,22 @@ you cannot name the extracted function without referring to its position
 which is roughly where exhaustive testing stops being practical and where
 readers reliably start missing a branch.
 
-**Why 5 preferred:** most functions that do one thing land at 1–4. A function
+**Why 5 preferred:** most functions that do one thing land at 1 - 4. A function
 at 6 is usually two functions.
 
 **Fix, in order of preference:**
 
-1. *Replace Nested Conditional with Guard Clauses* — usually the biggest win.
-2. *Decompose Conditional* — name the condition, name the branches.
-3. *Consolidate Conditional Expression* — merge conditions with the same result.
-4. *Replace Conditional with Polymorphism* — for a switch on a type code.
-5. *Extract Function* — last, because it moves complexity rather than removing
+1. *Replace Nested Conditional with Guard Clauses* - usually the biggest win.
+2. *Decompose Conditional* - name the condition, name the branches.
+3. *Consolidate Conditional Expression* - merge conditions with the same result.
+4. *Replace Conditional with Polymorphism* - for a switch on a type code.
+5. *Extract Function* - last, because it moves complexity rather than removing
    it. Splitting a complexity-12 function into two complexity-6 functions that
    are always called in sequence is laundering, not simplification.
 
 ---
 
-## `nesting-depth` — 3 preferred, 5 hard
+## `nesting-depth` - 3 preferred, 5 hard
 
 **Detects:** maximum brace depth inside a function body (indent levels in
 Python).
@@ -219,16 +244,21 @@ return early, and let the happy path run at depth 1. This usually fixes
 
 ---
 
-## `param-count` — 3 preferred, 7 hard
+## `param-count` - 3 preferred, 7 hard
 
-**Detects:** declared parameters. `self` and `this` are not counted.
+**Detects:** declared parameters. `this` is not counted, and neither is a
+Rust receiver in any of its forms: `self`, `mut self`, `&self`, `&mut self`,
+and the same with an explicit lifetime (`&'a self`, `&'a mut self`). Only the
+bare `self` form used to be excluded; a method taking `&self`, by far the
+more common form in real Rust code, used to count its own receiver as a
+declared parameter.
 
 **Why 7:** the *Long Parameter List* smell. Past a handful, call sites become
 positional puzzles and every insertion is a breaking change no compiler
 catches when the types happen to match.
 
 **Why 3 preferred:** most functions that need four arguments are being handed a
-*Data Clump* — a group of values that always travel together and want to be a
+*Data Clump* - a group of values that always travel together and want to be a
 type.
 
 **Fix:**
@@ -236,12 +266,12 @@ type.
 - *Introduce Parameter Object* for a data clump.
 - *Preserve Whole Object* when you are passing three fields of the same object.
 - *Replace Parameter with Query* when the callee can derive the value.
-- *Remove Flag Argument* for booleans — a boolean parameter means the function
+- *Remove Flag Argument* for booleans - a boolean parameter means the function
   is two functions.
 
 ---
 
-## `unnamed-tuple` — positional return values
+## `unnamed-tuple` - positional return values
 
 **Detects:** tuple types in type positions: TypeScript `: [A, B]` in a return
 type, variable annotation, or type alias; C# `(int, string) Method(...)`; Rust
@@ -251,14 +281,14 @@ type, variable annotation, or type alias; C# `(int, string) Method(...)`; Rust
 re-derives what the fields are. Adding or reordering a field silently breaks
 every destructuring that still compiles.
 
-**Fix:** *Replace Primitive with Object* — declare a named type (a record, a
+**Fix:** *Replace Primitive with Object* - declare a named type (a record, a
 struct, an interface). In C#, named tuple elements `(int count, string label)`
 are an acceptable middle ground and are not flagged. Local destructuring
 (`const [a, b] = ...`) is not flagged; only declared types are.
 
 ---
 
-## `else-branch` — prefer guard clauses
+## `else-branch` - prefer guard clauses
 
 **Detects:** any `else` in a function body, including `else if`.
 
@@ -277,12 +307,20 @@ are fine.
 
 ---
 
-## `stateless-method` — a method that never touches state
+## `stateless-method` - a method that never touches state
 
 **Detects:** a non-static method inside a class whose body references neither
-`this`/`self` nor any field declared in that class.
+`this`/`self` nor any field declared in that class. In Rust there is no class
+body to check: a struct's fields live in the `struct`, and its methods live
+in a separate `impl` block. This rule now follows that split, attributing an
+`impl Type { ... }` block's methods to the matching `struct Type`'s fields in
+the same file. Before this, no Rust `impl` block was ever attributed to a
+type at all, so this rule never fired on Rust code, silently, for every file.
+When a type's `impl` block is in the file but its `struct` is not, field
+access cannot be proven either way, so the method is left unreported rather
+than guessed at.
 
-**Why preferred:** Meyers' guideline — prefer non-member non-friend functions.
+**Why preferred:** Meyers' guideline - prefer non-member non-friend functions.
 A free function can only use the type's public surface, so it cannot become a
 hidden dependency on internals, and it does not grow the class's interface. A
 data type should hold data.
@@ -291,30 +329,39 @@ data type should hold data.
 exported function in the same module. Rust: a free function, or a separate
 `impl` block that does not take `self`.
 
-**False negatives:** the detector only knows fields it can see declared with a
-visibility modifier. Inherited fields and constructor-shorthand properties may
-be missed.
+**False negatives:** field detection is per-language, and each shape still
+has gaps. Java and a plain C# field need their own visibility modifier
+(`private int balance;`) to be recognized at all. A C# auto-property
+(`Foo { get; set; }`) or expression-bodied property (`Foo => expr;`) is
+recognized as a field too, but a constructor-shorthand property is not. A
+C++ field needs no modifier of its own - fields grouped under a
+`private:`/`protected:`/`public:` section are recognized whichever section,
+explicit or default, holds them - but a pointer or reference member written
+with no space before its name (`int* p;`) is missed. A Rust struct field
+needs no modifier either (`bar: i32,`, with or without `pub`). In every
+class-based language here, a field inherited from a base type declared in
+another file is missed.
 
 ---
 
-## `line-length` — 80 preferred, 120 hard
+## `line-length` - 80 preferred, 120 hard
 
 **Detects:** characters per line.
 
 **Why 80 preferred:** side-by-side diffs, split editor panes, and terminal
-review all assume it. It also acts as a complexity signal — a line past 80
+review all assume it. It also acts as a complexity signal - a line past 80
 characters is usually doing two things.
 
 **Why 120 hard:** past that, wrapping is unavoidable somewhere, and wrapped
 lines are read wrong.
 
-**Fix:** *Extract Variable* for a long expression — the name is documentation.
+**Fix:** *Extract Variable* for a long expression - the name is documentation.
 Break long parameter lists one per line. Never fix this by reformatting alone
 in a file you have not otherwise touched, and never before wave 6.
 
 ---
 
-## `todo-marker` — TODO / FIXME / HACK / XXX
+## `todo-marker` - TODO / FIXME / HACK / XXX
 
 **Detects:** those words in any comment.
 

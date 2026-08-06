@@ -1,17 +1,18 @@
 /**
  * Run the linter the repository already configures, for the one edited file.
  *
- * Only fast per-file linters belong here. Clippy and dotnet format work on a
- * whole crate or solution, so a per-write hook cannot afford them. Rust and C#
- * therefore get the structural scanner alone.
- *
- * Formatters are left out on purpose. The answer to bad layout is to run the
- * formatter, not to block the write.
+ * ESLint and ruff are per-file linters inside the shared ten-second timeout.
+ * Clippy and dotnet format analyzers need the whole crate, project, or
+ * solution, so Rust and C# get their own module with a longer shared timeout
+ * (rust-linter.mjs, csharp-linter.mjs). `dotnet format analyzers` runs the
+ * Roslyn analyzers, not the whitespace formatter, so it stays in scope.
  */
 
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { rustFindings } from './rust-linter.mjs';
+import { csharpFindings } from './csharp-linter.mjs';
 
 const TIMEOUT_MS = 10_000;
 
@@ -79,16 +80,20 @@ function ruffFindings(filePath, repoRoot) {
     }));
 }
 
+/** Extension test paired with its finder, tried in order. */
+const LINTERS = [
+  [(lower) => ESLINT_EXT.has(lower.slice(lower.lastIndexOf('.'))), eslintFindings],
+  [(lower) => lower.endsWith('.py'), ruffFindings],
+  [(lower) => lower.endsWith('.rs'), rustFindings],
+  [(lower) => lower.endsWith('.cs'), csharpFindings],
+];
+
 /** Findings from the repository linter that matches this file. */
 export function runProjectLinter(filePath, repoRoot) {
   const lower = filePath.toLowerCase();
   try {
-    if (ESLINT_EXT.has(lower.slice(lower.lastIndexOf('.')))) {
-      return eslintFindings(filePath, repoRoot);
-    }
-    if (lower.endsWith('.py')) return ruffFindings(filePath, repoRoot);
+    return LINTERS.find(([test]) => test(lower))?.[1]?.(filePath, repoRoot) ?? [];
   } catch {
     return [];
   }
-  return [];
 }

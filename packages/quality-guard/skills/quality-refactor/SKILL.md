@@ -2,7 +2,7 @@
 name: quality-refactor
 description: >-
   Systematically refactor code to a high quality bar using an explicit,
-  machine-checked rule set — one type per file, files under 300 lines,
+  machine-checked rule set - one type per file, files under 300 lines,
   cyclomatic complexity under 10, at most 7 parameters, no unnamed tuples,
   guard clauses instead of else, free functions instead of stateless methods,
   and aggressive deletion of dead, test-only, duplicate, and compatibility-shim
@@ -36,7 +36,7 @@ to a test suite:
 | Eight positional parameters | Four or fewer, or a named parameter object |
 | `[string, number]` returned from a public function | A named type |
 | Helper methods on a class that never touch `this` | Free functions |
-| Dead code left behind "just in case" | Deleted — git remembers |
+| Dead code left behind "just in case" | Deleted - git remembers |
 | A `v2` next to the `v1` it replaced | One implementation |
 | Exported symbols only the tests call | Deleted, along with those tests |
 
@@ -57,16 +57,16 @@ difference between "never ship this" and "make it better every pass."
 | `complexity` (cyclomatic) | ≤ 5 | ≤ 10 |
 | `param-count` | ≤ 3 | ≤ 7 |
 | `nesting-depth` | ≤ 3 | ≤ 5 |
-| `types-per-file` | — | 1 |
+| `types-per-file` | - | 1 |
 | `duplicate-block` (6 lines) | 2 sites | 2 sites |
-| `unnamed-tuple` | — | none allowed |
-| `dead-export` | — | none allowed |
-| `unused-local` | — | none allowed |
+| `unnamed-tuple` | - | none allowed |
+| `dead-export` | - | none allowed |
+| `unused-local` | - | none allowed |
 | `test-only-export` | none preferred | - |
-| `commented-out-code` | — | none allowed |
-| `else-branch` | none preferred | — |
-| `stateless-method` | none preferred | — |
-| `todo-marker` | none preferred | — |
+| `commented-out-code` | - | none allowed |
+| `else-branch` | none preferred | - |
+| `stateless-method` | none preferred | - |
+| `todo-marker` | none preferred | - |
 
 **Hard bounds are a gate.** A refactor is not done while any error remains in
 its scope.
@@ -84,8 +84,15 @@ Smell → refactoring mapping (Fowler catalog, SOLID): `reference/catalog.md`.
 node "${CLAUDE_PLUGIN_ROOT}/skills/quality-refactor/scripts/quality-scan.mjs" --help
 ```
 
-Zero dependencies, Node 18+. Handles TypeScript/JavaScript, C#, Rust, Python,
-Go, Java/Kotlin, and C/C++. If `${CLAUDE_PLUGIN_ROOT}` is not set, find it:
+Zero dependencies, Node 18+. One scanner parses seven language families:
+TypeScript/JavaScript, C#, Rust, Python, Go, Java/Kotlin, and C/C++. Not
+every rule applies to every one of them (`reference/rules.md` says which),
+and function detection itself is not one algorithm for all seven. Rust and
+Go anchor on the `fn`/`func` keyword, because both write `if`/`for`/`while`
+with no parentheses, so a bare call before a brace (`if path.exists() {`)
+would otherwise read as a definition. Python reads indentation. The rest,
+TypeScript/JavaScript, C#, Java/Kotlin, and C/C++, share one
+call-vs-definition heuristic. If `${CLAUDE_PLUGIN_ROOT}` is not set, find it:
 
 ```bash
 find ~/.claude/plugins -name quality-scan.mjs -path '*quality-refactor*' 2>/dev/null | head -1
@@ -127,12 +134,12 @@ Its current counts go into the baseline file. It is not reported as a
 regression. Without that, every file you extract during a refactor would fail
 the ratchet against a phantom zero. From the run after adoption on, the file is
 held to the counts that were recorded. Baselines written by an older scanner
-(no file list) are rejected with exit `3` — re-record with `--write-baseline`.
+(no file list) are rejected with exit `3` - re-record with `--write-baseline`.
 
 **The scanner is a heuristic, not a compiler.** It is tuned to stay quiet
 rather than to catch everything. Two consequences: a finding is almost always
 real, and a clean scan does not mean a clean module. The judgment rules below
-are not scanned at all — you have to look.
+are not scanned at all - you have to look.
 
 ## What the Scanner Cannot See
 
@@ -158,14 +165,14 @@ name and the type name are the same word.
 
 Old signatures that forward to new ones, adapter classes, `v1`/`v2` pairs,
 re-export files mapping old names to new. **Default to deletion.** Check `git
-log` — if the same development cycle introduced both the old and the new, no
+log` - if the same development cycle introduced both the old and the new, no
 external consumer ever existed. Do not build a proof; migrate the call sites
 and delete.
 
 ### 3. Useless tests
 
 Delete a test when any of these is true. Deleting a bad test is an improvement,
-not a coverage loss — it was never covering anything.
+not a coverage loss - it was never covering anything.
 
 - It asserts on a mock it configured in the same test.
 - It asserts nothing, or only that the code did not throw.
@@ -185,22 +192,22 @@ delete it.
 
 A type that holds data should hold data. Operations on it belong in free
 functions (Meyers' "prefer non-member non-friend functions"; extension methods
-in C#; trait impls kept separate in Rust). This maximizes encapsulation — a
-free function can only use the public surface — and it keeps the type readable.
+in C#; trait impls kept separate in Rust). This maximizes encapsulation - a
+free function can only use the public surface - and it keeps the type readable.
 The `stateless-method` rule catches the mechanical case; the judgment case is a
 class whose methods touch one field each and could all be free functions over a
 plain record.
 
 ### 5. SOLID violations
 
-- **SRP** — the file-length and complexity numbers are proxies. The real test:
+- **SRP** - the file-length and complexity numbers are proxies. The real test:
   can you name the file's job without "and"?
-- **OCP** — a `switch` on a type code that grows with every feature wants
+- **OCP** - a `switch` on a type code that grows with every feature wants
   polymorphism (*Replace Conditional with Polymorphism*).
-- **LSP** — a subclass that throws on an inherited method (*Refused Bequest*)
+- **LSP** - a subclass that throws on an inherited method (*Refused Bequest*)
   wants delegation instead.
-- **ISP** — an interface where most implementors stub half the methods.
-- **DIP** — a policy module importing a concrete driver.
+- **ISP** - an interface where most implementors stub half the methods.
+- **DIP** - a policy module importing a concrete driver.
 
 ## Process
 
@@ -208,7 +215,7 @@ plain record.
 
 1. Git clean, or ask the user: stash, include, or abort.
 2. Run the project's build and full test suite. **Record the result.** If it is
-   already failing, stop and report — you cannot prove behavior preservation
+   already failing, stop and report - you cannot prove behavior preservation
    against a red baseline.
 3. Resolve the exact test command. Write it down; every step will use it.
 4. `mkdir -p .quality && node "$QS" <scope> --write-baseline=.quality/baseline.json`
@@ -220,7 +227,7 @@ node "$QS" <scope> --top=30
 node "$QS" <scope> --format=units > .quality/units.json
 ```
 
-Read the summary. Read `units.json` — each entry is one file with every rule it
+Read the summary. Read `units.json` - each entry is one file with every rule it
 violates. Then do the reading pass from "What the Scanner Cannot See" and write
 your findings into `.quality/judgment.md`, one heading per category.
 
@@ -243,7 +250,7 @@ pass.
 
 ### Phase 3: Emit the plan
 
-Write `.step-session/steps.json` — the schema `/dod-guard:step-by-step` reads.
+Write `.step-session/steps.json` - the schema `/dod-guard:step-by-step` reads.
 **One step per file per wave.** A step that touches two files is two steps,
 except for a deletion that requires updating its call sites, which is one.
 
@@ -273,7 +280,7 @@ Rules for step construction:
 - `verify_surface` is `structural` for every step in this skill. A refactor is
   verified by "tests still pass AND no new violations", never by "it compiles."
 - `verify_cmd` is always the project test command **and** the ratchet check,
-  joined with `&&`. Resolve `$QS` to the real absolute path in the JSON — a
+  joined with `&&`. Resolve `$QS` to the real absolute path in the JSON - a
   step briefing is read by a subagent with no shell history.
 - `description` states the refactoring by name from the catalog (*Extract
   Function*, *Replace Nested Conditional with Guard Clauses*, *Introduce
@@ -297,7 +304,7 @@ Wait for confirmation. This is the only planned interruption.
 
 Hand off to `/dod-guard:step-by-step`. It owns dispatch, verification, the
 fixer budget, and the approach-pivot rule. Do not re-implement any of that
-here, and do not execute steps inline — this skill's job ends at a correct
+here, and do not execute steps inline - this skill's job ends at a correct
 plan.
 
 ### Phase 6: Ratchet
@@ -305,7 +312,7 @@ plan.
 After all steps complete:
 
 1. Full build + test, compared against the Phase 0 baseline.
-2. `node "$QS" <scope> --fail-on=error` — must exit 0.
+2. `node "$QS" <scope> --fail-on=error` - must exit 0.
 3. Rewrite the baseline: `node "$QS" <scope> --write-baseline=.quality/baseline.json`
 4. Report: before/after counts per rule, files deleted, types split out.
 5. Present a commit message. Do **not** auto-commit.
@@ -316,7 +323,7 @@ A ratchet that nobody runs is not a ratchet.
 ## Rules
 
 1. **Behavior is preserved, always.** If a change alters what the program does,
-   it is not a refactoring — it is a separate task. Split it out and say so.
+   it is not a refactoring - it is a separate task. Split it out and say so.
 2. **Delete before you polish.** Wave order is not a suggestion.
 3. **The test suite is the proof.** Every step re-runs it. "It should be fine"
    is not a verification.
@@ -345,7 +352,7 @@ A ratchet that nobody runs is not a ratchet.
 | "Six parameters is fine, they're all needed" | Introduce Parameter Object. The parameters being needed is not the question. |
 | "I'll do the whole module in one step, it's all related" | NO. One file per step. That is what makes it verifiable. |
 | "The scanner says 0 errors, we're done" | The scanner does not read hierarchy, shims, or test quality. Do the judgment pass. |
-| "I'll split this file to get under 300 lines" | Only along a real seam. An arbitrary split is worse than a long file — note it and move on. |
+| "I'll split this file to get under 300 lines" | Only along a real seam. An arbitrary split is worse than a long file - note it and move on. |
 
 ## Scope Detection
 
@@ -353,7 +360,7 @@ A ratchet that nobody runs is not a ratchet.
 |---|---|
 | (empty) | Whole repo, source directories only |
 | `src/services/` | That directory tree |
-| `authentication` | Files matching the concept — confirm the list with the user |
+| `authentication` | Files matching the concept - confirm the list with the user |
 | a file list | Exactly those files plus their tests |
 
 For a repo-scale scope with 50+ files, do not plan the whole thing at once.

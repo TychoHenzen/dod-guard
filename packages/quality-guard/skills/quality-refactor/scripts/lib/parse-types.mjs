@@ -71,3 +71,28 @@ export function findTypes(code, lang, starts) {
   }
   return found;
 }
+
+/**
+ * Rust impl headers: `impl Type {}`, `impl<T> Type<T> {}`, `impl Trait for
+ * Type {}`. Captures only the implementing type's name; classSpans
+ * (rules-file.mjs) borrows that type's fields from its struct span. Trait,
+ * generics, and `where` are skipped via `[^{}]`, since none contain braces.
+ */
+const RUST_IMPL_HEADER =
+  /\bimpl(?:<[^{}]*>)?\s+(?:[A-Za-z_][\w:]*(?:<[^{}]*>)?\s+for\s+)?([A-Za-z_][\w:]*)(?:<[^{}]*>)?\s*(?:where[^{]*)?\{/g;
+
+/** Impl spans, split from findTypes so `struct Foo` + `impl Foo` count as one
+ * type not two. Reuses depthTracker so a `mod`-wrapped impl is not top-level. */
+export function findRustImpls(code) {
+  const depthAt = depthTracker(code);
+  const found = [];
+  RUST_IMPL_HEADER.lastIndex = 0;
+  let match = RUST_IMPL_HEADER.exec(code);
+  while (match !== null) {
+    if (depthAt(match.index) === 0) {
+      found.push({ typeName: match[1], offset: match.index });
+    }
+    match = RUST_IMPL_HEADER.exec(code);
+  }
+  return found;
+}
