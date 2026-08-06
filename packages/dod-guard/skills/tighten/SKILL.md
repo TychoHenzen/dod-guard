@@ -295,7 +295,100 @@ reason the prediction never gets to stop the cycle.
 The recording step is not optional on any path. An attempt the ledger never
 hears about is an attempt the loop repeats forever.
 
-Report the target, the verdict, the two gate numbers, and the queue depth.
+## Phase 11: Report
+
+Every invocation ends with the same block, whatever the verdict.
+
+```
+Target      <path>
+Verdict     accepted | pending | resistant
+Oracle      existing suite | characterization <file>
+Overlap     <longest shared run> against <limit>
+Simplicity  <before score> -> <after score>
+Size        <before files>/<before lines> -> <after files>/<after lines>
+Dropped     <each OBSERVED item the analyst called ACCIDENTAL, one per line>
+Repaired    <each gap the auditor found in Phase 9>
+Commit      <sha>, on tighten/<date>
+Branch      <n> accepted targets, <m> pending, <k> resistant
+Queue       <depth> targets remain
+```
+
+On `pending` or `resistant`, say what failed in one line: which gate, or which
+test, or that the author never beat the original. That line is the same text the
+ledger recorded, so the next invocation reads the same reason you reported.
+
+Then list the accepted targets on the branch, one line each: the path, the
+score it moved, and the commit. That list is the whole product of the run. A
+reader who sees only the report has to be able to decide whether to keep it.
+
+## Phase 12: Merge
+
+Print this section whenever the branch holds at least one accepted commit, even
+when this invocation itself failed. Print the commands. Do not run them.
+
+The branch is the unit the user accepts or throws away, not a single target. A
+run that accepted four targets and then went resistant on a fifth still has four
+good commits to land.
+
+Say plainly that the merge is theirs to make, and wait. Approval for one merge
+is not approval for the next run.
+
+**1. Read the whole diff.**
+
+```bash
+rtk git diff master...tighten/<date> --stat
+rtk git diff master...tighten/<date>
+```
+
+**2. Prove the branch green from a clean build.** Every gate the repository runs
+in CI, not only the tests this loop already ran. A rewrite that passes the
+target's own suite can still break a lint rule, a coverage ratchet, or another
+package that imports it.
+
+```bash
+rtk npm run clean && rtk npm run build && rtk npm test
+```
+
+**3. Merge with history.** A merge commit keeps each rewrite reviewable on its
+own. Squashing them into one commit throws away the per-target boundary the loop
+worked to keep.
+
+```bash
+rtk git checkout master
+rtk git pull --ff-only
+rtk git merge --no-ff tighten/<date> -m "refactor: tighten <n> targets"
+```
+
+**4. Push only when the user says to.** In this repository a push to master
+publishes every package whose version npm does not already have. Check the diff
+for a `package.json` version bump before pushing, and say what will publish.
+
+```bash
+rtk git push origin master
+```
+
+**5. Delete the branch after the merge lands.**
+
+```bash
+rtk git branch -d tighten/<date>
+```
+
+Rejecting the run is one command, and it is worth stating next to the rest:
+
+```bash
+rtk git branch -D tighten/<date>
+```
+
+The ledger keeps its records either way. `.tighten/` is untracked, so deleting
+the branch deletes the rewrites and leaves every record standing. A target
+accepted on a branch the user then threw away stays accepted, so the loop never
+picks it again and the work is gone. Say that in the report.
+It is the one part of a rejection that does not undo itself.
+
+To put such a target back in the queue, set its entry in `.tighten/ledger.json`
+to `"status": "pending"` with `"attempts": 0`. Recording it again through
+`record-result.mjs` does not work, because every record counts as an attempt and
+two attempts close a target for good.
 
 ## Rules
 
@@ -306,8 +399,12 @@ Report the target, the verdict, the two gate numbers, and the queue depth.
 4. **Never drop UNKNOWN behavior.** Only ACCIDENTAL, and only with evidence.
 5. **Never rewrite without an oracle.** Write one first.
 6. **Both gates or no accept.** Different is not enough. Smaller is not enough.
-7. **Never work on master.** Commit to the working branch, and never push.
+7. **Never work on master.** Commit to the working branch. The merge back is
+   Phase 12, and the user runs it.
 8. **Never skip a target.** Every picked target gets a rewrite. A prediction
    that the code is already minimal is a note in the ledger, never an exit.
 9. **Only a measured cycle may clear a target.** "This did not need a rewrite"
    is a conclusion from two failed attempts, never a plan.
+10. **Report every invocation.** Same block, accepted or not.
+11. **Propose the merge, never run it.** Print the commands and stop. The user
+    decides whether the branch lands, every time.
