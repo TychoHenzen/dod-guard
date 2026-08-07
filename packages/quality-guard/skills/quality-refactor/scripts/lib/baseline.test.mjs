@@ -89,7 +89,7 @@ test("adopted files are held to their recorded counts on the next run", () => {
   const scanned = ["old.ts", "new.ts"];
 
   const first = compareToBaseline(firstRun, baseline, scanned);
-  const tightened = adoptNewFiles(baseline, firstRun, first.newFiles);
+  const tightened = adoptNewFiles(baseline, firstRun, first.adopted);
 
   assert.deepEqual(tightened.files, ["new.ts", "old.ts"]);
   assert.equal(tightened.counts["new.ts::file-length"], 1);
@@ -102,10 +102,20 @@ test("adopted files are held to their recorded counts on the next run", () => {
   assert.deepEqual(second.regressions, [{ file: "new.ts", rule: "file-length", before: 1, now: 2 }]);
 });
 
+test("a known file with a rule the baseline never recorded is adopted, not regressed", () => {
+  const baseline = baselineOf([violation("app.ts", "complexity")], ["app.ts"]);
+  const after = [violation("app.ts", "complexity"), violation("app.ts", "dead-export")];
+
+  const comparison = compareToBaseline(after, baseline, ["app.ts"]);
+
+  assert.deepEqual(comparison.regressions, []);
+  assert.deepEqual(comparison.adopted, [{ file: "app.ts", rule: "dead-export", now: 1 }]);
+});
+
 test("adoption leaves untouched files' counts alone", () => {
   const baseline = baselineOf([violation("old.ts", "complexity")], ["old.ts"]);
 
-  const tightened = adoptNewFiles(baseline, [violation("new.ts", "file-length")], ["new.ts"]);
+  const tightened = adoptNewFiles(baseline, [violation("new.ts", "file-length")], [{ file: "new.ts", rule: "file-length", now: 1 }]);
 
   assert.equal(tightened.counts["old.ts::complexity"], 1);
 });

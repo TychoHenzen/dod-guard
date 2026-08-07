@@ -150,8 +150,8 @@ function compareAndAdopt(path, violations, scanned) {
     return null;
   }
   const comparison = compareToBaseline(violations, baseline, scanned);
-  if (comparison.newFiles.length > 0) {
-    writeBaseline(path, adoptNewFiles(baseline, violations, comparison.newFiles));
+  if (comparison.adopted.length > 0) {
+    writeBaseline(path, adoptNewFiles(baseline, violations, comparison.adopted));
   }
   return comparison;
 }

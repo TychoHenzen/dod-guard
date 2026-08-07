@@ -58,11 +58,6 @@ export function readBaseline(path) {
   return baseline;
 }
 
-/**
- * `regressions` are strictly worse, `improvements` strictly better, a vanished
- * file counts as fixed, and a file the baseline never scanned lands in
- * `adopted` — first measurement, nothing for it to be worse than.
- */
 export function compareToBaseline(violations, baseline, scannedFiles) {
   const current = countByFileRule(violations);
   const known = new Set(baseline.files);
@@ -72,11 +67,11 @@ export function compareToBaseline(violations, baseline, scannedFiles) {
   for (const key of new Set([...Object.keys(current), ...Object.keys(baseline.counts)])) {
     const [file, rule] = splitKey(key);
     const now = current[key] ?? 0;
-    if (isNew.has(file)) {
+    if (isNew.has(file) || !(key in baseline.counts)) {
       if (now > 0) result.adopted.push({ file, rule, now });
       continue;
     }
-    const before = baseline.counts[key] ?? 0;
+    const before = baseline.counts[key];
     const bucket = bucketFor(before, now);
     if (bucket) result[bucket].push({ file, rule, before, now });
   }
@@ -88,12 +83,13 @@ export function compareToBaseline(violations, baseline, scannedFiles) {
  * this bar. Additive only: a vanished file keeps its recorded counts until a
  * full `--write-baseline` rewrite drops it.
  */
-export function adoptNewFiles(baseline, violations, newFiles) {
-  const isNew = new Set(newFiles);
+export function adoptNewFiles(baseline, violations, adopted) {
+  const adoptedKeys = new Set(adopted.map((a) => `${a.file}::${a.rule}`));
   const counts = { ...baseline.counts };
   for (const [key, count] of Object.entries(countByFileRule(violations))) {
-    if (isNew.has(splitKey(key)[0])) counts[key] = count;
+    if (adoptedKeys.has(key)) counts[key] = count;
   }
+  const newFiles = adopted.filter((a) => !new Set(baseline.files).has(a.file)).map((a) => a.file);
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
   return { ...baseline, files: sortedUnique([...baseline.files, ...newFiles]), total, counts };
 }
