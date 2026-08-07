@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-07T06:56:39.507Z",
-  "total": 882,
+  "total": 896,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -56,6 +56,7 @@
     "packages/dod-guard/skills/skill-debug/scripts/lib/trace.mjs",
     "packages/dod-guard/skills/skill-debug/scripts/lib/trace.test.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/compare-runs.mjs",
+    "packages/dod-guard/skills/skill-migrate/scripts/diff-runs.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/extract-actions.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/grade-eval.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/run-eval.mjs",
@@ -761,6 +762,12 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.mjs::else-branch": 3,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::else-branch": 1,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/dod-guard/skills/skill-migrate/scripts/diff-runs.mjs::complexity": 8,
+    "packages/dod-guard/skills/skill-migrate/scripts/diff-runs.mjs::file-length": 1,
+    "packages/dod-guard/skills/skill-migrate/scripts/diff-runs.mjs::function-length": 1,
+    "packages/dod-guard/skills/skill-migrate/scripts/diff-runs.mjs::nesting-depth": 1,
+    "packages/dod-guard/skills/skill-migrate/scripts/diff-runs.mjs::param-count": 1,
+    "packages/dod-guard/skills/skill-migrate/scripts/diff-runs.mjs::else-branch": 2
   }
 }
