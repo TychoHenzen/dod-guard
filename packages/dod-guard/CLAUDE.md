@@ -122,7 +122,7 @@ The CLI exists so `verify_cmd` / `fitness_cmd` in evomcp can gate on a DoD subtr
 | `blind-rewrite` | Delete an implementation, rebuild it from a contract a fresh agent gets without seeing the original, then gate the result against the deleted code. Shape D covers prose with no test harness: the contract carries claims and their strength, and `overlap-scan.mjs --mode=prose` scores sentences and their order |
 | `tighten` | Autonomous blind-rewrite loop against accidental complexity. One target per invocation, ranked by structural violations times git return-churn, gated on both difference and reduction |
 | `skill-debug` | Debug a skill from the sessions that ran it. `find-runs.mjs` locates every recent run in `~/.claude/projects`, `extract-run.mjs` compacts one into a numbered trace, and the skill aligns that against what the SKILL.md required |
-| `skill-migrate` | Migrate a skill to post-4.6 models via blind rewrite. Extracts a behavioral contract, classifies scaffolding vs essential instructions, blind-rewrites the SKILL.md targeting the post-4.6 paradigm, and gates on overlap, benchmarks, and 4.6 compatibility |
+| `skill-migrate` | Migrate a skill to post-4.6 models via blind rewrite. Extracts a behavioral contract, classifies scaffolding vs essential instructions, blind-rewrites the SKILL.md targeting the post-4.6 paradigm, and gates on overlap and claim coverage |
 
 ## Lessons
 
