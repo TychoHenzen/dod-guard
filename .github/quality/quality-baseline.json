@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-07T12:48:58.542Z",
-  "total": 957,
+  "total": 977,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -66,6 +66,8 @@
     "packages/dod-guard/skills/skill-migrate/scripts/generate-scenarios.test.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/grade-eval.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/integration.test.mjs",
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs",
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.test.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/mine-github.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/mine-github.test.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/mutate-code.mjs",
@@ -814,6 +816,13 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.mjs::else-branch": 3,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::else-branch": 1,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs::file-length": 1,
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs::complexity": 9,
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs::function-length": 2,
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs::nesting-depth": 2,
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs::else-branch": 4,
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.test.mjs::file-length": 1,
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.test.mjs::complexity": 1
   }
 }

@@ -56,11 +56,27 @@ They go into the blind writer's briefing as positive targets.
 10. **No worked examples that constrain exploration.** Examples lock the model
     into one approach. State the goal and let it explore.
 
-## Phase 0: Read the skill
+## Phase 0: Read and baseline the skill
 
 Read the target SKILL.md, every agent it dispatches (find `subagent_type`
 references), and every script it calls (find `${CLAUDE_PLUGIN_ROOT}` paths
 or `node` commands in fenced blocks).
+
+### Baseline check
+
+Run the migration checker against the original before anything changes:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/migration-check.mjs" \
+  <path-to-target-SKILL.md> \
+  --save=.skill-migrate/baseline.json
+```
+
+This records every check (line count, frontmatter, scaffolding patterns,
+scope, delegation caps, worked examples, contradictions, terminology) as a
+baseline for the after comparison in Phase 8.
+
+### Inventory
 
 Build an inventory:
 - The skill's goal in one sentence
@@ -177,7 +193,42 @@ contract. Repair every gap it reports.
 An item the analyst tagged SCAFFOLDING or ACCIDENTAL that the user confirmed
 dropping is not a gap.
 
-## Phase 8: Report
+## Phase 8: Migration gate
+
+Run the migration checker against the migrated SKILL.md, comparing against
+the Phase 0 baseline:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/migration-check.mjs" \
+  .skill-migrate/migrated-SKILL.md \
+  --before=.skill-migrate/baseline.json
+```
+
+Exit 0 means no regressions. Exit 1 means a check that passed before now
+fails. Fix regressions before reporting.
+
+The checker tests these requirements from the post-4.6 target:
+
+| Check | What it catches |
+|---|---|
+| line-count | Body over 500 lines (warns over 300) |
+| name-format | Name not lowercase/hyphens/1-64 chars |
+| description-present | Empty or over 1024 chars |
+| description-person | First/second person in description |
+| no-at-imports | `@`-imports (only work in CLAUDE.md) |
+| no-scaffolding | Verification reminders, forced progress, reasoning extraction |
+| no-conservative-filters | "be conservative", "only report high-severity" |
+| no-bare-negatives | "never X" without a path forward |
+| no-implicit-scope | "apply the formatting" without "every/all/each" |
+| no-drip-fed | "see Phase N above", "as described earlier" |
+| no-redundant-repetition | Same instruction stated twice (trigram similarity) |
+| explicit-scope | No scope markers |
+| delegation-cap | Dispatches subagents without a cap |
+| no-constraining-examples | Long worked examples (>15 non-script lines) |
+| no-contradictions | "must X" paired with "must not X" |
+| consistent-terminology | Same concept spelled multiple ways |
+
+## Phase 9: Report
 
 ```
 Skill           <name>
@@ -191,10 +242,14 @@ After           <migrated lines>
 Scaffolding dropped   <n items>
 Claims preserved      <n of m>
 Overlap gate          <run score> / <ngram score>
+Migration check       <passed>/<total> (before: <passed>/<total>)
+Regressions           <n>
+Fixed                 <n>
 ```
 
-End with the diff between the original and migrated SKILL.md. Do not apply
-it. The caller decides whether the migration lands.
+End with the before/after migration check comparison, then the diff
+between the original and migrated SKILL.md. Do not apply the migration.
+The caller decides whether it lands.
 
 ## Rules
 

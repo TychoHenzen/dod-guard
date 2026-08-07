@@ -93,16 +93,21 @@ function report(header, lines, tail) {
   return 2;
 }
 
-const NEW_FILE_TAIL =
-  "This file is new, so only the generous ceiling applies. Split it up.\n"
-  + "To waive this once: touch .quality-skip";
+function newFileTail(repoRoot) {
+  const sentinel = join(repoRoot, ".quality-skip");
+  return (
+    "This file is new, so only the generous ceiling applies. Split it up.\n"
+    + `To waive this once: touch "${sentinel}"`
+  );
+}
 
 function trackedTail(filePath, repoRoot) {
+  const sentinel = join(repoRoot, ".quality-skip");
   return (
     "Fix the new violations, or split the change. The baseline records what was\n"
     + "already there, so only the increase blocks. Run the scanner directly:\n"
     + `  node "${SCANNER}" "${filePath}" --root="${repoRoot}"\n`
-    + 'To record a deliberate raise: echo \'{"rebaseline": true}\' > .quality-skip'
+    + `To record a deliberate raise: echo '{"rebaseline": true}' > "${sentinel}"`
   );
 }
 
@@ -162,7 +167,7 @@ export function gate(input, filePath, deps) {
     return report(
       `quality-guard blocked this write. ${filePath} got structurally worse.`,
       blocking,
-      isNew ? NEW_FILE_TAIL : trackedTail(filePath, repoRoot),
+      isNew ? newFileTail(repoRoot) : trackedTail(filePath, repoRoot),
     );
   }
 
