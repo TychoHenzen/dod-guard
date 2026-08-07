@@ -416,6 +416,132 @@ discovery, pass/fail on target, pass/fail on 4.6.
 End with the diff between the original and migrated SKILL.md. Do not apply
 it. The caller decides whether the migration lands.
 
+## Benchmark sandbox
+
+The scripts under `scripts/` form a pipeline that builds a mutation-based
+benchmark corpus and scores a skill against it. This is separate from the
+discovery-run flow in Phase 4-10 above, which diffs two models on the same
+skill. The benchmark sandbox instead measures how well a skill (any skill,
+not only a migrated one) repairs known damage in real-world code.
+
+### mine-github.mjs
+
+Pulls source files from the GitHub code search API into a local corpus.
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/mine-github.mjs" \
+  --language=ts --min-stars=100 --max-file-size=15000 --count=20 \
+  --out=.skill-migrate/corpus
+```
+
+Key flags: `--language` (`ts`, `js`, `py`, `rs`, `go`, required), `--min-stars`
+(default 100), `--max-file-size` in bytes (default 15000), `--count` (default
+20), `--out` (default `.skill-migrate/corpus`). Requires `GITHUB_TOKEN` in the
+environment to avoid the anonymous rate limit. Each saved file gets a
+`<file>.meta.json` sidecar recording `repo`, `stars`, `language`, `url`,
+`path`, `sha`, and a content hash used to skip duplicates.
+
+### mutate-code.mjs
+
+Injects synthetic bugs into one file, seeded so the same seed always produces
+the same mutations.
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/mutate-code.mjs" \
+  --input=src/example.ts --out=/tmp/mutated.ts --count=3 \
+  --types=rename,dead-code,shuffle,bug --seed=1
+```
+
+Mutation types: `rename` (identifier renamed), `dead-code` (unreachable code
+inserted), `shuffle` (statement order changed), `bug` (a comparison or
+arithmetic operator swapped). The `--seed` flag drives a small linear
+congruential generator (`seededRandom`), so `--seed=1` always yields the same
+mutation sequence for the same input. Each mutation is recorded in a
+`<out>.mutations.json` sidecar, which `check-properties.mjs` reads back to
+score whether a fix restored the original behavior.
+
+### check-properties.mjs
+
+Compares a processed result file against its original (oracle) version.
+
+Checks: `syntax_valid` (language-specific parse check: `node --check` for
+JS, `tsc --noEmit` for TS, `py_compile` for Python). `behavior_score`
+measures line-level similarity between result and oracle (0.0-1.0).
+`mutations_fixed` counts how many recorded mutations were reverted.
+
+Graceful degradation: when no checker exists for a language (Rust, Go),
+or the binary is missing, `syntax_valid` returns `null` instead of
+failing. A missing checker never blocks scoring.
+
+### generate-scenarios.mjs
+
+Turns a mined corpus into eval-case JSON files, one per file (or per group of
+files, with `--scenario-size`). Each scenario mutates its source, embeds the
+mutated file as `src/<name>`, and embeds the untouched original plus its
+mutation record as `oracle/<name>` and `oracle/<name>.mutations.json` fixtures.
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/generate-scenarios.mjs" \
+  --corpus=.skill-migrate/corpus --out=.skill-migrate/scenarios --seed=1
+```
+
+Key flags: `--corpus` and `--out` (both required), `--mutations-per-file`
+(default 2), `--mutation-types` (default all four), `--seed` (default 1).
+Optional: `--prompt-template` (default asks the model to review and fix
+`{file}`), `--scenario-size` (default 1, files per scenario).
+
+### benchmark.mjs
+
+End-to-end harness. For each scenario: sets up a sandbox, runs the skill,
+extracts actions, grades assertions, and checks properties against the
+oracle. Writes `benchmark.json` (full detail) and `runs.json` (the
+`{runs:[...]}` shape that `compare-runs.mjs` reads).
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/benchmark.mjs" \
+  --scenarios=.skill-migrate/scenarios --skill=<path-to-SKILL.md> \
+  --model=<model-id> --out=.skill-migrate/runs/before
+```
+
+`--dry-run` skips execution entirely and only validates every scenario file's
+shape (required `id`, `prompt`, `fixtures.files` with `inline:`/`copy:`
+values). It needs only `--scenarios`, not `--skill` or `--model`, and prints
+`{count, invalid, results}`. Use it to catch a malformed scenario before
+spending eval budget on it.
+
+The aggregate metrics in `benchmark.json` (`aggregate` field): `mean_pass_rate`
+(from grade assertions, when the scenario has any), `mean_behavior_score`,
+`mutations_fixed_rate` (fixed mutations over total mutations across every
+scenario), `syntax_valid_count` / `syntax_invalid_count`, `mean_tokens`, and
+`mean_duration_ms`.
+
+### The full flow
+
+```bash
+# 1. Mine real-world source files into a corpus
+node scripts/mine-github.mjs --language=ts --out=.skill-migrate/corpus
+
+# 2. Turn the corpus into mutated eval scenarios
+node scripts/generate-scenarios.mjs \
+  --corpus=.skill-migrate/corpus --out=.skill-migrate/scenarios
+
+# 3. Run the skill under test against every scenario
+node scripts/benchmark.mjs \
+  --scenarios=.skill-migrate/scenarios --skill=<skill-under-test>.md \
+  --model=<model-id> --out=.skill-migrate/runs/before
+
+# ...repeat step 3 against the migrated skill, writing to runs/after...
+
+# 4. Compare before and after
+node scripts/compare-runs.mjs \
+  --before=.skill-migrate/runs/before/benchmark.json \
+  --after=.skill-migrate/runs/after/benchmark.json
+```
+
+`compare-runs.mjs` reads the two `benchmark.json` files, matches scenarios by
+`eval_id`, and reports per-scenario and aggregate deltas in `pass_rate`,
+`tokens`, and `tool_calls`.
+
 ## Rules
 
 1. **One skill per invocation.** Mixing skills produces shallow analysis.
