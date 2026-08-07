@@ -1,0 +1,117 @@
+{
+  "source": "packages/evomcp/src/escalation.ts",
+  "date": "2026-08-07T07:53:09.173Z",
+  "summary": {
+    "total": 130,
+    "killed": 111,
+    "survived": 13,
+    "timeout": 0,
+    "unviable": 6
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 16,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 16,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 17,
+      "dist_col": 55
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 18,
+      "dist_col": 59
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 19,
+      "dist_col": 61
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 20,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "38",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 54,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "64",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 73,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "71",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 78,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "97",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 135,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "101",
+      "mutator": "OptionalChaining",
+      "replacement": "next.level",
+      "dist_line": 138,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "119",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 152,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/escalation.js",
+      "id": "125",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 155,
+      "dist_col": 62
+    }
+  ]
+}

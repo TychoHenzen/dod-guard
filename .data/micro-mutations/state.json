@@ -200,7 +200,7 @@
       },
       "lines": 249,
       "error_count": 2,
-      "recent_commits": 14,
+      "recent_commits": 15,
       "fingerprint": "a4ab4d99751cd602dadb8757408320ae86bac1b305c187fbf4d374b420840d18",
       "dirty": true
     },
@@ -514,13 +514,21 @@
       "dirty": false
     },
     "packages/dod-guard/src/fingerprint.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-07",
+      "last_result": {
+        "total": 65,
+        "caught": 44,
+        "missed": 19,
+        "timeout": 0,
+        "unviable": 2,
+        "status": "ok",
+        "error": null
+      },
       "lines": 50,
       "error_count": 0,
       "recent_commits": 3,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "03ff2109be77b1fa0fbd5380e947ced21cce5483232c1215fc04fa68a79c69a2",
+      "dirty": false
     },
     "packages/dod-guard/src/import-gate.ts": {
       "last_tested": null,
@@ -541,13 +549,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/mcp/dod-amend.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-07",
+      "last_result": {
+        "total": 97,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 97,
+        "status": "ok",
+        "error": null
+      },
       "lines": 125,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "8915ebdd7a215e18db4ddde5898d37a9f08a24d63931a2f83f265b2ee1019f0c",
+      "dirty": false
     },
     "packages/dod-guard/src/mcp/dod-check.ts": {
       "last_tested": null,
@@ -717,13 +733,21 @@
       "dirty": false
     },
     "packages/evomcp/src/escalation.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-07",
+      "last_result": {
+        "total": 130,
+        "caught": 111,
+        "missed": 13,
+        "timeout": 0,
+        "unviable": 6,
+        "status": "ok",
+        "error": null
+      },
       "lines": 217,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "d11d91c058504791d6c2cc12f83806f58d6f2e17e9ddbdd268dd3d187751697a",
+      "dirty": false
     },
     "packages/evomcp/src/feedback.ts": {
       "last_tested": "2026-08-06",
@@ -1149,58 +1173,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 17382,
-    "caught": 6648,
-    "missed": 6287,
+    "total_mutants": 17674,
+    "caught": 6803,
+    "missed": 6319,
     "timeout": 79,
-    "unviable": 4368,
+    "unviable": 4473,
     "error": 43,
-    "runs": 101,
-    "files_tested": 101
+    "runs": 104,
+    "files_tested": 104
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "d6b6b1ccf4b2051c7667827f6cef8855e8bc86b1",
-      "file": "packages/dod-guard/src/regression.ts",
-      "result": {
-        "total": 25,
-        "caught": 21,
-        "missed": 4,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "d6b6b1ccf4b2051c7667827f6cef8855e8bc86b1",
-      "file": "packages/evomcp/src/solve.ts",
-      "result": {
-        "total": 177,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 177,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "d6b6b1ccf4b2051c7667827f6cef8855e8bc86b1",
-      "file": "packages/gitevo/src/index.ts",
-      "result": {
-        "total": 126,
-        "caught": 7,
-        "missed": 61,
-        "timeout": 2,
-        "unviable": 56,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
@@ -2555,6 +2537,48 @@
         "missed": 18,
         "timeout": 0,
         "unviable": 97,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-07",
+      "commit": "bb2e024bce0772e4fe094b3db0f2bd4c653c782d",
+      "file": "packages/evomcp/src/escalation.ts",
+      "result": {
+        "total": 130,
+        "caught": 111,
+        "missed": 13,
+        "timeout": 0,
+        "unviable": 6,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-07",
+      "commit": "bb2e024bce0772e4fe094b3db0f2bd4c653c782d",
+      "file": "packages/dod-guard/src/mcp/dod-amend.ts",
+      "result": {
+        "total": 97,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 97,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-07",
+      "commit": "bb2e024bce0772e4fe094b3db0f2bd4c653c782d",
+      "file": "packages/dod-guard/src/fingerprint.ts",
+      "result": {
+        "total": 65,
+        "caught": 44,
+        "missed": 19,
+        "timeout": 0,
+        "unviable": 2,
         "status": "ok",
         "error": null
       }

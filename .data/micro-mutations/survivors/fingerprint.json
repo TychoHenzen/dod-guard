@@ -1,0 +1,165 @@
+{
+  "source": "packages/dod-guard/src/fingerprint.ts",
+  "date": "2026-08-07T07:53:32.539Z",
+  "summary": {
+    "total": 65,
+    "killed": 44,
+    "survived": 19,
+    "timeout": 0,
+    "unviable": 2
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "6",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 5,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "7",
+      "mutator": "EqualityOperator",
+      "replacement": "node.children.length >= 0",
+      "dist_line": 5,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "30",
+      "mutator": "MethodExpression",
+      "replacement": "leaves.slice()",
+      "dist_line": 30,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "31",
+      "mutator": "MethodExpression",
+      "replacement": "leaves",
+      "dist_line": 30,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "32",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 30,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "34",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 33,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "37",
+      "mutator": "LogicalOperator",
+      "replacement": "node.predicate?.type && \"\"",
+      "dist_line": 35,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "38",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.type",
+      "dist_line": 35,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "40",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 36,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "41",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 36,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "42",
+      "mutator": "EqualityOperator",
+      "replacement": "node.predicate?.value === undefined",
+      "dist_line": 36,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "43",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.value",
+      "dist_line": 36,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "44",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 36,
+      "dist_col": 89
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "45",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 37,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "48",
+      "mutator": "OptionalChaining",
+      "replacement": "node.predicate.timeout_ms",
+      "dist_line": 37,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "51",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 40,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "56",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 43,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "61",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 46,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/fingerprint.js",
+      "id": "62",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 48,
+      "dist_col": 15
+    }
+  ]
+}
