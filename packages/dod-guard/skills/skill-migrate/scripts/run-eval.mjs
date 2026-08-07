@@ -30,7 +30,7 @@ if (values.skill) {
   writeFileSync(join(commandsDir, `${skillName}.md`), skillContent);
 }
 
-const cmd = ["claude", "-p", values.prompt, "--output-format", "stream-json"];
+const cmd = ["claude", "-p", values.prompt, "--output-format", "stream-json", "--verbose"];
 if (values.model) cmd.push("--model", values.model);
 
 const env = {};

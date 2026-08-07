@@ -55,3 +55,6 @@ reports/
 
 # skill-migrate scratch: eval cases, sandboxes, benchmark runs
 .skill-migrate/
+
+# Scratch clipboard
+clipboard.txt

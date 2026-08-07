@@ -1,48 +1,63 @@
 ---
 name: skill-migrate
 description: >-
-  Migrate a skill to work on post-4.6 Claude models without breaking 4.6
-  compatibility. Analyzes a SKILL.md for inference gaps (places where literal
-  models take the wrong action), generates eval cases with sandbox fixtures,
-  benchmarks before and after migration, and gates on 4.6 compatibility.
-  One skill per invocation. TRIGGER when: user says "migrate this skill",
-  "tune for Opus 5", "make this work on newer models", "fix skill for
-  literal models", "benchmark this skill across models". DO NOT TRIGGER for
-  writing a new skill (that is /skill-creator) or debugging a skill from
-  transcripts (that is /skill-debug).
+  Migrate a skill to work on post-4.6 Claude models by blind-rewriting it from
+  a behavioral contract. Extracts what the skill accomplishes, classifies which
+  instructions are scaffolding written for 4.6, deletes the SKILL.md, and has a
+  blind writer rebuild it for the target model. Gates on overlap (not a
+  paraphrase), benchmarks on both the target model and 4.6, and reports the diff
+  without applying it. One skill per invocation. TRIGGER when: user says
+  "migrate this skill", "tune for Opus 5", "make this work on newer models",
+  "fix skill for literal models", "benchmark this skill across models". DO NOT
+  TRIGGER for writing a new skill (that is /skill-creator) or debugging a skill
+  from transcripts (that is /skill-debug).
 argument-hint: "<skill name or path to SKILL.md>"
 ---
 
 # Skill Migrate
 
-Take a skill that works on Opus 4.6. Make it work on post-4.6 models too.
-Prove the result with a benchmark. Do not break 4.6.
+Take a skill that works on Opus 4.6. Rebuild it from what it accomplishes, not
+from what it says. Prove the result works on both the target model and on 4.6.
 
 ## Why this exists
 
 Post-4.6 Claude models follow instructions more literally and infer less
-unstated intent. This shift is intentional and progressive across 4.7, 4.8,
-Sonnet 5, and Opus 5. Skills written for 4.6 break because they rely on
-the model filling inference gaps. 4.6 filled those gaps from context.
-Newer models do not.
+unstated intent. Skills written for 4.6 break because they rely on the model
+filling inference gaps. The fix is subtraction: delete scaffolding the model
+does natively, make intent explicit, and let the model use judgment.
 
-The official guidance is subtraction: delete scaffolding the model does
-natively, make intent explicit, let the model use judgment. But a migration
-that breaks 4.6 is worse than no migration, because 4.6 is the known-good
-model. So every change runs against both the target model and 4.6.
+Patching a skill line by line cannot get there. The old structure is an
+attractor. A model told to "make this work better on Opus 5" renames a
+variable, adds an explicit instruction, and reports a migration. The result
+is longer, not simpler, and the skill still relies on inference in every place
+the patch did not reach.
 
-## The failure mode taxonomy
+This skill uses `/blind-rewrite`'s prose track instead. It extracts what the
+skill must accomplish, deletes the SKILL.md, and has a fresh agent rebuild it
+without seeing the original. The rebuild targets post-4.6 models by
+construction, because the writer receives the contract and the model
+guidance, not the old prose.
 
-Six ways a literal-minded model misreads a skill:
+## The post-4.6 model
 
-| Mode | What happens |
-|---|---|
-| artifact-chase | Model checks output artifacts instead of fixing the source |
-| surface-interpret | Model takes the shallowest reading of an instruction |
-| step-skip | Model optimizes away a step the skill bans skipping |
-| lost-late | Model drops a rule that appears past line 200 |
-| worker-trust | Model trusts a subagent report without verifying |
-| escape-hatch | Model takes a conditional exit the skill meant to be narrow |
+These findings come from Anthropic's official guidance and measured practice.
+They go into the blind writer's briefing as positive targets.
+
+1. **Shorter, not longer.** Anthropic removed over 80% of Claude Code's system
+   prompt for Opus 5 with no loss on coding evals. A migrated skill should be
+   shorter than the original.
+2. **What, not how.** State the goal and the verification. Let the model pick
+   the method. Worked examples that show one approach constrain exploration.
+3. **No verification scaffolding.** Post-4.6 models verify their own work.
+   "Double-check your work", "re-read Phase N and confirm", "verify you did
+   not miss anything" waste tokens and cause performative checking.
+4. **Explicit scope, not inferred scope.** Where the skill relies on the model
+   inferring scope from context, state the scope. "Apply this to every section,
+   not just the first one."
+5. **Judgment over rules.** A principle the model can apply to novel cases beats
+   a rule list the model follows literally and cannot generalize.
+6. **Script-enforced gates over prose rules.** An instruction a script checks
+   survives at step 200. One that rests on the model remembering gets dropped.
 
 ## Phase 0: Read the skill
 
@@ -50,79 +65,77 @@ Read the target SKILL.md, every agent it dispatches (find `subagent_type`
 references), and every script it calls (find `${CLAUDE_PLUGIN_ROOT}` paths
 or `node` commands in fenced blocks).
 
-Build a manifest:
-- Phases (numbered headings or sections)
-- Rules (the numbered list under a "Rules" heading)
-- Agent dispatches (agent names and what they receive)
-- Script calls (paths, arguments, exit code meanings)
-- Escape hatches (conditional language offering an exit)
-- Negative instructions ("never", "do not", "must not")
-- Late instructions (anything past line 200)
+Build an inventory:
+- The skill's goal in one sentence
+- Each phase and what it accomplishes
+- Each agent dispatch and what it returns
+- Each script call and its exit code meaning
+- The rules section
 
-## Phase 1: Analyze inference gaps
+The inventory goes to the contract extractor and to the blind writer.
 
-Dispatch `dod-guard:migration-analyst` with the full skill text and manifest.
+## Phase 1: Contract
 
-```
-Analyze this skill for inference gaps. The skill text, its agents, and its
-scripts follow.
+Dispatch `dod-guard:blind-prose-contract-extractor` against the SKILL.md.
 
-Skill: <full SKILL.md text>
-Agents: <each agent text, labeled>
-Scripts: <each script path and its first 30 lines>
+The extractor returns:
+- REQUIRED claims (what the rest of the system depends on)
+- OBSERVED claims (only this skill asserts them)
+- Verbatim text (names, formats, schemas that must match exactly)
+- A dependency census (what cites this skill)
+- Banned vocabulary
 
-Return the gap table and one eval scenario per gap.
-```
+## Phase 2: Intent classification
 
-The analyst returns a table of gaps classified by failure mode, severity,
-and the transform that addresses each one. It also returns one eval scenario
-sentence per gap.
+Dispatch `dod-guard:migration-analyst` with the contract and the inventory.
 
-## Phase 2: Generate eval cases and sandboxes
+The analyst classifies each OBSERVED item:
 
-For each gap (up to 5, sorted by severity), write one eval case. Each case
-needs a prompt, assertions, and fixture files for a sandbox.
+| Tag | Meaning | Fate |
+|---|---|---|
+| ESSENTIAL | The skill needs this to work | Kept |
+| SCAFFOLDING | Compensates for 4.6's inference gaps | Candidate for removal |
+| ACCIDENTAL | A quirk of the current wording | Dropped |
+
+A SCAFFOLDING item is an instruction that newer models follow from context or
+do natively. Verification reminders, constraining examples, over-specified
+procedures, and redundant "never do X" rules the model infers from the goal.
+
+The analyst also identifies scripts and agents that enforce behavior the
+rewritten skill must preserve. Those go into the writer's briefing as
+hard constraints.
+
+## Phase 3: Human gate
+
+Show the user the REQUIRED claims, the OBSERVED claims with their tags, and
+which items the analyst marked SCAFFOLDING. Ask the user to confirm:
+
+1. Which SCAFFOLDING items to drop (they may want to keep some for safety)
+2. Which OBSERVED items are requirements the extractor missed
+3. Whether any REQUIRED claim is wrong
+
+This is the only mandatory human step.
+
+## Phase 4: Generate eval cases
+
+For each REQUIRED claim and each kept OBSERVED claim (up to 8, sorted by
+importance), write one eval case. Each case tests whether a model running
+the skill does the right thing for that claim.
 
 ### The sandbox
 
 Each eval runs in a disposable git repo. The sandbox contains:
 - Files the scenario needs (3-8 files, under 500 lines total)
-- One planted defect matching the gap being tested
 - A seed git commit so git commands work
-
-### Fixture strategy by failure mode
-
-**artifact-chase:** Plant a bug in a script or skill file. Also plant output
-artifacts (scan results, logs) that show the symptom of the bug. The correct
-action edits the script. The wrong action re-runs the scan or edits the output.
-
-**surface-interpret:** Plant a user prompt with two readings. The skill text
-in the sandbox disambiguates if read carefully. The correct action follows
-the deeper reading. The wrong action follows the surface reading.
-
-**step-skip:** Set up a state where a step looks unnecessary (e.g., the output
-file already exists). The skill forbids skipping. The correct action runs the
-step anyway. The wrong action skips it.
-
-**worker-trust:** Plant a report file claiming success. The repo state shows
-the work was not done. The correct action runs the check command. The wrong
-action trusts the report.
-
-**escape-hatch:** Set up a scenario matching an escape condition. The correct
-reading of the condition says it does not apply here. The wrong action takes
-the exit.
-
-**lost-late:** Set up a long task. Put a critical constraint in the skill text
-past line 200. Check whether the model follows it.
+- A task that exercises the claim being tested
 
 ### Eval case format
 
 ```json
 {
-  "id": "artifact-chase-phase7",
+  "id": "claim-short-name",
   "prompt": "The user prompt triggering the scenario",
-  "gap": "One sentence describing the gap",
-  "failure_mode": "artifact-chase",
+  "claim": "The REQUIRED or OBSERVED claim being tested",
   "fixtures": {
     "files": {
       "path/to/file.md": "inline:file content here",
@@ -131,12 +144,12 @@ past line 200. Check whether the model follows it.
   },
   "assertions": {
     "tool_calls": [
-      {"type": "tool_called", "tool": "Edit", "args_contain": "file.md"},
-      {"type": "tool_not_called", "tool": "Bash", "args_contain": "scan"}
+      {"type": "tool_called", "tool": "Agent", "args_contain": "step-implementer"},
+      {"type": "tool_not_called", "tool": "Edit"}
     ],
     "repo_state": [
-      {"type": "file_modified", "path": "path/to/file.md"},
-      {"type": "file_not_modified", "path": "output.json"}
+      {"type": "file_modified", "path": "path/to/file.ts"},
+      {"type": "file_contains", "path": ".step-session/steps.json", "value": "completed"}
     ]
   }
 }
@@ -148,10 +161,9 @@ Assertion types for tool calls: `tool_called`, `tool_not_called`,
 
 Save each case to `.skill-migrate/cases/<id>.json`.
 
-Show the cases to the user and wait for approval. This is the only
-interruption in the workflow.
+Show the cases to the user and wait for approval.
 
-## Phase 3: Benchmark (before)
+## Phase 5: Benchmark before
 
 For each approved case, run these scripts in order:
 
@@ -177,68 +189,90 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/grade-eval.mjs" \
   --out=.skill-migrate/runs/before/<id>/grading.json
 ```
 
-Copy `timing.json` from the sandbox to `.skill-migrate/runs/before/<id>/`.
-
 After all cases, aggregate into `.skill-migrate/runs/before/benchmark.json`.
-Use the skill-creator benchmark schema: `metadata`, `runs[]` with `eval_id`,
-`configuration` (use `"before_migration"`), `result` with `pass_rate`,
-`tokens`, `tool_calls`.
 
 Clean up sandboxes after grading.
 
-## Phase 4: Apply migration transforms
+## Phase 6: Quarantine and blind rewrite
 
-Apply each transform only if it addresses a gap from Phase 1. Work on a copy
-of the SKILL.md at `.skill-migrate/migrated-SKILL.md`. Record which transforms
-you applied and which gaps they address.
+### Quarantine
 
-### Transform 1: Explicit action routing
+```bash
+mkdir -p .skill-migrate/quarantine
+cp <path-to-target-SKILL.md> .skill-migrate/quarantine/original-SKILL.md
+```
 
-Where the skill says "verify X" or "check Y" without naming the command, add
-the command. "Run [script]. Exit 0 means [pass]. Exit 1 means [fail]."
+Add `.skill-migrate/quarantine/` to the banned list.
 
-### Transform 2: Delete verification scaffolding
+### Delete and rewrite
 
-Remove lines that say "double-check your work", "re-read Phase N and confirm",
-"verify you did not miss anything". Post-4.6 models verify on their own. The
-extra text costs tokens and causes performative rather than real checking.
+Remove the SKILL.md content below the frontmatter. Keep the frontmatter
+(name, description, argument-hint) since those are the skill's identity.
 
-### Transform 3: Script-enforce negative rules
+Dispatch `dod-guard:blind-prose-writer` with:
 
-For each "never do X" rule with no script backing it, write a gate script
-that exits non-zero on violation. Or restructure the rule as a pre-condition
-in the phase where it applies.
+```
+Contract: {the pruned contract from Phase 3}
 
-### Transform 4: Explicit scope boundaries
+Inventory (hard constraints):
+- Scripts: {each script path, its purpose, its exit codes}
+- Agents: {each agent name, what it does, what it returns}
+- Frontmatter: {the kept frontmatter}
 
-Where the skill relies on inference for scope, add a concrete boundary.
-"Do not edit files the findings did not mention. Do not refactor adjacent
-code. Do not expand the fix beyond the reported defect."
+Post-4.6 targets:
+1. Shorter than the original. Aim for 50-70% of original line count.
+2. State goals and verification, not procedures.
+3. No verification scaffolding. No "double-check", no "re-read and confirm."
+4. Explicit scope where the original relies on inference.
+5. Principles over rule lists.
+6. Script references where the original uses prose rules.
 
-### Transform 5: Move late-run instructions earlier
+Audience: a Claude model running in Claude Code with tool access.
+Register: direct, technical.
+Length: aim for {50-70% of original line count} lines.
 
-Any instruction past line 200 that a gap tagged as lost-late: move it to the
-phase where it first applies, or repeat it there. The original can stay if it
-serves as a summary.
+Banned paths (do not read):
+- {quarantine path}
+- {any other copies found in Phase 1 leak sweep}
+```
 
-### Transform 6: Delete constraining examples
+One dispatch for the whole skill. The writer produces the complete body below
+the frontmatter.
 
-Remove output examples that show one specific approach when the skill wants
-the model to choose its own. Keep examples that define a format or schema.
+### Reassemble
 
-### Transform 7: State the why
+Combine the kept frontmatter with the writer's output into the migrated
+SKILL.md at `.skill-migrate/migrated-SKILL.md`.
 
-Where the skill says "do X" with no rationale, add one sentence explaining
-why. A model that understands the reason generalizes better than one that
-pattern-matches on the instruction.
+## Phase 7: Verify claim coverage
 
-### Line budget
+Walk every REQUIRED claim and every kept OBSERVED claim. Find where the new
+skill carries each one. A claim you cannot point at is a gap. Redispatch the
+writer with that claim named.
 
-The migrated skill must not exceed the original line count plus 20%. Transforms
-1, 3, 4, 5, and 7 add lines. Transforms 2 and 6 remove lines. If the budget
-is tight, prioritize transforms that address high-severity gaps.
+## Phase 8: Overlap gate
 
-## Phase 5: Benchmark (after, target model)
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/blind-rewrite/scripts/overlap-scan.mjs" \
+  --mode=prose \
+  --original=.skill-migrate/quarantine/original-SKILL.md \
+  --rewrite=.skill-migrate/migrated-SKILL.md \
+  --contract-file=<path-to-verbatim-file>
+```
+
+Exit 0 means rewritten. Exit 1 means cosmetic. On exit 1, redispatch the
+writer. Tell it the result was too close to the original. Give it nothing
+else about how it was close.
+
+## Phase 9: Gap audit
+
+Dispatch `dod-guard:blind-gap-auditor` with both versions and the pruned
+contract. Repair every gap it reports. A gap repair is a normal sighted edit.
+
+An item the analyst tagged SCAFFOLDING or ACCIDENTAL that the user confirmed
+dropping is not a gap.
+
+## Phase 10: Benchmark after (target model)
 
 Run the same eval cases against `.skill-migrate/migrated-SKILL.md` on the
 target model. Use `"after_migration"` as the benchmark configuration.
@@ -251,40 +285,41 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/compare-runs.mjs" \
   --after=.skill-migrate/runs/after/benchmark.json
 ```
 
-If pass rate did not improve on any case, review the transforms. Remove any
-that did not affect the failing cases. Try a different transform for the same
-gap. Allow one revision pass.
+If pass rate dropped on any case, check whether the new skill dropped a
+claim. If so, dispatch the writer to add it. If the skill carries the claim
+and the model still fails, that is a finding for the report.
 
-## Phase 6: 4.6 compatibility gate
+## Phase 11: 4.6 compatibility gate
 
-Run the after-benchmark on `claude-opus-4-6`. Use `"after_46"` as the
-configuration.
+Run the same eval cases against `.skill-migrate/migrated-SKILL.md` on
+`claude-opus-4-6`. Use `"after_46"` as the configuration.
 
-If any case regresses (passed before, fails after), identify which transform
-caused it. Revert that transform from the migrated copy. Re-run only the
-affected case on 4.6. Allow two revert-and-rerun cycles.
+A simpler, more explicit skill should work better on 4.6, not worse. If a
+case regresses, identify which claim the 4.6 model misread. Edit the migrated
+skill to make that claim clearer without adding scaffolding back. Allow two
+edit-and-rerun cycles.
 
-If the regression persists after reverts, mark the migration as rejected.
-Report which gaps could not be addressed without breaking 4.6.
+If the regression persists, mark it in the report. Do not revert the whole
+migration for one case.
 
-## Phase 7: Report
+## Phase 12: Report
 
 ```
 Skill           <name>
 Target model    <model>
 Verdict         accepted | partial | rejected
-Gaps found      <n> (<failure modes>)
-Transforms      <n> applied of <m> candidates
 
-                pass_rate    tokens    tool_calls
-Before          <val>        <val>     <val>
-After (target)  <val>        <val>     <val>
-After (4.6)     <val>        <val>     <val>
+                pass_rate    tokens    lines
+Before          <val>        <val>     <original lines>
+After (target)  <val>        <val>     <migrated lines>
+After (4.6)     <val>        <val>     <migrated lines>
 
-Reverted        <transforms that broke 4.6, if any>
+Scaffolding dropped   <n items>
+Claims preserved      <n of m>
+Overlap gate          <run score> / <ngram score>
 ```
 
-Then a per-case table: gap tested, failure mode, pass/fail per model, tokens.
+Then a per-claim table: claim tested, pass/fail per model, tokens.
 
 End with the diff between the original and migrated SKILL.md. Do not apply
 it. The caller decides whether the migration lands.
@@ -292,13 +327,13 @@ it. The caller decides whether the migration lands.
 ## Rules
 
 1. **One skill per invocation.** Mixing skills produces shallow analysis.
-2. **Benchmark before editing.** The before-run is the baseline. Without it
-   the delta means nothing.
-3. **Every transform cites a gap.** A transform without a gap is taste.
-4. **The 4.6 gate is the last gate.** Run it once, at the end.
-5. **Assert on actions and repo state.** Never grade on output text. A model
-   that does the wrong thing politely still fails.
-6. **Stay within the line budget.** Original plus 20%.
-7. **Sandboxes are disposable.** Clean up after grading.
-8. **One interruption.** Show eval cases, get approval, then run to completion.
-9. **Do not apply the migration.** Show the diff. The caller decides.
+2. **Benchmark before rewriting.** The before-run is the baseline.
+3. **Delete before dispatching the writer.** A writer that reads the original
+   reproduces it.
+4. **Assert on actions and repo state.** Never grade on output text.
+5. **The 4.6 gate runs last.** A simpler skill should not regress on 4.6.
+6. **The human prunes OBSERVED.** Never decide which scaffolding to drop
+   without asking.
+7. **Do not apply the migration.** Show the diff. The caller decides.
+8. **Shorter is the target.** A migration that makes a skill longer has
+   failed the premise.
