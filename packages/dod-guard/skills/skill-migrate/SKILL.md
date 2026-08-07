@@ -98,15 +98,30 @@ This is the only mandatory human step.
 
 This phase replaces speculative claim-based assertions with measured
 behavioral differences. Run the old skill on both 4.6 and the target model,
-then diff the outputs.
+then diff the outputs. Discovery assertions are the primary benchmark.
+Contract assertions are secondary.
 
 ### Design scenarios
 
 Pick 2-3 representative scenarios that exercise the skill's core behavior.
 Each scenario combines multiple claims. Each needs:
-- A sandbox with realistic fixtures (3-8 files, under 500 lines total)
-- A prompt a real user would give
+- A sandbox with 3-8 files, 200-500 lines total
+- At least one file over 80 lines
+- At least one ambiguous decision the model must make (shape classification,
+  error handling strategy, retry path, scope boundary)
+- A prompt a real user would give, not a synthetic test phrase
 - A seed git commit so git commands work
+
+A scenario that any model handles the same way has no discriminating power.
+Test the scenario on one model first. If the run produces no judgment calls,
+the scenario is too simple. Add complexity until the model has to choose.
+
+Fixture checklist before running:
+1. Does the sandbox have enough structure that classification is non-trivial?
+2. Could a model reasonably disagree about the right approach?
+3. Does the prompt match what a real user would type?
+4. Are there enough call sites, tests, or cross-references that census or
+   verification work matters?
 
 Use the existing case format for sandbox setup:
 
@@ -184,9 +199,41 @@ For each difference, classify:
 | Both same | No meaningful difference | No |
 | Cosmetic | Different approach, same outcome | No |
 
-Write the judgment for each difference. Only differences with a clear winner
-become assertions. Write these as eval cases using the existing assertion
-format:
+### Minimum assertion count
+
+The final benchmark needs at least 10 discovery-derived assertions. These
+are the primary metric. If the discovery diff produced fewer than 10
+differences with a clear winner, the scenarios were too simple. Go back to
+Phase 4 and add a scenario with more complexity, more ambiguity, or a
+different part of the skill's behavior. Repeat until you reach 10.
+
+Contract-based assertions (marked `"source": "contract"`) are secondary.
+They catch regressions but cannot show improvement. Keep them, but never
+count them toward the minimum of 10.
+
+### Assertion types
+
+Use the full range of assertion types that `grade-eval.mjs` supports.
+Binary `tool_called` checks have low discriminating power. Two models that
+both call the same tool still differ in how many times, in what order,
+what they produce, and what they leave behind.
+
+| Type | What it measures | Example |
+|---|---|---|
+| `tool_called` / `tool_not_called` | Did the model use the right tool? | Agent with "blind-writer" |
+| `tool_count` (min/max) | Efficiency, retry behavior | Agent calls between 2-4, not 8 |
+| `tool_order` | Sequencing and judgment | Quarantine before writer dispatch |
+| `file_modified` | Did the model change the right files? | Target file was rewritten |
+| `file_not_modified` | Did it leave the wrong files alone? | Unrelated module untouched |
+| `file_created` | Did it produce expected artifacts? | Contract file exists |
+| `file_contains` | Outcome quality | Rewritten file has required content |
+| `file_not_contains` | Avoided copying | Rewritten file lacks old interior name |
+
+Prioritize assertions that test outcome and judgment over assertions that
+test recipe-following. "Did it produce the right result" matters more than
+"did it call the right tool."
+
+Write each assertion as an eval case:
 
 ```json
 {
@@ -198,15 +245,16 @@ format:
   "fixtures": { ... },
   "assertions": {
     "tool_calls": [
-      {"type": "tool_called", "tool": "Agent", "args_contain": "step-implementer"}
+      {"type": "tool_called", "tool": "Agent", "args_contain": "step-implementer"},
+      {"type": "tool_count", "tool": "Agent", "min": 2, "max": 5}
+    ],
+    "repo_state": [
+      {"type": "file_contains", "path": "src/scorer.js", "string": "export function"},
+      {"type": "file_not_contains", "path": "src/scorer.js", "string": "oldInternalName"}
     ]
   }
 }
 ```
-
-Also keep mechanical assertions for REQUIRED claims that touch scripts or
-agents. These are cheap to check and do catch real issues. Mark them with
-`"source": "contract"`.
 
 Save cases to `.skill-migrate/cases/` and the judgment table to
 `.skill-migrate/discovery/judgments.json`.
@@ -290,6 +338,8 @@ dropping is not a gap.
 ## Phase 10: Benchmark after
 
 Run the approved eval cases against `.skill-migrate/migrated-SKILL.md`.
+Report discovery and contract results separately. Discovery assertions
+are the primary verdict. Contract assertions catch regressions only.
 
 ### Target model
 
@@ -322,30 +372,46 @@ adding scaffolding back. Allow two edit-and-rerun cycles.
 
 ## Phase 11: Report
 
+Split discovery results from contract results. Discovery is the primary
+verdict. A migration that passes all contract assertions but fails
+discovery assertions has not improved the skill.
+
 ```
 Skill           <name>
 Target model    <model>
 Verdict         accepted | partial | rejected
 
-                pass_rate    tokens    lines
-Before          <val>        <val>     <original lines>
-After (target)  <val>        <val>     <migrated lines>
-After (4.6)     <val>        <val>     <migrated lines>
+Discovery assertions (primary)
+                pass_rate    total
+Target          <n>/<m>      <m>
+4.6             <n>/<m>      <m>
+
+Contract assertions (secondary)
+                pass_rate    total
+Target          <n>/<m>      <m>
+4.6             <n>/<m>      <m>
+
+                tokens    lines
+Before          <val>     <original lines>
+After (target)  <val>     <migrated lines>
+After (4.6)     <val>     <migrated lines>
 
 Scaffolding dropped   <n items>
 Claims preserved      <n of m>
 Overlap gate          <run score> / <ngram score>
 
 Discovery summary
-  Scenarios run       <n>
-  Differences found   <n>
+  Scenarios run            <n>
+  Differences found        <n>
+  Assertions written       <n> (minimum 10)
   Targeted (4.6 better)    <n>
   Targeted (target better) <n>
-  Cosmetic/same             <n>
+  Cosmetic/same            <n>
 ```
 
-Then a per-difference table: what diverged, which model was better, whether
-the migration hit that target, pass/fail per model.
+Then a per-assertion table with: assertion id, what it measures, assertion
+type (tool_count / file_contains / etc.), which model was better in
+discovery, pass/fail on target, pass/fail on 4.6.
 
 End with the diff between the original and migrated SKILL.md. Do not apply
 it. The caller decides whether the migration lands.
@@ -355,9 +421,15 @@ it. The caller decides whether the migration lands.
 1. **One skill per invocation.** Mixing skills produces shallow analysis.
 2. **Discover before asserting.** Run both models first, then write
    assertions from measured differences. Never write speculative assertions.
+   The benchmark needs at least 10 discovery assertions. If discovery
+   produced fewer than 10, the scenarios were too simple.
 3. **Delete before dispatching the writer.** A writer that reads the original
    reproduces it.
 4. **Assert on actions and repo state.** Never grade on output text.
+   Prefer outcome assertions (`file_contains`, `file_not_contains`,
+   `tool_count`) over binary presence checks (`tool_called`). A benchmark
+   made of `tool_called` checks cannot distinguish recipe-following from
+   good judgment.
 5. **Judge each difference.** Neither model is always right. The target
    behavior is whichever model did it better.
 6. **The 4.6 gate runs last.** A simpler skill should not regress on 4.6.
