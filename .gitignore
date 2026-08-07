@@ -58,3 +58,6 @@ reports/
 
 # Scratch clipboard
 clipboard.txt
+
+# Plugin orphan-detection timestamp (written by marketplace tooling)
+.orphaned_at

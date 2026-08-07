@@ -5,6 +5,7 @@
 
 import { splitSentences } from "./sentence-split.mjs";
 
+const FRONTMATTER_PATTERN = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
 const FENCE_PATTERN = /```[\s\S]*?```/g;
 const INDENTED_CODE_PATTERN = /^(?: {4,}|\t)/;
 const HEADING_PATTERN = /^#{1,6}\s+/;
@@ -14,7 +15,8 @@ const WORD_PATTERN = /[a-z0-9]+(?:['-][a-z0-9]+)*/g;
 // Removes fenced ``` blocks and 4-space/tab indented code blocks before any
 // segmentation runs. Code inside a prose document is not prose.
 function stripCodeBlocks(text) {
-  const withoutFences = text.replace(FENCE_PATTERN, "\n");
+  const withoutFrontmatter = text.replace(FRONTMATTER_PATTERN, "");
+  const withoutFences = withoutFrontmatter.replace(FENCE_PATTERN, "\n");
   return withoutFences
     .split("\n")
     .map((line) => (INDENTED_CODE_PATTERN.test(line) ? "" : line))

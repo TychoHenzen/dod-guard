@@ -97,8 +97,51 @@ function collectStats(original, rewrite, settings) {
   };
 }
 
+// Contract content is required verbatim, so any overlap it causes is not
+// evidence of copying. removeTokenRuns strips contiguous matches, but table
+// rows and inline references scatter contract tokens among free text, so run
+// matching alone underestimates required content. The scale factor instead
+// counts how many of the document's tokens belong to any contract entry
+// (bag-of-words), then scales thresholds by 1/(1-f) so the gate judges
+// only the free portion.
+function contractTokenBag(contractRuns) {
+  const bag = new Set();
+  for (const run of contractRuns) {
+    for (const token of run) bag.add(token);
+  }
+  return bag;
+}
+
+function contractFraction(text, settings, bag) {
+  const raw = proseTokens(text, settings.whitelist);
+  if (raw.length === 0) return 0;
+  const matched = raw.filter((t) => bag.has(t)).length;
+  return matched / raw.length;
+}
+
+function contractScaleFactor(original, rewrite, settings) {
+  if (settings.contractRuns.length === 0) return 1;
+  const bag = contractTokenBag(settings.contractRuns);
+  const fraction = Math.max(
+    contractFraction(original, settings, bag),
+    contractFraction(rewrite, settings, bag),
+  );
+  return fraction >= 1 ? 1 : 1 / (1 - fraction);
+}
+
+function scaleThresholds(thresholds, factor) {
+  if (factor <= 1) return thresholds;
+  const scaled = {};
+  for (const key of Object.keys(thresholds)) {
+    scaled[key] = thresholds[key] * factor;
+  }
+  return scaled;
+}
+
 export function scoreProseOverlap(original, rewrite, options = {}) {
   const settings = resolveSettings(options);
   const stats = collectStats(original, rewrite, settings);
-  return gradeStats(stats, settings.thresholds, MIN_SAMPLES);
+  const factor = contractScaleFactor(original, rewrite, settings);
+  const adjusted = scaleThresholds(settings.thresholds, factor);
+  return gradeStats(stats, adjusted, MIN_SAMPLES);
 }
