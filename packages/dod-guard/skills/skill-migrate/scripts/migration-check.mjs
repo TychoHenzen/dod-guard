@@ -228,9 +228,13 @@ function checkExplicitScope(body) {
   };
 }
 
+const CAP_RE = /\bcap\b.*\b(delegat|dispatch|agent)/i;
+const CAP_NUM_RE = /\bmax(imum|)\s+\d+\s+(sub)?agent/i;
+const CAP_COLON_RE = /\bcap:\s*\d+/i;
+
 function checkDelegationCap(body) {
-  const agents = (body.match(/\bsubagent_type\b|\bdispatch\b|\bsubagent\b/gi) ?? []).length;
-  const hasCap = /\bcap\b.*\bdelegat/i.test(body) || /\bmax(imum|)\s+\d+\s+(sub)?agent/i.test(body);
+  const agents = (body.match(/\bDispatch\s+`/g) ?? []).length;
+  const hasCap = CAP_RE.test(body) || CAP_NUM_RE.test(body) || CAP_COLON_RE.test(body);
   return {
     id: "delegation-cap",
     label: "Subagent delegation capped (when dispatching)",
@@ -317,8 +321,16 @@ function checkConsistentTerminology(body) {
 // --- Bare negative rules ---
 
 function hasAlternative(line, nextLine) {
-  const alt = /\b(instead|use)\b/i;
+  const alt = /\b(instead|use|rather)\b/i;
   return alt.test(line) || alt.test(nextLine) || /^\s*[-*]\s/.test(nextLine);
+}
+
+function isDescriptiveNegative(line) {
+  const trimmed = line.trim();
+  if (/^(the|a|an|this|that|it|each|every|both)\s/i.test(trimmed)) return true;
+  if (/^(exit|matching|difference)\s/i.test(trimmed)) return true;
+  if (/\bwho\s+(never|does not|doesn't)\b/i.test(trimmed)) return true;
+  return false;
 }
 
 function checkBareNegatives(body) {
@@ -327,6 +339,7 @@ function checkBareNegatives(body) {
   for (let i = 0; i < lines.length; i++) {
     const neg = /\b(never|do not|don't|must not|shall not)\s+(.{5,60})/i.exec(lines[i].text);
     if (!neg) continue;
+    if (isDescriptiveNegative(lines[i].text)) continue;
     const next = (lines[i + 1]?.text ?? "").trim();
     if (!hasAlternative(lines[i].text, next)) {
       hits.push({ line: lines[i].line, text: lines[i].text.trim().slice(0, 60) });
@@ -345,13 +358,15 @@ function checkBareNegatives(body) {
 
 // --- Implicit scope ---
 
+const IMPLICIT_SCOPE_RE = /\b(apply|format|process)\s+(the|this|that)\s+\w+/i;
+const SCOPE_QUANTIFIER_RE = /\b(every|all|each)\b/i;
+
 function checkImplicitScope(body) {
   const hits = [];
   for (const { text, line } of proseLines(body)) {
-    const implicit =
-      /\b(apply|format|process|check|run|update)\s+(this|the|that|it)\b/i.test(text) &&
-      !/\b(every|all|each)\b/i.test(text);
-    if (implicit) hits.push({ line, text: text.trim().slice(0, 60) });
+    if (IMPLICIT_SCOPE_RE.test(text) && !SCOPE_QUANTIFIER_RE.test(text)) {
+      hits.push({ line, text: text.trim().slice(0, 60) });
+    }
   }
   return {
     id: "no-implicit-scope",
@@ -419,7 +434,7 @@ function collectInstructions(body) {
   const result = [];
   for (const { text, line } of proseLines(body)) {
     const norm = normalizeForComparison(text);
-    if (norm.length >= 15) result.push({ norm, line, text: text.trim().slice(0, 50) });
+    if (norm.length >= 30) result.push({ norm, line, text: text.trim().slice(0, 50) });
   }
   return result;
 }
@@ -431,7 +446,7 @@ function findNearDuplicates(instructions) {
     for (let j = i + 1; j < instructions.length; j++) {
       if (Math.abs(instructions[i].line - instructions[j].line) < 3) continue;
       const sim = trigramSimilarity(instructions[i].norm, instructions[j].norm);
-      if (sim < 0.7) continue;
+      if (sim < 0.75) continue;
       const key = `${instructions[i].line}:${instructions[j].line}`;
       if (seen.has(key)) continue;
       seen.add(key);

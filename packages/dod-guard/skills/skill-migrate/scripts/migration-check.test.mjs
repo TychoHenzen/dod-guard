@@ -221,7 +221,7 @@ describe("migration-check", () => {
       "# Implicit Scope",
       "",
       "Apply the formatting to the document.",
-      "Check the output for errors.",
+      "Process the output for errors.",
       "Scope: one file.",
       "",
     ].join("\n");
