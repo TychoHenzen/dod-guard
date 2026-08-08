@@ -68,5 +68,13 @@
     "at": "2026-08-01T19:08:05.367Z",
     "acknowledged": true,
     "acknowledgement": "Reviewed: render.ts was created by moving three functions out of index.ts byte for byte. The complexity, the long lines and the em dashes all came with the move, and editing them would have made the move something other than a move. The blind rewrite that follows is what removes them."
+  },
+  {
+    "file": ".skill-migrate/migrated-SKILL.md",
+    "reasons": [],
+    "exempt": true,
+    "at": "2026-08-08T11:53:34.992Z",
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: scratch output of a skill-migrate run. The file is the blind writer's candidate SKILL.md, judged by the skill's own gates (overlap, gap audit, regression check), not by the prose linter. It never ships from this path."
   }
 ]

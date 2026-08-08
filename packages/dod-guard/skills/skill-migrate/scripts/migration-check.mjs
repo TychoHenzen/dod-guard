@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 // Score a SKILL.md against post-4.6 migration guidelines.
+// Each check carries a 0-1 score and a weight; the weighted sum is a
+// 0-100 "5.0-readiness" score for comparing two skills.
 // Exit codes: 0 all checks pass, 1 at least one fails, 3 usage error.
 // With --json, writes structured output. With --before=<path>, loads a
 // prior run and prints a before/after comparison.
@@ -9,10 +11,11 @@ import { readFileSync, writeFileSync } from "node:fs";
 const USAGE = [
   "Usage: node migration-check.mjs <path-to-SKILL.md> [options]",
   "",
-  "  --json             Output structured JSON",
+  "  --json             Output structured JSON (score + checks)",
   "  --save=<path>      Write results to file (for before/after comparison)",
   "  --before=<path>    Load a prior run and compare against it",
   "",
+  "Prints a 0-100 5.0-readiness score (weighted sum of per-check scores).",
   "Exit codes: 0 pass, 1 at least one check fails, 3 usage error.",
 ].join("\n");
 
@@ -42,6 +45,10 @@ function parseFrontmatter(text) {
 function bodyAfterFrontmatter(text) {
   const match = /^---\r?\n[\s\S]*?\r?\n---\r?\n?([\s\S]*)$/.exec(text);
   return match ? match[1] : text;
+}
+
+function cleanDescription(fm) {
+  return (fm.description ?? "").replace(/^>-?\s*/, "").trim();
 }
 
 // --- Shared line iterator (skips code fences) ---
@@ -107,38 +114,46 @@ function checkLineCount(body) {
   };
 }
 
+function nameProblems(name) {
+  const problems = [];
+  if (!/^[a-z0-9-]{1,64}$/.test(name)) problems.push("bad format");
+  if (/\b(anthropic|claude)\b/i.test(name)) problems.push("reserved word");
+  return problems;
+}
+
 function checkNameFormat(fm) {
   const name = fm.name ?? "";
-  const valid = /^[a-z0-9-]{1,64}$/.test(name);
+  const problems = nameProblems(name);
   return {
     id: "name-format",
-    label: "Name: lowercase, hyphens, 1-64 chars",
+    label: "Name: lowercase, hyphens, 1-64 chars, no reserved words",
     value: name,
-    pass: valid,
-    detail: valid ? "valid" : `"${name}" violates format`,
+    pass: problems.length === 0,
+    detail: problems.length === 0 ? "valid" : `"${name}": ${problems.join(", ")}`,
   };
 }
 
-function descriptionDetail(len) {
+function descriptionDetail(len, hasXml) {
   if (len === 0) return "empty";
   if (len > 1024) return `${len} chars, over 1024`;
+  if (hasXml) return "contains XML tags";
   return `${len} chars`;
 }
 
 function checkDescriptionPresent(fm) {
-  const desc = (fm.description ?? "").replace(/^>-?\s*/, "").trim();
+  const desc = cleanDescription(fm);
+  const hasXml = /<[a-z][\w-]*>/i.test(desc);
   return {
     id: "description-present",
-    label: "Description: non-empty, under 1024 chars",
+    label: "Description: non-empty, under 1024 chars, no XML",
     value: desc.length,
-    pass: desc.length > 0 && desc.length <= 1024,
-    detail: descriptionDetail(desc.length),
+    pass: desc.length > 0 && desc.length <= 1024 && !hasXml,
+    detail: descriptionDetail(desc.length, hasXml),
   };
 }
 
 function checkDescriptionPerson(fm) {
-  const raw = fm.description ?? "";
-  const desc = raw.replace(/^>-?\s*/, "").trim();
+  const desc = cleanDescription(fm);
   const bad = /^(I |We |You |My |Our |Your )/i.test(desc);
   return {
     id: "description-person",
@@ -146,6 +161,20 @@ function checkDescriptionPerson(fm) {
     value: bad ? desc.slice(0, 40) : "ok",
     pass: !bad,
     detail: bad ? "starts with first/second person" : "third person",
+  };
+}
+
+const TRIGGER_RE = /\b(trigger|use (this |it |)when|when (the |a |)user|when asked|for use when)\b/i;
+
+function checkDescriptionTriggers(fm) {
+  const desc = cleanDescription(fm);
+  const has = TRIGGER_RE.test(desc);
+  return {
+    id: "description-triggers",
+    label: "Description says when to use (dispatcher routing)",
+    value: has ? "present" : "absent",
+    pass: has,
+    detail: has ? "trigger language found" : "no when-to-use language",
   };
 }
 
@@ -233,7 +262,7 @@ const CAP_NUM_RE = /\bmax(imum|)\s+\d+\s+(sub)?agent/i;
 const CAP_COLON_RE = /\bcap:\s*\d+/i;
 
 function checkDelegationCap(body) {
-  const agents = (body.match(/\bDispatch\s+`/g) ?? []).length;
+  const agents = (body.match(/\b(?:re)?dispatch(?:es|ed|ing)?\s+`/gi) ?? []).length;
   const hasCap = CAP_RE.test(body) || CAP_NUM_RE.test(body) || CAP_COLON_RE.test(body);
   return {
     id: "delegation-cap",
@@ -263,25 +292,34 @@ function checkWorkedExamples(body) {
     label: "No long worked examples (>15 lines, non-script)",
     value: hits.length,
     pass: hits.length === 0,
-    warn: hits.length > 0,
     detail: hits.length === 0 ? "none found" : hits.map((h) => `L${h.line}: ${h.length} lines`).join("; "),
   };
 }
+
+// The positive regex must not swallow "must not" / "must never" lines;
+// otherwise every prohibition contradicts itself.
+const MUST_RE = /\b(?:must|always|shall)\s+(?!not\b|never\b)(.{5,40})/i;
+const MUST_NOT_RE = /\b(?:must not|never|shall not|do not|don't)\s+(.{5,40})/i;
 
 function isContradiction(pos, neg) {
   if (pos === neg) return true;
   return (pos.length > 8 && neg.includes(pos)) || (neg.length > 8 && pos.includes(neg));
 }
 
-function checkContradictions(body) {
+function collectDirectives(body) {
   const must = [];
   const mustNot = [];
-  for (const line of body.split(/\r?\n/)) {
-    const m1 = /\b(must|always|shall)\s+(.{5,40})/i.exec(line);
-    if (m1) must.push(m1[2].toLowerCase().trim());
-    const m2 = /\b(must not|never|shall not|do not)\s+(.{5,40})/i.exec(line);
-    if (m2) mustNot.push(m2[2].toLowerCase().trim());
+  for (const { text } of proseLines(body)) {
+    const m1 = MUST_RE.exec(text);
+    if (m1) must.push(m1[1].toLowerCase().trim());
+    const m2 = MUST_NOT_RE.exec(text);
+    if (m2) mustNot.push(m2[1].toLowerCase().trim());
   }
+  return { must, mustNot };
+}
+
+function checkContradictions(body) {
+  const { must, mustNot } = collectDirectives(body);
   const found = [];
   for (const pos of must) {
     for (const neg of mustNot) {
@@ -313,7 +351,6 @@ function checkConsistentTerminology(body) {
     label: "Consistent terminology (no synonym mixing)",
     value: mixed.length,
     pass: mixed.length === 0,
-    warn: mixed.length > 0,
     detail: mixed.length === 0 ? "consistent" : `mixed: ${mixed.join(", ")}`,
   };
 }
@@ -350,7 +387,6 @@ function checkBareNegatives(body) {
     label: "Negative rules have alternatives",
     value: hits.length,
     pass: hits.length === 0,
-    warn: hits.length > 0,
     detail: hits.length === 0 ? "all negatives have alternatives" : hits.map((h) => `L${h.line}`).join(", "),
     hits,
   };
@@ -373,7 +409,6 @@ function checkImplicitScope(body) {
     label: "No implicit scope (use every/all/each)",
     value: hits.length,
     pass: hits.length === 0,
-    warn: hits.length > 0,
     detail: hits.length === 0 ? "scope explicit" : hits.map((h) => `L${h.line}`).join(", "),
     hits,
   };
@@ -398,9 +433,46 @@ function checkDripFed(body) {
     label: "No drip-fed cross-phase references",
     value: hits.length,
     pass: hits.length === 0,
-    warn: hits.length > 0,
     detail: hits.length === 0 ? "self-contained phases" : hits.map((h) => `L${h.line}`).join(", "),
     hits,
+  };
+}
+
+// --- Time-sensitive references ---
+
+const MONTHS = "january|february|march|april|may|june|july|august|september|october|november|december";
+const TIME_SENSITIVE_RE = new RegExp(`\\b(before|after|as of|until|since)\\s+((?:${MONTHS})\\s+\\d{4}|\\d{4})\\b`, "i");
+
+function checkTimeSensitive(body) {
+  const hits = [];
+  for (const { text, line } of proseLines(body)) {
+    if (TIME_SENSITIVE_RE.test(text)) hits.push({ line, text: text.trim().slice(0, 60) });
+  }
+  return {
+    id: "no-time-sensitive",
+    label: "No time-sensitive references (dates go stale)",
+    value: hits.length,
+    pass: hits.length === 0,
+    detail: hits.length === 0 ? "none found" : hits.map((h) => `L${h.line}`).join(", "),
+    hits,
+  };
+}
+
+// --- Emphasis density ---
+
+const EMPHASIS_RE = /\b(IMPORTANT|CRITICAL|MANDATORY|YOU MUST|NEVER|ALWAYS)\b/g;
+
+function checkEmphasisDensity(body) {
+  let count = 0;
+  for (const { text } of proseLines(body)) {
+    count += (text.match(EMPHASIS_RE) ?? []).length;
+  }
+  return {
+    id: "emphasis-density",
+    label: "Emphasis markers used sparingly (max 2)",
+    value: count,
+    pass: count <= 2,
+    detail: count <= 2 ? `${count} markers` : `${count} caps-emphasis markers, keep at most 2`,
   };
 }
 
@@ -463,7 +535,6 @@ function checkRedundantRepetition(body) {
     label: "No redundant repeated instructions",
     value: hits.length,
     pass: hits.length === 0,
-    warn: hits.length > 0,
     detail:
       hits.length === 0
         ? "no near-duplicates"
@@ -472,29 +543,103 @@ function checkRedundantRepetition(body) {
   };
 }
 
+// --- Scoring ---
+// Weights sum to 100, ranked by how hard the post-4.6 guidance leans on
+// each property: conciseness and scaffolding removal carry the most.
+
+const WEIGHTS = {
+  "line-count": 15,
+  "no-scaffolding": 15,
+  "no-conservative-filters": 8,
+  "no-contradictions": 8,
+  "explicit-scope": 6,
+  "no-implicit-scope": 5,
+  "no-drip-fed": 5,
+  "no-redundant-repetition": 5,
+  "no-constraining-examples": 5,
+  "delegation-cap": 5,
+  "description-triggers": 5,
+  "no-bare-negatives": 4,
+  "description-present": 3,
+  "emphasis-density": 3,
+  "name-format": 2,
+  "description-person": 2,
+  "no-at-imports": 2,
+  "no-time-sensitive": 1,
+  "consistent-terminology": 1,
+};
+
+function lineCountScore(lines) {
+  if (lines <= 300) return 1;
+  if (lines <= 500) return 1 - (0.5 * (lines - 300)) / 200;
+  return Math.max(0, 0.5 - (lines - 500) / 800);
+}
+
+const boolScore = (c) => (c.pass ? 1 : 0);
+const countScore = (tolerance) => (c) => Math.max(0, 1 - c.value / tolerance);
+
+const SCORERS = {
+  "line-count": (c) => lineCountScore(c.value),
+  "name-format": boolScore,
+  "description-present": boolScore,
+  "description-person": boolScore,
+  "description-triggers": boolScore,
+  "explicit-scope": boolScore,
+  "delegation-cap": boolScore,
+  "no-at-imports": countScore(2),
+  "no-scaffolding": countScore(5),
+  "no-conservative-filters": countScore(3),
+  "no-bare-negatives": countScore(4),
+  "no-implicit-scope": countScore(4),
+  "no-drip-fed": countScore(4),
+  "no-redundant-repetition": countScore(4),
+  "no-time-sensitive": countScore(2),
+  "no-constraining-examples": countScore(3),
+  "no-contradictions": countScore(3),
+  "consistent-terminology": countScore(3),
+  "emphasis-density": (c) => Math.max(0, 1 - Math.max(0, c.value - 2) / 4),
+};
+
+function applyScores(checks) {
+  for (const c of checks) {
+    c.weight = WEIGHTS[c.id];
+    c.score = Number(SCORERS[c.id](c).toFixed(3));
+  }
+  return checks;
+}
+
+function overallScore(checks) {
+  let total = 0;
+  for (const c of checks) total += (c.weight ?? 0) * (c.score ?? 0);
+  return Math.round(total);
+}
+
 // --- Run all checks ---
 
 function runChecks(text) {
   const fm = parseFrontmatter(text);
   const body = bodyAfterFrontmatter(text);
-  return [
+  return applyScores([
     checkLineCount(body),
     checkNameFormat(fm),
     checkDescriptionPresent(fm),
     checkDescriptionPerson(fm),
+    checkDescriptionTriggers(fm),
     checkNoAtImports(body),
     checkScaffolding(body),
     checkConservativeFilters(body),
     checkBareNegatives(body),
     checkImplicitScope(body),
     checkDripFed(body),
+    checkTimeSensitive(body),
+    checkEmphasisDensity(body),
     checkRedundantRepetition(body),
     checkExplicitScope(body),
     checkDelegationCap(body),
     checkWorkedExamples(body),
     checkContradictions(body),
     checkConsistentTerminology(body),
-  ];
+  ]);
 }
 
 // --- Comparison ---
@@ -509,8 +654,8 @@ function compare(before, after) {
     rows.push({
       id: a.id,
       label: a.label,
-      before: { pass: b.pass, value: b.value, detail: b.detail },
-      after: { pass: a.pass, value: a.value, detail: a.detail },
+      before: { pass: b.pass, value: b.value, detail: b.detail, score: b.score ?? 0 },
+      after: { pass: a.pass, value: a.value, detail: a.detail, score: a.score ?? 0 },
       status,
     });
   }
@@ -519,18 +664,19 @@ function compare(before, after) {
 
 // --- Output ---
 
-function printChecks(checks) {
+function printChecks(checks, score) {
   const maxLabel = Math.max(...checks.map((c) => c.label.length));
   for (const c of checks) {
     const mark = c.pass ? (c.warn ? "~" : "+") : "-";
     const pad = " ".repeat(maxLabel - c.label.length);
-    process.stdout.write(`[${mark}] ${c.label}${pad}  ${c.detail}\n`);
+    process.stdout.write(`[${mark}] ${c.label}${pad}  ${c.score.toFixed(2)}  ${c.detail}\n`);
   }
   const passed = checks.filter((c) => c.pass).length;
   process.stdout.write(`\n${passed}/${checks.length} passed\n`);
+  process.stdout.write(`5.0-readiness: ${score}/100\n`);
 }
 
-function printComparison(rows) {
+function printComparison(rows, scores) {
   process.stdout.write("\n  Before / After migration check\n");
   process.stdout.write("  " + "-".repeat(70) + "\n");
   for (const r of rows) {
@@ -544,8 +690,12 @@ function printComparison(rows) {
   const fixed = rows.filter((r) => r.status === "FIXED").length;
   const regressed = rows.filter((r) => r.status === "REGRESSED").length;
   const passing = rows.filter((r) => r.status === "PASS" || r.status === "FIXED").length;
+  const delta = scores.after - scores.before;
   process.stdout.write(
     `\n  ${passing}/${rows.length} passing, ${fixed} fixed, ${regressed} regressed\n`,
+  );
+  process.stdout.write(
+    `  5.0-readiness: ${scores.before}/100 -> ${scores.after}/100 (${delta >= 0 ? "+" : ""}${delta})\n`,
   );
 }
 
@@ -564,6 +714,19 @@ function parseArgs(argv) {
   return args;
 }
 
+function runComparison(args, checks, score) {
+  const beforeData = JSON.parse(readFileSync(args.before, "utf8"));
+  const rows = compare(beforeData.checks, checks);
+  const scores = { before: beforeData.score ?? overallScore(beforeData.checks), after: score };
+  if (args.json === "true") {
+    const out = { ...scores, delta: scores.after - scores.before, rows };
+    process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+  } else {
+    printComparison(rows, scores);
+  }
+  return rows.some((r) => r.status === "REGRESSED") ? 1 : 0;
+}
+
 function main(argv) {
   const args = parseArgs(argv);
   const target = args.positional[0];
@@ -572,30 +735,27 @@ function main(argv) {
     return 3;
   }
 
-  const text = readFileSync(target, "utf8");
+  let text;
+  try {
+    text = readFileSync(target, "utf8");
+  } catch (err) {
+    process.stderr.write(`Cannot read ${target}: ${err.message}\n`);
+    return 3;
+  }
   const checks = runChecks(text);
+  const score = overallScore(checks);
 
   if (args.save) {
-    const data = { file: target, checks, timestamp: new Date().toISOString() };
+    const data = { file: target, score, checks, timestamp: new Date().toISOString() };
     writeFileSync(args.save, JSON.stringify(data, null, 2));
   }
 
-  if (args.before) {
-    const beforeData = JSON.parse(readFileSync(args.before, "utf8"));
-    const rows = compare(beforeData.checks, checks);
-    if (args.json === "true") {
-      process.stdout.write(`${JSON.stringify(rows, null, 2)}\n`);
-    } else {
-      printComparison(rows);
-    }
-    const regressed = rows.some((r) => r.status === "REGRESSED");
-    return regressed ? 1 : 0;
-  }
+  if (args.before) return runComparison(args, checks, score);
 
   if (args.json === "true") {
-    process.stdout.write(`${JSON.stringify(checks, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({ score, checks }, null, 2)}\n`);
   } else {
-    printChecks(checks);
+    printChecks(checks, score);
   }
   return checks.every((c) => c.pass) ? 0 : 1;
 }
