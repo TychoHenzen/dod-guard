@@ -80,15 +80,15 @@ alike, and any piece of it you cannot secure goes into the recorded `summary` as
 is. Where a gap is recorded, describe the review as partly dependent rather than calling it
 independent.
 
-Each agent file already fixes its persona, checklist, finding floor and output shape, so omit
-all of that and send three things: the lens name, the user's request copied word for word,
+Each agent file already fixes its persona, checklist, finding floor and output shape. Omit all
+of that instead. Send three things: the lens name, the user's request copied word for word,
 and the material under review, each spelled out in full. Reviewers see none of this
 conversation, so paste what they need rather than citing where it sits. A reviewer answers
 with findings or with one `NO_FINDINGS:` line and a reason, and any other shape counts as a
 failed dispatch worth sending again. `subagent_type` picks the agent, while the model travels
 on its own parameter of the same call, so a model name inside `subagent_type` errors out.
-Budget 5 dispatches at phase 1 plus at most 1 negative control, 3 at phase 2 and 3 at phase
-3, counting a repeated round as the full set again, to a limit of 3 rounds per phase.
+Budget 5 dispatches at phase 1 plus at most 1 negative control, then 3 at phase 2 and 3 at
+phase 3. A repeated round costs the full set again, to a limit of 3 rounds per phase.
 
 ## Verdict and record
 
@@ -119,11 +119,11 @@ user immediately. File every round with `dod_adversarial_gate`, `REVISE` rounds 
 }
 ```
 
-The tool turns down phase N while any lower-numbered phase is absent or short of `GO`,
-answering with a line that opens `ERROR: Cannot record Phase`, naming that phase and its state, and
-storing nothing. A call that lands lists all four phases with their verdicts, so read the
-answer after every filing. `dod_check` polices no phase order itself, so to make the DoD
-withhold a pass until the gates read `GO`, add a leaf with predicate
+The tool turns down phase N while any lower-numbered phase is absent or short of `GO`. It
+answers with a line that opens `ERROR: Cannot record Phase`, naming that phase and its state.
+It stores nothing. A call that lands lists all four phases with their verdicts, so read the
+answer after every filing. `dod_check` polices no phase order itself. To make the DoD withhold
+a pass until the gates read `GO`, add a leaf with predicate
 `{"type": "adversarial", "value": 3}` for phase 3, which carries no `command`.
 `{"type": "convergence"}` takes no value and always reads phase 4.
 

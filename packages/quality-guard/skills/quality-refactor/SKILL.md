@@ -116,9 +116,9 @@ Five things decide the shape of the code and no scanner sees them. Walk each one
 
 3. Worthless tests. Delete a test when any of these holds: it asserts on a mock it configured itself, it
    asserts nothing or only that nothing threw, its assertions are loose enough to pass against a constant, it
-   covers a symbol no production code calls, which the scanner reports as `test-only-export`, it repeats
-   another test with different literals and no different branch, or it exists to move a coverage number. One
-   exception: confirm first that the symbol is test-support code, and when it is, declare its directory with
+   covers a symbol no production code calls, which the scanner reports as `test-only-export`. Delete it too
+   when it repeats another test with different literals and no different branch, or when it exists only to
+   move a coverage number. One exception: confirm first that the symbol is test-support code, and when it is, declare its directory with
    `--test-path` rather than deleting anything. The test worth keeping is the one that fails when the
    requirement is broken, so delete any test whose breaking behavior change you cannot state.
 
@@ -198,8 +198,8 @@ manifest sitting above it, and the symbol then reads as dead. A generic data fil
 name is not usage, and that covers `.json`, `.yaml`, `.xml` and `.md`.
 
 A baseline records which files it scanned, not only their counts. On the next `--baseline` run the scanner
-adopts a file it has never seen at that file's current counts rather than reporting a regression, so a file
-you extract mid-refactor is measured against its own first reading rather than against a zero it never had.
+adopts a file it has never seen at that file's current counts rather than reporting a regression. A file
+you extract mid-refactor is therefore measured against its own first reading rather than against a zero.
 From the following run onward, that file is
 held to its recorded counts. A baseline written by an older scanner carries no file list, so the scanner
 rejects it with exit 3 and you re-record it with `--write-baseline`. `--baseline=<path>` reads the path you
@@ -229,8 +229,8 @@ per wave, each with a resolved `verify_cmd` and a `description` that names its r
 
 **Phase 4.** Report to the user before any step runs: the number of files in scope, the total violation count
 with the error count called out, and anything in `judgment.md` that changes a public API or the file layout.
-Wait for the user to confirm. Leave the per-wave step counts and the verify command out of this report,
-because `/dod-guard:step-by-step` shows both as soon as it takes over and asks for approval of its own plan.
+Wait for the user to confirm. Leave the per-wave step counts and the verify command out of this report.
+`/dod-guard:step-by-step` shows both as soon as it takes over, and asks for approval of its own plan.
 
 **Phase 5.** Hand the plan to `/dod-guard:step-by-step`. That skill owns dispatch, verification, the repair
 budget and the approach-pivot rule. Point at it rather than restating any of that, and let it run each step

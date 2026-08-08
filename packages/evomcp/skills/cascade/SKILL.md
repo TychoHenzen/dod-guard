@@ -54,7 +54,7 @@ is a re-invocation after an escalation, so load the prior spec and
 `decisions.json` before you plan anything new.
 
 Record every resolved decision in `decisions.json` and never re-ask it inside
-the same task; read the recorded answer instead.
+the same task. Read the recorded answer instead.
 
 ## Four checks before you dispatch anything
 
@@ -82,8 +82,8 @@ found. A scoped run with `--node-path` exits `0` when that subtree passes, which
 is what makes a subtree usable as a verify command.
 
 Prefer a DoD subtree over anything else, because it gives you a multi-layer
-oracle with per-gate diagnostics. Do not use a full DoD as the verify command;
-it is too slow for a repair loop, so scope it to a subtree.
+oracle with per-gate diagnostics. Do not use a full DoD as the verify command.
+A full run is too slow for a repair loop, so scope it to a subtree instead.
 
 Four rules for the command itself:
 
@@ -135,7 +135,7 @@ error to avoid, so round up when unsure.
 
 Add `lint_cmd`, `build_cmd` and `test_cmd` only when the verify command is
 expensive. They run before the verify step, cheapest first, and short-circuit on
-failure. Never make one a duplicate of the verify command; leave the field unset
+failure. Never make one a duplicate of the verify command. Leave the field unset
 instead.
 
 Write specs that hold up under any worker model. Get that from a tight verify
@@ -217,9 +217,9 @@ while passing reliably.
 
 Ask the user at exactly these six triggers, named `U1` through `U6`.
 
-- `U1`: the goal admits two or more materially different verify commands, the
-  acceptance behavior is underdetermined, the task hides an unstated tradeoff
-  such as speed against readability or strictness against compatibility, or the
+- `U1`: the goal admits two or more materially different verify commands, or the
+  acceptance behavior is underdetermined. It also fires when the task hides an
+  unstated tradeoff, such as speed against readability. It fires again when the
   word "fix" has more than one candidate meaning here. This fires before any
   fanout budget is spent, and the answers go into the spec's `context` field so
   the workers see them.
@@ -239,7 +239,7 @@ Every user question carries two to four concrete options, a marked
 recommendation with a one-sentence reason, and an evidence pack. Keep the
 best-partial summary inside that pack to at most ten lines.
 
-Never ask the user a question a command can answer; run the command instead.
+Never ask the user a question a command can answer. Run the command instead.
 Never ask the user to pick among candidates. Let the verifier select instead, and show
 the user at most one winner plus a flag.
 
@@ -254,7 +254,7 @@ again.
 
 ## Agents and the dispatch ceiling
 
-Three agents ship with this skill. Dispatch each by bare name; the plugin
+Three agents ship with this skill. Dispatch each by bare name. The plugin
 namespace is added when the plugin installs.
 
 | Agent | Tier | Does |
@@ -273,7 +273,7 @@ escalates twice therefore spends at most four agent dispatches.
 
 ## The worker backend stays unnamed
 
-Never name, tune for, or debug the worker backend from this skill; say worker
+Never name, tune for, or debug the worker backend from this skill. Say worker
 and lineage and describe behavior instead. Swapping the backend requires zero
 changes to this file, and keeping model names out of it is what preserves that.
 

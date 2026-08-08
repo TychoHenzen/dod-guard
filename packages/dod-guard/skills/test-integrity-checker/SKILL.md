@@ -27,7 +27,7 @@ Code with no logic in it offers nothing to get wrong. Snapshot files copy output
 auditor marks every value critical and each of those criticals is wrong.
 
 Where the project keeps written requirements or a verified specification, measure the tests against
-those requirements rather than against the implementation they came from, and run
+those requirements rather than against the implementation they came from. Run
 `/dod-guard:adversarial-workflow` from its phase 2 in place of this skill.
 
 Scan with `rg` rather than `grep` or `findstr`, since `rg` returns the same results under Windows and
@@ -40,7 +40,7 @@ changed and the whole suite stayed green.
 
 Run inside this repository, `node scripts/mutation-queue.mjs` writes `.data/micro-mutations/queue.json`
 and ranks the least protective test files first. That script lives at the root of this repository
-alone, and ships in neither the plugin nor the npm package, so a reader in another repository has no
+alone, and ships in neither the plugin nor the npm package. A reader in another repository has no
 such list unless that project runs mutation testing itself.
 
 The file pairs `generated` with `queue`. Each `queue` entry names `source`, `test`, `date`, `summary`,
@@ -80,7 +80,7 @@ prompt:
 Your prompt holds the two paths. Where a queue entry backs the unit, it also holds that entry's
 hotspot lines with a request to work from them, since mutation testing lies outside what the agent
 knows. Persona, per-pattern detection guidance, the severity behind each pattern, the count of
-findings owed and the layout of the answer all sit in the agent file already, so send paths and
+findings owed and the layout of the answer all sit in the agent file already. Send paths and
 hotspot lines alone rather than any of that.
 
 `subagent_type` selects an agent. The model comes from a separate `model` parameter on the same call,
@@ -110,8 +110,8 @@ computation you do by hand from the specification, a second computation sharing 
 implementation, a standard test vector for the domain, or output from a separate reference
 implementation.
 
-Where none of the four is open to you, keep the assertion as it stands and carry the finding into the
-report unrepaired, with a `TODO` above the line naming it so the problem outlasts your report.
+Where none of the four is open to you, keep the assertion as it stands. Carry the finding into the
+report unrepaired, with a `TODO` above the line naming it so the problem survives your report.
 
 Two patterns arrive without a cure attached. A test that stubs out every dependency gains assertions
 on the data handed to those stubs, or one added test running against real or realistic dependencies.

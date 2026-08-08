@@ -24,9 +24,9 @@ up against each other. No other names for those two things.
 - One agent dispatch per pair, 20 dispatches per run at most. Tighten
   `--threshold`, `--limit` and `--max-per-claim` until the file fits that budget,
   then start dispatching.
-- Confine every edit to the files and line ranges the scanner named; touch nothing
+- Keep every edit inside the files and line ranges the scanner named. Touch nothing
   else in the repository.
-- Delete a claim only under the verdicts in the table below; leave every other claim
+- Delete a claim only under the verdicts in the table below. Leave every other claim
   exactly as written.
 - For repeated wording, delete one copy and point at the other. Never write a fresh
   sentence that blends the two. Instead pick one existing wording and keep it as it stands.
@@ -75,7 +75,7 @@ dating script owns the question of which claim came first.
 
 ## Getting a date
 
-Date the `CONFLICT` and `DUPLICATE` pairs only; send nothing else to the script.
+Date the `CONFLICT` and `DUPLICATE` pairs only. Send nothing else to the script.
 
 `claim-age.mjs` follows a line backward through `git log -L`, compares content with
 formatting normalized away, passes over the commits that shifted no words, and
