@@ -100,6 +100,13 @@ Token overlap >65% → duplicate. Uses stopword filtering, Jaccard-like comparis
 
 **Plugin agents**: agents ship from the plugin-root `agents/` directory (`agents/spec-writer.md`, `agents/patch-reviewer.md`, `agents/escalation-handler.md`) — NOT nested inside the skill. Claude Code only discovers plugin agents from `<plugin-root>/agents/*.md`, and each file MUST have YAML frontmatter (`name`, `description`) or it won't register. They are referenced by bare name (`spec-writer`, `patch-reviewer`, `escalation-handler`) — the plugin namespace is auto-prefixed at install time. Each agent runs at a specific tier: spec-writer and escalation-handler at `host`, patch-reviewer at `host-light`. See each agent's `.md` for its prompt, tier, and U-point integration.
 
+Each agent also pins `model:` and, where the agent should not hold the full tool
+set, `tools:`. The tier in the prose above says which rung the agent answers for.
+The `model:` line says what actually runs it, so the two have to agree: a host-tier
+agent pins `opus`, a host-light one pins `sonnet`. An agent with no `tools:` line
+gets every tool, which is what `escalation-handler` needs and what the read-only
+reviewers must not have.
+
 **Escalation ladder** (skill-level, not code-level):
 - Rung 0: Worker repair loop (inside evomcp)
 - Rung 1: Worker resample (inside evomcp)

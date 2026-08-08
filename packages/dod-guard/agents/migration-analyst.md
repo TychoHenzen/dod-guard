@@ -7,6 +7,7 @@ description: >-
   artifact kind from the orchestrator's briefing. Returns a tagged list that
   the human gate uses to decide what the blind writer keeps. Read-only.
   Dispatched by skill-migrate.
+model: sonnet
 tools: Read, Grep, Glob
 ---
 
