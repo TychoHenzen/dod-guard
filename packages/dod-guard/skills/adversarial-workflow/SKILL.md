@@ -3,197 +3,129 @@ name: adversarial-workflow
 description: Drive one piece of work through a 4-phase review and record a gate at each stage. Use when the user asks for the adversarial workflow, says "gate this", asks for strict quality, asks for a full adversarial pass, asks for an adversarial review or a 4-phase review, or wants gates at each stage of spec, tests, implementation, and cleanup. Use it too when the user raises a quality or security concern about multi-step implementation work. Reviewers run without the author's reasoning and must produce findings. The product is four dod_adversarial_gate records against one dod_id.
 argument-hint: [task description or dod_id]
 ---
-
 # Adversarial workflow
 
-You delegate the building and you do the reviewing. Your product is four
-`dod_adversarial_gate` records, phases 1 to 4, against one `dod_id`, plus the
-implemented feature. Everything below exists to keep those records honest.
+Drive one unit of work through four rounds of hostile review, each closing with a
+`dod_adversarial_gate` record on one shared `dod_id`. Those four records plus the working
+feature are the output. Delegate the building and spend your own turns judging what comes
+back. Scope is that single `dod_id`: another tree, or writing the code yourself, sits outside it.
 
-## Where to start
+## Starting point
 
-You get one of two entries.
+With no `dod_id` yet, pass the task to `/dod-guard:interview`, which collects requirements,
+builds the tree, reviews the spec, calls `dod_create` and files the phase 1 gate. Halt it
+there rather than letting it pass work onward, then carry on at phase 2 yourself.
 
-1. A task and no `dod_id`. Delegate to `/dod-guard:interview`. That skill
-   gathers requirements, builds the tree, reviews the spec, calls `dod_create`,
-   and records the phase 1 gate itself. Stop it before it hands work to an
-   executor, because you are the executor. Then start at phase 2.
-2. A `dod_id`. Do not run interview. A second run builds a second DoD.
+With a `dod_id` in hand, resume from the record rather than calling `/dod-guard:interview`,
+whose second run yields a separate DoD. Load `~/.claude/dod-store/<dod_id>.json`, or that
+file under `$DOD_STORE_DIR` when the variable is set, and read `adversarial_gates`. Entries
+sit in write order, so find each through its `phase` field rather than its index, and restart
+at the lowest phase whose verdict is anything but `GO`. Phase 1 holding `REVISE` returns to
+`/dod-guard:interview` rather than moving to phase 2, and a document with no phase 1 entry
+gets that spec round run here rather than later. `/dod-guard:interview`,
+`/dod-guard:clean-house`, `/dod-guard:ratchet` and `/dod-guard:test-integrity-checker` all
+feed work in, and the first two hand off at phase 2, so accept that as a start.
 
-To read gate state, open the stored document at
-`~/.claude/dod-store/<dod_id>.json`, or under `$DOD_STORE_DIR` when that
-variable is set. Look at `adversarial_gates`. Match entries by their `phase`
-field, because the array is ordered by recording time. Start at the lowest
-phase whose verdict is not `GO`. A recorded `REVISE` at phase 1 sends the work
-back to `/dod-guard:interview`, never forward to phase 2.
+## Round by round
 
-If the document carries no phase 1 gate at all, run the spec review here.
-`dod_import`, a hand-built `dod_create`, and any DoD older than the gate
-feature all land in that state.
+**Phase 1, spec.** Send the five spec lenses across the requirements and the tree. Then run a
+negative control: pick the lens that reported least, hand it the real spec with one flaw
+seeded inside that lens's own territory, and see whether it names the flaw. Skip the control
+after a `STOP`, on a spec under roughly 20 lines, or once this `dod_id` has seen two. A lens
+that misses its seeded flaw earns one repeat on a stronger model, and `summary` names that
+lens. File the gate at `phase: 1` last, so the control result reaches its `summary`.
 
-`/dod-guard:interview` and `/dod-guard:clean-house` send work here at phase 2.
-`/dod-guard:ratchet` and `/dod-guard:test-integrity-checker` also route here.
+**Phase 2, test.** Secure tests from a party that has not read the implementation, settling
+that before auditing starts. Send the test auditor across its three lenses, one dispatch
+each, and file the gate at `phase: 2`.
 
-## Dispatching reviewers
+**Phase 3, implementation.** Delegate the build to `/dod-guard:step-by-step` or
+`/dod-guard:cheap-step`, each of which halts at steps done, tests green and build clean,
+since the judging falls to you. Send the saboteur, the new hire and the spec auditor across
+the diff, run `dod_check` over the whole `dod_id`, and file the gate at `phase: 3`. Any
+`critical` finding here outlives the run through `memory_save` at `type: "project"`, or
+through `evo_learn` where gitevo runs. Use one of those two rather than inventing a
+project-local rules file.
 
-| Phase | Lens | Agent |
+**Phase 4, structural.** Attach structural proofs with `dod_add_node`, or sharpen an existing
+draft placeholder with `dod_refine` at `mode: "concretize"`. Lift ready proof JSON for the
+project's language from `standards/structural-gates.md` in this package, and execute each
+proof before attaching it, so you know it can still report failure. For a language that file
+omits, author the proof, watch it fail on a broken file and pass on the real tree, then
+return the working section there. Audit, mend what the findings name, audit again, and quit
+once two consecutive audits surface no fresh `critical` and no fresh `major`. Past 3 audits,
+escalate the remainder to the user. File the gate at `phase: 4`.
+
+## Lenses, agents and dispatches
+
+| Phase | Lens | `subagent_type` |
 |---|---|---|
-| 1 Spec | Security | `subagent_type: "dod-guard:adversarial-security"` |
-| 1 Spec | Assumptions, Testability, Consistency, Implementability | `subagent_type: "dod-guard:adversarial-spec-reviewer"` |
-| 2 Test | Coverage, Falsifiability, Gap detection | `subagent_type: "dod-guard:adversarial-test-auditor"` |
-| 3 Implementation | Saboteur | `subagent_type: "dod-guard:adversarial-saboteur"` |
-| 3 Implementation | New hire | `subagent_type: "dod-guard:adversarial-new-hire"` |
-| 3 Implementation | Spec audit | `subagent_type: "dod-guard:adversarial-spec-auditor"` |
+| 1 | Security | `dod-guard:adversarial-security` |
+| 1 | Assumptions, Testability, Consistency, Implementability | `dod-guard:adversarial-spec-reviewer` |
+| 2 | Coverage, Falsifiability, Gap detection | `dod-guard:adversarial-test-auditor` |
+| 3 | Saboteur | `dod-guard:adversarial-saboteur` |
+| 3 | New hire | `dod-guard:adversarial-new-hire` |
+| 3 | Spec audit | `dod-guard:adversarial-spec-auditor` |
 
-Each agent already carries its own persona, its checklist, how many findings it
-owes you, and its output format. Never restate any of that in a prompt. Give a
-dispatch only the lens name, the user's original request word for word, and the
-material under review, all as literal text. These agents cannot see this
-conversation. Never point one at an earlier message.
+| Author | Reviewer model | Saboteur model |
+|---|---|---|
+| `opus` | `sonnet` | `opus` |
+| `sonnet` | `opus` or `haiku` | `opus` |
+| `haiku` | `sonnet` or `opus` | `opus` |
+| not Claude, such as a `/dod-guard:cheap-step` worker | any Claude model | `opus` |
 
-Every reviewer returns findings or one `NO_FINDINGS:` line with a reason. A
-reply carrying neither is not a pass. Re-dispatch that reviewer.
+`opus` is both the saboteur's default and its floor, so leave it there rather than trading
+down. Independence spans reviewer models, phase 2 test authorship and the closing report
+alike, and any piece of it you cannot secure goes into the recorded `summary` as the gap it
+is. Where a gap is recorded, describe the review as partly dependent rather than calling it
+independent.
 
-`subagent_type` names an agent, not a model. Passing `sonnet` or `opus` there
-fails, because the model is a separate parameter on the same call.
+Each agent file already fixes its persona, checklist, finding floor and output shape, so omit
+all of that and send three things: the lens name, the user's request copied word for word,
+and the material under review, each spelled out in full. Reviewers see none of this
+conversation, so paste what they need rather than citing where it sits. A reviewer answers
+with findings or with one `NO_FINDINGS:` line and a reason, and any other shape counts as a
+failed dispatch worth sending again. `subagent_type` picks the agent, while the model travels
+on its own parameter of the same call, so a model name inside `subagent_type` errors out.
+Budget 5 dispatches at phase 1 plus at most 1 negative control, 3 at phase 2 and 3 at phase
+3, counting a repeated round as the full set again, to a limit of 3 rounds per phase.
 
-| Model that produced the work | Route reviewers to |
-|---|---|
-| opus | sonnet, with the saboteur left on opus |
-| sonnet | opus or haiku, with the saboteur left on opus |
-| haiku | sonnet or opus |
-| a non-Claude model, such as a cheap worker from `/dod-guard:cheap-step` | any Claude model, with the saboteur on opus |
+## Verdict and record
 
-A reviewer sharing a model with the author shares its blind spots. Never route
-the saboteur below `opus`, which is its own default. When two genuinely
-distinct models are not reachable, write that into the recorded `summary` and
-do not claim independent review.
+Total the severities over all lenses in the round. A finding reads `critical`, `major`,
+`minor` or `blocker`. Zero critical with 2 major or fewer gives `GO`. One critical or more,
+or 3 major or more, gives `REVISE`. A single blocker gives `STOP`. Phase 3 carries three
+reviewers instead of two, so it alone allows `GO` up to 3 major and turns `REVISE` at 4 or more.
 
-## Verdicts and the gate record
-
-Count severities across every lens in the phase. This rule covers all four
-phases.
-
-| Counts for the phase | Verdict |
-|---|---|
-| 0 critical and at most 2 major | `GO` |
-| 1 or more critical, or 3 or more major | `REVISE` |
-| any blocker | `STOP` |
-
-Phase 3 is the one exception. It carries three reviewers rather than two, so it
-takes `GO` at up to 3 major, and `REVISE` at 4 or more.
-
-Severity counts are not the only bar. Every reviewer owes you a minimum number
-of findings, and the agent states its own. The saboteur owes 2. The others owe
-1. A reviewer that came in under its minimum sets `mandatory_minimum_met` to
-`false` for that lens, and any `false` forces `REVISE` whatever the counts say.
-A reviewer that found nothing real says so with `NO_FINDINGS:` and a reason,
-which does meet the minimum.
-
-On `REVISE`, fix what the findings name, then dispatch that phase again. Cap
-this at 3 rounds per phase, then take it to the user. On `STOP`, go to the user
-at once.
-
-Record every phase with `dod_adversarial_gate`, including a `REVISE`. A finding
-severity is `critical`, `major`, `minor`, or `blocker`.
+Each agent file names a finding floor: 2 for the saboteur and 1 for every other reviewer. A
+lens under its floor takes `mandatory_minimum_met: false`, and one `false` anywhere drives
+the round to `REVISE` even where the severities alone would allow `GO`. A `NO_FINDINGS:` line
+with a reason clears the floor. On `REVISE`, mend what the findings name and rerun that
+round, to a limit of 3 rounds, then bring the remainder to the user. On `STOP`, reach the
+user immediately. File every round with `dod_adversarial_gate`, `REVISE` rounds included.
 
 ```json
 {
-  "dod_id": "6f1c...",
-  "phase": 2,
-  "verdict": "REVISE",
+  "dod_id": "<dod_id>", "phase": 3, "verdict": "REVISE",
   "lenses": [
-    {
-      "lens": "Coverage",
-      "mandatory_minimum_met": true,
-      "findings": [
-        {
-          "severity": "critical",
-          "target": "R3 email verification required",
-          "problem": "No test exercises the unverified-email path",
-          "suggestion": "Assert login rejects an account with verified=false",
-          "evidence": "test-auth.ts:89"
-        }
-      ]
-    },
-    { "lens": "Falsifiability", "mandatory_minimum_met": true, "findings": [] }
+    { "lens": "Saboteur", "mandatory_minimum_met": true, "findings": [
+      { "severity": "critical", "target": "src/auth/token.ts:42",
+        "problem": "Expired tokens still validate.",
+        "suggestion": "Compare exp with the clock before returning.",
+        "evidence": "token.test.js passes with exp in the past" } ] },
+    { "lens": "New hire", "mandatory_minimum_met": true, "findings": [] }
   ],
-  "summary": "1 critical coverage gap on R3, tests written before the code"
+  "summary": "One critical in token checks. Saboteur opus, other lenses sonnet."
 }
 ```
 
-The tool refuses to record phase N while an earlier phase is missing or not
-`GO`. It answers with a line starting `ERROR: Cannot record Phase`, naming the
-earlier phase and its state, and stores nothing. A successful call lists all
-four phases with their verdicts, so read that reply back after each recording.
-
-`dod_check` does not enforce phase order. To make the DoD itself refuse to pass
-until the gates are `GO`, add a leaf with predicate
-`{"type": "adversarial", "value": 3}` for phase 3, which needs no `command`.
+The tool turns down phase N while any lower-numbered phase is absent or short of `GO`,
+answering with a line that opens `ERROR: Cannot record Phase`, naming that phase and its state, and
+storing nothing. A call that lands lists all four phases with their verdicts, so read the
+answer after every filing. `dod_check` polices no phase order itself, so to make the DoD
+withhold a pass until the gates read `GO`, add a leaf with predicate
+`{"type": "adversarial", "value": 3}` for phase 3, which carries no `command`.
 `{"type": "convergence"}` takes no value and always reads phase 4.
 
-## The four phases
-
-### Phase 1, Spec
-
-Dispatch the five lenses from the table over the requirements and the tree.
-
-Then test one reviewer before you trust the set. Take the lens that returned
-the fewest findings, breaking a tie in favour of Security. Send it the real
-spec again with one flaw planted inside its own subject. Give Security a
-credential read from an environment variable and logged. Give Assumptions a
-requirement that silently expects a sorted input. Give Testability a
-requirement worded so no command could falsify it. Give Consistency a second
-requirement contradicting an earlier one. Give Implementability a call into a
-module the project does not depend on.
-
-A reviewer that misses its planted flaw is not reading. Dispatch it once more
-on a stronger model, and write `Negative control: <lens> missed` into the
-`summary`. A reviewer that catches it earns `Negative control: <lens> passed`.
-Skip this when the phase already reached `STOP`, when the spec is under about
-20 lines, or when you have already run it twice on this `dod_id`.
-
-Record the gate at `phase: 1`.
-
-### Phase 2, Test
-
-The tests have to come from a party that never saw the implementation. Arrange
-that before you audit. When you cannot, say so in the `summary` and do not
-claim the audit is independent. Then dispatch the test auditor three times,
-once for coverage, once for falsifiability, once for gap detection. Record the
-gate at `phase: 2`.
-
-### Phase 3, Implementation
-
-Delegate the building to `/dod-guard:step-by-step` or to
-`/dod-guard:cheap-step`. Both stop at "all steps complete, tests pass, build
-clean", precisely because you review afterwards. Then dispatch the saboteur,
-the new hire, and the spec auditor over the diff. Run a full `dod_check` on the
-`dod_id` here. Record the gate at `phase: 3`.
-
-A `critical` finding here is worth keeping past this run. Save it with
-`memory_save` at `type: "project"`, or with `evo_learn` when gitevo is running.
-Never invent a local rules file for it.
-
-### Phase 4, Structural
-
-Add structural proofs to the tree with `dod_add_node`. Where the tree already
-holds a draft placeholder for one, use `dod_refine` at `mode: "concretize"`
-instead. Copy the ready-made proof JSON for the project's language from
-`standards/structural-gates.md` in this package.
-
-Run each proof before you add it. A proof that cannot fail is worse than no
-proof, because it makes this phase converge on nothing. For a language that
-file lacks, write the proof, point it at a file you have deliberately broken,
-and confirm it fails. Then confirm it passes on the real tree. Add the working
-section back to that file so the next run inherits it.
-
-Then audit and fix what the findings name. Audit again. Stop when two audits in
-a row produce no new `critical` and no new `major` finding. Give up after 3
-audits and take what is left to the user. Record the gate at `phase: 4`.
-
-## Reporting
-
-Report the `dod_id` and the four verdicts with their finding counts. Report the
-final `dod_check` verdict and the markdown path. Name every phase where you
-could not reach model diversity or an independent test author.
+Close out by reporting the `dod_id`, all four verdicts with their finding counts, the closing
+`dod_check` verdict, the markdown path, and every phase where independence came up short.
