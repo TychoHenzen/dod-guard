@@ -61,3 +61,6 @@ clipboard.txt
 
 # Plugin orphan-detection timestamp (written by marketplace tooling)
 .orphaned_at
+
+# ste-lint waiver sentinel: written by hand, consumed by ~/.claude/hooks/ste-turn-guard.mjs
+.prose-skip
