@@ -13,113 +13,114 @@ description: >-
 argument-hint: "[skill name, and optionally a session id]"
 ---
 
-# Skill Debug
+# Skill debug
 
-Read what the skill actually did. Compare it against what the skill said. Fix
-the text that failed, and nothing else.
+Goal: account for the behavior of a target skill on its real runs, and produce
+edits that would have changed those runs.
 
-## Why this exists
+You have shell and file tools. This skill dispatches no subagents.
 
-A skill is a prompt, so it fails the way prompts fail. The agent reports every
-phase as done. The output looks like the output of a run that worked. Nothing
-raises an error, because nothing checked.
+Scope: one target skill per invocation, and every finding covers that skill alone.
 
-Asking the model afterwards does not help. It no longer holds the run, and it
-will produce a fluent account of why it did the right thing. That account is
-generated, not remembered.
+## Terms
 
-The transcript is the only record of what happened. It holds every tool call in
-order, every failure, and every word the user typed mid-run. This skill reads
-that and nothing else.
+**run** - one execution of the target skill in one session.
+**trace** - the numbered listing of a run.
+**step** - one numbered line of a trace.
+**phase** - one unit of the sequence the target SKILL.md requires.
+**finding** - one gap between a trace and that sequence.
+**cause** - the property of the skill text that opened the gap.
 
-## What counts as evidence
+Session transcripts decide every question of fact here. Never ask a model to
+recount a past run. Pull that run's trace and read it instead.
 
-Ranked. The top of this list settles arguments with the bottom of it.
+## The two scripts
 
-1. **A user turn during the run.** Somebody stopped the agent and said what was
-   wrong. Nothing beats it.
-2. **A tool error.** A command the skill names came back non-zero.
-3. **A phase with no tool calls under it.** The skill required work that leaves
-   a trace, and no trace is there.
-4. **Steps in the wrong order,** or a phase that never appears.
-5. **What the agent said it did.** Worth reading, never worth trusting. A `say`
-   line is a claim. The tool lines above and below it are the fact.
-
-## Phase 1: Find the runs
+Locate runs:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/skill-debug/scripts/find-runs.mjs" \
   --skill=<name> --days=30
 ```
 
-Names work bare or qualified. `tighten` and `dod-guard:tighten` find the same
-runs. Exit 4 means no run in that window, so widen `--days` before concluding
-anything.
+Flags: `--skill`, `--days` (default 30), `--limit`, `--projects`. Exit 0 printed
+a list of runs. Exit 4 found nothing inside the window, so raise `--days` and run
+it again before you conclude anything. Exit 3 is a usage error.
 
-Read the counts. A run with user turns is the one to open first. So is a run
-that is far shorter than its neighbours, because a short run of a long skill
-stopped early.
+`--skill` takes the bare name or the plugin-qualified one. `tighten` and
+`dod-guard:tighten` reach the same runs.
 
-## Phase 2: Read the skill as a contract
-
-Read the SKILL.md under debate. Read every script it calls and every agent it
-dispatches. Write down the sequence it requires, one line per phase, with the
-observable each phase should leave behind.
-
-Do this before you look at a trace. An expected sequence written afterwards
-bends toward what the trace already shows, and then every run passes.
-
-## Phase 3: Extract the traces
+Turn one run into a trace:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/skill-debug/scripts/extract-run.mjs" \
   --session=<id> --skill=<name> --run=1
 ```
 
-The session id takes a unique prefix. Add `--sidechains` when the suspect is an
-agent brief rather than the orchestrator. Subagent steps are marked `~`.
+Flags: `--session`, `--skill`, `--run` (default 1), `--max-steps`,
+`--sidechains`, `--projects`. Exit 0 printed a trace. Exit 4 matched no such
+session or run number. Exit 3 is a usage error.
 
-Pull at least two runs when two exist. One run cannot tell a skill defect from a
-bad day.
+`--session` takes the whole id, any unique prefix of it, or a path. Add
+`--sidechains` to fold subagent steps into the trace, where a leading `~` marks
+each one. Reach for it once an agent brief looks more at fault than the
+orchestrator.
 
-## Phase 4: Align
+## Before the first trace
 
-Walk the expected sequence against the trace. Every phase gets one verdict:
-ran, ran wrong, ran out of order, or never ran. Record the step numbers that
-carry each verdict.
+Read the target SKILL.md end to end, along with every script it calls and every
+agent it dispatches. Out of that reading, write the sequence it demands: the
+phases in order, each carrying the trace evidence it ought to produce. That
+written sequence is the standard you score against. Finish it while no trace has
+been read.
 
-Then walk the other way. Every stretch of trace that answers to no phase is
-work the skill never asked for. That is a finding too, and usually it means the
-agent hit a gap and improvised.
+## Gather runs
 
-## Phase 5: Name the cause
+Take two runs or more whenever two exist, and mark in the report any finding that
+only one run supports. A run far shorter than its peers stopped early.
 
-A divergence and its cause are different things, and the fix follows the cause.
+## Score the sequence against the trace
+
+Note the step numbers that back every verdict you assign. Each phase in the
+sequence takes one verdict out of four: ran, ran wrong, ran out of order,
+never ran.
+
+Then read the trace on its own terms, front to back. Any run of steps that no
+phase accounts for is a finding.
+
+## Which evidence wins
+
+When two pieces of evidence disagree, the higher one on this list decides it.
+
+1. a user turn inside the run that halted or redirected the agent
+2. a tool call that came back with an error or a non-zero exit
+3. a tool call whose arguments run against what the skill laid out
+4. a phase the sequence demands, with no tool line beneath it
+5. a phase out of sequence, or missing from the trace
+6. the agent's account of its own work. A `say` line is a claim. The tool lines
+   around it are the fact.
+
+## Diagnose
+
+The gap is not the cause, and the edit answers the cause.
 
 | Cause | What the trace shows | Fix shape |
 |---|---|---|
-| missing step | the agent improvised work the skill never named | add the step |
-| ambiguous wording | the agent did something the text allows and you did not want | narrow the wording |
-| ignored instruction | the text is plain and the agent did otherwise | move it into the rules block, or have a script enforce it |
-| escape hatch | the skill offered an exit and the agent took it | delete the exit |
-| broken script | a command the skill names failed or printed nothing | fix the script |
-| wrong altitude | the skill said how, and the agent needed what | rewrite the phase |
-| lost late | the run held the shape early and dropped it after step 80 | move the instruction later in the file, or shorten the run |
+| missing step | work appears with no counterpart in the skill text | write the step in |
+| ambiguous wording | the run stayed inside what the text allows and still landed wrong | tighten the wording until only the wanted reading survives |
+| ignored instruction | the text states it plainly and the run went the other way | promote it into the rules block, or let a script enforce it |
+| escape hatch | the skill made a step optional and the run declined it | drop the option |
+| broken script | a command the skill names errored or printed nothing | repair the script |
+| wrong altitude | the skill spelled out how, and the run needed what | rewrite that phase |
+| lost late | early steps hold the sequence, and drift sets in past roughly step 80 | push the instruction further down the file, or cut the run shorter |
 
-The last two rows are the ones models get wrong. Both look like the agent being
-careless. Neither answers to stronger wording.
+## Write the report
 
-## Phase 6: Rank
+Sort by cost, breaking ties by count. Cost measures damage to the run. A finding
+that cut a run short sorts above one that only weakened the output. A finding
+that shows up in all runs sorts above one that shows up once.
 
-Sort by cost, then by how often it happened.
-
-Cost is what the divergence did to the run. A finding that ended a run early
-outranks one that produced a slightly worse result. A finding in every run
-outranks one seen once. Say plainly which findings rest on a single run.
-
-## Phase 7: Report
-
-One block per finding.
+One block per finding:
 
 ```
 ### {what went wrong, in one line}
@@ -130,33 +131,24 @@ skill text at fault: {heading or line}
 fix: {the edit}
 ```
 
-Stop here and show the user. The findings are what they asked for. Applying an
-edit to a skill that ships is a separate decision, so let them make it.
+Each edit you propose points at a step number in a run you actually pulled. That
+holds for every edit, with nothing exempt.
 
-## Phase 8: Apply
+Hand the report to the user and wait. Changing a shipped skill is the user's
+call.
 
-Apply the edits the user accepts. One edit per finding, in the SKILL.md or the
-agent brief that carries the fault.
+## Edit what the user accepts
 
-Then say what the next run should show if the fix worked. That sentence is what
-somebody checks after the next run, and writing it is how you find out whether
-a fix is testable at all.
+Work through the accepted findings one at a time, one edit each. Each edit lands
+in whichever file holds the fault, the SKILL.md or the agent brief. It touches
+the failing text alone and leaves its neighbors as they were. Fold unrelated
+rewriting in and the change no longer traces back to the run behind it.
 
-## Debugging this skill
+Where a script can check the fix, choose that over a fix the agent must remember.
+A long run sheds a remembered instruction somewhere past step 90.
 
-It reads its own transcripts like any other. `--skill=skill-debug` works.
+Never trade one optional exit for another. Spell out the condition the skill can
+test instead.
 
-## Rules
-
-1. **Cite a step.** No edit without a step number from a real run.
-2. **Two runs make a pattern.** One run is an anecdote. Label it as one.
-3. **Never take the agent's word.** A `say` line records a claim. Check the
-   tool lines under it.
-4. **A user correction outranks your reading.** They were there.
-5. **Fix the text that failed.** Not the file around it.
-6. **Prefer a script to a sentence.** An instruction a script can check gets
-   followed. One that rests on the agent remembering gets dropped at step 90.
-7. **Never add an escape hatch while removing one.** "Skip when it seems
-   unnecessary" is the defect, in every skill, every time.
-8. **One edit per finding.** A bundled rewrite cannot be traced back to the run
-   that justified it.
+Once every accepted edit is in, say what the next run should show if the fix
+holds.
