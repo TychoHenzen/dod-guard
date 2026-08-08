@@ -3,159 +3,125 @@ name: doc-reconcile
 description: >-
   Find documents that contradict each other, date each conflicting claim from
   its real edit history, and delete the older side when the dating is
-  decisive. Use for doc drift, conflicting docs, stale documentation, "which
+  decisive. Use when the user reports doc drift, conflicting docs, stale documentation, "which
   doc is right", reconcile the docs, docs contradict each other, remove
   outdated docs, or docs say different things.
 ---
-
 # Doc Reconcile
 
-## The problem
+Documentation rots in pairs. One file says six, another says eight, and both look
+authoritative to whoever lands on them. This skill finds those pairs across the
+repository, works out which half was written first from real edit history, and
+deletes the older half when the history is clear enough to be sure.
 
-Facts change while the work goes on. The same fact ends up written in several
-documents: a README, a package CLAUDE.md, a skill's SKILL.md, a manifest
-description. Later, an agent finds the older statement first, believes it,
-and acts on it. Nobody consulted the history, because a document does not
-carry its own revision date on its face. This skill finds those pairs, dates
-them from git, and deletes the stale side when the dating is decisive.
+Throughout, a *claim* is one scanned piece of text and a *pair* is two claims held
+up against each other. No other names for those two things.
 
-## The pipeline
+## Fixed limits
 
-### 1. Scan
+- Begin with a clean tree. Commit or stash pending work first, because an
+  uncommitted file cannot be dated.
+- One agent dispatch per pair, 20 dispatches per run at most. Tighten
+  `--threshold`, `--limit` and `--max-per-claim` until the file fits that budget,
+  then start dispatching.
+- Confine every edit to the files and line ranges the scanner named; touch nothing
+  else in the repository.
+- Delete a claim only under the verdicts in the table below; leave every other claim
+  exactly as written.
+- For repeated wording, delete one copy and point at the other. Never write a fresh
+  sentence that blends the two. Instead pick one existing wording and keep it as it stands.
 
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile/scripts/scan-docs.mjs" \
-  --root=. --out=.doc-reconcile/candidates.json
-```
+Scope: this skill deletes and points, and it stops there. Rewriting a claim into new
+prose, editing code, and reconciling anything the scanner did not report all sit
+outside it. Every deletion traces to one agent verdict and one dating result.
 
-Reads every git-tracked `.md` file plus the `description` fields in
-`plugin.json` and `marketplace.json`. Splits each document into claim units:
-one paragraph, one top-level list item, one table row, or one JSON
-description string. Scores every pair of units that share vocabulary and
-writes the survivors to `--out`, sorted by score descending, then by file and
-line. Two runs over the same input always produce the same file.
+## What each outcome buys
 
-On this repository the scan reads 78 documents into 5215 claim units. A full
-judge pass over every candidate pair costs one dispatch per pair. Bound the
-scan before dispatching. `--threshold` raises the score floor. `--limit`
-caps the pair count. `--max-per-claim` caps how many pairs one claim can
-appear in.
-
-### 2. Judge each pair
-
-Dispatch the `doc-conflict-judge` agent, one pair per dispatch, in batches.
-Give it the two claims' `file`, `startLine`, `endLine`, `heading`, and `text`
-fields from the candidates file. It returns one of `CONFLICT`, `DUPLICATE`,
-`STALE-SUBSET`, or `UNRELATED`, with a quoted-evidence line for any
-`CONFLICT`. The scanner is tuned for recall, so most pairs come back
-`UNRELATED`. That is the expected shape of the output, not a failure.
-
-### 3. Date every CONFLICT and DUPLICATE pair
-
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile/scripts/claim-age.mjs" \
-  --pair=<file>:<start>-<end> --pair=<file>:<start>-<end> --json
-```
-
-Exit 0 means `DECISIVE` and names the older side. Exit 1 means `AMBIGUOUS`.
-Exit 3 is a usage error. Only run this step on pairs the judge called
-`CONFLICT` or `DUPLICATE`. `STALE-SUBSET` and `UNRELATED` pairs skip dating
-entirely, because nothing about them needs an older side identified.
-
-### 4. Resolve
-
-- **`CONFLICT` plus exit 0**: delete the older claim. Say which commit dated
-  it and which commits were skipped as cosmetic.
-- **`DUPLICATE` plus exit 0**: keep the newer wording in one place, and
-  replace the older copy with a pointer to it. Do not leave two copies to
-  drift again.
-- **`STALE-SUBSET`**: leave it. It is not a contradiction.
-- **Exit 1, any verdict**: change nothing. Collect it for the report.
-
-A `DUPLICATE` pair is often written in one commit, so both sides date
-identically and `claim-age.mjs` returns `AMBIGUOUS`. The dating cannot pick a
-winner there. Instead, choose the canonical home by which document owns the
-subject, and report that choice in the same list as the other `AMBIGUOUS`
-pairs. Never delete a claim on an `AMBIGUOUS` verdict, whatever the judge
-said.
-
-### 5. Report
-
-List every deletion with its evidence: the pair, the judge's quote, and the
-deciding commit. Then give the user one numbered list of the `AMBIGUOUS`
-pairs, each with both claims, both dates, and the reason it could not be
-decided. That list is the only thing the user has to read.
-
-## Why dating is not just blame
-
-`git blame` names only the most recent commit that touched a line. A
-reformat, an autofix, or a version bump that rewrapped a paragraph makes an
-old claim look new. `claim-age.mjs` walks the line's history with
-`git log -L`. It compares the normalized content of each change and skips
-the commits that changed no words. It dates the claim to the last edit that
-changed its meaning.
-
-Real example from this repository:
-`packages/dod-guard/skills/clean-house/SKILL.md` line 92 dates to 2026-07-27
-by blame, and to 2026-07-13 by this tool. The 2026-07-27 commit only changed
-a trailing colon to a period.
-
-## Worked example
-
-`.data/micro-mutations/REPORT.md:54` says `32%` for
-`packages/obsidian-rag/src/retriever.ts`. `docs/MICRO_MUTATIONS.md:53` says
-`42%` for the same file on the same date. Pair mode:
-
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile/scripts/claim-age.mjs" \
-  --pair=".data/micro-mutations/REPORT.md:54-54" \
-  --pair="docs/MICRO_MUTATIONS.md:53-53" --json
-```
-
-Returns `DECISIVE`, `docs/MICRO_MUTATIONS.md:53` older by 7.62 days.
-
-## Flags
-
-### scan-docs.mjs
-
-| Flag | Default | Meaning |
+| Agent verdict | Dating | Action |
 |---|---|---|
-| `--root=<path>` | cwd | Repository to scan |
-| `--threshold=<n>` | 0.35 | Minimum pair score to keep |
-| `--max-per-claim=<n>` | 3 | Pair cap per claim |
-| `--min-tokens=<n>` | 6 | Drop claims with fewer content tokens than this |
-| `--out=<path>` | `.doc-reconcile/candidates.json` | Output file, relative to root |
-| `--json` | off | Print to stdout instead of writing a file |
-| `--limit=<n>` | none | Keep only the top N pairs |
+| `CONFLICT` | `DECISIVE` | delete the claim history dates as older |
+| `DUPLICATE` | `DECISIVE` | keep the newer wording, point the older copy at it |
+| `CONFLICT` or `DUPLICATE` | `AMBIGUOUS` | change nothing, carry the pair forward |
+| `STALE-SUBSET` | not dated | leave both claims alone |
+| `UNRELATED` | not dated | leave both claims alone |
 
-Exit codes: 0 ran, 3 usage error.
+A `STALE-SUBSET` pair says less on one side than the other. That narrowing is not a
+contradiction, so it is not yours to fix.
 
-### claim-age.mjs
+Repeated wording that history cannot separate still deserves a single location.
+Choose the document that owns the subject, keep the claim there, replace the other
+copy with a pointer, and say in your write-up that you chose rather than measured.
 
-| Flag | Default | Meaning |
+## Getting a verdict
+
+Send `doc-conflict-judge` exactly one pair, and give it both claims' `file`,
+`startLine`, `endLine`, `heading` and `text` straight from the candidates file. It
+answers with exactly one of `CONFLICT`, `DUPLICATE`, `STALE-SUBSET` or `UNRELATED`,
+plus quoted evidence whenever the answer is `CONFLICT`.
+
+Expect `UNRELATED` for most of what you send. The scanner errs toward offering too
+many pairs, so a long run of `UNRELATED` means it worked as designed.
+
+Where two claims put different numbers on the same thing, whether a count, version,
+port, percentage or timeout, that is a `CONFLICT` and not a difference of phrasing.
+The one exception is a pair that spells out, in the claims themselves, the
+conditions under which both figures hold.
+
+The agent weighs the two texts alone. It does not go hunting through the enclosing
+document for a reading that lets both survive, because whoever reads one claim in
+the wild never sees the other one's surroundings. It also writes nothing: no edits,
+no merged claims, no suggested replacement wording. You own the deletions and the
+dating script owns the question of which claim came first.
+
+## Getting a date
+
+Date the `CONFLICT` and `DUPLICATE` pairs only; send nothing else to the script.
+
+`claim-age.mjs` follows a line backward through `git log -L`, compares content with
+formatting normalized away, passes over the commits that shifted no words, and
+reports the last edit that changed what the line meant. `git blame` would name only
+the newest commit touching that line, so a rewrap, autofix or reformat would dress
+an old claim up as a recent one. Following the history is what keeps that from
+happening.
+
+A `DECISIVE` result names which of the two claims is older. Dates separated by less
+than `--min-gap` produce `AMBIGUOUS` and no winner. A file carrying uncommitted
+changes dates as `uncommitted`, which forces `AMBIGUOUS` on any pair that includes
+it and exits 1.
+
+## Script reference
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile/scripts/scan-docs.mjs"
+node "${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile/scripts/claim-age.mjs"
+```
+
+`scan-docs.mjs` reads every git-tracked Markdown file plus each `description` field
+inside `plugin.json` and `marketplace.json`. It cuts each document into claims along
+these boundaries: a paragraph, a top-level list item, a table row, a JSON
+description string. It scores every pair sharing vocabulary, keeps whatever meets
+the threshold, limits how many pairs one claim may join, and writes the file that
+each later phase reads. Repeat runs over unchanged input match line for line, sorted
+by score, then file, then line. Exit 0 ran, exit 3 flagged a usage error.
+
+| Flag | Meaning | Default |
 |---|---|---|
-| `--file=<path>` `--lines=<start>-<end>` | required in single mode | Date one claim |
-| `--pair=<file>:<start>-<end>` (given twice) | required in pair mode | Compare two claims |
-| `--min-gap=<days>` | 1 | Minimum gap before a pair counts as decisive |
-| `--json` | off | Print JSON instead of text |
+| `--root=<path>` | repository to read | cwd |
+| `--threshold=<n>` | lowest pair score kept | 0.35 |
+| `--max-per-claim=<n>` | how many pairs one claim may join | 3 |
+| `--min-tokens=<n>` | drops claims holding fewer content tokens than this | 6 |
+| `--out=<path>` | output file, resolved against `--root` | `.doc-reconcile/candidates.json` |
+| `--json` | prints to stdout in place of writing the file | off |
+| `--limit=<n>` | keeps only the best-scoring pairs | none |
 
-Exit codes: 0 single mode or pair `DECISIVE`, 1 pair `AMBIGUOUS`, 3 usage
-error.
+`claim-age.mjs` compares two ranges given as `--pair=<file>:<start>-<end>` twice, or
+ages one range given as `--file=<path>` with `--lines=<start>-<end>`. It also takes
+`--min-gap=<days>`, default 1, and `--json`, default off. Exit 0 covers single mode
+and a `DECISIVE` pair, exit 1 an `AMBIGUOUS` pair, exit 3 a usage error.
 
-## Anti-patterns
+## What you hand back
 
-| Anti-pattern | Why it fails |
-|---|---|
-| Deleting on an `AMBIGUOUS` verdict | The dating could not tell which side is older. Deleting either one is a coin flip. |
-| Trusting blame recency | Blame reports the last touch, not the last meaning change. A punctuation fix makes an old claim look freshly written. |
-| Rewriting both claims into a new merged sentence | The skill deletes and points, it does not compose new prose. A merge is an edit nobody reviewed against the judge's verdict. |
-| Reading around a pair until the two claims can be reconciled | The judge classifies the two claims as given. A reader who lands on one has no access to the other's context. |
-| Treating a number difference as a wording difference | A differing count, version, port, percentage, or timeout is a `CONFLICT`, not a paraphrase to reconcile. |
-| Running the pipeline without checking the tree is clean first | Scanning and dating read files in place. Uncommitted changes to a scanned file make `claim-age.mjs` return `uncommitted` for it. |
-
-## Safety rules
-
-1. Work on a clean tree.
-2. Never delete a claim the judge did not call `CONFLICT` or `DUPLICATE`.
-3. Never delete on exit 1.
-4. Never edit a file the scanner did not report.
+Give every deletion its own entry: the pair, the agent's quoted evidence, the commit
+that settled the age, and the commits skipped for changing wording only. Follow that
+with a single numbered list of the pairs left undecided, each showing both claims,
+both dates, and what stopped the dating from settling it.
