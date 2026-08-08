@@ -9,11 +9,12 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const USAGE = [
-  "Usage: node migration-check.mjs <path-to-SKILL.md> [options]",
+  "Usage: node migration-check.mjs <path-to-file> [options]",
   "",
   "  --json             Output structured JSON (score + checks)",
   "  --save=<path>      Write results to file (for before/after comparison)",
   "  --before=<path>    Load a prior run and compare against it",
+  "  --kind=<k>         Override kind detection: skill, agent, claude-md, memory, instinct",
   "",
   "Prints a 0-100 5.0-readiness score (weighted sum of per-check scores).",
   "Exit codes: 0 pass, 1 at least one check fails, 3 usage error.",
@@ -45,6 +46,16 @@ function parseFrontmatter(text) {
 function bodyAfterFrontmatter(text) {
   const match = /^---\r?\n[\s\S]*?\r?\n---\r?\n?([\s\S]*)$/.exec(text);
   return match ? match[1] : text;
+}
+
+// The frontmatter parser above flattens an indented continuation line onto
+// its parent key, so a nested block like `metadata:\n  type: user` never
+// becomes a nested object. Kind-specific checks that need a nested value
+// read it back out of the raw frontmatter text instead.
+
+function rawFrontmatterText(text) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
+  return match ? match[1] : "";
 }
 
 function cleanDescription(fm) {
@@ -100,17 +111,57 @@ function fencedBlocks(body) {
   return blocks;
 }
 
+// --- Kind detection ---
+// The kind decides which checks run and which weight table scores them.
+// `text` is unused today, kept so a later kind-specific check (memory
+// frontmatter, agent tools) can inspect content without changing the
+// signature.
+
+function kindFromBasename(basename) {
+  if (basename === "SKILL.md") return "skill";
+  if (basename === "CLAUDE.md") return "claude-md";
+  if (basename === "INSTINCTS.md") return "instinct";
+  if (basename === "MEMORY.md") return "memory";
+  return null;
+}
+
+function kindFromSegments(segments) {
+  if (segments.includes("instincts")) return "instinct";
+  if (segments.includes("memory")) return "memory";
+  if (segments.includes("agents")) return "agent";
+  return null;
+}
+
+function detectKind(path, text) {
+  void text;
+  const segments = path.replace(/\\/g, "/").split("/");
+  const basename = segments[segments.length - 1];
+  return kindFromBasename(basename) ?? kindFromSegments(segments) ?? "skill";
+}
+
 // --- Individual checks ---
 
-function checkLineCount(body) {
+// Each kind has its own line-count comfort zone. A skill's targets are
+// unchanged from the pre-kind version, so a skill's score does not move.
+const LINE_COUNT_TARGETS = {
+  skill: { warn: 300, fail: 500 },
+  agent: { warn: 200, fail: 400 },
+  "claude-md": { warn: 400, fail: 800 },
+  memory: { warn: 40, fail: 100 },
+  instinct: { warn: 20, fail: 60 },
+};
+
+function checkLineCount(body, targets) {
   const lines = body.split(/\r?\n/).length;
+  const { warn, fail } = targets;
   return {
     id: "line-count",
-    label: "Body under 500 lines (target 300)",
+    label: `Body under ${fail} lines (target ${warn})`,
     value: lines,
-    pass: lines <= 500,
-    warn: lines > 300,
-    detail: lines <= 300 ? "within target" : lines <= 500 ? "over target, under limit" : "over limit",
+    pass: lines <= fail,
+    warn: lines > warn,
+    detail: lines <= warn ? "within target" : lines <= fail ? "over target, under limit" : "over limit",
+    targets,
   };
 }
 
@@ -190,6 +241,100 @@ function checkNoAtImports(body) {
     value: hits.length,
     pass: hits.length === 0,
     detail: hits.length === 0 ? "none found" : `found: ${hits.slice(0, 3).join(", ")}`,
+  };
+}
+
+// --- Kind-specific checks ---
+// memory-frontmatter runs for the memory kind alone; agent-tools runs for
+// the agent kind alone.
+
+const ALLOWED_METADATA_TYPES = new Set(["user", "feedback", "project", "reference"]);
+
+function metadataTypeValue(rawFm) {
+  const match = /^\s+type:\s*(\S+)/m.exec(rawFm);
+  return match ? match[1].trim() : "";
+}
+
+function missingNameOrDescription(fm) {
+  const name = fm.name || "";
+  const description = fm.description || "";
+  if (!name.trim()) return "missing name";
+  if (!description.trim()) return "missing description";
+  return null;
+}
+
+function metadataTypeProblem(rawFm) {
+  const type = metadataTypeValue(rawFm);
+  if (!type) return "missing metadata.type";
+  if (!ALLOWED_METADATA_TYPES.has(type)) {
+    return `metadata.type "${type}" not one of user, feedback, project, reference`;
+  }
+  return null;
+}
+
+function memoryFrontmatterProblem(fm, rawFm) {
+  return missingNameOrDescription(fm) ?? metadataTypeProblem(rawFm);
+}
+
+function checkMemoryFrontmatter(fm, rawFm) {
+  const problem = memoryFrontmatterProblem(fm, rawFm);
+  return {
+    id: "memory-frontmatter",
+    label: "Frontmatter: name, description, metadata.type in allowed set",
+    value: problem ?? "ok",
+    pass: !problem,
+    detail: problem ?? "valid",
+  };
+}
+
+function checkAgentTools(fm) {
+  const tools = (fm.tools ?? "").trim();
+  return {
+    id: "agent-tools",
+    label: "Frontmatter declares tools",
+    value: tools.length > 0 ? tools : "absent",
+    pass: tools.length > 0,
+    detail: tools.length > 0 ? "tools declared" : "no tools line",
+  };
+}
+
+// An instinct file uses a flat id/trigger/confidence/domain schema instead
+// of the memory kind's name/description/metadata.type schema, so it gets
+// its own frontmatter check rather than reusing memory-frontmatter.
+
+function confidenceRangeProblem(raw, num) {
+  if (num < 0 || num > 1) return `confidence "${raw}" not in range 0 to 1`;
+  return null;
+}
+
+function confidenceProblem(raw) {
+  const trimmed = (raw ?? "").trim();
+  if (!trimmed) return "confidence missing";
+  const num = Number(trimmed);
+  if (Number.isNaN(num)) return `confidence "${raw}" is not a number`;
+  return confidenceRangeProblem(raw, num);
+}
+
+function missingInstinctField(value, name) {
+  return (value ?? "").trim() ? null : `missing ${name}`;
+}
+
+function instinctFrontmatterProblem(fm) {
+  const nameProblem = missingInstinctField(fm.id, "id") ?? missingInstinctField(fm.trigger, "trigger");
+  if (nameProblem) return nameProblem;
+  const confProblem = confidenceProblem(fm.confidence);
+  if (confProblem) return confProblem;
+  return missingInstinctField(fm.domain, "domain");
+}
+
+function checkInstinctFrontmatter(fm) {
+  const problem = instinctFrontmatterProblem(fm);
+  return {
+    id: "instinct-frontmatter",
+    label: "Frontmatter: id, trigger, confidence 0-1, domain",
+    value: problem ?? "ok",
+    pass: !problem,
+    detail: problem ?? "valid",
   };
 }
 
@@ -335,12 +480,12 @@ function checkContradictions(body) {
   };
 }
 
-function checkConsistentTerminology(body) {
+function checkConsistentTerminology(body, kind) {
   const synonymSets = [
     ["subagent", "sub-agent", "sub agent"],
     ["frontmatter", "front-matter", "front matter"],
-    ["SKILL.md", "skill.md", "Skill.md"],
   ];
+  if (kind === "skill") synonymSets.push(["SKILL.md", "skill.md", "Skill.md"]);
   const mixed = [];
   for (const set of synonymSets) {
     const found = set.filter((term) => body.includes(term));
@@ -569,17 +714,19 @@ const WEIGHTS = {
   "consistent-terminology": 1,
 };
 
-function lineCountScore(lines) {
-  if (lines <= 300) return 1;
-  if (lines <= 500) return 1 - (0.5 * (lines - 300)) / 200;
-  return Math.max(0, 0.5 - (lines - 500) / 800);
+function lineCountScore(lines, targets) {
+  const { warn, fail } = targets;
+  const span = fail - warn;
+  if (lines <= warn) return 1;
+  if (lines <= fail) return 1 - (0.5 * (lines - warn)) / span;
+  return Math.max(0, 0.5 - (lines - fail) / (4 * span));
 }
 
 const boolScore = (c) => (c.pass ? 1 : 0);
 const countScore = (tolerance) => (c) => Math.max(0, 1 - c.value / tolerance);
 
 const SCORERS = {
-  "line-count": (c) => lineCountScore(c.value),
+  "line-count": (c) => lineCountScore(c.value, c.targets),
   "name-format": boolScore,
   "description-present": boolScore,
   "description-person": boolScore,
@@ -598,11 +745,14 @@ const SCORERS = {
   "no-contradictions": countScore(3),
   "consistent-terminology": countScore(3),
   "emphasis-density": (c) => Math.max(0, 1 - Math.max(0, c.value - 2) / 4),
+  "memory-frontmatter": boolScore,
+  "agent-tools": boolScore,
+  "instinct-frontmatter": boolScore,
 };
 
-function applyScores(checks) {
+function applyScores(checks, weights) {
   for (const c of checks) {
-    c.weight = WEIGHTS[c.id];
+    c.weight = weights[c.id];
     c.score = Number(SCORERS[c.id](c).toFixed(3));
   }
   return checks;
@@ -614,35 +764,115 @@ function overallScore(checks) {
   return Math.round(total);
 }
 
+// --- Per-kind check membership and weights ---
+// Every artifact kind runs a subset of the 19 checks above, plus whatever
+// kind-specific checks apply only to it. Weights are taken from ALL_WEIGHTS
+// and renormalized so each kind's own subset sums to 100 - that keeps scores
+// from different kinds on one comparable scale. A kind-specific check's
+// weight lives in KIND_EXTRA_WEIGHTS, scoped to the one kind that runs it,
+// so it never enters the skill kind's 19-check baseline.
+
+const CHECK_IDS = Object.keys(WEIGHTS);
+
+const KIND_EXTRA_WEIGHTS = {
+  agent: { "agent-tools": 8 },
+  memory: { "memory-frontmatter": 8 },
+  instinct: { "instinct-frontmatter": 8 },
+};
+
+const ALL_WEIGHTS = {
+  ...WEIGHTS,
+  ...Object.assign({}, ...Object.values(KIND_EXTRA_WEIGHTS)),
+};
+
+const FRONTMATTER_CHECK_IDS = [
+  "name-format",
+  "description-present",
+  "description-person",
+  "description-triggers",
+];
+
+function checkIdsExcluding(...excluded) {
+  const drop = new Set(excluded);
+  return CHECK_IDS.filter((id) => !drop.has(id));
+}
+
+function renormalizedWeights(ids) {
+  const sum = ids.reduce((total, id) => total + ALL_WEIGHTS[id], 0);
+  const weights = {};
+  for (const id of ids) weights[id] = (ALL_WEIGHTS[id] * 100) / sum;
+  return weights;
+}
+
+const KIND_CHECK_IDS = {
+  skill: CHECK_IDS,
+  agent: [...checkIdsExcluding("delegation-cap"), ...Object.keys(KIND_EXTRA_WEIGHTS.agent)],
+  "claude-md": checkIdsExcluding(...FRONTMATTER_CHECK_IDS, "delegation-cap"),
+  memory: [
+    ...checkIdsExcluding("description-triggers", "delegation-cap"),
+    ...Object.keys(KIND_EXTRA_WEIGHTS.memory),
+  ],
+  instinct: [
+    ...checkIdsExcluding(...FRONTMATTER_CHECK_IDS, "delegation-cap"),
+    ...Object.keys(KIND_EXTRA_WEIGHTS.instinct),
+  ],
+};
+
+const KINDS = Object.fromEntries(
+  Object.entries(KIND_CHECK_IDS).map(([kind, ids]) => [
+    kind,
+    { checkIds: ids, weights: renormalizedWeights(ids) },
+  ]),
+);
+
 // --- Run all checks ---
 
-function runChecks(text) {
+const CHECK_RUNNERS = {
+  "line-count": (fm, body, kind) => checkLineCount(body, LINE_COUNT_TARGETS[kind]),
+  "name-format": (fm, body) => checkNameFormat(fm),
+  "description-present": (fm, body) => checkDescriptionPresent(fm),
+  "description-person": (fm, body) => checkDescriptionPerson(fm),
+  "description-triggers": (fm, body) => checkDescriptionTriggers(fm),
+  "no-at-imports": (fm, body) => checkNoAtImports(body),
+  "no-scaffolding": (fm, body) => checkScaffolding(body),
+  "no-conservative-filters": (fm, body) => checkConservativeFilters(body),
+  "no-bare-negatives": (fm, body) => checkBareNegatives(body),
+  "no-implicit-scope": (fm, body) => checkImplicitScope(body),
+  "no-drip-fed": (fm, body) => checkDripFed(body),
+  "no-time-sensitive": (fm, body) => checkTimeSensitive(body),
+  "emphasis-density": (fm, body) => checkEmphasisDensity(body),
+  "no-redundant-repetition": (fm, body) => checkRedundantRepetition(body),
+  "explicit-scope": (fm, body) => checkExplicitScope(body),
+  "delegation-cap": (fm, body) => checkDelegationCap(body),
+  "no-constraining-examples": (fm, body) => checkWorkedExamples(body),
+  "no-contradictions": (fm, body) => checkContradictions(body),
+  "consistent-terminology": (fm, body, kind) => checkConsistentTerminology(body, kind),
+  "memory-frontmatter": (fm, body, kind, rawFm) => checkMemoryFrontmatter(fm, rawFm),
+  "agent-tools": (fm) => checkAgentTools(fm),
+  "instinct-frontmatter": (fm) => checkInstinctFrontmatter(fm),
+};
+
+function runChecks(text, kind) {
   const fm = parseFrontmatter(text);
   const body = bodyAfterFrontmatter(text);
-  return applyScores([
-    checkLineCount(body),
-    checkNameFormat(fm),
-    checkDescriptionPresent(fm),
-    checkDescriptionPerson(fm),
-    checkDescriptionTriggers(fm),
-    checkNoAtImports(body),
-    checkScaffolding(body),
-    checkConservativeFilters(body),
-    checkBareNegatives(body),
-    checkImplicitScope(body),
-    checkDripFed(body),
-    checkTimeSensitive(body),
-    checkEmphasisDensity(body),
-    checkRedundantRepetition(body),
-    checkExplicitScope(body),
-    checkDelegationCap(body),
-    checkWorkedExamples(body),
-    checkContradictions(body),
-    checkConsistentTerminology(body),
-  ]);
+  const rawFm = rawFrontmatterText(text);
+  const { checkIds, weights } = KINDS[kind];
+  const checks = checkIds.map((id) => CHECK_RUNNERS[id](fm, body, kind, rawFm));
+  return applyScores(checks, weights);
 }
 
 // --- Comparison ---
+
+// A baseline saved before the --kind field existed carries no `kind`, and
+// that missing field matches any current kind rather than blocking. Only an
+// explicit, different kind refuses the comparison - the per-kind weight
+// tables make a cross-kind score delta meaningless.
+
+function kindMismatch(beforeKind, currentKind) {
+  if (beforeKind === undefined || beforeKind === null) return null;
+  if (beforeKind === currentKind) return null;
+  return beforeKind;
+}
 
 function compare(before, after) {
   const rows = [];
@@ -664,7 +894,8 @@ function compare(before, after) {
 
 // --- Output ---
 
-function printChecks(checks, score) {
+function printChecks(checks, score, kind) {
+  process.stdout.write(`kind: ${kind}\n`);
   const maxLabel = Math.max(...checks.map((c) => c.label.length));
   for (const c of checks) {
     const mark = c.pass ? (c.warn ? "~" : "+") : "-";
@@ -714,18 +945,33 @@ function parseArgs(argv) {
   return args;
 }
 
-function runComparison(args, checks, score) {
-  const beforeData = JSON.parse(readFileSync(args.before, "utf8"));
+function printComparisonResult(beforeData, checks, score, kind, asJson) {
   const rows = compare(beforeData.checks, checks);
   const scores = { before: beforeData.score ?? overallScore(beforeData.checks), after: score };
   const exit = rows.some((r) => r.status === "REGRESSED") ? 1 : 0;
-  if (args.json === "true") {
-    const out = { ...scores, delta: scores.after - scores.before, rows };
+  if (asJson) {
+    const out = { ...scores, delta: scores.after - scores.before, kind, rows };
     process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
     return exit;
   }
   printComparison(rows, scores);
   return exit;
+}
+
+function runComparison(args, checks, score, kind) {
+  const beforeData = JSON.parse(readFileSync(args.before, "utf8"));
+  const mismatch = kindMismatch(beforeData.kind, kind);
+  if (mismatch) {
+    process.stderr.write(`Cannot compare: baseline kind "${mismatch}" does not match current kind "${kind}"\n`);
+    return 3;
+  }
+  return printComparisonResult(beforeData, checks, score, kind, args.json === "true");
+}
+
+function resolveKind(args, target, text) {
+  if (!args.kind) return detectKind(target, text);
+  if (!Object.hasOwn(KINDS, args.kind)) return null;
+  return args.kind;
 }
 
 function main(argv) {
@@ -743,20 +989,25 @@ function main(argv) {
     process.stderr.write(`Cannot read ${target}: ${err.message}\n`);
     return 3;
   }
-  const checks = runChecks(text);
+  const kind = resolveKind(args, target, text);
+  if (!kind) {
+    process.stderr.write(`Unknown --kind: ${args.kind}. Expected one of: ${Object.keys(KINDS).join(", ")}\n`);
+    return 3;
+  }
+  const checks = runChecks(text, kind);
   const score = overallScore(checks);
 
   if (args.save) {
-    const data = { file: target, score, checks, timestamp: new Date().toISOString() };
+    const data = { file: target, kind, score, checks, timestamp: new Date().toISOString() };
     writeFileSync(args.save, JSON.stringify(data, null, 2));
   }
 
-  if (args.before) return runComparison(args, checks, score);
+  if (args.before) return runComparison(args, checks, score, kind);
 
   if (args.json === "true") {
-    process.stdout.write(`${JSON.stringify({ score, checks }, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({ score, checks, kind }, null, 2)}\n`);
   } else {
-    printChecks(checks, score);
+    printChecks(checks, score, kind);
   }
   return checks.every((c) => c.pass) ? 0 : 1;
 }
