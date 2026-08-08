@@ -540,13 +540,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/mcp/dod-adversarial-gate.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-08",
+      "last_result": {
+        "total": 73,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 73,
+        "status": "ok",
+        "error": null
+      },
       "lines": 73,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "7172cac450de0fe96046e533e8d2ef4b19355c8bd2c067d185aec449aeea2c50",
+      "dirty": false
     },
     "packages/dod-guard/src/mcp/dod-amend.ts": {
       "last_tested": "2026-08-07",
@@ -994,13 +1002,21 @@
       "dirty": true
     },
     "packages/evomcp/src/solve-repair.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-08",
+      "last_result": {
+        "total": 40,
+        "caught": 34,
+        "missed": 2,
+        "timeout": 4,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 70,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "bf79b03da5640e1288bce9411b262208c762a99bdff0b732a337ebf93a8a8326",
+      "dirty": false
     },
     "packages/evomcp/src/solve-report.ts": {
       "last_tested": null,
@@ -1092,13 +1108,21 @@
       "dirty": true
     },
     "packages/quality-guard/src/index.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-08",
+      "last_result": {
+        "total": 70,
+        "caught": 10,
+        "missed": 35,
+        "timeout": 2,
+        "unviable": 23,
+        "status": "ok",
+        "error": null
+      },
       "lines": 116,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "1307d99aa942412d7ed15b63f25c1bd24f329778a9ab1c8813b5cebd49cce6a4",
+      "dirty": false
     },
     "packages/quality-guard/src/scanner.ts": {
       "last_tested": null,
@@ -1173,58 +1197,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 17674,
-    "caught": 6803,
-    "missed": 6319,
-    "timeout": 79,
-    "unviable": 4473,
+    "total_mutants": 17857,
+    "caught": 6847,
+    "missed": 6356,
+    "timeout": 85,
+    "unviable": 4569,
     "error": 43,
-    "runs": 104,
-    "files_tested": 104
+    "runs": 107,
+    "files_tested": 107
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
-      "file": "packages/dod-guard/src/brevity.ts",
-      "result": {
-        "total": 366,
-        "caught": 147,
-        "missed": 149,
-        "timeout": 0,
-        "unviable": 70,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
-      "file": "packages/obsidian-rag/src/retriever.ts",
-      "result": {
-        "total": 112,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 112,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
-      "file": "packages/dod-guard/src/command-check.ts",
-      "result": {
-        "total": 300,
-        "caught": 147,
-        "missed": 123,
-        "timeout": 8,
-        "unviable": 22,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
@@ -2579,6 +2561,48 @@
         "missed": 19,
         "timeout": 0,
         "unviable": 2,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-08",
+      "commit": "c33ec5dcdbf353b11fd8204ae0c0db6cf9d5432a",
+      "file": "packages/dod-guard/src/mcp/dod-adversarial-gate.ts",
+      "result": {
+        "total": 73,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 73,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-08",
+      "commit": "c33ec5dcdbf353b11fd8204ae0c0db6cf9d5432a",
+      "file": "packages/evomcp/src/solve-repair.ts",
+      "result": {
+        "total": 40,
+        "caught": 34,
+        "missed": 2,
+        "timeout": 4,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-08",
+      "commit": "c33ec5dcdbf353b11fd8204ae0c0db6cf9d5432a",
+      "file": "packages/quality-guard/src/index.ts",
+      "result": {
+        "total": 70,
+        "caught": 10,
+        "missed": 35,
+        "timeout": 2,
+        "unviable": 23,
         "status": "ok",
         "error": null
       }
