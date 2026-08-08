@@ -1,6 +1,6 @@
 {
   "name": "quality-guard",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Structural code quality gate. Claude Code plugin with an MCP server and a PostToolUse hook that ratchets every write against a recorded baseline. Ships 1 skill: /quality-refactor.",
   "type": "module",
   "main": "dist/bundle.js",
