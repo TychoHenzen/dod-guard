@@ -718,13 +718,14 @@ function runComparison(args, checks, score) {
   const beforeData = JSON.parse(readFileSync(args.before, "utf8"));
   const rows = compare(beforeData.checks, checks);
   const scores = { before: beforeData.score ?? overallScore(beforeData.checks), after: score };
+  const exit = rows.some((r) => r.status === "REGRESSED") ? 1 : 0;
   if (args.json === "true") {
     const out = { ...scores, delta: scores.after - scores.before, rows };
     process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
-  } else {
-    printComparison(rows, scores);
+    return exit;
   }
-  return rows.some((r) => r.status === "REGRESSED") ? 1 : 0;
+  printComparison(rows, scores);
+  return exit;
 }
 
 function main(argv) {
