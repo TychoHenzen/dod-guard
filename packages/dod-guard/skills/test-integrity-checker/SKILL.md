@@ -13,196 +13,133 @@ description: >-
   covers a negative case. The skill both finds these tests and repairs them.
 argument-hint: [test file or directory to audit]
 ---
-
 # Test integrity checker
 
-A model that read the code before it wrote the tests asserts whatever the code
-produced. Where the code returns 42 and the specification says 24, the test
-asserts 42. It passes forever and catches nothing. A test whose expected value
-would have to change once somebody fixes the bug is a second copy of that bug.
+Tests written after the code tend to record what the code produced, not what the specification
+requires. You end with one test file whose expectations come from outside the implementation, one
+demonstrated fault, and a digest guarding the result.
 
-You detect none of this yourself. A shipped agent does the reading. Your work
-is everything around that dispatch. Pick the target. Hand the agent evidence it
-cannot see. Judge the reply. Repair the tests. Prove one repair catches a real
-bug. Lock the result.
+## What qualifies, and which file to take
 
-Say at the start that you are auditing test integrity, and that you are
-checking whether the tests catch bugs or bless them.
+Four situations put a file out of scope. Tests older than the implementation carry no fitted
+expectations. Tests by an author other than the implementation's already come from a second source.
+Code with no logic in it offers nothing to get wrong. Snapshot files copy output by design, so an
+auditor marks every value critical and each of those criticals is wrong.
 
-Four kinds of work do not need this skill. Tests written before the
-implementation are safe, because their author never watched the code run. Tests
-written by a party other than the implementer are safe for the same reason.
-Code with no logic to get wrong has nothing to bless. A snapshot file is its
-own category. Every snapshot value is copied from output by design, so an audit
-returns nothing but false criticals on one.
+Where the project keeps written requirements or a verified specification, measure the tests against
+those requirements rather than against the implementation they came from, and run
+`/dod-guard:adversarial-workflow` from its phase 2 in place of this skill.
 
-Stop here when the project already has a verified specification. Stop too when
-somebody wrote the requirements down. Auditing tests against the code they came
-from answers a weaker question than auditing them against the requirement. Send
-that work to `/dod-guard:adversarial-workflow` and tell it to start at phase 2,
-its test audit.
+Scan with `rg` rather than `grep` or `findstr`, since `rg` returns the same results under Windows and
+POSIX. Because `rg --files` writes the platform's own separator, keep every glob to a single path
+segment.
 
-Use `rg` for every scan rather than `grep` or `findstr`. It behaves the same on
-Windows and on POSIX. One caution: `rg --files` prints the native path
-separator, so match a single path segment.
+Files the user names are the files audited. Otherwise choose on recorded evidence rather than
+instinct. A mutant that survived is a logged case of this exact defect: one line of production code
+changed and the whole suite stayed green.
 
-## Choosing what to audit
+Run inside this repository, `node scripts/mutation-queue.mjs` writes `.data/micro-mutations/queue.json`
+and ranks the least protective test files first. That script lives at the root of this repository
+alone, and ships in neither the plugin nor the npm package, so a reader in another repository has no
+such list unless that project runs mutation testing itself.
 
-When the user names files, audit those.
+The file pairs `generated` with `queue`. Each `queue` entry names `source`, `test`, `date`, `summary`,
+`score`, `stale`, `unmapped` and `hotspots`. A `summary` names `total`, `killed`, `survived`,
+`timeout` and `unviable`, and each hotspot names `line`, `count` and `mutators`.
+Take the entries in order of `score`, highest first. A `stale` of true puts the survivor record before
+the current build and its line numbers past trusting, so rerun `scripts/micro-mutations.mjs` before
+touching those `hotspots`. A `test` of null means no test file exists, which calls for writing tests
+rather than auditing them, so log that entry and move down.
 
-Otherwise prefer recorded evidence over a guess. A surviving mutant is proof of
-this exact problem. Somebody changed a line of production code and the whole
-suite still passed. In this repository, `node scripts/mutation-queue.mjs`
-writes `.data/micro-mutations/queue.json`, a ranked list of the weakest test
-files. That script lives at the root of this repository only. It does not ship
-inside the plugin or the npm package. A reader working in another repository
-has no such command unless that repository runs its own mutation testing.
-
-The file is shaped `{ "generated": ..., "queue": [ ... ] }`. One entry looks
-like this.
-
-```json
-{
-  "source": "packages/dod-guard/src/checker.ts",
-  "test": "packages/dod-guard/src/checker.test.ts",
-  "date": "2026-07-30T09:12:00.000Z",
-  "summary": { "total": 41, "killed": 18, "survived": 11, "timeout": 0, "unviable": 12 },
-  "score": 7,
-  "stale": false,
-  "unmapped": 0,
-  "hotspots": [{ "line": 214, "count": 3, "mutators": ["EqualityOperator", "ConditionalExpression"] }]
-}
-```
-
-Three fields change what you do.
-
-- `score` ranks the entries. Work the highest first.
-- `stale: true` means the survivor record predates the current build. Its line
-  numbers cannot be trusted. Re-run `scripts/micro-mutations.mjs` before you
-  use that entry's `hotspots`.
-- `test: null` means no test file exists at all. That unit needs tests written,
-  not audited. Report it and move to the next entry.
-
-With no mutation data, pair the files by hand. Name the capitalized variants
-too, because a case-sensitive filesystem hides them otherwise.
+Without mutation data, pair the files by hand:
 
 ```
 rg --files -g "*test*" -g "*spec*" -g "*Test*" -g "*Spec*" | sort
 ```
 
-Sorting keeps a repeated run picking the same unit. Match each test file to its
-production file through its imports or the project's naming convention. Each
-pair is one audit unit.
+Each test ties back to its production file through an import or the project's naming rule, and one
+tie makes one unit.
 
-## Sending the audit
+## The dispatch
 
-Dispatch one audit unit per call, one production file paired with one test
-file. Use this exact agent name.
+The `dod-guard:test-integrity-auditor` agent produces the findings. One call handles one unit, being
+a single production file with the single test file that covers it.
 
 ```
 subagent_type: "dod-guard:test-integrity-auditor"
-prompt: production file <path>
-        test file <path>
-        These lines were changed and the whole suite still passed. Start there.
-        For each one, name the test that was meant to catch the change, and say
-        why it did not.
-        line 214, 3 survivors, EqualityOperator and ConditionalExpression
+model: <a model other than the one that wrote these tests>
+prompt:
+  Production file: src/rate-limiter.ts
+  Test file: test/rate-limiter.test.ts
+  Survivors: line 42, count 3, EqualityOperator and ConditionalExpression
+  These lines were changed and the whole suite still passed. Start there.
+  For each one, name the test that was meant to catch the change, and say
+  why it did not.
 ```
 
-That agent already carries its persona and its detection guidance for every
-pattern. It also sets the severity for each one, how many findings it owes, and
-the format of its reply. Never restate any of that. Carry the two file paths
-and, when a queue entry exists, that entry's hotspot lines. Render each hotspot
-as a line number, a survivor count, and the mutator names. The agent knows
-nothing about mutation testing. Those lines, and the ask attached to them, are
-the one thing it cannot reach on its own.
+Your prompt holds the two paths. Where a queue entry backs the unit, it also holds that entry's
+hotspot lines with a request to work from them, since mutation testing lies outside what the agent
+knows. Persona, per-pattern detection guidance, the severity behind each pattern, the count of
+findings owed and the layout of the answer all sit in the agent file already, so send paths and
+hotspot lines alone rather than any of that.
 
-`subagent_type` names an agent, never a model. The model is a separate `model`
-parameter on the same call. An auditor sharing a model with whoever wrote the
-tests shares its blind spots, so the two must differ. The table that maps an
-author model to a reviewer model lives in `adversarial-workflow/SKILL.md`
-beside this file. Read the route there. When two distinct models are not
-reachable, say so in the report and do not claim the audit was independent.
-Then check the auditor before you trust it. Take one finding and work out its
-correct expected value by hand. An auditor reviewing its own work fails that
-check, and the whole reply is then suspect.
+`subagent_type` selects an agent. The model comes from a separate `model` parameter on the same call,
+and it has to differ from the model that wrote these tests. `adversarial-workflow/SKILL.md`, in the
+directory beside this one, maps an author model to its reviewer, so take the route from there. Where
+a single model is all you can reach, say so in writing rather than calling the audit independent.
 
-## Reading what comes back
+Spend one dispatch on a unit. An unreadable answer earns that unit one more. Nothing beyond that.
 
-The agent replies with findings, or with one line starting `NO_FINDINGS:` and a
-reason. A reply carrying neither is not a result. Dispatch that unit again.
+## Verdict and repair
 
-Each finding carries its own `SEVERITY`, one of `critical`, `major`, `minor`,
-or `info`. Each finding also carries its own `PATTERN`, one of
-`logic-mirroring`, `output-blessing`, `weak-assertions`, `mock-everything`,
-`symmetry-inverse`, `happy-path-only`, or `copy-paste-parameterization`. Those
-names belong to the agent. Pass them into your report unchanged.
+An answer counts when it holds findings, or when it holds one line opening `NO_FINDINGS:` with a
+reason. An answer holding neither goes back as that unit's second call.
 
-The reply closes with a verdict line.
+Findings arrive labelled. `SEVERITY` reads `critical`, `major`, `minor` or `info`. `PATTERN` reads
+`logic-mirroring`, `output-blessing`, `weak-assertions`, `mock-everything`, `symmetry-inverse`,
+`happy-path-only` or `copy-paste-parameterization`. Both vocabularies are the agent's, so pass every
+label on as it arrived.
 
-| Verdict | Meaning | What the run owes next |
-|---|---|---|
-| `INTEGRITY_FAIL` | at least one critical finding | These tests cannot catch bugs as they stand. Repair every critical finding before the unit is done. |
-| `INTEGRITY_WEAK` | no critical finding, at least one major | Repair the major findings, or report each one you leave alone. |
-| `INTEGRITY_PASS` | neither of the above | Record the result and take the next unit. |
+`INTEGRITY_FAIL` closes a reply holding at least one critical, and every critical is repaired before
+the unit is done. `INTEGRITY_WEAK` closes a reply whose worst finding is a major, so repair the
+majors or record why each one you leave stays. `INTEGRITY_PASS` closes a reply with neither, and that
+unit is done.
 
-Rank the findings before you edit anything. A finding sitting on a hotspot line
-outranks one that does not. A weak assertion the agent merely suspects is
-arguable. A line where a real change was made and every test still passed is
-settled, because it is a counter-example rather than a suspicion.
+A repaired assertion carries a value the implementation never produced. Four origins qualify:
+computation you do by hand from the specification, a second computation sharing no machinery with the
+implementation, a standard test vector for the domain, or output from a separate reference
+implementation.
 
-## Repairing a test
+Where none of the four is open to you, keep the assertion as it stands and carry the finding into the
+report unrepaired, with a `TODO` above the line naming it so the problem outlasts your report.
 
-Every repaired test must assert a value obtained from somewhere other than the
-implementation under test. Four sources qualify. Compute the value by hand from
-the specification. Compute it a second way that shares no structure with the
-implementation. Take a standard test vector for the domain. Read it from a
-separate reference implementation.
+Two patterns arrive without a cure attached. A test that stubs out every dependency gains assertions
+on the data handed to those stubs, or one added test running against real or realistic dependencies.
+A test that only watches a value survive a round trip gains one assertion in a single direction
+against a value already known.
 
-When you cannot establish the correct value, report the finding unfixed and
-leave the assertion alone. A test rewritten around a second guess is worse than
-the one it replaced. Add a TODO comment above it naming the finding, so the
-next reader sees the problem after your report is gone.
+## Proof and gates
 
-Two repairs need a prescription the agent does not give. For a test that mocks
-every dependency, assert on the data passed to the mocks. Another option is one
-test that runs against real or realistic dependencies. For a test that only
-checks a value surviving a round trip, add an assertion in one direction
-against a known value.
+Each unit needs one repaired test seen failing on a genuine fault. Confirm the working tree holds
+nothing uncommitted first, since this step alters production code on purpose. Break the code. Watch
+the test fail. Restore the code. Watch the test pass.
 
-Keep the tests that were already asserting correct values. Not every test in a
-suspect file is wrong, and rewriting a correct test gains nothing.
+A finding traced to a recorded surviving mutation takes that mutation as its fault rather than a new
+one, so the demonstration covers the bug the suite let past.
 
-Work one test file through to the end before you start another.
+Two gates then close the unit. The full suite passes. Measured coverage sits no lower than before,
+since a drop says a repair pulled a path out of testing.
 
-## Proving the repair
+## Locking, then the report
 
-At least one repaired test per unit has to be shown failing against a real
-defect. Confirm the working tree is clean first, because this is the one step
-that edits production code on purpose. Break the production code. Run the test
-and confirm it fails. Revert the code. Run the test again and confirm it
-passes.
+A corrected test earns a digest once you worked its value out by hand, its fault demonstration
+passed, and the logic beneath it deserves defending. Every other test stays without one.
 
-When the finding came from a hotspot, do not invent a defect. The queue entry
-already names the mutators that survived at that line. Apply that recorded
-change instead. The proof then covers the exact bug the suite let through
-rather than a plausible one.
-
-Afterwards the whole suite must pass. Measured coverage must not fall. A drop
-means a repair took a code path out of testing. Read the test and coverage
-commands out of the project rather than assuming a package manager.
-
-## Locking a corrected test
-
-dod-guard can hold a corrected test against later weakening by fingerprinting
-it. Do this for every test whose correct value you established by hand, whose
-defect proof passed, and which covers logic worth protecting. Skip it for the
-rest. Locking a trivial test produces noise and protects nothing.
-
-Call `dod_create` and give it a concrete leaf like the one below. The `holdout`
-predicate compares the command's trimmed output against the stored digest,
-ignoring case. It reports a weakened or removed test by name when the two
-differ. The surrounding arguments belong to `/dod-guard:interview`.
+`dod_create` takes a leaf whose refinement is concrete. Its `holdout` predicate runs the command,
+trims the output, matches that against the stored digest while ignoring case, and names the test once
+the two diverge. `/dod-guard:interview` covers the arguments around the leaf. This leaf runs under
+the Windows shell dod-guard uses, so copy the command character for character, escaping included,
+rather than re-quoting or reformatting it:
 
 ```json
 {
@@ -215,18 +152,11 @@ differ. The surrounding arguments belong to `/dod-guard:interview`.
 }
 ```
 
-Both `title` and `refinement` are load-bearing. `title` is required, so the
-call is rejected without it. `refinement` defaults to `draft` on a leaf, and a
-draft carries no command, so the fingerprint would never be checked and the DoD
-would report incomplete forever.
+`title` is mandatory, so dod-guard turns away a call without one. An unset `refinement` defaults to
+`draft`, a draft holds no command, and a digest check with no command to run leaves the DoD
+incomplete.
 
-Reproduce that command exactly, including its escaping. It is verified to run
-under the Windows shell dod-guard uses.
-
-## Reporting
-
-Name every unit you audited. Give each repaired test with its pattern and its
-severity as the agent wrote them. List every finding you left unfixed and say
-why. State the outcome of the defect proof and the result of the full suite.
-Give coverage before and after. Name every unit where model diversity was out
-of reach.
+The report names every unit audited. Each repaired test appears with the pattern and the severity the
+agent gave it. Each finding left unrepaired appears with your reason. The fault demonstration's
+outcome and the full suite's result both appear. Coverage appears before and after. Every unit that
+ran on a single model appears marked as such.
