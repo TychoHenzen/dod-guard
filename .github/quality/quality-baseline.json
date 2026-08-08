@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-07T21:28:49.033Z",
-  "total": 894,
+  "total": 906,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -763,6 +763,8 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.mjs::else-branch": 3,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::else-branch": 1,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.test.mjs::duplicate-block": 10,
+    "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs::param-count": 2
   }
 }
