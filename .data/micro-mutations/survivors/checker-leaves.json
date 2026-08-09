@@ -1,0 +1,109 @@
+{
+  "source": "packages/dod-guard/src/checker-leaves.ts",
+  "date": "2026-08-09T07:35:21.434Z",
+  "summary": {
+    "total": 37,
+    "killed": 23,
+    "survived": 12,
+    "timeout": 0,
+    "unviable": 2
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "8",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 8,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "14",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 11,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "15",
+      "mutator": "LogicalOperator",
+      "replacement": "status === \"pending\" && status === \"draft\"",
+      "dist_line": 11,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "16",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 11,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 11,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "19",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 11,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "21",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 11,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "25",
+      "mutator": "LogicalOperator",
+      "replacement": "(node.description ?? node.intent) && node.title",
+      "dist_line": 20,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "27",
+      "mutator": "LogicalOperator",
+      "replacement": "node.command && \"\"",
+      "dist_line": 22,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "26",
+      "mutator": "LogicalOperator",
+      "replacement": "node.description && node.intent",
+      "dist_line": 20,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "31",
+      "mutator": "LogicalOperator",
+      "replacement": "(node.description ?? node.intent) && node.title",
+      "dist_line": 31,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/checker-leaves.js",
+      "id": "32",
+      "mutator": "LogicalOperator",
+      "replacement": "node.description && node.intent",
+      "dist_line": 31,
+      "dist_col": 26
+    }
+  ]
+}

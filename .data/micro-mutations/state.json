@@ -443,13 +443,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/checker-leaves.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-09",
+      "last_result": {
+        "total": 37,
+        "caught": 23,
+        "missed": 12,
+        "timeout": 0,
+        "unviable": 2,
+        "status": "ok",
+        "error": null
+      },
       "lines": 60,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "81db31c7aa888017b6552ad4da5372afab43ed2919b1cde702d49cd7988c27e1",
+      "dirty": false
     },
     "packages/dod-guard/src/checker-result.ts": {
       "last_tested": null,
@@ -574,13 +582,21 @@
       "dirty": false
     },
     "packages/dod-guard/src/mcp/dod-check.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-09",
+      "last_result": {
+        "total": 46,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 46,
+        "status": "ok",
+        "error": null
+      },
       "lines": 68,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "dc95b64beecb917a9dd65807114a40f9a40ae96e6faa22edc9c911f816269eeb",
+      "dirty": false
     },
     "packages/dod-guard/src/mcp/dod-import.ts": {
       "last_tested": null,
@@ -619,10 +635,18 @@
       "dirty": true
     },
     "packages/dod-guard/src/mcp/dod-store-migrate.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-09",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run .data/micro-mutations/stryker.run.json --mutate \"packages/dod-guard/dist/mcp/dod-store-migrate.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n   "
+      },
       "lines": 61,
-      "error_count": 0,
+      "error_count": 1,
       "recent_commits": 2,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
@@ -1197,58 +1221,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 17857,
-    "caught": 6847,
-    "missed": 6356,
+    "total_mutants": 17940,
+    "caught": 6870,
+    "missed": 6368,
     "timeout": 85,
-    "unviable": 4569,
-    "error": 43,
-    "runs": 107,
-    "files_tested": 107
+    "unviable": 4617,
+    "error": 44,
+    "runs": 110,
+    "files_tested": 110
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
-      "file": "packages/dod-guard/src/baseline.ts",
-      "result": {
-        "total": 126,
-        "caught": 68,
-        "missed": 58,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "031bcb5d3545f70cc9b0d1a21378b3c1f8a0e8ee",
-      "file": "packages/dod-guard/src/assertions.ts",
-      "result": {
-        "total": 319,
-        "caught": 89,
-        "missed": 215,
-        "timeout": 0,
-        "unviable": 15,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/obsidian-rag/src/indexer.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/indexer.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dis"
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
@@ -2603,6 +2585,48 @@
         "missed": 35,
         "timeout": 2,
         "unviable": 23,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-09",
+      "commit": "6b7a4b3c1373c666ed4ae2b18ca532252413b092",
+      "file": "packages/dod-guard/src/mcp/dod-check.ts",
+      "result": {
+        "total": 46,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 46,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-09",
+      "commit": "6b7a4b3c1373c666ed4ae2b18ca532252413b092",
+      "file": "packages/dod-guard/src/mcp/dod-store-migrate.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "Command failed: npx stryker run .data/micro-mutations/stryker.run.json --mutate \"packages/dod-guard/dist/mcp/dod-store-migrate.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n   "
+      }
+    },
+    {
+      "date": "2026-08-09",
+      "commit": "6b7a4b3c1373c666ed4ae2b18ca532252413b092",
+      "file": "packages/dod-guard/src/checker-leaves.ts",
+      "result": {
+        "total": 37,
+        "caught": 23,
+        "missed": 12,
+        "timeout": 0,
+        "unviable": 2,
         "status": "ok",
         "error": null
       }
