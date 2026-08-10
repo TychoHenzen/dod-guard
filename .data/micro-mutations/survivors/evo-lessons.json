@@ -1,0 +1,109 @@
+{
+  "source": "packages/gitevo/src/evo-lessons.ts",
+  "date": "2026-08-10T08:14:56.912Z",
+  "summary": {
+    "total": 39,
+    "killed": 26,
+    "survived": 12,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "3",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 11,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 11,
+      "dist_col": 68
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "6",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 21,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 21,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "8",
+      "mutator": "MethodExpression",
+      "replacement": "found",
+      "dist_line": 22,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "9",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 22,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "10",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 22,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "11",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 22,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "12",
+      "mutator": "EqualityOperator",
+      "replacement": "a.timestamp !== b.timestamp",
+      "dist_line": 22,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "15",
+      "mutator": "OptionalChaining",
+      "replacement": "repoOverride.cwd",
+      "dist_line": 25,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "28",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 41,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/gitevo/dist/evo-lessons.js",
+      "id": "33",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 43,
+      "dist_col": 64
+    }
+  ]
+}
