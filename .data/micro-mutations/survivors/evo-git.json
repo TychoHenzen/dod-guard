@@ -1,0 +1,173 @@
+{
+  "source": "packages/gitevo/src/evo-git.ts",
+  "date": "2026-08-10T08:14:50.258Z",
+  "summary": {
+    "total": 129,
+    "killed": 99,
+    "survived": 20,
+    "timeout": 0,
+    "unviable": 10
+  },
+  "survivors": [
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "2",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 15,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "11",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 19,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 22,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 22,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "23",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 26,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "24",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 27,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "25",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 27,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "26",
+      "mutator": "LogicalOperator",
+      "replacement": "(result.stderr || \"\").trim() && (result.stdout || \"\").trim()",
+      "dist_line": 27,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "27",
+      "mutator": "MethodExpression",
+      "replacement": "result.stderr || \"\"",
+      "dist_line": 27,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "30",
+      "mutator": "LogicalOperator",
+      "replacement": "result.stderr && \"\"",
+      "dist_line": 27,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "48",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "dist_line": 39,
+      "dist_col": 48
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "81",
+      "mutator": "LogicalOperator",
+      "replacement": "ROOT_CANDIDATES.find(candidate => names.includes(candidate)) && activeBranch(root)",
+      "dist_line": 71,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "82",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 71,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "100",
+      "mutator": "MethodExpression",
+      "replacement": "rest.join(\"|\")",
+      "dist_line": 80,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "101",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 80,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "105",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 89,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/gitevo/dist/evo-git.js",
+      "id": "114",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 91,
+      "dist_col": 47
+    }
+  ]
+}

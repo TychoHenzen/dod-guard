@@ -954,13 +954,21 @@
       "dirty": true
     },
     "packages/evomcp/src/solve-files.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-10",
+      "last_result": {
+        "total": 71,
+        "caught": 56,
+        "missed": 13,
+        "timeout": 0,
+        "unviable": 2,
+        "status": "ok",
+        "error": null
+      },
       "lines": 80,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "e1d63054c0e68ffcf7eab7de83e67ad2d0f43f2dfa07b32939038bcdf18fa8b8",
+      "dirty": false
     },
     "packages/evomcp/src/solve-finish.ts": {
       "last_tested": null,
@@ -1185,22 +1193,38 @@
       "dirty": true
     },
     "packages/gitevo/src/evo-git.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-10",
+      "last_result": {
+        "total": 129,
+        "caught": 99,
+        "missed": 20,
+        "timeout": 0,
+        "unviable": 10,
+        "status": "ok",
+        "error": null
+      },
       "lines": 92,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "e71494afa0cab6bc5af0820a6730eac629f3c99348bb6a76c4e7671f0649db55",
+      "dirty": false
     },
     "packages/gitevo/src/evo-lessons.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-10",
+      "last_result": {
+        "total": 39,
+        "caught": 26,
+        "missed": 12,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      },
       "lines": 49,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "fffd876d0901aee8fb1f106fde7b4ca250ccb9407ebce4233c2b3ec3cf2eb485",
+      "dirty": false
     },
     "packages/gitevo/src/evo-safety.ts": {
       "last_tested": "2026-08-06",
@@ -1221,58 +1245,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 17940,
-    "caught": 6870,
-    "missed": 6368,
+    "total_mutants": 18179,
+    "caught": 7051,
+    "missed": 6413,
     "timeout": 85,
-    "unviable": 4617,
+    "unviable": 4630,
     "error": 44,
-    "runs": 110,
-    "files_tested": 110
+    "runs": 113,
+    "files_tested": 113
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/obsidian-rag/src/cli.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/cli.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/dod-guard/src/author.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/author.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/dod-guard/src/checker.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/s"
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
@@ -2625,6 +2607,48 @@
         "total": 37,
         "caught": 23,
         "missed": 12,
+        "timeout": 0,
+        "unviable": 2,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-10",
+      "commit": "79bce43a5c543b5b16ece9092c7713b171c599e6",
+      "file": "packages/gitevo/src/evo-git.ts",
+      "result": {
+        "total": 129,
+        "caught": 99,
+        "missed": 20,
+        "timeout": 0,
+        "unviable": 10,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-10",
+      "commit": "79bce43a5c543b5b16ece9092c7713b171c599e6",
+      "file": "packages/gitevo/src/evo-lessons.ts",
+      "result": {
+        "total": 39,
+        "caught": 26,
+        "missed": 12,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-10",
+      "commit": "79bce43a5c543b5b16ece9092c7713b171c599e6",
+      "file": "packages/evomcp/src/solve-files.ts",
+      "result": {
+        "total": 71,
+        "caught": 56,
+        "missed": 13,
         "timeout": 0,
         "unviable": 2,
         "status": "ok",

@@ -1,0 +1,117 @@
+{
+  "source": "packages/evomcp/src/solve-files.ts",
+  "date": "2026-08-10T08:15:06.826Z",
+  "summary": {
+    "total": 71,
+    "killed": 56,
+    "survived": 13,
+    "timeout": 0,
+    "unviable": 2
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 11,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 11,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 11,
+      "dist_col": 60
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 11,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "11",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 18,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 19,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "23",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 23,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "26",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 25,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "36",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 32,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "42",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 45,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "45",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 47,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "47",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 50,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/evomcp/dist/solve-files.js",
+      "id": "50",
+      "mutator": "MethodExpression",
+      "replacement": "patterns",
+      "dist_line": 60,
+      "dist_col": 27
+    }
+  ]
+}

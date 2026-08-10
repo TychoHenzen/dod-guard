@@ -1,29 +1,26 @@
 # Micro-Mutation Report
 
-**Generated**: 2026-08-09 | **Commit**: `6b7a4b3`
+**Generated**: 2026-08-10 | **Commit**: `79bce43`
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
-| Total mutants | 17940 |
-| Killed | 6870 |
-| Missed | 6368 |
+| Total mutants | 18179 |
+| Killed | 7051 |
+| Missed | 6413 |
 | Timeout | 85 |
-| No coverage | 4617 |
-| Catch rate | 38.3% |
-| Runs | 110 |
-| Files tested | 110 |
+| No coverage | 4630 |
+| Catch rate | 38.8% |
+| Runs | 113 |
+| Files tested | 113 |
 
-**Last run**: 2026-08-09 — `packages/dod-guard/src/checker-leaves.ts` → ok
+**Last run**: 2026-08-10 — `packages/evomcp/src/solve-files.ts` → ok
 
 ## File Inventory
 
 | Prio | File | Lines | Churn | Stale | Dirty | Last Tested | Result | Status |
 |------|------|-------|-------|-------|-------|-------------|--------|--------|
-| 85% | packages/gitevo/src/evo-git.ts | 92 | 1 | 90d | 🟡 | — | — | ⬜ |
-| 84% | packages/gitevo/src/evo-lessons.ts | 49 | 2 | 90d | 🟡 | — | — | ⬜ |
-| 84% | packages/evomcp/src/solve-files.ts | 80 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 84% | packages/dod-guard/src/snapshot.ts | 78 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 84% | packages/evomcp/src/attempt-result.ts | 75 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 84% | packages/evomcp/src/solve-report.ts | 75 | 1 | 90d | 🟡 | — | — | ⬜ |
@@ -61,62 +58,68 @@
 | 78% | packages/evomcp/src/solve-session.ts | 18 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 77% | packages/gitevo/src/evo-error.ts | 12 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 76% | packages/dod-guard/src/checker-summary.ts | 6 | 2 | 90d | 🟡 | — | — | ⬜ |
+| 76% | packages/evomcp/src/evolve.ts | 524 | 14 | 29d | 🟡 | 2026-07-12 | 94/244 killed | ⚠️ |
+| 76% | packages/evomcp/src/agent.ts | 516 | 11 | 29d | 🟡 | 2026-07-12 | 135/335 killed | ⚠️ |
 | 76% | packages/dod-guard/src/checker-result.ts | 9 | 1 | 90d | 🟡 | — | — | ⬜ |
-| 75% | packages/evomcp/src/evolve.ts | 524 | 14 | 28d | 🟡 | 2026-07-12 | 94/244 killed | ⚠️ |
-| 75% | packages/evomcp/src/agent.ts | 516 | 11 | 28d | 🟡 | 2026-07-12 | 135/335 killed | ⚠️ |
-| 75% | packages/obsidian-rag/src/tools.ts | 506 | 11 | 28d | 🟡 | 2026-07-12 | 0/540 killed | ⚠️ |
-| 73% | packages/dod-guard/src/command-check.ts | 297 | 11 | 28d | 🟡 | 2026-07-12 | 146/300 killed | ⚠️ |
-| 72% | packages/dod-guard/src/author.ts | 229 | 12 | 28d | 🟡 | 2026-07-12 | 113/383 killed | ⚠️ |
-| 72% | packages/gitevo/src/index.ts | 226 | 13 | 28d | 🟡 | 2026-07-12 | 26/124 killed | ⚠️ |
-| 70% | packages/obsidian-rag/src/store.ts | 427 | 13 | 21d | 🟡 | 2026-07-19 | 0/0 killed | ❌ |
-| 70% | packages/obsidian-rag/src/index.ts | 150 | 18 | 28d | 🟡 | 2026-07-12 | 0/162 killed | ⚠️ |
-| 70% | packages/dod-guard/src/evaluate-proof.ts | 297 | 18 | 22d | 🟡 | 2026-07-18 | 0/0 killed | ❌ |
-| 70% | packages/gitevo/src/operations.ts | 254 | 17 | 23d | 🟡 | 2026-07-17 | 0/0 killed | ❌ |
-| 69% | packages/evomcp/src/index.ts | 249 | 21 | 23d | 🟡 | 2026-07-17 | 0/0 killed | ❌ |
-| 68% | packages/dod-guard/src/tree-utils.ts | 249 | 15 | 21d | 🟡 | 2026-07-19 | 0/0 killed | ❌ |
-| 68% | packages/dod-guard/src/tools/dod-refine.ts | 143 | 9 | 28d | 🟡 | 2026-07-12 | 0/143 killed | ⚠️ |
-| 68% | packages/dod-guard/src/index.ts | 264 | 35 | 20d | 🟡 | 2026-07-20 | 0/0 killed | ❌ |
-| 68% | packages/obsidian-rag/src/indexer.ts | 233 | 8 | 28d | 🟡 | 2026-07-12 | 58/121 killed | ⚠️ |
-| 68% | packages/evomcp/src/solve.ts | 82 | 15 | 28d | 🟡 | 2026-07-12 | 48/177 killed | ⚠️ |
-| 67% | packages/obsidian-rag/src/vault.ts | 187 | 13 | 20d | 🟡 | 2026-07-20 | 0/0 killed | ❌ |
-| 64% | packages/dod-guard/src/checker.ts | 100 | 19 | 20d | 🟡 | 2026-07-20 | 0/0 killed | ❌ |
-| 64% | packages/dod-guard/src/parser.ts | 221 | 6 | 28d | 🟡 | 2026-07-12 | 358/556 killed | ⚠️ |
-| 64% | packages/dod-guard/src/tools/dod-create.ts | 78 | 8 | 28d | 🟡 | 2026-07-12 | 0/47 killed | ⚠️ |
-| 63% | packages/dod-guard/src/tools/dod-add-node.ts | 105 | 7 | 28d | 🟡 | 2026-07-12 | 0/124 killed | ⚠️ |
-| 63% | packages/dod-guard/src/store.ts | 168 | 6 | 28d | 🟡 | 2026-07-12 | 83/152 killed | ⚠️ |
-| 62% | packages/obsidian-rag/src/retriever.ts | 149 | 6 | 28d | 🟡 | 2026-07-12 | 0/112 killed | ⚠️ |
-| 62% | packages/dod-guard/src/format-result.ts | 87 | 7 | 28d | 🟡 | 2026-07-12 | 145/191 killed | ⚠️ |
-| 51% | packages/gitevo/src/memory.ts | 301 | 5 | 7d | 🟡 | 2026-08-02 | 0/0 killed | ❌ |
-| 49% | packages/obsidian-rag/src/cli.ts | 144 | 7 | 28d | — | 2026-07-12 | 53/132 killed | ⚠️ |
-| 40% | packages/evomcp/src/dedup.ts | 170 | 2 | 28d | — | 2026-07-12 | 77/167 killed | ⚠️ |
-| 35% | packages/dod-guard/src/mcp/dod-store-migrate.ts | 61 | 2 | 0d | 🟡 | 2026-08-09 | 0/0 killed | ❌ |
-| 32% | packages/evomcp/src/judge.ts | 301 | 3 | 7d | — | 2026-08-02 | 136/307 killed | ⚠️ |
-| 32% | packages/evomcp/src/degenerate.ts | 461 | 2 | 7d | — | 2026-08-02 | 300/477 killed | ⚠️ |
-| 31% | packages/evomcp/src/prompts.ts | 235 | 3 | 6d | — | 2026-08-03 | 59/169 killed | ⚠️ |
-| 29% | packages/evomcp/src/gitevo-integration.ts | 100 | 4 | 6d | — | 2026-08-03 | 0/31 killed | ⚠️ |
-| 29% | packages/evomcp/src/orchestrate.ts | 252 | 2 | 6d | — | 2026-08-03 | 121/215 killed | ⚠️ |
-| 28% | packages/evomcp/src/convergence.ts | 244 | 2 | 5d | — | 2026-08-04 | 113/157 killed | ⚠️ |
-| 28% | packages/evomcp/src/budget.ts | 238 | 2 | 5d | — | 2026-08-04 | 131/168 killed | ⚠️ |
-| 28% | packages/evomcp/src/render.ts | 138 | 3 | 5d | — | 2026-08-04 | 130/171 killed | ⚠️ |
-| 27% | packages/evomcp/src/context.ts | 331 | 1 | 4d | — | 2026-08-05 | 145/277 killed | ⚠️ |
-| 27% | packages/evomcp/src/gates.ts | 199 | 2 | 4d | — | 2026-08-05 | 108/157 killed | ⚠️ |
-| 27% | packages/evomcp/src/orchestrator.ts | 301 | 1 | 4d | — | 2026-08-05 | 128/175 killed | ⚠️ |
-| 26% | packages/evomcp/src/feedback.ts | 281 | 1 | 3d | — | 2026-08-06 | 212/301 killed | ⚠️ |
-| 25% | packages/gitevo/src/evo-safety.ts | 147 | 2 | 3d | — | 2026-08-06 | 127/176 killed | ⚠️ |
-| 25% | packages/dod-guard/src/cli.ts | 222 | 1 | 3d | — | 2026-08-06 | 89/204 killed | ⚠️ |
-| 24% | packages/evomcp/src/escalation.ts | 217 | 1 | 2d | — | 2026-08-07 | 111/130 killed | ⚠️ |
-| 24% | packages/dod-guard/src/mcp/dod-amend.ts | 125 | 2 | 2d | — | 2026-08-07 | 0/97 killed | ⚠️ |
-| 23% | packages/dod-guard/src/fingerprint.ts | 50 | 3 | 2d | — | 2026-08-07 | 44/65 killed | ⚠️ |
-| 21% | packages/dod-guard/src/mcp/dod-adversarial-gate.ts | 73 | 2 | 1d | — | 2026-08-08 | 0/73 killed | ⚠️ |
-| 21% | packages/evomcp/src/solve-repair.ts | 70 | 2 | 1d | — | 2026-08-08 | 34/40 killed | ⚠️ |
-| 21% | packages/quality-guard/src/index.ts | 116 | 1 | 1d | — | 2026-08-08 | 10/70 killed | ⚠️ |
-| 21% | packages/dod-guard/src/mcp/dod-check.ts | 68 | 2 | 0d | — | 2026-08-09 | 0/46 killed | ⚠️ |
-| 20% | packages/dod-guard/src/checker-leaves.ts | 60 | 2 | 0d | — | 2026-08-09 | 23/37 killed | ⚠️ |
+| 76% | packages/obsidian-rag/src/tools.ts | 506 | 11 | 29d | 🟡 | 2026-07-12 | 0/540 killed | ⚠️ |
+| 74% | packages/dod-guard/src/command-check.ts | 297 | 11 | 29d | 🟡 | 2026-07-12 | 146/300 killed | ⚠️ |
+| 72% | packages/dod-guard/src/author.ts | 229 | 12 | 29d | 🟡 | 2026-07-12 | 113/383 killed | ⚠️ |
+| 72% | packages/gitevo/src/index.ts | 226 | 13 | 29d | 🟡 | 2026-07-12 | 26/124 killed | ⚠️ |
+| 71% | packages/obsidian-rag/src/store.ts | 427 | 13 | 22d | 🟡 | 2026-07-19 | 0/0 killed | ❌ |
+| 71% | packages/obsidian-rag/src/index.ts | 150 | 18 | 29d | 🟡 | 2026-07-12 | 0/162 killed | ⚠️ |
+| 70% | packages/dod-guard/src/evaluate-proof.ts | 297 | 18 | 23d | 🟡 | 2026-07-18 | 0/0 killed | ❌ |
+| 70% | packages/gitevo/src/operations.ts | 254 | 17 | 24d | 🟡 | 2026-07-17 | 0/0 killed | ❌ |
+| 70% | packages/evomcp/src/index.ts | 249 | 21 | 24d | 🟡 | 2026-07-17 | 0/0 killed | ❌ |
+| 69% | packages/dod-guard/src/tree-utils.ts | 249 | 15 | 22d | 🟡 | 2026-07-19 | 0/0 killed | ❌ |
+| 69% | packages/dod-guard/src/tools/dod-refine.ts | 143 | 9 | 29d | 🟡 | 2026-07-12 | 0/143 killed | ⚠️ |
+| 69% | packages/dod-guard/src/index.ts | 264 | 35 | 21d | 🟡 | 2026-07-20 | 0/0 killed | ❌ |
+| 69% | packages/obsidian-rag/src/indexer.ts | 233 | 8 | 29d | 🟡 | 2026-07-12 | 58/121 killed | ⚠️ |
+| 68% | packages/evomcp/src/solve.ts | 82 | 15 | 29d | 🟡 | 2026-07-12 | 48/177 killed | ⚠️ |
+| 67% | packages/obsidian-rag/src/vault.ts | 187 | 13 | 21d | 🟡 | 2026-07-20 | 0/0 killed | ❌ |
+| 65% | packages/dod-guard/src/checker.ts | 100 | 19 | 21d | 🟡 | 2026-07-20 | 0/0 killed | ❌ |
+| 64% | packages/dod-guard/src/parser.ts | 221 | 6 | 29d | 🟡 | 2026-07-12 | 358/556 killed | ⚠️ |
+| 64% | packages/dod-guard/src/tools/dod-create.ts | 78 | 8 | 29d | 🟡 | 2026-07-12 | 0/47 killed | ⚠️ |
+| 63% | packages/dod-guard/src/tools/dod-add-node.ts | 105 | 7 | 29d | 🟡 | 2026-07-12 | 0/124 killed | ⚠️ |
+| 63% | packages/dod-guard/src/store.ts | 168 | 6 | 29d | 🟡 | 2026-07-12 | 83/152 killed | ⚠️ |
+| 63% | packages/obsidian-rag/src/retriever.ts | 149 | 6 | 29d | 🟡 | 2026-07-12 | 0/112 killed | ⚠️ |
+| 63% | packages/dod-guard/src/format-result.ts | 87 | 7 | 29d | 🟡 | 2026-07-12 | 145/191 killed | ⚠️ |
+| 52% | packages/gitevo/src/memory.ts | 301 | 5 | 8d | 🟡 | 2026-08-02 | 0/0 killed | ❌ |
+| 50% | packages/obsidian-rag/src/cli.ts | 144 | 7 | 29d | — | 2026-07-12 | 53/132 killed | ⚠️ |
+| 40% | packages/evomcp/src/dedup.ts | 170 | 2 | 29d | — | 2026-07-12 | 77/167 killed | ⚠️ |
+| 36% | packages/dod-guard/src/mcp/dod-store-migrate.ts | 61 | 2 | 1d | 🟡 | 2026-08-09 | 0/0 killed | ❌ |
+| 33% | packages/evomcp/src/judge.ts | 301 | 3 | 8d | — | 2026-08-02 | 136/307 killed | ⚠️ |
+| 33% | packages/evomcp/src/degenerate.ts | 461 | 2 | 8d | — | 2026-08-02 | 300/477 killed | ⚠️ |
+| 31% | packages/evomcp/src/prompts.ts | 235 | 3 | 7d | — | 2026-08-03 | 59/169 killed | ⚠️ |
+| 30% | packages/evomcp/src/gitevo-integration.ts | 100 | 4 | 7d | — | 2026-08-03 | 0/31 killed | ⚠️ |
+| 30% | packages/evomcp/src/orchestrate.ts | 252 | 2 | 7d | — | 2026-08-03 | 121/215 killed | ⚠️ |
+| 29% | packages/evomcp/src/convergence.ts | 244 | 2 | 6d | — | 2026-08-04 | 113/157 killed | ⚠️ |
+| 29% | packages/evomcp/src/budget.ts | 238 | 2 | 6d | — | 2026-08-04 | 131/168 killed | ⚠️ |
+| 29% | packages/evomcp/src/render.ts | 138 | 3 | 6d | — | 2026-08-04 | 130/171 killed | ⚠️ |
+| 28% | packages/evomcp/src/context.ts | 331 | 1 | 5d | — | 2026-08-05 | 145/277 killed | ⚠️ |
+| 28% | packages/evomcp/src/gates.ts | 199 | 2 | 5d | — | 2026-08-05 | 108/157 killed | ⚠️ |
+| 27% | packages/evomcp/src/orchestrator.ts | 301 | 1 | 5d | — | 2026-08-05 | 128/175 killed | ⚠️ |
+| 26% | packages/evomcp/src/feedback.ts | 281 | 1 | 4d | — | 2026-08-06 | 212/301 killed | ⚠️ |
+| 26% | packages/gitevo/src/evo-safety.ts | 147 | 2 | 4d | — | 2026-08-06 | 127/176 killed | ⚠️ |
+| 25% | packages/dod-guard/src/cli.ts | 222 | 1 | 4d | — | 2026-08-06 | 89/204 killed | ⚠️ |
+| 25% | packages/evomcp/src/escalation.ts | 217 | 1 | 3d | — | 2026-08-07 | 111/130 killed | ⚠️ |
+| 25% | packages/dod-guard/src/mcp/dod-amend.ts | 125 | 2 | 3d | — | 2026-08-07 | 0/97 killed | ⚠️ |
+| 23% | packages/dod-guard/src/fingerprint.ts | 50 | 3 | 3d | — | 2026-08-07 | 44/65 killed | ⚠️ |
+| 22% | packages/dod-guard/src/mcp/dod-adversarial-gate.ts | 73 | 2 | 2d | — | 2026-08-08 | 0/73 killed | ⚠️ |
+| 22% | packages/evomcp/src/solve-repair.ts | 70 | 2 | 2d | — | 2026-08-08 | 34/40 killed | ⚠️ |
+| 22% | packages/quality-guard/src/index.ts | 116 | 1 | 2d | — | 2026-08-08 | 10/70 killed | ⚠️ |
+| 21% | packages/dod-guard/src/mcp/dod-check.ts | 68 | 2 | 1d | — | 2026-08-09 | 0/46 killed | ⚠️ |
+| 21% | packages/dod-guard/src/checker-leaves.ts | 60 | 2 | 1d | — | 2026-08-09 | 23/37 killed | ⚠️ |
+| 20% | packages/gitevo/src/evo-git.ts | 92 | 1 | 0d | — | 2026-08-10 | 99/129 killed | ⚠️ |
+| 19% | packages/gitevo/src/evo-lessons.ts | 49 | 2 | 0d | — | 2026-08-10 | 26/39 killed | ⚠️ |
+| 19% | packages/evomcp/src/solve-files.ts | 80 | 1 | 0d | — | 2026-08-10 | 56/71 killed | ⚠️ |
 
 ## Recent Runs
 
 | Date | Commit | File | Mutants | Killed | Missed | Status |
 |------|--------|------|---------|--------|--------|--------|
+| 2026-08-10 | `79bce43` | packages/evomcp/src/solve-files.ts | 71 | 56 | 13 | ok |
+| 2026-08-10 | `79bce43` | packages/gitevo/src/evo-lessons.ts | 39 | 26 | 12 | ok |
+| 2026-08-10 | `79bce43` | packages/gitevo/src/evo-git.ts | 129 | 99 | 20 | ok |
 | 2026-08-09 | `6b7a4b3` | packages/dod-guard/src/checker-leaves.ts | 37 | 23 | 12 | ok |
 | 2026-08-09 | `6b7a4b3` | packages/dod-guard/src/mcp/dod-store-migrate.ts | 0 | 0 | 0 | error |
 | 2026-08-09 | `6b7a4b3` | packages/dod-guard/src/mcp/dod-check.ts | 46 | 0 | 0 | ok |
@@ -144,9 +147,6 @@
 | 2026-07-20 | `c526372` | packages/obsidian-rag/src/vault.ts | 0 | 0 | 0 | error |
 | 2026-07-20 | `c526372` | packages/dod-guard/src/checker.ts | 0 | 0 | 0 | error |
 | 2026-07-20 | `c526372` | packages/dod-guard/src/index.ts | 0 | 0 | 0 | error |
-| 2026-07-19 | `30dfdd6` | packages/obsidian-rag/src/store.ts | 0 | 0 | 0 | error |
-| 2026-07-19 | `30dfdd6` | packages/dod-guard/src/tree-utils.ts | 0 | 0 | 0 | error |
-| 2026-07-19 | `30dfdd6` | packages/dod-guard/src/index.ts | 0 | 0 | 0 | error |
 
 ## Survivor Reports
 
@@ -171,6 +171,8 @@ Use these to identify weak tests and add targeted assertions.
 | [degenerate.json](.data/micro-mutations/survivors/degenerate.json) | 160 | packages/evomcp/src/degenerate.ts |
 | [escalation.json](.data/micro-mutations/survivors/escalation.json) | 13 | packages/evomcp/src/escalation.ts |
 | [evaluate-proof.json](.data/micro-mutations/survivors/evaluate-proof.json) | 236 | packages/dod-guard/src/evaluate-proof.ts |
+| [evo-git.json](.data/micro-mutations/survivors/evo-git.json) | 20 | packages/gitevo/src/evo-git.ts |
+| [evo-lessons.json](.data/micro-mutations/survivors/evo-lessons.json) | 12 | packages/gitevo/src/evo-lessons.ts |
 | [evo-safety.json](.data/micro-mutations/survivors/evo-safety.json) | 39 | packages/gitevo/src/evo-safety.ts |
 | [evolve.json](.data/micro-mutations/survivors/evolve.json) | 118 | packages/evomcp/src/evolve.ts |
 | [feedback.json](.data/micro-mutations/survivors/feedback.json) | 87 | packages/evomcp/src/feedback.ts |
@@ -191,6 +193,7 @@ Use these to identify weak tests and add targeted assertions.
 | [prompts.json](.data/micro-mutations/survivors/prompts.json) | 105 | packages/evomcp/src/prompts.ts |
 | [regression.json](.data/micro-mutations/survivors/regression.json) | 4 | packages/dod-guard/src/regression.ts |
 | [render.json](.data/micro-mutations/survivors/render.json) | 41 | packages/evomcp/src/render.ts |
+| [solve-files.json](.data/micro-mutations/survivors/solve-files.json) | 13 | packages/evomcp/src/solve-files.ts |
 | [solve-repair.json](.data/micro-mutations/survivors/solve-repair.json) | 2 | packages/evomcp/src/solve-repair.ts |
 | [solve.json](.data/micro-mutations/survivors/solve.json) | 98 | packages/evomcp/src/solve.ts |
 | [store.json](.data/micro-mutations/survivors/store.json) | 59 | packages/dod-guard/src/store.ts |
