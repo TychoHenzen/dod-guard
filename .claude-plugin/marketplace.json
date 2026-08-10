@@ -15,19 +15,19 @@
     },
     {
       "name": "obsidian-rag",
-      "description": "RAG/memory MCP server on an Obsidian vault. Semantic search, note CRUD, memory recall, backlink traversal — all local, all offline. Ships the /rag-memory skill for vault search and cross-session memory workflows.",
+      "description": "RAG/memory MCP server on an Obsidian vault. Semantic search, note CRUD, memory recall, backlink traversal: all local, all offline. Ships the /rag-memory skill for vault search and cross-session memory workflows.",
       "source": "./packages/obsidian-rag",
       "category": "knowledge-management"
     },
     {
       "name": "evomcp",
-      "description": "Evolutionary solver MCP — cheap-model fanout with best-of-N + repair chains and scalar-fitness evolution, gated by dod-guard verification. Spawns claude -p (DeepSeek) instances with diverse strategies, verifies, repairs, escalates stuck nodes. Ships /cascade skill with 3 agents.",
+      "description": "Evolutionary solver MCP: cheap-model fanout with best-of-N + repair chains and scalar-fitness evolution, gated by dod-guard verification. Spawns claude -p (DeepSeek) instances with diverse strategies, verifies, repairs, escalates stuck nodes. Ships /cascade skill with 3 agents.",
       "source": "./packages/evomcp",
       "category": "productivity"
     },
     {
       "name": "gitevo",
-      "description": "Evolutionary git branching for LLM agents — checkpoint, spawn parallel exploration branches, learn from failures, merge winners, clean artifacts. evo_export_lessons bridges to obsidian-rag for persistent memory.",
+      "description": "Evolutionary git branching for LLM agents: checkpoint, spawn parallel exploration branches, learn from failures, merge winners, clean artifacts. evo_export_lessons bridges to obsidian-rag for persistent memory.",
       "source": "./packages/gitevo",
       "category": "productivity"
     },
@@ -39,7 +39,7 @@
     },
     {
       "name": "natural-output-style",
-      "description": "Output style only. Natural makes Claude write plain prose every turn - common words, short sentences, active voice, no filler and no marketing words. It mirrors the rules ste-lint checks mechanically, so replies meet the same bar files do. Keeps Claude Code's built-in coding behavior. No MCP server, no skills, no hooks.",
+      "description": "Output style only. Natural makes Claude write plain prose every turn - common words, short sentences, active voice, no filler and no marketing words. Keeps exact technical terms and explains them in plain words on the spot. It mirrors the rules ste-lint checks mechanically, so replies meet the same bar files do. Keeps Claude Code's built-in coding behavior. No MCP server, no skills, no hooks.",
       "source": "./plugins/natural-output-style",
       "category": "writing"
     }
