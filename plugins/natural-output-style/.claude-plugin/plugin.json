@@ -1,0 +1,9 @@
+{
+  "name": "natural-output-style",
+  "version": "1.0.0",
+  "description": "Natural output style: plain language every turn - common words, short sentences, no filler and no jargon. Mirrors the rules ste-lint checks mechanically. Ships no MCP server, no skills and no hooks.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  }
+}

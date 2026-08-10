@@ -15,9 +15,12 @@ const SECRET_ASSIGNMENT = /(password|passwd|secret|token|api[-_]?key|access[-_]?
 // Values that are obviously stand-ins rather than real credentials.
 const PLACEHOLDER_VALUE = /^(\$|<|\{|your|example|changeme|redacted|placeholder|dummy|fake|test|x{3,}|\*{3,}|\.\.\.)/i;
 
+// Every tree that reaches a user: npm workspaces, standalone plugins, and the
+// root marketplace manifest.
+const CONTENT_ROOTS = ["packages", "plugins", ".claude-plugin"];
+
 function shippedTextFiles(root) {
-  const roots = [join(root, "packages"), join(root, ".claude-plugin")];
-  return roots
+  return CONTENT_ROOTS.map((dir) => join(root, dir))
     .flatMap((dir) => walkFiles(dir))
     .filter((file) => file.endsWith(".md") || file.endsWith(".json"))
     .filter((file) => basename(file) !== "package-lock.json");
@@ -25,7 +28,7 @@ function shippedTextFiles(root) {
 
 /** A JSON file that does not parse breaks whatever reads it, often silently. */
 export function checkJsonSyntax(root, report) {
-  const files = [...walkFiles(join(root, "packages")), ...walkFiles(join(root, ".claude-plugin"))];
+  const files = CONTENT_ROOTS.flatMap((dir) => walkFiles(join(root, dir)));
   for (const entry of readdirSync(root)) {
     const full = join(root, entry);
     if (entry.endsWith(".json") && statSync(full).isFile()) files.push(full);
@@ -94,7 +97,7 @@ export function checkShippedContent(root, report) {
  * The marketplace installs plugins by checking out this repo, so an untracked
  * or gitignored skill exists locally and nowhere else.
  */
-export function checkGitTracked(root, packages, report) {
+export function checkGitTracked(root, plugins, report) {
   let tracked;
   try {
     tracked = new Set(
@@ -104,8 +107,10 @@ export function checkGitTracked(root, packages, report) {
     report(root, `cannot list git-tracked files: ${err.message}`);
     return;
   }
-  for (const pkg of packages) {
-    const shipped = ["skills", "agents", ".claude-plugin"].flatMap((dir) => walkFiles(join(pkg.dir, dir)));
+  for (const pkg of plugins) {
+    const shipped = ["skills", "agents", "output-styles", ".claude-plugin"].flatMap((dir) =>
+      walkFiles(join(pkg.dir, dir)),
+    );
     shipped.push(join(pkg.dir, ".mcp.json"));
     for (const file of shipped.filter((f) => existsSync(f))) {
       const rel = toPosix(root, file);

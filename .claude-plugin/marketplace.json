@@ -36,6 +36,12 @@
       "description": "Structural code quality gate. A PostToolUse hook ratchets every write against a recorded baseline, so existing debt is allowed but making it worse is not. Ships 1 skill: /quality-refactor (systematic refactoring to an explicit machine-checked quality bar - one type per file, complexity and size bounds, dead-code removal - with a zero-dependency scanner and a ratcheting baseline).",
       "source": "./packages/quality-guard",
       "category": "productivity"
+    },
+    {
+      "name": "natural-output-style",
+      "description": "Output style only. Natural makes Claude write plain prose every turn - common words, short sentences, active voice, no filler and no marketing words. It mirrors the rules ste-lint checks mechanically, so replies meet the same bar files do. Keeps Claude Code's built-in coding behavior. No MCP server, no skills, no hooks.",
+      "source": "./plugins/natural-output-style",
+      "category": "writing"
     }
   ]
 }

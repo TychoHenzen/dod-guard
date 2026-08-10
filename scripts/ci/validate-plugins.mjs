@@ -23,6 +23,7 @@ import {
 } from "./lib/content-checks.mjs";
 import { listDir } from "./lib/fs-utils.mjs";
 import { createPluginChecks } from "./lib/plugin-checks.mjs";
+import { checkStandalonePlugins, loadStandalonePlugins } from "./lib/standalone-checks.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PACKAGES_DIR = join(ROOT, "packages");
@@ -49,6 +50,7 @@ function loadPackages() {
 
 function main() {
   const packages = loadPackages();
+  const standalone = loadStandalonePlugins(ROOT);
   if (packages.length === 0) {
     process.stderr.write("no packages found under packages/\n");
     return 3;
@@ -58,14 +60,16 @@ function main() {
   for (const pkg of packages) checkPackage(pkg, packages);
   checkMarketplace(join(ROOT, ".claude-plugin", "marketplace.json"), packages, true);
 
+  const styleCount = checkStandalonePlugins(standalone, report);
   const jsonCount = checkJsonSyntax(ROOT, report);
   checkOrphanPluginContent(ROOT, report);
   const contentCount = checkShippedContent(ROOT, report);
-  checkGitTracked(ROOT, packages, report);
+  checkGitTracked(ROOT, [...packages, ...standalone], report);
 
   const skillCount = packages.reduce((n, p) => n + p.skills.length, 0);
   const agentCount = packages.reduce((n, p) => n + p.agents.length, 0);
-  const scanned = `${packages.length} plugins, ${skillCount} skills, ${agentCount} agents, ${jsonCount} JSON files, ${contentCount} shipped docs`;
+  const pluginCount = packages.length + standalone.length;
+  const scanned = `${pluginCount} plugins, ${skillCount} skills, ${agentCount} agents, ${styleCount} output styles, ${jsonCount} JSON files, ${contentCount} shipped docs`;
   if (violations.length === 0) {
     process.stdout.write(`plugin configuration OK — ${scanned}\n`);
     return 0;

@@ -16,6 +16,16 @@ npm workspaces monorepo with five MCP server plugins for Claude Code, distribute
 
 **Each package has its own CLAUDE.md** with detailed architecture, file responsibilities, and domain-specific rules. Read it before working in that package.
 
+### Plugins that ship no code
+
+`plugins/` holds plugins with no MCP server: a `.claude-plugin/plugin.json` plus content Claude Code loads directly. They are not npm workspaces, so they never publish, and the `packages/` rules about `dist/bundle.js`, `.mcp.json` and `files[]` do not apply. They still need a root marketplace entry, and `validate-plugins.mjs` checks their manifest, their output-style frontmatter, and that git tracks every file.
+
+| Plugin | Ships |
+|--------|-------|
+| `natural-output-style` | The `Natural` output style. Plain prose every turn: common words, short sentences, no filler. Mirrors what `ste-lint` checks mechanically. |
+
+Put a plugin here only while it has no server. The moment it needs one, it becomes a package.
+
 ## Build, test, lint
 
 All commands from the **monorepo root**:
