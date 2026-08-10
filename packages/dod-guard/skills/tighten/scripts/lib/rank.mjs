@@ -26,6 +26,8 @@ const RULE_WEIGHT = {
   "types-per-file": 1,
   "param-count": 1,
   "todo-marker": 1,
+  "comment-bloat": 1,
+  "comment-restates-code": 0,
   "line-length": 0,
 };
 

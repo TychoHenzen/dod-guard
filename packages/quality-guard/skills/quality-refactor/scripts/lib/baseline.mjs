@@ -67,11 +67,14 @@ export function compareToBaseline(violations, baseline, scannedFiles) {
   for (const key of new Set([...Object.keys(current), ...Object.keys(baseline.counts)])) {
     const [file, rule] = splitKey(key);
     const now = current[key] ?? 0;
-    if (isNew.has(file) || !(key in baseline.counts)) {
+    if (isNew.has(file)) {
       if (now > 0) result.adopted.push({ file, rule, now });
       continue;
     }
-    const before = baseline.counts[key];
+    // A known file with no row for this rule was clean of it. Zero is the bar
+    // it has to hold, so the first violation is a regression. Only a file the
+    // baseline has never scanned gets adopted at whatever it measures.
+    const before = baseline.counts[key] ?? 0;
     const bucket = bucketFor(before, now);
     if (bucket) result[bucket].push({ file, rule, before, now });
   }

@@ -110,7 +110,13 @@ That last one matters because **the marketplace installs from git, not npm** —
 
 Existing debt is allowed; making it worse is not. When a ratchet improves, CI rewrites the baseline in the same commit as the Biome autofixes, so the bar can only rise. To rebaseline by hand: `node scripts/ci/<script>.mjs --write-baseline`.
 
-The quality baseline records **which files it scanned**, not only their counts. A file the baseline has never seen is adopted at its current counts — written into the baseline by that same run and picked up by the autofix commit — instead of failing as a jump from zero. Otherwise every file created or extracted in a commit would fail the ratchet, and because the gate failed the tighten step would be skipped, leaving CI red until someone rebaselined by hand. A file is ratcheted normally from the run after it is adopted.
+The quality baseline records **which files it scanned**, not only their counts. A file the baseline has never seen is adopted at its current counts, rather than failing as a jump from zero. The same run writes those counts into the baseline, and the autofix commit picks them up. Otherwise every file created or extracted in a commit would fail the ratchet. The gate failing skips the tighten step, so CI would stay red until someone rebaselined by hand. A file is ratcheted normally from the run after it is adopted.
+
+Adoption is per file, never per rule. A file the baseline already lists was
+clean of every rule it holds no row for. So its first violation of one is a
+regression from zero. That is what makes a newly added rule bite on existing
+files. It also means the commit that adds a rule has to rebaseline in the same
+commit. While the gate is red, the tighten step is skipped.
 
 The coverage ratchet measures the compiled output, not the sources. c8 matches
 `--include` against the files it loads, which are `packages/<pkg>/dist/**/*.js`.

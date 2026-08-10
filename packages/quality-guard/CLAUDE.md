@@ -87,6 +87,11 @@ repository turned on as errors.
   `test-only-export`. Those need whole-project reachability, so a per-file run
   would call every export dead. `FILE_RULES` in `quality-guard.mjs` lists what
   a single-file scan may judge.
+- `comment-bloat` and `comment-restates-code` judge a comment against the code
+  under it, so `rules-comments.mjs` reads the blanked source, not the raw file.
+  A blanked line is whitespace exactly where a comment was, which is how a
+  standalone comment is told from a trailing one and how a block's subject is
+  found. Hand it the raw source and every comment reads as code.
 - Point `--root` at the repository, not at the target directory. Manifest
   files such as Godot scenes are collected from the root, and a scene that
   wires a class usually sits above the scanned subdirectory.

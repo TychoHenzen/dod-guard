@@ -361,6 +361,52 @@ in a file you have not otherwise touched, and never before wave 6.
 
 ---
 
+## `comment-bloat` - a comment that outweighs its own declaration
+
+**Detects:** a block of five or more standalone comment lines. It fires when
+that count is more than twice (preferred) or four times (hard) the lines of
+code below it. The subject is the run of code lines under the block. That run
+stops at the first blank line, or at a line that only closes a bracket.
+
+**Why the ratio and not the length:** ten lines over a forty-line function is
+an explanation. Ten lines over a one-line field is an essay. Length alone
+would punish the first and miss the point of the second.
+
+**Why preferred:** the comment is read every time the code is. The reader
+pays for it every time. Some blocks recount the bug that prompted the line,
+name the value it used to hold, or walk through an experiment. Git already
+records all of that, so the toll buys nothing.
+
+**Fix:** keep the sentence that gives a reason a reader could not derive.
+Delete the history, the changelog, and the rejected alternative. Delete the
+walkthrough of what the code plainly does. Move a measurement table into the
+test that produced it. An explanation that truly needs the length is a signal.
+Name the code under it better, or split it.
+
+**Not reported:** a comment with no code under it - a file header, a licence,
+a section banner - and a comment above a `package`, `import` or `use` line.
+Neither has a declaration to be measured against.
+
+---
+
+## `comment-restates-code` - a comment that says the name again
+
+**Detects:** a comment of one or two lines. It fires when three quarters or
+more of the comment's content words also appear in the three code lines below
+it. Both sides are split on camelCase and snake_case, then stemmed.
+`/** Parse a markdown file from disk. */` over `parseMarkdown(filePath)`
+matches.
+
+**Why preferred:** the declaration already states the what, and it cannot go
+stale. A comment that repeats it adds a second copy that can. It also trains
+the reader to skip comments in this file, including the ones that matter.
+
+**Fix:** delete it, or replace it with the why - the constraint, the reason
+for this value, the caller this shape exists for. If nothing can be said, the
+name is the documentation and no comment is needed.
+
+---
+
 ## `todo-marker` - TODO / FIXME / HACK / XXX
 
 **Detects:** those words in any comment.

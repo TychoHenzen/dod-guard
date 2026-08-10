@@ -37,7 +37,7 @@ on:
 
 env:
   # Biome owns line width (120); ratcheting it here would fight the formatter.
-  QUALITY_RULES: file-length,function-length,complexity,param-count,nesting-depth,types-per-file,duplicate-block,else-branch,unnamed-tuple,dead-export,unused-local,test-only-export,commented-out-code,todo-marker,stateless-method
+  QUALITY_RULES: file-length,function-length,complexity,param-count,nesting-depth,types-per-file,duplicate-block,else-branch,unnamed-tuple,dead-export,unused-local,test-only-export,commented-out-code,todo-marker,stateless-method,comment-bloat,comment-restates-code
   QUALITY_SCAN: packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs
 
 jobs:

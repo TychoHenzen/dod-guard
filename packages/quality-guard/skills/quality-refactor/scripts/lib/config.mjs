@@ -122,6 +122,11 @@ const DEFAULT_THRESHOLDS = {
   "nesting-depth": { warn: 3, error: 5 },
   "types-per-file": { warn: null, error: 1 },
   "duplicate-block": { warn: 1, error: 2 },
+  /**
+   * Comment lines divided by the lines of code they document, so the bound is
+   * a ratio and not a length. A block under `BLOAT_FLOOR` lines never counts.
+   */
+  "comment-bloat": { warn: 2, error: 4 },
 };
 
 /** Rules that fire on presence, not on a numeric threshold. */
@@ -132,6 +137,7 @@ const PRESENCE_SEVERITY = {
   "unused-local": "error",
   "test-only-export": "warn",
   "commented-out-code": "error",
+  "comment-restates-code": "warn",
   "todo-marker": "warn",
   "stateless-method": "warn",
 };

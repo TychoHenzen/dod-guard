@@ -64,7 +64,7 @@ every new step. The executor is what later writes `completed`, `skipped` or `blo
 | 3 SPLIT | `types-per-file`, `file-length`, hierarchy moves | splitting moves violations between files, so it precedes any per-file measurement |
 | 4 SIMPLIFY | `complexity`, `function-length`, `nesting-depth`, `else-branch` | structure has settled by now, so control flow can be fixed where it stands |
 | 5 SIGNATURES | `param-count`, `unnamed-tuple`, `stateless-method` | a signature change reaches call sites, so it waits until the callers stop moving |
-| 6 COSMETIC | `line-length`, `todo-marker` | every wave above rewrites lines, so starting here wastes the whole pass |
+| 6 COSMETIC | `line-length`, `todo-marker`, `comment-bloat`, `comment-restates-code` | every wave above rewrites lines, so starting here wastes the whole pass, and a comment judged before its code moves is judged against the wrong subject |
 
 Keep the waves in that sequence on every run.
 
@@ -143,6 +143,7 @@ Five things decide the shape of the code and no scanner sees them. Walk each one
 | `nesting-depth` | 3 | 5 |
 | `types-per-file` | - | 1 |
 | `duplicate-block` (6-line window) | 2 sites | 2 sites |
+| `comment-bloat` (comment lines per line of code) | 2x | 4x |
 | `unnamed-tuple` | none | none |
 | `dead-export` | none | none |
 | `unused-local` | none | none |
@@ -150,6 +151,7 @@ Five things decide the shape of the code and no scanner sees them. Walk each one
 | `test-only-export` | none | - |
 | `else-branch` | none | - |
 | `stateless-method` | none | - |
+| `comment-restates-code` | none | - |
 | `todo-marker` | none | - |
 
 A hard bound is a gate. The refactor stays unfinished while any error remains in scope.

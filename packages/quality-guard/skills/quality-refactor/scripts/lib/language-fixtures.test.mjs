@@ -50,6 +50,9 @@ test("Rust fixture (lifetimes, impl blocks, cfg(test), format captures, match ar
     { file: "sample.rs", line: 18, rule: "complexity" },
     { file: "sample.rs", line: 29, rule: "stateless-method" },
     { file: "sample.rs", line: 36, rule: "else-branch" },
+    // Six lines of prose over a two-line function. Under strict that is the
+    // comment-bloat bound exactly, which is what the fixture pins.
+    { file: "sample.rs", line: 44, rule: "comment-bloat" },
     { file: "sample.rs", line: 58, rule: "todo-marker" },
   ]);
 });

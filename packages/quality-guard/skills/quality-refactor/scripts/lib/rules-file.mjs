@@ -4,7 +4,9 @@ import { severityFor } from "./config.mjs";
 import { lineAt, lineIndex, matchBracket } from "./offsets.mjs";
 import { findRustImpls, findTypes } from "./parse-types.mjs";
 import { findFunctions } from "./parse.mjs";
+import { checkComments } from "./rules-comments.mjs";
 import { strip } from "./strip.mjs";
+import { push } from "./violations.mjs";
 
 /**
  * Rust closures open with a pipe-delimited parameter list. So a
@@ -79,17 +81,6 @@ const TUPLE_PATTERNS = {
   rs: /->\s*\([^)\n]*,[^)\n]*\)/g,
   py: /:\s*[Tt]uple\[[^\]\n]*,/g,
 };
-
-const TODO_MARKER = /\b(TODO|FIXME|HACK|XXX)\b/;
-const CODE_IN_COMMENT = /^[^\w]*(if|for|while|return|const|let|var|function|def|public|private|import|await)\b/;
-/**
- * Commented-out code has to both start like a statement and end like one.
- * Prose that quotes a keyword ("`const name = (` is the arrow form") ends in
- * punctuation, not a terminator, so it stays out of the results.
- */
-const CODE_TAIL = /[;{}[\]),]\s*$/;
-/** Doc comments describe code; they are never commented-out code. */
-const DOC_COMMENT = /^(\/\*\*|\/\/\/|"""|''')/;
 
 function countMatches(text, patterns) {
   let total = 0;
@@ -364,11 +355,6 @@ function checkUnusedLocal(file, config, fn, context, out) {
   push(out, file, fn.line, "unused-local", severity, message, 1);
 }
 
-function push(out, file, line, rule, severity, message, metric) {
-  if (severity === null) return;
-  out.push({ file: file.rel, line, rule, severity, message, metric });
-}
-
 function checkLines(file, config, out) {
   file.lines.forEach((text, index) => {
     const severity = severityFor(config, "line-length", text.length);
@@ -473,22 +459,6 @@ function checkTuples(file, config, code, starts, out) {
   }
 }
 
-function checkComments(file, config, comments, out) {
-  for (const comment of comments) {
-    const body = comment.text.replace(/^[\s/*#]+|[\s*/]+$/g, "");
-    const line = comment.line;
-    if (TODO_MARKER.test(body)) {
-      const marker = config.presence["todo-marker"];
-      push(out, file, line, "todo-marker", marker, `unresolved marker: ${body.slice(0, 60)}`, 1);
-      continue;
-    }
-    if (DOC_COMMENT.test(comment.text.trim())) continue;
-    if (!CODE_IN_COMMENT.test(body) || !CODE_TAIL.test(body)) continue;
-    const severity = config.presence["commented-out-code"];
-    push(out, file, line, "commented-out-code", severity, `commented-out code: ${body.slice(0, 60)}`, 1);
-  }
-}
-
 /**
  * Rust puts a unit-test module in the same file as the code it tests,
  * gated by `#[cfg(test)]`. Every other rule here reads `isTest` as a
@@ -573,7 +543,7 @@ export function scanFile(file, config) {
   checkLines(file, config, out);
   checkTypes(file, config, types, out);
   checkTuples(file, config, code, starts, out);
-  checkComments(file, config, comments, out);
+  checkComments(file, config, comments, code.split("\n"), out);
   const context = { starts, spans, code, interpolations };
   for (const fn of functions) {
     if (inTestRegion(testRegions, fn.headerStart)) continue;

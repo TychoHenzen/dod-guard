@@ -21,6 +21,8 @@ const RULE_ORDER = [
   "unnamed-tuple",
   "else-branch",
   "stateless-method",
+  "comment-bloat",
+  "comment-restates-code",
   "todo-marker",
   "line-length",
 ];
@@ -102,7 +104,7 @@ function renderComparison(comparison) {
 }
 
 export function renderText(result, top) {
-  const { summary, violations, comparison } = result;
+  const { summary, comparison } = result;
   const lines = [];
   const counts = `${summary.errors} error, ${summary.warnings} warn`;
   lines.push(`Scanned ${result.fileCount} files — ${summary.total} violations (${counts})`);

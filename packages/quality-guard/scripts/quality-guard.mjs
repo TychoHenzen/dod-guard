@@ -40,6 +40,7 @@ const FILE_RULES = [
   "file-length", "function-length", "complexity", "param-count",
   "nesting-depth", "types-per-file", "else-branch", "unnamed-tuple",
   "unused-local", "commented-out-code", "todo-marker", "stateless-method",
+  "comment-bloat", "comment-restates-code",
 ].join(",");
 
 const SCAN_TIMEOUT_MS = 20_000;

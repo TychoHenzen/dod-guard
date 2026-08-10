@@ -43,6 +43,16 @@ test("a clean new file is adopted with no violations recorded", () => {
   assert.deepEqual(comparison.regressions, []);
 });
 
+test("a known file breaking a rule it never broke is a regression, not an adoption", () => {
+  const baseline = baselineOf([violation("a.ts", "complexity")], ["a.ts"]);
+  const now = [violation("a.ts", "complexity"), violation("a.ts", "comment-bloat")];
+
+  const comparison = compareToBaseline(now, baseline, ["a.ts"]);
+
+  assert.deepEqual(comparison.regressions, [{ file: "a.ts", rule: "comment-bloat", before: 0, now: 1 }]);
+  assert.deepEqual(comparison.adopted, []);
+});
+
 test("a known file getting worse is still a regression", () => {
   const baseline = baselineOf([violation("a.ts", "complexity")], ["a.ts"]);
   const now = [violation("a.ts", "complexity"), violation("a.ts", "complexity")];
@@ -100,16 +110,6 @@ test("adopted files are held to their recorded counts on the next run", () => {
 
   assert.deepEqual(second.newFiles, []);
   assert.deepEqual(second.regressions, [{ file: "new.ts", rule: "file-length", before: 1, now: 2 }]);
-});
-
-test("a known file with a rule the baseline never recorded is adopted, not regressed", () => {
-  const baseline = baselineOf([violation("app.ts", "complexity")], ["app.ts"]);
-  const after = [violation("app.ts", "complexity"), violation("app.ts", "dead-export")];
-
-  const comparison = compareToBaseline(after, baseline, ["app.ts"]);
-
-  assert.deepEqual(comparison.regressions, []);
-  assert.deepEqual(comparison.adopted, [{ file: "app.ts", rule: "dead-export", now: 1 }]);
 });
 
 test("adoption leaves untouched files' counts alone", () => {
