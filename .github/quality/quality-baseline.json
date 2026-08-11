@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-10T07:34:05.691Z",
-  "total": 1012,
+  "total": 1016,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -114,6 +114,17 @@
     "packages/dod-guard/src/mcp/dod-tree.ts",
     "packages/dod-guard/src/mcp/locate-node.ts",
     "packages/dod-guard/src/mcp/resolve.ts",
+    "packages/dod-guard/src/openspec-convert.test.ts",
+    "packages/dod-guard/src/openspec/convert.test.ts",
+    "packages/dod-guard/src/openspec/convert.ts",
+    "packages/dod-guard/src/openspec/dependency.test.ts",
+    "packages/dod-guard/src/openspec/glob.test.ts",
+    "packages/dod-guard/src/openspec/requirement-block.test.ts",
+    "packages/dod-guard/src/openspec/requirement-block.ts",
+    "packages/dod-guard/src/openspec/requirements.test.ts",
+    "packages/dod-guard/src/openspec/requirements.ts",
+    "packages/dod-guard/src/openspec/scenario-block.test.ts",
+    "packages/dod-guard/src/openspec/scenario-block.ts",
     "packages/dod-guard/src/parser.ts",
     "packages/dod-guard/src/schemas.ts",
     "packages/dod-guard/src/snapshot.test.ts",
@@ -821,6 +832,10 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/dod-guard/src/openspec/requirements.ts::types-per-file": 1,
+    "packages/dod-guard/src/openspec/requirements.ts::complexity": 1,
+    "packages/dod-guard/src/openspec-convert.test.ts::file-length": 1,
+    "packages/dod-guard/src/openspec/convert.test.ts::file-length": 1
   }
 }

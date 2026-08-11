@@ -1,7 +1,8 @@
 import { promises as fs } from "node:fs";
 import type { TaskNode } from "../types.js";
 import { resolveGlob } from "./glob.js";
-import { extractRequirementTitles } from "./requirements.js";
+import { extractRequirementBlocks } from "./requirements.js";
+import type { ScenarioBlock } from "./scenario-block.js";
 import type { OpenSpecInstructions } from "./types.js";
 
 /** Converter output: the roots dod-guard's `writeMarkdown` renders, plus
@@ -11,12 +12,22 @@ export interface ConvertedDod {
   roots: TaskNode[];
 }
 
-function requirementGroup(title: string, index: number): TaskNode {
+function scenarioLeaf(scenario: ScenarioBlock, id: string): TaskNode {
+  return {
+    id,
+    title: scenario.title,
+    refinement: "draft",
+    intent: scenario.intent,
+    last_status: "draft",
+  };
+}
+
+function requirementGroup(title: string, index: number, scenarios: ScenarioBlock[]): TaskNode {
   return {
     id: `req-${index}`,
     title,
     refinement: "draft",
-    children: [],
+    children: scenarios.map((scenario, si) => scenarioLeaf(scenario, `req-${index}-scenario-${si}`)),
     last_status: "draft",
   };
 }
@@ -32,8 +43,9 @@ async function readDeltaFiles(instructions: OpenSpecInstructions): Promise<strin
 /**
  * Turn parsed `instructions --json` output into a DodDocument-shaped
  * roots tree: one group node per `### Requirement:` heading found across
- * every resolved spec delta file, in file-then-document order. No leaves
- * yet - a later step maps `#### Scenario:` blocks onto proof leaves.
+ * every resolved spec delta file, in file-then-document order, each
+ * holding one draft leaf per `#### Scenario:` found under it. A leaf's
+ * intent is its scenario's `THEN` text.
  */
 export async function convertInstructionsToDod(instructions: OpenSpecInstructions): Promise<ConvertedDod> {
   const files = await readDeltaFiles(instructions);
@@ -42,8 +54,8 @@ export async function convertInstructionsToDod(instructions: OpenSpecInstruction
 
   for (const file of files) {
     const content = await fs.readFile(file, "utf-8");
-    for (const title of extractRequirementTitles(content)) {
-      roots.push(requirementGroup(title, index));
+    for (const block of extractRequirementBlocks(content)) {
+      roots.push(requirementGroup(block.title, index, block.scenarios));
       index++;
     }
   }
