@@ -1,6 +1,6 @@
 ---
 name: interview
-description: Pin down requirements before any implementation task, feature request, bug fix, or refactor, and before writing code or plans. Use when requirements are unclear, when there is a risk of wrong assumptions, or when the user says "build X" without specs. It replaces brainstorming for implementation work. Read the existing code, then question the user one item at a time. Confirm a written requirements summary, then run an adversarial review of that spec. Store a machine-checkable Definition of Done through dod_create and hand off to an executor skill. The output is one dod_id plus its markdown. This skill never implements.
+description: Pin down requirements before any implementation task, feature request, bug fix, or refactor, and before writing code or plans. Use when requirements are unclear, when there is a risk of wrong assumptions, or when the user says "build X" without specs. It replaces brainstorming for implementation work. Read the existing code, then question the user one item at a time. Confirm a written requirements summary, then run an adversarial review of that spec. Generate a machine-checkable Definition of Done from the resulting spec change and hand off to an executor skill. The output is a change id and its DoD. This skill never implements.
 ---
 
 # Interview
@@ -367,8 +367,10 @@ expected-to-fail pile remains.
 
 ## 8. Hand off and stop
 
-Report the `dod_id`, the root group count, the total leaf count, the
-concrete count, the draft count, and the `MANUAL:` count. Report the gate
+Report the change id and the `dod_id`. The executor needs both, because
+the change holds the requirements and the DoD holds the proofs. Report the
+root group count, the total leaf count, the concrete count, the draft
+count, and the `MANUAL:` count. Report the gate
 verdict and the markdown path. Report the baseline run as the number of
 leaves that passed and the number that failed as expected. Then name the
 executor.
@@ -379,6 +381,7 @@ executor.
 | the same, with evomcp fanout per step | `/dod-guard:cheap-step` |
 | interdependent sub-problems, regression risk, unknown unknowns | `/dod-guard:ratchet`, at its Phase B |
 | quality or security gates needed at each stage | `/dod-guard:adversarial-workflow`, resuming at its Phase 2 |
+| a small change whose own `tasks.md` covers the work, with no per-step gate needed | `/opsx:apply` |
 
 Tell the user which one you picked and why, in one sentence. A caller
 outside MCP verifies a subtree with
