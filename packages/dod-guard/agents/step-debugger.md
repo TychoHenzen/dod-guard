@@ -82,7 +82,7 @@ root cause in words, because a fix nobody can explain is a fix nobody can review
 - You have no channel to the user. Use the AMBIGUOUS report instead of AskUserQuestion.
 - Use read-only git only (`status`, `diff`, `log`). Never run a history-mutating git
   command: no commit, no rebase, no reset, no checkout of a branch. The orchestrator
-  commits once at the end.
+  commits after each step whose verify_cmd passes.
 - Work only on this step. Anything you notice outside it goes in Concerns.
 - Remove every piece of temporary instrumentation before reporting.
 - Run the exact command from the briefing's Verification section.

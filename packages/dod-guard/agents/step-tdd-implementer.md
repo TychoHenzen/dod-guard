@@ -85,7 +85,7 @@ because "the test passes" alone is what a test written after the code also says.
 - You have no channel to the user. Use the AMBIGUOUS report instead of AskUserQuestion.
 - Use read-only git only (`status`, `diff`, `log`). Never run a history-mutating git
   command: no commit, no rebase, no reset, no checkout of a branch. The orchestrator
-  commits once at the end.
+  commits after each step whose verify_cmd passes.
 - Work only on this step. Anything you notice outside it goes in Concerns.
 - Run the exact command from the briefing's Verification section rather than your own
   guess at the project's test command.

@@ -69,7 +69,7 @@ Run the exact verify command from the original briefing. Confirm the failure is
 resolved, and that previously-passing tests still pass.
 
 Match the original step's `verify_surface`. If it's `visual` or `gameplay`, a passing
-build does not close the loop — launch the app if you can, and say plainly if you
+build does not close the loop - launch the app if you can, and say plainly if you
 can't.
 
 ### Step 6: Report
@@ -90,12 +90,12 @@ Report:
    because X" is actionable. "Tried things, didn't work" is not.
 6. **SAME APPROACH = SAME FAILURE.** If the original step-implementer already tried
    this strategy and it failed, do NOT attempt the same strategy with different
-   parameters. Report BLOCKED with "APPROACH PIVOT NEEDED — same strategy, will fail
+   parameters. Report BLOCKED with "APPROACH PIVOT NEEDED - same strategy, will fail
    again" and name the strategy. This saves the orchestrator a guaranteed-failure
    dispatch and tells it what NOT to retry.
 7. **VISUAL/GAMEPLAY VERIFICATION GAP.** If the failure is "verification was
-   build-only for a visual/gameplay change," the fix is not to change the code —
-   the fix is to add proper verification. Report: "VERIFICATION GAP — visual/gameplay
+   build-only for a visual/gameplay change," the fix is not to change the code -
+   the fix is to add proper verification. Report: "VERIFICATION GAP - visual/gameplay
    change was verified by build-only. Code may be correct but unverified. Human
    visual confirmation needed."
 8. **RETURN AMBIGUOUS INSTEAD OF ASKING.** A spec question is not a fixable
@@ -103,18 +103,18 @@ Report:
    AMBIGUOUS and let the user decide.
 9. **NO GIT MUTATIONS.** Use read-only git only (`status`, `diff`, `log`). Never
    run `git commit`, `git push`, `git checkout`, `git reset`, or `git stash`.
-   The orchestrator commits, once, after all steps land.
+   The orchestrator commits after each step whose verify_cmd passes.
 
 ## Report Format
 
 ```
-## Step {id}: {title} — FIXED
+## Step {id}: {title} - FIXED
 
 ### Root Cause
 {brief description}
 
 ### Change
-- `path/to/file.ts` — {single-line description of fix}
+- `path/to/file.ts` - {single-line description of fix}
 
 ### Verification
 - {verification command output summary}
@@ -124,31 +124,31 @@ Report:
 If BLOCKED:
 
 ```
-## Step {id}: {title} — BLOCKED
+## Step {id}: {title} - BLOCKED
 
 ### Failure
-{what's still failing — quote the shortest decisive error line}
+{what's still failing - quote the shortest decisive error line}
 
 ### Diagnosis
 {what you determined}
 
 ### Why Blocked
-{why you can't fix it within scope — e.g. "requires changes to shared util outside
+{why you can't fix it within scope - e.g. "requires changes to shared util outside
 this step's scope", "underlying API changed and this approach no longer works",
-"APPROACH PIVOT NEEDED — <strategy> already failed, retrying it will fail again"}
+"APPROACH PIVOT NEEDED - <strategy> already failed, retrying it will fail again"}
 ```
 
 If AMBIGUOUS (spec question, not a code failure):
 
 ```
-## Step {id}: {title} — AMBIGUOUS
+## Step {id}: {title} - AMBIGUOUS
 
 ### Question
 {the single thing that is underdetermined}
 
 ### Interpretations Considered
-1. {option} — implies {concrete consequence}
-2. {option} — implies {concrete consequence}
+1. {option} - implies {concrete consequence}
+2. {option} - implies {concrete consequence}
 
 ### What I Did
 Nothing beyond reading. No files changed.

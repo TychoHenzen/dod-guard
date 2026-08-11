@@ -49,6 +49,9 @@ step.
   keep Concerns and file lists for the final report, then drop
   everything else about that step. Carry forward only id, title, and
   verdict.
+- When `verify_cmd` passes, commit the step's changes yourself. That
+  commit is the rollback point. A failed or blocked step earns no
+  commit. You commit. You never push. Pushing stays a human decision.
 
 ### Workers
 
@@ -180,4 +183,4 @@ Deliver a report containing:
 - Visual or gameplay steps still awaiting confirmation
 - All changed files
 - All worker Concerns, grouped by step
-- A commit message (write it, do not commit)
+- The commits made along the way, one per passed step
