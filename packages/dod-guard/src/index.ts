@@ -12,6 +12,7 @@ import { isCliInvocation, runCli } from "./cli.js";
 import { handleDodAdversarialGate } from "./mcp/dod-adversarial-gate.js";
 import { handleDodAmend } from "./mcp/dod-amend.js";
 import { handleDodCheck } from "./mcp/dod-check.js";
+import { handleDodGenerate } from "./mcp/dod-generate.js";
 import { handleDodImport } from "./mcp/dod-import.js";
 import { handleDodList } from "./mcp/dod-list.js";
 import { handleDodRemoveNode } from "./mcp/dod-remove-node.js";
@@ -222,6 +223,19 @@ server.tool(
     cwd: z.string(),
   },
   async (params) => run(() => handleDodImport(params)),
+);
+
+server.tool(
+  "dod_generate",
+  "Generate a DoD from an OpenSpec change and register it alongside " +
+    "that change. Fetches the change's instructions via the OpenSpec " +
+    "CLI, converts its spec deltas into a DoD tree, and imports or " +
+    "regenerates the tracked DoD for it.",
+  {
+    change_id: z.string(),
+    cwd: z.string(),
+  },
+  async (params) => run(() => handleDodGenerate(params)),
 );
 
 server.tool(

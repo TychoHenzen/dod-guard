@@ -48,6 +48,7 @@ const EXPECTED_TOOLS = [
   "dod_amend",
   "dod_list",
   "dod_import",
+  "dod_generate",
   "dod_store_migrate",
   "dod_adversarial_gate",
 ];
@@ -320,9 +321,9 @@ describe("dod-guard MCP server: per-document tool answers", () => {
   });
   after(() => live.close());
 
-  test("tools/list must expose exactly the 12 dod tools", async () => {
+  test("tools/list must expose exactly the 13 dod tools", async () => {
     const names = await live.listTools();
-    assert.equal(names.length, 12);
+    assert.equal(names.length, 13);
     assert.deepEqual(names.slice().sort(), EXPECTED_TOOLS.slice().sort());
   });
 
