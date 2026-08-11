@@ -57,6 +57,19 @@ check. Keep asking until all four hold for every requirement.
 
 Re-read code mid-interview whenever an answer contradicts what you found.
 
+Label every question Low, Medium, or High. The label names what a wrong
+answer costs. Low means the work absorbs a wrong answer cheaply. High means
+a wrong answer wastes the build or ships the wrong behavior. Ask a
+High-risk question before a Low-risk one, because a wrong High answer
+invalidates work already built on it.
+
+Cap clarifying questions at 3 per round, so the interview cannot stall on a
+user who stops answering. A round is one batch of questions put to the user
+at once, used only to unblock when several answers are needed together. The
+floor above sets a minimum for the whole interview. The cap sets a maximum
+per round. Neither overrides the other, so a change with a floor of 5 or 6
+still needs two or more rounds to reach it.
+
 ## 4. The summary the user confirms
 
 Present one structured summary with these headings: goal, behavior included,
