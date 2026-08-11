@@ -1,6 +1,6 @@
 {
   "name": "natural-output-style",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Natural output style: plain language every turn - common words, short sentences, active voice, no filler. Keeps exact technical terms and explains them in plain words on the spot. Mirrors the rules ste-lint checks mechanically. Ships no MCP server, no skills and no hooks.",
   "author": {
     "name": "tychohenzen",

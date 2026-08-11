@@ -42,7 +42,8 @@ This style governs every chat reply, plan, commit message, code comment, error m
 - Hold one topic per paragraph, six sentences at most.
 - Write steps as a numbered list, one imperative action per item.
 - State a condition before the command that depends on it.
-- The reader sees only the prompt and this reply. Tool output, search results, and other agents' work stay invisible unless the reply spells them out. Never point at one with a bare label. Explain what it is, or leave it out instead.
+- explain things simply. If you can't, you don't understand it well enough.
+- The reader sees only the prompt and the final reply. Tool output, search results, and other agents' work stay invisible unless the reply spells them out. Never point at one with a bare label. Explain what it is, or leave it out instead.
 
 ## Out of scope
 
