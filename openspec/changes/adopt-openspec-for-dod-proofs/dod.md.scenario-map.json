@@ -1,0 +1,167 @@
+[
+  {
+    "groupTitle": "ASSUMPTION marker does not trip todo-marker",
+    "scenarioTitle": "Code contains an ASSUMPTION comment",
+    "nodeId": "node-1"
+  },
+  {
+    "groupTitle": "assumption-marker rule counts without failing",
+    "scenarioTitle": "File gains an ASSUMPTION comment",
+    "nodeId": "node-3"
+  },
+  {
+    "groupTitle": "assumption-marker rule counts without failing",
+    "scenarioTitle": "Baseline records the count",
+    "nodeId": "node-4"
+  },
+  {
+    "groupTitle": "convention is documented",
+    "scenarioTitle": "Reader checks the convention",
+    "nodeId": "node-6"
+  },
+  {
+    "groupTitle": "audit resolves each marker to one verdict",
+    "scenarioTitle": "Audit runs against a repo with marked assumptions",
+    "nodeId": "node-8"
+  },
+  {
+    "groupTitle": "audit resolves each marker to one verdict",
+    "scenarioTitle": "Audit finds no unresolved assumption left silently",
+    "nodeId": "node-9"
+  },
+  {
+    "groupTitle": "interview writes an OpenSpec change",
+    "scenarioTitle": "Interview reaches Phase 4",
+    "nodeId": "node-11"
+  },
+  {
+    "groupTitle": "interview keeps its question floors and adversarial review",
+    "scenarioTitle": "Interview session with few natural questions",
+    "nodeId": "node-13"
+  },
+  {
+    "groupTitle": "unconfirmed answers become open questions",
+    "scenarioTitle": "One answer stays unconfirmed",
+    "nodeId": "node-15"
+  },
+  {
+    "groupTitle": "questions carry a risk label and a per-round cap",
+    "scenarioTitle": "Round would otherwise ask more than three questions",
+    "nodeId": "node-17"
+  },
+  {
+    "groupTitle": "handoff names opsx:apply as an executor",
+    "scenarioTitle": "Interview session finishes",
+    "nodeId": "node-19"
+  },
+  {
+    "groupTitle": "steps derive from the DoD as a schema artifact",
+    "scenarioTitle": "Steps artifact blocked before dod completes",
+    "nodeId": "node-21"
+  },
+  {
+    "groupTitle": "steps derive from the DoD as a schema artifact",
+    "scenarioTitle": "Leaf proof command becomes verify_cmd",
+    "nodeId": "node-22"
+  },
+  {
+    "groupTitle": "draft leaves map to manual_required steps",
+    "scenarioTitle": "DoD contains a draft leaf",
+    "nodeId": "node-24"
+  },
+  {
+    "groupTitle": "briefing carries the Requirement field",
+    "scenarioTitle": "Worker receives a step briefing",
+    "nodeId": "node-26"
+  },
+  {
+    "groupTitle": "briefing states the assumption rule",
+    "scenarioTitle": "Worker writes code beyond what the scenario states",
+    "nodeId": "node-28"
+  },
+  {
+    "groupTitle": "staleness check reads openspec status",
+    "scenarioTitle": "Underlying change gains a new commit",
+    "nodeId": "node-30"
+  },
+  {
+    "groupTitle": "opsx:propose is a recognized plan producer",
+    "scenarioTitle": "Session starts from an OpenSpec change",
+    "nodeId": "node-32"
+  },
+  {
+    "groupTitle": "commit lands after each verified step",
+    "scenarioTitle": "A step's verify_cmd passes",
+    "nodeId": "node-34"
+  },
+  {
+    "groupTitle": "finishing traces and archives",
+    "scenarioTitle": "Integration check passes at session end",
+    "nodeId": "node-36"
+  },
+  {
+    "groupTitle": "cheap-step mirrors step-by-step",
+    "scenarioTitle": "cheap-step session runs to Finishing",
+    "nodeId": "node-38"
+  },
+  {
+    "groupTitle": "adversarial review reads the spec",
+    "scenarioTitle": "Adversarial review is dispatched",
+    "nodeId": "node-40"
+  },
+  {
+    "groupTitle": "DoD artifact in the schema",
+    "scenarioTitle": "Change reaches the dod artifact only after specs",
+    "nodeId": "node-42"
+  },
+  {
+    "groupTitle": "DoD artifact in the schema",
+    "scenarioTitle": "Change without specs cannot start the dod artifact",
+    "nodeId": "node-43"
+  },
+  {
+    "groupTitle": "DoD generated from spec deltas",
+    "scenarioTitle": "One scenario becomes one leaf",
+    "nodeId": "node-45"
+  },
+  {
+    "groupTitle": "DoD generated from spec deltas",
+    "scenarioTitle": "Leaves group under their requirement",
+    "nodeId": "node-46"
+  },
+  {
+    "groupTitle": "Uncheckable scenario becomes a draft leaf",
+    "scenarioTitle": "Scenario needs human judgment",
+    "nodeId": "node-48"
+  },
+  {
+    "groupTitle": "Generated DoD registers through dod_import",
+    "scenarioTitle": "Import reports the right leaf count",
+    "nodeId": "node-50"
+  },
+  {
+    "groupTitle": "Regenerated DoD preserves the tamper fingerprint",
+    "scenarioTitle": "Spec edited after first generation",
+    "nodeId": "node-52"
+  },
+  {
+    "groupTitle": "trace command exists",
+    "scenarioTitle": "Command runs against a real change",
+    "nodeId": "node-54"
+  },
+  {
+    "groupTitle": "Untraced leaf fails the check",
+    "scenarioTitle": "Leaf added by hand outside the generator",
+    "nodeId": "node-56"
+  },
+  {
+    "groupTitle": "Untraced scenario is reported, not blocking",
+    "scenarioTitle": "Scenario added after DoD generation",
+    "nodeId": "node-58"
+  },
+  {
+    "groupTitle": "trace is wired into the CI gate table",
+    "scenarioTitle": "Gate table documents the command",
+    "nodeId": "node-60"
+  }
+]

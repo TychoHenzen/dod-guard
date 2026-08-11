@@ -50,7 +50,10 @@ function c8Args(pkg, reportDir) {
     "node",
     "--experimental-test-module-mocks",
     "--test",
-    `${dist}/*.test.js`,
+    // Recursive, to match --include above. A non-recursive glob leaves a
+    // nested test unrun while its source still counts, which reads as a
+    // coverage drop that no amount of testing can fix.
+    `${dist}/**/*.test.js`,
   ];
 }
 

@@ -3,6 +3,7 @@ import { handleDodImport } from "../mcp/dod-import.js";
 import * as store from "../store.js";
 import type { DodDocument } from "../types.js";
 import { type ConvertedDod, convertInstructionsToDod } from "./convert.js";
+import { regenerateDod } from "./regenerate-dod.js";
 import { buildScenarioMap, writeScenarioMap } from "./scenario-identity.js";
 import type { OpenSpecInstructions } from "./types.js";
 
@@ -32,15 +33,23 @@ function buildRenderableDoc(
 }
 
 /**
- * Convert an OpenSpec change's instructions into a DoD, render it to
- * `resolvedOutputPath` inside the change directory, and register it
- * through `dod_import` so it lands in canonical storage alongside the
- * change (and so `openspec archive` carries the proof record along).
- * Returns `handleDodImport`'s report string (ID, concrete proof count,
- * draft count).
+ * Convert an OpenSpec change's instructions into a DoD and register it
+ * alongside the change (so `openspec archive` carries the proof record
+ * along). The first call for a given `resolvedOutputPath` renders and
+ * registers a fresh DoD through `dod_import`. A later call, once the spec
+ * has moved on, finds that registration and calls `regenerateDod` instead
+ * - the same reconciliation `dod-guard trace` expects has already run
+ * (see trace.ts) - rather than silently doing nothing the way a second
+ * `dod_import` on an already-tracked path would.
  */
 export async function renderAndImportDod(instructions: OpenSpecInstructions): Promise<string> {
   const converted = await convertInstructionsToDod(instructions);
+  const existing = await store.findByPath(converted.resolvedOutputPath);
+  if (existing) {
+    const summary = await regenerateDod(existing.id, instructions);
+    return formatRegenerateReport(existing.id, summary);
+  }
+
   const doc = buildRenderableDoc(instructions, converted.roots, converted.resolvedOutputPath);
   await writeMarkdown(doc);
   const report = await handleDodImport({ path: converted.resolvedOutputPath, cwd: instructions.root.path });
@@ -48,6 +57,20 @@ export async function renderAndImportDod(instructions: OpenSpecInstructions): Pr
     await recordScenarioIdentity(converted);
   }
   return report;
+}
+
+/** Mirrors `handleDodImport`'s report shape so callers can key off the same
+ * "ID: " line regardless of which branch ran. */
+function formatRegenerateReport(dodId: string, summary: Awaited<ReturnType<typeof regenerateDod>>): string {
+  return [
+    "DoD regenerated.",
+    "",
+    `ID: ${dodId}`,
+    `Amended: ${summary.amended.length}`,
+    `Added: ${summary.added.length}`,
+    `Removed: ${summary.removed.length}`,
+    `Unchanged: ${summary.unchanged}`,
+  ].join("\n");
 }
 
 /** Record which stored node id each (requirement, scenario) pair landed

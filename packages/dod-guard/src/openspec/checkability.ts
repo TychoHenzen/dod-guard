@@ -14,7 +14,7 @@ const COMMAND_SPAN = /`([^`]*\s[^`]*)`/;
  * executable as the first token is what tells those apart from `` `npm
  * test` ``. Seeded from what this repo's own specs and docs plausibly
  * invoke; extend as real specs need more. */
-export const ALLOWED_EXECUTABLES: ReadonlySet<string> = new Set([
+const ALLOWED_EXECUTABLES: ReadonlySet<string> = new Set([
   "npm",
   "npx",
   "node",
@@ -44,7 +44,7 @@ function firstToken(command: string): string {
  * (`ALLOWED_EXECUTABLES`). This never touches the host PATH, so it holds
  * the same verdict on every machine.
  */
-export function isCheckable(scenario: ScenarioBlock): boolean {
+function isCheckable(scenario: ScenarioBlock): boolean {
   const command = extractCommand(scenario);
   if (!command) return false;
   return ALLOWED_EXECUTABLES.has(firstToken(command));

@@ -37,7 +37,7 @@ import { convertInstructionsToDod } from "./convert.js";
 import { readScenarioMap, type ScenarioMapEntry, scenarioKey, writeScenarioMap } from "./scenario-identity.js";
 import type { OpenSpecInstructions } from "./types.js";
 
-export interface RegenerateSummary {
+interface RegenerateSummary {
   amended: string[];
   added: string[];
   removed: string[];

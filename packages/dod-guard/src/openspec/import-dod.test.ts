@@ -8,9 +8,7 @@ import type { OpenSpecInstructions } from "./types.js";
 
 // `handleDodImport` writes into `~/.claude/dod-store/` unless
 // `DOD_STORE_DIR` overrides it (see store.ts's `getStoreDir`). Point every
-// test at a fresh temp directory so nothing here touches the real store,
-// and so a second run of this test never trips the "Already tracked as"
-// refusal a stable path would hit on the real store.
+// test at a fresh temp directory so nothing here touches the real store.
 let storeDir: string;
 
 beforeEach(async () => {

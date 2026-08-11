@@ -156,6 +156,120 @@ test("regenerateDod adds a newly introduced scenario and removes a deleted one",
   await fs.rm(changeDir, { recursive: true, force: true });
 });
 
+// A second spec pair for the branches the first pair never reaches: a new
+// group, a draft-text edit, and a concrete<->draft kind switch.
+const KINDS_V1_SPEC = [
+  "### Requirement: Kinds",
+  "",
+  "#### Scenario: Draft note",
+  "- **WHEN** the release ships",
+  "- **THEN** someone reviews the release notes by hand",
+  "",
+  "#### Scenario: Switches kind",
+  "- **WHEN** the switch has not happened yet",
+  "- **THEN** `npm --version` exits zero for the switches-kind scenario",
+  "",
+].join("\n");
+
+const KINDS_V2_SPEC = [
+  "### Requirement: Kinds",
+  "",
+  "#### Scenario: Draft note",
+  "- **WHEN** the release ships",
+  "- **THEN** someone carefully reviews the updated release notes by hand",
+  "",
+  "#### Scenario: Switches kind",
+  "- **WHEN** the switch has happened",
+  "- **THEN** a human confirms the switch by hand",
+  "",
+  "### Requirement: Brand New Group",
+  "",
+  "#### Scenario: Fresh one",
+  "- **WHEN** the group is new",
+  "- **THEN** `npm --version` exits zero for the fresh-one scenario",
+  "",
+].join("\n");
+
+test("regenerateDod creates a brand-new requirement group for a scenario under a heading that did not exist yet", async () => {
+  const changeDir = await fs.mkdtemp(join(os.tmpdir(), "dod-guard-regen-kinds-"));
+  const v1 = await instructionsFor(changeDir, KINDS_V1_SPEC);
+  const report = await renderAndImportDod(v1);
+  const dodId = idFrom(report);
+
+  const v2 = await instructionsFor(changeDir, KINDS_V2_SPEC);
+  const summary = await regenerateDod(dodId, v2);
+
+  const doc = await store.load(dodId);
+  assert.ok(doc, "expected the regenerated doc to still be tracked");
+  if (!doc) throw new Error("unreachable");
+
+  const newGroup = doc.roots.find((r) => r.title === "Brand New Group");
+  assert.ok(newGroup, "expected a new 'Brand New Group' root to be created");
+  assert.equal(newGroup?.refinement, "draft");
+  const freshLeaf = newGroup?.children?.find((c) => c.description?.includes("fresh-one scenario"));
+  assert.ok(freshLeaf, "expected the 'Fresh one' scenario to land in the new group");
+  assert.ok(summary.added.includes(freshLeaf?.id as string), "expected the new leaf's id in summary.added");
+
+  await fs.rm(changeDir, { recursive: true, force: true });
+});
+
+test("regenerateDod mutates a draft leaf's text in place when its scenario stays a draft", async () => {
+  const changeDir = await fs.mkdtemp(join(os.tmpdir(), "dod-guard-regen-kinds-"));
+  const v1 = await instructionsFor(changeDir, KINDS_V1_SPEC);
+  const report = await renderAndImportDod(v1);
+  const dodId = idFrom(report);
+
+  const v2 = await instructionsFor(changeDir, KINDS_V2_SPEC);
+  const summary = await regenerateDod(dodId, v2);
+
+  const doc = await store.load(dodId);
+  assert.ok(doc, "expected the regenerated doc to still be tracked");
+  if (!doc) throw new Error("unreachable");
+
+  const group = doc.roots.find((r) => r.title === "Kinds");
+  const leaf = group?.children?.find((c) => c.intent?.includes("release notes"));
+  assert.ok(leaf, "expected the 'Draft note' leaf to survive as a draft");
+  assert.equal(leaf?.refinement, "draft");
+  assert.equal(leaf?.intent, "MANUAL: someone carefully reviews the updated release notes by hand");
+  assert.ok(summary.amended.includes(leaf?.id as string), "expected the mutated draft's id in summary.amended");
+
+  await fs.rm(changeDir, { recursive: true, force: true });
+});
+
+test("regenerateDod replaces a leaf whose scenario switched from concrete to draft", async () => {
+  const changeDir = await fs.mkdtemp(join(os.tmpdir(), "dod-guard-regen-kinds-"));
+  const v1 = await instructionsFor(changeDir, KINDS_V1_SPEC);
+  const report = await renderAndImportDod(v1);
+  const dodId = idFrom(report);
+
+  const before = await store.load(dodId);
+  const beforeLeaf = before?.roots
+    .find((r) => r.title === "Kinds")
+    ?.children?.find((c) => c.description?.includes("switches-kind scenario"));
+  assert.ok(beforeLeaf, "expected the 'Switches kind' leaf to start out concrete");
+  assert.equal(beforeLeaf?.refinement, "concrete");
+
+  const v2 = await instructionsFor(changeDir, KINDS_V2_SPEC);
+  const summary = await regenerateDod(dodId, v2);
+
+  const doc = await store.load(dodId);
+  assert.ok(doc, "expected the regenerated doc to still be tracked");
+  if (!doc) throw new Error("unreachable");
+
+  const group = doc.roots.find((r) => r.title === "Kinds");
+  const afterLeaf = group?.children?.find((c) => c.intent?.includes("human confirms the switch"));
+  assert.ok(afterLeaf, "expected the 'Switches kind' leaf to now be a draft with the new text");
+  assert.equal(afterLeaf?.refinement, "draft");
+  assert.notEqual(afterLeaf?.id, beforeLeaf?.id, "expected replacement, not in-place mutation, across a kind switch");
+  assert.ok(
+    summary.removed.includes(beforeLeaf?.id as string),
+    "expected the old concrete leaf's id in summary.removed",
+  );
+  assert.ok(summary.added.includes(afterLeaf?.id as string), "expected the new draft leaf's id in summary.added");
+
+  await fs.rm(changeDir, { recursive: true, force: true });
+});
+
 test("regenerateDod keeps the tamper fingerprint honest: a following check reports tampered false", async () => {
   const changeDir = await fs.mkdtemp(join(os.tmpdir(), "dod-guard-regen-"));
   const { doc } = await buildRegeneratedDoc(changeDir);

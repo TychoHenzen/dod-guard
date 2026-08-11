@@ -22082,209 +22082,10 @@ async function listAllRaw() {
   return docs;
 }
 
-// src/openspec/glob.ts
-import { promises as fs3 } from "node:fs";
-import * as path3 from "node:path";
-function segmentToRegExp(segment) {
-  const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-  return new RegExp(`^${escaped}$`);
-}
-async function listEntries(dir) {
-  try {
-    return await fs3.readdir(dir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-}
-async function walkFiles(dir, segment) {
-  const re = segmentToRegExp(segment);
-  const entries = await listEntries(dir);
-  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path3.join(dir, e.name));
-}
-async function walkDirs(dir, segment, rest) {
-  const re = segmentToRegExp(segment);
-  const entries = await listEntries(dir);
-  const results = [];
-  for (const e of entries) {
-    if (e.isDirectory() && re.test(e.name)) {
-      results.push(...await resolveSegments(path3.join(dir, e.name), rest));
-    }
-  }
-  return results;
-}
-async function walkDoubleStar(dir, rest) {
-  const results = await resolveSegments(dir, rest);
-  const entries = await listEntries(dir);
-  for (const e of entries) {
-    if (e.isDirectory()) {
-      results.push(...await walkDoubleStar(path3.join(dir, e.name), rest));
-    }
-  }
-  return results;
-}
-async function resolveSegments(dir, segments) {
-  if (segments.length === 0) return [];
-  const [segment, ...rest] = segments;
-  if (segment === "**") return walkDoubleStar(dir, rest);
-  if (rest.length === 0) return walkFiles(dir, segment);
-  return walkDirs(dir, segment, rest);
-}
-async function resolveGlob(baseDir, pattern) {
-  const segments = pattern.split(/[\\/]/).filter((s) => s.length > 0);
-  return resolveSegments(baseDir, segments);
-}
-
-// src/openspec/requirements.ts
-var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
-var SCENARIO_HEADING = /^#### Scenario:\s*(.+?)\s*$/;
-var THEN_LINE = /^-\s*\*\*THEN\*\*\s*(.*)$/;
-var OTHER_BULLET = /^-\s*\*\*[A-Z]+\*\*/;
-function finalizeScenario(state) {
-  if (state.currentScenario && state.currentReq) {
-    state.currentScenario.intent = state.thenParts.join(" ");
-    state.currentReq.scenarios.push(state.currentScenario);
-  }
-  state.currentScenario = null;
-  state.thenParts = [];
-  state.inThen = false;
-}
-function consumeLine(state, line) {
-  const reqMatch = line.match(REQUIREMENT_HEADING);
-  if (reqMatch) {
-    finalizeScenario(state);
-    state.currentReq = { title: reqMatch[1], scenarios: [] };
-    state.blocks.push(state.currentReq);
-    return;
-  }
-  const scenarioMatch = line.match(SCENARIO_HEADING);
-  if (scenarioMatch) {
-    finalizeScenario(state);
-    state.currentScenario = { title: scenarioMatch[1], intent: "" };
-    return;
-  }
-  const thenMatch = line.match(THEN_LINE);
-  if (thenMatch) {
-    state.thenParts.push(thenMatch[1].trim());
-    state.inThen = true;
-    return;
-  }
-  if (OTHER_BULLET.test(line)) {
-    state.inThen = false;
-    return;
-  }
-  if (state.inThen && line.trim().length > 0) {
-    const lastIndex = state.thenParts.length - 1;
-    state.thenParts[lastIndex] = `${state.thenParts[lastIndex]} ${line.trim()}`;
-  }
-}
-function extractRequirementBlocks(content) {
-  const state = { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false };
-  for (const line of content.split("\n")) {
-    consumeLine(state, line);
-  }
-  finalizeScenario(state);
-  return state.blocks;
-}
-
-// src/openspec/convert.ts
-async function readDeltaFiles(instructions) {
-  const files = [];
-  for (const dep of instructions.dependencies) {
-    files.push(...await resolveGlob(instructions.changeDir, dep.path));
-  }
-  return files;
-}
-
-// src/openspec/scenario-identity.ts
-import { promises as fs4 } from "node:fs";
-function sidecarPath(resolvedOutputPath) {
-  return `${resolvedOutputPath}.scenario-map.json`;
-}
-function scenarioKey(groupTitle, scenarioTitle) {
-  return `${groupTitle}||${scenarioTitle}`;
-}
-async function readScenarioMap(resolvedOutputPath) {
-  try {
-    const raw = await fs4.readFile(sidecarPath(resolvedOutputPath), "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-// src/openspec/trace.ts
-async function currentScenarioEntries(instructions) {
-  const entries = /* @__PURE__ */ new Map();
-  for (const file of await readDeltaFiles(instructions)) {
-    const content = await fs5.readFile(file, "utf-8");
-    for (const block of extractRequirementBlocks(content)) {
-      for (const scenario of block.scenarios) {
-        entries.set(scenarioKey(block.title, scenario.title), `${block.title} > ${scenario.title}`);
-      }
-    }
-  }
-  return entries;
-}
-function collectLeaves(roots) {
-  const out = [];
-  for (const group of roots) {
-    for (const leaf of group.children ?? []) {
-      out.push({ groupTitle: group.title, leaf });
-    }
-  }
-  return out;
-}
-function untracedLeafDescriptions(doc, tracedNodeIds) {
-  return collectLeaves(doc.roots).filter(({ leaf }) => !tracedNodeIds.has(leaf.id)).map(({ groupTitle, leaf }) => `${groupTitle} > ${leaf.title}`);
-}
-async function traceChange(changeId, instructions) {
-  const doc = await findByPath(instructions.resolvedOutputPath);
-  if (!doc) {
-    return { changeId, hasDod: false, untracedLeaves: [], untracedScenarios: [] };
-  }
-  const scenarioMap = await readScenarioMap(instructions.resolvedOutputPath);
-  const tracedNodeIds = new Set(scenarioMap.map((e) => e.nodeId));
-  const tracedKeys = new Set(scenarioMap.map((e) => scenarioKey(e.groupTitle, e.scenarioTitle)));
-  const currentScenarios = await currentScenarioEntries(instructions);
-  const untracedScenarios = [...currentScenarios.entries()].filter(([key]) => !tracedKeys.has(key)).map(([, display]) => display);
-  return {
-    changeId,
-    hasDod: true,
-    untracedLeaves: untracedLeafDescriptions(doc, tracedNodeIds),
-    untracedScenarios
-  };
-}
-function classifyOutcome(report) {
-  if (!report.hasDod) return "no-dod";
-  if (report.untracedLeaves.length > 0) return "blocked";
-  return "ok";
-}
-function formatTraceReport(report) {
-  if (!report.hasDod) {
-    return `No DoD registered yet for change "${report.changeId}". Run the openspec dod converter (renderAndImportDod) first.
-`;
-  }
-  const lines = [];
-  if (report.untracedScenarios.length > 0) {
-    lines.push("UNTRACED SCENARIOS (reported, not blocking):");
-    for (const s of report.untracedScenarios) lines.push(`  - ${s}`);
-  } else {
-    lines.push("All scenarios reach a leaf.");
-  }
-  if (report.untracedLeaves.length > 0) {
-    lines.push("UNTRACED LEAVES (blocking):");
-    for (const l of report.untracedLeaves) lines.push(`  - ${l}`);
-  } else {
-    lines.push("All leaves trace to a scenario.");
-  }
-  return `${lines.join("\n")}
-`;
-}
-
 // src/command-check.ts
 import { execFile as execFile3 } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
-import * as path4 from "node:path";
+import * as path3 from "node:path";
 import { promisify as promisify4 } from "node:util";
 var execFileAsync = promisify4(execFile3);
 var isWindows = process.platform === "win32";
@@ -22451,7 +22252,7 @@ async function toolExists(name, cwd) {
   return ok;
 }
 function resolvePathExists(name, cwd) {
-  const base = path4.isAbsolute(name) ? name : path4.resolve(cwd, name);
+  const base = path3.isAbsolute(name) ? name : path3.resolve(cwd, name);
   const candidates = isWindows ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
   return candidates.some((p) => existsSync(p));
 }
@@ -22499,7 +22300,7 @@ function expandGlobsInCommand(command, cwd) {
       if (seen.has(fullMatch)) continue;
       seen.add(fullMatch);
       try {
-        const parentDir = path4.resolve(cwd, prefix);
+        const parentDir = path3.resolve(cwd, prefix);
         if (!existsSync(parentDir)) continue;
         const entries = readdirSync(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
         if (entries.length > 0) {
@@ -22539,6 +22340,205 @@ function isPlaceholderCommand(command) {
   return PLACEHOLDER_PATTERNS.some((re) => re.test(cmd));
 }
 var currentOs = process.platform;
+
+// src/openspec/glob.ts
+import { promises as fs3 } from "node:fs";
+import * as path4 from "node:path";
+function segmentToRegExp(segment) {
+  const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+  return new RegExp(`^${escaped}$`);
+}
+async function listEntries(dir) {
+  try {
+    return await fs3.readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+async function walkFiles(dir, segment) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path4.join(dir, e.name));
+}
+async function walkDirs(dir, segment, rest) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  const results = [];
+  for (const e of entries) {
+    if (e.isDirectory() && re.test(e.name)) {
+      results.push(...await resolveSegments(path4.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+async function walkDoubleStar(dir, rest) {
+  const results = await resolveSegments(dir, rest);
+  const entries = await listEntries(dir);
+  for (const e of entries) {
+    if (e.isDirectory()) {
+      results.push(...await walkDoubleStar(path4.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+async function resolveSegments(dir, segments) {
+  if (segments.length === 0) return [];
+  const [segment, ...rest] = segments;
+  if (segment === "**") return walkDoubleStar(dir, rest);
+  if (rest.length === 0) return walkFiles(dir, segment);
+  return walkDirs(dir, segment, rest);
+}
+async function resolveGlob(baseDir, pattern) {
+  const segments = pattern.split(/[\\/]/).filter((s) => s.length > 0);
+  return resolveSegments(baseDir, segments);
+}
+
+// src/openspec/requirements.ts
+var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
+var SCENARIO_HEADING = /^#### Scenario:\s*(.+?)\s*$/;
+var THEN_LINE = /^-\s*\*\*THEN\*\*\s*(.*)$/;
+var OTHER_BULLET = /^-\s*\*\*[A-Z]+\*\*/;
+function finalizeScenario(state) {
+  if (state.currentScenario && state.currentReq) {
+    state.currentScenario.intent = state.thenParts.join(" ");
+    state.currentReq.scenarios.push(state.currentScenario);
+  }
+  state.currentScenario = null;
+  state.thenParts = [];
+  state.inThen = false;
+}
+function consumeLine(state, line) {
+  const reqMatch = line.match(REQUIREMENT_HEADING);
+  if (reqMatch) {
+    finalizeScenario(state);
+    state.currentReq = { title: reqMatch[1], scenarios: [] };
+    state.blocks.push(state.currentReq);
+    return;
+  }
+  const scenarioMatch = line.match(SCENARIO_HEADING);
+  if (scenarioMatch) {
+    finalizeScenario(state);
+    state.currentScenario = { title: scenarioMatch[1], intent: "" };
+    return;
+  }
+  const thenMatch = line.match(THEN_LINE);
+  if (thenMatch) {
+    state.thenParts.push(thenMatch[1].trim());
+    state.inThen = true;
+    return;
+  }
+  if (OTHER_BULLET.test(line)) {
+    state.inThen = false;
+    return;
+  }
+  if (state.inThen && line.trim().length > 0) {
+    const lastIndex = state.thenParts.length - 1;
+    state.thenParts[lastIndex] = `${state.thenParts[lastIndex]} ${line.trim()}`;
+  }
+}
+function extractRequirementBlocks(content) {
+  const state = { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false };
+  for (const line of content.split("\n")) {
+    consumeLine(state, line);
+  }
+  finalizeScenario(state);
+  return state.blocks;
+}
+
+// src/openspec/convert.ts
+async function readDeltaFiles(instructions) {
+  const files = [];
+  for (const dep of instructions.dependencies) {
+    files.push(...await resolveGlob(instructions.changeDir, dep.path));
+  }
+  return files;
+}
+
+// src/openspec/scenario-identity.ts
+import { promises as fs4 } from "node:fs";
+function sidecarPath(resolvedOutputPath) {
+  return `${resolvedOutputPath}.scenario-map.json`;
+}
+function scenarioKey(groupTitle, scenarioTitle) {
+  return `${groupTitle}||${scenarioTitle}`;
+}
+async function readScenarioMap(resolvedOutputPath) {
+  try {
+    const raw = await fs4.readFile(sidecarPath(resolvedOutputPath), "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+// src/openspec/trace.ts
+async function currentScenarioEntries(instructions) {
+  const entries = /* @__PURE__ */ new Map();
+  for (const file of await readDeltaFiles(instructions)) {
+    const content = await fs5.readFile(file, "utf-8");
+    for (const block of extractRequirementBlocks(content)) {
+      for (const scenario of block.scenarios) {
+        entries.set(scenarioKey(block.title, scenario.title), `${block.title} > ${scenario.title}`);
+      }
+    }
+  }
+  return entries;
+}
+function collectLeaves(roots) {
+  const out = [];
+  for (const group of roots) {
+    for (const leaf of group.children ?? []) {
+      out.push({ groupTitle: group.title, leaf });
+    }
+  }
+  return out;
+}
+function untracedLeafDescriptions(doc, tracedNodeIds) {
+  return collectLeaves(doc.roots).filter(({ leaf }) => !tracedNodeIds.has(leaf.id)).map(({ groupTitle, leaf }) => `${groupTitle} > ${leaf.title}`);
+}
+async function traceChange(changeId, instructions) {
+  const doc = await findByPath(instructions.resolvedOutputPath);
+  if (!doc) {
+    return { changeId, hasDod: false, untracedLeaves: [], untracedScenarios: [] };
+  }
+  const scenarioMap = await readScenarioMap(instructions.resolvedOutputPath);
+  const tracedNodeIds = new Set(scenarioMap.map((e) => e.nodeId));
+  const tracedKeys = new Set(scenarioMap.map((e) => scenarioKey(e.groupTitle, e.scenarioTitle)));
+  const currentScenarios = await currentScenarioEntries(instructions);
+  const untracedScenarios = [...currentScenarios.entries()].filter(([key]) => !tracedKeys.has(key)).map(([, display]) => display);
+  return {
+    changeId,
+    hasDod: true,
+    untracedLeaves: untracedLeafDescriptions(doc, tracedNodeIds),
+    untracedScenarios
+  };
+}
+function classifyOutcome(report) {
+  if (!report.hasDod) return "no-dod";
+  if (report.untracedLeaves.length > 0) return "blocked";
+  return "ok";
+}
+function formatTraceReport(report) {
+  if (!report.hasDod) {
+    return `No DoD registered yet for change "${report.changeId}". Run the openspec dod converter (renderAndImportDod) first.
+`;
+  }
+  const lines = [];
+  if (report.untracedScenarios.length > 0) {
+    lines.push("UNTRACED SCENARIOS (reported, not blocking):");
+    for (const s of report.untracedScenarios) lines.push(`  - ${s}`);
+  } else {
+    lines.push("All scenarios reach a leaf.");
+  }
+  if (report.untracedLeaves.length > 0) {
+    lines.push("UNTRACED LEAVES (blocking):");
+    for (const l of report.untracedLeaves) lines.push(`  - ${l}`);
+  } else {
+    lines.push("All leaves trace to a scenario.");
+  }
+  return `${lines.join("\n")}
+`;
+}
 
 // src/tree-utils.ts
 var nodeIdCounter = 0;

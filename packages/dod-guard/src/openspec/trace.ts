@@ -20,7 +20,7 @@ import { extractRequirementBlocks } from "./requirements.js";
 import { readScenarioMap, scenarioKey } from "./scenario-identity.js";
 import type { OpenSpecInstructions } from "./types.js";
 
-export interface TraceReport {
+interface TraceReport {
   changeId: string;
   /** False when no DoD is registered yet for this change at all. */
   hasDod: boolean;
@@ -89,7 +89,7 @@ export async function traceChange(changeId: string, instructions: OpenSpecInstru
 
 /** What `runCli` maps to an exit code - see `EXIT` in cli.ts. Kept out of
  * cli.ts so the decision is testable without importing it. */
-export type TraceOutcome = "no-dod" | "blocked" | "ok";
+type TraceOutcome = "no-dod" | "blocked" | "ok";
 
 export function classifyOutcome(report: TraceReport): TraceOutcome {
   if (!report.hasDod) return "no-dod";

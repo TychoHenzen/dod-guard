@@ -2,10 +2,10 @@
   "note": "Coverage each package holds today. A drop below its own number fails CI.",
   "packages": {
     "dod-guard": {
-      "statements": 88.59,
-      "branches": 79.62,
-      "functions": 92.16,
-      "lines": 88.59
+      "statements": 92.13,
+      "branches": 83.12,
+      "functions": 94.61,
+      "lines": 92.13
     },
     "evomcp": {
       "statements": 95.29,
