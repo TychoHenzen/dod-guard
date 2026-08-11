@@ -2,18 +2,18 @@ import type { CheckResult } from "./types.js";
 
 export function formatCheckResult(result: CheckResult): string {
   const l: string[] = [];
-  const stuckLabel = result.overall === "stuck" ? " 🔄 STUCK — approach may be wrong" : "";
+  const stuckLabel = result.overall === "stuck" ? " 🔄 STUCK - approach may be wrong" : "";
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}${stuckLabel}`);
   l.push("");
 
   if (result.tampered) {
-    l.push("🔴 **TAMPER DETECTED** — proof-set fingerprint mismatch. Store was edited outside dod_amend.");
+    l.push("🔴 **TAMPER DETECTED** - proof-set fingerprint mismatch. Store was edited outside dod_amend.");
     l.push("");
   }
 
   if (result.scoped) {
     l.push(
-      `⏳ **Scoped run — node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`,
+      `⏳ **Scoped run - node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`,
     );
     l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
     l.push("");
@@ -21,7 +21,7 @@ export function formatCheckResult(result: CheckResult): string {
 
   if (result.draft_count > 0) {
     l.push(
-      `📝 **${result.draft_count} draft node(s)** — use dod_refine to concretize before a final pass is possible.`,
+      `📝 **${result.draft_count} draft node(s)** - use dod_refine to concretize before a final pass is possible.`,
     );
     l.push("");
   }
@@ -55,7 +55,7 @@ export function formatCheckResult(result: CheckResult): string {
       .filter(Boolean)
       .join(", ");
 
-    l.push(`${icon} **${rootTitle}** — ${status} (${countStr})`);
+    l.push(`${icon} **${rootTitle}** - ${status} (${countStr})`);
 
     for (const leaf of leaves) {
       const depth = leaf.node_path.split(".children.").length - 1;
@@ -63,14 +63,14 @@ export function formatCheckResult(result: CheckResult): string {
 
       if (leaf.status === "draft") {
         if (summaryMode) continue;
-        l.push(`${indent}📝 ${leaf.description} — DRAFT (use dod_refine to concretize)`);
+        l.push(`${indent}📝 ${leaf.description} - DRAFT (use dod_refine to concretize)`);
       } else if (leaf.status === "pass") {
-        l.push(`${indent}✓ \`${leaf.command}\` → ${leaf.description} (${leaf.duration_ms ?? 0}ms)`);
+        l.push(`${indent}✓ \`${leaf.command}\` -> ${leaf.description} (${leaf.duration_ms ?? 0}ms)`);
       } else if (leaf.status === "skipped") {
-        l.push(`${indent}⏳ \`${leaf.command}\` — not verified${leaf.error ? `: ${leaf.error}` : ""}`);
+        l.push(`${indent}⏳ \`${leaf.command}\` - not verified${leaf.error ? `: ${leaf.error}` : ""}`);
       } else {
         // Fail
-        l.push(`${indent}✗ \`${leaf.command}\` → ${leaf.description}`);
+        l.push(`${indent}✗ \`${leaf.command}\` -> ${leaf.description}`);
         if (leaf.exit_code !== undefined) l.push(`${indent}  exit code: ${leaf.exit_code}`);
         if (leaf.error) l.push(`${indent}  error: ${leaf.error.split("\n").slice(0, 3).join(`\n${indent}  `)}`);
         if (leaf.diagnosis) l.push(`${indent}  💡 Diagnosis: ${leaf.diagnosis}`);
@@ -79,7 +79,7 @@ export function formatCheckResult(result: CheckResult): string {
     }
 
     if (summaryMode && draftCount > 0) {
-      l.push(`  📝 ${draftCount} draft node(s) unchanged — use dod_refine to concretize`);
+      l.push(`  📝 ${draftCount} draft node(s) unchanged - use dod_refine to concretize`);
     }
 
     l.push("");

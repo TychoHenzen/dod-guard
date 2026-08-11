@@ -12,7 +12,7 @@ function extractPredicateMetadata(line: string): { predicate: Predicate | null; 
       const cleanLine = line.replace(/<!--p:.+?-->/, "").trimEnd();
       return { predicate, cleanLine };
     } catch {
-      // Malformed JSON — treat as no metadata
+      // Malformed JSON - treat as no metadata
     }
   }
   return { predicate: null, cleanLine: line };
@@ -47,7 +47,7 @@ function parseLeafLine(line: string): TaskNode | null {
 
   // Any proof format with a backticked command (generic pattern handles
   // "Proof:", "Proof (TDD ...):", "Proof (brevity ...):", etc.)
-  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*→\s*(.+)$/);
+  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*->\s*(.+)$/);
   if (proofMatch) {
     const desc = proofMatch[3].trim();
     if (metaPredicate) {
@@ -61,7 +61,7 @@ function parseLeafLine(line: string): TaskNode | null {
         last_status: markerToStatus(proofMatch[1]),
       };
     }
-    // No explicit metadata → import as draft
+    // No explicit metadata -> import as draft
     return {
       id: "",
       title: desc,
@@ -143,7 +143,7 @@ function parseDodTree(lines: string[], startIdx: number): TaskNode[] {
 
     const leadingSpaces = line.length - line.trimStart().length;
 
-    // `### Title` → root
+    // `### Title` -> root
     const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
     if (rootMatch) {
       const node: TaskNode = {
@@ -159,7 +159,7 @@ function parseDodTree(lines: string[], startIdx: number): TaskNode[] {
       continue;
     }
 
-    // `  **Title** [x]` → task group
+    // `  **Title** [x]` -> task group
     const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
     if (groupMatch) {
       const depth = Math.floor(leadingSpaces / 2);
@@ -212,9 +212,13 @@ function parseContent(content: string): ParsedDod {
 
   for (const line of lines) {
     if (!title && line.startsWith("# ")) {
+      // Strip the exact " - Requirements Spec" suffix author.ts appends.
+      // Not a generic "hyphen and everything after" pattern: a title can
+      // legitimately contain a hyphen, and a generic pattern would
+      // silently truncate it.
       title = line
         .replace(/^#\s+/, "")
-        .replace(/\s*—.*$/, "")
+        .replace(/ - Requirements Spec$/, "")
         .trim();
     }
     const goalMatch = line.match(/^\*\*Goal:\*\*\s*(.+)/);

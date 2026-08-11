@@ -15,9 +15,12 @@ import { createInterface } from "node:readline";
 import { after, before, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-// Server messages carry U+2014 and U+2192. This file stays pure ASCII.
+// Server messages still carry U+2014 and U+2192 in a few untouched error
+// strings. This file stays pure ASCII. Proof lines use the ASCII "->"
+// delimiter; ARROW is the unrelated U+2192 still emitted by dod-store-migrate.ts.
 const EM = String.fromCharCode(0x2014);
-const TO = String.fromCharCode(0x2192);
+const ARROW = String.fromCharCode(0x2192);
+const TO = "->";
 
 const SERVER_ENTRY = path.join(path.dirname(fileURLToPath(import.meta.url)), "index.js");
 const MCP_VERSION = "2025-06-18";
@@ -430,7 +433,7 @@ describe("dod-guard MCP server: per-document tool answers", () => {
     }
     const answer = await invoke("dod_check", { dod_id: id });
     assert.ok(answer.includes("## DoD Check Result: STUCK"), answer);
-    assert.ok(answer.includes(`STUCK ${EM} approach may be wrong`), answer);
+    assert.ok(answer.includes("STUCK - approach may be wrong"), answer);
   });
 
   test("dod_refine concretize must turn the last draft into a proof", async () => {
@@ -757,6 +760,6 @@ describe("dod-guard MCP server: whole-store answers with superseded files", () =
 
   test("dod_store_migrate must convert a superseded file into root task groups", async () => {
     const answer = await invoke("dod_store_migrate", { dod_id: SUPERSEDED_MIGRATED });
-    assert.ok(answer.includes(`Migrated: "Legacy Doc" ${TO} 1 root task group(s).`), answer);
+    assert.ok(answer.includes(`Migrated: "Legacy Doc" ${ARROW} 1 root task group(s).`), answer);
   });
 });

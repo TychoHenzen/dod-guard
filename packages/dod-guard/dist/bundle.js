@@ -21611,23 +21611,23 @@ async function checkDocument(doc, cwdOverride, opts = {}) {
 // src/format-result.ts
 function formatCheckResult(result) {
   const l = [];
-  const stuckLabel = result.overall === "stuck" ? " \u{1F504} STUCK \u2014 approach may be wrong" : "";
+  const stuckLabel = result.overall === "stuck" ? " \u{1F504} STUCK - approach may be wrong" : "";
   l.push(`## DoD Check Result: ${result.overall.toUpperCase()}${stuckLabel}`);
   l.push("");
   if (result.tampered) {
-    l.push("\u{1F534} **TAMPER DETECTED** \u2014 proof-set fingerprint mismatch. Store was edited outside dod_amend.");
+    l.push("\u{1F534} **TAMPER DETECTED** - proof-set fingerprint mismatch. Store was edited outside dod_amend.");
     l.push("");
   }
   if (result.scoped) {
     l.push(
-      `\u23F3 **Scoped run \u2014 node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`
+      `\u23F3 **Scoped run - node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`
     );
     l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
     l.push("");
   }
   if (result.draft_count > 0) {
     l.push(
-      `\u{1F4DD} **${result.draft_count} draft node(s)** \u2014 use dod_refine to concretize before a final pass is possible.`
+      `\u{1F4DD} **${result.draft_count} draft node(s)** - use dod_refine to concretize before a final pass is possible.`
     );
     l.push("");
   }
@@ -21654,19 +21654,19 @@ function formatCheckResult(result) {
       skipCount > 0 ? `${skipCount} skipped` : "",
       draftCount > 0 ? `${draftCount} draft` : ""
     ].filter(Boolean).join(", ");
-    l.push(`${icon} **${rootTitle}** \u2014 ${status} (${countStr})`);
+    l.push(`${icon} **${rootTitle}** - ${status} (${countStr})`);
     for (const leaf of leaves) {
       const depth = leaf.node_path.split(".children.").length - 1;
       const indent = "  ".repeat(depth + 1);
       if (leaf.status === "draft") {
         if (summaryMode) continue;
-        l.push(`${indent}\u{1F4DD} ${leaf.description} \u2014 DRAFT (use dod_refine to concretize)`);
+        l.push(`${indent}\u{1F4DD} ${leaf.description} - DRAFT (use dod_refine to concretize)`);
       } else if (leaf.status === "pass") {
-        l.push(`${indent}\u2713 \`${leaf.command}\` \u2192 ${leaf.description} (${leaf.duration_ms ?? 0}ms)`);
+        l.push(`${indent}\u2713 \`${leaf.command}\` -> ${leaf.description} (${leaf.duration_ms ?? 0}ms)`);
       } else if (leaf.status === "skipped") {
-        l.push(`${indent}\u23F3 \`${leaf.command}\` \u2014 not verified${leaf.error ? `: ${leaf.error}` : ""}`);
+        l.push(`${indent}\u23F3 \`${leaf.command}\` - not verified${leaf.error ? `: ${leaf.error}` : ""}`);
       } else {
-        l.push(`${indent}\u2717 \`${leaf.command}\` \u2192 ${leaf.description}`);
+        l.push(`${indent}\u2717 \`${leaf.command}\` -> ${leaf.description}`);
         if (leaf.exit_code !== void 0) l.push(`${indent}  exit code: ${leaf.exit_code}`);
         if (leaf.error) l.push(`${indent}  error: ${leaf.error.split("\n").slice(0, 3).join(`
 ${indent}  `)}`);
@@ -21676,7 +21676,7 @@ ${indent}  `)}`);
       }
     }
     if (summaryMode && draftCount > 0) {
-      l.push(`  \u{1F4DD} ${draftCount} draft node(s) unchanged \u2014 use dod_refine to concretize`);
+      l.push(`  \u{1F4DD} ${draftCount} draft node(s) unchanged - use dod_refine to concretize`);
     }
     l.push("");
   }
@@ -21753,7 +21753,7 @@ function renderLeaf(node, indent, lines) {
   let proofLine;
   if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? node.last_status === "pass" ? "GREEN" : "RED" : "AWAITING RED";
-    proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` \u2192 ${node.description}`;
+    proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` -> ${node.description}`;
   } else if (node.predicate?.type === "adversarial") {
     const phase = node.predicate.value !== void 0 ? Number(node.predicate.value) : 0;
     const phaseName = ["", "Spec", "Test", "Implement", "Cleanup"][phase] ?? `Phase ${phase}`;
@@ -21764,9 +21764,9 @@ function renderLeaf(node, indent, lines) {
     proofLine = `${indent}- ${mark} Proof (Convergence Audit ${gateState}): ${node.description}`;
   } else if (node.predicate?.type === "holdout") {
     const fingerprint = node.predicate.value ? String(node.predicate.value).slice(0, 12) : "unknown";
-    proofLine = `${indent}- ${mark} Proof (Holdout ${fingerprint}\u2026): \`${node.command}\` \u2192 ${node.description}`;
+    proofLine = `${indent}- ${mark} Proof (Holdout ${fingerprint}...): \`${node.command}\` -> ${node.description}`;
   } else {
-    proofLine = `${indent}- ${mark} Proof: \`${node.command}\` \u2192 ${node.description}`;
+    proofLine = `${indent}- ${mark} Proof: \`${node.command}\` -> ${node.description}`;
   }
   if (node.predicate) {
     proofLine += ` <!--p:${JSON.stringify(node.predicate)}-->`;
@@ -21779,20 +21779,20 @@ function renderLeaf(node, indent, lines) {
 }
 function renderMarkdown(doc) {
   const l = [];
-  l.push(`# ${doc.title} \u2014 Requirements Spec`);
+  l.push(`# ${doc.title} - Requirements Spec`);
   l.push("");
   l.push("<claude_instructions>");
   l.push("**For the implementer:** Work through each task below.");
   l.push("1. Mark a task `[>]` when you begin working on it.");
-  l.push("2. Call `dod_check` to verify proofs \u2014 do NOT mark proofs manually.");
+  l.push("2. Call `dod_check` to verify proofs - do NOT mark proofs manually.");
   l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
   l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.");
   l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("6. Continue until `dod_check` returns PASS \u2014 then stop and report done.");
+  l.push("6. Continue until `dod_check` returns PASS - then stop and report done.");
   l.push("");
   l.push("**Behavioral predicates only.** Each proof is a concrete behavioral claim.");
-  l.push("Read failure diagnoses carefully \u2014 they tell you WHAT went wrong and what to fix.");
-  l.push("Proofs run on the HOST OS \u2014 write OS-correct commands (no bash on Windows).");
+  l.push("Read failure diagnoses carefully - they tell you WHAT went wrong and what to fix.");
+  l.push("Proofs run on the HOST OS - write OS-correct commands (no bash on Windows).");
   l.push("");
   l.push(`**CWD:** \`${doc.cwd}\``);
   l.push("");
@@ -23268,7 +23268,7 @@ function parseLeafLine(line) {
     };
   }
   const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
-  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*→\s*(.+)$/);
+  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*->\s*(.+)$/);
   if (proofMatch) {
     const desc = proofMatch[3].trim();
     if (metaPredicate) {
@@ -23394,7 +23394,7 @@ function parseContent(content) {
   let title = "", goal = "", date3 = "", cwd = ".";
   for (const line of lines) {
     if (!title && line.startsWith("# ")) {
-      title = line.replace(/^#\s+/, "").replace(/\s*—.*$/, "").trim();
+      title = line.replace(/^#\s+/, "").replace(/ - Requirements Spec$/, "").trim();
     }
     const goalMatch = line.match(/^\*\*Goal:\*\*\s*(.+)/);
     if (goalMatch) goal = goalMatch[1].trim();

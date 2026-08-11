@@ -1,17 +1,17 @@
-# <!-- change title --> — Requirements Spec
+# <!-- change title --> - Requirements Spec
 
 <claude_instructions>
 **For the implementer:** Work through each task below.
 1. Mark a task `[>]` when you begin working on it.
-2. Call `dod_check` to verify proofs — do NOT mark proofs manually.
+2. Call `dod_check` to verify proofs - do NOT mark proofs manually.
 3. A task group is complete when ALL its concrete proofs pass via `dod_check`.
 4. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.
 5. If a proof cannot be met, use `dod_amend` to modify it with a reason.
-6. Continue until `dod_check` returns PASS — then stop and report done.
+6. Continue until `dod_check` returns PASS - then stop and report done.
 
 **Behavioral predicates only.** Each proof is a concrete behavioral claim.
-Read failure diagnoses carefully — they tell you WHAT went wrong and what to fix.
-Proofs run on the HOST OS — write OS-correct commands (no bash on Windows).
+Read failure diagnoses carefully - they tell you WHAT went wrong and what to fix.
+Proofs run on the HOST OS - write OS-correct commands (no bash on Windows).
 
 **CWD:** `<!-- absolute path to the target repo -->`
 
@@ -47,6 +47,6 @@ Proofs run on the HOST OS — write OS-correct commands (no bash on Windows).
      root always match. -->
 ### <!-- capability-path --> [ ]
 
-  - [ ] Proof: `<!-- verification command for this scenario -->` → <!-- scenario name: expected behavior --> <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `<!-- verification command for this scenario -->` -> <!-- scenario name: expected behavior --> <!--p:{"type":"exit_code","value":0}-->
 
 </definition_of_done>

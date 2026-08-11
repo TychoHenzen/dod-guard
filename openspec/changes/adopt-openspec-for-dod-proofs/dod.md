@@ -1,17 +1,17 @@
-# adopt-openspec-for-dod-proofs — Requirements Spec
+# adopt-openspec-for-dod-proofs - Requirements Spec
 
 <claude_instructions>
 **For the implementer:** Work through each task below.
 1. Mark a task `[>]` when you begin working on it.
-2. Call `dod_check` to verify proofs — do NOT mark proofs manually.
+2. Call `dod_check` to verify proofs - do NOT mark proofs manually.
 3. A task group is complete when ALL its concrete proofs pass via `dod_check`.
 4. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.
 5. If a proof cannot be met, use `dod_amend` to modify it with a reason.
-6. Continue until `dod_check` returns PASS — then stop and report done.
+6. Continue until `dod_check` returns PASS - then stop and report done.
 
 **Behavioral predicates only.** Each proof is a concrete behavioral claim.
-Read failure diagnoses carefully — they tell you WHAT went wrong and what to fix.
-Proofs run on the HOST OS — write OS-correct commands (no bash on Windows).
+Read failure diagnoses carefully - they tell you WHAT went wrong and what to fix.
+Proofs run on the HOST OS - write OS-correct commands (no bash on Windows).
 
 **CWD:** `C:\Users\siriu\mcp-servers\dod-guard`
 
@@ -81,7 +81,7 @@ Generated from OpenSpec spec deltas.
 
 ### steps derive from the DoD as a schema artifact [~]
 
-  - [ ] Proof: `openspec status --json` → `openspec status --json` reports the `steps` artifact blocked with `dod` in its `missingDeps` <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `openspec status --json` -> `openspec status --json` reports the `steps` artifact blocked with `dod` in its `missingDeps` <!--p:{"type":"exit_code","value":0}-->
   - [~] **Draft**: MANUAL: the generated `steps.json` contains one step whose `verify_cmd` is that proof command and whose title is the leaf's intent
 
 ### draft leaves map to manual_required steps [~]
@@ -98,7 +98,7 @@ Generated from OpenSpec spec deltas.
 
 ### staleness check reads openspec status [ ]
 
-  - [ ] Proof: `openspec status --json` → the staleness check detects the change through `openspec status --json`, not through a file mtime comparison <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `openspec status --json` -> the staleness check detects the change through `openspec status --json`, not through a file mtime comparison <!--p:{"type":"exit_code","value":0}-->
 
 ### opsx:propose is a recognized plan producer [~]
 
@@ -110,11 +110,11 @@ Generated from OpenSpec spec deltas.
 
 ### finishing traces and archives [ ]
 
-  - [ ] Proof: `dod-guard trace` → Finishing runs `dod-guard trace` and, when it exits zero, runs `openspec archive <id> --yes` <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `dod-guard trace` -> Finishing runs `dod-guard trace` and, when it exits zero, runs `openspec archive <id> --yes` <!--p:{"type":"exit_code","value":0}-->
 
 ### cheap-step mirrors step-by-step [ ]
 
-  - [ ] Proof: `dod-guard trace` → it runs `dod-guard trace` and `openspec archive <id> --yes` the same way, and its briefing still carries a `mode` field <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `dod-guard trace` -> it runs `dod-guard trace` and `openspec archive <id> --yes` the same way, and its briefing still carries a `mode` field <!--p:{"type":"exit_code","value":0}-->
 
 ### adversarial review reads the spec [~]
 
@@ -122,8 +122,8 @@ Generated from OpenSpec spec deltas.
 
 ### DoD artifact in the schema [ ]
 
-  - [ ] Proof: `openspec status --json` → `openspec status --json` reports the `dod` artifact as not blocked <!--p:{"type":"exit_code","value":0}-->
-  - [ ] Proof: `openspec status --json` → `openspec status --json` reports the `dod` artifact blocked with `specs` in its `missingDeps` <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `openspec status --json` -> `openspec status --json` reports the `dod` artifact as not blocked <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `openspec status --json` -> `openspec status --json` reports the `dod` artifact blocked with `specs` in its `missingDeps` <!--p:{"type":"exit_code","value":0}-->
 
 ### DoD generated from spec deltas [~]
 
@@ -148,14 +148,14 @@ Generated from OpenSpec spec deltas.
 
 ### Untraced leaf fails the check [ ]
 
-  - [ ] Proof: `dod-guard trace` → `dod-guard trace` reports that leaf as untraced and exits non-zero <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `dod-guard trace` -> `dod-guard trace` reports that leaf as untraced and exits non-zero <!--p:{"type":"exit_code","value":0}-->
 
 ### Untraced scenario is reported, not blocking [ ]
 
-  - [ ] Proof: `dod-guard trace` → `dod-guard trace` names that scenario in its report and, absent any untraced leaf, exits zero <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `dod-guard trace` -> `dod-guard trace` names that scenario in its report and, absent any untraced leaf, exits zero <!--p:{"type":"exit_code","value":0}-->
 
 ### trace is wired into the CI gate table [ ]
 
-  - [ ] Proof: `dod-guard trace` → it names `dod-guard trace` and states that an untraced leaf fails the gate <!--p:{"type":"exit_code","value":0}-->
+  - [ ] Proof: `dod-guard trace` -> it names `dod-guard trace` and states that an untraced leaf fails the gate <!--p:{"type":"exit_code","value":0}-->
 
 </definition_of_done>

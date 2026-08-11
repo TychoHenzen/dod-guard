@@ -77,7 +77,7 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
 
   if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? (node.last_status === "pass" ? "GREEN" : "RED") : "AWAITING RED";
-    proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` → ${node.description}`;
+    proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` -> ${node.description}`;
   } else if (node.predicate?.type === "adversarial") {
     const phase = node.predicate.value !== undefined ? Number(node.predicate.value) : 0;
     const phaseName = ["", "Spec", "Test", "Implement", "Cleanup"][phase] ?? `Phase ${phase}`;
@@ -88,9 +88,9 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
     proofLine = `${indent}- ${mark} Proof (Convergence Audit ${gateState}): ${node.description}`;
   } else if (node.predicate?.type === "holdout") {
     const fingerprint = node.predicate.value ? String(node.predicate.value).slice(0, 12) : "unknown";
-    proofLine = `${indent}- ${mark} Proof (Holdout ${fingerprint}…): \`${node.command}\` → ${node.description}`;
+    proofLine = `${indent}- ${mark} Proof (Holdout ${fingerprint}...): \`${node.command}\` -> ${node.description}`;
   } else {
-    proofLine = `${indent}- ${mark} Proof: \`${node.command}\` → ${node.description}`;
+    proofLine = `${indent}- ${mark} Proof: \`${node.command}\` -> ${node.description}`;
   }
 
   // Append predicate metadata for lossless round-trip parsing
@@ -109,23 +109,23 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
 
 // ── Main render ───────────────────────────────────────────────────────────
 
-export function renderMarkdown(doc: DodDocument): string {
+function renderMarkdown(doc: DodDocument): string {
   const l: string[] = [];
 
-  l.push(`# ${doc.title} — Requirements Spec`);
+  l.push(`# ${doc.title} - Requirements Spec`);
   l.push("");
   l.push("<claude_instructions>");
   l.push("**For the implementer:** Work through each task below.");
   l.push("1. Mark a task `[>]` when you begin working on it.");
-  l.push("2. Call `dod_check` to verify proofs — do NOT mark proofs manually.");
+  l.push("2. Call `dod_check` to verify proofs - do NOT mark proofs manually.");
   l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
   l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.");
   l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("6. Continue until `dod_check` returns PASS — then stop and report done.");
+  l.push("6. Continue until `dod_check` returns PASS - then stop and report done.");
   l.push("");
   l.push("**Behavioral predicates only.** Each proof is a concrete behavioral claim.");
-  l.push("Read failure diagnoses carefully — they tell you WHAT went wrong and what to fix.");
-  l.push("Proofs run on the HOST OS — write OS-correct commands (no bash on Windows).");
+  l.push("Read failure diagnoses carefully - they tell you WHAT went wrong and what to fix.");
+  l.push("Proofs run on the HOST OS - write OS-correct commands (no bash on Windows).");
   l.push("");
   l.push(`**CWD:** \`${doc.cwd}\``);
   l.push("");
