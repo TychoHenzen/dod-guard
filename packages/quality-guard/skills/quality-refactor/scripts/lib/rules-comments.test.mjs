@@ -118,3 +118,25 @@ test("commented-out code is still reported after the move", () => {
   const found = scan("ts", "export const a = 1;\n// const b = compute(a);\n", "commented-out-code");
   assert.equal(found.length, 1);
 });
+
+test("ASSUMPTION does not match the todo-marker regex", () => {
+  const found = scan(
+    "ts",
+    "// ASSUMPTION: the API returns ids in insertion order\nexport const a = 1;\n",
+    "todo-marker",
+  );
+  assert.deepEqual(found, []);
+});
+
+// checkMarkerOrDeadCode returns as soon as the deferred-marker regex
+// matches. A future assumption-marker check added to the same function
+// would sit past that return, so this pins whether a combined comment
+// can ever reach it.
+test("a comment holding both markers takes the todo-marker branch and stops there", () => {
+  const found = scan(
+    "ts",
+    "// ASSUMPTION: TODO revisit this once the API is confirmed\nexport const a = 1;\n",
+    "todo-marker",
+  );
+  assert.equal(found.length, 1);
+});
