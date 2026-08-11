@@ -37,10 +37,7 @@ test("resolveGlob's ** also matches nested directories, at any depth", async () 
     await writeFile(join(dir, "specs", "top.md"), "");
     await writeFile(join(dir, "specs", "nested", "deep.md"), "");
     const result = await resolveGlob(dir, "specs/**/*.md");
-    assert.deepEqual(
-      result.sort(),
-      [join(dir, "specs", "top.md"), join(dir, "specs", "nested", "deep.md")].sort(),
-    );
+    assert.deepEqual(result.sort(), [join(dir, "specs", "top.md"), join(dir, "specs", "nested", "deep.md")].sort());
   });
 });
 

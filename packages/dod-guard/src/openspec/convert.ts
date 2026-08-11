@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import type { TaskNode } from "../types.js";
+import { extractCommand, isCheckable } from "./checkability.js";
 import { resolveGlob } from "./glob.js";
 import { extractRequirementBlocks } from "./requirements.js";
 import type { ScenarioBlock } from "./scenario-block.js";
@@ -12,12 +13,28 @@ export interface ConvertedDod {
   roots: TaskNode[];
 }
 
+/** A scenario naming a runnable command (see checkability.ts) becomes a
+ * concrete leaf that command can prove. Everything else needs human
+ * judgment, so it becomes a draft leaf holding a `MANUAL:` intent - the
+ * only "a human still owes us something" leaf shape dod-guard has. */
 function scenarioLeaf(scenario: ScenarioBlock, id: string): TaskNode {
+  if (isCheckable(scenario)) {
+    return {
+      id,
+      title: scenario.title,
+      refinement: "concrete",
+      command: extractCommand(scenario),
+      predicate: { type: "exit_code", value: 0 },
+      description: scenario.intent,
+      category: "other",
+      last_status: "pending",
+    };
+  }
   return {
     id,
     title: scenario.title,
     refinement: "draft",
-    intent: scenario.intent,
+    intent: `MANUAL: ${scenario.intent}`,
     last_status: "draft",
   };
 }

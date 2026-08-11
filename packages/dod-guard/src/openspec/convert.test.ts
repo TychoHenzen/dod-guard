@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { promises as fsPromises, readFileSync } from "node:fs";
+import * as os from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { countDraftNodes } from "../checker-tree.js";
 import { convertInstructionsToDod } from "./convert.js";
 import type { OpenSpecInstructions } from "./types.js";
 
@@ -98,7 +100,7 @@ test("convertInstructionsToDod maps one scenario to one leaf carrying the THEN t
   assert.equal(oneScenarioLeaf?.refinement, "draft");
   assert.equal(
     oneScenarioLeaf?.intent,
-    "the generated DoD contains one leaf under that requirement's heading, with the scenario's `THEN` line as the leaf intent",
+    "MANUAL: the generated DoD contains one leaf under that requirement's heading, with the scenario's `THEN` line as the leaf intent",
   );
 });
 
@@ -114,7 +116,7 @@ test("convertInstructionsToDod maps a requirement with two scenarios to two leav
   const titles = group?.children?.map((c) => c.title);
   assert.deepEqual(titles, ["One scenario becomes one leaf", "Leaves group under their requirement"]);
   const secondLeaf = group?.children?.[1];
-  assert.equal(secondLeaf?.intent, "the generated DoD groups both leaves under that one requirement heading");
+  assert.equal(secondLeaf?.intent, "MANUAL: the generated DoD groups both leaves under that one requirement heading");
 });
 
 test("convertInstructionsToDod joins several THEN bullets in one scenario with a space", async () => {
@@ -131,6 +133,71 @@ test("convertInstructionsToDod joins several THEN bullets in one scenario with a
   const leaf = group?.children?.[0];
   assert.equal(
     leaf?.intent,
-    "regenerating and re-importing the DoD updates only the leaves tied to the changed scenario, and leaves the fingerprint on every untouched leaf intact",
+    "MANUAL: regenerating and re-importing the DoD updates only the leaves tied to the changed scenario, and leaves the fingerprint on every untouched leaf intact",
   );
+});
+
+// Custom fixtures below (not the captured CLI output) - each pins one side
+// of the checkable/uncheckable split against a scenario built for that
+// purpose, isolated from the repo's own real spec deltas.
+async function instructionsFor(specContent: string): Promise<OpenSpecInstructions> {
+  const dir = await fsPromises.mkdtemp(join(os.tmpdir(), "dod-guard-openspec-"));
+  await fsPromises.mkdir(join(dir, "specs"), { recursive: true });
+  await fsPromises.writeFile(join(dir, "specs", "delta.md"), specContent, "utf-8");
+  return {
+    changeName: "test-change",
+    artifactId: "dod",
+    schemaName: "default",
+    changeDir: dir,
+    planningHome: { kind: "local", root: dir, changesDir: dir, defaultSchema: "default" },
+    outputPath: "dod.md",
+    resolvedOutputPath: join(dir, "dod.md"),
+    existingOutputPaths: [],
+    description: "",
+    instruction: "",
+    template: "",
+    dependencies: [{ id: "specs", done: true, path: "specs/**/*.md", description: "" }],
+    unlocks: [],
+    root: { path: dir, source: "test" },
+  };
+}
+
+test("convertInstructionsToDod maps a scenario no command can check to a draft leaf with a MANUAL: intent", async () => {
+  const instructions = await instructionsFor(
+    [
+      "### Requirement: Prose quality",
+      "",
+      "#### Scenario: Reviewer checks tone",
+      "- **WHEN** a reviewer reads the summary",
+      "- **THEN** the summary reads clearly and stays on topic",
+      "",
+    ].join("\n"),
+  );
+
+  const result = await convertInstructionsToDod(instructions);
+
+  const leaf = result.roots[0]?.children?.[0];
+  assert.equal(leaf?.refinement, "draft");
+  assert.ok(leaf?.intent?.startsWith("MANUAL:"), `expected intent to start with "MANUAL:", got ${leaf?.intent}`);
+  assert.equal(countDraftNodes(result.roots), 1);
+});
+
+test("convertInstructionsToDod maps a checkable scenario to a concrete leaf, not a draft", async () => {
+  const instructions = await instructionsFor(
+    [
+      "### Requirement: Build passes",
+      "",
+      "#### Scenario: Tests run clean",
+      "- **WHEN** the suite runs",
+      "- **THEN** `npm test` exits zero",
+      "",
+    ].join("\n"),
+  );
+
+  const result = await convertInstructionsToDod(instructions);
+
+  const leaf = result.roots[0]?.children?.[0];
+  assert.equal(leaf?.refinement, "concrete");
+  assert.equal(leaf?.command, "npm test");
+  assert.equal(countDraftNodes(result.roots), 0);
 });
