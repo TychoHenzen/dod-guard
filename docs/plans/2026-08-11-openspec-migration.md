@@ -219,6 +219,29 @@ tag is worth nothing without the check, so both land together.
 36. Decide where the audit runs. A skill is the honest fit, because judging
     whether a guess still holds needs reading the code around it.
 
+### Item 36, settled 2026-08-12
+
+The audit runs as a skill. A later session builds it.
+
+The script at `scripts/audit-assumptions.mjs` collects hits and stops
+there. It never judges, because a verdict needs reading the code around
+the hit. So its caller has to supply the judging, and only a skill can.
+
+The three rejected homes each fail on that. A CI job that prints the list
+assigns nobody a verdict, so the list grows unread. A PostToolUse hook
+runs on every write for a list that changes weekly, and cannot judge
+either. Leaving it a hand-run script means nobody remembers it.
+
+Blocking is already covered elsewhere. The `assumption-marker` rule
+ratchets in CI, so a rising count fails the build without this audit.
+The skill owes the other half: which guesses still hold.
+
+Two facts a later session needs. Items 32 and 33 changed under contact
+with the code. The collision item 32 predicts does not exist, because
+`TODO_MARKER` is `/\b(TODO|FIXME|HACK|XXX)\b/` and `ASSUMPTION` matches
+none of it. Item 33 says the rule counts rather than fails, and the user
+overrode that: it ratchets like every other rule.
+
 ## Phase 5: general setup, `~/.claude`
 
 37. Add a plan-mode-first rule to `~/.claude/CLAUDE.md`. Skip it for one-line
