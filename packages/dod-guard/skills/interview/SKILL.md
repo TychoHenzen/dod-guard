@@ -226,8 +226,8 @@ both with `dod_add_node` after generation:
 
 ## 6. Adversarial review of the spec
 
-Dispatch five lenses in parallel, over the confirmed summary and the tree
-you just built. Security uses `subagent_type: "dod-guard:adversarial-security"`.
+Dispatch five lenses in parallel, over the confirmed summary and the spec
+delta section 5 wrote. Security uses `subagent_type: "dod-guard:adversarial-security"`.
 Assumptions, Testability, Consistency, and Implementability each use
 `subagent_type: "dod-guard:adversarial-spec-reviewer"`.
 
@@ -239,7 +239,7 @@ every prompt as literal text:
 2. The user's original request, word for word.
 3. The goal, the work type, and the language and stack.
 4. The project layout you found in section 2.
-5. The requirements and the tree.
+5. The spec delta section 5 wrote, pasted as text.
 
 Consistency cannot find scope drift without the original request.
 Implementability cannot judge fit without the layout. Give nothing beyond
@@ -256,9 +256,10 @@ Count the severities across all five lenses:
 2. 1 or more critical, or 3 or more major: verdict `REVISE`.
 3. Any blocker: verdict `STOP`.
 
-On `REVISE`, fix the spec and the tree, then dispatch the lenses again. Cap
-this at 3 rounds. After a third `REVISE`, stop and ask the user for an
-explicit override. On `STOP`, report the blocker to the user and abort.
+On `REVISE`, fix the summary and the spec delta, then dispatch the lenses
+again. Cap this at 3 rounds. After a third `REVISE`, stop and ask the user
+for an explicit override. On `STOP`, report the blocker to the user and
+abort.
 
 ## 7. Generate the document, then prove it runs
 
