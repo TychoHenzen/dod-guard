@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-10T07:34:05.691Z",
-  "total": 1019,
+  "total": 1030,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -123,12 +123,16 @@
     "packages/dod-guard/src/openspec/glob.test.ts",
     "packages/dod-guard/src/openspec/import-dod.test.ts",
     "packages/dod-guard/src/openspec/import-dod.ts",
+    "packages/dod-guard/src/openspec/regenerate-dod.test.ts",
+    "packages/dod-guard/src/openspec/regenerate-dod.ts",
     "packages/dod-guard/src/openspec/requirement-block.test.ts",
     "packages/dod-guard/src/openspec/requirement-block.ts",
     "packages/dod-guard/src/openspec/requirements.test.ts",
     "packages/dod-guard/src/openspec/requirements.ts",
     "packages/dod-guard/src/openspec/scenario-block.test.ts",
     "packages/dod-guard/src/openspec/scenario-block.ts",
+    "packages/dod-guard/src/openspec/scenario-identity.test.ts",
+    "packages/dod-guard/src/openspec/scenario-identity.ts",
     "packages/dod-guard/src/parser.ts",
     "packages/dod-guard/src/schemas.ts",
     "packages/dod-guard/src/snapshot.test.ts",
@@ -843,6 +847,13 @@
     "packages/dod-guard/src/openspec/convert.test.ts::file-length": 1,
     "packages/dod-guard/src/openspec/checkability.ts::comment-bloat": 1,
     "packages/dod-guard/src/openspec/import-dod.test.ts::comment-bloat": 1,
-    "packages/dod-guard/src/openspec/import-dod.test.ts::function-length": 1
+    "packages/dod-guard/src/openspec/import-dod.test.ts::function-length": 1,
+    "packages/dod-guard/src/openspec/regenerate-dod.ts::file-length": 1,
+    "packages/dod-guard/src/openspec/regenerate-dod.ts::complexity": 3,
+    "packages/dod-guard/src/openspec/regenerate-dod.ts::param-count": 3,
+    "packages/dod-guard/src/openspec/regenerate-dod.ts::else-branch": 1,
+    "packages/dod-guard/src/openspec/regenerate-dod.ts::comment-bloat": 1,
+    "packages/dod-guard/src/openspec/regenerate-dod.test.ts::file-length": 1,
+    "packages/dod-guard/src/openspec/scenario-identity.ts::nesting-depth": 1
   }
 }

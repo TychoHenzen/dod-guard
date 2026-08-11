@@ -1,7 +1,9 @@
 import { writeMarkdown } from "../author.js";
 import { handleDodImport } from "../mcp/dod-import.js";
+import * as store from "../store.js";
 import type { DodDocument } from "../types.js";
-import { convertInstructionsToDod } from "./convert.js";
+import { type ConvertedDod, convertInstructionsToDod } from "./convert.js";
+import { buildScenarioMap, writeScenarioMap } from "./scenario-identity.js";
 import type { OpenSpecInstructions } from "./types.js";
 
 /** Build a throwaway `DodDocument` shell around the converted roots -
@@ -41,5 +43,19 @@ export async function renderAndImportDod(instructions: OpenSpecInstructions): Pr
   const converted = await convertInstructionsToDod(instructions);
   const doc = buildRenderableDoc(instructions, converted.roots, converted.resolvedOutputPath);
   await writeMarkdown(doc);
-  return handleDodImport({ path: converted.resolvedOutputPath, cwd: instructions.root.path });
+  const report = await handleDodImport({ path: converted.resolvedOutputPath, cwd: instructions.root.path });
+  if (report.startsWith("DoD imported.")) {
+    await recordScenarioIdentity(converted);
+  }
+  return report;
+}
+
+/** Record which stored node id each (requirement, scenario) pair landed
+ * on, so a later `regenerateDod` can find it again - see
+ * `scenario-identity.ts` for why this can't just be `leaf.title`. */
+async function recordScenarioIdentity(converted: ConvertedDod): Promise<void> {
+  const imported = await store.findByPath(converted.resolvedOutputPath);
+  if (!imported) return;
+  const map = buildScenarioMap(converted.roots, imported.roots);
+  await writeScenarioMap(converted.resolvedOutputPath, map);
 }
