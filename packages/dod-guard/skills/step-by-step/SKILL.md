@@ -69,6 +69,10 @@ Working directory: {cwd}
 No scenario behind the step (plan-file and quality-refactor sessions have
 none): write `Requirement: none - see Task`.
 
+Code that implements the `Requirement` needs no tag. The scenario already
+states it. Code the worker writes that depends on behavior no scenario
+states earns an `ASSUMPTION: <what and why>` comment at that line.
+
 Workers own their scope rules, report format, git practices, and
 ambiguity handling separately.
 
