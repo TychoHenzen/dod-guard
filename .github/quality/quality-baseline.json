@@ -137,6 +137,7 @@
     "packages/dod-guard/src/openspec/scenario-identity.ts",
     "packages/dod-guard/src/openspec/trace.test.ts",
     "packages/dod-guard/src/openspec/trace.ts",
+    "packages/dod-guard/src/openspec/types.ts",
     "packages/dod-guard/src/parser.ts",
     "packages/dod-guard/src/schemas.ts",
     "packages/dod-guard/src/snapshot.test.ts",

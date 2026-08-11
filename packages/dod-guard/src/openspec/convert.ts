@@ -1,7 +1,8 @@
 import { promises as fs } from "node:fs";
 import type { TaskNode } from "../types.js";
-import { extractCommand, isCheckable } from "./checkability.js";
+import { extractCommand, isRunnable } from "./checkability.js";
 import { resolveGlob } from "./glob.js";
+import type { RequirementBlock } from "./requirement-block.js";
 import { extractRequirementBlocks } from "./requirements.js";
 import type { ScenarioBlock } from "./scenario-block.js";
 import type { OpenSpecInstructions } from "./types.js";
@@ -17,8 +18,8 @@ export interface ConvertedDod {
  * concrete leaf that command can prove. Everything else needs human
  * judgment, so it becomes a draft leaf holding a `MANUAL:` intent - the
  * only "a human still owes us something" leaf shape dod-guard has. */
-function scenarioLeaf(scenario: ScenarioBlock, id: string): TaskNode {
-  if (isCheckable(scenario)) {
+async function scenarioLeaf(scenario: ScenarioBlock, id: string, cwd: string): Promise<TaskNode> {
+  if (await isRunnable(scenario, cwd)) {
     return {
       id,
       title: scenario.title,
@@ -39,12 +40,15 @@ function scenarioLeaf(scenario: ScenarioBlock, id: string): TaskNode {
   };
 }
 
-function requirementGroup(title: string, index: number, scenarios: ScenarioBlock[]): TaskNode {
+async function requirementGroup(block: RequirementBlock, index: number, cwd: string): Promise<TaskNode> {
+  const children = await Promise.all(
+    block.scenarios.map((scenario, si) => scenarioLeaf(scenario, `req-${index}-scenario-${si}`, cwd)),
+  );
   return {
     id: `req-${index}`,
-    title,
+    title: block.title,
     refinement: "draft",
-    children: scenarios.map((scenario, si) => scenarioLeaf(scenario, `req-${index}-scenario-${si}`)),
+    children,
     last_status: "draft",
   };
 }
@@ -69,13 +73,14 @@ export async function readDeltaFiles(instructions: OpenSpecInstructions): Promis
  */
 export async function convertInstructionsToDod(instructions: OpenSpecInstructions): Promise<ConvertedDod> {
   const files = await readDeltaFiles(instructions);
+  const cwd = instructions.root.path;
   const roots: TaskNode[] = [];
   let index = 0;
 
   for (const file of files) {
     const content = await fs.readFile(file, "utf-8");
     for (const block of extractRequirementBlocks(content)) {
-      roots.push(requirementGroup(block.title, index, block.scenarios));
+      roots.push(await requirementGroup(block, index, cwd));
       index++;
     }
   }
