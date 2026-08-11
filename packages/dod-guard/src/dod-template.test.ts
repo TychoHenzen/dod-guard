@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { parseMarkdownFromString } from "./parser.js";
 
 // The OpenSpec dod artifact template lives outside packages/dod-guard, but
@@ -27,17 +27,17 @@ function fillTemplate(): string {
   const rootsBlock = [
     "### user-export [x]",
     "",
-    "  - [x] Proof: `npm test -- export.test.ts` → CSV file downloads with all user data <!--p:{\"type\":\"exit_code\",\"value\":0}-->",
+    '  - [x] Proof: `npm test -- export.test.ts` → CSV file downloads with all user data <!--p:{"type":"exit_code","value":0}-->',
     "",
     "### user-export-empty [ ]",
     "",
-    "  - [ ] Proof: `npm test -- export-empty.test.ts` → export button disabled when dataset is empty <!--p:{\"type\":\"output_contains\",\"value\":\"disabled\"}-->",
+    '  - [ ] Proof: `npm test -- export-empty.test.ts` → export button disabled when dataset is empty <!--p:{"type":"output_contains","value":"disabled"}-->',
   ].join("\n");
 
   const templateRootsBlock = [
     "### <!-- capability-path --> [ ]",
     "",
-    "  - [ ] Proof: `<!-- verification command for this scenario -->` → <!-- scenario name: expected behavior --> <!--p:{\"type\":\"exit_code\",\"value\":0}-->",
+    '  - [ ] Proof: `<!-- verification command for this scenario -->` → <!-- scenario name: expected behavior --> <!--p:{"type":"exit_code","value":0}-->',
   ].join("\n");
 
   return raw

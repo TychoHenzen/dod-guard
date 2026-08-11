@@ -49,7 +49,10 @@ function requirementGroup(title: string, index: number, scenarios: ScenarioBlock
   };
 }
 
-async function readDeltaFiles(instructions: OpenSpecInstructions): Promise<string[]> {
+/** Every spec delta file `instructions.dependencies` resolves to, in
+ * dependency-then-glob-match order. Shared with `trace.ts`, which needs
+ * the same file set to re-derive the current scenario list. */
+export async function readDeltaFiles(instructions: OpenSpecInstructions): Promise<string[]> {
   const files: string[] = [];
   for (const dep of instructions.dependencies) {
     files.push(...(await resolveGlob(instructions.changeDir, dep.path)));

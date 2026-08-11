@@ -168,4 +168,17 @@ describe("runCli", () => {
     assert.equal(code, EXIT.ERROR);
     assert.match(err(), /not found/);
   });
+
+  it("documents the trace exit-code contract in usage output", async () => {
+    const { io, out } = captureIo();
+    await runCli(["help"], io);
+    assert.match(out(), /EXIT CODES \(trace\)/);
+  });
+
+  it("errors when trace is given no change id", async () => {
+    const { io, err } = captureIo();
+    const code = await runCli(["trace"], io);
+    assert.equal(code, EXIT.ERROR);
+    assert.match(err(), /pass a change id/);
+  });
 });

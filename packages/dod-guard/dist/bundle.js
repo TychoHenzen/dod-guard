@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path7) {
-      let input = path7;
+    function removeDotSegments(path8) {
+      let input = path8;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path7, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path7 && path7 !== "/" ? path7 : void 0;
+        const [path8, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path8 && path8 !== "/" ? path8 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -6902,12 +6902,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs4, exportName) {
+    function addFormats(ajv, list, fs7, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs4[f]);
+        ajv.addFormat(f, fs7[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -6917,7 +6917,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync } from "node:fs";
-import * as path6 from "node:path";
+import * as path7 from "node:path";
 import { fileURLToPath } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
@@ -7398,8 +7398,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path7, errorMaps, issueData } = params;
-  const fullPath = [...path7, ...issueData.path || []];
+  const { data, path: path8, errorMaps, issueData } = params;
+  const fullPath = [...path8, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7411,15 +7411,15 @@ var makeIssue = (params) => {
       message: issueData.message
     };
   }
-  let errorMessage = "";
+  let errorMessage2 = "";
   const maps = errorMaps.filter((m) => !!m).slice().reverse();
   for (const map of maps) {
-    errorMessage = map(fullIssue, { data, defaultError: errorMessage }).message;
+    errorMessage2 = map(fullIssue, { data, defaultError: errorMessage2 }).message;
   }
   return {
     ...issueData,
     path: fullPath,
-    message: errorMessage
+    message: errorMessage2
   };
 };
 var EMPTY_PATH = [];
@@ -7515,11 +7515,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path7, key) {
+  constructor(parent, value, path8, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path7;
+    this._path = path8;
     this._key = key;
   }
   get path() {
@@ -11156,10 +11156,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path7) {
-  if (!path7)
+function getElementAtPath(obj, path8) {
+  if (!path8)
     return obj;
-  return path7.reduce((acc, key) => acc?.[key], obj);
+  return path8.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11479,11 +11479,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path7, issues) {
+function prefixIssues(path8, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path7);
+    iss.path.unshift(path8);
     return iss;
   });
 }
@@ -14894,11 +14894,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path7) {
-  if (path7.length === 0) {
+function getDotPath(path8) {
+  if (path8.length === 0) {
     return "object root";
   }
-  return path7.reduce((acc, seg, index) => {
+  return path8.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -17257,19 +17257,19 @@ var getRefs = (options) => {
 };
 
 // ../../node_modules/zod-to-json-schema/dist/esm/errorMessages.js
-function addErrorMessage(res, key, errorMessage, refs) {
+function addErrorMessage(res, key, errorMessage2, refs) {
   if (!refs?.errorMessages)
     return;
-  if (errorMessage) {
+  if (errorMessage2) {
     res.errorMessage = {
       ...res.errorMessage,
-      [key]: errorMessage
+      [key]: errorMessage2
     };
   }
 }
-function setResponseValueAndErrors(res, key, value, errorMessage, refs) {
+function setResponseValueAndErrors(res, key, value, errorMessage2, refs) {
   res[key] = value;
-  addErrorMessage(res, key, errorMessage, refs);
+  addErrorMessage(res, key, errorMessage2, refs);
 }
 
 // ../../node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
@@ -18580,8 +18580,8 @@ var Protocol = class {
                   if (queuedMessage.type === "response") {
                     resolver(message);
                   } else {
-                    const errorMessage = message;
-                    const error2 = new McpError(errorMessage.error.code, errorMessage.error.message, errorMessage.error.data);
+                    const errorMessage2 = message;
+                    const error2 = new McpError(errorMessage2.error.code, errorMessage2.error.message, errorMessage2.error.data);
                     resolver(error2);
                   }
                 } else {
@@ -19872,23 +19872,23 @@ var Server = class extends Protocol {
       const wrappedHandler = async (request, extra) => {
         const validatedRequest = safeParse2(CallToolRequestSchema, request);
         if (!validatedRequest.success) {
-          const errorMessage = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage}`);
+          const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage2}`);
         }
         const { params } = validatedRequest.data;
         const result = await Promise.resolve(handler(request, extra));
         if (params.task) {
           const taskValidationResult = safeParse2(CreateTaskResultSchema, result);
           if (!taskValidationResult.success) {
-            const errorMessage = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
-            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage}`);
+            const errorMessage2 = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
+            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage2}`);
           }
           return taskValidationResult.data;
         }
         const validationResult = safeParse2(CallToolResultSchema, result);
         if (!validationResult.success) {
-          const errorMessage = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call result: ${errorMessage}`);
+          const errorMessage2 = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call result: ${errorMessage2}`);
         }
         return validationResult.data;
       };
@@ -20382,12 +20382,12 @@ var McpServer = class {
    * @param errorMessage - The error message.
    * @returns The tool error result.
    */
-  createToolError(errorMessage) {
+  createToolError(errorMessage2) {
     return {
       content: [
         {
           type: "text",
-          text: errorMessage
+          text: errorMessage2
         }
       ],
       isError: true
@@ -20405,8 +20405,8 @@ var McpServer = class {
     const parseResult = await safeParseAsync2(schemaToParse, args);
     if (!parseResult.success) {
       const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
-      const errorMessage = getParseErrorMessage(error2);
-      throw new McpError(ErrorCode.InvalidParams, `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage}`);
+      const errorMessage2 = getParseErrorMessage(error2);
+      throw new McpError(ErrorCode.InvalidParams, `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage2}`);
     }
     return parseResult.data;
   }
@@ -20430,8 +20430,8 @@ var McpServer = class {
     const parseResult = await safeParseAsync2(outputObj, result.structuredContent);
     if (!parseResult.success) {
       const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
-      const errorMessage = getParseErrorMessage(error2);
-      throw new McpError(ErrorCode.InvalidParams, `Output validation error: Invalid structured content for tool ${toolName}: ${errorMessage}`);
+      const errorMessage2 = getParseErrorMessage(error2);
+      throw new McpError(ErrorCode.InvalidParams, `Output validation error: Invalid structured content for tool ${toolName}: ${errorMessage2}`);
     }
   }
   /**
@@ -20643,8 +20643,8 @@ var McpServer = class {
         const parseResult = await safeParseAsync2(argsObj, request.params.arguments);
         if (!parseResult.success) {
           const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
-          const errorMessage = getParseErrorMessage(error2);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage}`);
+          const errorMessage2 = getParseErrorMessage(error2);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage2}`);
         }
         const args = parseResult.data;
         const cb = prompt.callback;
@@ -21178,9 +21178,9 @@ function toIndex(segment) {
   const idx = Number(segment);
   return Number.isInteger(idx) ? idx : null;
 }
-function findNodeByPath(nodes, path7) {
-  if (!path7) return null;
-  const segments = path7.split(".").filter((s) => s !== "children");
+function findNodeByPath(nodes, path8) {
+  if (!path8) return null;
+  const segments = path8.split(".").filter((s) => s !== "children");
   let current = nodes;
   let node = null;
   for (const segment of segments) {
@@ -21202,11 +21202,11 @@ function checkAmendGate(amendments, resolvedPath, amendJustification) {
 function collectDraftLeaves(nodes, parentPath) {
   const out = [];
   nodes.forEach((node, i) => {
-    const path7 = parentPath ? `${parentPath}.children.${i}` : `${i}`;
+    const path8 = parentPath ? `${parentPath}.children.${i}` : `${i}`;
     if (!isLeaf(node)) {
-      out.push(...collectDraftLeaves(node.children ?? [], path7));
+      out.push(...collectDraftLeaves(node.children ?? [], path8));
     } else if (node.refinement === "draft") {
-      out.push({ node, node_path: path7 });
+      out.push({ node, node_path: path8 });
     }
   });
   return out;
@@ -21463,9 +21463,9 @@ function computeProofFingerprint(roots) {
 }
 
 // src/checker-leaves.ts
-function isInScope(path7, nodePath) {
+function isInScope(path8, nodePath) {
   if (nodePath === void 0) return true;
-  return path7 === nodePath || path7.startsWith(`${nodePath}.`);
+  return path8 === nodePath || path8.startsWith(`${nodePath}.`);
 }
 function toCarriedStatus(status) {
   if (status === "pending" || status === "draft") return "skipped";
@@ -21546,9 +21546,9 @@ function draftResult(node, node_path) {
     command: node.command ?? ""
   };
 }
-function isUnderScope(path7, nodePath) {
+function isUnderScope(path8, nodePath) {
   if (nodePath === void 0) return false;
-  return path7 === nodePath || path7.startsWith(`${nodePath}.`);
+  return path8 === nodePath || path8.startsWith(`${nodePath}.`);
 }
 function isNonAdvisoryFail(entry) {
   return entry.result.status === "fail" && !entry.node.advisory;
@@ -21922,6 +21922,35 @@ function buildImportGateInfo(doc) {
   };
 }
 
+// src/openspec/fetch-instructions.ts
+import { execFile as execFile2 } from "node:child_process";
+import { promisify as promisify3 } from "node:util";
+var execFileP2 = promisify3(execFile2);
+async function fetchInstructions(changeId, cwd) {
+  const command = `openspec instructions dod --change ${changeId} --json`;
+  const { shell, args, verbatim } = buildShellInvocation(command);
+  let stdout;
+  try {
+    const run2 = await execFileP2(shell, args, {
+      cwd,
+      windowsHide: true,
+      windowsVerbatimArguments: verbatim,
+      maxBuffer: 10 * 1024 * 1024
+    });
+    stdout = run2.stdout;
+  } catch (err) {
+    throw new Error(`'${command}' failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    throw new Error(`'${command}' did not print valid JSON.`);
+  }
+}
+
+// src/openspec/trace.ts
+import { promises as fs5 } from "node:fs";
+
 // src/store.ts
 import * as crypto from "node:crypto";
 import { promises as fs2 } from "node:fs";
@@ -22053,12 +22082,211 @@ async function listAllRaw() {
   return docs;
 }
 
-// src/command-check.ts
-import { execFile as execFile2 } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+// src/openspec/glob.ts
+import { promises as fs3 } from "node:fs";
 import * as path3 from "node:path";
-import { promisify as promisify3 } from "node:util";
-var execFileAsync = promisify3(execFile2);
+function segmentToRegExp(segment) {
+  const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+  return new RegExp(`^${escaped}$`);
+}
+async function listEntries(dir) {
+  try {
+    return await fs3.readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+async function walkFiles(dir, segment) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path3.join(dir, e.name));
+}
+async function walkDirs(dir, segment, rest) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  const results = [];
+  for (const e of entries) {
+    if (e.isDirectory() && re.test(e.name)) {
+      results.push(...await resolveSegments(path3.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+async function walkDoubleStar(dir, rest) {
+  const results = await resolveSegments(dir, rest);
+  const entries = await listEntries(dir);
+  for (const e of entries) {
+    if (e.isDirectory()) {
+      results.push(...await walkDoubleStar(path3.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+async function resolveSegments(dir, segments) {
+  if (segments.length === 0) return [];
+  const [segment, ...rest] = segments;
+  if (segment === "**") return walkDoubleStar(dir, rest);
+  if (rest.length === 0) return walkFiles(dir, segment);
+  return walkDirs(dir, segment, rest);
+}
+async function resolveGlob(baseDir, pattern) {
+  const segments = pattern.split(/[\\/]/).filter((s) => s.length > 0);
+  return resolveSegments(baseDir, segments);
+}
+
+// src/openspec/requirements.ts
+var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
+var SCENARIO_HEADING = /^#### Scenario:\s*(.+?)\s*$/;
+var THEN_LINE = /^-\s*\*\*THEN\*\*\s*(.*)$/;
+var OTHER_BULLET = /^-\s*\*\*[A-Z]+\*\*/;
+function finalizeScenario(state) {
+  if (state.currentScenario && state.currentReq) {
+    state.currentScenario.intent = state.thenParts.join(" ");
+    state.currentReq.scenarios.push(state.currentScenario);
+  }
+  state.currentScenario = null;
+  state.thenParts = [];
+  state.inThen = false;
+}
+function consumeLine(state, line) {
+  const reqMatch = line.match(REQUIREMENT_HEADING);
+  if (reqMatch) {
+    finalizeScenario(state);
+    state.currentReq = { title: reqMatch[1], scenarios: [] };
+    state.blocks.push(state.currentReq);
+    return;
+  }
+  const scenarioMatch = line.match(SCENARIO_HEADING);
+  if (scenarioMatch) {
+    finalizeScenario(state);
+    state.currentScenario = { title: scenarioMatch[1], intent: "" };
+    return;
+  }
+  const thenMatch = line.match(THEN_LINE);
+  if (thenMatch) {
+    state.thenParts.push(thenMatch[1].trim());
+    state.inThen = true;
+    return;
+  }
+  if (OTHER_BULLET.test(line)) {
+    state.inThen = false;
+    return;
+  }
+  if (state.inThen && line.trim().length > 0) {
+    const lastIndex = state.thenParts.length - 1;
+    state.thenParts[lastIndex] = `${state.thenParts[lastIndex]} ${line.trim()}`;
+  }
+}
+function extractRequirementBlocks(content) {
+  const state = { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false };
+  for (const line of content.split("\n")) {
+    consumeLine(state, line);
+  }
+  finalizeScenario(state);
+  return state.blocks;
+}
+
+// src/openspec/convert.ts
+async function readDeltaFiles(instructions) {
+  const files = [];
+  for (const dep of instructions.dependencies) {
+    files.push(...await resolveGlob(instructions.changeDir, dep.path));
+  }
+  return files;
+}
+
+// src/openspec/scenario-identity.ts
+import { promises as fs4 } from "node:fs";
+function sidecarPath(resolvedOutputPath) {
+  return `${resolvedOutputPath}.scenario-map.json`;
+}
+function scenarioKey(groupTitle, scenarioTitle) {
+  return `${groupTitle}||${scenarioTitle}`;
+}
+async function readScenarioMap(resolvedOutputPath) {
+  try {
+    const raw = await fs4.readFile(sidecarPath(resolvedOutputPath), "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+// src/openspec/trace.ts
+async function currentScenarioEntries(instructions) {
+  const entries = /* @__PURE__ */ new Map();
+  for (const file of await readDeltaFiles(instructions)) {
+    const content = await fs5.readFile(file, "utf-8");
+    for (const block of extractRequirementBlocks(content)) {
+      for (const scenario of block.scenarios) {
+        entries.set(scenarioKey(block.title, scenario.title), `${block.title} > ${scenario.title}`);
+      }
+    }
+  }
+  return entries;
+}
+function collectLeaves(roots) {
+  const out = [];
+  for (const group of roots) {
+    for (const leaf of group.children ?? []) {
+      out.push({ groupTitle: group.title, leaf });
+    }
+  }
+  return out;
+}
+function untracedLeafDescriptions(doc, tracedNodeIds) {
+  return collectLeaves(doc.roots).filter(({ leaf }) => !tracedNodeIds.has(leaf.id)).map(({ groupTitle, leaf }) => `${groupTitle} > ${leaf.title}`);
+}
+async function traceChange(changeId, instructions) {
+  const doc = await findByPath(instructions.resolvedOutputPath);
+  if (!doc) {
+    return { changeId, hasDod: false, untracedLeaves: [], untracedScenarios: [] };
+  }
+  const scenarioMap = await readScenarioMap(instructions.resolvedOutputPath);
+  const tracedNodeIds = new Set(scenarioMap.map((e) => e.nodeId));
+  const tracedKeys = new Set(scenarioMap.map((e) => scenarioKey(e.groupTitle, e.scenarioTitle)));
+  const currentScenarios = await currentScenarioEntries(instructions);
+  const untracedScenarios = [...currentScenarios.entries()].filter(([key]) => !tracedKeys.has(key)).map(([, display]) => display);
+  return {
+    changeId,
+    hasDod: true,
+    untracedLeaves: untracedLeafDescriptions(doc, tracedNodeIds),
+    untracedScenarios
+  };
+}
+function classifyOutcome(report) {
+  if (!report.hasDod) return "no-dod";
+  if (report.untracedLeaves.length > 0) return "blocked";
+  return "ok";
+}
+function formatTraceReport(report) {
+  if (!report.hasDod) {
+    return `No DoD registered yet for change "${report.changeId}". Run the openspec dod converter (renderAndImportDod) first.
+`;
+  }
+  const lines = [];
+  if (report.untracedScenarios.length > 0) {
+    lines.push("UNTRACED SCENARIOS (reported, not blocking):");
+    for (const s of report.untracedScenarios) lines.push(`  - ${s}`);
+  } else {
+    lines.push("All scenarios reach a leaf.");
+  }
+  if (report.untracedLeaves.length > 0) {
+    lines.push("UNTRACED LEAVES (blocking):");
+    for (const l of report.untracedLeaves) lines.push(`  - ${l}`);
+  } else {
+    lines.push("All leaves trace to a scenario.");
+  }
+  return `${lines.join("\n")}
+`;
+}
+
+// src/command-check.ts
+import { execFile as execFile3 } from "node:child_process";
+import { existsSync, readdirSync } from "node:fs";
+import * as path4 from "node:path";
+import { promisify as promisify4 } from "node:util";
+var execFileAsync = promisify4(execFile3);
 var isWindows = process.platform === "win32";
 var CMD_BUILTINS = /* @__PURE__ */ new Set([
   "assoc",
@@ -22223,7 +22451,7 @@ async function toolExists(name, cwd) {
   return ok;
 }
 function resolvePathExists(name, cwd) {
-  const base = path3.isAbsolute(name) ? name : path3.resolve(cwd, name);
+  const base = path4.isAbsolute(name) ? name : path4.resolve(cwd, name);
   const candidates = isWindows ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
   return candidates.some((p) => existsSync(p));
 }
@@ -22271,7 +22499,7 @@ function expandGlobsInCommand(command, cwd) {
       if (seen.has(fullMatch)) continue;
       seen.add(fullMatch);
       try {
-        const parentDir = path3.resolve(cwd, prefix);
+        const parentDir = path4.resolve(cwd, prefix);
         if (!existsSync(parentDir)) continue;
         const entries = readdirSync(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
         if (entries.length > 0) {
@@ -22533,6 +22761,7 @@ COMMANDS
   status    Print the last cached check result without re-running proofs
   tree      Print the DoD's node tree with paths (use to find --node-path values)
   list      List all tracked DoDs
+  trace     Check OpenSpec closure for a change: leaf <-> scenario, both directions
 
 OPTIONS (check / status / tree)
   --dod-id=<id>        DoD ID, as returned by dod_create or 'dod-guard list'
@@ -22543,6 +22772,9 @@ OPTIONS (check / status / tree)
   --confirm-import     Confirm an imported DoD's commands are safe to execute
   --quiet              Print only the verdict line; suppress per-proof output
 
+OPTIONS (trace)
+  --cwd=<dir>          Directory 'openspec instructions' resolves the change from (default: cwd)
+
 EXIT CODES (check)
   0  pass         every in-scope proof passed
   1  fail         a proof failed, or the DoD is tampered/stuck
@@ -22552,10 +22784,16 @@ EXIT CODES (check)
 A scoped run (--node-path) exits 0 when that subtree's proofs pass, which is what
 makes it usable as a verify_cmd. Only an unscoped run can report code 2.
 
+EXIT CODES (trace)
+  0  pass    every DoD leaf traces to a scenario (untraced scenarios are only reported)
+  1  fail    at least one DoD leaf traces to no scenario
+  3  error   bad usage, or no DoD registered yet for this change
+
 EXAMPLES
   dod-guard check --dod-id=abc123
   dod-guard check --dod-id=abc123 --node-path=0.children.1 --quiet
   dod-guard check --path=docs/plans/2026-07-27-auth.md --cwd=/repo
+  dod-guard trace adopt-openspec-for-dod-proofs
   dod-guard tree --dod-id=abc123
 `;
 function parseArgs(argv) {
@@ -22576,6 +22814,10 @@ function parseArgs(argv) {
 function str(flags, key) {
   const v = flags[key];
   return typeof v === "string" ? v : void 0;
+}
+function errorMessage(err) {
+  if (err instanceof Error) return err.message;
+  return String(err);
 }
 async function resolveDoc(flags, write) {
   const dodId = str(flags, "dod-id");
@@ -22672,6 +22914,42 @@ async function cmdTree(flags, write, writeErr) {
 `);
   return EXIT.PASS;
 }
+function traceExitCodeFor(outcome) {
+  if (outcome === "no-dod") return EXIT.ERROR;
+  if (outcome === "blocked") return EXIT.FAIL;
+  return EXIT.PASS;
+}
+async function resolveInstructions(changeId, cwd, writeErr) {
+  try {
+    return await fetchInstructions(changeId, cwd);
+  } catch (err) {
+    writeErr(`ERROR: ${errorMessage(err)}
+`);
+    return null;
+  }
+}
+async function reportTrace(changeId, instructions, write, writeErr) {
+  const report = await traceChange(changeId, instructions);
+  const outcome = classifyOutcome(report);
+  const text2 = formatTraceReport(report);
+  if (outcome === "no-dod") {
+    writeErr(text2);
+    return traceExitCodeFor(outcome);
+  }
+  write(text2);
+  return traceExitCodeFor(outcome);
+}
+async function cmdTrace(positional, flags, write, writeErr) {
+  const changeId = positional[0];
+  if (!changeId) {
+    writeErr("ERROR: pass a change id, e.g. 'dod-guard trace adopt-openspec-for-dod-proofs'.\n");
+    return EXIT.ERROR;
+  }
+  const cwd = str(flags, "cwd") ?? process.cwd();
+  const instructions = await resolveInstructions(changeId, cwd, writeErr);
+  if (!instructions) return EXIT.ERROR;
+  return reportTrace(changeId, instructions, write, writeErr);
+}
 async function cmdList(write) {
   const docs = await listAll();
   if (docs.length === 0) {
@@ -22689,31 +22967,31 @@ var defaultIo = {
   write: (s) => process.stdout.write(s),
   writeErr: (s) => process.stderr.write(s)
 };
+var COMMANDS = {
+  check: (_p, flags, io) => cmdCheck(flags, io.write, io.writeErr),
+  status: (_p, flags, io) => cmdStatus(flags, io.write, io.writeErr),
+  tree: (_p, flags, io) => cmdTree(flags, io.write, io.writeErr),
+  trace: (positional, flags, io) => cmdTrace(positional, flags, io.write, io.writeErr),
+  list: (_p, _f, io) => cmdList(io.write)
+};
 async function runCli(argv, io = defaultIo) {
-  const { command, flags } = parseArgs(argv);
+  const { command, flags, positional } = parseArgs(argv);
   if (flags.help === true || flags.h === true || command === "help") {
     io.write(USAGE);
     return EXIT.PASS;
   }
-  try {
-    switch (command) {
-      case "check":
-        return await cmdCheck(flags, io.write, io.writeErr);
-      case "status":
-        return await cmdStatus(flags, io.write, io.writeErr);
-      case "tree":
-        return await cmdTree(flags, io.write, io.writeErr);
-      case "list":
-        return await cmdList(io.write);
-      default:
-        io.writeErr(`ERROR: unknown command "${command}".
+  const handler = COMMANDS[command];
+  if (!handler) {
+    io.writeErr(`ERROR: unknown command "${command}".
 
 `);
-        io.writeErr(USAGE);
-        return EXIT.ERROR;
-    }
+    io.writeErr(USAGE);
+    return EXIT.ERROR;
+  }
+  try {
+    return await handler(positional, flags, io);
   } catch (err) {
-    io.writeErr(`ERROR: ${err instanceof Error ? err.message : String(err)}
+    io.writeErr(`ERROR: ${errorMessage(err)}
 `);
     return EXIT.ERROR;
   }
@@ -22842,22 +23120,22 @@ async function rejectMissingTools(command, cwd) {
 function effectiveCommand(params, node) {
   return params.new_command ?? node.command ?? "";
 }
-async function guardSingle(doc, params, node, path7) {
+async function guardSingle(doc, params, node, path8) {
   if (node.refinement === "draft") {
     return "ERROR: node is a draft. Use dod_refine to concretize it first.";
   }
   const cmd = effectiveCommand(params, node);
   const osMsg = await rejectMissingTools(cmd, doc.cwd);
   if (osMsg) return osMsg;
-  return checkAmendGate(doc.amendments, path7, params.amend_justification);
+  return checkAmendGate(doc.amendments, path8, params.amend_justification);
 }
 async function amendSingle(doc, params) {
   const target = resolveTarget(doc, params);
   if (typeof target === "string") return target;
-  const { node, path: path7 } = target;
-  const guardMsg = await guardSingle(doc, params, node, path7);
+  const { node, path: path8 } = target;
+  const guardMsg = await guardSingle(doc, params, node, path8);
   if (guardMsg) return guardMsg;
-  applyAmendment({ node, path: path7 }, doc, params);
+  applyAmendment({ node, path: path8 }, doc, params);
   return finalizeAmend(doc);
 }
 async function bulkGateFailures(doc, params, leaves) {
@@ -22884,7 +23162,7 @@ async function amendBulk(doc, params) {
   return finalizeAmend(doc);
 }
 function applyAmendment(target, doc, params) {
-  const { node, path: path7 } = target;
+  const { node, path: path8 } = target;
   const old_value = { command: node.command, predicate: node.predicate, description: node.description };
   if (params.new_command !== void 0) node.command = params.new_command;
   if (params.new_predicate !== void 0) node.predicate = params.new_predicate;
@@ -22892,7 +23170,7 @@ function applyAmendment(target, doc, params) {
   node.last_status = "pending";
   doc.amendments.push({
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    node_path: path7,
+    node_path: path8,
     action: "modified",
     old_value,
     new_value: { command: node.command, predicate: node.predicate, description: node.description },
@@ -22956,10 +23234,10 @@ function formatImportGate(doc, executableCount, commandList) {
 }
 
 // src/mcp/dod-import.ts
-import * as path4 from "node:path";
+import * as path5 from "node:path";
 
 // src/parser.ts
-import { promises as fs3 } from "node:fs";
+import { promises as fs6 } from "node:fs";
 function extractPredicateMetadata(line) {
   const metaMatch = line.match(/<!--p:(.+?)-->/);
   if (metaMatch) {
@@ -23139,13 +23417,13 @@ function parseContent(content) {
   return { title, goal, date: date3, cwd, sections, roots };
 }
 async function parseMarkdown(filePath) {
-  const content = await fs3.readFile(filePath, "utf-8");
+  const content = await fs6.readFile(filePath, "utf-8");
   return parseContent(content);
 }
 
 // src/mcp/dod-import.ts
 async function handleDodImport(params) {
-  const mdPath = path4.resolve(params.path);
+  const mdPath = path5.resolve(params.path);
   const existing = await findByPath(mdPath);
   if (existing) {
     return `Already tracked as "${existing.title}" (ID: ${existing.id}).`;
@@ -23164,10 +23442,10 @@ async function buildImportedDoc(params, mdPath) {
   const fingerprint = computeProofFingerprint(parsed.roots);
   return {
     id: generateId(),
-    title: parsed.title || path4.basename(mdPath),
+    title: parsed.title || path5.basename(mdPath),
     goal: parsed.goal,
     date: parsed.date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
-    cwd: parsed.cwd && parsed.cwd !== "." ? parsed.cwd : path4.resolve(params.cwd),
+    cwd: parsed.cwd && parsed.cwd !== "." ? parsed.cwd : path5.resolve(params.cwd),
     markdown_path: mdPath,
     created_at: (/* @__PURE__ */ new Date()).toISOString(),
     import_source: mdPath,
@@ -23472,10 +23750,10 @@ Run dod_check to verify${refinement === "draft" ? " after refining with dod_refi
 }
 
 // src/tools/dod-create.ts
-import * as path5 from "node:path";
+import * as path6 from "node:path";
 async function handleDodCreate(params) {
   const { title, goal, type, cwd, markdown_path, sections, roots: rootInputs } = params;
-  const resolvedCwd = path5.resolve(cwd);
+  const resolvedCwd = path6.resolve(cwd);
   resetNodeIdCounter();
   const roots = buildTaskNodes(rootInputs);
   const osError = await checkCommandsForOs(roots, resolvedCwd);
@@ -23490,7 +23768,7 @@ async function handleDodCreate(params) {
     date: date3,
     type,
     cwd: resolvedCwd,
-    markdown_path: path5.resolve(markdown_path),
+    markdown_path: path6.resolve(markdown_path),
     created_at: (/* @__PURE__ */ new Date()).toISOString(),
     execution_confirmed: true,
     sections,
@@ -23643,8 +23921,8 @@ ${draftCount} draft node(s) total. Refine each draft leaf before running dod_che
 }
 
 // src/index.ts
-var _dirname = path6.dirname(fileURLToPath(import.meta.url));
-var _pkgPath = path6.join(_dirname, "..", "package.json");
+var _dirname = path7.dirname(fileURLToPath(import.meta.url));
+var _pkgPath = path7.join(_dirname, "..", "package.json");
 var _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 var server = new McpServer({ name: "dod-guard", version: _pkg.version });
 var REJECT_DOD_ID = [

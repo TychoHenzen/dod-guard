@@ -1,6 +1,8 @@
 import { formatCheckResult, updateDocFromCheckResult, writeMarkdown } from "./author.js";
 import { checkDocument, findNodeByPath } from "./checker.js";
 import { buildImportGateInfo } from "./import-gate.js";
+import { fetchInstructions } from "./openspec/fetch-instructions.js";
+import { classifyOutcome, formatTraceReport, traceChange } from "./openspec/trace.js";
 import * as store from "./store.js";
 import { formatTree } from "./tree-utils.js";
 import type { CheckResult, DodDocument } from "./types.js";
@@ -31,6 +33,7 @@ COMMANDS
   status    Print the last cached check result without re-running proofs
   tree      Print the DoD's node tree with paths (use to find --node-path values)
   list      List all tracked DoDs
+  trace     Check OpenSpec closure for a change: leaf <-> scenario, both directions
 
 OPTIONS (check / status / tree)
   --dod-id=<id>        DoD ID, as returned by dod_create or 'dod-guard list'
@@ -41,6 +44,9 @@ OPTIONS (check / status / tree)
   --confirm-import     Confirm an imported DoD's commands are safe to execute
   --quiet              Print only the verdict line; suppress per-proof output
 
+OPTIONS (trace)
+  --cwd=<dir>          Directory 'openspec instructions' resolves the change from (default: cwd)
+
 EXIT CODES (check)
   0  pass         every in-scope proof passed
   1  fail         a proof failed, or the DoD is tampered/stuck
@@ -50,10 +56,16 @@ EXIT CODES (check)
 A scoped run (--node-path) exits 0 when that subtree's proofs pass, which is what
 makes it usable as a verify_cmd. Only an unscoped run can report code 2.
 
+EXIT CODES (trace)
+  0  pass    every DoD leaf traces to a scenario (untraced scenarios are only reported)
+  1  fail    at least one DoD leaf traces to no scenario
+  3  error   bad usage, or no DoD registered yet for this change
+
 EXAMPLES
   dod-guard check --dod-id=abc123
   dod-guard check --dod-id=abc123 --node-path=0.children.1 --quiet
   dod-guard check --path=docs/plans/2026-07-27-auth.md --cwd=/repo
+  dod-guard trace adopt-openspec-for-dod-proofs
   dod-guard tree --dod-id=abc123
 `;
 
@@ -81,6 +93,11 @@ export function parseArgs(argv: string[]): { command: string; flags: Flags; posi
 function str(flags: Flags, key: string): string | undefined {
   const v = flags[key];
   return typeof v === "string" ? v : undefined;
+}
+
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return String(err);
 }
 
 /** Resolve a DoD by --dod-id or --path. Writes its own error on failure. */
@@ -206,6 +223,64 @@ async function cmdTree(flags: Flags, write: (s: string) => void, writeErr: (s: s
   return EXIT.PASS;
 }
 
+/** Maps `classifyOutcome` to the exit code contract - see EXIT CODES (trace) in USAGE. */
+function traceExitCodeFor(outcome: ReturnType<typeof classifyOutcome>): number {
+  if (outcome === "no-dod") return EXIT.ERROR;
+  if (outcome === "blocked") return EXIT.FAIL;
+  return EXIT.PASS;
+}
+
+/** Resolves the change's instructions, or writes the error and returns null. */
+async function resolveInstructions(
+  changeId: string,
+  cwd: string,
+  writeErr: (s: string) => void,
+): Promise<Awaited<ReturnType<typeof fetchInstructions>> | null> {
+  try {
+    return await fetchInstructions(changeId, cwd);
+  } catch (err) {
+    writeErr(`ERROR: ${errorMessage(err)}\n`);
+    return null;
+  }
+}
+
+/** Runs the closure check once `instructions` is in hand, and writes the report. */
+async function reportTrace(
+  changeId: string,
+  instructions: Awaited<ReturnType<typeof fetchInstructions>>,
+  write: (s: string) => void,
+  writeErr: (s: string) => void,
+): Promise<number> {
+  const report = await traceChange(changeId, instructions);
+  const outcome = classifyOutcome(report);
+  const text = formatTraceReport(report);
+  if (outcome === "no-dod") {
+    writeErr(text);
+    return traceExitCodeFor(outcome);
+  }
+  write(text);
+  return traceExitCodeFor(outcome);
+}
+
+async function cmdTrace(
+  positional: string[],
+  flags: Flags,
+  write: (s: string) => void,
+  writeErr: (s: string) => void,
+): Promise<number> {
+  const changeId = positional[0];
+  if (!changeId) {
+    writeErr("ERROR: pass a change id, e.g. 'dod-guard trace adopt-openspec-for-dod-proofs'.\n");
+    return EXIT.ERROR;
+  }
+
+  const cwd = str(flags, "cwd") ?? process.cwd();
+  const instructions = await resolveInstructions(changeId, cwd, writeErr);
+  if (!instructions) return EXIT.ERROR;
+
+  return reportTrace(changeId, instructions, write, writeErr);
+}
+
 async function cmdList(write: (s: string) => void): Promise<number> {
   const docs = await store.listAll();
 
@@ -232,32 +307,36 @@ const defaultIo: CliIo = {
   writeErr: (s) => process.stderr.write(s),
 };
 
+type Command = (positional: string[], flags: Flags, io: CliIo) => Promise<number>;
+
+const COMMANDS: Record<string, Command> = {
+  check: (_p, flags, io) => cmdCheck(flags, io.write, io.writeErr),
+  status: (_p, flags, io) => cmdStatus(flags, io.write, io.writeErr),
+  tree: (_p, flags, io) => cmdTree(flags, io.write, io.writeErr),
+  trace: (positional, flags, io) => cmdTrace(positional, flags, io.write, io.writeErr),
+  list: (_p, _f, io) => cmdList(io.write),
+};
+
 /** Run the CLI. Returns the process exit code — never calls process.exit itself. */
 export async function runCli(argv: string[], io: CliIo = defaultIo): Promise<number> {
-  const { command, flags } = parseArgs(argv);
+  const { command, flags, positional } = parseArgs(argv);
 
   if (flags.help === true || flags.h === true || command === "help") {
     io.write(USAGE);
     return EXIT.PASS;
   }
 
+  const handler = COMMANDS[command];
+  if (!handler) {
+    io.writeErr(`ERROR: unknown command "${command}".\n\n`);
+    io.writeErr(USAGE);
+    return EXIT.ERROR;
+  }
+
   try {
-    switch (command) {
-      case "check":
-        return await cmdCheck(flags, io.write, io.writeErr);
-      case "status":
-        return await cmdStatus(flags, io.write, io.writeErr);
-      case "tree":
-        return await cmdTree(flags, io.write, io.writeErr);
-      case "list":
-        return await cmdList(io.write);
-      default:
-        io.writeErr(`ERROR: unknown command "${command}".\n\n`);
-        io.writeErr(USAGE);
-        return EXIT.ERROR;
-    }
+    return await handler(positional, flags, io);
   } catch (err) {
-    io.writeErr(`ERROR: ${err instanceof Error ? err.message : String(err)}\n`);
+    io.writeErr(`ERROR: ${errorMessage(err)}\n`);
     return EXIT.ERROR;
   }
 }
