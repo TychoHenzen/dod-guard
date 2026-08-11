@@ -100,6 +100,11 @@ test("buildConfig default profile downgrades test-only-export to warn, leaving d
   assert.equal(config.presence["dead-export"], "error");
 });
 
+test("buildConfig carries assumption-marker at warn by default and error under strict", () => {
+  assert.equal(buildConfig("default").presence["assumption-marker"], "warn");
+  assert.equal(buildConfig("strict").presence["assumption-marker"], "error");
+});
+
 test("buildConfig strict profile collapses warn onto error and escalates presence rules", () => {
   const config = buildConfig("strict");
   assert.deepEqual(config.thresholds.complexity, { warn: null, error: 5 });

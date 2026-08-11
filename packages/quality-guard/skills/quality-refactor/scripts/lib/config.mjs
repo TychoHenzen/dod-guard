@@ -139,6 +139,7 @@ const PRESENCE_SEVERITY = {
   "commented-out-code": "error",
   "comment-restates-code": "warn",
   "todo-marker": "warn",
+  "assumption-marker": "warn",
   "stateless-method": "warn",
 };
 

@@ -5,6 +5,7 @@ import { severityFor } from "./config.mjs";
 import { push } from "./violations.mjs";
 
 const TODO_MARKER = /\b(TODO|FIXME|HACK|XXX)\b/;
+const ASSUMPTION_MARKER = /\bASSUMPTION\b/;
 const CODE_IN_COMMENT = /^[^\w]*(if|for|while|return|const|let|var|function|def|public|private|import|await)\b/;
 /**
  * Commented-out code has to both start like a statement and end like one.
@@ -123,9 +124,17 @@ function checkRestatement(ctx, block) {
   push(ctx.out, ctx.file, block.start, "comment-restates-code", severity, message, 1);
 }
 
+/** A named guess measures a different thing than a deferred marker, so it never returns early. */
+function checkAssumptionMarker(ctx, body, at) {
+  if (!ASSUMPTION_MARKER.test(body)) return;
+  const marker = ctx.config.presence["assumption-marker"];
+  push(ctx.out, ctx.file, at, "assumption-marker", marker, `unverified guess: ${body.slice(0, 60)}`, 1);
+}
+
 function checkMarkerOrDeadCode(ctx, comment) {
   const body = comment.text.replace(/^[\s/*#]+|[\s*/]+$/g, "");
   const at = comment.line;
+  checkAssumptionMarker(ctx, body, at);
   if (TODO_MARKER.test(body)) {
     const marker = ctx.config.presence["todo-marker"];
     push(ctx.out, ctx.file, at, "todo-marker", marker, `unresolved marker: ${body.slice(0, 60)}`, 1);

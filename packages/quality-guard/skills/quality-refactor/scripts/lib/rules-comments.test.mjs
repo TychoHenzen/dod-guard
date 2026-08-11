@@ -140,3 +140,25 @@ test("a comment holding both markers takes the todo-marker branch and stops ther
   );
   assert.equal(found.length, 1);
 });
+
+test("a comment naming the guess marker fires the rule once", () => {
+  const found = scan(
+    "ts",
+    "// ASSUMPTION: the API returns ids in insertion order\nexport const a = 1;\n",
+    "assumption-marker",
+  );
+  assert.equal(found.length, 1);
+  assert.equal(found[0].metric, 1);
+});
+
+test("a comment naming both markers fires both, since they measure different things", () => {
+  const code = "// ASSUMPTION: TODO revisit this once the API is confirmed\nexport const a = 1;\n";
+  assert.equal(scan("ts", code, "assumption-marker").length, 1);
+  assert.equal(scan("ts", code, "todo-marker").length, 1);
+});
+
+test("an ordinary comment fires neither marker rule", () => {
+  const code = "// clamp the batch size before sending the request\nexport const a = 1;\n";
+  assert.deepEqual(scan("ts", code, "assumption-marker"), []);
+  assert.deepEqual(scan("ts", code, "todo-marker"), []);
+});

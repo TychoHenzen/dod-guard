@@ -24,6 +24,7 @@ const RULE_ORDER = [
   "comment-bloat",
   "comment-restates-code",
   "todo-marker",
+  "assumption-marker",
   "line-length",
 ];
 
