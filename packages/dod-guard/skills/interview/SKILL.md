@@ -74,6 +74,35 @@ the change directory, `proposal.md`, `design.md`, `tasks.md`, and the spec
 delta at `specs/<capability-path>/spec.md`. Stop after it presents the
 artifacts. Do not start implementation from inside this skill.
 
+Before you write, sort every interview answer into one of two piles. A
+confirmed answer becomes a requirement and its scenarios. An unconfirmed
+answer goes into `open_questions` instead, and never becomes a scenario.
+An answer is confirmed only when the user gave it directly, or confirmed
+it in the section 4 summary. An answer you inferred from reading the code
+is not confirmed, even if it seems obviously right. This matters because
+of how the generator works. Every scenario becomes a leaf, and a leaf is a
+proof the work must satisfy. So a scenario built from a guess becomes a
+proof of a guess. `open_risks` keeps its own job from earlier in this
+section, a company-baseline row that genuinely does not apply. Do not put
+unconfirmed answers there instead.
+
+Where the unconfirmed answers go depends on which path built the document.
+
+The `dod_create` fallback takes them directly, as
+`sections.open_questions` in the tool call.
+
+A generated DoD has no such field. `dod_generate` sets `requirements` and
+nothing else, and no tool adds a section afterwards. Do not hand-edit the
+rendered `dod.md` to add one. Every write regenerates that file from
+canonical storage, and `dod_check` writes on every run, so the next
+instruction in section 7 would erase it.
+
+Put them in the change instead, under an "Open questions" heading in its
+`proposal.md` or `design.md`. That is the right home anyway. OpenSpec owns
+intent and dod-guard owns proof, and an unanswered question is intent. The
+change's own files survive regeneration, and `openspec archive` keeps them
+with the shipped change.
+
 The spec delta decides the shape of the tree, not you. Every
 `### Requirement:` heading becomes one group node. Every `#### Scenario:`
 under it becomes one leaf. Take a change with three requirements and two
