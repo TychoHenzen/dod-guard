@@ -1,0 +1,21 @@
+{
+  "source": "packages/evomcp/src/attempt-result.ts",
+  "date": "2026-08-11T07:47:15.966Z",
+  "summary": {
+    "total": 24,
+    "killed": 23,
+    "survived": 1,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/attempt-result.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 12,
+      "dist_col": 35
+    }
+  ]
+}

@@ -679,22 +679,38 @@
       "dirty": true
     },
     "packages/dod-guard/src/snapshot.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-11",
+      "last_result": {
+        "total": 39,
+        "caught": 11,
+        "missed": 28,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 78,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "b17c2f55392ed78f1cb2a27b7db94e25b6d798a74a954ee1f6980c761c909c57",
+      "dirty": false
     },
     "packages/evomcp/src/attempt-result.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-11",
+      "last_result": {
+        "total": 24,
+        "caught": 23,
+        "missed": 1,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 75,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "ccdb1e87aeaeecc23752f2f8b1bd03df02d52f7c076938d06c58b7fa0a6f1a95",
+      "dirty": false
     },
     "packages/evomcp/src/budget.ts": {
       "last_tested": "2026-08-04",
@@ -1051,13 +1067,21 @@
       "dirty": false
     },
     "packages/evomcp/src/solve-report.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-11",
+      "last_result": {
+        "total": 58,
+        "caught": 57,
+        "missed": 1,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 75,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "5649b8f81f88a7db1788d140af0050a0edc5d6b182b5792a6a4925206f2ffa89",
+      "dirty": false
     },
     "packages/evomcp/src/solve-run.ts": {
       "last_tested": null,
@@ -1245,58 +1269,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 18179,
-    "caught": 7051,
-    "missed": 6413,
+    "total_mutants": 18300,
+    "caught": 7142,
+    "missed": 6443,
     "timeout": 85,
     "unviable": 4630,
     "error": 44,
-    "runs": 113,
-    "files_tested": 113
+    "runs": 116,
+    "files_tested": 116
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/dod-guard/src/notify.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/notify.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/sr"
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/dod-guard/src/store.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/store.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src"
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/obsidian-rag/src/tools.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/tools.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/"
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
@@ -2651,6 +2633,48 @@
         "missed": 13,
         "timeout": 0,
         "unviable": 2,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-11",
+      "commit": "db141f56981ea6ca05e8f83f8afea64c51a87bc2",
+      "file": "packages/dod-guard/src/snapshot.ts",
+      "result": {
+        "total": 39,
+        "caught": 11,
+        "missed": 28,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-11",
+      "commit": "db141f56981ea6ca05e8f83f8afea64c51a87bc2",
+      "file": "packages/evomcp/src/attempt-result.ts",
+      "result": {
+        "total": 24,
+        "caught": 23,
+        "missed": 1,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-11",
+      "commit": "db141f56981ea6ca05e8f83f8afea64c51a87bc2",
+      "file": "packages/evomcp/src/solve-report.ts",
+      "result": {
+        "total": 58,
+        "caught": 57,
+        "missed": 1,
+        "timeout": 0,
+        "unviable": 0,
         "status": "ok",
         "error": null
       }
