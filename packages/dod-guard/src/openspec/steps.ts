@@ -34,22 +34,52 @@ function leafToStep(leaf: TaskNode, previousId: string | undefined): Step {
   };
 }
 
+/** `convert.ts`'s `scenarioLeaf` writes this exact prefix (colon, one
+ * space) onto every draft leaf it produces for a human-judgment scenario. */
+const MANUAL_PREFIX = "MANUAL: ";
+
+/** Build one step from a `MANUAL:` draft leaf. No command exists to check,
+ * so `verify_cmd` is empty and `manual_required` stands in for the missing
+ * proof. The description is the intent with the prefix stripped - both
+ * already mean "a human still owes us something". */
+function manualLeafToStep(leaf: TaskNode, previousId: string | undefined): Step {
+  return {
+    id: leaf.id,
+    title: leaf.title,
+    description: (leaf.intent ?? "").slice(MANUAL_PREFIX.length),
+    files: [],
+    deps: previousId ? [previousId] : [],
+    verify_surface: "code",
+    verify_cmd: "",
+    manual_required: true,
+    status: "pending",
+  };
+}
+
 /**
  * Turn a DoD node tree - one requirement group per root, each holding
  * scenario leaves in source order (the shape `convertInstructionsToDod`
- * produces) - into the `steps` array of a step-by-step steps.json. Draft
- * leaves are skipped here; mapping them to `manual_required` steps is a
- * later step. Leaves keep source order within their group, and every step
+ * produces) - into the `steps` array of a step-by-step steps.json. A
+ * concrete leaf becomes a normal step; a draft leaf whose intent starts
+ * with `MANUAL:` becomes a manual step. A draft leaf whose intent does
+ * NOT start with `MANUAL:` is skipped: dod-guard's own draft leaves never
+ * carry an intent in any other shape, so there is nothing to convert, and
+ * a group node (a draft with `children`) is never itself iterated as a
+ * leaf here. Leaves keep source order within their group, and every step
  * depends on the one immediately before it in that flattened order.
  */
 export function dodTreeToSteps(roots: TaskNode[]): Step[] {
   const steps: Step[] = [];
   for (const group of roots) {
     for (const leaf of group.children ?? []) {
-      if (leaf.refinement !== "concrete") {
+      const previousId = steps.at(-1)?.id;
+      if (leaf.refinement === "concrete") {
+        steps.push(leafToStep(leaf, previousId));
         continue;
       }
-      steps.push(leafToStep(leaf, steps.at(-1)?.id));
+      if (leaf.intent?.startsWith(MANUAL_PREFIX)) {
+        steps.push(manualLeafToStep(leaf, previousId));
+      }
     }
   }
   return steps;

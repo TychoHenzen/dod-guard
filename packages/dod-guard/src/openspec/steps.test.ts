@@ -109,7 +109,7 @@ test("dodTreeToSteps sets every generated step's status to pending", () => {
   assert.ok(steps.every((s) => s.status === "pending"));
 });
 
-test("dodTreeToSteps skips draft leaves", () => {
+test("dodTreeToSteps converts a MANUAL draft leaf into a manual step", () => {
   const draftLeaf: TaskNode = {
     id: "req-0-scenario-0",
     title: "Needs a human",
@@ -121,5 +121,57 @@ test("dodTreeToSteps skips draft leaves", () => {
 
   const steps = dodTreeToSteps(roots);
 
-  assert.equal(steps.length, 0);
+  assert.equal(steps.length, 1);
+  assert.equal(steps[0]?.manual_required, true);
+  assert.equal(steps[0]?.verify_cmd, "");
+  assert.equal(steps[0]?.description, "someone reads it");
+});
+
+test("dodTreeToSteps leaves a concrete leaf's manual_required false", () => {
+  const roots = [
+    group("req-0", "Build passes", [
+      concreteLeaf({ id: "req-0-scenario-0", title: "Tests run", command: "npm test", description: "runs the suite" }),
+    ]),
+  ];
+
+  const steps = dodTreeToSteps(roots);
+
+  assert.equal(steps[0]?.manual_required, false);
+});
+
+test("dodTreeToSteps chains a manual step into deps like any other step", () => {
+  const draftLeaf: TaskNode = {
+    id: "req-0-scenario-1",
+    title: "Needs a human",
+    refinement: "draft",
+    intent: "MANUAL: someone reads it",
+    last_status: "draft",
+  };
+  const roots = [
+    group("req-0", "Mixed", [
+      concreteLeaf({ id: "req-0-scenario-0", title: "First", command: "npm run first", description: "first" }),
+      draftLeaf,
+    ]),
+    group("req-1", "Lint passes", [
+      concreteLeaf({ id: "req-1-scenario-0", title: "Third", command: "npm run third", description: "third" }),
+    ]),
+  ];
+
+  const steps = dodTreeToSteps(roots);
+
+  assert.equal(steps.length, 3);
+  assert.deepEqual(steps[1]?.deps, ["req-0-scenario-0"]);
+  assert.deepEqual(steps[2]?.deps, ["req-0-scenario-1"]);
+});
+
+test("dodTreeToSteps never turns a group node into a step", () => {
+  const roots = [
+    group("req-0", "Build passes", [
+      concreteLeaf({ id: "req-0-scenario-0", title: "Tests run", command: "npm test", description: "runs the suite" }),
+    ]),
+  ];
+
+  const steps = dodTreeToSteps(roots);
+
+  assert.ok(steps.every((s) => s.id !== "req-0"));
 });
