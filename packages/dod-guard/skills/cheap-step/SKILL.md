@@ -62,6 +62,12 @@ Secure the working tree before the first dispatch. `solve` creates branches and
 checks them out in this directory, and it discards the attempts that lose.
 Commit or stash anything you are not willing to lose.
 
+The base commits after each step whose `verify_cmd` passes. That commit
+lands on whatever branch is checked out at that moment. After `solve`
+returns, confirm you are back on the session's branch before the base
+commits. A commit on a branch `solve` leaves behind is not on the branch
+the rest of the session builds on.
+
 Two keys hold the same paths and are not the same key. `allowed_files` is the
 `solve` spec field. `files` is the session step field.
 
@@ -93,11 +99,18 @@ The spec is the worker's whole world. Write it this way:
 
 1. State the observable outcome in `goal`, never the method.
 2. Point `verify_cmd` at the narrowest command that exits non-zero on failure.
-3. Name one existing file to copy the pattern from in `context`, plus the
-   constraints. One paragraph, not a dumped file.
-4. List every file the worker may touch in `allowed_files`.
-5. Set `cwd` to the session `cwd`, as an absolute path.
-6. Set `budget_tokens` per step. Left out, it defaults to about 100k, which is
+3. Open `context` with `Requirement: {the scenario's WHEN and THEN lines
+   verbatim}`. No scenario behind this step: write `Requirement: none - see
+   Task`. A `solve` worker has no briefing to read this from, so it belongs
+   in `context` or it never reaches the worker at all.
+4. After the requirement line, name one existing file to copy the pattern
+   from in `context`, plus the constraints. One paragraph, not a dumped
+   file. Code that implements the requirement needs no tag. Code the
+   worker writes that depends on behavior no scenario states earns an
+   `ASSUMPTION: <what and why>` comment at that line.
+5. List every file the worker may touch in `allowed_files`.
+6. Set `cwd` to the session `cwd`, as an absolute path.
+7. Set `budget_tokens` per step. Left out, it defaults to about 100k, which is
    far more than one atomic step needs. An uncapped step spends the saving
    this skill exists to produce.
 
@@ -114,7 +127,7 @@ usable here.
   "verify_cmd": "npx vitest run src/limiter.test.ts",
   "cwd": "/absolute/path/to/repo",
   "allowed_files": ["src/limiter.ts"],
-  "context": "src/limiter.test.ts already exists and is red. Copy the timer handling in src/backoff.ts. Use a monotonic clock. Add no dependencies.",
+  "context": "Requirement: WHEN take(n) is called on an empty bucket THEN it returns false. WHEN one refill interval has passed THEN it returns true again. src/limiter.test.ts already exists and is red. Copy the timer handling in src/backoff.ts. Use a monotonic clock. Add no dependencies.",
   "strategy": "best-of-n",
   "fanout": 4,
   "budget_tokens": 30000,
