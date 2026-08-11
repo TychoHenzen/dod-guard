@@ -66,31 +66,58 @@ excluded list in writing, because that is where late scope creep starts.
 Ask the user to confirm it. Do not create anything until they do. If they
 correct any part, apply the correction and present the summary again.
 
-## 5. From requirements to leaves
+## 5. From requirements to a spec delta
 
-Turn the confirmed summary into a tree of TaskNode objects. A node with
-`children` is a task group. A node without `children` is a leaf, and each
-leaf proves exactly one behavior that can be checked on its own.
+Turn the confirmed summary into an OpenSpec change with `/opsx:propose`.
+Give it the goal and the requirements from section 4. That workflow creates
+the change directory, `proposal.md`, `design.md`, `tasks.md`, and the spec
+delta at `specs/<capability-path>/spec.md`. Stop after it presents the
+artifacts. Do not start implementation from inside this skill.
 
-Keep the tree three levels deep at most: roots, then two to four groups per
-root, then leaves. Deeper than that means you over-decomposed. Give lint,
-format, and the full test suite a root group of their own, apart from
-feature work. A scoped check on a feature should not drag the whole suite in.
+The spec delta decides the shape of the tree, not you. Every
+`### Requirement:` heading becomes one group node. Every `#### Scenario:`
+under it becomes one leaf. Take a change with three requirements and two
+scenarios each. Its DoD carries three groups of two leaves, whatever
+nesting or grouping choice the interview would otherwise have made.
 
-A leaf is `concrete` when `refinement` is `"concrete"`. It then carries
-`command`, `predicate`, `description`, and `category`. A leaf is `draft`
-when the check cannot be written yet. A draft leaf carries `intent` and
-nothing else. Drafts hold the whole document at INCOMPLETE, which is what
-you want for work that is still open. Set `advisory: true` on a leaf whose
-failure should be reported without failing the run.
+Whether a scenario becomes a machine-checkable leaf or a `MANUAL:` draft
+depends on one rule. Does its `THEN` line hold a backticked code span with
+a space in it, whose first word is a known tool? `npm`, `npx`, `node`,
+`git`, `openspec`, `dod-guard`, `grep`, `findstr`, `tsc`, and `biome` are
+the known tools. A scenario that puts a real command there becomes a
+concrete leaf, as long as that command also runs on this OS. That leaf
+proves itself by exit code 0. A scenario that only describes an outcome in
+prose becomes a draft leaf with a `MANUAL:` intent. A draft holds the
+document at INCOMPLETE.
 
-Expect roughly half the leaves concrete and half draft. An all-concrete tree
-means you guessed at commands you cannot know yet. An all-draft tree means
-nothing is verified structurally.
+So write the proving command into the THEN line, not just the outcome:
 
-A draft `intent` names a behavior a later check can confirm. "Empty result
-set returns a header-only file" works. "Export endpoint" does not, because
-that is a group title rather than a behavior.
+```markdown
+## ADDED Requirements
+
+### Requirement: CSV export serializer
+The system SHALL quote a field that holds an embedded comma.
+
+#### Scenario: Embedded comma survives a round trip
+- **WHEN** a row field contains a comma
+- **THEN** `npm test -- csv-serializer.test.ts` exits 0
+
+#### Scenario: Operator confirms the file opens cleanly
+- **WHEN** a completed export is downloaded
+- **THEN** the file opens in the spreadsheet tool with the right columns
+```
+
+The first scenario becomes a concrete leaf, because its THEN line names a
+runnable `npm` command. The second becomes a `MANUAL:` draft, because its
+THEN line only describes an outcome. Put the command in a scenario's THEN
+line yourself while you draft the delta, if it deserves a machine check.
+Nothing later promotes prose into a command for you.
+
+Every leaf the converter generates carries predicate `exit_code` at value
+0 and category `other`. It never picks a richer predicate or a category,
+and it never sets `timeout_ms` or `advisory`. Those choices happen after
+generation, in section 7, through `dod_amend` and `dod_refine`, using the
+tables below.
 
 A predicate is `{type, value, timeout_ms}`. These 10 types are the whole
 vocabulary, and anything else is rejected.
@@ -117,39 +144,48 @@ vocabulary, and anything else is rejected.
 | `test_audit` | a gate over the tests themselves |
 | `other` | anything the three above do not fit |
 
-Set `timeout_ms` above the 120000 default for a slow tool.
+Amend `timeout_ms` above the 120000 default for a slow tool.
 
-A proof often names a test file the implementer has not written yet. Write
-those as regex, not as exact names. Use `output_matches` with a pattern like
-`"export.*csv"`, so a reasonable naming choice still passes.
+A proof often names a test file the implementer has not written yet. Amend
+those to a regex, not an exact name. Use `output_matches` with a pattern
+like `"export.*csv"`, so a reasonable naming choice still passes.
+
+The generated tree carries no company baseline, no integration proof pair,
+and no `MANUAL:` inspection leaf for visual work. Add all three by hand,
+after generation, as described next.
 
 ### Company baseline
 
-Set `type` from the request. A bug, defect, regression, or incident is
-`"bug"`. A feature, enhancement, refactor, or new component is `"general"`.
-Reserve `"minimal"` for work the user has explicitly held to no baseline.
+The generator never applies the company baseline, so add it by hand after
+`dod_generate` runs, using `dod_add_node`.
+
+Set `type` from the request when the change lacks a company-baseline node
+of its own. A bug, defect, regression, or incident is `"bug"`. A feature,
+enhancement, refactor, or new component is `"general"`. Reserve
+`"minimal"` for work the user has explicitly held to no baseline.
 
 Read `standards/dod-baselines.md` and take the minimum proofs for that work
-type. Its `manual` predicate column is out of date, so turn every row it
-marks manual into a `MANUAL:` draft leaf instead. Read
+type. Its `manual` predicate column is out of date, so add every row it
+marks manual as a `MANUAL:` draft leaf instead. Read
 `standards/language-commands.md` for the command that fits this project's
 language.
 
-Adjust lint and format proofs to the counts from section 2. Under 10
+Set lint and format proofs to the counts from section 2. Under 10
 violations, demand zero. At 10 or more, scope the proof to changed files or
-assert the count does not rise. Write both counts into the `research_notes`
-section so a later reader can check the bar.
+assert the count does not rise. Record both counts in the summary you give
+the user, so a later reader can check the bar.
 
 A baseline row can genuinely fail to apply, because the project has no
-linter or no test runner. Never drop such a row in silence. Record the
-omission in the `open_risks` section and raise it with the user.
+linter or no test runner. Never drop such a row in silence. Tell the user
+about the omission.
 
 ### Integration proof
 
-Every feature in the tree needs two leaves, both required. The wiring leaf
-greps for the import, the registration, or the route that makes the piece
-reachable. The behavioral leaf drives the feature through the system's real
-entry point, not through the component's own API.
+The generator adds no integration proof pair on its own. Add one after
+generation, with `dod_add_node`, for every feature the tree covers. The
+wiring leaf greps for the import, the registration, or the route that makes
+the piece reachable. The behavioral leaf drives the feature through the
+system's real entry point, not through the component's own API.
 
 Wiring alone catches "registered but broken". Behavior alone catches "works
 in the harness, unreachable in production". Neither may become a human step.
@@ -157,16 +193,18 @@ Place this pair last among the machine-checkable leaves.
 
 ### Human judgement
 
-There is no human-verification predicate. A step only a person can judge
+dod-guard has no human-verification predicate. A step only a person can judge
 becomes a draft leaf whose `intent` starts with the literal prefix `MANUAL:`.
 Other skills key off that prefix, so write it exactly. Never invent a command
 that pretends to check a human's opinion.
 
-Some changes need a person to look at the result. Add a `MANUAL:` inspection
-leaf when the work touches `rendering/`, `ui/`, `graphics/`, `shaders/`,
-`sprites/`, `scenes/`, or `levels/`. Add one when a leaf intent mentions
-render, display, show, look, appear, or visual. Add one when it mentions
-movement, collision, spawn, ai behavior, or gameplay.
+The generator turns a prose-only scenario into a `MANUAL:` draft
+automatically, but it adds no inspection leaf where the change adds none.
+After generation, add a `MANUAL:` inspection leaf with `dod_add_node` when
+the work touches `rendering/`, `ui/`, `graphics/`, `shaders/`, `sprites/`,
+`scenes/`, or `levels/`. Add one when a leaf intent mentions render,
+display, show, look, appear, or visual. Add one when it mentions movement,
+collision, spawn, ai behavior, or gameplay.
 
 A build that compiles proves nothing about what the screen shows. When in
 doubt, add the leaf. A needless check costs a minute. A missing one ships an
@@ -176,79 +214,15 @@ unverified change.
 
 The baseline makes test-first work non-negotiable. A bug fix needs a
 regression test written red first. A feature needs unit tests written red
-first. This is the one case where one requirement takes two leaves, because
-a `tdd` proof alone cannot tell a real assertion from `assert true`:
+first. This is the one case a single requirement needs two leaves, because
+a `tdd` proof alone cannot tell a real assertion from `assert true`. Add
+both with `dod_add_node` after generation:
 
-```json
-[
-  { "title": "Export test asserts something real",
-    "refinement": "concrete",
-    "command": "grep -nE \"expect.*(header|comma|empty)\" src/export.test.ts",
-    "predicate": { "type": "output_matches", "value": "expect.*(header|comma)" },
-    "category": "test_audit",
-    "description": "The test asserts on export behavior, not on a constant" },
-  { "title": "Export test is red first, then green",
-    "refinement": "concrete", "command": "npm test -- export.test.ts",
-    "predicate": { "type": "tdd", "value": 0 }, "category": "behavioral",
-    "description": "The test fails before the exporter exists, then passes" }
-]
-```
-
-### Worked payload
-
-```json
-{
-  "title": "CSV export for the invoice list",
-  "goal": "Operators download the filtered invoice list as CSV",
-  "type": "general",
-  "cwd": "/srv/billing",
-  "markdown_path": "docs/plans/2026-08-04-invoice-csv-export.md",
-  "sections": { "requirements": "R1 ... R7", "current_state": "lint 42, format 0" },
-  "roots": [
-    {
-      "title": "CSV export",
-      "refinement": "draft",
-      "intent": "Serialize and serve the filtered invoice list",
-      "children": [
-        {
-          "title": "Serializer quotes embedded commas",
-          "refinement": "concrete",
-          "command": "npm test -- csv-serializer.test.ts",
-          "predicate": { "type": "exit_code", "value": 0 },
-          "description": "A field holding a comma survives a round trip",
-          "category": "behavioral"
-        },
-        {
-          "title": "Empty result set returns a header-only file",
-          "refinement": "draft",
-          "intent": "Prove the zero-row response still carries the header line"
-        },
-        {
-          "title": "Export route is registered",
-          "refinement": "concrete",
-          "command": "grep -rn \"invoices/export\" src/routes/index.ts",
-          "predicate": { "type": "output_matches", "value": "invoices/export" },
-          "description": "The route table reaches the export handler",
-          "category": "wiring"
-        },
-        {
-          "title": "Download works through the running server",
-          "refinement": "concrete",
-          "command": "./scripts/serve-and-get.sh /invoices/export?status=open",
-          "predicate": { "type": "output_contains", "value": "invoice_id," },
-          "description": "A live HTTP request returns CSV with a header row",
-          "category": "behavioral"
-        },
-        {
-          "title": "Operator confirms the file opens in the spreadsheet tool",
-          "refinement": "draft",
-          "intent": "MANUAL: open a downloaded export in Excel and check the columns"
-        }
-      ]
-    }
-  ]
-}
-```
+1. A leaf whose command greps the test file for a real assertion, predicate
+   `output_matches`, category `test_audit`. Example command:
+   `grep -nE "expect.*(header|comma|empty)" src/export.test.ts`.
+2. A leaf whose command runs that test, predicate `tdd` at value 0,
+   category `behavioral`. Example command: `npm test -- export.test.ts`.
 
 ## 6. Adversarial review of the spec
 
@@ -286,21 +260,46 @@ On `REVISE`, fix the spec and the tree, then dispatch the lenses again. Cap
 this at 3 rounds. After a third `REVISE`, stop and ask the user for an
 explicit override. On `STOP`, report the blocker to the user and abort.
 
-## 7. Create the document, then prove it runs
+## 7. Generate the document, then prove it runs
 
-Call `dod_create` with `title`, `goal`, `type`, `cwd`, `markdown_path`,
-`sections`, and `roots`. `type` is `"bug"`, `"general"`, or `"minimal"`.
-`sections` takes `requirements`, which is required, plus optional
-`decisions`, `current_state`, `research_notes`, `open_questions`, and
-`open_risks`. Never pass `dod_id`, because the tool rejects it. Point
-`markdown_path` at `docs/plans/YYYY-MM-DD-<topic>.md`.
+Call `dod_generate` with `change_id`, the kebab-case name `/opsx:propose`
+gave the change, and `cwd`. It reads that change's spec delta through the
+OpenSpec CLI, converts every `### Requirement:` and `#### Scenario:` into
+the tree section 5 described, and writes `dod.md` to
+`openspec/changes/<change_id>/dod.md`. The specs artifact must exist before
+you call it, because `dod_generate` depends on it.
 
-Create through the tool, never by writing the markdown yourself. The proofs
-live in canonical storage, so editing the rendered file cannot weaken them.
+`dod_generate` is not reachable yet in the deployed plugin. This repo's
+skills run from the installed plugin cache, and that tool has not shipped
+there as of this session. If the call is unavailable, fall back to
+`dod_create` as described below.
 
-If the MCP server is not connected, write the markdown with the Write tool
-instead. Then tell the user plainly that the proofs are not locked and that
-anti-cheat verification is off for this document.
+`dod_create` stays the fallback for work with no OpenSpec change, and for
+any session where `dod_generate` is not reachable. Call it with `title`,
+`goal`, `type`, `cwd`, `markdown_path`, `sections`, and `roots`. `type` is
+`"bug"`, `"general"`, or `"minimal"`. `sections` takes `requirements`,
+which is required, plus optional `decisions`, `current_state`,
+`research_notes`, `open_questions`, and `open_risks`. Never pass `dod_id`,
+because the tool rejects it. Point `markdown_path` at
+`docs/plans/YYYY-MM-DD-<topic>.md`.
+
+In this fallback you build `roots` by hand, so you need the node shape the
+generator would otherwise produce. A node with `children` is a group. A node
+without `children` is a leaf, and each leaf proves one behavior on its own. A
+leaf is concrete when `refinement` is `"concrete"`, and it then carries
+`command`, `predicate`, `description`, and `category`. A leaf is draft when
+`refinement` is `"draft"`, and it carries `intent` and nothing else. Set
+`advisory: true` on a leaf whose failure should be reported without failing
+the run. Mirror the spec delta: one group per requirement, one leaf per
+scenario.
+
+Create through one of the two tools, never by writing the markdown
+yourself. The proofs live in canonical storage, so editing the rendered
+file cannot weaken them.
+
+If the MCP server is not connected at all, write the markdown with the
+Write tool instead. Then tell the user plainly that the proofs are not
+locked and that anti-cheat verification is off for this document.
 
 Right after creation, record the review with `dod_adversarial_gate` at
 `phase: 1`, passing `dod_id`, `verdict`, `lenses`, and `summary`. Each lens
@@ -318,8 +317,10 @@ Fix every mis-authored leaf before you hand off. Use `dod_amend` with
 and the required `reason`. Add `amend_justification` once a node has been
 amended three times. Use `dod_refine` with `mode: "concretize"` or
 `mode: "subdivide"` to turn a draft into a proof or into children. Use
-`dod_add_node` with `parent_path` and `title` for a check you missed. Re-run
-`dod_check` until only the expected-to-fail pile remains.
+`dod_add_node` with `parent_path` and `title` for a check you missed, and
+for the company baseline, integration proof, human judgement, and
+test-first leaves from section 5. Re-run `dod_check` until only the
+expected-to-fail pile remains.
 
 ## 8. Hand off and stop
 
