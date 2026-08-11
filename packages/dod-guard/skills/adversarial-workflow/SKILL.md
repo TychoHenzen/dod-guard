@@ -82,8 +82,12 @@ independent.
 
 Each agent file already fixes its persona, checklist, finding floor and output shape. Omit all
 of that instead. Send three things: the lens name, the user's request copied word for word,
-and the material under review, each spelled out in full. Reviewers see none of this
-conversation, so paste what they need rather than citing where it sits. A reviewer answers
+and the material under review, each spelled out in full. When the work under review traces to
+an OpenSpec change, add a fourth: its spec deltas. Use the `specs/` markdown under
+`openspec/changes/<change-id>/`, or the JSON from `openspec show <change-id> --json
+--deltas-only`. Withhold that fourth item from the new hire lens alone - it reads the diff
+cold, with no prior context. Handing it spec deltas would erase the lens that makes it useful. Reviewers
+see none of this conversation, so paste what they need rather than citing where it sits. A reviewer answers
 with findings or with one `NO_FINDINGS:` line and a reason, and any other shape counts as a
 failed dispatch worth sending again. `subagent_type` picks the agent, while the model travels
 on its own parameter of the same call, so a model name inside `subagent_type` errors out.
