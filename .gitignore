@@ -64,3 +64,7 @@ clipboard.txt
 
 # ste-lint waiver sentinel: written by hand, consumed by ~/.claude/hooks/ste-turn-guard.mjs
 .prose-skip
+
+# dod_create scratch: DoD markdown from smoke and anti-cheat test runs
+.cli-smoke.md
+test-anticheat.md
