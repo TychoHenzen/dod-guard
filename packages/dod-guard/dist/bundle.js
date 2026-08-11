@@ -6902,12 +6902,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs7, exportName) {
+    function addFormats(ajv, list, fs8, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs7[f]);
+        ajv.addFormat(f, fs8[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -21949,7 +21949,7 @@ async function fetchInstructions(changeId, cwd) {
 }
 
 // src/openspec/trace.ts
-import { promises as fs5 } from "node:fs";
+import { promises as fs6 } from "node:fs";
 
 // src/store.ts
 import * as crypto from "node:crypto";
@@ -22081,6 +22081,9 @@ async function listAllRaw() {
   }
   return docs;
 }
+
+// src/openspec/convert.ts
+import { promises as fs4 } from "node:fs";
 
 // src/command-check.ts
 import { execFile as execFile3 } from "node:child_process";
@@ -22341,6 +22344,38 @@ function isPlaceholderCommand(command) {
 }
 var currentOs = process.platform;
 
+// src/openspec/checkability.ts
+var COMMAND_SPAN = /`([^`]*\s[^`]*)`/;
+var ALLOWED_EXECUTABLES = /* @__PURE__ */ new Set([
+  "npm",
+  "npx",
+  "node",
+  "git",
+  "openspec",
+  "dod-guard",
+  "grep",
+  "findstr",
+  "tsc",
+  "biome"
+]);
+function extractCommand(scenario) {
+  const match = scenario.intent.match(COMMAND_SPAN);
+  return match ? match[1] : "";
+}
+function firstToken2(command) {
+  return command.trim().split(/\s+/)[0] ?? "";
+}
+function isCheckable(scenario) {
+  const command = extractCommand(scenario);
+  if (!command) return false;
+  return ALLOWED_EXECUTABLES.has(firstToken2(command));
+}
+async function isRunnable(scenario, cwd) {
+  if (!isCheckable(scenario)) return false;
+  const missing = await findMissingTools([extractCommand(scenario)], cwd);
+  return missing.length === 0;
+}
+
 // src/openspec/glob.ts
 import { promises as fs3 } from "node:fs";
 import * as path4 from "node:path";
@@ -22446,6 +22481,39 @@ function extractRequirementBlocks(content) {
 }
 
 // src/openspec/convert.ts
+async function scenarioLeaf(scenario, id, cwd) {
+  if (await isRunnable(scenario, cwd)) {
+    return {
+      id,
+      title: scenario.title,
+      refinement: "concrete",
+      command: extractCommand(scenario),
+      predicate: { type: "exit_code", value: 0 },
+      description: scenario.intent,
+      category: "other",
+      last_status: "pending"
+    };
+  }
+  return {
+    id,
+    title: scenario.title,
+    refinement: "draft",
+    intent: `MANUAL: ${scenario.intent}`,
+    last_status: "draft"
+  };
+}
+async function requirementGroup(block, index, cwd) {
+  const children = await Promise.all(
+    block.scenarios.map((scenario, si) => scenarioLeaf(scenario, `req-${index}-scenario-${si}`, cwd))
+  );
+  return {
+    id: `req-${index}`,
+    title: block.title,
+    refinement: "draft",
+    children,
+    last_status: "draft"
+  };
+}
 async function readDeltaFiles(instructions) {
   const files = [];
   for (const dep of instructions.dependencies) {
@@ -22453,9 +22521,23 @@ async function readDeltaFiles(instructions) {
   }
   return files;
 }
+async function convertInstructionsToDod(instructions) {
+  const files = await readDeltaFiles(instructions);
+  const cwd = instructions.root.path;
+  const roots = [];
+  let index = 0;
+  for (const file of files) {
+    const content = await fs4.readFile(file, "utf-8");
+    for (const block of extractRequirementBlocks(content)) {
+      roots.push(await requirementGroup(block, index, cwd));
+      index++;
+    }
+  }
+  return { resolvedOutputPath: instructions.resolvedOutputPath, roots };
+}
 
 // src/openspec/scenario-identity.ts
-import { promises as fs4 } from "node:fs";
+import { promises as fs5 } from "node:fs";
 function sidecarPath(resolvedOutputPath) {
   return `${resolvedOutputPath}.scenario-map.json`;
 }
@@ -22464,18 +22546,34 @@ function scenarioKey(groupTitle, scenarioTitle) {
 }
 async function readScenarioMap(resolvedOutputPath) {
   try {
-    const raw = await fs4.readFile(sidecarPath(resolvedOutputPath), "utf-8");
+    const raw = await fs5.readFile(sidecarPath(resolvedOutputPath), "utf-8");
     return JSON.parse(raw);
   } catch {
     return [];
   }
+}
+async function writeScenarioMap(resolvedOutputPath, entries) {
+  await fs5.writeFile(sidecarPath(resolvedOutputPath), JSON.stringify(entries, null, 2), "utf-8");
+}
+function buildScenarioMap(convertedRoots, importedRoots) {
+  const entries = [];
+  convertedRoots.forEach((group, gi) => {
+    const importedGroup = importedRoots[gi];
+    for (const [li, leaf] of (group.children ?? []).entries()) {
+      const importedLeaf = importedGroup?.children?.[li];
+      if (importedLeaf) {
+        entries.push({ groupTitle: group.title, scenarioTitle: leaf.title, nodeId: importedLeaf.id });
+      }
+    }
+  });
+  return entries;
 }
 
 // src/openspec/trace.ts
 async function currentScenarioEntries(instructions) {
   const entries = /* @__PURE__ */ new Map();
   for (const file of await readDeltaFiles(instructions)) {
-    const content = await fs5.readFile(file, "utf-8");
+    const content = await fs6.readFile(file, "utf-8");
     for (const block of extractRequirementBlocks(content)) {
       for (const scenario of block.scenarios) {
         entries.set(scenarioKey(block.title, scenario.title), `${block.title} > ${scenario.title}`);
@@ -23237,7 +23335,7 @@ function formatImportGate(doc, executableCount, commandList) {
 import * as path5 from "node:path";
 
 // src/parser.ts
-import { promises as fs6 } from "node:fs";
+import { promises as fs7 } from "node:fs";
 function extractPredicateMetadata(line) {
   const metaMatch = line.match(/<!--p:(.+?)-->/);
   if (metaMatch) {
@@ -23417,7 +23515,7 @@ function parseContent(content) {
   return { title, goal, date: date3, cwd, sections, roots };
 }
 async function parseMarkdown(filePath) {
-  const content = await fs6.readFile(filePath, "utf-8");
+  const content = await fs7.readFile(filePath, "utf-8");
   return parseContent(content);
 }
 
@@ -23457,33 +23555,8 @@ async function buildImportedDoc(params, mdPath) {
   };
 }
 
-// src/mcp/dod-list.ts
-function formatLegacyBlock(raw) {
-  const n = Array.isArray(raw.steps) ? raw.steps.length : 0;
-  const status = `${n} step(s) in old format.`;
-  const hint = "Run dod_store_migrate to upgrade.";
-  return [raw.title, `ID: ${raw.id}`, `Status: LEGACY | ${status} ${hint}`].join("\n");
-}
-function formatDocBlock(doc) {
-  const concrete = flattenConcreteLeaves(doc.roots).length;
-  const draft = countDraftNodes(doc.roots);
-  const draftClause = draft > 0 ? ` (${draft} draft)` : "";
-  const proofs = `${concrete} concrete proofs${draftClause}`;
-  const counts = `${doc.roots.length} roots, ${proofs}`;
-  const status = `Status: UNCHECKED | ${counts}`;
-  return [doc.title, `ID: ${doc.id}`, status].join("\n");
-}
-function formatBlock(raw) {
-  if (isLegacyFormat(raw)) return formatLegacyBlock(raw);
-  return formatDocBlock(raw);
-}
-async function handleDodList() {
-  const docs = await listAllRaw();
-  if (docs.length === 0) {
-    return "No DoD documents tracked. Use dod_create or dod_import to add one.";
-  }
-  return docs.map(formatBlock).join("\n\n");
-}
+// src/openspec/regenerate-dod.ts
+import { randomUUID as randomUUID2 } from "node:crypto";
 
 // src/mcp/locate-node.ts
 function locateInArray(roots, nodePath) {
@@ -23543,6 +23616,326 @@ function recordRemoval(doc, nodePath, removed) {
     old_value: { title: removed.title, refinement: removed.refinement },
     reason: `Removed node "${removed.title}"`
   });
+}
+
+// src/tools/dod-add-node.ts
+async function handleDodAddNode(params) {
+  const {
+    dod_id,
+    parent_path,
+    parent_id: parentId,
+    title,
+    refinement,
+    intent,
+    command,
+    predicate,
+    description,
+    category,
+    advisory
+  } = params;
+  const doc = await load(dod_id);
+  if (!doc) throw new Error("ERROR: DoD not found.");
+  let resolvedParentPath = parent_path;
+  let parent = null;
+  if (parentId) {
+    const found = findNodeById(doc.roots, parentId);
+    if (!found) throw new Error(`ERROR: parent node not found by id "${parentId}".`);
+    parent = found.node;
+    resolvedParentPath = found.path;
+    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
+  } else if (parent_path) {
+    parent = findNodeByPath(doc.roots, parent_path);
+    if (!parent) throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
+    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
+  }
+  if (refinement === "concrete") {
+    if (!(command && predicate && description)) {
+      throw new Error("ERROR: concrete nodes require command, predicate, and description.");
+    }
+    if (command.trim() !== "") {
+      const missing = await findMissingTools([command], doc.cwd);
+      if (missing.length > 0) {
+        throw new Error(formatMissingTools(missing));
+      }
+    }
+  }
+  if (refinement === "draft" && !intent) {
+    throw new Error("ERROR: draft nodes require an intent describing what this will prove.");
+  }
+  const node = {
+    id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title,
+    refinement,
+    last_status: refinement === "draft" ? "draft" : "pending"
+  };
+  if (refinement === "draft") node.intent = intent;
+  if (refinement === "concrete") {
+    node.command = command;
+    node.predicate = predicate;
+    node.description = description;
+    node.category = category;
+    if (advisory !== void 0) node.advisory = advisory;
+  }
+  if (parent) {
+    parent.children?.push(node);
+  } else {
+    doc.roots.push(node);
+  }
+  const fullPath = resolvedParentPath ? `${resolvedParentPath}.children.${(parent?.children?.length ?? 0) - 1}` : `${doc.roots.length - 1}`;
+  doc.amendments.push({
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    node_path: fullPath,
+    action: "added",
+    new_value: { title, refinement },
+    reason: `Added ${refinement} node: ${title}`
+  });
+  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
+  await save(doc);
+  await writeMarkdown(doc);
+  return {
+    path: fullPath,
+    message: `Node "${title}" (${refinement}) added at path "${fullPath}".
+Run dod_check to verify${refinement === "draft" ? " after refining with dod_refine" : ""}.`
+  };
+}
+
+// src/openspec/regenerate-dod.ts
+function sourceText(node) {
+  if (node.refinement === "concrete") return node.description ?? "";
+  return (node.intent ?? "").replace(/^MANUAL:\s*/, "");
+}
+function findGroupByTitle(roots, title) {
+  return roots.find((n) => n.title === title && n.children);
+}
+function addNodeParams(dodId, parentId, leaf) {
+  return {
+    dod_id: dodId,
+    parent_path: "",
+    parent_id: parentId,
+    title: leaf.title,
+    refinement: leaf.refinement,
+    intent: leaf.intent,
+    command: leaf.command,
+    predicate: leaf.predicate,
+    description: leaf.description,
+    category: leaf.category,
+    advisory: leaf.advisory
+  };
+}
+async function loadDocOrThrow(dodId) {
+  const doc = await load(dodId);
+  if (!doc) throw new Error(`ERROR: DoD "${dodId}" not found.`);
+  return doc;
+}
+async function ensureGroupId(dodId, groupTitle) {
+  const doc = await loadDocOrThrow(dodId);
+  const existing = findGroupByTitle(doc.roots, groupTitle);
+  if (existing) return existing.id;
+  const group = {
+    id: `group-${randomUUID2()}`,
+    title: groupTitle,
+    refinement: "draft",
+    children: [],
+    last_status: "draft"
+  };
+  doc.roots.push(group);
+  doc.amendments.push({
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    node_path: `${doc.roots.length - 1}`,
+    action: "added",
+    new_value: { title: group.title, refinement: group.refinement },
+    reason: `Added requirement group: ${group.title}`
+  });
+  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
+  await save(doc);
+  await writeMarkdown(doc);
+  return group.id;
+}
+async function addLeafGetId(dodId, parentId, leaf) {
+  const { path: path8 } = await handleDodAddNode(addNodeParams(dodId, parentId, leaf));
+  const doc = await loadDocOrThrow(dodId);
+  const node = findNodeByPath(doc.roots, path8);
+  if (!node) throw new Error(`ERROR: added node not found at path "${path8}".`);
+  return node.id;
+}
+async function amendChangedLeaf(dodId, oldLeaf, newLeaf) {
+  const res = await handleDodAmend({
+    dod_id: dodId,
+    node_path: "",
+    node_id: oldLeaf.id,
+    new_command: newLeaf.command,
+    new_predicate: newLeaf.predicate,
+    new_description: newLeaf.description,
+    reason: "Regenerated: scenario text changed"
+  });
+  if (res.startsWith("ERROR")) throw new Error(res);
+}
+async function mutateDraftText(dodId, nodeId, newIntent) {
+  const doc = await loadDocOrThrow(dodId);
+  const found = findNodeById(doc.roots, nodeId);
+  if (!found) throw new Error(`ERROR: node not found by id "${nodeId}".`);
+  const old_value = { intent: found.node.intent };
+  found.node.intent = newIntent;
+  doc.amendments.push({
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    node_path: found.path,
+    action: "modified",
+    old_value,
+    new_value: { intent: newIntent },
+    reason: "Regenerated: scenario text changed"
+  });
+  await save(doc);
+  await writeMarkdown(doc);
+}
+async function reconcileExisting(dodId, groupTitle, oldLeaf, newLeaf, summary) {
+  if (sourceText(oldLeaf) === sourceText(newLeaf) && oldLeaf.refinement === newLeaf.refinement) {
+    summary.unchanged++;
+    return oldLeaf.id;
+  }
+  if (oldLeaf.refinement === "concrete" && newLeaf.refinement === "concrete") {
+    await amendChangedLeaf(dodId, oldLeaf, newLeaf);
+    summary.amended.push(oldLeaf.id);
+    return oldLeaf.id;
+  }
+  if (oldLeaf.refinement === "draft" && newLeaf.refinement === "draft") {
+    await mutateDraftText(dodId, oldLeaf.id, newLeaf.intent ?? "");
+    summary.amended.push(oldLeaf.id);
+    return oldLeaf.id;
+  }
+  await handleDodRemoveNode({ dod_id: dodId, node_path: "", node_id: oldLeaf.id });
+  const parentId = await ensureGroupId(dodId, groupTitle);
+  const id = await addLeafGetId(dodId, parentId, newLeaf);
+  summary.removed.push(oldLeaf.id);
+  summary.added.push(id);
+  return id;
+}
+async function reconcileScenario(dodId, groupTitle, newLeaf, priorNodeId, summary) {
+  if (priorNodeId) {
+    const doc = await loadDocOrThrow(dodId);
+    const found = findNodeById(doc.roots, priorNodeId);
+    if (found) return reconcileExisting(dodId, groupTitle, found.node, newLeaf, summary);
+  }
+  const parentId = await ensureGroupId(dodId, groupTitle);
+  const id = await addLeafGetId(dodId, parentId, newLeaf);
+  summary.added.push(id);
+  return id;
+}
+async function removeIfPresent(dodId, nodeId, summary) {
+  const doc = await loadDocOrThrow(dodId);
+  if (!findNodeById(doc.roots, nodeId)) return;
+  await handleDodRemoveNode({ dod_id: dodId, node_path: "", node_id: nodeId });
+  summary.removed.push(nodeId);
+}
+async function reconcileAll(dodId, newRoots, priorById, summary) {
+  const nextMap = [];
+  const seenKeys = /* @__PURE__ */ new Set();
+  for (const newGroup of newRoots) {
+    for (const newLeaf of newGroup.children ?? []) {
+      const key = scenarioKey(newGroup.title, newLeaf.title);
+      seenKeys.add(key);
+      const nodeId = await reconcileScenario(dodId, newGroup.title, newLeaf, priorById.get(key), summary);
+      nextMap.push({ groupTitle: newGroup.title, scenarioTitle: newLeaf.title, nodeId });
+    }
+  }
+  return { nextMap, seenKeys };
+}
+async function regenerateDod(dodId, instructions) {
+  await loadDocOrThrow(dodId);
+  const converted = await convertInstructionsToDod(instructions);
+  const priorMap = await readScenarioMap(instructions.resolvedOutputPath);
+  const priorById = new Map(priorMap.map((e) => [scenarioKey(e.groupTitle, e.scenarioTitle), e.nodeId]));
+  const summary = { amended: [], added: [], removed: [], unchanged: 0 };
+  const { nextMap, seenKeys } = await reconcileAll(dodId, converted.roots, priorById, summary);
+  for (const entry of priorMap) {
+    if (!seenKeys.has(scenarioKey(entry.groupTitle, entry.scenarioTitle))) {
+      await removeIfPresent(dodId, entry.nodeId, summary);
+    }
+  }
+  await writeScenarioMap(instructions.resolvedOutputPath, nextMap);
+  return summary;
+}
+
+// src/openspec/import-dod.ts
+function buildRenderableDoc(instructions, roots, markdownPath) {
+  return {
+    id: "openspec-render",
+    title: instructions.changeName,
+    goal: instructions.description,
+    date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+    cwd: instructions.root.path,
+    markdown_path: markdownPath,
+    created_at: (/* @__PURE__ */ new Date()).toISOString(),
+    execution_confirmed: false,
+    sections: { requirements: "Generated from OpenSpec spec deltas." },
+    roots,
+    amendments: []
+  };
+}
+async function renderAndImportDod(instructions) {
+  const converted = await convertInstructionsToDod(instructions);
+  const existing = await findByPath(converted.resolvedOutputPath);
+  if (existing) {
+    const summary = await regenerateDod(existing.id, instructions);
+    return formatRegenerateReport(existing.id, summary);
+  }
+  const doc = buildRenderableDoc(instructions, converted.roots, converted.resolvedOutputPath);
+  await writeMarkdown(doc);
+  const report = await handleDodImport({ path: converted.resolvedOutputPath, cwd: instructions.root.path });
+  if (report.startsWith("DoD imported.")) {
+    await recordScenarioIdentity(converted);
+  }
+  return report;
+}
+function formatRegenerateReport(dodId, summary) {
+  return [
+    "DoD regenerated.",
+    "",
+    `ID: ${dodId}`,
+    `Amended: ${summary.amended.length}`,
+    `Added: ${summary.added.length}`,
+    `Removed: ${summary.removed.length}`,
+    `Unchanged: ${summary.unchanged}`
+  ].join("\n");
+}
+async function recordScenarioIdentity(converted) {
+  const imported = await findByPath(converted.resolvedOutputPath);
+  if (!imported) return;
+  const map = buildScenarioMap(converted.roots, imported.roots);
+  await writeScenarioMap(converted.resolvedOutputPath, map);
+}
+
+// src/mcp/dod-generate.ts
+async function handleDodGenerate(params) {
+  const instructions = await fetchInstructions(params.change_id, params.cwd);
+  return renderAndImportDod(instructions);
+}
+
+// src/mcp/dod-list.ts
+function formatLegacyBlock(raw) {
+  const n = Array.isArray(raw.steps) ? raw.steps.length : 0;
+  const status = `${n} step(s) in old format.`;
+  const hint = "Run dod_store_migrate to upgrade.";
+  return [raw.title, `ID: ${raw.id}`, `Status: LEGACY | ${status} ${hint}`].join("\n");
+}
+function formatDocBlock(doc) {
+  const concrete = flattenConcreteLeaves(doc.roots).length;
+  const draft = countDraftNodes(doc.roots);
+  const draftClause = draft > 0 ? ` (${draft} draft)` : "";
+  const proofs = `${concrete} concrete proofs${draftClause}`;
+  const counts = `${doc.roots.length} roots, ${proofs}`;
+  const status = `Status: UNCHECKED | ${counts}`;
+  return [doc.title, `ID: ${doc.id}`, status].join("\n");
+}
+function formatBlock(raw) {
+  if (isLegacyFormat(raw)) return formatLegacyBlock(raw);
+  return formatDocBlock(raw);
+}
+async function handleDodList() {
+  const docs = await listAllRaw();
+  if (docs.length === 0) {
+    return "No DoD documents tracked. Use dod_create or dod_import to add one.";
+  }
+  return docs.map(formatBlock).join("\n\n");
 }
 
 // src/mcp/dod-status.ts
@@ -23667,87 +24060,6 @@ var SectionsSchema = external_exports.object({
   open_questions: external_exports.string().optional(),
   open_risks: external_exports.string().optional()
 });
-
-// src/tools/dod-add-node.ts
-async function handleDodAddNode(params) {
-  const {
-    dod_id,
-    parent_path,
-    parent_id: parentId,
-    title,
-    refinement,
-    intent,
-    command,
-    predicate,
-    description,
-    category,
-    advisory
-  } = params;
-  const doc = await load(dod_id);
-  if (!doc) throw new Error("ERROR: DoD not found.");
-  let resolvedParentPath = parent_path;
-  let parent = null;
-  if (parentId) {
-    const found = findNodeById(doc.roots, parentId);
-    if (!found) throw new Error(`ERROR: parent node not found by id "${parentId}".`);
-    parent = found.node;
-    resolvedParentPath = found.path;
-    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
-  } else if (parent_path) {
-    parent = findNodeByPath(doc.roots, parent_path);
-    if (!parent) throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
-    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
-  }
-  if (refinement === "concrete") {
-    if (!(command && predicate && description)) {
-      throw new Error("ERROR: concrete nodes require command, predicate, and description.");
-    }
-    if (command.trim() !== "") {
-      const missing = await findMissingTools([command], doc.cwd);
-      if (missing.length > 0) {
-        throw new Error(formatMissingTools(missing));
-      }
-    }
-  }
-  if (refinement === "draft" && !intent) {
-    throw new Error("ERROR: draft nodes require an intent describing what this will prove.");
-  }
-  const node = {
-    id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    title,
-    refinement,
-    last_status: refinement === "draft" ? "draft" : "pending"
-  };
-  if (refinement === "draft") node.intent = intent;
-  if (refinement === "concrete") {
-    node.command = command;
-    node.predicate = predicate;
-    node.description = description;
-    node.category = category;
-    if (advisory !== void 0) node.advisory = advisory;
-  }
-  if (parent) {
-    parent.children?.push(node);
-  } else {
-    doc.roots.push(node);
-  }
-  const fullPath = resolvedParentPath ? `${resolvedParentPath}.children.${(parent?.children?.length ?? 0) - 1}` : `${doc.roots.length - 1}`;
-  doc.amendments.push({
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    node_path: fullPath,
-    action: "added",
-    new_value: { title, refinement },
-    reason: `Added ${refinement} node: ${title}`
-  });
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
-  await save(doc);
-  await writeMarkdown(doc);
-  return {
-    path: fullPath,
-    message: `Node "${title}" (${refinement}) added at path "${fullPath}".
-Run dod_check to verify${refinement === "draft" ? " after refining with dod_refine" : ""}.`
-  };
-}
 
 // src/tools/dod-create.ts
 import * as path6 from "node:path";
@@ -24098,6 +24410,15 @@ server.tool(
     cwd: external_exports.string()
   },
   async (params) => run(() => handleDodImport(params))
+);
+server.tool(
+  "dod_generate",
+  "Generate a DoD from an OpenSpec change and register it alongside that change. Fetches the change's instructions via the OpenSpec CLI, converts its spec deltas into a DoD tree, and imports or regenerates the tracked DoD for it.",
+  {
+    change_id: external_exports.string(),
+    cwd: external_exports.string()
+  },
+  async (params) => run(() => handleDodGenerate(params))
 );
 server.tool(
   "dod_store_migrate",
