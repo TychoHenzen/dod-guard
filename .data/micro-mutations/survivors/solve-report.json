@@ -1,0 +1,21 @@
+{
+  "source": "packages/evomcp/src/solve-report.ts",
+  "date": "2026-08-11T07:47:20.682Z",
+  "summary": {
+    "total": 58,
+    "killed": 57,
+    "survived": 1,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/solve-report.js",
+      "id": "20",
+      "mutator": "EqualityOperator",
+      "replacement": "a.exitCode > 0",
+      "dist_line": 31,
+      "dist_col": 43
+    }
+  ]
+}

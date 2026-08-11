@@ -1,0 +1,237 @@
+{
+  "source": "packages/dod-guard/src/snapshot.ts",
+  "date": "2026-08-11T07:47:09.686Z",
+  "summary": {
+    "total": 39,
+    "killed": 11,
+    "survived": 28,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "2",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 17,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "5",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 19,
+      "dist_col": 79
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "6",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 23,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 28,
+      "dist_col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "11",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 29,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "10",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 29,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "14",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 31,
+      "dist_col": 86
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 35,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "16",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 35,
+      "dist_col": 77
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "17",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 37,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "18",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 38,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "19",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 38,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "20",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 38,
+      "dist_col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "22",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 42,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "23",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 42,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "24",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 42,
+      "dist_col": 57
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "27",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 49,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "28",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 50,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "29",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 50,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "31",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 52,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "30",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 50,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "32",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 53,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "33",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 53,
+      "dist_col": 81
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "34",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 63,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "35",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 64,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "36",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 64,
+      "dist_col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "37",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 64,
+      "dist_col": 61
+    },
+    {
+      "file": "packages/dod-guard/dist/snapshot.js",
+      "id": "38",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 76,
+      "dist_col": 49
+    }
+  ]
+}
