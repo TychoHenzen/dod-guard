@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// audit-assumptions — collects every marked guess in the repository so a
-// human can work through each one to a verdict: confirmed and deleted, wrong
-// and fixed, or still open. This script only collects and reports. Judging a
-// hit needs reading the surrounding code, which this script does not do.
+// audit-assumptions collects every marked guess in the repository. A human
+// then works each one to a verdict: confirmed and deleted, wrong and fixed,
+// or still open. This script only collects and reports. Judging a hit needs
+// reading the surrounding code, which this script does not do.
 //
-// This is a plain line match, not a comment parser, but it is restricted to
-// two things that keep it from matching prose about the convention or the
-// marker quoted as test data:
+// This is a plain line match, not a comment parser. Two restrictions keep it
+// from matching prose about the convention, or the marker quoted as test
+// data:
 //
 //   1. Only source files are walked. This repository's source extensions
 //      are .ts, .js, .mjs, .cjs, .tsx, .jsx. A markdown file cannot hold a
