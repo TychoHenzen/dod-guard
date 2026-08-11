@@ -364,12 +364,11 @@ artifacts:
     instruction: |
       Generate the steps.json file that /dod-guard:step-by-step executes.
 
-      Break the DoD proof tree into an ordered sequence of atomic steps. Each
-      step corresponds to work that makes one or more DoD proofs pass, and
-      its verify_cmd should be a `dod-guard check` invocation scoped to the
-      matching node (`dod-guard check --dod-id=<id> --node-path=<path>
-      --quiet`) wherever the DoD tree has a node for that work. Steps whose
-      verification is not a DoD subtree may use another shell verify_cmd.
+      Break the DoD proof tree into an ordered sequence of atomic steps. One
+      concrete leaf becomes one step, and that leaf's own proof command
+      becomes the step's verify_cmd. A draft leaf holding a `MANUAL:` intent
+      becomes a step with `manual_required` true and no verify_cmd, because
+      both already mean a human still owes us something.
 
       Top-level fields: `goal` (one sentence, matches the DoD's Goal), `cwd`
       (absolute path to the target repo), `plan_source` (path to the plan
