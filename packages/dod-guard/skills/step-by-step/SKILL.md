@@ -175,10 +175,32 @@ clean" and stop. Do not review further.
 After the last step, run the full build and test suite as an
 integration check.
 
+When the session's `plan_source` is an OpenSpec change id, a green
+integration check earns two more commands, run in this order.
+
+Run `dod-guard trace <change-id>`. It checks closure in both
+directions. Every DoD leaf must trace to one scenario, and every
+scenario must reach one leaf or be a MANUAL draft. Only the leaf side
+blocks. An untraced scenario is reported and lets the run continue.
+Exit 0 means every leaf traced. Exit 1 means an untraced leaf. Exit 3 means no DoD is
+registered for the change, or bad usage. On exit 1 or exit 3, stop
+here: report the untraced leaf and do not archive.
+
+On exit 0, run `openspec archive <change-id> --yes`. It merges the
+change's spec deltas into openspec/specs/ and moves the change under
+changes/archive/. Use `--skip-specs` for a tooling-only change with no
+spec deltas. Run archive without asking the user first. A DoD that
+passes trace is a change that shipped. Asking for confirmation on
+every green run just re-asks a question the gate already answered.
+Archiving is not cheaply reversible, but the trace check is the
+approval: it already proved every scenario is covered before this
+command runs.
+
 Deliver a report containing:
 
 - Each step's title and final status
 - Integration check result
+- Trace and archive outcome, when the session is OpenSpec-sourced
 - Reasons for any blocked or skipped steps
 - Visual or gameplay steps still awaiting confirmation
 - All changed files
