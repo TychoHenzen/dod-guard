@@ -33,7 +33,7 @@ Valid state means resuming from the first `pending` step.
 
 - Present the plan for approval before executing anything. Show: goal,
   step count, each title with its `verify_cmd`, a breakdown of
-  `verify_surface` types, and how many steps need manual confirmation.
+  `verify_surface` types, and a count of the steps a human must confirm.
   This is the only planned interruption.
 - Pick the right worker for each step (see dispatch table below).
 - Run `verify_cmd` yourself after every worker finishes. A worker's
@@ -48,11 +48,15 @@ Valid state means resuming from the first `pending` step.
 
 ### Workers
 
-Each worker gets a briefing with six fields and nothing else:
+Each worker gets a briefing with seven fields and nothing else. The
+`Requirement` field carries the most weight. Test-first instructions that
+never name what correct means left regressions at 9.94 percent. Naming it
+cut them by about 70 percent.
 
 ```
 Task: {step description, verbatim from steps.json}
 Context: {what earlier steps produced}
+Requirement: {the scenario this step satisfies, its WHEN and THEN lines verbatim}
 Verification: verify_surface is {value}. Run exactly: {verify_cmd}
 Files:
 - Read before starting: {paths}
@@ -61,6 +65,9 @@ Files:
 Expected output: {concrete testable criteria}
 Working directory: {cwd}
 ```
+
+No scenario behind the step (plan-file and quality-refactor sessions have
+none): write `Requirement: none - see Task`.
 
 Workers own their scope rules, report format, git practices, and
 ambiguity handling separately.
@@ -116,9 +123,9 @@ build proves the compiler ran, nothing more.
 ## DoD subtree proofs
 
 Steps verified through a DoD subtree use `dod-guard check` as their
-`verify_cmd`. The CLI exits 0 on pass, 1 when a proof failed or the
-document is tampered or stuck, 2 when drafts remain on an unscoped
-run, and 3 on usage error. A scoped run exits 0 when its own subtree
+`verify_cmd`. The CLI exits 0 on pass and 3 on usage error. It exits 1
+when a proof failed, or the document is tampered or stuck, and 2 when
+drafts remain on an unscoped run. A scoped run exits 0 when its own subtree
 passes.
 
 ## Persistence
