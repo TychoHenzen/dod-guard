@@ -23,9 +23,13 @@ You need a confirmed plan. No plan means no work. Route to
 
 Check for `.step-session/steps.json`. When it exists, inspect it for
 staleness: wrong goal, every step already done, unknown status values,
-missing `plan_source`, or a `plan_mtime` that no longer matches the
-source file. Stale state means asking the user whether to replace it.
-Valid state means resuming from the first `pending` step.
+or missing `plan_source`. A plan-file session is also stale when the
+source file's mtime no longer matches `plan_mtime`. An OpenSpec
+session works differently. It is stale when `openspec status --json
+--change <id>` artifact statuses differ from the `plan_artifacts`
+snapshot at generation time. Stale state means asking the user whether
+to replace it. Valid state means resuming from the first `pending`
+step.
 
 ## Three actors, three boundaries
 
@@ -137,9 +141,12 @@ passes.
 All state lives in `.step-session/` (gitignored).
 
 **steps.json** carries the plan. Top level: `goal`, `cwd`,
-`plan_source`, `plan_mtime`, and a `steps` array. When you write the
-session yourself, stat `plan_source` and record its mtime as
-`plan_mtime`. Other producers may leave it absent. Each entry holds `id`, `title`,
+`plan_source`, `plan_mtime` or `plan_artifacts`, and a `steps` array.
+For a plan-file session, `plan_source` is the file path. Stat it and
+record its mtime as `plan_mtime`. For an OpenSpec session,
+`plan_source` is the change id. Record the `artifacts` array from
+`openspec status --json --change <id>` as `plan_artifacts`. Other
+producers may leave both absent. Each entry holds `id`, `title`,
 `description`, `files` (array), `deps` (array), `verify_surface`,
 `verify_cmd` (a shell string where `&&` is valid), `manual_required`
 (bool), and `status`. Valid statuses: `pending`, `completed`, `skipped`,

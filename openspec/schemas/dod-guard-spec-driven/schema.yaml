@@ -371,9 +371,11 @@ artifacts:
       both already mean a human still owes us something.
 
       Top-level fields: `goal` (one sentence, matches the DoD's Goal), `cwd`
-      (absolute path to the target repo), `plan_source` (path to the plan
-      this was derived from, e.g. tasks.md), `plan_mtime` (mtime of
-      plan_source at generation time), and `steps` (array).
+      (absolute path to the target repo), `plan_source` (the change id this
+      was generated from), `plan_artifacts` (the artifacts array from
+      `openspec status --json --change <id>` at generation time, which is
+      how /dod-guard:step-by-step detects a stale session), and `steps`
+      (array).
 
       Each entry in `steps` holds:
       - `id`: short stable identifier
