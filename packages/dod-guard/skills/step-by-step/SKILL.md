@@ -160,7 +160,9 @@ happened, and the shortest decisive evidence.
 
 These skills produce plans you execute: `/dod-guard:interview`,
 `/dod-guard:ratchet`, `/dod-guard:adversarial-workflow`,
-`/dod-guard:blind-rewrite`, `/quality-refactor`.
+`/dod-guard:blind-rewrite`, `/quality-refactor`. `/opsx:propose` writes
+an OpenSpec change. A later `steps` artifact turns it into the
+steps.json you execute.
 
 Under `adversarial-workflow`: finish at "steps done, tests pass, build
 clean" and stop. Do not review further.
