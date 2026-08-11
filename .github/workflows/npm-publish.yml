@@ -7,7 +7,7 @@
 #
 # Gates, in the order they can stop a release:
 #   build-test        compile + unit tests + which versions are unpublished
-#   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency
+#   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency, OpenSpec spec validation
 #   static-analysis   Biome plus four ratchets (quality, test presence, advisories, coverage)
 #   package-integrity what npm would publish, and whether that bundle actually speaks MCP
 #
@@ -78,6 +78,12 @@ jobs:
       # Names, sources, hook targets, skill/agent frontmatter, encoding, files[] coverage.
       - name: Plugin configuration is consistent
         run: node scripts/ci/validate-plugins.mjs
+      - name: OpenSpec changes are valid
+        env:
+          OPENSPEC_TELEMETRY: 0
+        run: |
+          npm install -g @fission-ai/openspec@1.8.0
+          openspec validate --all --strict --no-interactive
 
   static-analysis:
     needs: build-test

@@ -95,7 +95,7 @@ updated `package-lock.json` with the new package.
 | Job | What it blocks on |
 |-----|-------------------|
 | `build-test` | tsc, `npm test`, and `detect-releases.mjs`, which decides what publishes |
-| `plugin-config` | `validate-plugins.mjs` — see below |
+| `plugin-config` | `validate-plugins.mjs` (see below) and `openspec validate --all --strict --no-interactive` |
 | `static-analysis` | Biome (autofix + strict) and four ratchets |
 | `package-integrity` | `check-pack.mjs` (every skill, agent and hook target is in the tarball; no `src/` or `node_modules`) and `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) |
 
@@ -180,11 +180,7 @@ Proof commands run on the **host OS**. `dod_create`/`dod_refine`/`dod_amend` val
 
 Shell invocation is built by `buildShellInvocation()` in `evaluate-proof.ts` — the single place that knows how to reach a shell. On Windows it produces `cmd.exe /d /s /c "<command>"` with `windowsVerbatimArguments: true`. Both details are load-bearing: cmd.exe has no single-quote grouping (wrapping in `'...'` makes it look for a program named `'command`), and Node's default Windows quoting escapes embedded double quotes in a way cmd.exe doesn't understand, silently mangling `findstr /C:"x" file` and `node -e "..."` into no-ops that exit 0. Never hand-roll shell escaping elsewhere.
 
-There is no `manual` predicate. Human-verified steps are **draft leaves** with a `MANUAL:` intent — drafts hold the verdict at INCOMPLETE, which is the correct "a human still owes us something" semantic.
-
-### No backwards compatibility shims
-
-This is a private project. Remove old code paths outright — no deprecation warnings, compat layers, or feature flags.
+The `manual` predicate does not exist. Human-verified steps are **draft leaves** with a `MANUAL:` intent. A draft holds the verdict at INCOMPLETE, which is the correct "a human still owes us something" semantic.
 
 ### Biome config note
 
