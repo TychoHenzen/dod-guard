@@ -1,7 +1,7 @@
 /**
  * The 'trace' command's full happy/blocked/no-dod paths, through runCli.
  * Split out from cli.test.ts because it needs node:child_process mocked
- * before cli.js (and its openspec/fetch-instructions.js dependency) load —
+ * before cli.js (and its openspec/fetch-instructions.js dependency) load -
  * see the "ESM mock.module ordering" rule in the repo CLAUDE.md.
  */
 import assert from "node:assert/strict";
@@ -18,7 +18,7 @@ let EXIT: typeof ExitT;
 let store: typeof StoreModule;
 
 /** Path in the mocked `openspec instructions dod --change <id> --json` output.
- * Never touched on disk — findByPath only ever compares this string. */
+ * Never touched on disk - findByPath only ever compares this string. */
 function targetPathFor(changeId: string): string {
   return join(os.tmpdir(), `dod-guard-trace-target-${changeId}.md`);
 }
@@ -27,7 +27,7 @@ before(async () => {
   mock.module("node:child_process", {
     namedExports: {
       // checker-vcs.ts and snapshot.ts (pulled in transitively through
-      // cli.js) import `exec` too — mock.module replaces every named
+      // cli.js) import `exec` too - mock.module replaces every named
       // export of the module, so it has to stay present even unused here.
       exec: mock.fn(),
       execFile: mock.fn(

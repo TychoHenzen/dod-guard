@@ -7,7 +7,7 @@ import { EXIT, exitCodeFor, isCliInvocation, parseArgs, runCli } from "./cli.js"
 import * as store from "./store.js";
 import type { CheckResult, DodDocument, LeafResult } from "./types.js";
 
-// Isolate the store the same way regenerate-dod.test.ts does — never touch
+// Isolate the store the same way regenerate-dod.test.ts does - never touch
 // the real ~/.claude/dod-store.
 let storeDir: string;
 
@@ -257,7 +257,7 @@ describe("runCli list", () => {
 describe("runCli error handling", () => {
   it("catches a thrown error from a handler and reports ERROR instead of crashing", async () => {
     // A regular file where the store directory should be forces
-    // ensureStoreDir()'s fs.mkdir to throw — listAll() does not catch it,
+    // ensureStoreDir()'s fs.mkdir to throw - listAll() does not catch it,
     // so it propagates up through cmdList into runCli's try/catch.
     const blockingFile = join(os.tmpdir(), `dod-guard-not-a-dir-${Date.now()}`);
     await fs.writeFile(blockingFile, "not a directory", "utf-8");
