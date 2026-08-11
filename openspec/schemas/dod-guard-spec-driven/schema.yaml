@@ -1,6 +1,6 @@
 name: dod-guard-spec-driven
 version: 1
-description: Default OpenSpec workflow - proposal → specs → design → tasks
+description: Spec-driven workflow - proposal, specs, design, tasks, dod, steps
 artifacts:
   - id: proposal
     generates: proposal.md
@@ -262,7 +262,7 @@ artifacts:
       Include alternatives considered for each decision.
 
       - **Risks / Trade-offs**: Known limitations, things that could go wrong.
-      Format: [Risk] → Mitigation
+      Format: [Risk] -> Mitigation
 
       - **Migration Plan**: Steps to deploy, rollback strategy (if applicable)
 
@@ -357,10 +357,48 @@ artifacts:
       workflow land in a later migration step.
     requires:
       - specs
+  - id: steps
+    generates: steps.json
+    description: Step-by-step execution plan derived from the DoD proof tree
+    template: steps.json
+    instruction: |
+      Generate the steps.json file that /dod-guard:step-by-step executes.
+
+      Break the DoD proof tree into an ordered sequence of atomic steps. Each
+      step corresponds to work that makes one or more DoD proofs pass, and
+      its verify_cmd should be a `dod-guard check` invocation scoped to the
+      matching node (`dod-guard check --dod-id=<id> --node-path=<path>
+      --quiet`) wherever the DoD tree has a node for that work. Steps whose
+      verification is not a DoD subtree may use another shell verify_cmd.
+
+      Top-level fields: `goal` (one sentence, matches the DoD's Goal), `cwd`
+      (absolute path to the target repo), `plan_source` (path to the plan
+      this was derived from, e.g. tasks.md), `plan_mtime` (mtime of
+      plan_source at generation time), and `steps` (array).
+
+      Each entry in `steps` holds:
+      - `id`: short stable identifier
+      - `title`: one-line summary
+      - `description`: exact task text a worker executes verbatim
+      - `files`: array of paths the step reads or may modify
+      - `deps`: array of step ids that must be `completed` first
+      - `verify_surface`: one of `code`, `config`, `structural`, `visual`,
+        `gameplay`
+      - `verify_cmd`: a shell string (`&&` is valid) that proves the step
+      - `manual_required`: bool, true when a human must confirm before the
+        step is marked done
+      - `status`: one of `pending`, `completed`, `skipped`, `blocked` -
+        every generated step starts at `pending`
+
+      Order steps by dependency, matching the DoD tree's structure. Do not
+      invent steps that have no corresponding DoD proof or task.
+    requires:
+      - dod
 apply:
   requires:
     - tasks
     - dod
+    - steps
   tracks: tasks.md
   instruction: |
     Read context files, work through pending tasks, mark complete as you go.

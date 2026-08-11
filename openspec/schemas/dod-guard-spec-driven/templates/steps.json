@@ -1,0 +1,19 @@
+{
+  "goal": "<!-- one-sentence goal for this change, matches the DoD's Goal -->",
+  "cwd": "<!-- absolute path to the target repo -->",
+  "plan_source": "<!-- path to the plan this was derived from, e.g. tasks.md -->",
+  "plan_mtime": "<!-- mtime of plan_source at generation time -->",
+  "steps": [
+    {
+      "id": "<!-- short stable identifier -->",
+      "title": "<!-- one-line summary -->",
+      "description": "<!-- exact task text a worker executes verbatim -->",
+      "files": ["<!-- paths this step reads or may modify -->"],
+      "deps": ["<!-- ids of steps that must be completed first -->"],
+      "verify_surface": "<!-- code | config | structural | visual | gameplay -->",
+      "verify_cmd": "<!-- shell string proving the step; && is valid -->",
+      "manual_required": false,
+      "status": "pending"
+    }
+  ]
+}
