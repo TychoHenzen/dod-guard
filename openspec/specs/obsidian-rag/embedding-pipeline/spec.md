@@ -4,7 +4,7 @@
 
 Defines optional semantic vectors for an Obsidian vault, and how the server
 behaves when those vectors are unavailable. Scoring what a vector search
-returns belongs to `obsidian-rag/note-search`; walking the vault into chunks
+returns belongs to `obsidian-rag/note-search`. Walking the vault into chunks
 belongs to `obsidian-rag/vault-indexing`. This capability covers only the
 embedder itself and the storage, generation, and progress of vectors.
 
@@ -90,7 +90,7 @@ the affected chunks without embeddings, rather than failing or blocking.
 ### Requirement: Chunk texts are embedded in a single batched call
 
 When embedding a group of chunks, the server SHALL hand every chunk's text to
-the embedder in one batched call rather than issuing one call per chunk.
+the embedder in one batched call. It SHALL NOT issue one call per chunk.
 
 #### Scenario: A batch of unembedded chunks is embedded
 - **WHEN** the server embeds a set of chunks that currently lack vectors
@@ -100,7 +100,7 @@ the embedder in one batched call rather than issuing one call per chunk.
 ### Requirement: Background embedding returns a progress handle immediately
 
 A request to embed a vault's remaining chunks SHALL start that work in the
-background and return to the caller at once, rather than waiting for
+background and return to the caller at once. It SHALL NOT wait for
 embedding to finish. The background work SHALL process unembedded chunks in
 batches until none remain, updating stored progress after each batch.
 
@@ -130,8 +130,9 @@ embedding proceeds.
 
 The server SHALL NOT require an embedder, or any embedded chunk, for keyword
 search to function. A search or retrieval path that would use vectors SHALL
-fall back to keyword-only behavior when no embedder is available or no chunk
-in the vault carries an embedding, without loading the embedding model.
+fall back to keyword-only behavior when no embedder is available. The same
+fallback applies when no chunk in the vault carries an embedding. It SHALL
+do so without loading the embedding model.
 
 #### Scenario: Embedding package never installed
 - **WHEN** the optional embedding package is not installed

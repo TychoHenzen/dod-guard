@@ -29,9 +29,10 @@ named for its type, and SHALL name the file after the memory id.
 ### Requirement: A saved memory carries frontmatter a Claude Code memory reader accepts
 
 The system SHALL write each memory as a markdown file whose frontmatter holds
-a name, a description, a type, a metadata object, and created and modified
-timestamps. It SHALL accept a title, a one-line description, a markdown body,
-a memory type, and optional metadata key-value pairs from the caller.
+a name, a description, and a type. The frontmatter also holds a metadata
+object and created and modified timestamps. It SHALL accept a title, a
+one-line description, a markdown body, and a memory type from the caller. It
+SHALL also accept optional metadata key-value pairs from the caller.
 
 #### Scenario: Frontmatter fields set on save
 - **WHEN** a memory is saved with a title, a description, and a content body
@@ -66,13 +67,13 @@ save, without requiring a separate reindex step.
 
 #### Scenario: Recall right after save
 - **WHEN** a memory is saved and then recalled by a query matching its content
-- **THEN** the recall finds it, because the save indexed that one note before
+- **THEN** the recall finds it. The save indexed that one note before
   returning
 
 ### Requirement: Recall searches the same stack as note search, scoped to memories
 
 The system SHALL run memory recall through the same keyword and semantic
-search path used for general note search, and SHALL restrict the results to
+search path used for general note search. It SHALL restrict the results to
 files under the `Claude-Memories` path.
 
 #### Scenario: Recall query
@@ -88,7 +89,7 @@ files under the `Claude-Memories` path.
 ### Requirement: Memories can be listed without a search query
 
 The system SHALL list every saved memory by reading the memory directory
-from the filesystem, grouped by type, each entry showing its title,
+from the filesystem, grouped by type. Each entry shows its title,
 description, and id.
 
 #### Scenario: Listing with memories present

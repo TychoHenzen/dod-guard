@@ -2,11 +2,12 @@
 
 ## Purpose
 
-Defines how obsidian-rag reads and writes notes inside a selected vault: which
-backend answers each read, how a note's frontmatter and links are parsed, how
-a path is kept inside the vault, and what the read and write tools expose.
-Search ranking lives in `obsidian-rag/note-search`, indexing mechanics live in
-`obsidian-rag/vault-indexing`, and memory-entry tools live in
+Defines how obsidian-rag reads and writes notes inside a selected vault. It
+covers which backend answers each read, and how a note's frontmatter and
+links are parsed. It also covers how a path is kept inside the vault, and
+what the read and write tools expose. Search ranking lives in
+`obsidian-rag/note-search`. Indexing
+mechanics live in `obsidian-rag/vault-indexing`. Memory-entry tools live in
 `obsidian-rag/memory-store`.
 
 ## Requirements
@@ -47,8 +48,9 @@ rather than a generic failure.
 
 ### Requirement: Listing notes can be filtered by directory
 
-`list_notes` SHALL list every indexed note in the selected vault, and SHALL
-narrow that list to a caller-given subdirectory when one is supplied.
+`list_notes` SHALL list every indexed note in the selected vault. When a
+caller supplies a subdirectory, `list_notes` SHALL narrow that list to notes
+under it.
 
 #### Scenario: No directory given
 - **WHEN** `list_notes` is called with no directory
@@ -85,9 +87,9 @@ name.
 
 ### Requirement: Get tags aggregates tags with note counts
 
-`get_tags` SHALL return every tag used anywhere in the selected vault's index,
-each paired with the count of notes carrying it, sorted from most to least
-used.
+`get_tags` SHALL return every tag used anywhere in the selected vault's index.
+Each tag SHALL be paired with the count of notes carrying it, sorted from
+most to least used.
 
 #### Scenario: Vault with tagged notes
 - **WHEN** `get_tags` is called on a vault whose notes carry frontmatter tags
@@ -96,9 +98,10 @@ used.
 
 ### Requirement: Index status reports indexing progress
 
-`index_status` SHALL report, for the selected vault, how many notes are
-indexed against the total, how many chunks exist, how many of those chunks
-carry an embedding, and when the vault was last indexed.
+For the selected vault, `index_status` SHALL report how many notes are
+indexed against the total, and how many chunks exist. It SHALL also report
+how many of those chunks carry an embedding, and when the vault was last
+indexed.
 
 #### Scenario: Status requested
 - **WHEN** `index_status` is called on a selected vault
@@ -107,8 +110,8 @@ carry an embedding, and when the vault was last indexed.
 
 ### Requirement: Creating or updating a note reindexes it immediately
 
-`create_note` SHALL write a note's content and frontmatter to the vault, and
-SHALL either overwrite the note or append to its existing content depending
+`create_note` SHALL write a note's content and frontmatter to the vault. It
+SHALL either overwrite the note or append to its existing content, depending
 on the caller's request. After a successful write, the server SHALL reindex
 that single note so it is searchable without a full reindex.
 
@@ -127,10 +130,9 @@ that single note so it is searchable without a full reindex.
 
 ### Requirement: Three resources expose vaults, tags, and notes
 
-The server SHALL expose an `obsidian://vaults` resource listing known vaults,
-an `obsidian://tags` resource listing tags with counts for the selected vault,
-and an `obsidian://notes/{path}` resource returning a single note's raw
-content by path.
+The server SHALL expose three resources. `obsidian://vaults` SHALL list known
+vaults. `obsidian://tags` SHALL list tags with counts for the selected vault.
+`obsidian://notes/{path}` SHALL return a single note's raw content by path.
 
 #### Scenario: Tags resource with no vault selected
 - **WHEN** `obsidian://tags` is read before any vault is selected
@@ -176,7 +178,7 @@ rejected.
 ### Requirement: A note path cannot resolve outside the vault
 
 Every read and write of a note SHALL resolve the note's real path with
-symlinks followed, and SHALL reject the operation when that real path falls
+symlinks followed. It SHALL reject the operation when that real path falls
 outside the vault's real root. This check SHALL catch both a literal `../`
 segment and a symlink that points outside the vault.
 
@@ -195,8 +197,8 @@ segment and a symlink that points outside the vault.
 
 Every tool that reads or writes notes SHALL require a selected vault. When no
 vault has been selected and none is in the middle of being selected, the tool
-SHALL return a clear error rather than silently choosing or indexing a vault
-on the caller's behalf.
+SHALL return a clear error. It SHALL NOT silently choose or index a vault on
+the caller's behalf.
 
 #### Scenario: No vault selected
 - **WHEN** a note-access tool is called before `vault_select` has been called
@@ -205,8 +207,8 @@ on the caller's behalf.
 
 ### Requirement: Vault discovery degrades gracefully without the external tool
 
-`vault_list` SHALL report when the Obsidian command-line tool is unavailable
-rather than failing outright, and SHALL still report an empty vault list
+`vault_list` SHALL report when the Obsidian command-line tool is unavailable,
+rather than failing outright. It SHALL still report an empty vault list
 distinctly from a tool-unavailable condition.
 
 #### Scenario: Command-line tool not installed
@@ -223,9 +225,9 @@ distinctly from a tool-unavailable condition.
 ### Requirement: Errors surface rather than being swallowed
 
 A failure reading or writing a note SHALL be reported back to the caller with
-enough detail to act on it, distinguishing a missing note from any other
-failure. Aggregation across many notes, such as tag counting, SHALL skip a
-single broken note rather than aborting the whole operation, and SHALL NOT
+enough detail to act on it. That report SHALL distinguish a missing note from
+any other failure. Aggregation across many notes, such as tag counting, SHALL skip a
+single broken note rather than aborting the whole operation. It SHALL NOT
 report that note's failure as a false empty result for the whole vault.
 
 #### Scenario: Read fails for a reason other than a missing file

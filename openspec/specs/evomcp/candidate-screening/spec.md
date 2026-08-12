@@ -3,10 +3,10 @@
 ## Purpose
 
 Keeps the search honest from plan diversity through to the winner. Before
-solve or evolve spend a token on a plan, screening thins near-duplicate plans.
-After a candidate passes verification, screening still checks it for gaming
-the metric and for touching files outside its mandate, and every refusal it
-produces gets reported rather than dropped in silence. Screening also
+solve or evolve spend a token on a plan, screening thins near-duplicate
+plans. After a candidate passes verification, screening still checks it for
+gaming the metric and for touching files outside its mandate. Every refusal
+it produces gets reported rather than dropped in silence. Screening also
 compiles verification output into diagnostics a repair loop can act on, and
 assembles the deterministic context a generation call reads from.
 
@@ -40,12 +40,14 @@ its English stopword list before computing overlap.
 - **THEN** the system treats their token sets as equal for overlap purposes
 
 ### Requirement: Degenerate detectors catch metric-gaming candidates
-The system SHALL scan a candidate's diff for hardcoded test outputs, deleted
-assertions, broadened exception catches, dense type-ignore or lint
-suppressions, disabled lint directives, runs of commented-out code, empty
-test bodies, and TODO bombs in production files. Each finding SHALL carry a
-severity of block or warn. The system SHALL mark a candidate unclean when it
-carries at least one block-severity finding.
+The system SHALL scan a candidate's diff for degenerate patterns: hardcoded
+test outputs, deleted assertions, broadened exception catches, and dense
+type-ignore or lint suppressions. It SHALL also scan for disabled lint
+directives, runs of commented-out code, empty test bodies, and TODO bombs
+in production files.
+
+Each finding SHALL carry a severity of block or warn. The system SHALL mark
+a candidate unclean when it carries at least one block-severity finding.
 
 #### Scenario: Test input equals its expected output
 - **WHEN** an added test line asserts that a function's output equals the
@@ -123,9 +125,11 @@ allowed-files check entirely.
 ### Requirement: Every refusal is reported, never dropped in silence
 The system SHALL record every candidate rejection, whether from the
 degenerate check or the allowed-files check, as a named refusal attached to
-its run. A rejected candidate SHALL NOT be silently discarded; the run
-result SHALL always be able to account for why a candidate that reached
-screening did not survive.
+its run.
+
+A rejected candidate SHALL NOT be silently discarded. The run result SHALL
+always be able to account for why a candidate that reached screening did
+not survive.
 
 #### Scenario: Rejection surfaces in the run result
 - **WHEN** a candidate is rejected by either screening check
@@ -134,10 +138,12 @@ screening did not survive.
 
 ### Requirement: The judge compares multiple surviving candidates on a weighted rubric
 The system SHALL score two or more candidates on correctness, clarity,
-efficiency, and maintainability, and SHALL combine those scores with weights
-0.4, 0.2, 0.2, and 0.2 respectively when deciding a winner from numeric
-scores. It SHALL declare a winner rather than score when only one candidate
-is given.
+efficiency, and maintainability. When deciding a winner from numeric
+scores, it SHALL combine those scores with weights 0.4, 0.2, 0.2, and 0.2
+respectively.
+
+It SHALL declare a winner rather than score when only one candidate is
+given.
 
 #### Scenario: Single candidate needs no judging
 - **WHEN** exactly one candidate is given to the judge
@@ -150,11 +156,13 @@ is given.
   highest weighted composite score
 
 ### Requirement: The judge falls back to composite scoring when the LLM judge is unavailable
-The system SHALL fall back to sorting candidates by their own numeric score,
-highest first, whenever the judge proxy is unreachable, the judge process
-fails or times out, or its output cannot be parsed into a verdict. A
-fallback verdict SHALL be marked as a fallback and SHALL carry the reason in
-its rationale.
+The system SHALL fall back to sorting candidates by their own numeric
+score, highest first. This fallback fires whenever the judge proxy is
+unreachable, the judge process fails or times out, or its output cannot be
+parsed into a verdict.
+
+A fallback verdict SHALL be marked as a fallback and SHALL carry the reason
+in its rationale.
 
 #### Scenario: Judge process times out
 - **WHEN** the spawned judge process reports a timeout
@@ -210,12 +218,15 @@ the surviving ones' text.
   context
 
 ### Requirement: Context is assembled deterministically across seven layers and cached
-The system SHALL assemble a curated context from up to seven layers, in
-order: goal, strategy, target files, dependency graph, constraints, prior
-attempts, and failure signatures. It SHALL include a layer's section only
-when that layer's data is present. It SHALL cache an assembled result keyed
-by a content hash of its input layers, and SHALL return the cached result
-for identical layers rather than reassembling.
+The system SHALL assemble a curated context from up to seven layers. The
+layer order is fixed: goal, strategy, target files, dependency graph,
+constraints, prior attempts, and failure signatures.
+
+It SHALL include a layer's section only when that layer's data is present.
+
+It SHALL cache an assembled result keyed by a content hash of its input
+layers. It SHALL return the cached result for identical layers, rather
+than reassembling.
 
 #### Scenario: Layer omitted when absent
 - **WHEN** a context assembly call supplies no prior attempts

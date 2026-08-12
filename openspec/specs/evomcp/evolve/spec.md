@@ -48,12 +48,13 @@ trivially passed.
 
 ### Requirement: Target files are read through glob patterns
 
-The system SHALL read the files named by the spec's target-file patterns,
-resolving a pattern that names a file directly and a pattern that names a
-directory glob. A run whose patterns match no file SHALL fail before any
-generation starts. The target-file list a caller supplies is understood to be
-filtered to files the caller is allowed to touch; that filtering is a
-dispatch-level concern, not a check evolve performs on the patterns itself.
+The system SHALL read the files named by the spec's target-file patterns. A
+pattern may name a file directly, or it may name a directory glob. Both
+SHALL resolve. A run whose patterns match no file SHALL fail before any
+generation starts. Evolve assumes the caller has already filtered the
+target-file list to files the caller is allowed to touch. That filtering
+is a dispatch-level concern, not a check evolve performs on the patterns
+itself.
 
 #### Scenario: Pattern names an existing file
 - **WHEN** a target-file pattern resolves to a path that exists and is a file
@@ -71,9 +72,9 @@ dispatch-level concern, not a check evolve performs on the patterns itself.
 ### Requirement: Each generation mutates a population under a concurrency cap
 
 For each generation, the system SHALL spawn one mutation attempt per
-population member, and SHALL run at most four mutation attempts at once
-regardless of population size. A population larger than four SHALL queue the
-remainder until a slot frees.
+population member. It SHALL run at most four mutation attempts at once,
+regardless of population size. A population larger than four SHALL queue
+the remainder until a slot frees.
 
 #### Scenario: Population larger than the concurrency cap
 - **WHEN** a generation's population size is 8
@@ -86,11 +87,14 @@ remainder until a slot frees.
 
 ### Requirement: Each candidate is scored and gated before it can become best
 
-The system SHALL run the fitness command against a candidate that produced a
-committed change, and SHALL run the same lint, build and test gates configured
-for the baseline before that candidate can replace the current best. A
-candidate whose score would be better than the current best but which fails a
-configured gate SHALL NOT become the new best and SHALL NOT be adopted.
+The system SHALL run the fitness command against a candidate that produced
+a committed change. Before that candidate can replace the current best, the
+system SHALL also run the same lint, build and test gates configured for
+the baseline.
+
+A candidate whose score would be better than the current best, but which
+fails a configured gate, SHALL NOT become the new best. It SHALL NOT be
+adopted.
 
 #### Scenario: Winning score but failing gate
 - **WHEN** a candidate's fitness score is better than the current best but a
@@ -109,10 +113,10 @@ configured gate SHALL NOT become the new best and SHALL NOT be adopted.
 
 ### Requirement: Elite selection tracks the best-scoring candidates seen
 
-Each time a candidate becomes the new best, the system SHALL record it among a
-bounded set of elites, ordered so the best-scoring elite sorts first, whether
-higher or lower is better. The set SHALL be capped so only a handful of the
-best-scoring elites are kept.
+Each time a candidate becomes the new best, the system SHALL record it
+among a bounded set of elites. The set SHALL be ordered so the best-scoring
+elite sorts first, whether higher or lower is better. The set SHALL be
+capped, so only a handful of the best-scoring elites are kept.
 
 #### Scenario: New best displaces the weakest recorded elite
 - **WHEN** a new best candidate is found and the elite set is already at its
@@ -123,25 +127,28 @@ best-scoring elites are kept.
 ### Requirement: The best patch so far carries forward between generations
 
 Between generations, the system SHALL check out the current best-scoring
-branch found so far, so the next generation's mutations build on it rather
-than restarting from the baseline. When no candidate in a generation improved
-on the best, the system SHALL return the working tree to the run's root
-branch before the next generation's checkpoint.
+branch found so far. This lets the following generation's mutations build
+on it rather than restarting from the baseline.
+
+When no candidate in a generation improved on the best, the system SHALL
+return the working tree to the run's root branch. This happens before the
+following generation's checkpoint.
 
 #### Scenario: A generation improves on the best
 - **WHEN** a generation produces a new best-scoring candidate
-- **THEN** the next generation's mutations start from that candidate's branch
+- **THEN** the following generation's mutations start from that candidate's branch
 
 #### Scenario: A generation improves on nothing
 - **WHEN** no candidate in a generation beats the current best
-- **THEN** the working tree returns to the root branch before the next
+- **THEN** the working tree returns to the root branch before the following
   generation begins
 
 ### Requirement: Token spending is tracked per candidate and accumulated
 
 The system SHALL measure the token delta for each candidate's mutation
-attempt and add it to a running total across the run, regardless of whether
-that candidate went on to win, lose, error, or fail its gates.
+attempt, and add it to a running total across the run. This applies
+regardless of whether that candidate went on to win, lose, error, or fail
+its gates.
 
 #### Scenario: A losing candidate still consumes tokens
 - **WHEN** a candidate's mutation attempt runs but the candidate does not
@@ -150,11 +157,14 @@ that candidate went on to win, lose, error, or fail its gates.
 
 ### Requirement: The run stops early on convergence, stagnation or oscillation
 
-After each generation, the system SHALL evaluate the generation's scores and
-fitness history for convergence, stagnation and oscillation, and SHALL stop
-the generation loop before its configured limit when that evaluation
-recommends anything other than continuing. The stopping reason SHALL be
-carried into the run's result.
+After each generation, the system SHALL evaluate the generation's scores
+and fitness history. It checks for convergence, stagnation and
+oscillation.
+
+The evaluation may recommend stopping instead of continuing. When it does,
+the system SHALL stop the generation loop before its configured limit.
+
+The stopping reason SHALL be carried into the run's result.
 
 #### Scenario: Convergence detected before the generation limit
 - **WHEN** the convergence check recommends stopping after generation 1 of a
@@ -171,14 +181,18 @@ carried into the run's result.
 At the end of the run, the system SHALL attempt to adopt the best-scoring
 branch into the working tree. When adoption fails, the system SHALL still
 report that branch as the winning patch rather than discarding the result.
-The system SHALL then run the fitness command once more, and SHALL run any
-configured lint, build or test gates once more, against the adopted state, and
-SHALL report the baseline score, the final score, and the improvement between
-them.
+
+The system SHALL then run the fitness command once more against the
+adopted state. It SHALL also run any configured lint, build or test gates
+once more.
+
+It SHALL report the baseline score, the final score, and the improvement
+between them.
 
 #### Scenario: Adoption succeeds
 - **WHEN** the best-scoring branch adopts cleanly
-- **THEN** the final fitness measurement runs against the adopted working tree
+- **THEN** the system runs the fitness command again against the adopted
+  working tree
 
 #### Scenario: Adoption fails
 - **WHEN** adopting the best-scoring branch throws an error

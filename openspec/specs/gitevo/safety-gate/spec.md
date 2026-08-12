@@ -3,16 +3,17 @@
 ## Purpose
 
 Works out what a destructive move would cost before it happens. A spawn or
-abandon rewrites the working tree, so the gate scans for what that rewrite
-would lose and refuses the move unless the caller accepts the risk. The
-branching operations that call the gate belong to `gitevo/branch-lifecycle`;
-the memory bus that records what happened belongs to `gitevo/memory-bus`.
+abandon rewrites the working tree. The gate scans for what that rewrite
+would lose, and refuses the move unless the caller accepts the risk. The
+branching operations that call the gate belong to `gitevo/branch-lifecycle`.
+The memory bus that records what happened belongs to `gitevo/memory-bus`.
 
 ## Requirements
 
 ### Requirement: The gate scans before a spawn or an abandon
-The system SHALL run the safety scan as part of spawning a branch and as part
-of abandoning one, before either operation changes the working tree.
+The system SHALL run the safety scan as part of spawning a branch and as
+part of abandoning one. It SHALL run before either operation changes the
+working tree.
 
 #### Scenario: Spawning from a checkpoint
 - **WHEN** a caller spawns a new branch from a checkpoint
@@ -26,11 +27,12 @@ of abandoning one, before either operation changes the working tree.
   before it reverts the branch
 
 ### Requirement: Three independent findings describe what a move would cost
-The system SHALL evaluate a move against three findings: tracked source files
-present at HEAD and absent from the target reference, uncommitted files that
-look like source, and build output whose source no longer exists. Each finding
-SHALL be reported only when it holds at least one file, and a move with no
-finding SHALL be treated as safe.
+The system SHALL evaluate a move against three findings. The first is
+tracked source files present at HEAD and absent from the target reference.
+The second is uncommitted files that look like source. The third is build
+output whose source no longer exists. Each
+finding SHALL be reported only when it holds at least one file. A move with
+no finding SHALL be treated as safe.
 
 #### Scenario: Tracked source missing at the destination
 - **WHEN** a file counts as source and is tracked at HEAD but absent from the
@@ -66,11 +68,12 @@ finding.
 
 ### Requirement: Configuration controls what counts as source, where build
 output lives, and whether the stale check runs
+
 The system SHALL read source extensions, build directory layouts, and a
-switch to skip the stale-output check from a settings file at
-`.evo/config.json` under the repository root. A setting the file does not
-name SHALL fall back to a default. A file that does not exist or will not
-parse SHALL be treated as no settings at all.
+switch to skip the stale-output check. It SHALL read them from a settings
+file at `.evo/config.json` under the repository root. A setting the file
+does not name SHALL fall back to a default. A file that does not exist or
+will not parse SHALL be treated as no settings at all.
 
 #### Scenario: No settings file
 - **WHEN** the repository has no `.evo/config.json`
@@ -94,10 +97,11 @@ parse SHALL be treated as no settings at all.
 
 ### Requirement: A test-shaped build artifact is not flagged stale when its
 source language is not configured
-The system SHALL recognize a build artifact named like a test file, and SHALL
-exempt it from the stale-output finding when the repository's configured
-source extensions name none of the source extensions that artifact could
-have compiled from.
+
+The system SHALL recognize a build artifact named like a test file. It
+SHALL exempt that artifact from the stale-output finding under one
+condition. The repository's configured source extensions must name none
+of the source extensions the artifact could have compiled from.
 
 #### Scenario: JS-only repository with a compiled test file
 - **WHEN** the configured source extensions include only JavaScript
@@ -114,9 +118,10 @@ have compiled from.
 
 ### Requirement: The gate refuses the move by default and reports a
 diagnostic
-The system SHALL refuse a move that has at least one finding by raising a
-user-facing error whose message lists every finding, unless the caller
-explicitly forces the move.
+
+The system SHALL refuse a move that has at least one finding, unless the
+caller explicitly forces it. The refusal SHALL raise a user-facing error
+whose message lists every finding.
 
 #### Scenario: Costly move without force
 - **WHEN** the scan produces at least one finding and the caller does not
@@ -131,7 +136,7 @@ explicitly forces the move.
 
 ### Requirement: Refusals are a dedicated error type
 The system SHALL raise refusals as a single error type distinct from a
-generic error, so a caller across a package boundary can recognize and
+generic error. This lets a caller across a package boundary recognize and
 handle it by type. That type SHALL carry a message and SHALL behave as a
 standard error in every other respect.
 
@@ -147,9 +152,9 @@ standard error in every other respect.
 
 ### Requirement: An optional read swallows the dedicated error type
 The system SHALL provide a way to run a read that may legitimately fail
-because of the same refusal condition, and SHALL swallow that refusal by
-returning an empty result rather than propagating the error, for callers that
-treat the read as optional.
+because of the same refusal condition. For callers that treat the read as
+optional, the system SHALL swallow that refusal by returning an empty
+result rather than propagating the error.
 
 #### Scenario: Optional read succeeds
 - **WHEN** an optional read completes without triggering a refusal

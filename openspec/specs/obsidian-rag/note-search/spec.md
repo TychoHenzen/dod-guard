@@ -35,8 +35,8 @@ combine both.
 
 ### Requirement: Keyword search ranks by the FTS5 engine and strips markup from snippets
 
-The system SHALL run the keyword query through SQLite FTS5, order results by
-FTS5 rank, and derive each result's score from that rank so a better rank
+The system SHALL run the keyword query through SQLite FTS5 and order results by
+FTS5 rank. It SHALL derive each result's score from that rank, so a better rank
 yields a higher score. The system SHALL strip the engine's highlight markers
 from the returned snippet text.
 
@@ -76,8 +76,8 @@ rows rather than every row.
 ### Requirement: Keyword search falls back to a substring match on FTS5 failure
 
 When a sanitized query still fails FTS5 parsing, the system SHALL fall back to
-a plain substring match against note title and content instead of raising the
-error to the caller.
+a plain substring match against note title and content. It SHALL NOT raise
+that error to the caller.
 
 #### Scenario: FTS5 rejects a sanitized query
 - **WHEN** the FTS5 engine cannot parse a query even after sanitizing
@@ -87,10 +87,10 @@ error to the caller.
 ### Requirement: Semantic search compares embeddings by cosine similarity read from binary storage
 
 The system SHALL compute cosine similarity between the query embedding and
-each stored chunk embedding by reading the stored vector directly from its
+each stored chunk embedding. It SHALL read the stored vector directly from its
 binary representation, with no per-query JSON parsing of stored vectors. It
-SHALL rank chunks by similarity descending and SHALL return at most one result
-per note, keeping the highest-similarity chunk for that note.
+SHALL rank chunks by similarity descending, and it SHALL return at most one
+result per note, keeping the highest-similarity chunk for that note.
 
 #### Scenario: Same note has two matching chunks
 - **WHEN** semantic search finds two chunks from the same note among the
@@ -152,8 +152,8 @@ and return at most the requested number.
 
 The system SHALL compare the query embedding's length against a stored
 embedding's length before scoring. When the lengths differ, it SHALL raise an
-error naming both lengths and pointing at reindexing with embeddings enabled,
-rather than silently returning a zero similarity.
+error naming both lengths and pointing at reindexing with embeddings enabled.
+It SHALL NOT silently return a zero similarity.
 
 #### Scenario: Stored embedding has a different dimension than the query embedding
 - **WHEN** semantic search compares a query embedding against a stored

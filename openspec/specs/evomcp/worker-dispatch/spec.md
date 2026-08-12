@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Defines how evomcp reaches a cheap worker at all: spawning `claude -p`
-subprocesses pointed at the deepclaude proxy, resolving the API key that
-authenticates those subprocesses, checking whether the proxy is alive, and
-measuring token spend and failure signatures for each attempt. Every other
-evomcp capability spawns work through this layer.
+Defines how evomcp reaches a cheap worker at all. It spawns `claude -p`
+subprocesses pointed at the deepclaude proxy, and resolves the API key that
+authenticates those subprocesses. It also checks whether the proxy is alive,
+and measures token spend and failure signatures for each attempt. Every
+other evomcp capability spawns work through this layer.
 
 ## Requirements
 
@@ -120,8 +120,8 @@ This SHALL be available for diagnostics separately from the key value itself.
 #### Scenario: Status reporting
 - **WHEN** something reports on dispatch readiness
 - **THEN** it can distinguish a key sourced from the option, the environment,
-  the config file, or the absence of any key, without exposing the key value
-  itself
+  or the config file, or report the absence of any key. It does this
+  without exposing the key value itself
 
 ### Requirement: Proxy health is checked, not assumed
 
@@ -149,8 +149,9 @@ SHALL be reported as not healthy.
 
 Before spawning a worker in proxy mode, the dispatcher SHALL either find the
 proxy already healthy or attempt to start it. Starting the proxy SHALL
-require both the deepclaude installation and a resolvable API key; either
-missing SHALL abort the attempt to start it without dispatching a worker.
+require both the deepclaude installation and a resolvable API key. If
+either is missing, the dispatcher SHALL abort the attempt to start it
+without dispatching a worker.
 
 #### Scenario: Proxy already running
 - **WHEN** the health check reports the proxy alive
@@ -196,8 +197,8 @@ unmeasured.
 The dispatcher SHALL reduce a failure's output to a SHA-256 hex digest over a
 normalized form of that output. Normalization SHALL strip timestamps,
 file:line locations, hexadecimal addresses, durations, and temporary
-directory paths before hashing, so that two failures differing only in those
-volatile details hash identically.
+directory paths before hashing. Two failures differing only in those
+volatile details then hash identically.
 
 #### Scenario: Same failure, different timestamps
 - **WHEN** two failure outputs are identical except for their embedded

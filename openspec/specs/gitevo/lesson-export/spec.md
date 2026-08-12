@@ -3,18 +3,19 @@
 ## Purpose
 
 Defines how gitevo records what an attempt taught, lists those lessons back,
-and hands them to another tool. The store's schema and query surface belong to
-`gitevo/memory-bus`; branching operations belong to `gitevo/branch-lifecycle`.
-This spec covers `evo_learn`, `evo_lessons`, `evo_export_lessons`, and the
+and hands them to another tool. The store's schema and query surface belong
+to `gitevo/memory-bus`. Branching operations belong to
+`gitevo/branch-lifecycle`. This spec covers `evo_learn`, `evo_lessons`,
+`evo_export_lessons`, and the
 one-time migration of the legacy lessons file.
 
 ## Requirements
 
 ### Requirement: Recording a lesson attributes it to the active branch
 
-`evo_learn` SHALL write the given content as an INSIGHT message, attributed to
-the branch active at the time of the call. It SHALL report which branch the
-lesson was recorded on.
+`evo_learn` SHALL write the given content as an INSIGHT message. It SHALL
+attribute that message to whichever branch is active when the call happens.
+`evo_learn` SHALL also report that branch's name in its reply.
 
 #### Scenario: Lesson recorded on the current branch
 - **WHEN** `evo_learn` is called with a lesson while a branch is active
@@ -41,10 +42,10 @@ none.
 ### Requirement: Export emits JSON the obsidian-rag memory_save tool accepts
 
 `evo_export_lessons` SHALL emit every stored lesson as a JSON array, newest
-first, in the shape the obsidian-rag `memory_save` tool accepts: an id, a
-title truncated to 80 characters, a description naming the source branch, the
-full content, a type of "feedback", and metadata naming the source and branch.
-It SHALL emit an empty array when no lessons are stored.
+first, in the shape the obsidian-rag `memory_save` tool accepts. Each entry SHALL carry an id, a title truncated to 80 characters, and a
+description naming the source branch. It SHALL also carry the full content,
+a type of "feedback", and metadata naming the source and branch.
+`evo_export_lessons` SHALL emit an empty array when no lessons are stored.
 
 #### Scenario: Empty store exports as an empty array
 - **WHEN** `evo_export_lessons` is called before any lesson has been recorded
@@ -81,10 +82,10 @@ migration.
 
 ### Requirement: Re-running init migrates the legacy file and then clears it
 
-Initializing gitevo again on a repository holding a legacy lessons file SHALL
-migrate every entry in that file into the memory bus before clearing the
-file's contents. Lessons already present in the memory bus SHALL survive the
-migration and the clear.
+Initializing gitevo again on a repository holding a legacy lessons file
+SHALL migrate every entry in that file into the memory bus. It SHALL then
+clear the file's contents. Lessons already present in the memory bus SHALL
+survive the migration and the clear.
 
 #### Scenario: Legacy file present on re-init
 - **WHEN** gitevo is initialized again while `.evo/lessons.jsonl` holds

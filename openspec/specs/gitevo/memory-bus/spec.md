@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Defines the cross-session record of what was tried and what worked in gitevo.
-The bus persists messages, checkpoint timestamps, and branch state in a
-SQLite database under `.evo/`, so an evomcp reader on the other side of the
-seam can recover past insights, failures, and elite solutions across
-sessions.
+Defines the cross-session record of what was tried and what worked in
+gitevo. The bus persists messages, checkpoint timestamps, and branch state
+in a SQLite database under `.evo/`. An evomcp reader on the other side of
+the seam uses that database to recover past insights, past failures, and
+elite solutions from earlier sessions.
 
 ## Requirements
 
@@ -27,10 +27,10 @@ calls made against the same working directory.
 - **THEN** both land in the same `.evo/memory.db` file
 
 ### Requirement: A message carries a type, scope, content, metadata, and branch
-The system SHALL record, for every message, a type, a content body, an
-optional scope, optional metadata, an optional branch, and a timestamp of
-when it was written. The system SHALL support at least three message types:
-INSIGHT, FAILURE_SIGNATURE, and ELITE_SOLUTION.
+For every message, the system SHALL record a type, a content body, and a
+timestamp of when it was written. It SHALL also record an optional scope,
+optional metadata, and an optional branch. The system SHALL support at
+least three message types: INSIGHT, FAILURE_SIGNATURE, and ELITE_SOLUTION.
 
 #### Scenario: Insight recorded with no scope
 - **WHEN** an INSIGHT message is written with no scope and no metadata
@@ -48,10 +48,10 @@ INSIGHT, FAILURE_SIGNATURE, and ELITE_SOLUTION.
 - **THEN** the stored message returns that metadata intact on query
 
 ### Requirement: Messages are queryable by type and by scope
-The system SHALL let a caller query messages filtered by type, by scope, by a
-minimum timestamp, or by any combination of these, and SHALL return the most
-recent matching messages first. The system SHALL cap the number of messages
-returned, defaulting to 50 when the caller sets no limit.
+The system SHALL let a caller query messages filtered by type, by scope, by
+a minimum timestamp, or by any combination of these. It SHALL return the
+most recent matching messages first. The system SHALL cap the number of
+messages returned, defaulting to 50 when the caller sets no limit.
 
 #### Scenario: Query filtered by type
 - **WHEN** a caller queries for type FAILURE_SIGNATURE
@@ -78,7 +78,7 @@ report the count for a single named type when asked.
 - **THEN** the system returns only the count of INSIGHT messages
 
 ### Requirement: Branch records keep one row per branch with its current status
-The system SHALL record a branch's name, status, and spawn point, and SHALL
+The system SHALL record a branch's name, status, and spawn point. It SHALL
 keep exactly one record per branch name, updating that record's status in
 place on every subsequent record for the same name.
 

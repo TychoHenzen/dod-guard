@@ -6,16 +6,16 @@ Turns a vault of markdown files into a searchable local index: notes, headings-a
 chunks, and the tables that keyword and vector search read from. Covers selecting a
 vault, walking it, chunking and hashing content, and keeping the index consistent as
 notes are added, edited, or deleted. Generating vectors for a chunk belongs to
-`obsidian-rag/embedding-pipeline`; reading and writing note files belongs to
-`obsidian-rag/note-access`; querying the index belongs to `obsidian-rag/note-search`.
+`obsidian-rag/embedding-pipeline`. Reading and writing note files belongs to
+`obsidian-rag/note-access`. Querying the index belongs to `obsidian-rag/note-search`.
 
 ## Requirements
 
 ### Requirement: Vault selection resolves a name or a direct path
 
 The system SHALL resolve a vault either by a known name or by a filesystem path
-supplied directly, and SHALL record the selected vault so later tool calls do not need
-to repeat it.
+supplied directly. It SHALL record the selected vault so later tool calls do not
+need to repeat it.
 
 #### Scenario: Selecting by known name
 - **WHEN** a caller selects a vault by a name already recorded in the store
@@ -32,8 +32,9 @@ to repeat it.
 ### Requirement: A full index walk covers every markdown file in the vault
 
 The system SHALL walk the vault directory recursively and collect every file whose
-name ends in `.md`, skipping hidden directories. It SHALL record each file's path
-relative to the vault root using forward slashes regardless of platform.
+name ends in `.md`. It SHALL skip hidden directories during that walk. It SHALL
+record each file's path relative to the vault root using forward slashes
+regardless of platform.
 
 #### Scenario: Nested markdown files
 - **WHEN** the vault holds markdown files several directories deep
@@ -50,12 +51,13 @@ relative to the vault root using forward slashes regardless of platform.
 ### Requirement: Chunking is heading-aware, bounded, and keeps code blocks intact
 
 The system SHALL split a note's content into sections at markdown headings (`#`
-through `######`), carrying the nearest heading as breadcrumb text on each chunk. It
-SHALL accumulate section text into a chunk up to a maximum size and SHALL carry a
-fixed amount of trailing text from one chunk into the next as overlap when it splits.
-A heading marker appearing inside a fenced code block SHALL NOT start a new section,
-and the code fence SHALL never be split across chunks by that rule. A note with no
-content that crosses the size limit SHALL still produce exactly one chunk.
+through `######`). It SHALL carry the nearest heading as breadcrumb text on each
+chunk. It SHALL accumulate section text into a chunk up to a maximum size. When it
+splits a chunk, it SHALL carry a fixed amount of trailing text from that chunk into
+the next one as overlap. A heading marker appearing inside a fenced code block SHALL NOT
+start a new section. The code fence SHALL never be split across chunks by that
+rule. A note whose content does not cross the size limit SHALL still produce
+exactly one chunk.
 
 #### Scenario: Heading marks section
 - **WHEN** a note contains two headings each followed by short text
@@ -78,8 +80,8 @@ content that crosses the size limit SHALL still produce exactly one chunk.
 ### Requirement: Chunk identifiers are stable and unique within a note
 
 The system SHALL assign each chunk an identifier built from the note's path and the
-chunk's position within that note, so chunk identifiers within one note never repeat
-and the same input reproduces the same identifiers.
+chunk's position within that note. Chunk identifiers within one note SHALL never
+repeat, and the same input SHALL always reproduce the same identifiers.
 
 #### Scenario: Many chunks from one note
 - **WHEN** a single note produces many chunks
@@ -87,7 +89,7 @@ and the same input reproduces the same identifiers.
 
 ### Requirement: A content hash drives incremental indexing
 
-The system SHALL compute a stable hash of a note's content and SHALL skip
+The system SHALL compute a stable hash of a note's content. It SHALL skip
 re-chunking and re-storing a note whose stored hash still matches its current
 content. It SHALL treat any change to the content as requiring re-indexing.
 
@@ -109,8 +111,8 @@ content. It SHALL treat any change to the content as requiring re-indexing.
 ### Requirement: Re-indexing a note deletes its old chunks before inserting new ones
 
 The system SHALL delete every existing chunk belonging to a note before it inserts
-that note's newly computed chunks, so a note that now produces fewer chunks than
-before leaves no orphaned chunks behind.
+that note's newly computed chunks. This way, a note that now produces fewer chunks
+than before leaves no orphaned chunks behind.
 
 #### Scenario: Note shrinks
 - **WHEN** a previously indexed note that produced several chunks is re-indexed with
@@ -121,9 +123,10 @@ before leaves no orphaned chunks behind.
 ### Requirement: A full index walk reconciles the index against the filesystem
 
 After walking and indexing every markdown file found on disk, the system SHALL
-compare the set of notes recorded in the index against the files that still exist and
-SHALL remove, from both the note table and the chunk table, any note whose file is no
-longer present.
+reconcile the index against the filesystem. It SHALL compare the set of notes
+recorded in the index against the files that still exist. It SHALL then remove any
+note whose file is no longer present. That removal SHALL cover both the note table
+and the chunk table.
 
 #### Scenario: Note deleted from disk
 - **WHEN** the index holds a note whose file has been removed from the vault since
@@ -136,9 +139,9 @@ longer present.
 
 ### Requirement: A single note can be indexed without a full walk
 
-The system SHALL support indexing one named note independently of a full vault walk,
-performing the same delete-then-insert chunk replacement as the full walk, so that a
-note just written is immediately reflected in the index without waiting on a full
+The system SHALL support indexing one named note independently of a full vault walk.
+It SHALL perform the same delete-then-insert chunk replacement as the full walk. So
+a note just written is immediately reflected in the index without waiting on a full
 reindex.
 
 #### Scenario: Note written then indexed
@@ -152,13 +155,14 @@ reindex.
 
 ### Requirement: The index schema separates notes, chunks, vectors, and the keyword index
 
-The system SHALL persist indexed data in tables covering: note metadata and content
-per vault, chunks belonging to a note with their heading breadcrumb, a vector column
-associated with each chunk, and a keyword index built from note title, content, and
-tags. It SHALL scope every one of those tables by vault so that two vaults never
+The system SHALL persist indexed data in four kinds of tables. One table SHALL hold
+note metadata and content per vault. Another SHALL hold chunks belonging to a note,
+each carrying its heading breadcrumb. A vector column SHALL be associated with each
+chunk. A keyword index SHALL be built from note title, content, and tags. The
+system SHALL scope every one of those tables by vault, so that two vaults never
 mix data. Generating the vector values themselves is out of scope for this
-capability; see `obsidian-rag/embedding-pipeline`. Querying these tables is out of
-scope for this capability; see `obsidian-rag/note-search`.
+capability. See `obsidian-rag/embedding-pipeline`. Querying these tables is out of
+scope for this capability. See `obsidian-rag/note-search`.
 
 #### Scenario: Two vaults stay separate
 - **WHEN** two different vaults have each been indexed
@@ -172,9 +176,9 @@ scope for this capability; see `obsidian-rag/note-search`.
 ### Requirement: The index refuses to install anything at run time
 
 The system SHALL NOT attempt to install missing runtime dependencies itself. When a
-required native dependency is missing, it SHALL fail with an error naming the
-missing dependency and the exact command to run to install it, rather than degrading
-silently or attempting an install.
+required native dependency is missing, it SHALL fail with an error. That error
+SHALL name the missing dependency and the exact command to run to install it. It SHALL NOT
+degrade silently or attempt an install.
 
 #### Scenario: Native dependency missing
 - **WHEN** the database layer's required native module cannot be loaded

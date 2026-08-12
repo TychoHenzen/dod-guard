@@ -29,9 +29,9 @@ and SHALL report zero lineages attempted.
 - **THEN** the run proceeds to sample and run attempts
 
 ### Requirement: Attempts run one at a time
-The system SHALL run attempts sequentially rather than concurrently, because
-every attempt checks out its own branch inside the one working directory the
-run holds, and two attempts cannot each hold that directory checked out to a
+The system SHALL run attempts sequentially rather than concurrently. Every
+attempt checks out its own branch inside the one working directory the run
+holds. Two attempts cannot each hold that directory checked out to a
 different branch at once.
 
 #### Scenario: Multiple plans sampled
@@ -40,10 +40,10 @@ different branch at once.
   and screening, before the next plan's attempt starts
 
 ### Requirement: Each attempt follows a fixed cycle
-The system SHALL run each attempt through: spawning a branch from the
-checkpoint, checking that branch out, running a worker against the plan's
-prompt, committing whatever the worker produced, capturing the diff against
-the root branch, and verifying the result.
+The system SHALL run each attempt through a fixed cycle. It spawns a branch
+from the checkpoint, checks that branch out, and runs a worker against the
+plan's prompt. It then commits whatever the worker produced. It captures
+the diff against the root branch, and verifies the result.
 
 #### Scenario: Branch cannot be spawned or checked out
 - **WHEN** spawning or checking out an attempt's branch fails
@@ -82,9 +82,10 @@ alone and judge the attempt on its exit code.
 
 ### Requirement: A failing attempt enters a bounded repair loop
 The system SHALL give a failing attempt further worker tries, each with
-feedback compiled from the failing verification output, until the
-escalation ladder stops the lineage, the run's budget is exhausted, a repair
-worker times out, or a repair attempt passes verification.
+feedback compiled from the failing verification output. The loop keeps going
+until the escalation ladder stops the lineage or the run's budget is
+exhausted. It also stops when a repair worker times out or a repair attempt
+passes verification.
 
 #### Scenario: Repair produces a passing result
 - **WHEN** a repair try passes verification
@@ -95,17 +96,18 @@ worker times out, or a repair attempt passes verification.
 - **THEN** the lineage stops repairing and the attempt is marked timed out
 
 #### Scenario: Ladder leaves the retry and resample rungs
-- **WHEN** the escalation ladder advances past the rungs that permit another
-  try
+- **WHEN** the escalation ladder passes the point where a rung permits
+  another try
 - **THEN** the lineage stops repairing and the attempt is marked stuck
 
 ### Requirement: Stuck and oscillating detection reads per-lineage signature history
 The system SHALL compute a failure signature for each repair try and
 maintain a per-lineage history of those signatures. It SHALL classify the
-lineage's failure mode as stuck when recent signatures repeat unchanged,
-oscillating when a signature recurs after an intervening different one, or
-no-progress when recent signatures are all distinct, and SHALL record that
-classification on the attempt's diagnostic.
+lineage's failure mode as stuck when recent signatures repeat unchanged.
+It SHALL classify the mode as oscillating when a signature recurs after an
+intervening different one. It SHALL classify the mode as no-progress when
+recent signatures are all distinct, and SHALL record that classification on
+the attempt's diagnostic.
 
 #### Scenario: Same signature repeats
 - **WHEN** the most recent signatures in a lineage's history are identical
@@ -118,7 +120,7 @@ classification on the attempt's diagnostic.
 
 ### Requirement: Every non-surviving attempt is abandoned
 The system SHALL check out and abandon the branch of every attempt that does
-not survive screening, reverting the branch and recording the reason the
+not survive screening. It reverts the branch and records the reason the
 lineage did not survive.
 
 #### Scenario: Attempt fails verification or screening
@@ -154,16 +156,16 @@ returning to the root branch.
 
 ### Requirement: A run with no surviving attempt returns an escalation report
 The system SHALL return an escalation outcome when no attempt survives. The
-report SHALL name the most frequent failure signature across every
-attempt's history, carry the diff and truncated output of the least-bad
-attempt, count how many lineages were attempted, and carry every attempt's
-diagnostic.
+report SHALL name the failure signature that recurs most often across every
+attempt's history. It SHALL also carry the diff and truncated output of the
+least-bad attempt, count how many lineages were attempted, and carry every
+attempt's diagnostic.
 
 #### Scenario: Every attempt fails
 - **WHEN** no attempt survives verification and screening
 - **THEN** the run returns outcome `escalate` with a summary naming the
-  lineage count, the dominant failure signature, and the total repair tries,
-  and lineage diagnostics for every attempt
+  lineage count, the dominant failure signature, and the total repair
+  tries. It also carries lineage diagnostics for every attempt
 
 #### Scenario: Some attempts were rejected by screening
 - **WHEN** one or more passing attempts were rejected by screening and no

@@ -12,14 +12,17 @@ retrying forever.
 
 ### Requirement: Every playbook stage carries a token and time budget
 
-The system SHALL track a token limit and a wall-time limit in milliseconds for
-each of the stages spec, test_author, implement, harden, review, merge, and a
-total stage covering the whole run. A caller SHALL be able to override the
-limit for one or more stages without affecting the others.
+The system SHALL track a token limit and a wall-time limit in milliseconds.
+It SHALL track both for each of six stages: spec, test_author, implement,
+harden, review, and merge. It SHALL also track both limits for a total
+stage covering the whole run.
+
+A caller SHALL be able to override the limit for one or more stages,
+without affecting the others.
 
 #### Scenario: Fresh budget state
 - **WHEN** a new budget state is created with no overrides
-- **THEN** every stage holds its default token limit and time limit, and every
+- **THEN** every stage holds its default token limit and time limit. Every
   stage's consumption starts at zero tokens, zero milliseconds, zero attempts,
   and zero verified edges
 
@@ -38,22 +41,21 @@ call.
 
 #### Scenario: Recording tokens against one stage
 - **WHEN** a caller records tokens against the spec stage
-- **THEN** the spec stage's token consumption increases by that amount and
-  the total stage's token consumption increases by the same amount
+- **THEN** the spec stage consumes that many more tokens, and the total stage
+  consumes the same amount
 
 #### Scenario: Recording an attempt
 - **WHEN** a caller records an attempt against a stage with a token count and
   a time count
-- **THEN** the stage's token consumption, time consumption, and attempt count
-  all increase, and the total stage's token consumption, time consumption,
-  and attempt count all increase to match
+- **THEN** the stage's tokens, time, and attempt count all increase. The
+  total stage's tokens, time, and attempt count all increase to match
 
 ### Requirement: A stage is exhausted when either resource reaches its limit
 
 The system SHALL treat a stage as exhausted once its token consumption
-reaches its token limit or its time consumption reaches its time limit,
-whichever happens first. The fraction consumed for a stage SHALL be the
-larger of its token fraction and its time fraction.
+reaches its token limit or its time consumption reaches its time limit.
+Whichever happens first decides the exhaustion. The fraction consumed for a
+stage SHALL be the larger of its token fraction and its time fraction.
 
 #### Scenario: Token limit reached
 - **WHEN** a stage's token consumption reaches its token limit while its time
@@ -68,27 +70,25 @@ larger of its token fraction and its time fraction.
 
 ### Requirement: A run is exhausted only at the total stage, not a substage
 
-The system SHALL treat the whole run as exhausted only when the total stage's
-token consumption reaches the total token limit or the total stage's time
-consumption reaches the total time limit. Exhaustion of one substage SHALL
-NOT by itself mark the run exhausted.
+The system SHALL treat the whole run as exhausted only when the total stage
+reaches the total token limit or the total time limit. Exhaustion of one
+substage SHALL NOT by itself mark the run exhausted.
 
 #### Scenario: One substage exhausted, total still under limit
-- **WHEN** a substage's consumption reaches its own limit but the total
-  stage's consumption stays under the total limit
+- **WHEN** a substage's consumption reaches its own limit but the total stage
+  stays under the total limit
 - **THEN** the run-level exhausted flag stays false
 
 #### Scenario: Total limit reached
-- **WHEN** the total stage's token consumption or time consumption reaches
-  the total limit
+- **WHEN** the total stage's tokens or time reach the total limit
 - **THEN** the run-level exhausted flag becomes true
 
 ### Requirement: Warnings fire once per stage at each of four thresholds
 
 The system SHALL emit a warning the first time a stage's fraction consumed
 reaches 50%, 80%, 95%, or 100%. Each threshold SHALL fire at most once per
-stage. A warning SHALL name which resource, tokens, time, or both, drove the
-stage past the threshold.
+stage. A warning SHALL name which resource drove the stage past the
+threshold: tokens, time, or both.
 
 #### Scenario: Crossing multiple thresholds in one recording
 - **WHEN** a single recording pushes a stage's fraction consumed from under
@@ -123,8 +123,8 @@ or a stage's first attempt.
 
 The system SHALL compute a total dollar cost from total token consumption.
 The system SHALL compute cost per verified edge as total cost divided by the
-total count of verified graph edges, and SHALL report no such figure until at
-least one edge has been verified.
+total count of verified graph edges. The system SHALL report no such figure
+until at least one edge has been verified.
 
 #### Scenario: No edges verified yet
 - **WHEN** a run has consumed tokens but verified no graph edges
@@ -139,9 +139,10 @@ least one edge has been verified.
 ### Requirement: A human-readable summary reports spend, edges, and exhaustion
 
 The system SHALL produce a text summary that names each stage's consumption
-and fraction of budget used, the total tokens spent, the total verified
-edges, the cost per verified edge when available, and an explicit exhaustion
-notice when the run is exhausted.
+and fraction of budget used. It SHALL also name the total tokens spent and
+the total verified edges. The summary SHALL include the cost per verified edge when
+available. It SHALL include an explicit exhaustion notice when the run is
+exhausted.
 
 #### Scenario: Summary while under budget
 - **WHEN** a summary is requested for a run that has spent tokens but is not
@@ -159,12 +160,14 @@ notice when the run is exhausted.
 The system SHALL define the rungs retry, resample, re-decompose,
 stronger-model, and human, in that order, as the code-level escalation
 ladder. A fresh escalation state SHALL start at the retry rung with zero
-attempts and empty history. This is the ladder implemented in code; it is
-distinct from and shorter than the four-rung ladder the cascade skill
-describes above evomcp (worker repair, worker resample, host model, user).
-The skill ladder's rungs are decisions the orchestrating session and the user
-make around a run; the code ladder's rungs are the strategy changes evomcp
-itself applies inside one run.
+attempts and empty history.
+
+This is the ladder implemented in code. It is distinct from, and shorter
+than, the four-rung ladder the cascade skill describes above evomcp (worker
+repair, worker resample, host model, user). The skill ladder's rungs are
+decisions the orchestrating session and the user make around a run. The code
+ladder's rungs are the strategy changes evomcp itself applies inside one
+run.
 
 #### Scenario: Fresh escalation state
 - **WHEN** a new escalation state is created
@@ -174,8 +177,8 @@ itself applies inside one run.
 #### Scenario: Full ladder in order
 - **WHEN** a run escalates every time it exhausts a rung's attempts
 - **THEN** it moves from retry to resample, from resample to re-decompose,
-  from re-decompose to stronger-model, and from stronger-model to human, in
-  that order, never skipping or reordering a rung
+  from re-decompose to stronger-model, and from stronger-model to human. It
+  never skips or reorders a rung
 
 ### Requirement: Each rung carries its own attempt budget
 
@@ -196,11 +199,13 @@ escalate to the next rung.
 ### Requirement: Five trigger signals can force escalation before the attempt cap
 
 The system SHALL escalate a non-human rung immediately when any of these
-signals fires: the same failure signature repeating across consecutive
-attempts, oscillating scores, no progress (edit distance collapsed to zero
-across retries), token budget exhaustion, or wall-time budget exhaustion. Any
-one of these signals SHALL be sufficient; the rung's attempt cap need not be
-reached.
+signals fires. The same failure repeats across consecutive attempts, or
+scores oscillate, or progress stalls (edit distance collapses to zero
+across retries). It also fires when the token budget runs out, or the
+wall-time budget runs out.
+
+Any one of these signals SHALL be sufficient. The rung's attempt cap need
+not be reached.
 
 #### Scenario: A single stuck signal escalates immediately
 - **WHEN** the stuck signal fires on the first attempt at a rung
@@ -229,8 +234,8 @@ at the human rung.
 
 ### Requirement: A stuck determination composes at least two trigger signals
 
-The system SHALL treat a task as stuck, for the purpose of a composite stuck
-check, only when at least two of the five trigger signals fire together. A
+The system SHALL treat a task as stuck, for a composite stuck check, only
+when at least two of the five trigger signals fire together. A
 single firing signal SHALL NOT by itself satisfy this composite check.
 
 #### Scenario: Two signals fire together
@@ -245,10 +250,11 @@ single firing signal SHALL NOT by itself satisfy this composite check.
 ### Requirement: A successful re-decomposition can return the ladder to retry
 
 The system SHALL let a caller reset the current rung to retry, with the
-attempt count at that rung set to zero, while preserving total attempts and
-history. This SHALL be available independently of the automatic escalation
-trigger, so a successful decomposition can resume at the bottom of the
-ladder.
+attempt count at that rung set to zero. Total attempts and history SHALL
+be preserved.
+
+This SHALL be available independently of the automatic escalation trigger.
+A successful decomposition can then resume at the bottom of the ladder.
 
 #### Scenario: Resetting after re-decompose succeeds
 - **WHEN** the run is at the re-decompose rung and decomposition succeeds
