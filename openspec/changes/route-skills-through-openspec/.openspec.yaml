@@ -1,4 +1,5 @@
 schema: dod-guard-spec-driven
 created: 2026-08-12
-goal: Make every dod-guard skill operate on an OpenSpec change id and fetch
-  artifact rules at runtime instead of carrying its own copies
+goal: Delete the DoD proof/predicate engine, make dod-guard cover (scenario to
+  test, verified by reachability) the gate, and put every skill on an
+  OpenSpec change id instead of a copy of rules OpenSpec already owns
