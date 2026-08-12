@@ -29,17 +29,17 @@ and points the build skills at it.
 ## Capabilities
 
 ### New Capabilities
-- `dod-generation-from-spec`: converts an OpenSpec change's spec deltas into
+- `dod-guard/generation-from-spec`: converts an OpenSpec change's spec deltas into
   a DoD document, one scenario mapping to one leaf. An uncheckable scenario
   gets one `MANUAL:` draft leaf instead. The document registers through
   `dod_import`.
-- `dod-trace-closure`: `dod-guard trace <change-id>`, the two-directional
+- `dod-guard/trace-closure`: `dod-guard trace <change-id>`, the two-directional
   check that every DoD leaf traces to a scenario and every scenario reaches
   a leaf or a draft.
-- `build-skill-openspec-integration`: the observable behavior of
+- `dod-guard/build-skill-openspec-integration`: the observable behavior of
   `/interview`, `/step-by-step` and `/cheap-step` once they read from and
   write to OpenSpec artifacts instead of hand-written DoD prose.
-- `assumption-marker-audit`: the `ASSUMPTION:` comment convention, the
+- `dod-guard/assumption-marker-audit`: the `ASSUMPTION:` comment convention, the
   quality-guard rule that counts it, and the audit that resolves each hit.
 
 ### Modified Capabilities

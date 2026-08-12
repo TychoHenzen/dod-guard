@@ -33,13 +33,13 @@ Nothing reads that JSON into a view a person can browse.
 
 ### New Capabilities
 
-- `openspec-project-registry`: which projects the dashboard shows, how a scan
+- `openspec-dashboard/project-registry`: which projects the dashboard shows, how a scan
   proposes new ones, and how the registry keeps that choice across restarts.
   A scan proposes and the registry decides.
-- `openspec-cli-reader`: how the dashboard gets a project's data. It locates
+- `openspec-dashboard/cli-reader`: how the dashboard gets a project's data. It locates
   the OpenSpec CLI, runs only read commands, reuses a result until the
   project's files change, and turns a failure into a readable message.
-- `openspec-dashboard-ui`: what a reader sees and can reach in the browser.
+- `openspec-dashboard/ui`: what a reader sees and can reach in the browser.
   Tabs, the change and spec lists, the detail panes, the scan panel, and the
   empty states.
 
