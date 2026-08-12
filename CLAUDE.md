@@ -26,6 +26,16 @@ npm workspaces monorepo with five MCP server plugins for Claude Code, distribute
 
 Put a plugin here only while it has no server. The moment it needs one, it becomes a package.
 
+### Local tools that ship nothing
+
+`tools/` holds developer utilities that run from a checkout and never publish. They are not npm workspaces and not plugins, so no version bump, no `dist/bundle.js`, and no marketplace entry applies.
+
+| Tool | Runs with |
+|------|-----------|
+| `openspec-dashboard` | `node tools/openspec-dashboard/serve.mjs`. Read-only browser view over the OpenSpec CLI, across every project in `~/.openspec-dashboard/projects.json`. |
+
+Every CI gate is scoped away from this directory. The quality scan reads `packages`, Biome reads `packages/*/src/` and `scripts/ci/`, and `validate-plugins.mjs` reads `packages/` and `plugins/`. So a tool here is checked by review alone, not by the ratchets. Keep one dependency-free and small enough to read, or promote it to a package.
+
 ## Build, test, lint
 
 All commands from the **monorepo root**:

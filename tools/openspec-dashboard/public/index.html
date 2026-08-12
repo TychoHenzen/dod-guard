@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenSpec dashboard</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header>
+      <span class="brand">OpenSpec</span>
+      <nav id="tabs" class="tabs"></nav>
+      <div class="actions">
+        <button id="refresh" type="button" title="Re-read this project from disk">Refresh</button>
+      </div>
+    </header>
+    <main>
+      <aside id="sidebar">
+        <input id="filter" type="search" placeholder="Filter changes and specs" autocomplete="off" />
+        <div id="lists"></div>
+      </aside>
+      <section id="detail">
+        <p class="empty">Pick a change or a spec.</p>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
