@@ -4,7 +4,7 @@
  * openspec/changes/route-skills-through-openspec. `steps` (task-bound) and
  * `cover` (scenario-to-test coverage) land in later steps of that change.
  */
-const USAGE = `dod-guard — OpenSpec scenario coverage
+const USAGE = `dod-guard - OpenSpec scenario coverage
 
 USAGE
   dod-guard <command> [options]
@@ -57,7 +57,7 @@ export const EXIT_USAGE_ERROR = 3;
 
 const COMMANDS: Record<string, Command> = {};
 
-/** Run the CLI. Returns the process exit code — never calls process.exit itself. */
+/** Run the CLI. Returns the process exit code. Never calls process.exit itself. */
 export async function runCli(argv: string[], io: CliIo = defaultIo): Promise<number> {
   const { command, flags, positional } = parseArgs(argv);
 

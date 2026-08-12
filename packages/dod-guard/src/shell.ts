@@ -15,8 +15,8 @@ export interface ShellRun {
  * On Windows this is `cmd.exe /d /s /c "command"`, passed with
  * windowsVerbatimArguments so Node does not re-quote the string. Node's default
  * Windows quoting escapes embedded double quotes in a way cmd.exe does not
- * understand, which silently mangles commands like `findstr /C:"x" file` and
- * `node -e "..."` — they run, exit 0, and produce nothing. `/s` tells cmd.exe to
+ * understand. It silently mangles commands like `findstr /C:"x" file` and
+ * `node -e "..."` - they run, exit 0, and produce nothing. `/s` tells cmd.exe to
  * strip exactly the outer quote pair we add here.
  *
  * Single quotes are NOT a grouping character in cmd.exe; wrapping in them makes
