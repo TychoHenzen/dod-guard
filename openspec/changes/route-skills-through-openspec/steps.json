@@ -95,7 +95,7 @@
       "verify_surface": "code",
       "verify_cmd": "npm run build -w packages/dod-guard && node --test packages/dod-guard/dist/openspec/delta-sections.test.js",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "converter-title-round-trip",
@@ -112,7 +112,7 @@
       "verify_surface": "code",
       "verify_cmd": "npm run build -w packages/dod-guard && node --test packages/dod-guard/dist/title-round-trip.test.js",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "converter-title-amend",
@@ -130,7 +130,7 @@
       "verify_surface": "code",
       "verify_cmd": "npm run build -w packages/dod-guard && node --test packages/dod-guard/dist/title-round-trip.test.js",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "schema-dod-instruction",

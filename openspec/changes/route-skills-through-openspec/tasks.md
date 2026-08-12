@@ -13,12 +13,12 @@ The guard lands first, so every later step has a failing check to satisfy.
 
 ## 2. Converter fidelity
 
-- [ ] 2.1 Teach `extractRequirementBlocks` the `## ADDED` / `## MODIFIED` /
+- [x] 2.1 Teach `extractRequirementBlocks` the `## ADDED` / `## MODIFIED` /
       `## REMOVED` / `## RENAMED` headings, and drop every requirement under
       `## REMOVED Requirements` so it produces no group and no leaf
-- [ ] 2.2 Render a concrete leaf's title in `author.ts` and read it back in
+- [x] 2.2 Render a concrete leaf's title in `author.ts` and read it back in
       `parser.ts`, in place of the `title: desc` fallback
-- [ ] 2.3 Give `dod_amend` a title parameter and pass it from
+- [x] 2.3 Give `dod_amend` a title parameter and pass it from
       `amendChangedLeaf` in `regenerate-dod.ts`
 - [ ] 2.4 Update the DoD markdown format spec under `packages/dod-guard/docs/`
       for the rendered title

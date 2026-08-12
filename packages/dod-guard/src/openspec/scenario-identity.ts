@@ -1,12 +1,12 @@
 /**
  * Scenario identity, kept outside the DodDocument entirely.
  *
- * `author.ts` never renders a leaf's scenario heading (see `renderLeaf`),
- * and `parser.ts` reconstructs `title` from the rendered description/intent
- * text instead (see `parseLeafLine`). So the only path into canonical
- * storage - `dod_import`, which every OpenSpec-generated DoD goes through
- * once - already throws the scenario heading away by the time
- * `regenerateDod` would need it to key a diff.
+ * A concrete leaf carries its scenario heading through the render/parse
+ * round trip (see `titlePrefix` in `author.ts`), but a draft leaf does not:
+ * `renderLeaf` writes only its `MANUAL:` intent, and `parser.ts` rebuilds
+ * `title` from that text (see `parseLeafLine`). So `dod_import`, the one
+ * path into canonical storage every OpenSpec-generated DoD goes through,
+ * still loses the heading of every scenario a human has to judge.
  *
  * This sidecar, written and read only by `src/openspec/` code, remembers
  * which stored node id each (requirement heading, scenario heading) pair
@@ -50,8 +50,8 @@ export async function writeScenarioMap(resolvedOutputPath: string, entries: Scen
 /** Right after a fresh import, zip the pre-roundtrip converted tree (real
  * scenario titles) against the just-imported doc's roots. Both walk the
  * same requirement/scenario order the converter produced, so position
- * lines them up even though the imported copy's own `title` field is
- * already lossy. */
+ * lines them up even where the imported copy's own `title` field is
+ * lossy. */
 export function buildScenarioMap(convertedRoots: TaskNode[], importedRoots: TaskNode[]): ScenarioMapEntry[] {
   const entries: ScenarioMapEntry[] = [];
   convertedRoots.forEach((group, gi) => {

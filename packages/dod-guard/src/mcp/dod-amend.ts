@@ -19,6 +19,7 @@ interface AmendParams {
   new_command?: string;
   new_predicate?: Predicate;
   new_description?: string;
+  new_title?: string;
   reason: string;
   amend_justification?: string;
 }
@@ -115,12 +116,18 @@ async function amendBulk(doc: DodDocument, params: AmendParams): Promise<string>
   return finalizeAmend(doc);
 }
 
+/** The fields an amendment can move, for both sides of the audit entry. */
+function snapshot(node: TaskNode) {
+  return { command: node.command, predicate: node.predicate, description: node.description, title: node.title };
+}
+
 function applyAmendment(target: { node: TaskNode; path: string }, doc: DodDocument, params: AmendParams): void {
   const { node, path } = target;
-  const old_value = { command: node.command, predicate: node.predicate, description: node.description };
+  const old_value = snapshot(node);
   if (params.new_command !== undefined) node.command = params.new_command;
   if (params.new_predicate !== undefined) node.predicate = params.new_predicate;
   if (params.new_description !== undefined) node.description = params.new_description;
+  if (params.new_title !== undefined) node.title = params.new_title;
   node.last_status = "pending";
 
   doc.amendments.push({
@@ -128,7 +135,7 @@ function applyAmendment(target: { node: TaskNode; path: string }, doc: DodDocume
     node_path: path,
     action: "modified",
     old_value,
-    new_value: { command: node.command, predicate: node.predicate, description: node.description },
+    new_value: snapshot(node),
     reason: params.reason,
     justification: params.amend_justification,
   });

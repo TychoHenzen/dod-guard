@@ -106,14 +106,18 @@ test("round trip: writeMarkdown then parseMarkdown preserves the proof tree", as
   assert.equal(parsed.roots.length, 2);
 
   const [first, group] = parsed.roots;
-  assert.equal(first.title, "lint passes");
+  // The rendered line now names the leaf, so the title survives instead of
+  // being reconstructed from the description - see title-round-trip.test.ts.
+  assert.equal(first.title, "step one");
+  assert.equal(first.description, "lint passes");
   assert.equal(first.command, "npm run lint");
   assert.equal(first.refinement, "concrete");
 
   assert.equal(group.title, "group of steps");
   assert.equal(group.children?.length, 1);
   const leaf = group.children?.[0];
-  assert.equal(leaf?.title, "tests pass");
+  assert.equal(leaf?.title, "step two");
+  assert.equal(leaf?.description, "tests pass");
   assert.equal(leaf?.command, "npm test");
   assert.deepEqual(leaf?.predicate, { type: "output_contains", value: "ok" });
 });

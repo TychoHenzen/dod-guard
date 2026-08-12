@@ -45,17 +45,22 @@ function parseLeafLine(line: string): TaskNode | null {
   // Without this HTML comment, proof lines are parsed as draft leaves.
   const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
 
-  // Any proof format with a backticked command (generic pattern handles
-  // "Proof:", "Proof (TDD ...):", "Proof (brevity ...):", etc.)
-  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*->\s*(.+)$/);
+  // Any proof format with a backticked command ("Proof:", "Proof (TDD ...):",
+  // ...), optionally named by a `**title** - ` prefix. A line without one came
+  // from a leaf whose title only repeated its description (see `titlePrefix`
+  // in author.ts), so the description stands in.
+  const proofMatch = cleanLine.match(
+    /^-\s*\[([ x~>])\]\s*(?:\*\*(.+?)\*\*\s+-\s+)?Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*->\s*(.+)$/,
+  );
   if (proofMatch) {
-    const desc = proofMatch[3].trim();
+    const desc = proofMatch[4].trim();
+    const title = proofMatch[2]?.trim() || desc;
     if (metaPredicate) {
       return {
         id: "",
-        title: desc,
+        title,
         refinement: "concrete",
-        command: proofMatch[2].trim(),
+        command: proofMatch[3].trim(),
         predicate: metaPredicate,
         description: desc,
         last_status: markerToStatus(proofMatch[1]),
@@ -64,7 +69,7 @@ function parseLeafLine(line: string): TaskNode | null {
     // No explicit metadata -> import as draft
     return {
       id: "",
-      title: desc,
+      title,
       refinement: "draft",
       intent: desc,
       last_status: "draft",

@@ -65,6 +65,15 @@ function allLeavesPass(nodes: TaskNode[]): boolean {
   return true;
 }
 
+/** The leaf's own name, rendered ahead of the proof so `parser.ts` can read it
+ * back instead of falling back to the description. A title that only repeats
+ * the description is left out: it would say the same thing twice to the human
+ * reading this file, and the parser's fallback restores it exactly. */
+function titlePrefix(node: TaskNode): string {
+  if (!node.title || node.title === node.description) return "";
+  return `**${node.title}** - `;
+}
+
 function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
   if (node.refinement === "draft") {
     const mark = proofMark("draft");
@@ -73,24 +82,25 @@ function renderLeaf(node: TaskNode, indent: string, lines: string[]): void {
   }
 
   const mark = proofMark(node.last_status);
+  const name = titlePrefix(node);
   let proofLine: string;
 
   if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? (node.last_status === "pass" ? "GREEN" : "RED") : "AWAITING RED";
-    proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` -> ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof (TDD ${tddState}): \`${node.command}\` -> ${node.description}`;
   } else if (node.predicate?.type === "adversarial") {
     const phase = node.predicate.value !== undefined ? Number(node.predicate.value) : 0;
     const phaseName = ["", "Spec", "Test", "Implement", "Cleanup"][phase] ?? `Phase ${phase}`;
     const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
-    proofLine = `${indent}- ${mark} Proof (Adversarial ${phaseName} Gate ${gateState}): ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof (Adversarial ${phaseName} Gate ${gateState}): ${node.description}`;
   } else if (node.predicate?.type === "convergence") {
     const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
-    proofLine = `${indent}- ${mark} Proof (Convergence Audit ${gateState}): ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof (Convergence Audit ${gateState}): ${node.description}`;
   } else if (node.predicate?.type === "holdout") {
     const fingerprint = node.predicate.value ? String(node.predicate.value).slice(0, 12) : "unknown";
-    proofLine = `${indent}- ${mark} Proof (Holdout ${fingerprint}...): \`${node.command}\` -> ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof (Holdout ${fingerprint}...): \`${node.command}\` -> ${node.description}`;
   } else {
-    proofLine = `${indent}- ${mark} Proof: \`${node.command}\` -> ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof: \`${node.command}\` -> ${node.description}`;
   }
 
   // Append predicate metadata for lossless round-trip parsing

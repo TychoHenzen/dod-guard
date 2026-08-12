@@ -23,11 +23,15 @@ const FIXTURE_PATH = join(
 );
 
 // The captured `changeDir` is absolute to the machine that ran the CLI.
-// Repoint it at this checkout so the test resolves real files anywhere.
+// Repoint it at this checkout so the test resolves real files anywhere. The
+// change itself is archived now, and an archived change's spec deltas never
+// move again - which is what makes it a stable fixture.
+const ARCHIVED_CHANGE = join("archive", "2026-08-12-adopt-openspec-for-dod-proofs");
+
 function loadFixture(): OpenSpecInstructions {
   const raw = JSON.parse(readFileSync(FIXTURE_PATH, "utf-8")) as OpenSpecInstructions;
   const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-  raw.changeDir = join(repoRoot, "openspec", "changes", "adopt-openspec-for-dod-proofs");
+  raw.changeDir = join(repoRoot, "openspec", "changes", ARCHIVED_CHANGE);
   // Sentinel, unrelated to any real path, to prove pass-through rather
   // than a coincidental match against a real file.
   raw.resolvedOutputPath = "SENTINEL/dod.md";

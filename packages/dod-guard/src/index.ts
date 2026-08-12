@@ -202,6 +202,7 @@ server.tool(
     new_command: z.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: z.string().optional(),
+    new_title: z.string().optional(),
     reason: z.string(),
     amend_justification: z.string().optional(),
   },

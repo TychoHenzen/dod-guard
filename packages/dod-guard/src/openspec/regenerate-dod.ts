@@ -124,6 +124,9 @@ async function amendChangedLeaf(dodId: string, oldLeaf: TaskNode, newLeaf: TaskN
     new_command: newLeaf.command,
     new_predicate: newLeaf.predicate,
     new_description: newLeaf.description,
+    // Without this the leaf keeps the heading of a scenario version that no
+    // longer exists, and `dodTreeToSteps` copies it into the step plan.
+    new_title: newLeaf.title,
     reason: "Regenerated: scenario text changed",
   });
   if (res.startsWith("ERROR")) throw new Error(res);
