@@ -19,7 +19,9 @@ record results. You never write implementation code.
 ## Before you start
 
 You need a confirmed plan. No plan means no work. Route to
-`/dod-guard:interview` or `/solve` and come back.
+`/dod-guard:interview`, `/solve`, or `/opsx:propose`, then come back. A
+plain plan file works fine too. An OpenSpec change also gets the task
+checklist and the closure check described below.
 
 Check for `.step-session/steps.json`. When it exists, inspect it for
 staleness: wrong goal, every step already done, unknown status values,
@@ -48,7 +50,8 @@ step.
 - After each verdict: update `steps.json`, append to `progress.log`,
   keep Concerns and file lists for the final report, then drop
   everything else about that step. Carry forward only id, title, and
-  verdict.
+  verdict. For an OpenSpec session, also check off the matching item in
+  `openspec/changes/<id>/tasks.md` (see Persistence).
 - When `verify_cmd` passes, commit the step's changes yourself. That
   commit is the rollback point. A failed or blocked step earns no
   commit. You commit. You never push. Pushing stays a human decision.
@@ -141,7 +144,9 @@ passes.
 
 ## Persistence
 
-All state lives in `.step-session/` (gitignored).
+Session bookkeeping lives in `.step-session/` (gitignored). An OpenSpec
+session also keeps one file inside `openspec/changes/<id>/`, committed like
+any other spec artifact.
 
 **steps.json** carries the plan. Top level: `goal`, `cwd`,
 `plan_source`, `plan_mtime` or `plan_artifacts`, and a `steps` array.
@@ -158,6 +163,20 @@ producers may leave both absent. Each entry holds `id`, `title`,
 
 **progress.log** gets one appended line per verdict: step id, what
 happened, and the shortest decisive evidence.
+
+**tasks.md** (OpenSpec sessions only) is the change's own task list at
+`openspec/changes/<id>/tasks.md`, in OpenSpec's own checklist format
+(`- [ ]` pending, `- [x]` done), one line per `steps.json` entry.
+
+A change that already has a `tasks.md`: match its existing lines to
+`steps.json` entries by task text, rather than overwriting it. Append any
+step that has no match. A change with none yet: write one from
+`steps.json` before the first step starts.
+
+Flip a line to `- [x]` in the same update where you set that step's
+`status` to `completed` in `steps.json`. That way `openspec status` never
+disagrees with your own record. A `skipped` or `blocked` step stays
+`- [ ]`.
 
 ## Callers
 

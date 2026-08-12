@@ -46,13 +46,67 @@ The target has no test harness and no build step. Verify through claim coverage,
 
 ## The contract
 
-The contract splits what from how.
+The contract splits what from how. For shapes A, B, and C, every claim is
+written in OpenSpec's own shape, whether or not this repo runs OpenSpec.
+That shape starts with a `### Requirement: <name>` line stating the
+behavior with an RFC 2119 keyword: MUST, SHOULD, or MAY. It continues with
+one or more `#### Scenario: <name>` blocks, each a GIVEN, WHEN, THEN (and
+AND) bullet list. It is precise enough for the author to reproduce
+exactly, and needs no reformatting later if it becomes a spec delta.
 
-**What** (recorded): claims with strength (always, usually, sometimes, never), caveats, exceptions, Verbatim text (text the replacement must copy exactly), constraints. Each claim carries a tag: `REQUIRED` or `OBSERVED`. The extractor tags both. The human prunes the `OBSERVED` list.
+Shape D (prose) keeps its own form instead. OpenSpec's Requirement and
+Scenario shape describes system behavior, not narrative claims, so it does
+not fit a rewritten paragraph. A prose claim carries a strength word
+instead (always, usually, sometimes, never), plus its caveats and
+exceptions.
+
+**What** (recorded): for code, Requirement and Scenario blocks in the shape
+above. For prose, claims with a strength word, caveats, and exceptions.
+Both also carry Verbatim text (text the replacement must copy exactly) and
+constraints. Each item carries a tag: `REQUIRED` or `OBSERVED`. The
+extractor tags both. The human prunes the `OBSERVED` list.
 
 **How** (discarded): sentences, order, word count, vocabulary, metaphors, examples, rhetorical shape. The extractor omits all of these. A contract line names a fact, not the passage. Keep interior names, algorithm names, and step order out of every contract line. A line that describes structure hands the author the old shape.
 
-Claim strength is exact. The author reproduces every claim at its recorded strength. A hedged claim flattened to flat is wrong. A flat claim hedged is also wrong.
+Claim strength is exact either way: the RFC 2119 keyword for code, the strength word for prose. The author reproduces it exactly. A hedged claim flattened to flat is wrong, in either form. A flat claim hedged is also wrong.
+
+### OpenSpec integration (optional, shapes A, B, C only)
+
+OpenSpec specs describe system behavior, so only code contracts persist
+through it. Shape D has no equivalent there. Skip this whole section for
+prose.
+
+Blind-rewrite works the same with or without OpenSpec, because a code
+contract is always written in OpenSpec's shape (see above). No `openspec/`
+folder in this repo: the contract stays inside `.blind/` and nothing below
+applies.
+
+An `openspec/` folder exists:
+
+**Read, in Phase 0 and Phase 2.** Check whether the target's capability has
+a spec or an active change: `openspec list --specs --json` and `openspec
+list --changes --json`. A match means `openspec show <name> --json
+--requirements` returns Requirement and Scenario blocks. Feed those to the
+contract extractor as known `REQUIRED` claims in Phase 2. Their text then
+comes from the spec verbatim, not from the extractor's own read of the
+deleted code. `OBSERVED` claims still come from the extractor either way.
+
+**Write, in Phase 9.** Compare the gap-audited contract against what
+`openspec show` returned in Phase 0. A `REQUIRED` claim the spec did not
+already carry is existing behavior, newly put into words by this rewrite,
+not new behavior. Record it as a delta:
+- **An active change already covers the capability**: append the claim
+  under `openspec/changes/<change-id>/specs/<capability>/spec.md`, in an
+  `## ADDED Requirements` or `## MODIFIED Requirements` section, matching
+  whichever the claim is.
+- **No active change, and the capability has no spec yet**: create one
+  with `openspec new change --description "Document <capability> contract
+  from blind-rewrite"`, then write the same delta under that change's
+  `specs/<capability>/spec.md`.
+- **The spec already carries every `REQUIRED` claim**: write nothing.
+
+Never edit `openspec/specs/` directly. A delta lives under
+`openspec/changes/<id>/` until a human runs `/opsx:archive`.
 
 ## Phases
 
@@ -60,7 +114,7 @@ Ten phases, numbered 0 through 9. Each phase below states its full task.
 
 ### Phase 0: Classify
 
-Read the target. Classify into one of four shapes (A, B, C, D). Record which shape and why. The caller already decided the rewrite is worthwhile.
+Read the target. Classify into one of four shapes (A, B, C, D). Record which shape and why. The caller already decided the rewrite is worthwhile. If this repo has `openspec/`, note whether a spec or active change covers the target's capability, for Phase 2.
 
 ### Phase 1: Seal leaks
 
@@ -70,7 +124,7 @@ Find every copy of the target the author could reach: build output, rendered doc
 
 ### Phase 2: Extract contract
 
-Dispatch `dod-guard:blind-contract-extractor` for code targets, or `dod-guard:blind-prose-contract-extractor` for prose targets. The extractor returns: boundary and census (code) or dependency census (prose), `REQUIRED` and `OBSERVED` claims, leak paths, and banned vocabulary. Check every contract line against banned vocabulary before passing it to the author.
+Dispatch `dod-guard:blind-contract-extractor` for code targets, or `dod-guard:blind-prose-contract-extractor` for prose targets. The extractor returns: boundary and census (code) or dependency census (prose), `REQUIRED` and `OBSERVED` claims, leak paths, and banned vocabulary. Check every contract line against banned vocabulary before passing it to the author. When Phase 0 found a covering spec or change, merge its OpenSpec-sourced `REQUIRED` claims into the contract (see above) before Phase 3.
 
 ### Phase 3: Human review
 
@@ -148,7 +202,13 @@ Dispatch `dod-guard:blind-gap-auditor` with both versions and the pruned contrac
 
 ### Phase 9: Cleanup
 
-Delete `.blind/` and confirm the quarantined copy is gone. Summarize: overlap gate scores, gap audit verdict, which `OBSERVED` items the user dropped.
+When this repo has `openspec/` and the target was shape A, B, or C, write
+the OpenSpec delta first (see OpenSpec integration above), before deleting
+anything. Then delete `.blind/` and confirm the quarantined copy is gone.
+Summarize: overlap gate scores, gap audit verdict, and which `OBSERVED`
+items the user dropped. When OpenSpec is in use, also name which
+`REQUIRED` claims came from an existing spec. Name which ones were newly
+written as a delta, too.
 
 ## Escalation
 

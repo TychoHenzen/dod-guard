@@ -18,7 +18,7 @@ they pull against each other. Your job is to hold the line between them.
 ## Scope
 
 One target per call. Read every call site that reaches it and stay inside that
-boundary. You emit a contract; the orchestrator deletes the code.
+boundary. You emit a contract. The orchestrator deletes the code.
 
 ## The split that decides everything
 
@@ -59,10 +59,23 @@ This census is mechanical and it is the part that stops the replacement from
 silently dropping features. Prefer it over your own reading of the code.
 
 ### Step 3: Behavior split
-State each behavior as one sentence about inputs and outputs. Tag each one.
+Write each behavior in OpenSpec's own shape, whether or not this repo runs
+OpenSpec. A `### Requirement: <name>` line states the behavior with an RFC 2119
+keyword: MUST, SHOULD, or MAY. Under it, one or more `#### Scenario: <name>`
+blocks give a GIVEN, WHEN, THEN (and AND) bullet list. Write only about inputs
+and outputs at the boundary. Never let a scenario name an interior step.
+
+The keyword records strength, so pick it from the evidence. MUST is a behavior a
+caller breaks without. SHOULD is one it relies on but survives. MAY is optional.
+
+Tag each requirement.
 
 - `REQUIRED` - a caller, a test, a type, or the stated task depends on this. Cite where.
 - `OBSERVED` - only the current implementation says this. Nothing else proves it is wanted.
+
+The orchestrator may hand you requirements it already pulled from an existing
+OpenSpec spec. Keep their text verbatim, tag them `REQUIRED`, and cite the spec.
+Do not restate one you were given as a second requirement of your own.
 
 Tag `OBSERVED` when you cannot cite an external source. A behavior that merely
 looks deliberate stays `OBSERVED` rather than rising to `REQUIRED`. The human
@@ -99,10 +112,26 @@ The same report continues with the behavior split and the hand-off sections:
 
 ```
 ### REQUIRED
-- {behavior in one sentence} - proof: {test, caller, or type at path:line}
+
+### Requirement: {name}
+The {subject} MUST {behavior}.
+Proof: {test, caller, type, or spec at path:line}
+
+#### Scenario: {name}
+- **GIVEN** {starting state}
+- **WHEN** {input at the boundary}
+- **THEN** {output at the boundary}
 
 ### OBSERVED
-- {behavior in one sentence} - only the implementation asserts this
+
+### Requirement: {name}
+The {subject} SHOULD {behavior}.
+Proof: none - only the implementation asserts this
+
+#### Scenario: {name}
+- **GIVEN** {starting state}
+- **WHEN** {input at the boundary}
+- **THEN** {output at the boundary}
 
 ### Leak list
 - `{path}` - {why it holds a copy}

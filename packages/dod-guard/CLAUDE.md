@@ -116,11 +116,11 @@ The CLI exists so `verify_cmd` / `fitness_cmd` in evomcp can gate on a DoD subtr
 | `interview` | Structured requirements gathering that yields behavioral predicates |
 | `ratchet` | Multi-step problem solving with verification gates |
 | `clean-house` | Hunt down duplicate/obsolete implementations |
-| `step-by-step` | Execute multi-step plans one atomic step at a time |
+| `step-by-step` | Execute multi-step plans one atomic step at a time. An OpenSpec change also gets `openspec/changes/<id>/tasks.md`, checked off in the same update that marks a step completed in `steps.json` |
 | `cheap-step` | Step-by-step with evomcp cheap-worker fanout |
 | `adversarial-workflow` | 4-phase adversarial choreography (spec review, test audit, implementation review, structural gates) |
 | `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |
-| `blind-rewrite` | Delete an implementation, rebuild it from a contract a fresh agent gets without seeing the original, then gate the result against the deleted code. Shape D covers prose with no test harness: the contract carries claims and their strength, and `overlap-scan.mjs --mode=prose` scores sentences and their order |
+| `blind-rewrite` | Delete an implementation, rebuild it from a contract a fresh agent gets without seeing the original, then gate the result against the deleted code. Shape D covers prose with no test harness: the contract carries claims and their strength, and `overlap-scan.mjs --mode=prose` scores sentences and their order. Code contracts (shapes A, B, C) are written as OpenSpec `### Requirement:` and `#### Scenario:` blocks, so a repo with `openspec/` can seed them from an existing spec and write the leftovers back as a delta under `openspec/changes/<id>/` |
 | `tighten` | Autonomous blind-rewrite loop against accidental complexity. One target per invocation, ranked by structural violations times git return-churn, gated on both difference and reduction |
 | `skill-debug` | Debug a skill from the sessions that ran it. `find-runs.mjs` locates every recent run in `~/.claude/projects`, `extract-run.mjs` compacts one into a numbered trace, and the skill aligns that against what the SKILL.md required |
 | `skill-migrate` | Migrate a SKILL.md, agent definition, CLAUDE.md, memory file, or instinct file to post-4.6 models via blind rewrite. Extracts a behavioral contract, classifies scaffolding vs essential instructions, and blind-rewrites the artifact. `migration-check.mjs` resolves the artifact kind, scores it against that kind's own check set and weight table renormalized to 100, and refuses to compare a baseline of one kind against a run of another |
