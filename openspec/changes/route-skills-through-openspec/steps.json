@@ -81,7 +81,7 @@
       "verify_surface": "structural",
       "verify_cmd": "node --test scripts/ci/check-skill-hygiene.test.mjs",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "converter-delta-sections",

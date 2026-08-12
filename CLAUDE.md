@@ -105,7 +105,7 @@ updated `package-lock.json` with the new package.
 | Job | What it blocks on |
 |-----|-------------------|
 | `build-test` | tsc, `npm test`, and `detect-releases.mjs`, which decides what publishes |
-| `plugin-config` | `validate-plugins.mjs` (see below), `openspec validate --all --strict --no-interactive`, and `check-trace.mjs` (see below) |
+| `plugin-config` | `validate-plugins.mjs` (see below), `check-skill-hygiene.mjs` (see below), `openspec validate --all --strict --no-interactive`, and `check-trace.mjs` (see below) |
 | `static-analysis` | Biome (autofix + strict) and four ratchets |
 | `package-integrity` | `check-pack.mjs` (every skill, agent and hook target is in the tarball; no `src/` or `node_modules`) and `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) |
 
@@ -116,6 +116,16 @@ updated `package-lock.json` with the new package.
 - **Skills and agents** — each skill directory has a SKILL.md whose frontmatter `name` matches the directory; each agent file's `name` matches its filename; both carry a description; `subagent_type: "<plugin>:<agent>"` references resolve.
 - **Description honesty** — every `/slug` mentioned resolves to a skill that ships, "Ships N skills" matches the real count, and no mojibake or control characters (this is what shipped the double-encoded em-dash in `b4b2e13`).
 - **Repo-wide content** — every JSON file parses; no `skills/` or `agents/` directory without a `plugin.json` above it; no credentials or `C:\Users\<name>` paths in shipped `.md`/`.json`; every skill, agent and `.claude-plugin` file is tracked by git.
+
+`check-skill-hygiene.mjs` keeps a skill from taking back a job it does not own.
+OpenSpec owns a change's artifacts and the rules for authoring them, dod-guard
+owns proof, and a skill owns choreography. Ten rules, each selectable with
+`--rule=<name>`, and all of them run with no flag. They fail a skill that names
+a second home for the plan, carries its own predicate or category table, keeps
+a `dod_create` fallback, or runs with no change id. `--root=<dir>` points a rule
+at a fixture tree, which is how `check-skill-hygiene.test.mjs` gives every rule
+both a passing and a failing fixture. A rule that cannot fail is the failure
+mode a text guard invites, so a meta-test asserts every rule has one.
 
 `check-trace.mjs` runs `dod-guard trace` over every active change that has a
 `dod.md`. It is the OpenSpec closure gate. **An untraced leaf fails the gate.**

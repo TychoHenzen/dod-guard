@@ -9,7 +9,7 @@ The guard lands first, so every later step has a failing check to satisfy.
       selectable with `--rule=` and all of them run when the flag is absent
 - [x] 1.2 Write `scripts/ci/check-skill-hygiene.test.mjs`, feeding each rule a
       known-bad fixture, so a rule that cannot fail is caught
-- [ ] 1.3 Add the guard to the `plugin-config` CI job
+- [x] 1.3 Add the guard to the `plugin-config` CI job
 
 ## 2. Converter fidelity
 
