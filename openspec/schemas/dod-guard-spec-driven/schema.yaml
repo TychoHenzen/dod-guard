@@ -353,8 +353,127 @@ artifacts:
     description: Definition of Done proof tree generated from the change's spec deltas
     template: dod.md
     instruction: |
-      Placeholder instruction. The dod artifact's template and generation
-      workflow land in a later migration step.
+      Build the proof tree for this change, then sharpen it.
+
+      **Never write dod.md by hand.** Call the `dod_generate` MCP tool with
+      this change's id and the repo path. It reads the spec deltas, converts
+      them, and registers the document. Proofs live in canonical storage, so
+      editing the rendered file cannot change what runs, and the next write
+      regenerates the file and discards your edit.
+
+      The delta decides the shape, not you. Every `### Requirement:` becomes
+      one group. Every `#### Scenario:` under it becomes one leaf. Three
+      requirements with two scenarios each give three groups of two leaves.
+
+      Whether a scenario becomes a machine-checkable leaf turns on one rule:
+      does its THEN line hold a backticked code span with a space in it,
+      whose first word is a known tool? `npm`, `npx`, `node`, `git`,
+      `openspec`, `dod-guard`, `grep`, `findstr`, `tsc` and `biome` are the
+      known tools. A scenario that names a real command becomes a concrete
+      leaf proved by exit code 0. A scenario that only describes an outcome
+      in prose becomes a draft leaf with a `MANUAL:` intent, and a draft
+      holds the document at INCOMPLETE. That is the correct "a human still
+      owes us something" state.
+
+      So write the proving command into the THEN line while you draft the
+      delta. Nothing later promotes prose into a command for you.
+
+      A command that already passes proves nothing. Point a proof at the
+      test file or the guard the work still has to write, not at a suite
+      that is green today.
+
+      ## After generation
+
+      Every generated leaf carries predicate `exit_code` at 0 and category
+      `other`. Sharpen them with `dod_amend`, `dod_refine` and
+      `dod_add_node`. A predicate is `{type, value, timeout_ms}`, and these
+      10 types are the whole vocabulary:
+
+      | Predicate | Passes when |
+      |---|---|
+      | `exit_code` | the command exits with `value` |
+      | `exit_code_not` | the command exits with anything but `value` |
+      | `output_contains` | stdout plus stderr contains the substring `value` |
+      | `output_not_contains` | that text does not contain `value` |
+      | `output_matches` | that text matches the regex `value` |
+      | `output_not_matches` | that text does not match the regex `value` |
+      | `tdd` | the command failed on an earlier run, then passes |
+      | `adversarial` | the gate for phase `value` is recorded GO |
+      | `holdout` | the holdout test fingerprint is unchanged |
+      | `convergence` | the phase 4 convergence audit reached GO |
+
+      `category` takes one of four values:
+
+      | Category | Use for |
+      |---|---|
+      | `behavioral` | a check that the feature does the right thing |
+      | `wiring` | a check that the piece is reachable from the real system |
+      | `test_audit` | a gate over the tests themselves |
+      | `other` | anything the three above do not fit |
+
+      Raise `timeout_ms` above the 120000 default for a slow tool.
+
+      A proof often names a test file nobody has written yet. Amend those to
+      `output_matches` with a pattern like `"export.*csv"`, so a reasonable
+      naming choice still passes.
+
+      Proof commands run on the host OS. On Windows use `findstr` rather than
+      `grep`, and write file paths in full, because cmd.exe expands no globs.
+
+      ## What generation never adds
+
+      The converter adds no company baseline, no integration pair, and no
+      inspection leaf. Add all three by hand with `dod_add_node`.
+
+      **Company baseline.** Read `standards/dod-baselines.md` and take the
+      minimum proofs for this work type. A bug, defect, regression or
+      incident is a bug. A feature, enhancement, refactor or new component is
+      general. Reserve minimal for work the user has explicitly held to no
+      baseline. Read `standards/language-commands.md` for the command that
+      fits this project's language. That file's `manual` predicate column is
+      out of date, so add every row it marks manual as a `MANUAL:` draft
+      instead. Count the project's existing lint and format violations before
+      you start editing. Under 10, demand zero. At 10 or more, scope the
+      proof to changed files or assert the count does not rise. A baseline
+      row can genuinely fail to apply, because the project has no linter or
+      no test runner. Never drop such a row in silence; tell the user.
+
+      **Integration pair.** For every feature the tree covers, add two
+      leaves. The wiring leaf greps for the import, the registration or the
+      route that makes the piece reachable. The behavioral leaf drives the
+      feature through the system's real entry point, not the component's own
+      API. Wiring alone catches "registered but broken". Behavior alone
+      catches "works in the harness, unreachable in production". Neither may
+      become a human step. Place the pair last among the concrete leaves.
+
+      **Human judgement.** There is no human-verification predicate. A step
+      only a person can judge is a draft leaf whose `intent` starts with the
+      literal prefix `MANUAL:`. Other skills key off that prefix, so write it
+      exactly. Never invent a command that pretends to check an opinion. Add
+      a `MANUAL:` inspection leaf when the work touches `rendering/`, `ui/`,
+      `graphics/`, `shaders/`, `sprites/`, `scenes/` or `levels/`, or when a
+      leaf intent mentions render, display, show, look, appear or visual, or
+      movement, collision, spawn, ai behavior or gameplay. A build that
+      compiles proves nothing about what the screen shows. When in doubt, add
+      it. A needless check costs a minute; a missing one ships blind.
+
+      **Test-first pair.** A bug fix needs a regression test written red
+      first, and a feature needs unit tests written red first. This is the
+      one case where a requirement needs two leaves, because a `tdd` proof
+      alone cannot tell a real assertion from `assert true`. Add a leaf whose
+      command greps the test file for a real assertion, predicate
+      `output_matches`, category `test_audit`. Then add a leaf that runs that
+      test, predicate `tdd` at 0, category `behavioral`.
+
+      ## Before you hand off
+
+      Run `dod_check` with no node path, before any code exists. Sort every
+      result into two piles. Expected to fail means the command ran and the
+      feature is simply absent. Mis-authored means a missing tool, a wrong
+      path, a shell error, a placeholder, or a proof that passes already and
+      therefore proves nothing. Fix every mis-authored leaf. A clean baseline
+      is one where nothing passes yet and nothing failed for the wrong
+      reason.
     requires:
       - specs
   - id: steps
@@ -362,39 +481,34 @@ artifacts:
     description: Step-by-step execution plan derived from the DoD proof tree
     template: steps.json
     instruction: |
-      Generate the steps.json file that /dod-guard:step-by-step executes.
+      Write the plan that /dod-guard:step-by-step executes. It lives at
+      `openspec/changes/<id>/steps.json` and nowhere else.
 
-      Break the DoD proof tree into an ordered sequence of atomic steps. One
-      concrete leaf becomes one step, and that leaf's own proof command
-      becomes the step's verify_cmd. A draft leaf holding a `MANUAL:` intent
-      becomes a step with `manual_required` true and no verify_cmd, because
-      both already mean a human still owes us something.
+      **Do not hand-write the skeleton.** Run `dod-guard steps <change-id>`.
+      It reads the DoD registered for this change and derives the fields that
+      must never drift from it: one step per concrete leaf, that leaf's own
+      proof command as `verify_cmd`, its title as the step title, and a
+      dependency on the step before it. A `MANUAL:` draft leaf becomes a step
+      with `manual_required` true and an empty `verify_cmd`, because both
+      already mean a human still owes us something.
 
-      Top-level fields: `goal` (one sentence, matches the DoD's Goal), `cwd`
-      (absolute path to the target repo), `plan_source` (the change id this
-      was generated from), `plan_artifacts` (the artifacts array from
-      `openspec status --json --change <id>` at generation time, which is
-      how /dod-guard:step-by-step detects a stale session), and `steps`
-      (array).
+      Then fill in the two fields a machine cannot know. `files` is the paths
+      the step reads or may modify. `verify_surface` is one of `code`,
+      `config`, `structural`, `visual` or `gameplay`. The command leaves them
+      empty and `code`, so an unfilled `files` reads as unfilled rather than
+      as decided. Correct the linear dependency chain too, wherever two steps
+      are genuinely independent.
 
-      Each entry in `steps` holds:
-      - `id`: short stable identifier
-      - `title`: one-line summary
-      - `description`: exact task text a worker executes verbatim
-      - `files`: array of paths the step reads or may modify
-      - `deps`: array of step ids that must be `completed` first
-      - `verify_surface`: one of `code`, `config`, `structural`, `visual`,
-        `gameplay`
-      - `verify_cmd`: a shell string (`&&` is valid) that proves the step
-      - `manual_required`: bool, true when a human must confirm before the
-        step is marked done
-      - `status`: one of `pending`, `completed`, `skipped`, `blocked` -
-        every generated step starts at `pending`
+      A change with no `dod.md` has no proof tree to derive from, so build
+      the steps from `tasks.md` instead, one step per task. That is the pure
+      refactor case, where the change sets `skip_specs: true` and no spec
+      delta exists to generate a DoD from.
 
-      Order steps by dependency, matching the DoD tree's structure. Do not
-      invent steps that have no corresponding DoD proof or task.
+      `templates/steps.json` carries the field list. Read it rather than
+      restating it anywhere else. Do not invent a step that matches no DoD
+      leaf and no task.
     requires:
-      - dod
+      - tasks
 apply:
   requires:
     - tasks

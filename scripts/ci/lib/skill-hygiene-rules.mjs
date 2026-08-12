@@ -188,7 +188,11 @@ export const RULES = {
     if (block === null) return ["the schema declares no dod artifact"];
 
     const bad = [];
-    if (/placeholder|later migration step/i.test(block)) bad.push("the dod instruction is still a placeholder");
+    // The phrase, not the bare word: a real instruction says "a placeholder"
+    // when it warns against proof commands that contain one.
+    if (/placeholder instruction|later migration step/i.test(block)) {
+      bad.push("the dod instruction is still a placeholder");
+    }
     const predicates = PREDICATE_TYPES.filter((type) => !block.includes(type));
     if (predicates.length > 0) bad.push(`the dod instruction omits predicate type(s): ${predicates.join(", ")}`);
     const categories = PROOF_CATEGORIES.filter((cat) => !block.includes(cat));

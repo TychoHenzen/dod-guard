@@ -25,15 +25,15 @@ The guard lands first, so every later step has a failing check to satisfy.
 
 ## 3. Schema
 
-- [ ] 3.1 Replace the `dod` artifact's placeholder instruction with the
+- [x] 3.1 Replace the `dod` artifact's placeholder instruction with the
       authoring policy: predicate table, category table, `timeout_ms` rule,
       regex-for-unwritten-test rule, company baseline, integration proof pair,
       `MANUAL:` inspection triggers, test-first pair, and the rule that a
       scenario's THEN line carries the proving command
-- [ ] 3.2 Change the `steps` artifact's `requires` from `[dod]` to `[tasks]`
+- [x] 3.2 Change the `steps` artifact's `requires` from `[dod]` to `[tasks]`
       and rewrite its instruction to run `dod-guard steps <change-id>` first,
       then fill `files` and `verify_surface` by judgment
-- [ ] 3.3 Make `templates/steps.json` the one authoritative field list
+- [x] 3.3 Make `templates/steps.json` the one authoritative field list
 
 ## 4. Code
 

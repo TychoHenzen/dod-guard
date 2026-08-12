@@ -145,7 +145,7 @@
       "verify_surface": "code",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=dod-instruction && openspec validate --all --strict --no-interactive",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "schema-steps-artifact",
@@ -161,7 +161,7 @@
       "verify_surface": "code",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=schema-steps-deps && openspec validate --all --strict --no-interactive",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "code-fetch-instructions",
