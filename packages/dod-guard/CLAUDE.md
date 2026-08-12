@@ -17,7 +17,7 @@ The bundled output is `dist/bundle.js` - this is what ships as the package entry
 
 ## Architecture
 
-**dod-guard** is an MCP server + Claude Code plugin that enforces Definition of Done verification with behavioral predicates. Proofs are stored canonically in `~/.claude/dod-store/` - the rendered markdown cannot influence verification.
+**dod-guard** is an MCP server + Claude Code plugin that enforces Definition of Done verification with behavioral predicates. Proofs are stored canonically in `~/.claude/dod-store/` - the rendered markdown cannot influence verification. The one command that reads `dod.md` instead is `trace`, which never executes a proof and only needs leaf ids. See `loadTraceTree` in `src/openspec/trace.ts`.
 
 ### Two entry points, one binary
 
@@ -28,6 +28,7 @@ The bundled output is `dist/bundle.js` - this is what ships as the package entry
 | `dod-guard` (no args) | Starts the MCP stdio server |
 | `dod-guard check --dod-id=<id> [--node-path=<p>] [--quiet]` | Runs proofs, exits `0` pass / `1` fail / `2` drafts remain / `3` usage error |
 | `dod-guard status\|tree\|list` | Read-only inspection |
+| `dod-guard trace <change-id>` | OpenSpec closure check, exits `0` closed / `1` a leaf traces to no scenario / `3` the change has no DoD |
 
 The CLI exists so `verify_cmd` / `fitness_cmd` in evomcp can gate on a DoD subtree - MCP tool names are not shell commands. Exit codes are a public contract. Changing them breaks every cascade and cheap-step spec in the wild. A scoped run exits 0 when its subtree passes even though `checkDocument` reports `incomplete`. See `exitCodeFor` in `cli.ts`.
 

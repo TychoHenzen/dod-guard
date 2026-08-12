@@ -105,7 +105,7 @@ updated `package-lock.json` with the new package.
 | Job | What it blocks on |
 |-----|-------------------|
 | `build-test` | tsc, `npm test`, and `detect-releases.mjs`, which decides what publishes |
-| `plugin-config` | `validate-plugins.mjs` (see below) and `openspec validate --all --strict --no-interactive` |
+| `plugin-config` | `validate-plugins.mjs` (see below), `openspec validate --all --strict --no-interactive`, and `check-trace.mjs` (see below) |
 | `static-analysis` | Biome (autofix + strict) and four ratchets |
 | `package-integrity` | `check-pack.mjs` (every skill, agent and hook target is in the tarball; no `src/` or `node_modules`) and `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) |
 
@@ -117,7 +117,22 @@ updated `package-lock.json` with the new package.
 - **Description honesty** — every `/slug` mentioned resolves to a skill that ships, "Ships N skills" matches the real count, and no mojibake or control characters (this is what shipped the double-encoded em-dash in `b4b2e13`).
 - **Repo-wide content** — every JSON file parses; no `skills/` or `agents/` directory without a `plugin.json` above it; no credentials or `C:\Users\<name>` paths in shipped `.md`/`.json`; every skill, agent and `.claude-plugin` file is tracked by git.
 
-That last one matters because **the marketplace installs from git, not npm** — `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo. `files[]` governs npm installs only; git tracking governs what `/plugin` users actually get.
+`check-trace.mjs` runs `dod-guard trace` over every active change that has a
+`dod.md`. It is the OpenSpec closure gate. **An untraced leaf fails the gate.**
+A leaf that traces back to no scenario is a proof nobody asked for. That means
+the DoD drifted from the spec it should prove. The other direction only
+reports. A scenario that reaches no leaf and no `MANUAL:` draft is named in the
+output, and the exit code does not change. A spec is allowed to run ahead of
+the last converter run.
+
+A change with no `dod.md` is skipped rather than failed, so a proposal still in
+planning does not block the build. The gate builds and bundles `dod-guard`
+first, because a released binary cannot see this checkout's own `trace`. CI has
+no `~/.claude/dod-store/`, so `trace` parses the committed `dod.md` and its
+`dod.md.scenario-map.json` sidecar instead of the canonical store. Both are
+tracked by git for exactly this reason.
+
+That last one matters because **the marketplace installs from git, not npm**. `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo. `files[]` governs npm installs only. Git tracking governs what `/plugin` users actually get.
 
 **Ratchets** compare against baselines in `.github/quality/`:
 

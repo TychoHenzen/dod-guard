@@ -59,7 +59,7 @@ makes it usable as a verify_cmd. Only an unscoped run can report code 2.
 EXIT CODES (trace)
   0  pass    every DoD leaf traces to a scenario (untraced scenarios are only reported)
   1  fail    at least one DoD leaf traces to no scenario
-  3  error   bad usage, or no DoD registered yet for this change
+  3  error   bad usage, or this change has no DoD in storage or on disk
 
 EXAMPLES
   dod-guard check --dod-id=abc123

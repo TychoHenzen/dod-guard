@@ -21949,18 +21949,203 @@ async function fetchInstructions(changeId, cwd) {
 }
 
 // src/openspec/trace.ts
-import { promises as fs6 } from "node:fs";
+import { promises as fs7 } from "node:fs";
+
+// src/parser.ts
+import { promises as fs2 } from "node:fs";
+function extractPredicateMetadata(line) {
+  const metaMatch = line.match(/<!--p:(.+?)-->/);
+  if (metaMatch) {
+    try {
+      const predicate = JSON.parse(metaMatch[1]);
+      const cleanLine = line.replace(/<!--p:.+?-->/, "").trimEnd();
+      return { predicate, cleanLine };
+    } catch {
+    }
+  }
+  return { predicate: null, cleanLine: line };
+}
+function markerToStatus(marker) {
+  if (marker === "x") return "pass";
+  if (marker === "~") return "skipped";
+  return "pending";
+}
+function parseLeafLine(line) {
+  const trimmed = line.trim();
+  const draftMatch = trimmed.match(/^-\s*\[[ ~]\s*\]\s*\*\*Draft\*\*:\s*(.+)$/i);
+  if (draftMatch) {
+    return {
+      id: "",
+      title: draftMatch[1].trim(),
+      refinement: "draft",
+      intent: draftMatch[1].trim(),
+      last_status: "draft"
+    };
+  }
+  const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
+  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*->\s*(.+)$/);
+  if (proofMatch) {
+    const desc = proofMatch[3].trim();
+    if (metaPredicate) {
+      return {
+        id: "",
+        title: desc,
+        refinement: "concrete",
+        command: proofMatch[2].trim(),
+        predicate: metaPredicate,
+        description: desc,
+        last_status: markerToStatus(proofMatch[1])
+      };
+    }
+    return {
+      id: "",
+      title: desc,
+      refinement: "draft",
+      intent: desc,
+      last_status: "draft"
+    };
+  }
+  return null;
+}
+var SECTION_MAP = {
+  requirements: "requirements",
+  "research notes": "research_notes",
+  "open questions": "open_questions",
+  "open risks": "open_risks",
+  decisions: "decisions",
+  "current state": "current_state"
+};
+function parseSections(lines) {
+  const sections = { requirements: "" };
+  let currentSection = "";
+  let buf = [];
+  function flush() {
+    if (!currentSection) return;
+    sections[currentSection] = buf.join("\n").trim();
+    currentSection = "";
+    buf = [];
+  }
+  for (const line of lines) {
+    const h2Match = line.match(/^## (.+?)(?:\s*\(.*\))?$/);
+    if (h2Match) {
+      flush();
+      const heading = h2Match[1].trim().toLowerCase();
+      for (const [key, val] of Object.entries(SECTION_MAP)) {
+        if (heading.startsWith(key)) {
+          currentSection = val;
+          break;
+        }
+      }
+      continue;
+    }
+    if (line.match(/^---$/) && currentSection) {
+      flush();
+      continue;
+    }
+    if (currentSection) buf.push(line);
+  }
+  flush();
+  return sections;
+}
+function parseDodTree(lines, startIdx) {
+  const roots = [];
+  const stack = [];
+  let nodeCounter = 0;
+  for (let i = startIdx; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.match(/^## /)) break;
+    if (!line.trim()) continue;
+    const leadingSpaces = line.length - line.trimStart().length;
+    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
+    if (rootMatch) {
+      const node = {
+        id: `node-${nodeCounter++}`,
+        title: rootMatch[1].trim(),
+        refinement: "draft",
+        children: [],
+        last_status: "draft"
+      };
+      roots.push(node);
+      stack.length = 0;
+      stack.push({ node, depth: -1 });
+      continue;
+    }
+    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
+    if (groupMatch) {
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      const node = {
+        id: `node-${nodeCounter++}`,
+        title: groupMatch[1].trim(),
+        refinement: "draft",
+        children: [],
+        last_status: "draft"
+      };
+      if (parent?.children) parent.children.push(node);
+      stack.push({ node, depth });
+      continue;
+    }
+    const leaf = parseLeafLine(line);
+    if (leaf) {
+      leaf.id = `node-${nodeCounter++}`;
+      const depth = Math.floor(leadingSpaces / 2);
+      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
+      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
+      if (parent?.children) parent.children.push(leaf);
+      else if (!parent) roots.push(leaf);
+    }
+  }
+  function cleanup(node) {
+    if (node.children?.length === 0) delete node.children;
+    if (node.children) for (const c of node.children) cleanup(c);
+  }
+  for (const r of roots) cleanup(r);
+  return roots;
+}
+function parseContent(content) {
+  if (process.env.DOD_DEBUG) console.debug("parser: parseContent", { length: content.length });
+  const lines = content.split("\n");
+  let title = "", goal = "", date3 = "", cwd = ".";
+  for (const line of lines) {
+    if (!title && line.startsWith("# ")) {
+      title = line.replace(/^#\s+/, "").replace(/ - Requirements Spec$/, "").trim();
+    }
+    const goalMatch = line.match(/^\*\*Goal:\*\*\s*(.+)/);
+    if (goalMatch) goal = goalMatch[1].trim();
+    const dateMatch = line.match(/^\*\*Date:\*\*\s*(.+)/);
+    if (dateMatch) date3 = dateMatch[1].trim();
+    const targetMatch = line.match(/^\*\*Target:\*\*\s*`?([^`]+)`?/);
+    if (targetMatch) cwd = targetMatch[1].trim();
+    const cwdMatch = line.match(/All commands run from `([^`]+)`/);
+    if (cwdMatch) cwd = cwdMatch[1].trim();
+  }
+  const sections = parseSections(lines);
+  let dodStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].match(/^## Definition of Done/)) {
+      dodStart = i + 1;
+      break;
+    }
+  }
+  const roots = dodStart >= 0 ? parseDodTree(lines, dodStart) : [];
+  return { title, goal, date: date3, cwd, sections, roots };
+}
+async function parseMarkdown(filePath) {
+  const content = await fs2.readFile(filePath, "utf-8");
+  return parseContent(content);
+}
 
 // src/store.ts
 import * as crypto from "node:crypto";
-import { promises as fs2 } from "node:fs";
+import { promises as fs3 } from "node:fs";
 import * as os from "node:os";
 import * as path2 from "node:path";
 function getStoreDir() {
   return process.env.DOD_STORE_DIR || path2.join(os.homedir(), ".claude", "dod-store");
 }
 async function ensureStoreDir() {
-  await fs2.mkdir(getStoreDir(), { recursive: true });
+  await fs3.mkdir(getStoreDir(), { recursive: true });
 }
 function docPath(id) {
   return path2.join(getStoreDir(), `${id}.json`);
@@ -21970,11 +22155,11 @@ function generateId() {
 }
 async function save(doc) {
   await ensureStoreDir();
-  await fs2.writeFile(docPath(doc.id), JSON.stringify(doc, null, 2), "utf-8");
+  await fs3.writeFile(docPath(doc.id), JSON.stringify(doc, null, 2), "utf-8");
 }
 async function load(id) {
   try {
-    const data = await fs2.readFile(docPath(id), "utf-8");
+    const data = await fs3.readFile(docPath(id), "utf-8");
     return JSON.parse(data);
   } catch (err) {
     console.error("store: failed to load document", { id, err: err instanceof Error ? err.message : String(err) });
@@ -21983,7 +22168,7 @@ async function load(id) {
 }
 async function loadRaw(id) {
   try {
-    const data = await fs2.readFile(docPath(id), "utf-8");
+    const data = await fs3.readFile(docPath(id), "utf-8");
     return JSON.parse(data);
   } catch (err) {
     console.error("store: failed to loadRaw document", { id, err: err instanceof Error ? err.message : String(err) });
@@ -21992,11 +22177,11 @@ async function loadRaw(id) {
 }
 async function findByPath(markdownPath) {
   await ensureStoreDir();
-  const files = await fs2.readdir(getStoreDir());
+  const files = await fs3.readdir(getStoreDir());
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
     try {
-      const data = await fs2.readFile(path2.join(getStoreDir(), file), "utf-8");
+      const data = await fs3.readFile(path2.join(getStoreDir(), file), "utf-8");
       const doc = JSON.parse(data);
       const normalizedStored = path2.resolve(doc.markdown_path).toLowerCase();
       const normalizedSearch = path2.resolve(markdownPath).toLowerCase();
@@ -22012,12 +22197,12 @@ async function findByPath(markdownPath) {
 }
 async function listAll() {
   await ensureStoreDir();
-  const files = await fs2.readdir(getStoreDir());
+  const files = await fs3.readdir(getStoreDir());
   const docs = [];
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
     try {
-      const data = await fs2.readFile(path2.join(getStoreDir(), file), "utf-8");
+      const data = await fs3.readFile(path2.join(getStoreDir(), file), "utf-8");
       docs.push(JSON.parse(data));
     } catch (err) {
       console.error("store: failed to read file during listAll", {
@@ -22065,12 +22250,12 @@ async function migrateDoc(doc) {
 }
 async function listAllRaw() {
   await ensureStoreDir();
-  const files = await fs2.readdir(getStoreDir());
+  const files = await fs3.readdir(getStoreDir());
   const docs = [];
   for (const file of files) {
     if (!file.endsWith(".json")) continue;
     try {
-      const data = await fs2.readFile(path2.join(getStoreDir(), file), "utf-8");
+      const data = await fs3.readFile(path2.join(getStoreDir(), file), "utf-8");
       docs.push(JSON.parse(data));
     } catch (err) {
       console.error("store: failed to read file during listAllRaw", {
@@ -22083,7 +22268,7 @@ async function listAllRaw() {
 }
 
 // src/openspec/convert.ts
-import { promises as fs4 } from "node:fs";
+import { promises as fs5 } from "node:fs";
 
 // src/command-check.ts
 import { execFile as execFile3 } from "node:child_process";
@@ -22377,7 +22562,7 @@ async function isRunnable(scenario, cwd) {
 }
 
 // src/openspec/glob.ts
-import { promises as fs3 } from "node:fs";
+import { promises as fs4 } from "node:fs";
 import * as path4 from "node:path";
 function segmentToRegExp(segment) {
   const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
@@ -22385,7 +22570,7 @@ function segmentToRegExp(segment) {
 }
 async function listEntries(dir) {
   try {
-    return await fs3.readdir(dir, { withFileTypes: true });
+    return await fs4.readdir(dir, { withFileTypes: true });
   } catch {
     return [];
   }
@@ -22527,7 +22712,7 @@ async function convertInstructionsToDod(instructions) {
   const roots = [];
   let index = 0;
   for (const file of files) {
-    const content = await fs4.readFile(file, "utf-8");
+    const content = await fs5.readFile(file, "utf-8");
     for (const block of extractRequirementBlocks(content)) {
       roots.push(await requirementGroup(block, index, cwd));
       index++;
@@ -22537,7 +22722,7 @@ async function convertInstructionsToDod(instructions) {
 }
 
 // src/openspec/scenario-identity.ts
-import { promises as fs5 } from "node:fs";
+import { promises as fs6 } from "node:fs";
 function sidecarPath(resolvedOutputPath) {
   return `${resolvedOutputPath}.scenario-map.json`;
 }
@@ -22546,14 +22731,14 @@ function scenarioKey(groupTitle, scenarioTitle) {
 }
 async function readScenarioMap(resolvedOutputPath) {
   try {
-    const raw = await fs5.readFile(sidecarPath(resolvedOutputPath), "utf-8");
+    const raw = await fs6.readFile(sidecarPath(resolvedOutputPath), "utf-8");
     return JSON.parse(raw);
   } catch {
     return [];
   }
 }
 async function writeScenarioMap(resolvedOutputPath, entries) {
-  await fs5.writeFile(sidecarPath(resolvedOutputPath), JSON.stringify(entries, null, 2), "utf-8");
+  await fs6.writeFile(sidecarPath(resolvedOutputPath), JSON.stringify(entries, null, 2), "utf-8");
 }
 function buildScenarioMap(convertedRoots, importedRoots) {
   const entries = [];
@@ -22573,7 +22758,7 @@ function buildScenarioMap(convertedRoots, importedRoots) {
 async function currentScenarioEntries(instructions) {
   const entries = /* @__PURE__ */ new Map();
   for (const file of await readDeltaFiles(instructions)) {
-    const content = await fs6.readFile(file, "utf-8");
+    const content = await fs7.readFile(file, "utf-8");
     for (const block of extractRequirementBlocks(content)) {
       for (const scenario of block.scenarios) {
         entries.set(scenarioKey(block.title, scenario.title), `${block.title} > ${scenario.title}`);
@@ -22591,11 +22776,20 @@ function collectLeaves(roots) {
   }
   return out;
 }
-function untracedLeafDescriptions(doc, tracedNodeIds) {
-  return collectLeaves(doc.roots).filter(({ leaf }) => !tracedNodeIds.has(leaf.id)).map(({ groupTitle, leaf }) => `${groupTitle} > ${leaf.title}`);
+function untracedLeafDescriptions(roots, tracedNodeIds) {
+  return collectLeaves(roots).filter(({ leaf }) => !tracedNodeIds.has(leaf.id)).map(({ groupTitle, leaf }) => `${groupTitle} > ${leaf.title}`);
+}
+async function loadTraceTree(resolvedOutputPath) {
+  const stored = await findByPath(resolvedOutputPath);
+  if (stored) return stored;
+  try {
+    return await parseMarkdown(resolvedOutputPath);
+  } catch {
+    return null;
+  }
 }
 async function traceChange(changeId, instructions) {
-  const doc = await findByPath(instructions.resolvedOutputPath);
+  const doc = await loadTraceTree(instructions.resolvedOutputPath);
   if (!doc) {
     return { changeId, hasDod: false, untracedLeaves: [], untracedScenarios: [] };
   }
@@ -22607,7 +22801,7 @@ async function traceChange(changeId, instructions) {
   return {
     changeId,
     hasDod: true,
-    untracedLeaves: untracedLeafDescriptions(doc, tracedNodeIds),
+    untracedLeaves: untracedLeafDescriptions(doc.roots, tracedNodeIds),
     untracedScenarios
   };
 }
@@ -22618,7 +22812,7 @@ function classifyOutcome(report) {
 }
 function formatTraceReport(report) {
   if (!report.hasDod) {
-    return `No DoD registered yet for change "${report.changeId}". Run the openspec dod converter (renderAndImportDod) first.
+    return `No DoD found for change "${report.changeId}", in canonical storage or on disk. Run the openspec dod converter (renderAndImportDod) first.
 `;
   }
   const lines = [];
@@ -22885,7 +23079,7 @@ makes it usable as a verify_cmd. Only an unscoped run can report code 2.
 EXIT CODES (trace)
   0  pass    every DoD leaf traces to a scenario (untraced scenarios are only reported)
   1  fail    at least one DoD leaf traces to no scenario
-  3  error   bad usage, or no DoD registered yet for this change
+  3  error   bad usage, or this change has no DoD in storage or on disk
 
 EXAMPLES
   dod-guard check --dod-id=abc123
@@ -23333,193 +23527,6 @@ function formatImportGate(doc, executableCount, commandList) {
 
 // src/mcp/dod-import.ts
 import * as path5 from "node:path";
-
-// src/parser.ts
-import { promises as fs7 } from "node:fs";
-function extractPredicateMetadata(line) {
-  const metaMatch = line.match(/<!--p:(.+?)-->/);
-  if (metaMatch) {
-    try {
-      const predicate = JSON.parse(metaMatch[1]);
-      const cleanLine = line.replace(/<!--p:.+?-->/, "").trimEnd();
-      return { predicate, cleanLine };
-    } catch {
-    }
-  }
-  return { predicate: null, cleanLine: line };
-}
-function markerToStatus(marker) {
-  if (marker === "x") return "pass";
-  if (marker === "~") return "skipped";
-  return "pending";
-}
-function parseLeafLine(line) {
-  const trimmed = line.trim();
-  const draftMatch = trimmed.match(/^-\s*\[[ ~]\s*\]\s*\*\*Draft\*\*:\s*(.+)$/i);
-  if (draftMatch) {
-    return {
-      id: "",
-      title: draftMatch[1].trim(),
-      refinement: "draft",
-      intent: draftMatch[1].trim(),
-      last_status: "draft"
-    };
-  }
-  const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
-  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*->\s*(.+)$/);
-  if (proofMatch) {
-    const desc = proofMatch[3].trim();
-    if (metaPredicate) {
-      return {
-        id: "",
-        title: desc,
-        refinement: "concrete",
-        command: proofMatch[2].trim(),
-        predicate: metaPredicate,
-        description: desc,
-        last_status: markerToStatus(proofMatch[1])
-      };
-    }
-    return {
-      id: "",
-      title: desc,
-      refinement: "draft",
-      intent: desc,
-      last_status: "draft"
-    };
-  }
-  return null;
-}
-var SECTION_MAP = {
-  requirements: "requirements",
-  "research notes": "research_notes",
-  "open questions": "open_questions",
-  "open risks": "open_risks",
-  decisions: "decisions",
-  "current state": "current_state"
-};
-function parseSections(lines) {
-  const sections = { requirements: "" };
-  let currentSection = "";
-  let buf = [];
-  function flush() {
-    if (!currentSection) return;
-    sections[currentSection] = buf.join("\n").trim();
-    currentSection = "";
-    buf = [];
-  }
-  for (const line of lines) {
-    const h2Match = line.match(/^## (.+?)(?:\s*\(.*\))?$/);
-    if (h2Match) {
-      flush();
-      const heading = h2Match[1].trim().toLowerCase();
-      for (const [key, val] of Object.entries(SECTION_MAP)) {
-        if (heading.startsWith(key)) {
-          currentSection = val;
-          break;
-        }
-      }
-      continue;
-    }
-    if (line.match(/^---$/) && currentSection) {
-      flush();
-      continue;
-    }
-    if (currentSection) buf.push(line);
-  }
-  flush();
-  return sections;
-}
-function parseDodTree(lines, startIdx) {
-  const roots = [];
-  const stack = [];
-  let nodeCounter = 0;
-  for (let i = startIdx; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.match(/^## /)) break;
-    if (!line.trim()) continue;
-    const leadingSpaces = line.length - line.trimStart().length;
-    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
-    if (rootMatch) {
-      const node = {
-        id: `node-${nodeCounter++}`,
-        title: rootMatch[1].trim(),
-        refinement: "draft",
-        children: [],
-        last_status: "draft"
-      };
-      roots.push(node);
-      stack.length = 0;
-      stack.push({ node, depth: -1 });
-      continue;
-    }
-    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
-    if (groupMatch) {
-      const depth = Math.floor(leadingSpaces / 2);
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      const node = {
-        id: `node-${nodeCounter++}`,
-        title: groupMatch[1].trim(),
-        refinement: "draft",
-        children: [],
-        last_status: "draft"
-      };
-      if (parent?.children) parent.children.push(node);
-      stack.push({ node, depth });
-      continue;
-    }
-    const leaf = parseLeafLine(line);
-    if (leaf) {
-      leaf.id = `node-${nodeCounter++}`;
-      const depth = Math.floor(leadingSpaces / 2);
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      if (parent?.children) parent.children.push(leaf);
-      else if (!parent) roots.push(leaf);
-    }
-  }
-  function cleanup(node) {
-    if (node.children?.length === 0) delete node.children;
-    if (node.children) for (const c of node.children) cleanup(c);
-  }
-  for (const r of roots) cleanup(r);
-  return roots;
-}
-function parseContent(content) {
-  if (process.env.DOD_DEBUG) console.debug("parser: parseContent", { length: content.length });
-  const lines = content.split("\n");
-  let title = "", goal = "", date3 = "", cwd = ".";
-  for (const line of lines) {
-    if (!title && line.startsWith("# ")) {
-      title = line.replace(/^#\s+/, "").replace(/ - Requirements Spec$/, "").trim();
-    }
-    const goalMatch = line.match(/^\*\*Goal:\*\*\s*(.+)/);
-    if (goalMatch) goal = goalMatch[1].trim();
-    const dateMatch = line.match(/^\*\*Date:\*\*\s*(.+)/);
-    if (dateMatch) date3 = dateMatch[1].trim();
-    const targetMatch = line.match(/^\*\*Target:\*\*\s*`?([^`]+)`?/);
-    if (targetMatch) cwd = targetMatch[1].trim();
-    const cwdMatch = line.match(/All commands run from `([^`]+)`/);
-    if (cwdMatch) cwd = cwdMatch[1].trim();
-  }
-  const sections = parseSections(lines);
-  let dodStart = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].match(/^## Definition of Done/)) {
-      dodStart = i + 1;
-      break;
-    }
-  }
-  const roots = dodStart >= 0 ? parseDodTree(lines, dodStart) : [];
-  return { title, goal, date: date3, cwd, sections, roots };
-}
-async function parseMarkdown(filePath) {
-  const content = await fs7.readFile(filePath, "utf-8");
-  return parseContent(content);
-}
-
-// src/mcp/dod-import.ts
 async function handleDodImport(params) {
   const mdPath = path5.resolve(params.path);
   const existing = await findByPath(mdPath);

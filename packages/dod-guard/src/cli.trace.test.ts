@@ -109,7 +109,7 @@ describe("runCli trace", () => {
     const { io, err } = captureIo();
     const code = await runCli(["trace", "change-no-dod"], io);
     assert.equal(code, EXIT.ERROR);
-    assert.match(err(), /No DoD registered yet for change "change-no-dod"/);
+    assert.match(err(), /No DoD found for change "change-no-dod"/);
   });
 
   it("exits FAIL and lists the untraced leaf when a DoD leaf traces to no scenario", async () => {

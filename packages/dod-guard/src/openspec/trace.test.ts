@@ -73,6 +73,22 @@ test("traceChange finds no untraced leaves or scenarios right after a fresh impo
   assert.equal(classifyOutcome(report), "ok");
 });
 
+test("traceChange falls back to the committed dod.md when the canonical store is empty", async () => {
+  const instructions = await instructionsFor(ONE_REQUIREMENT_SPEC);
+  await renderAndImportDod(instructions);
+
+  // A CI runner checks out dod.md and its sidecar but has no ~/.claude/dod-store.
+  await fs.rm(storeDir, { recursive: true, force: true });
+  await fs.mkdir(storeDir, { recursive: true });
+
+  const report = await traceChange("test-change", instructions);
+
+  assert.equal(report.hasDod, true);
+  assert.deepEqual(report.untracedLeaves, []);
+  assert.deepEqual(report.untracedScenarios, []);
+  assert.equal(classifyOutcome(report), "ok");
+});
+
 test("traceChange names an untraced leaf that the scenario map has no entry for", async () => {
   const instructions = await instructionsFor(ONE_REQUIREMENT_SPEC);
   await renderAndImportDod(instructions);

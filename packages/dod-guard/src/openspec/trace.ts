@@ -13,6 +13,7 @@
  * this file never re-derives node ids itself.
  */
 import { promises as fs } from "node:fs";
+import { parseMarkdown } from "../parser.js";
 import * as store from "../store.js";
 import type { DodDocument, TaskNode } from "../types.js";
 import { readDeltaFiles } from "./convert.js";
@@ -55,17 +56,35 @@ function collectLeaves(roots: TaskNode[]): { groupTitle: string; leaf: TaskNode 
   return out;
 }
 
-function untracedLeafDescriptions(doc: DodDocument, tracedNodeIds: Set<string>): string[] {
-  return collectLeaves(doc.roots)
+function untracedLeafDescriptions(roots: TaskNode[], tracedNodeIds: Set<string>): string[] {
+  return collectLeaves(roots)
     .filter(({ leaf }) => !tracedNodeIds.has(leaf.id))
     .map(({ groupTitle, leaf }) => `${groupTitle} > ${leaf.title}`);
+}
+
+/** The tree both closure directions walk. The canonical store is preferred,
+ * but a CI runner has no `~/.claude/dod-store/`, so fall back to parsing the
+ * committed `dod.md`. Both directions only need the leaf ids and their
+ * grouping, and `parser.ts` numbers leaves `node-N` by position, which is the
+ * same id the import wrote into the sidecar. Reading the markdown cannot
+ * weaken the tamper check either: trace never executes a proof, and only
+ * `dod_check` compares fingerprints. Returns null when neither source has the
+ * change's DoD. */
+async function loadTraceTree(resolvedOutputPath: string): Promise<{ roots: TaskNode[] } | null> {
+  const stored: DodDocument | null = await store.findByPath(resolvedOutputPath);
+  if (stored) return stored;
+  try {
+    return await parseMarkdown(resolvedOutputPath);
+  } catch {
+    return null;
+  }
 }
 
 /** Run both closure directions for `changeId`. Returns `hasDod: false` when
  * `resolvedOutputPath` has no registered DoD - see cli.ts for how that maps
  * to an exit code. */
 export async function traceChange(changeId: string, instructions: OpenSpecInstructions): Promise<TraceReport> {
-  const doc = await store.findByPath(instructions.resolvedOutputPath);
+  const doc = await loadTraceTree(instructions.resolvedOutputPath);
   if (!doc) {
     return { changeId, hasDod: false, untracedLeaves: [], untracedScenarios: [] };
   }
@@ -82,7 +101,7 @@ export async function traceChange(changeId: string, instructions: OpenSpecInstru
   return {
     changeId,
     hasDod: true,
-    untracedLeaves: untracedLeafDescriptions(doc, tracedNodeIds),
+    untracedLeaves: untracedLeafDescriptions(doc.roots, tracedNodeIds),
     untracedScenarios,
   };
 }
@@ -100,7 +119,7 @@ export function classifyOutcome(report: TraceReport): TraceOutcome {
 export function formatTraceReport(report: TraceReport): string {
   if (!report.hasDod) {
     return (
-      `No DoD registered yet for change "${report.changeId}". ` +
+      `No DoD found for change "${report.changeId}", in canonical storage or on disk. ` +
       "Run the openspec dod converter (renderAndImportDod) first.\n"
     );
   }
