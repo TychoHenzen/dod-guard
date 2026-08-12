@@ -2,12 +2,12 @@
 
 The guard lands first, so every later step has a failing check to satisfy.
 
-- [ ] 1.1 Write `scripts/ci/check-skill-hygiene.mjs` with the rules
+- [x] 1.1 Write `scripts/ci/check-skill-hygiene.mjs` with the rules
       `no-step-session`, `plan-home`, `no-authoring-copy`, `no-legacy-fallback`,
       `change-scoped`, `dod-instruction`, `schema-steps-deps`,
       `interview-fetches`, `closing-gate` and `refactor-skip-specs`, each
       selectable with `--rule=` and all of them run when the flag is absent
-- [ ] 1.2 Write `scripts/ci/check-skill-hygiene.test.mjs`, feeding each rule a
+- [x] 1.2 Write `scripts/ci/check-skill-hygiene.test.mjs`, feeding each rule a
       known-bad fixture, so a rule that cannot fail is caught
 - [ ] 1.3 Add the guard to the `plugin-config` CI job
 
@@ -64,6 +64,8 @@ The guard lands first, so every later step has a failing check to satisfy.
       RFC 2119 keyword contradiction
 - [ ] 5.8 Make each `/tighten` target open a change, and reduce the ledger to a
       scanner queue
+- [ ] 5.9 Drop the `dod_create` reference from `/test-integrity-checker`, which
+      the guard found and the plan had missed
 
 ## 6. Docs and cleanup
 

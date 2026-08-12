@@ -3,42 +3,81 @@
   "cwd": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
   "plan_source": "route-skills-through-openspec",
   "plan_artifacts": [
-    { "id": "proposal", "outputPath": "proposal.md", "status": "done", "requires": [] },
-    { "id": "specs", "outputPath": "specs/**/*.md", "status": "done", "requires": ["proposal"] },
-    { "id": "design", "outputPath": "design.md", "status": "done", "requires": ["proposal"] },
-    { "id": "tasks", "outputPath": "tasks.md", "status": "done", "requires": ["specs", "design"] },
-    { "id": "dod", "outputPath": "dod.md", "status": "done", "requires": ["specs"] },
-    { "id": "steps", "outputPath": "steps.json", "status": "ready", "requires": ["dod"] }
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "done",
+      "requires": [
+        "specs",
+        "design"
+      ]
+    },
+    {
+      "id": "dod",
+      "outputPath": "dod.md",
+      "status": "done",
+      "requires": [
+        "specs"
+      ]
+    },
+    {
+      "id": "steps",
+      "outputPath": "steps.json",
+      "status": "ready",
+      "requires": [
+        "dod"
+      ]
+    }
   ],
   "steps": [
     {
       "id": "guard-script",
       "title": "Write the skill hygiene guard",
-      "description": "Write scripts/ci/check-skill-hygiene.mjs with the rules no-step-session, plan-home, no-authoring-copy, no-legacy-fallback, change-scoped, dod-instruction, schema-steps-deps, interview-fetches, closing-gate and refactor-skip-specs. Each is selectable with --rule=<name>; with no flag every rule runs. Exit 0 when the selected rules pass, 1 when any fails with a message naming the file and the offending text, 3 on an unknown rule name. Rules read only tracked files under packages/*/skills/, scripts/ci/, openspec/schemas/ and the repo docs. Zero dependencies, matching the other scripts in that directory.",
-      "files": ["scripts/ci/check-skill-hygiene.mjs", "scripts/ci/lib/fs-utils.mjs"],
+      "description": "Write scripts/ci/check-skill-hygiene.mjs with the rules no-step-session, plan-home, no-authoring-copy, no-legacy-fallback, change-scoped, dod-instruction, schema-steps-deps, interview-fetches, closing-gate and refactor-skip-specs. Each is selectable with --rule=<name>; with no flag every rule runs. It takes --root=<dir> so a test can point it at a fixture tree. Exit 0 when the selected rules pass, 1 when any fails with a message naming the file and the offending text, 3 on an unknown rule name. Zero dependencies, matching the other scripts in that directory. Write scripts/ci/check-skill-hygiene.test.mjs alongside it: every rule gets a fixture that violates it and a fixture that satisfies it, because a rule that cannot fail is the failure mode this guards against.",
+      "files": [
+        "scripts/ci/check-skill-hygiene.mjs",
+        "scripts/ci/check-skill-hygiene.test.mjs",
+        "scripts/ci/lib/fs-utils.mjs"
+      ],
       "deps": [],
-      "verify_surface": "code",
-      "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=no-such-rule",
-      "manual_required": false,
-      "status": "pending"
-    },
-    {
-      "id": "guard-tests",
-      "title": "Test every guard rule against a known-bad fixture",
-      "description": "Write scripts/ci/check-skill-hygiene.test.mjs. For each rule, build a temporary fixture tree that violates it and assert the rule reports a failure, then a fixture that satisfies it and assert the rule passes. A rule that cannot fail is the failure mode this guards against, so every rule needs both directions.",
-      "files": ["scripts/ci/check-skill-hygiene.test.mjs"],
-      "deps": ["guard-script"],
       "verify_surface": "code",
       "verify_cmd": "node --test scripts/ci/check-skill-hygiene.test.mjs",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "guard-ci",
       "title": "Add the guard to the plugin-config CI job",
       "description": "Add a step running node scripts/ci/check-skill-hygiene.mjs to the plugin-config job in .github/workflows/npm-publish.yml, next to validate-plugins.mjs and check-trace.mjs. Update the gate table in the root CLAUDE.md in the same step.",
-      "files": [".github/workflows/npm-publish.yml", "CLAUDE.md"],
-      "deps": ["guard-tests"],
+      "files": [
+        ".github/workflows/npm-publish.yml",
+        "CLAUDE.md"
+      ],
+      "deps": [
+        "guard-script"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node --test scripts/ci/check-skill-hygiene.test.mjs",
       "manual_required": false,
@@ -67,7 +106,9 @@
         "packages/dod-guard/src/parser.ts",
         "packages/dod-guard/src/title-round-trip.test.ts"
       ],
-      "deps": ["converter-delta-sections"],
+      "deps": [
+        "converter-delta-sections"
+      ],
       "verify_surface": "code",
       "verify_cmd": "npm run build -w packages/dod-guard && node --test packages/dod-guard/dist/title-round-trip.test.js",
       "manual_required": false,
@@ -83,7 +124,9 @@
         "packages/dod-guard/src/title-round-trip.test.ts",
         "packages/dod-guard/docs"
       ],
-      "deps": ["converter-title-round-trip"],
+      "deps": [
+        "converter-title-round-trip"
+      ],
       "verify_surface": "code",
       "verify_cmd": "npm run build -w packages/dod-guard && node --test packages/dod-guard/dist/title-round-trip.test.js",
       "manual_required": false,
@@ -93,8 +136,12 @@
       "id": "schema-dod-instruction",
       "title": "Fill the dod artifact instruction",
       "description": "Replace the dod artifact's placeholder instruction in openspec/schemas/dod-guard-spec-driven/schema.yaml with the authoring policy currently in the interview skill: the predicate table, the category table, the timeout_ms rule, the regex-for-an-unwritten-test rule, the company baseline procedure reading standards/dod-baselines.md and standards/language-commands.md, the integration proof pair, the MANUAL: inspection leaf triggers, the test-first leaf pair, and the rule that a scenario's THEN line carries the proving command. State that dod_generate produces the document and that dod_amend, dod_refine and dod_add_node are the only ways to change it.",
-      "files": ["openspec/schemas/dod-guard-spec-driven/schema.yaml"],
-      "deps": ["guard-ci"],
+      "files": [
+        "openspec/schemas/dod-guard-spec-driven/schema.yaml"
+      ],
+      "deps": [
+        "guard-ci"
+      ],
       "verify_surface": "code",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=dod-instruction && openspec validate --all --strict --no-interactive",
       "manual_required": false,
@@ -108,7 +155,9 @@
         "openspec/schemas/dod-guard-spec-driven/schema.yaml",
         "openspec/schemas/dod-guard-spec-driven/templates/steps.json"
       ],
-      "deps": ["schema-dod-instruction"],
+      "deps": [
+        "schema-dod-instruction"
+      ],
       "verify_surface": "code",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=schema-steps-deps && openspec validate --all --strict --no-interactive",
       "manual_required": false,
@@ -123,7 +172,9 @@
         "packages/dod-guard/src/openspec/fetch-instructions.test.ts",
         "packages/dod-guard/src/openspec/import-dod.ts"
       ],
-      "deps": ["converter-title-amend"],
+      "deps": [
+        "converter-title-amend"
+      ],
       "verify_surface": "code",
       "verify_cmd": "npm run build -w packages/dod-guard && node --test packages/dod-guard/dist/openspec/fetch-instructions.test.js",
       "manual_required": false,
@@ -138,7 +189,10 @@
         "packages/dod-guard/src/openspec/steps.ts",
         "packages/dod-guard/src/openspec/steps-cli.test.ts"
       ],
-      "deps": ["code-fetch-instructions", "schema-steps-artifact"],
+      "deps": [
+        "code-fetch-instructions",
+        "schema-steps-artifact"
+      ],
       "verify_surface": "code",
       "verify_cmd": "npm run build -w packages/dod-guard && node --test packages/dod-guard/dist/openspec/steps-cli.test.js",
       "manual_required": false,
@@ -148,8 +202,12 @@
       "id": "skill-interview",
       "title": "Cut the interview skill down to choreography",
       "description": "In packages/dod-guard/skills/interview/SKILL.md delete the spec-delta tutorial, the predicate table, the category table, and the Company baseline, Integration proof, Human judgement and Test-first subsections. Section 5 becomes: propose the change, then run openspec instructions dod --change <id> and follow what it returns. Delete the dod_create fallback, the docs/plans/ path, and the note claiming dod_generate is not reachable in the deployed plugin. Keep the no-code gate, the research pass with its lint and format counts, the question floors and risk labels, the confirmed summary, the confirmed-versus-unconfirmed split, the five-lens review, the pre-code dod_check baseline, and the handoff table.",
-      "files": ["packages/dod-guard/skills/interview/SKILL.md"],
-      "deps": ["schema-dod-instruction"],
+      "files": [
+        "packages/dod-guard/skills/interview/SKILL.md"
+      ],
+      "deps": [
+        "schema-dod-instruction"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=interview-fetches && node scripts/ci/check-skill-hygiene.mjs --rule=no-authoring-copy && node scripts/ci/validate-plugins.mjs",
       "manual_required": false,
@@ -159,8 +217,13 @@
       "id": "skill-step-by-step",
       "title": "Move the executor onto the change directory",
       "description": "In packages/dod-guard/skills/step-by-step/SKILL.md make openspec/changes/<id>/steps.json the only plan home. Delete the .step-session/ session directory, progress.log, plan-file sessions and the mtime staleness branch. Staleness is the plan_artifacts versus openspec status --json comparison. Delete the Persistence field list and point at openspec instructions steps --change <id>. Keep both the steps.json status field and the tasks.md checkbox, and state in one sentence that a checkbox cannot distinguish blocked from skipped. Keep the dod-guard trace then openspec archive finish.",
-      "files": ["packages/dod-guard/skills/step-by-step/SKILL.md"],
-      "deps": ["skill-interview", "code-steps-subcommand"],
+      "files": [
+        "packages/dod-guard/skills/step-by-step/SKILL.md"
+      ],
+      "deps": [
+        "skill-interview",
+        "code-steps-subcommand"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=plan-home && node scripts/ci/validate-plugins.mjs",
       "manual_required": false,
@@ -170,8 +233,12 @@
       "id": "skill-cheap-step",
       "title": "Strip cheap-step's session file references",
       "description": "In packages/dod-guard/skills/cheap-step/SKILL.md remove every .step-session and progress.log reference, including the argument-hint. The rule that a settled ambiguity is written into the step description survives; the rule that it is appended to progress.log does not.",
-      "files": ["packages/dod-guard/skills/cheap-step/SKILL.md"],
-      "deps": ["skill-step-by-step"],
+      "files": [
+        "packages/dod-guard/skills/cheap-step/SKILL.md"
+      ],
+      "deps": [
+        "skill-step-by-step"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=no-step-session && node scripts/ci/validate-plugins.mjs",
       "manual_required": false,
@@ -181,8 +248,12 @@
       "id": "skill-quality-refactor",
       "title": "Move quality-refactor onto a change",
       "description": "In packages/quality-guard/skills/quality-refactor/SKILL.md open an OpenSpec change in Phase 0 and set skip_specs: true in its .openspec.yaml. Waves go to openspec/changes/<id>/tasks.md, the step plan to that change's steps.json, and the public-API and file-layout judgment to its design.md. Delete the inline steps.json literal and every field rule around it, pointing at openspec instructions steps --change <id> instead. .quality/units.json stays as regenerable scanner output.",
-      "files": ["packages/quality-guard/skills/quality-refactor/SKILL.md"],
-      "deps": ["skill-cheap-step"],
+      "files": [
+        "packages/quality-guard/skills/quality-refactor/SKILL.md"
+      ],
+      "deps": [
+        "skill-cheap-step"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=refactor-skip-specs && node scripts/ci/check-skill-hygiene.mjs --rule=no-step-session && node scripts/ci/validate-plugins.mjs",
       "manual_required": false,
@@ -192,8 +263,12 @@
       "id": "skill-ratchet",
       "title": "Give ratchet a change id and the closing gate",
       "description": "In packages/dod-guard/skills/ratchet/SKILL.md take a change id and resolve the dod_id from it. Fix the claim that /interview owns dod_create; it writes an OpenSpec change and generates the DoD from it. Tick the matching tasks.md line as each sub-problem's subtree passes. Finish with dod-guard trace <change-id> then openspec archive <change-id> --yes, stopping before archive on a non-zero trace.",
-      "files": ["packages/dod-guard/skills/ratchet/SKILL.md"],
-      "deps": ["skill-quality-refactor"],
+      "files": [
+        "packages/dod-guard/skills/ratchet/SKILL.md"
+      ],
+      "deps": [
+        "skill-quality-refactor"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=closing-gate && node scripts/ci/check-skill-hygiene.mjs --rule=no-legacy-fallback && node scripts/ci/validate-plugins.mjs",
       "manual_required": false,
@@ -203,8 +278,12 @@
       "id": "skill-adversarial",
       "title": "Give adversarial-workflow a change id and the closing gate",
       "description": "In packages/dod-guard/skills/adversarial-workflow/SKILL.md take a change id and resolve the dod_id from it. Fix the claim that /interview calls dod_create. Close phase 4 with dod-guard trace <change-id> then openspec archive <change-id> --yes.",
-      "files": ["packages/dod-guard/skills/adversarial-workflow/SKILL.md"],
-      "deps": ["skill-ratchet"],
+      "files": [
+        "packages/dod-guard/skills/adversarial-workflow/SKILL.md"
+      ],
+      "deps": [
+        "skill-ratchet"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=closing-gate && node scripts/ci/check-skill-hygiene.mjs --rule=change-scoped && node scripts/ci/validate-plugins.mjs",
       "manual_required": false,
@@ -214,8 +293,12 @@
       "id": "skill-blind-rewrite",
       "title": "Make the rewrite contract a spec delta",
       "description": "In packages/dod-guard/skills/blind-rewrite/SKILL.md write the contract for a shape A, B or C target as the change's spec delta under openspec/changes/<id>/specs/, before deletion rather than as an optional Phase 9 write-back. .blind/ holds only the quarantined original, which is the mechanism the skill exists for. Fix the RFC 2119 contradiction: name SHALL and MUST and avoid should and may, matching the specs artifact instruction.",
-      "files": ["packages/dod-guard/skills/blind-rewrite/SKILL.md"],
-      "deps": ["skill-adversarial"],
+      "files": [
+        "packages/dod-guard/skills/blind-rewrite/SKILL.md"
+      ],
+      "deps": [
+        "skill-adversarial"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=change-scoped && node scripts/ci/validate-plugins.mjs",
       "manual_required": false,
@@ -225,10 +308,29 @@
       "id": "skill-tighten",
       "title": "Make each tighten target a change",
       "description": "In packages/dod-guard/skills/tighten/SKILL.md open a change for each picked target before any rewrite starts. .tighten/ledger.json stays the scanner queue, and its statuses stop being a second completion vocabulary: a target is accepted when its change archives.",
-      "files": ["packages/dod-guard/skills/tighten/SKILL.md"],
-      "deps": ["skill-blind-rewrite"],
+      "files": [
+        "packages/dod-guard/skills/tighten/SKILL.md"
+      ],
+      "deps": [
+        "skill-blind-rewrite"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=change-scoped && node scripts/ci/validate-plugins.mjs",
+      "manual_required": false,
+      "status": "pending"
+    },
+    {
+      "id": "skill-test-integrity",
+      "title": "Drop the dod_create reference from test-integrity-checker",
+      "description": "packages/dod-guard/skills/test-integrity-checker/SKILL.md still names dod_create. Replace it with the current path: the DoD is generated from the change's spec deltas. The guard found this skill; the plan had missed it.",
+      "files": [
+        "packages/dod-guard/skills/test-integrity-checker/SKILL.md"
+      ],
+      "deps": [
+        "skill-tighten"
+      ],
+      "verify_surface": "structural",
+      "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=no-legacy-fallback && node scripts/ci/validate-plugins.mjs",
       "manual_required": false,
       "status": "pending"
     },
@@ -241,7 +343,9 @@
         "scripts/ci/lib/fs-utils.mjs",
         "packages/quality-guard/skills/quality-refactor/scripts/lib/config.mjs"
       ],
-      "deps": ["skill-tighten"],
+      "deps": [
+        "skill-test-integrity"
+      ],
       "verify_surface": "code",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs --rule=no-step-session",
       "manual_required": false,
@@ -257,7 +361,9 @@
         "packages/dod-guard/CLAUDE.md",
         "CLAUDE.md"
       ],
-      "deps": ["cleanup-ignores"],
+      "deps": [
+        "cleanup-ignores"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs && node scripts/ci/validate-plugins.mjs",
       "manual_required": false,
@@ -268,7 +374,9 @@
       "title": "Confirm the manual leaves",
       "description": "Walk the MANUAL: draft leaves with the user: a blocked step keeping its tasks.md line unticked, a refactor change reaching the steps artifact with no spec deltas, the blind-rewrite contract landing under the change, a tighten target opening a change, and the dod instruction forbidding a hand-edited dod.md.",
       "files": [],
-      "deps": ["docs"],
+      "deps": [
+        "docs"
+      ],
       "verify_surface": "structural",
       "verify_cmd": "",
       "manual_required": true,
