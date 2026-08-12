@@ -1,0 +1,85 @@
+{
+  "source": "packages/dod-guard/src/openspec/convert.ts",
+  "date": "2026-08-12T08:00:27.000Z",
+  "summary": {
+    "total": 31,
+    "killed": 22,
+    "survived": 9,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/openspec/convert.js",
+      "id": "6",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 16,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/convert.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 16,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/convert.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 18,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/convert.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 19,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/convert.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 27,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/convert.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 31,
+      "dist_col": 101
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/convert.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 33,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/convert.js",
+      "id": "20",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 37,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/convert.js",
+      "id": "29",
+      "mutator": "UpdateOperator",
+      "replacement": "index--",
+      "dist_line": 66,
+      "dist_col": 13
+    }
+  ]
+}

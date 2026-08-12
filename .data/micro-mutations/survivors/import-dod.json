@@ -1,0 +1,141 @@
+{
+  "source": "packages/dod-guard/src/openspec/import-dod.ts",
+  "date": "2026-08-12T08:02:11.479Z",
+  "summary": {
+    "total": 32,
+    "killed": 5,
+    "survived": 16,
+    "timeout": 0,
+    "unviable": 11
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 17,
+      "dist_col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 14,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "4",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 21,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "5",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 22,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 22,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "7",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 24,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "10",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 40,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "13",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 47,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "14",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 47,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "15",
+      "mutator": "MethodExpression",
+      "replacement": "report.endsWith(\"DoD imported.\")",
+      "dist_line": 47,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 47,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "17",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 47,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "28",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 68,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "29",
+      "mutator": "BooleanLiteral",
+      "replacement": "imported",
+      "dist_line": 70,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "30",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 70,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/import-dod.js",
+      "id": "31",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 70,
+      "dist_col": 9
+    }
+  ]
+}
