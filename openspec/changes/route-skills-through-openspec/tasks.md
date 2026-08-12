@@ -37,9 +37,9 @@ The guard lands first, so every later step has a failing check to satisfy.
 
 ## 4. Code
 
-- [ ] 4.1 Give `fetchInstructions` an artifact id parameter in place of its
+- [x] 4.1 Give `fetchInstructions` an artifact id parameter in place of its
       hardcoded `dod`
-- [ ] 4.2 Add the `dod-guard steps <change-id>` subcommand to `cli.ts`, wrapping
+- [x] 4.2 Add the `dod-guard steps <change-id>` subcommand to `cli.ts`, wrapping
       `dodTreeToSteps` with `goal`, `cwd`, `plan_source` and `plan_artifacts`
 
 ## 5. Skills

@@ -16,7 +16,7 @@ string parts.
 #### Scenario: A change with a registered DoD gains a plan
 - **WHEN** `dod-guard steps <change-id>` runs for a change whose DoD is
   registered
-- **THEN** `node --test packages/dod-guard/dist/openspec/steps-cli.test.js`
+- **THEN** `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js`
   exits 0, covering a run that writes the file at the path OpenSpec resolved
 
 #### Scenario: The plan carries its own staleness signal
@@ -32,7 +32,7 @@ source order, and each SHALL depend on the step immediately before it.
 
 #### Scenario: Leaves convert in order
 - **WHEN** a DoD holds two requirement groups of two concrete leaves each
-- **THEN** `node --test packages/dod-guard/dist/openspec/steps-cli.test.js`
+- **THEN** `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js`
   exits 0, covering four steps in source order where each after the first
   names its predecessor in `deps`
 
@@ -44,7 +44,7 @@ as its description. A draft leaf without the prefix SHALL produce no step.
 
 #### Scenario: A DoD mixes concrete and manual leaves
 - **WHEN** `dod-guard steps <change-id>` runs against a DoD holding both kinds
-- **THEN** `node --test packages/dod-guard/dist/openspec/steps-cli.test.js`
+- **THEN** `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js`
   exits 0, covering a manual step with `manual_required` true and an empty
   `verify_cmd`
 
@@ -57,7 +57,7 @@ The command SHALL emit `files` as an empty array and `verify_surface` as
 
 #### Scenario: A generated step is inspected before editing
 - **WHEN** the command writes a step
-- **THEN** `node --test packages/dod-guard/dist/openspec/steps-cli.test.js`
+- **THEN** `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js`
   exits 0, covering a step whose `files` is empty, whose `verify_surface` is
   `code`, and whose `status` is `pending`
 
@@ -69,5 +69,5 @@ has no registered DoD or the invocation is malformed.
 #### Scenario: The change has no DoD
 - **WHEN** `dod-guard steps <change-id>` runs against a change with no
   registered DoD
-- **THEN** `node --test packages/dod-guard/dist/openspec/steps-cli.test.js`
+- **THEN** `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js`
   exits 0, covering an exit code of 3

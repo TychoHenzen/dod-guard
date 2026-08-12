@@ -178,7 +178,7 @@
       "verify_surface": "code",
       "verify_cmd": "npm run build -w packages/dod-guard && node --test packages/dod-guard/dist/openspec/fetch-instructions.test.js",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "code-steps-subcommand",
@@ -196,7 +196,7 @@
       "verify_surface": "code",
       "verify_cmd": "npm run build -w packages/dod-guard && node --test packages/dod-guard/dist/openspec/steps-cli.test.js",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "skill-interview",

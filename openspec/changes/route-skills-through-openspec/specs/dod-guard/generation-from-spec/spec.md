@@ -68,7 +68,7 @@ from a scenario version that no longer exists.
 
 #### Scenario: A stale title would reach the step plan
 - **WHEN** `dod-guard steps <change-id>` runs after a regeneration
-- **THEN** `node --test packages/dod-guard/dist/openspec/steps-cli.test.js`
+- **THEN** `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js`
   exits 0, covering step titles that match the current scenario headings
 
 ### Requirement: the generated document is never hand-written

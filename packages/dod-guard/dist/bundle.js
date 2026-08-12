@@ -6902,12 +6902,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs8, exportName) {
+    function addFormats(ajv, list, fs9, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs8[f]);
+        ajv.addFormat(f, fs9[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -21743,6 +21743,10 @@ function allLeavesPass(nodes) {
   }
   return true;
 }
+function titlePrefix(node) {
+  if (!node.title || node.title === node.description) return "";
+  return `**${node.title}** - `;
+}
 function renderLeaf(node, indent, lines) {
   if (node.refinement === "draft") {
     const mark2 = proofMark("draft");
@@ -21750,23 +21754,24 @@ function renderLeaf(node, indent, lines) {
     return;
   }
   const mark = proofMark(node.last_status);
+  const name = titlePrefix(node);
   let proofLine;
   if (node.predicate?.type === "tdd") {
     const tddState = node.seen_failing ? node.last_status === "pass" ? "GREEN" : "RED" : "AWAITING RED";
-    proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` -> ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof (TDD ${tddState}): \`${node.command}\` -> ${node.description}`;
   } else if (node.predicate?.type === "adversarial") {
     const phase = node.predicate.value !== void 0 ? Number(node.predicate.value) : 0;
     const phaseName = ["", "Spec", "Test", "Implement", "Cleanup"][phase] ?? `Phase ${phase}`;
     const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
-    proofLine = `${indent}- ${mark} Proof (Adversarial ${phaseName} Gate ${gateState}): ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof (Adversarial ${phaseName} Gate ${gateState}): ${node.description}`;
   } else if (node.predicate?.type === "convergence") {
     const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
-    proofLine = `${indent}- ${mark} Proof (Convergence Audit ${gateState}): ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof (Convergence Audit ${gateState}): ${node.description}`;
   } else if (node.predicate?.type === "holdout") {
     const fingerprint = node.predicate.value ? String(node.predicate.value).slice(0, 12) : "unknown";
-    proofLine = `${indent}- ${mark} Proof (Holdout ${fingerprint}...): \`${node.command}\` -> ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof (Holdout ${fingerprint}...): \`${node.command}\` -> ${node.description}`;
   } else {
-    proofLine = `${indent}- ${mark} Proof: \`${node.command}\` -> ${node.description}`;
+    proofLine = `${indent}- ${mark} ${name}Proof: \`${node.command}\` -> ${node.description}`;
   }
   if (node.predicate) {
     proofLine += ` <!--p:${JSON.stringify(node.predicate)}-->`;
@@ -21926,8 +21931,7 @@ function buildImportGateInfo(doc) {
 import { execFile as execFile2 } from "node:child_process";
 import { promisify as promisify3 } from "node:util";
 var execFileP2 = promisify3(execFile2);
-async function fetchInstructions(changeId, cwd) {
-  const command = `openspec instructions dod --change ${changeId} --json`;
+async function runOpenSpecJson(command, cwd) {
   const { shell, args, verbatim } = buildShellInvocation(command);
   let stdout;
   try {
@@ -21946,6 +21950,61 @@ async function fetchInstructions(changeId, cwd) {
   } catch {
     throw new Error(`'${command}' did not print valid JSON.`);
   }
+}
+async function fetchInstructions(changeId, cwd, artifactId) {
+  return runOpenSpecJson(`openspec instructions ${artifactId} --change ${changeId} --json`, cwd);
+}
+async function fetchStatus(changeId, cwd) {
+  return runOpenSpecJson(`openspec status --json --change ${changeId}`, cwd);
+}
+
+// src/openspec/steps-cli.ts
+import { promises as fs8 } from "node:fs";
+import { dirname as dirname2 } from "node:path";
+
+// src/openspec/steps.ts
+function leafToStep(leaf, previousId) {
+  return {
+    id: leaf.id,
+    title: leaf.title,
+    description: leaf.description ?? "",
+    files: [],
+    deps: previousId ? [previousId] : [],
+    verify_surface: "code",
+    verify_cmd: leaf.command ?? "",
+    manual_required: false,
+    status: "pending"
+  };
+}
+var MANUAL_PREFIX = "MANUAL: ";
+function manualLeafToStep(leaf, previousId) {
+  return {
+    id: leaf.id,
+    title: leaf.title,
+    description: (leaf.intent ?? "").slice(MANUAL_PREFIX.length),
+    files: [],
+    deps: previousId ? [previousId] : [],
+    verify_surface: "code",
+    verify_cmd: "",
+    manual_required: true,
+    status: "pending"
+  };
+}
+function dodTreeToSteps(roots) {
+  const steps = [];
+  for (const group of roots) {
+    for (const leaf of group.children ?? []) {
+      const previousId = steps.at(-1)?.id;
+      if (leaf.refinement === "concrete") {
+        steps.push(leafToStep(leaf, previousId));
+        continue;
+      }
+      if (leaf.intent?.startsWith(MANUAL_PREFIX)) {
+        steps.push(manualLeafToStep(leaf, previousId));
+      }
+    }
+  }
+  return steps;
 }
 
 // src/openspec/trace.ts
@@ -21983,15 +22042,18 @@ function parseLeafLine(line) {
     };
   }
   const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
-  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*->\s*(.+)$/);
+  const proofMatch = cleanLine.match(
+    /^-\s*\[([ x~>])\]\s*(?:\*\*(.+?)\*\*\s+-\s+)?Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*->\s*(.+)$/
+  );
   if (proofMatch) {
-    const desc = proofMatch[3].trim();
+    const desc = proofMatch[4].trim();
+    const title = proofMatch[2]?.trim() || desc;
     if (metaPredicate) {
       return {
         id: "",
-        title: desc,
+        title,
         refinement: "concrete",
-        command: proofMatch[2].trim(),
+        command: proofMatch[3].trim(),
         predicate: metaPredicate,
         description: desc,
         last_status: markerToStatus(proofMatch[1])
@@ -21999,7 +22061,7 @@ function parseLeafLine(line) {
     }
     return {
       id: "",
-      title: desc,
+      title,
       refinement: "draft",
       intent: desc,
       last_status: "draft"
@@ -22616,6 +22678,8 @@ async function resolveGlob(baseDir, pattern) {
 // src/openspec/requirements.ts
 var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
 var SCENARIO_HEADING = /^#### Scenario:\s*(.+?)\s*$/;
+var SECTION_HEADING = /^##\s+(.+?)\s*$/;
+var REMOVED_SECTION = /^REMOVED\b/i;
 var THEN_LINE = /^-\s*\*\*THEN\*\*\s*(.*)$/;
 var OTHER_BULLET = /^-\s*\*\*[A-Z]+\*\*/;
 function finalizeScenario(state) {
@@ -22627,20 +22691,34 @@ function finalizeScenario(state) {
   state.thenParts = [];
   state.inThen = false;
 }
+function startRequirement(state, title) {
+  state.currentReq = state.inRemoved ? null : { title, scenarios: [] };
+  if (state.currentReq) state.blocks.push(state.currentReq);
+}
+function consumeHeading(state, line) {
+  const section = line.match(SECTION_HEADING);
+  if (section) {
+    finalizeScenario(state);
+    state.currentReq = null;
+    state.inRemoved = REMOVED_SECTION.test(section[1]);
+    return true;
+  }
+  const requirement = line.match(REQUIREMENT_HEADING);
+  if (requirement) {
+    finalizeScenario(state);
+    startRequirement(state, requirement[1]);
+    return true;
+  }
+  const scenario = line.match(SCENARIO_HEADING);
+  if (scenario) {
+    finalizeScenario(state);
+    state.currentScenario = { title: scenario[1], intent: "" };
+    return true;
+  }
+  return false;
+}
 function consumeLine(state, line) {
-  const reqMatch = line.match(REQUIREMENT_HEADING);
-  if (reqMatch) {
-    finalizeScenario(state);
-    state.currentReq = { title: reqMatch[1], scenarios: [] };
-    state.blocks.push(state.currentReq);
-    return;
-  }
-  const scenarioMatch = line.match(SCENARIO_HEADING);
-  if (scenarioMatch) {
-    finalizeScenario(state);
-    state.currentScenario = { title: scenarioMatch[1], intent: "" };
-    return;
-  }
+  if (consumeHeading(state, line)) return;
   const thenMatch = line.match(THEN_LINE);
   if (thenMatch) {
     state.thenParts.push(thenMatch[1].trim());
@@ -22656,11 +22734,12 @@ function consumeLine(state, line) {
     state.thenParts[lastIndex] = `${state.thenParts[lastIndex]} ${line.trim()}`;
   }
 }
+function newState() {
+  return { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false, inRemoved: false };
+}
 function extractRequirementBlocks(content) {
-  const state = { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false };
-  for (const line of content.split("\n")) {
-    consumeLine(state, line);
-  }
+  const state = newState();
+  for (const line of content.split("\n")) consumeLine(state, line);
   finalizeScenario(state);
   return state.blocks;
 }
@@ -22830,6 +22909,36 @@ function formatTraceReport(report) {
   }
   return `${lines.join("\n")}
 `;
+}
+
+// src/openspec/steps-cli.ts
+async function exists(path8) {
+  try {
+    await fs8.stat(path8);
+    return true;
+  } catch {
+    return false;
+  }
+}
+async function writeStepsPlan(changeId, cwd) {
+  const dod = await fetchInstructions(changeId, cwd, "dod");
+  const doc = await loadTraceTree(dod.resolvedOutputPath);
+  if (!doc) return null;
+  const target = await fetchInstructions(changeId, cwd, "steps");
+  const status = await fetchStatus(changeId, cwd);
+  const plan = {
+    goal: doc.goal,
+    cwd: target.root.path,
+    plan_source: changeId,
+    plan_artifacts: status.artifacts ?? [],
+    steps: dodTreeToSteps(doc.roots)
+  };
+  const outputPath = target.resolvedOutputPath;
+  const overwrote = await exists(outputPath);
+  await fs8.mkdir(dirname2(outputPath), { recursive: true });
+  await fs8.writeFile(outputPath, `${JSON.stringify(plan, null, 2)}
+`, "utf-8");
+  return { plan, outputPath, overwrote };
 }
 
 // src/tree-utils.ts
@@ -23054,6 +23163,7 @@ COMMANDS
   tree      Print the DoD's node tree with paths (use to find --node-path values)
   list      List all tracked DoDs
   trace     Check OpenSpec closure for a change: leaf <-> scenario, both directions
+  steps     Write a change's steps.json plan from its registered DoD
 
 OPTIONS (check / status / tree)
   --dod-id=<id>        DoD ID, as returned by dod_create or 'dod-guard list'
@@ -23064,7 +23174,7 @@ OPTIONS (check / status / tree)
   --confirm-import     Confirm an imported DoD's commands are safe to execute
   --quiet              Print only the verdict line; suppress per-proof output
 
-OPTIONS (trace)
+OPTIONS (trace / steps)
   --cwd=<dir>          Directory 'openspec instructions' resolves the change from (default: cwd)
 
 EXIT CODES (check)
@@ -23081,11 +23191,19 @@ EXIT CODES (trace)
   1  fail    at least one DoD leaf traces to no scenario
   3  error   bad usage, or this change has no DoD in storage or on disk
 
+EXIT CODES (steps)
+  0  pass    the plan was written to the path OpenSpec resolved
+  3  error   bad usage, or this change has no DoD in storage or on disk
+
+'steps' overwrites an existing plan. Anything a human filled into a step's
+'files' or 'verify_surface' is lost, so it warns on stderr when it does.
+
 EXAMPLES
   dod-guard check --dod-id=abc123
   dod-guard check --dod-id=abc123 --node-path=0.children.1 --quiet
   dod-guard check --path=docs/plans/2026-07-27-auth.md --cwd=/repo
   dod-guard trace adopt-openspec-for-dod-proofs
+  dod-guard steps adopt-openspec-for-dod-proofs
   dod-guard tree --dod-id=abc123
 `;
 function parseArgs(argv) {
@@ -23213,7 +23331,7 @@ function traceExitCodeFor(outcome) {
 }
 async function resolveInstructions(changeId, cwd, writeErr) {
   try {
-    return await fetchInstructions(changeId, cwd);
+    return await fetchInstructions(changeId, cwd, "dod");
   } catch (err) {
     writeErr(`ERROR: ${errorMessage(err)}
 `);
@@ -23231,16 +23349,40 @@ async function reportTrace(changeId, instructions, write, writeErr) {
   write(text2);
   return traceExitCodeFor(outcome);
 }
-async function cmdTrace(positional, flags, write, writeErr) {
+function changeIdFrom(positional, example, writeErr) {
   const changeId = positional[0];
-  if (!changeId) {
-    writeErr("ERROR: pass a change id, e.g. 'dod-guard trace adopt-openspec-for-dod-proofs'.\n");
-    return EXIT.ERROR;
-  }
+  if (changeId) return changeId;
+  writeErr(`ERROR: pass a change id, e.g. '${example}'.
+`);
+  return null;
+}
+async function cmdTrace(positional, flags, write, writeErr) {
+  const changeId = changeIdFrom(positional, "dod-guard trace adopt-openspec-for-dod-proofs", writeErr);
+  if (!changeId) return EXIT.ERROR;
   const cwd = str(flags, "cwd") ?? process.cwd();
   const instructions = await resolveInstructions(changeId, cwd, writeErr);
   if (!instructions) return EXIT.ERROR;
   return reportTrace(changeId, instructions, write, writeErr);
+}
+var OVERWRITE_WARNING = "WARNING: an existing steps.json was overwritten - every step's human-filled 'files' and 'verify_surface' were reset.\n";
+function reportSteps(changeId, result, write, writeErr) {
+  if (!result) {
+    writeErr(
+      `No DoD found for change "${changeId}", in canonical storage or on disk. Run the openspec dod converter (renderAndImportDod) first.
+`
+    );
+    return EXIT.ERROR;
+  }
+  if (result.overwrote) writeErr(OVERWRITE_WARNING);
+  write(`Wrote ${result.plan.steps.length} step(s) to ${result.outputPath}
+`);
+  return EXIT.PASS;
+}
+async function cmdSteps(positional, flags, write, writeErr) {
+  const changeId = changeIdFrom(positional, "dod-guard steps adopt-openspec-for-dod-proofs", writeErr);
+  if (!changeId) return EXIT.ERROR;
+  const result = await writeStepsPlan(changeId, str(flags, "cwd") ?? process.cwd());
+  return reportSteps(changeId, result, write, writeErr);
 }
 async function cmdList(write) {
   const docs = await listAll();
@@ -23264,6 +23406,7 @@ var COMMANDS = {
   status: (_p, flags, io) => cmdStatus(flags, io.write, io.writeErr),
   tree: (_p, flags, io) => cmdTree(flags, io.write, io.writeErr),
   trace: (positional, flags, io) => cmdTrace(positional, flags, io.write, io.writeErr),
+  steps: (positional, flags, io) => cmdSteps(positional, flags, io.write, io.writeErr),
   list: (_p, _f, io) => cmdList(io.write)
 };
 async function runCli(argv, io = defaultIo) {
@@ -23453,19 +23596,23 @@ async function amendBulk(doc, params) {
   }
   return finalizeAmend(doc);
 }
+function snapshot(node) {
+  return { command: node.command, predicate: node.predicate, description: node.description, title: node.title };
+}
 function applyAmendment(target, doc, params) {
   const { node, path: path8 } = target;
-  const old_value = { command: node.command, predicate: node.predicate, description: node.description };
+  const old_value = snapshot(node);
   if (params.new_command !== void 0) node.command = params.new_command;
   if (params.new_predicate !== void 0) node.predicate = params.new_predicate;
   if (params.new_description !== void 0) node.description = params.new_description;
+  if (params.new_title !== void 0) node.title = params.new_title;
   node.last_status = "pending";
   doc.amendments.push({
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     node_path: path8,
     action: "modified",
     old_value,
-    new_value: { command: node.command, predicate: node.predicate, description: node.description },
+    new_value: snapshot(node),
     reason: params.reason,
     justification: params.amend_justification
   });
@@ -23773,6 +23920,9 @@ async function amendChangedLeaf(dodId, oldLeaf, newLeaf) {
     new_command: newLeaf.command,
     new_predicate: newLeaf.predicate,
     new_description: newLeaf.description,
+    // Without this the leaf keeps the heading of a scenario version that no
+    // longer exists, and `dodTreeToSteps` copies it into the step plan.
+    new_title: newLeaf.title,
     reason: "Regenerated: scenario text changed"
   });
   if (res.startsWith("ERROR")) throw new Error(res);
@@ -23913,7 +24063,7 @@ async function recordScenarioIdentity(converted) {
 
 // src/mcp/dod-generate.ts
 async function handleDodGenerate(params) {
-  const instructions = await fetchInstructions(params.change_id, params.cwd);
+  const instructions = await fetchInstructions(params.change_id, params.cwd, "dod");
   return renderAndImportDod(instructions);
 }
 
@@ -24398,6 +24548,7 @@ server.tool(
     new_command: external_exports.string().optional(),
     new_predicate: PredicateSchema.optional(),
     new_description: external_exports.string().optional(),
+    new_title: external_exports.string().optional(),
     reason: external_exports.string(),
     amend_justification: external_exports.string().optional()
   },

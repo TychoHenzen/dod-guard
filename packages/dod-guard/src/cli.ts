@@ -2,6 +2,7 @@ import { formatCheckResult, updateDocFromCheckResult, writeMarkdown } from "./au
 import { checkDocument, findNodeByPath } from "./checker.js";
 import { buildImportGateInfo } from "./import-gate.js";
 import { fetchInstructions } from "./openspec/fetch-instructions.js";
+import { writeStepsPlan } from "./openspec/steps-cli.js";
 import { classifyOutcome, formatTraceReport, traceChange } from "./openspec/trace.js";
 import * as store from "./store.js";
 import { formatTree } from "./tree-utils.js";
@@ -34,6 +35,7 @@ COMMANDS
   tree      Print the DoD's node tree with paths (use to find --node-path values)
   list      List all tracked DoDs
   trace     Check OpenSpec closure for a change: leaf <-> scenario, both directions
+  steps     Write a change's steps.json plan from its registered DoD
 
 OPTIONS (check / status / tree)
   --dod-id=<id>        DoD ID, as returned by dod_create or 'dod-guard list'
@@ -44,7 +46,7 @@ OPTIONS (check / status / tree)
   --confirm-import     Confirm an imported DoD's commands are safe to execute
   --quiet              Print only the verdict line; suppress per-proof output
 
-OPTIONS (trace)
+OPTIONS (trace / steps)
   --cwd=<dir>          Directory 'openspec instructions' resolves the change from (default: cwd)
 
 EXIT CODES (check)
@@ -61,11 +63,19 @@ EXIT CODES (trace)
   1  fail    at least one DoD leaf traces to no scenario
   3  error   bad usage, or this change has no DoD in storage or on disk
 
+EXIT CODES (steps)
+  0  pass    the plan was written to the path OpenSpec resolved
+  3  error   bad usage, or this change has no DoD in storage or on disk
+
+'steps' overwrites an existing plan. Anything a human filled into a step's
+'files' or 'verify_surface' is lost, so it warns on stderr when it does.
+
 EXAMPLES
   dod-guard check --dod-id=abc123
   dod-guard check --dod-id=abc123 --node-path=0.children.1 --quiet
   dod-guard check --path=docs/plans/2026-07-27-auth.md --cwd=/repo
   dod-guard trace adopt-openspec-for-dod-proofs
+  dod-guard steps adopt-openspec-for-dod-proofs
   dod-guard tree --dod-id=abc123
 `;
 
@@ -237,7 +247,7 @@ async function resolveInstructions(
   writeErr: (s: string) => void,
 ): Promise<Awaited<ReturnType<typeof fetchInstructions>> | null> {
   try {
-    return await fetchInstructions(changeId, cwd);
+    return await fetchInstructions(changeId, cwd, "dod");
   } catch (err) {
     writeErr(`ERROR: ${errorMessage(err)}\n`);
     return null;
@@ -262,23 +272,69 @@ async function reportTrace(
   return traceExitCodeFor(outcome);
 }
 
+/** The change id both change-scoped commands take as their one positional
+ * argument. Null once the usage error has been written. */
+function changeIdFrom(positional: string[], example: string, writeErr: (s: string) => void): string | null {
+  const changeId = positional[0];
+  if (changeId) return changeId;
+  writeErr(`ERROR: pass a change id, e.g. '${example}'.\n`);
+  return null;
+}
+
 async function cmdTrace(
   positional: string[],
   flags: Flags,
   write: (s: string) => void,
   writeErr: (s: string) => void,
 ): Promise<number> {
-  const changeId = positional[0];
-  if (!changeId) {
-    writeErr("ERROR: pass a change id, e.g. 'dod-guard trace adopt-openspec-for-dod-proofs'.\n");
-    return EXIT.ERROR;
-  }
+  const changeId = changeIdFrom(positional, "dod-guard trace adopt-openspec-for-dod-proofs", writeErr);
+  if (!changeId) return EXIT.ERROR;
 
   const cwd = str(flags, "cwd") ?? process.cwd();
   const instructions = await resolveInstructions(changeId, cwd, writeErr);
   if (!instructions) return EXIT.ERROR;
 
   return reportTrace(changeId, instructions, write, writeErr);
+}
+
+/** Regenerating a plan is destructive in one direction only: the machine
+ * rewrites `files` and `verify_surface`, which only a human can fill in. Say
+ * so rather than letting the loss be discovered later. */
+const OVERWRITE_WARNING =
+  "WARNING: an existing steps.json was overwritten - every step's human-filled 'files' and 'verify_surface' were reset.\n";
+
+/** Writes the outcome of one plan run. A null result means the change has no
+ * registered DoD, which is the same error `trace` reports. */
+function reportSteps(
+  changeId: string,
+  result: Awaited<ReturnType<typeof writeStepsPlan>>,
+  write: (s: string) => void,
+  writeErr: (s: string) => void,
+): number {
+  if (!result) {
+    writeErr(
+      `No DoD found for change "${changeId}", in canonical storage or on disk. ` +
+        "Run the openspec dod converter (renderAndImportDod) first.\n",
+    );
+    return EXIT.ERROR;
+  }
+
+  if (result.overwrote) writeErr(OVERWRITE_WARNING);
+  write(`Wrote ${result.plan.steps.length} step(s) to ${result.outputPath}\n`);
+  return EXIT.PASS;
+}
+
+async function cmdSteps(
+  positional: string[],
+  flags: Flags,
+  write: (s: string) => void,
+  writeErr: (s: string) => void,
+): Promise<number> {
+  const changeId = changeIdFrom(positional, "dod-guard steps adopt-openspec-for-dod-proofs", writeErr);
+  if (!changeId) return EXIT.ERROR;
+
+  const result = await writeStepsPlan(changeId, str(flags, "cwd") ?? process.cwd());
+  return reportSteps(changeId, result, write, writeErr);
 }
 
 async function cmdList(write: (s: string) => void): Promise<number> {
@@ -314,6 +370,7 @@ const COMMANDS: Record<string, Command> = {
   status: (_p, flags, io) => cmdStatus(flags, io.write, io.writeErr),
   tree: (_p, flags, io) => cmdTree(flags, io.write, io.writeErr),
   trace: (positional, flags, io) => cmdTrace(positional, flags, io.write, io.writeErr),
+  steps: (positional, flags, io) => cmdSteps(positional, flags, io.write, io.writeErr),
   list: (_p, _f, io) => cmdList(io.write),
 };
 

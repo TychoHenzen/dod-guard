@@ -12,6 +12,6 @@ interface GenerateParams {
 }
 
 export async function handleDodGenerate(params: GenerateParams): Promise<string> {
-  const instructions = await fetchInstructions(params.change_id, params.cwd);
+  const instructions = await fetchInstructions(params.change_id, params.cwd, "dod");
   return renderAndImportDod(instructions);
 }

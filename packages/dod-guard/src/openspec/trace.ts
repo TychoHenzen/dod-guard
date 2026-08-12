@@ -62,7 +62,9 @@ function untracedLeafDescriptions(roots: TaskNode[], tracedNodeIds: Set<string>)
     .map(({ groupTitle, leaf }) => `${groupTitle} > ${leaf.title}`);
 }
 
-/** The tree both closure directions walk. The canonical store is preferred,
+/** The tree both closure directions walk, and the one `dod-guard steps`
+ * converts (see steps-cli.ts - there is one way to find a change's DoD, not
+ * two). The canonical store is preferred,
  * but a CI runner has no `~/.claude/dod-store/`, so fall back to parsing the
  * committed `dod.md`. Both directions only need the leaf ids and their
  * grouping, and `parser.ts` numbers leaves `node-N` by position, which is the
@@ -70,7 +72,7 @@ function untracedLeafDescriptions(roots: TaskNode[], tracedNodeIds: Set<string>)
  * weaken the tamper check either: trace never executes a proof, and only
  * `dod_check` compares fingerprints. Returns null when neither source has the
  * change's DoD. */
-async function loadTraceTree(resolvedOutputPath: string): Promise<{ roots: TaskNode[] } | null> {
+export async function loadTraceTree(resolvedOutputPath: string): Promise<{ goal: string; roots: TaskNode[] } | null> {
   const stored: DodDocument | null = await store.findByPath(resolvedOutputPath);
   if (stored) return stored;
   try {
