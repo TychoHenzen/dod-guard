@@ -90,15 +90,9 @@ jobs:
         run: |
           npm install -g @fission-ai/openspec@1.8.0
           openspec validate --all --strict --no-interactive
-      # Closure: a DoD leaf that traces to no scenario means the proofs drifted
-      # from the spec. Needs the bundle from this checkout, not a released one.
-      - name: DoD leaves trace to their scenarios
-        env:
-          OPENSPEC_TELEMETRY: 0
-        run: |
-          npm run build -w packages/dod-guard
-          npm run bundle -w packages/dod-guard
-          node scripts/ci/check-trace.mjs
+      # dod-guard trace and its proof-tree closure check are gone; see
+      # openspec/changes/route-skills-through-openspec. dod-guard cover
+      # replaces this step once it lands.
 
   static-analysis:
     needs: build-test

@@ -2,7 +2,7 @@ import * as assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { describe, it } from "node:test";
 import { promisify } from "node:util";
-import { buildShellInvocation } from "./evaluate-proof.js";
+import { buildShellInvocation } from "./shell.js";
 
 const execFileP = promisify(execFile);
 

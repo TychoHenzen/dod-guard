@@ -8,7 +8,7 @@
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { buildShellInvocation } from "../evaluate-proof.js";
+import { buildShellInvocation } from "../shell.js";
 import type { OpenSpecInstructions } from "./types.js";
 
 const execFileP = promisify(execFile);

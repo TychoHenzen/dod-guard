@@ -28,10 +28,11 @@ point. `dod-guard cover <change-id>` is that check. It becomes the gate
 
 ## What Changes
 
-- Delete the predicate/proof/checker/fingerprint engine and 11 of dod-guard's 12
-  MCP tools (every one that authors, refines, or checks a proof node). Delete the
-  `check`, `status`, `tree`, `list`, and `trace` CLI subcommands and
-  `scripts/ci/check-trace.mjs`. Delete the schema's `dod` artifact.
+- Delete the predicate/proof/checker/fingerprint engine and all 13 of
+  dod-guard's MCP tools (every one that authors, refines, generates, or checks
+  a proof node). Delete the `check`, `status`, `tree`, `list`, and `trace` CLI
+  subcommands and `scripts/ci/check-trace.mjs`. Delete the schema's `dod`
+  artifact.
 - **BREAKING**: no dod.md, no proof commands, no predicates, no fingerprint. A
   DoD document is no longer a thing dod-guard produces.
 - Build `dod-guard cover <change-id>`: binds a scenario to a named test via a
@@ -97,7 +98,7 @@ point. `dod-guard cover <change-id>` is that check. It becomes the gate
 - `packages/dod-guard/src/`: delete `evaluate-proof.ts`, `fingerprint.ts`,
   `checker*.ts`, `import-gate.ts`, the DoD-tree-specific parts of `author.ts`,
   `parser.ts`, `tree-utils.ts`, `types.ts`, `schemas.ts`, `store.ts`, and their
-  tests. Delete 11 MCP tools from `index.ts`. Rework `src/openspec/steps.ts` and
+  tests. Delete all 13 MCP tools from `index.ts`. Rework `src/openspec/steps.ts` and
   add `src/cover/` (new).
 - `openspec/schemas/dod-guard-spec-driven/schema.yaml`: drop the `dod` artifact
   and its templates.

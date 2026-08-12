@@ -6,42 +6,50 @@
       proof-engine teardown and the coverage-gate rebuild
 - [x] 1.3 Rewrite this change's own `tasks.md` (this file) to match the new
       sequencing
-- [ ] 1.4 Delete this change's `dod.md` and `dod.md.scenario-map.json` (no `dod`
+- [x] 1.4 Delete this change's `dod.md` and `dod.md.scenario-map.json` (no `dod`
       artifact survives this change)
-- [ ] 1.5 Rewrite `specs/dod-guard/steps-generation/spec.md` and
+- [x] 1.5 Rewrite `specs/dod-guard/steps-generation/spec.md` and
       `specs/dod-guard/change-scoped-skills/spec.md` (both still-unarchived ADDED
       capabilities of this change) for the task-bound, cover-based design
-- [ ] 1.6 Rewrite `specs/dod-guard/build-skill-openspec-integration/spec.md` to
+- [x] 1.6 Rewrite `specs/dod-guard/build-skill-openspec-integration/spec.md` to
       drop the DoD-tree-derived `steps` requirement, keeping the plan-home and
       no-step-session requirements
-- [ ] 1.7 Delete `specs/dod-guard/generation-from-spec/spec.md` from this
+- [x] 1.7 Delete `specs/dod-guard/generation-from-spec/spec.md` from this
       change's deltas; the capability itself gets a `## REMOVED Requirements`
       delta written in step 2, once the deletion it describes has actually
       happened
-- [ ] 1.8 Add a `## REMOVED Requirements` delta for `dod-guard/trace-closure` in
+- [x] 1.8 Add a `## REMOVED Requirements` delta for `dod-guard/trace-closure` in
       step 2, for the same reason
 
 ## 2. Delete the proof engine
 
-- [ ] 2.1 Delete `evaluate-proof.ts`, `fingerprint.ts`, `checker*.ts`,
-      `import-gate.ts` and their tests
-- [ ] 2.2 Strip the DoD-tree-specific portions of `author.ts`, `parser.ts`,
+- [x] 2.1 Delete `evaluate-proof.ts`, `fingerprint.ts`, `checker*.ts`,
+      `import-gate.ts` and their tests. `buildShellInvocation`/`runCommand` were
+      the one genuinely reusable piece (used by `fetch-instructions.ts`, needed
+      by `cover` later) - extracted to `src/shell.ts` before the rest went
+- [x] 2.2 Strip the DoD-tree-specific portions of `author.ts`, `parser.ts`,
       `tree-utils.ts`, `types.ts`, `schemas.ts`, `store.ts`; delete what serves no
-      other caller
-- [ ] 2.3 Delete `dod_create`, `dod_check`, `dod_refine`, `dod_add_node`,
+      other caller. All of them served no other caller, so all deleted outright,
+      along with `openspec/scenario-identity.ts`, `openspec/checkability.ts`,
+      `command-check.ts`, `format-result.ts`, and `constants.ts` (each dead code
+      once its one caller was gone)
+- [x] 2.3 Delete `dod_create`, `dod_check`, `dod_refine`, `dod_add_node`,
       `dod_remove_node`, `dod_status`, `dod_tree`, `dod_amend`, `dod_list`,
-      `dod_import`, `dod_store_migrate`, `dod_adversarial_gate` from
-      `src/index.ts`
-- [ ] 2.4 Delete the `check`, `status`, `tree`, `list`, `trace` CLI subcommands
-      from `cli.ts`
-- [ ] 2.5 Delete `scripts/ci/check-trace.mjs` and its `plugin-config` CI wiring
-- [ ] 2.6 Delete the schema's `dod` artifact and its templates from
-      `openspec/schemas/dod-guard-spec-driven/schema.yaml`
-- [ ] 2.7 Write the deferred `## REMOVED Requirements` deltas for
+      `dod_import`, `dod_generate`, `dod_store_migrate`, `dod_adversarial_gate`
+      from `src/index.ts` (all 13)
+- [x] 2.4 Delete the `check`, `status`, `tree`, `list`, `trace` CLI subcommands
+      from `cli.ts`. `steps` deleted too rather than left half-working against a
+      dead `trace.ts` import; task 4 rebuilds it against `tasks.md`
+- [x] 2.5 Delete `scripts/ci/check-trace.mjs` and its `plugin-config` CI wiring
+- [x] 2.6 Delete the schema's `dod` artifact and its templates from
+      `openspec/schemas/dod-guard-spec-driven/schema.yaml`, and `dod` from
+      `apply.requires`
+- [x] 2.7 Write the deferred `## REMOVED Requirements` deltas for
       `dod-guard/generation-from-spec` and `dod-guard/trace-closure` (tasks 1.7,
       1.8), naming exactly what got deleted
-- [ ] 2.8 `npm run build -w packages/dod-guard && npm test -w packages/dod-guard`
-      green with the engine gone
+- [x] 2.8 `npm run build -w packages/dod-guard && npm test -w packages/dod-guard`
+      green with the engine gone (212 tests, 0 failures, after a clean rebuild -
+      stale `dist/` from deleted `.ts` sources faked 71 failures on the first try)
 
 ## 3. Build `dod-guard cover`
 
