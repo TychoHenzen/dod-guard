@@ -1,0 +1,132 @@
+[
+  {
+    "groupTitle": "cover command exists",
+    "scenarioTitle": "Command reports every scenario in the change",
+    "nodeId": "node-1"
+  },
+  {
+    "groupTitle": "cover command exists",
+    "scenarioTitle": "Unknown change id is a usage error",
+    "nodeId": "node-2"
+  },
+  {
+    "groupTitle": "A scenario binds to named tests",
+    "scenarioTitle": "Declared test binds to the scenario",
+    "nodeId": "node-4"
+  },
+  {
+    "groupTitle": "A scenario binds to named tests",
+    "scenarioTitle": "A scenario with no declared test is unbound",
+    "nodeId": "node-5"
+  },
+  {
+    "groupTitle": "A scenario binds to named tests",
+    "scenarioTitle": "A declared test that does not exist is an error",
+    "nodeId": "node-6"
+  },
+  {
+    "groupTitle": "Coverage requires a passing run",
+    "scenarioTitle": "Passing test covers its scenario",
+    "nodeId": "node-8"
+  },
+  {
+    "groupTitle": "Coverage requires a passing run",
+    "scenarioTitle": "Failing test does not cover its scenario",
+    "nodeId": "node-9"
+  },
+  {
+    "groupTitle": "Coverage requires a passing run",
+    "scenarioTitle": "Skipped test does not cover its scenario",
+    "nodeId": "node-10"
+  },
+  {
+    "groupTitle": "Coverage requires reachability from an entry point",
+    "scenarioTitle": "Test through an entry point counts as integrated",
+    "nodeId": "node-12"
+  },
+  {
+    "groupTitle": "Coverage requires reachability from an entry point",
+    "scenarioTitle": "Test that bypasses every entry point is reported",
+    "nodeId": "node-13"
+  },
+  {
+    "groupTitle": "Coverage requires reachability from an entry point",
+    "scenarioTitle": "Implementation no entry point reaches is reported",
+    "nodeId": "node-14"
+  },
+  {
+    "groupTitle": "A project declares its own entry points",
+    "scenarioTitle": "Declared entry points drive the reachability walk",
+    "nodeId": "node-16"
+  },
+  {
+    "groupTitle": "A project declares its own entry points",
+    "scenarioTitle": "A project with no declared entry points reports the gap",
+    "nodeId": "node-17"
+  },
+  {
+    "groupTitle": "cover reports and does not block",
+    "scenarioTitle": "Uncovered scenarios still exit 0",
+    "nodeId": "node-19"
+  },
+  {
+    "groupTitle": "cover reports and does not block",
+    "scenarioTitle": "A broken run exits non-zero",
+    "nodeId": "node-20"
+  },
+  {
+    "groupTitle": "backfill command exists",
+    "scenarioTitle": "Command drafts requirements for a path",
+    "nodeId": "node-22"
+  },
+  {
+    "groupTitle": "backfill command exists",
+    "scenarioTitle": "A path that does not exist is a usage error",
+    "nodeId": "node-23"
+  },
+  {
+    "groupTitle": "Backfill skips behavior an existing spec covers",
+    "scenarioTitle": "Covered behavior produces no draft",
+    "nodeId": "node-25"
+  },
+  {
+    "groupTitle": "Backfill skips behavior an existing spec covers",
+    "scenarioTitle": "Partly covered behavior drafts only the gap",
+    "nodeId": "node-26"
+  },
+  {
+    "groupTitle": "Every drafted requirement carries a confirmation state",
+    "scenarioTitle": "A fresh draft is unconfirmed",
+    "nodeId": "node-28"
+  },
+  {
+    "groupTitle": "Every drafted requirement carries a confirmation state",
+    "scenarioTitle": "An unconfirmed requirement does not satisfy coverage",
+    "nodeId": "node-29"
+  },
+  {
+    "groupTitle": "Every drafted requirement carries a confirmation state",
+    "scenarioTitle": "A confirmed requirement behaves like any other",
+    "nodeId": "node-30"
+  },
+  {
+    "groupTitle": "Backfill records the evidence for each draft",
+    "scenarioTitle": "A draft from a test names that test",
+    "nodeId": "node-32"
+  },
+  {
+    "groupTitle": "Backfill records the evidence for each draft",
+    "scenarioTitle": "A draft from code alone says no test backed it",
+    "nodeId": "node-33"
+  },
+  {
+    "groupTitle": "Backfill never edits a confirmed requirement",
+    "scenarioTitle": "Code that contradicts a confirmed requirement is reported",
+    "nodeId": "node-35"
+  },
+  {
+    "groupTitle": "Backfill never edits a confirmed requirement",
+    "scenarioTitle": "A second run does not duplicate its own earlier drafts",
+    "nodeId": "node-36"
+  }
+]
