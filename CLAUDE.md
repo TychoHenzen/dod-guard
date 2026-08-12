@@ -134,6 +134,16 @@ tracked by git for exactly this reason.
 
 That last one matters because **the marketplace installs from git, not npm**. `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo. `files[]` governs npm installs only. Git tracking governs what `/plugin` users actually get.
 
+### OpenSpec spec layout
+
+Every capability spec lives at `openspec/specs/<group>/<capability>/spec.md`, and the spec id is that path. So `openspec/specs/gitevo/memory-bus/spec.md` has the id `gitevo/memory-bus`.
+
+Six groups exist. Five match a package name: `dod-guard` (4 specs), `quality-guard` (5), `evomcp` (6), `gitevo` (4), `obsidian-rag` (5). The sixth, `openspec-dashboard` (3), names the tool under `tools/openspec-dashboard` instead.
+
+A change's delta directory must mirror the `openspec/specs/<group>/<capability>/spec.md` path exactly, at `openspec/changes/<id>/specs/<group>/<capability>/spec.md`. Get the group wrong and `openspec archive` creates a new flat capability instead of merging into the existing one, silently.
+
+Nesting makes a package prefix in the capability name redundant, so the name drops it. The old `quality-structural-scan` is now `quality-guard/structural-scan`.
+
 **Ratchets** compare against baselines in `.github/quality/`:
 
 | Ratchet | Baseline | Fails when |
