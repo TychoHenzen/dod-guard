@@ -1,0 +1,4 @@
+schema: dod-guard-spec-driven
+created: 2026-08-12
+goal: Make every dod-guard skill operate on an OpenSpec change id and fetch
+  artifact rules at runtime instead of carrying its own copies
