@@ -253,7 +253,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
 
 ## 6. Docs and cleanup
 
-- [ ] 6.1 Remove `.step-session/` from `.gitignore`, `scripts/ci/lib/fs-utils.mjs`,
+- [x] 6.1 Remove `.step-session/` from `.gitignore`, `scripts/ci/lib/fs-utils.mjs`,
       `quality-refactor/scripts/lib/config.mjs`
 - [ ] 6.2 Rewrite `packages/dod-guard/CLAUDE.md`: it documents 10 predicate
       types, `checker.ts`, `evaluate-proof.ts`, `fingerprint.ts`, and

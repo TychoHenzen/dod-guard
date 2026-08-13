@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-13T11:45:26.371Z",
-  "total": 850,
+  "total": 853,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -293,6 +293,7 @@
     "scripts/ci/check-coverage-gate.mjs",
     "scripts/ci/check-skill-hygiene.test.mjs",
     "scripts/ci/fixtures/skill-hygiene.mjs",
+    "scripts/ci/lib/fs-utils.mjs",
     "scripts/ci/lib/skill-hygiene-rules.mjs"
   ],
   "counts": {
@@ -737,6 +738,8 @@
     "scripts/ci/lib/skill-hygiene-rules.mjs::file-length": 1,
     "scripts/ci/lib/skill-hygiene-rules.mjs::complexity": 1,
     "scripts/ci/check-skill-hygiene.test.mjs::file-length": 1,
-    "scripts/ci/check-coverage-gate.mjs::complexity": 1
+    "scripts/ci/check-coverage-gate.mjs::complexity": 1,
+    "scripts/ci/lib/fs-utils.mjs::complexity": 1,
+    "scripts/ci/lib/fs-utils.mjs::else-branch": 2
   }
 }

@@ -47,9 +47,6 @@ reports/
 .data/micro-mutations/stryker.run.json
 .data/micro-mutations/queue.json
 
-# step-by-step session state: plan + progress log
-.step-session/
-
 # blind-rewrite scratch: quarantined original
 .blind/
 
