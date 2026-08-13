@@ -57,7 +57,7 @@ report "not running".
 
 ## 3. `/opsx:dashboard` with no argument (start or report)
 
-1. Run the detection command from step 2.
+1. Run the port detection command.
 2. If a port is already listening in range 4400-4419: report that URL
    (`http://127.0.0.1:<port>`) as the running dashboard. Do not start a
    second instance.
@@ -68,9 +68,9 @@ report "not running".
      finishing.
    - macOS/Linux: `node "<path to serve.mjs>" &` or an equivalent detached
      background launch.
-   Then read the port it bound to from the server's own startup line
-   (`OpenSpec dashboard on http://127.0.0.1:<port>`), or re-run the step 2
-   detection command a moment later if the startup line was not captured.
+   Then read the port from the server's startup line
+   (`OpenSpec dashboard on http://127.0.0.1:<port>`). If the startup line
+   was not captured, re-run the port detection command a moment later.
    Report the URL it bound to.
 4. Check the registry at `~/.openspec-dashboard/projects.json` for whether
    the current project (its OpenSpec root, the directory holding
@@ -86,13 +86,12 @@ report "not running".
 
 ## 4. `/opsx:dashboard stop`
 
-1. Run the detection command from step 2 to find a listener in range
-   4400-4419.
+1. Run the port detection command to find a listener in range 4400-4419.
 2. If nothing is listening: tell the user no dashboard was found running
    and stop. There is nothing to do.
-3. If a listener is found: identify its process id from the detection
-   command's own output (the last column of `netstat -ano`, or the PID
-   column of `lsof`/`ss`), then stop it.
+3. If a listener is found: read its process id from the detection output.
+   On Windows that is the last column of `netstat -ano`. On Unix it is the
+   PID column of `lsof` or `ss`. Then stop the process.
    - Windows: `taskkill /PID <pid> /F`
    - macOS/Linux: `kill <pid>`
 4. Re-run the detection command once more to confirm nothing is listening
@@ -107,6 +106,6 @@ report "not running".
   `~/.openspec-dashboard/projects.json`.
 - Never open a browser window yourself. Report the URL and let the user open
   it.
-- If `OPENSPEC_DASHBOARD_PORT` is set in the environment, the server starts
-  its scan there instead of 4400; widen the detection range accordingly if
-  you know that variable is set.
+- `OPENSPEC_DASHBOARD_PORT` overrides the server's start port. When that
+  variable is set, widen the detection range to start there instead of
+  4400.

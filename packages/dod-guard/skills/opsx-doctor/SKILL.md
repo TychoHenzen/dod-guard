@@ -36,10 +36,9 @@ is not itself a failure to report as an error.
 
 ## 3. The healthy case
 
-If both commands exit 0 with no findings, say so in one or two sentences:
-which store (or "the local project") was checked, and that both the
-relationship check and the strict structural check came back clean. Stop
-there. Do not list command output, do not editorialize.
+If both commands exit 0 with no findings, name which store or project was
+checked and say both checks came back clean. Stop there. Do not list
+command output.
 
 ## 4. Translating doctor findings
 
@@ -49,19 +48,18 @@ problem in plain language, not the tool's own wording.
 
 - **Orphaned spec delta** (a change's delta targets a capability with no
   main spec at `openspec/specs/<group>/<capability>/spec.md`): explain that
-  the delta has nothing to merge into, and it will land as a new flat
-  capability instead of updating the existing one. Suggest either creating
-  the missing main spec first, or correcting the delta's path if the
-  capability name was meant to match an existing one.
+  the delta has nothing to merge into. It will land as a new flat
+  capability instead of updating the existing one. Suggest creating the
+  missing main spec, or correcting the delta's path.
 - **Broken reference** (a change or spec points at something that does not
   resolve): name what it points at and where the pointer lives.
 - **Missing scenario** (a requirement with no scenario underneath it, or a
   reference to a scenario that is not present): name the requirement and
   the file.
 
-If doctor reports a finding type not covered above, still name the file
-and restate the tool's message in plain sentences rather than passing the
-raw line through.
+If doctor reports a finding type not listed above, name the file and
+restate the message in plain sentences. Do not pass the raw line
+through.
 
 ## 5. Translating validate findings
 
@@ -70,9 +68,9 @@ For each one: the file path, the line if the tool gives one, and what is
 wrong in plain language.
 
 - **Scenario heading level wrong** (a scenario uses `###` instead of the
-  required `####`): name the file and line, state that scenarios need four
-  hash marks while requirements need three, and offer to fix it (change
-  that heading's level) if the user wants.
+  required `####`): name the file and line. Scenarios need four hash marks.
+  Requirements need three. Offer to fix the heading level if the user
+  wants.
 - Any other strict violation: file path, what the rule requires, what the
   file actually has.
 
@@ -81,9 +79,9 @@ as above, and waiting for a yes.
 
 ## 6. Report shape
 
-One report, in this order: which store or project was checked, then
-doctor findings grouped by type, then validate findings grouped by type,
-then a one-line total ("N doctor findings, M validate violations"). Skip
+One report. Start with which store or project was checked. Then doctor
+findings grouped by type. Then validate findings grouped by type. End
+with a one-line total ("N doctor findings, M validate violations"). Skip
 any section with nothing to report rather than writing "no findings"
 under every heading.
 

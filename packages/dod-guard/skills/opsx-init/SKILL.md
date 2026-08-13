@@ -23,9 +23,8 @@ report what is already set up:
 - The spec count: number of `spec.md` files under `openspec/specs/`.
 - The change count: number of directories under `openspec/changes/`.
 
-Then offer to reconfigure the schema (step 2) or the project context (step
-3) instead of re-initializing. Continue to those steps only if the user
-wants to.
+Then offer to reconfigure the schema or the project context instead of
+re-initializing. Continue only if the user wants to.
 
 ## 2. Schema setup
 
@@ -49,7 +48,7 @@ Check `openspec/schemas/` in the target project.
    `openspec/config.yaml`.
 
 If the user declines, leave the default `spec-driven` schema in place and
-continue to step 3.
+continue to context configuration.
 
 **A schema already exists in `openspec/schemas/`:** Report its name. Do not
 overwrite it, and do not offer the copy.
@@ -63,16 +62,15 @@ any `*.csproj` file.
 **A manifest is found:** Propose a `context` block for
 `openspec/config.yaml` naming the language, the test runner, and (when
 detectable) the bundler. For a Node.js project with a `typescript`
-dependency in `package.json`, name TypeScript as the language; read
-`package.json`'s `scripts.test` and dependencies to name the test runner
-(for example `node:test`, `jest`, or `vitest`) and the bundler (for
-example `esbuild`, `webpack`, or `vite`) when either appears. Show the
-proposed block to the user before writing it. Write it into
-`openspec/config.yaml` only if the user accepts.
+dependency in `package.json`, name TypeScript as the language. Read
+`package.json`'s `scripts.test` and dependencies to find the test runner
+(`node:test`, `jest`, or `vitest`) and the bundler (`esbuild`, `webpack`,
+or `vite`). Show the proposed block to the user before writing it. Write
+it into `openspec/config.yaml` only if the user accepts.
 
 **No recognizable manifest is found:** Ask the user to describe the tech
-stack in their own words, then write what they say into the `context`
-field of `openspec/config.yaml`.
+stack. Write what they say into the `context` field of
+`openspec/config.yaml`.
 
 ## 4. Dashboard registration
 
