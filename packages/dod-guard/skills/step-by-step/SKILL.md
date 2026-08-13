@@ -7,7 +7,7 @@ description: >-
   has 5 or more steps, a model starts batching steps or cutting corners, the
   user says "work through this step by step" or "do not batch", or the plan
   came out of /interview, /blueprint, or /solve.
-argument-hint: "[plan file, .step-session/steps.json, or the plan just confirmed]"
+argument-hint: "[OpenSpec change id, plan file, or the plan just confirmed]"
 
 ---
 
@@ -18,20 +18,16 @@ record results. You never write implementation code.
 
 ## Before you start
 
-You need a confirmed plan. No plan means no work. Route to
-`/dod-guard:interview`, `/solve`, or `/opsx:propose`, then come back. A
-plain plan file works fine too. An OpenSpec change also gets the task
-checklist and the closure check described below.
+You need a confirmed OpenSpec change. No change means no work. Route to
+`/dod-guard:interview` or `/opsx:propose`, then come back. Every session
+runs against `openspec/changes/<id>/steps.json` and needs a change id.
 
-Check for `.step-session/steps.json`. When it exists, inspect it for
-staleness: wrong goal, every step already done, unknown status values,
-or missing `plan_source`. A plan-file session is also stale when the
-source file's mtime no longer matches `plan_mtime`. An OpenSpec
-session works differently. It is stale when `openspec status --json
---change <id>` artifact statuses differ from the `plan_artifacts`
-snapshot at generation time. Stale state means asking the user whether
-to replace it. Valid state means resuming from the first `pending`
-step.
+Check that file for staleness: wrong goal, every step already done,
+unknown status values, or missing `plan_source`. It is stale when
+`openspec status --json --change <id>` artifact statuses differ from the
+`plan_artifacts` snapshot at generation time. Stale state means asking
+the user whether to replace it (regenerate with `dod-guard steps <id>`).
+Valid state means resuming from the first `pending` step.
 
 ## Three actors, three boundaries
 
@@ -47,11 +43,10 @@ step.
 - Hold `manual_required` steps at `pending` until the user confirms.
 - Respect `deps`, not array order. A step starts only after all its
   dependencies show `completed`.
-- After each verdict: update `steps.json`, append to `progress.log`,
-  keep Concerns and file lists for the final report, then drop
-  everything else about that step. Carry forward only id, title, and
-  verdict. For an OpenSpec session, also check off the matching item in
-  `openspec/changes/<id>/tasks.md` (see Persistence).
+- After each verdict: update `steps.json`, keep Concerns and file lists
+  for the final report, then drop everything else about that step.
+  Carry forward only id, title, and verdict. Also check off the matching
+  item in `openspec/changes/<id>/tasks.md` (see Persistence).
 - When `verify_cmd` passes, commit the step's changes yourself. That
   commit is the rollback point. A failed or blocked step earns no
   commit. You commit. You never push. Pushing stays a human decision.
@@ -67,7 +62,7 @@ cut them by about 70 percent.
 Task: {step description, verbatim from steps.json}
 Context: {what earlier steps produced}
 Requirement: {the scenario this step satisfies, its WHEN and THEN lines verbatim}
-Verification: verify_surface is {value}. Run exactly: {verify_cmd}
+Verification: {surface type}. Run exactly: {verify_cmd}
 Files:
 - Read before starting: {paths}
 - May modify: {paths}
@@ -134,37 +129,25 @@ within the step's `files` list and imports remain consistent. `visual`
 and `gameplay` need human eyes or a screenshot comparison. A green
 build proves the compiler ran, nothing more.
 
-## DoD subtree proofs
-
-Steps verified through a DoD subtree use `dod-guard check` as their
-`verify_cmd`. The CLI exits 0 on pass and 3 on usage error. It exits 1
-when a proof failed, or the document is tampered or stuck, and 2 when
-drafts remain on an unscoped run. A scoped run exits 0 when its own subtree
-passes.
-
 ## Persistence
 
-Session bookkeeping lives in `.step-session/` (gitignored). An OpenSpec
-session also keeps one file inside `openspec/changes/<id>/`, committed like
-any other spec artifact.
+Session bookkeeping lives at `openspec/changes/<id>/steps.json`, committed
+like any other spec artifact. There is no other session store.
 
-**steps.json** carries the plan. Top level: `goal`, `cwd`,
-`plan_source`, `plan_mtime` or `plan_artifacts`, and a `steps` array.
-For a plan-file session, `plan_source` is the file path. Stat it and
-record its mtime as `plan_mtime`. For an OpenSpec session,
-`plan_source` is the change id. Record the `artifacts` array from
-`openspec status --json --change <id>` as `plan_artifacts`. Other
-producers may leave both absent. Each entry holds `id`, `title`,
-`description`, `files` (array), `deps` (array), `verify_surface`,
-`verify_cmd` (a shell string where `&&` is valid), `manual_required`
-(bool), and `status`. Valid statuses: `pending`, `completed`, `skipped`,
-`blocked`. Ignore fields you do not recognize. `cheap-step` adds
-`mode` with values `cheap` or `host-only`.
+**steps.json** carries the plan. Top level: `goal`, `cwd`, `plan_source`
+set to the change id, `plan_artifacts` (the `artifacts` array from
+`openspec status --json --change <id>`), and a `steps` array. Each entry
+holds `id`, `title`, `description`, `files` (array), `deps` (array),
+`verify_surface`, `verify_cmd` (a shell string where `&&` is valid),
+`manual_required` (bool), and `status`. Valid statuses: `pending`,
+`completed`, `skipped`, `blocked`. Ignore fields you do not recognize.
+`cheap-step` adds `mode` with values `cheap` or `host-only`.
 
-**progress.log** gets one appended line per verdict: step id, what
-happened, and the shortest decisive evidence.
+Record each verdict as you go: id, what happened, and the shortest
+decisive evidence, folded into the step's own entry rather than a
+separate log.
 
-**tasks.md** (OpenSpec sessions only) is the change's own task list at
+**tasks.md** is the change's own task list at
 `openspec/changes/<id>/tasks.md`, in OpenSpec's own checklist format
 (`- [ ]` pending, `- [x]` done), one line per `steps.json` entry.
 
@@ -194,32 +177,29 @@ clean" and stop. Do not review further.
 After the last step, run the full build and test suite as an
 integration check.
 
-When the session's `plan_source` is an OpenSpec change id, a green
-integration check earns two more commands, run in this order.
+A green integration check earns two more commands, run in this order.
 
-Run `dod-guard trace <change-id>`. It checks closure in both
-directions. Every DoD leaf must trace to one scenario, and every
-scenario must reach one leaf or be a MANUAL draft. Only the leaf side
-blocks. An untraced scenario is reported and lets the run continue.
-Exit 0 means every leaf traced. Exit 1 means an untraced leaf. Exit 3 means no DoD is
-registered for the change, or bad usage. On exit 1 or exit 3, stop
-here: report the untraced leaf and do not archive.
+Run `dod-guard cover <change-id>`. It checks each scenario in the
+change's spec deltas against a ratcheted baseline. Exit 0 means every
+scenario matches or improves on the baseline. Exit 1 means one
+regressed. Exit 3 means usage error. On exit 1 or exit 3, stop here:
+report the regression and do not archive.
 
 On exit 0, run `openspec archive <change-id> --yes`. It merges the
 change's spec deltas into openspec/specs/ and moves the change under
 changes/archive/. Use `--skip-specs` for a tooling-only change with no
-spec deltas. Run archive without asking the user first. A DoD that
-passes trace is a change that shipped. Asking for confirmation on
+spec deltas. Run archive without asking the user first. A change that
+passes cover is a change that shipped. Asking for confirmation on
 every green run just re-asks a question the gate already answered.
-Archiving is not cheaply reversible, but the trace check is the
-approval: it already proved every scenario is covered before this
-command runs.
+Archiving is not cheaply reversible, but the cover check is the
+approval: it already proved every scenario holds before this command
+runs.
 
 Deliver a report containing:
 
 - Each step's title and final status
 - Integration check result
-- Trace and archive outcome, when the session is OpenSpec-sourced
+- Cover and archive outcome
 - Reasons for any blocked or skipped steps
 - Visual or gameplay steps still awaiting confirmation
 - All changed files

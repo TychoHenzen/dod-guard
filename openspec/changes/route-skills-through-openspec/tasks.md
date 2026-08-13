@@ -188,7 +188,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
 - [ ] 5.1 Rewrite `/interview`: drop the DoD authoring policy, the `dod_create`
       fallback, the `docs/plans/` path; add scenario-writing and test-binding
       guidance
-- [ ] 5.2 **Bootstrap.** Rewrite `packages/dod-guard/skills/step-by-step/SKILL.md`:
+- [x] 5.2 **Bootstrap.** Rewrite `packages/dod-guard/skills/step-by-step/SKILL.md`:
       - Delete the "DoD subtree proofs" section (lines ~137-143) outright. A
         bound step's `verify_cmd` is now the scenario's test command directly;
         there is no subtree command left to document.
