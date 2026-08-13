@@ -85,16 +85,20 @@ unknowns live and produces no signal until markers exist.
 
 ### 3b. Real reachability
 
-- [ ] 3b.1 Run a bound test in isolation via `--test-name-pattern`, under c8
+- [x] 3b.1 Run a bound test in isolation via `--test-name-pattern`, under c8
       scoped to its package's `dist/**/*.js` (mirroring `check-coverage.mjs`'s
       `c8Args`)
-- [ ] 3b.2 Match the isolated run's per-file coverage against the package's
+- [x] 3b.2 Match the isolated run's per-file coverage against the package's
       declared entry-point files to decide covered-and-integrated vs
       covered-but-not-integrated
-- [ ] 3b.3 A failing bound test reports as failing, folded into "not covered"
+- [x] 3b.3 A failing bound test reports as failing, folded into "not covered"
       for the ratchet
-- [ ] 3b.4 Manual check: one real marker, one real entry-point declaration,
-      confirm the outcome flips when the entry-point declaration is removed
+- [x] 3b.4 Manual check: one real marker, one real entry-point declaration,
+      confirm the outcome flips when the entry-point declaration is removed.
+      Bound `cli.test.ts`'s `--help` test to `dod-guard/coverage-gate::cover
+      reports a scenario's state||A marker binds a scenario to a test`:
+      covered-and-integrated with `cli.ts` declared, covered-but-not-integrated
+      with it removed. Both temporary edits reverted after confirming
 - [ ] 3b.5 Give the ratchet a pawl: a "Tighten coverage-gate baseline" CI step
       (mirroring `quality-baseline.json`'s) that commits a scenario's
       improvement back, once 3b can produce covered-and-integrated at all -

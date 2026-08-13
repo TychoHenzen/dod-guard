@@ -5,7 +5,7 @@
  * `tools/openspec-dashboard`. `cover` uses this to find a group's test files
  * and, later, its `dist/**\/*.js` for coverage instrumentation.
  */
-function packageDirForGroup(group: string): string {
+export function packageDirForGroup(group: string): string {
   if (group === "openspec-dashboard") return "tools/openspec-dashboard";
   return `packages/${group}`;
 }

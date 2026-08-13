@@ -2984,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3011,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path5) {
-      let input = path5;
+    function removeDotSegments(path8) {
+      let input = path8;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path5, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path5 && path5 !== "/" ? path5 : void 0;
+        const [path8, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path8 && path8 !== "/" ? path8 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3642,7 +3642,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve(baseURI, relativeURI, options) {
+    function resolve2(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -3653,49 +3653,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative2, options, skipNormalization) {
+    function resolveComponent(base, relative4, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative2 = parse3(serialize(relative2, options), options);
+        relative4 = parse3(serialize(relative4, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative2.scheme) {
-        target.scheme = relative2.scheme;
-        target.userinfo = relative2.userinfo;
-        target.host = relative2.host;
-        target.port = relative2.port;
-        target.path = removeDotSegments(relative2.path || "");
-        target.query = relative2.query;
+      if (!options.tolerant && relative4.scheme) {
+        target.scheme = relative4.scheme;
+        target.userinfo = relative4.userinfo;
+        target.host = relative4.host;
+        target.port = relative4.port;
+        target.path = removeDotSegments(relative4.path || "");
+        target.query = relative4.query;
       } else {
-        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
-          target.userinfo = relative2.userinfo;
-          target.host = relative2.host;
-          target.port = relative2.port;
-          target.path = removeDotSegments(relative2.path || "");
-          target.query = relative2.query;
+        if (relative4.userinfo !== void 0 || relative4.host !== void 0 || relative4.port !== void 0) {
+          target.userinfo = relative4.userinfo;
+          target.host = relative4.host;
+          target.port = relative4.port;
+          target.path = removeDotSegments(relative4.path || "");
+          target.query = relative4.query;
         } else {
-          if (!relative2.path) {
+          if (!relative4.path) {
             target.path = base.path;
-            if (relative2.query !== void 0) {
-              target.query = relative2.query;
+            if (relative4.query !== void 0) {
+              target.query = relative4.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative2.path[0] === "/") {
-              target.path = removeDotSegments(relative2.path);
+            if (relative4.path[0] === "/") {
+              target.path = removeDotSegments(relative4.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative2.path;
+                target.path = "/" + relative4.path;
               } else if (!base.path) {
-                target.path = relative2.path;
+                target.path = relative4.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative4.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative2.query;
+            target.query = relative4.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3703,7 +3703,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative2.fragment;
+      target.fragment = relative4.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3926,7 +3926,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -6902,12 +6902,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs5, exportName) {
+    function addFormats(ajv, list, fs7, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs5[f]);
+        ajv.addFormat(f, fs7[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -6917,7 +6917,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync } from "node:fs";
-import * as path4 from "node:path";
+import * as path7 from "node:path";
 import { fileURLToPath } from "node:url";
 
 // ../../node_modules/zod/v3/helpers/util.js
@@ -7279,8 +7279,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path5, errorMaps, issueData } = params;
-  const fullPath = [...path5, ...issueData.path || []];
+  const { data, path: path8, errorMaps, issueData } = params;
+  const fullPath = [...path8, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7395,11 +7395,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path5, key) {
+  constructor(parent, value, path8, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path5;
+    this._path = path8;
     this._key = key;
   }
   get path() {
@@ -10991,10 +10991,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path5) {
-  if (!path5)
+function getElementAtPath(obj, path8) {
+  if (!path8)
     return obj;
-  return path5.reduce((acc, key) => acc?.[key], obj);
+  return path8.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11314,11 +11314,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path5, issues) {
+function prefixIssues(path8, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path5);
+    iss.path.unshift(path8);
     return iss;
   });
 }
@@ -14729,11 +14729,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path5) {
-  if (path5.length === 0) {
+function getDotPath(path8) {
+  if (path8.length === 0) {
     return "object root";
   }
-  return path5.reduce((acc, seg, index) => {
+  return path8.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -18862,7 +18862,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -18879,7 +18879,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -18957,7 +18957,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve(parseResult.data);
+            resolve2(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19218,12 +19218,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve, interval);
+      const timeoutId = setTimeout(resolve2, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20314,7 +20314,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -20978,34 +20978,64 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve) => {
+    return new Promise((resolve2) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve();
+        resolve2();
       } else {
-        this._stdout.once("drain", resolve);
+        this._stdout.once("drain", resolve2);
       }
     });
   }
 };
 
 // src/cover/baseline.ts
-import { promises as fs3 } from "node:fs";
-import * as path2 from "node:path";
+import { promises as fs5 } from "node:fs";
+import * as path5 from "node:path";
 
-// src/cover/markers.ts
-import { promises as fs2 } from "node:fs";
-
-// src/openspec/glob.ts
+// src/cover/entry-points.ts
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
+
+// src/cover/package-dir.ts
+function packageDirForGroup(group) {
+  if (group === "openspec-dashboard") return "tools/openspec-dashboard";
+  return `packages/${group}`;
+}
+function testGlobsForGroup(group) {
+  const pkgDir = packageDirForGroup(group);
+  if (pkgDir.startsWith("packages/")) return [`${pkgDir}/src/**/*.test.ts`];
+  return [`${pkgDir}/**/*.test.js`, `${pkgDir}/**/*.test.mjs`];
+}
+
+// src/cover/entry-points.ts
+async function loadEntryPoints(cwd) {
+  try {
+    const raw = await fs.readFile(path.join(cwd, "openspec", "entry-points.json"), "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+function entryPointsForGroup(entryPoints, group) {
+  const pkgDir = packageDirForGroup(group);
+  const files = entryPoints[pkgDir];
+  return files === void 0 ? { files: [], declared: false } : { files, declared: true };
+}
+
+// src/cover/markers.ts
+import { promises as fs3 } from "node:fs";
+
+// src/openspec/glob.ts
+import { promises as fs2 } from "node:fs";
+import * as path2 from "node:path";
 function segmentToRegExp(segment) {
   const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
   return new RegExp(`^${escaped}$`);
 }
 async function listEntries(dir) {
   try {
-    return await fs.readdir(dir, { withFileTypes: true });
+    return await fs2.readdir(dir, { withFileTypes: true });
   } catch {
     return [];
   }
@@ -21013,7 +21043,7 @@ async function listEntries(dir) {
 async function walkFiles(dir, segment) {
   const re = segmentToRegExp(segment);
   const entries = await listEntries(dir);
-  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path.join(dir, e.name));
+  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path2.join(dir, e.name));
 }
 async function walkDirs(dir, segment, rest) {
   const re = segmentToRegExp(segment);
@@ -21021,7 +21051,7 @@ async function walkDirs(dir, segment, rest) {
   const results = [];
   for (const e of entries) {
     if (e.isDirectory() && re.test(e.name)) {
-      results.push(...await resolveSegments(path.join(dir, e.name), rest));
+      results.push(...await resolveSegments(path2.join(dir, e.name), rest));
     }
   }
   return results;
@@ -21031,7 +21061,7 @@ async function walkDoubleStar(dir, rest) {
   const entries = await listEntries(dir);
   for (const e of entries) {
     if (e.isDirectory()) {
-      results.push(...await walkDoubleStar(path.join(dir, e.name), rest));
+      results.push(...await walkDoubleStar(path2.join(dir, e.name), rest));
     }
   }
   return results;
@@ -21051,17 +21081,6 @@ async function resolveGlob(baseDir, pattern) {
 // src/openspec/scenario-id.ts
 function buildScenarioId(group, capability, requirementTitle, scenarioTitle) {
   return `${group}/${capability}::${requirementTitle}||${scenarioTitle}`;
-}
-
-// src/cover/package-dir.ts
-function packageDirForGroup(group) {
-  if (group === "openspec-dashboard") return "tools/openspec-dashboard";
-  return `packages/${group}`;
-}
-function testGlobsForGroup(group) {
-  const pkgDir = packageDirForGroup(group);
-  if (pkgDir.startsWith("packages/")) return [`${pkgDir}/src/**/*.test.ts`];
-  return [`${pkgDir}/**/*.test.js`, `${pkgDir}/**/*.test.mjs`];
 }
 
 // src/cover/markers.ts
@@ -21097,7 +21116,7 @@ async function scanMarkers(cwd, group) {
   const bindings = /* @__PURE__ */ new Map();
   for (const pattern of testGlobsForGroup(group)) {
     for (const file of await resolveGlob(cwd, pattern)) {
-      const content = await fs2.readFile(file, "utf-8");
+      const content = await fs3.readFile(file, "utf-8");
       for (const binding of markersInFile(file, content)) {
         bindings.set(binding.scenarioId, binding);
       }
@@ -21106,24 +21125,126 @@ async function scanMarkers(cwd, group) {
   return bindings;
 }
 
+// src/cover/reachability.ts
+import { execFile } from "node:child_process";
+import { promises as fs4 } from "node:fs";
+import * as os from "node:os";
+import * as path4 from "node:path";
+import { promisify } from "node:util";
+
+// src/cover/dist-file.ts
+import * as path3 from "node:path";
+function distTestFile(cwd, pkgDir, srcTestFile) {
+  if (!pkgDir.startsWith("packages/")) return srcTestFile;
+  const srcRoot = path3.join(cwd, pkgDir, "src");
+  const rel = path3.relative(srcRoot, srcTestFile);
+  const distRoot = path3.join(cwd, pkgDir, "dist");
+  return path3.join(distRoot, rel.replace(/\.ts$/, ".js"));
+}
+
+// src/cover/reachability.ts
+var execFileP = promisify(execFile);
+function escapeForRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+async function fileExists(p) {
+  try {
+    await fs4.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+async function readIntegratedFiles(reportDir) {
+  try {
+    const raw = await fs4.readFile(path4.join(reportDir, "coverage-final.json"), "utf-8");
+    const coverage = JSON.parse(raw);
+    const integrated = /* @__PURE__ */ new Set();
+    for (const [file, fileCoverage] of Object.entries(coverage)) {
+      if (Object.values(fileCoverage.f).some((hits) => hits > 0)) integrated.add(file);
+    }
+    return integrated;
+  } catch {
+    return /* @__PURE__ */ new Set();
+  }
+}
+async function checkReachability(input) {
+  const pkgDir = packageDirForGroup(input.group);
+  const execTestFile = distTestFile(input.cwd, pkgDir, input.testFile);
+  if (!await fileExists(execTestFile)) {
+    const rel = path4.relative(input.cwd, execTestFile);
+    return { outcome: "failed", note: `compiled test file not found: ${rel} - run npm run build first` };
+  }
+  const c8Bin = path4.join(input.cwd, "node_modules", "c8", "bin", "c8.js");
+  if (!await fileExists(c8Bin)) {
+    return { outcome: "failed", note: "c8 is not installed at the repo root - run npm install" };
+  }
+  const includeGlob = pkgDir.startsWith("packages/") ? `${pkgDir}/dist/**/*.js` : `${pkgDir}/**/*.js`;
+  const pattern = `^${escapeForRegExp(input.testName)}$`;
+  const reportDir = await fs4.mkdtemp(path4.join(os.tmpdir(), "dod-guard-cover-"));
+  const childEnv = { ...process.env };
+  delete childEnv.NODE_TEST_CONTEXT;
+  try {
+    let stdout;
+    try {
+      const run = await execFileP(
+        process.execPath,
+        [
+          c8Bin,
+          `--include=${includeGlob}`,
+          "--reporter=json",
+          `--report-dir=${reportDir}`,
+          process.execPath,
+          "--experimental-test-module-mocks",
+          "--test",
+          `--test-name-pattern=${pattern}`,
+          execTestFile
+        ],
+        { cwd: input.cwd, shell: false, encoding: "utf-8", env: childEnv }
+      );
+      stdout = run.stdout;
+    } catch {
+      return { outcome: "failed", note: `bound test "${input.testName}" failed` };
+    }
+    if (!stdout.includes(`# Subtest: ${input.testName}`)) {
+      return { outcome: "failed", note: `no test named "${input.testName}" found in ${execTestFile}` };
+    }
+    if (input.entryPointFiles.length === 0) {
+      return {
+        outcome: "covered-but-not-integrated",
+        note: `bound test passed; no entry points declared for ${pkgDir} in openspec/entry-points.json`
+      };
+    }
+    const integratedFiles = await readIntegratedFiles(reportDir);
+    const integrated = input.entryPointFiles.some((file) => integratedFiles.has(path4.resolve(input.cwd, file)));
+    return integrated ? { outcome: "covered-and-integrated", note: "bound test passed and reached a declared entry point" } : { outcome: "covered-but-not-integrated", note: "bound test passed but reached no declared entry point" };
+  } finally {
+    await fs4.rm(reportDir, { recursive: true, force: true });
+  }
+}
+
 // src/cover/report.ts
-function stubOutcome(testName, file) {
-  return {
-    outcome: "covered-but-not-integrated",
-    note: `bound to "${testName}" in ${file}; reachability not checked yet (lands in a follow-up commit)`
-  };
+async function resolveOutcome(ctx, scenario) {
+  let markers = ctx.markersByGroup.get(scenario.group);
+  if (!markers) {
+    markers = await scanMarkers(ctx.cwd, scenario.group);
+    ctx.markersByGroup.set(scenario.group, markers);
+  }
+  const binding = markers.get(scenario.id);
+  if (!binding) return { outcome: "unwired", note: "no test binds this scenario" };
+  return checkReachability({
+    cwd: ctx.cwd,
+    group: scenario.group,
+    testName: binding.testName,
+    testFile: binding.file,
+    entryPointFiles: entryPointsForGroup(ctx.entryPoints, scenario.group).files
+  });
 }
 async function buildReport(cwd, scenarios) {
-  const markersByGroup = /* @__PURE__ */ new Map();
+  const ctx = { cwd, markersByGroup: /* @__PURE__ */ new Map(), entryPoints: await loadEntryPoints(cwd) };
   const reports = [];
   for (const scenario of scenarios) {
-    let markers = markersByGroup.get(scenario.group);
-    if (!markers) {
-      markers = await scanMarkers(cwd, scenario.group);
-      markersByGroup.set(scenario.group, markers);
-    }
-    const binding = markers.get(scenario.id);
-    const { outcome, note } = binding ? stubOutcome(binding.testName, binding.file) : { outcome: "unwired", note: "no test binds this scenario" };
+    const { outcome, note } = await resolveOutcome(ctx, scenario);
     reports.push({
       scenarioId: scenario.id,
       group: scenario.group,
@@ -21160,11 +21281,11 @@ function summarizeReport(reports) {
 // src/cover/baseline.ts
 var NOTE = "Coverage outcome each scenario holds today. A drop below its own outcome fails the gate.";
 function baselinePath(cwd) {
-  return path2.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
+  return path5.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
 }
 async function readBaseline(cwd) {
   try {
-    const raw = await fs3.readFile(baselinePath(cwd), "utf-8");
+    const raw = await fs5.readFile(baselinePath(cwd), "utf-8");
     const parsed = JSON.parse(raw);
     return parsed.scenarios ?? {};
   } catch {
@@ -21173,8 +21294,8 @@ async function readBaseline(cwd) {
 }
 async function writeBaseline(cwd, current) {
   const sorted = Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b)));
-  await fs3.mkdir(path2.dirname(baselinePath(cwd)), { recursive: true });
-  await fs3.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
+  await fs5.mkdir(path5.dirname(baselinePath(cwd)), { recursive: true });
+  await fs5.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
 `);
 }
 function compareToBaseline(reports, baseline) {
@@ -21197,8 +21318,8 @@ function outcomesFromReport(reports) {
 }
 
 // src/cover/enumerate.ts
-import { promises as fs4 } from "node:fs";
-import * as path3 from "node:path";
+import { promises as fs6 } from "node:fs";
+import * as path6 from "node:path";
 
 // src/openspec/requirements.ts
 var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
@@ -21271,14 +21392,14 @@ function extractRequirementBlocks(content) {
 
 // src/cover/enumerate.ts
 function capabilityFromPath(specsDir, specFile) {
-  const rel = path3.relative(specsDir, specFile).split(path3.sep);
+  const rel = path6.relative(specsDir, specFile).split(path6.sep);
   if (rel.length < 3) return null;
   return { group: rel[0], capability: rel[1] };
 }
 async function scenariosFromFile(specsDir, specFile) {
   const located = capabilityFromPath(specsDir, specFile);
   if (!located) return [];
-  const content = await fs4.readFile(specFile, "utf-8");
+  const content = await fs6.readFile(specFile, "utf-8");
   const scenarios = [];
   for (const block of extractRequirementBlocks(content)) {
     for (const scenario of block.scenarios) {
@@ -21302,10 +21423,10 @@ async function enumerateUnder(specsDir) {
   return out;
 }
 async function enumerateChangeScenarios(cwd, changeId) {
-  return enumerateUnder(path3.join(cwd, "openspec", "changes", changeId, "specs"));
+  return enumerateUnder(path6.join(cwd, "openspec", "changes", changeId, "specs"));
 }
 async function enumerateAllScenarios(cwd) {
-  return enumerateUnder(path3.join(cwd, "openspec", "specs"));
+  return enumerateUnder(path6.join(cwd, "openspec", "specs"));
 }
 
 // src/cover/run.ts
@@ -21446,8 +21567,8 @@ function isCliInvocation(argv) {
 }
 
 // src/index.ts
-var _dirname = path4.dirname(fileURLToPath(import.meta.url));
-var _pkgPath = path4.join(_dirname, "..", "package.json");
+var _dirname = path7.dirname(fileURLToPath(import.meta.url));
+var _pkgPath = path7.join(_dirname, "..", "package.json");
 var _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 var server = new McpServer({ name: "dod-guard", version: _pkg.version });
 var _filename = fileURLToPath(import.meta.url);

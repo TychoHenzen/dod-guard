@@ -1,12 +1,12 @@
 /**
- * The three-outcome coverage report. In 3a, reachability is stubbed: a bound
- * scenario always reports covered-but-not-integrated, since nothing has run
- * the test yet to tell integrated apart from merely covered. 3b replaces
- * `stubOutcome` with a real isolated-coverage run; nothing else in this file
- * changes shape when it lands.
+ * The three-outcome coverage report: unwired (no marker binds the scenario),
+ * or a bound scenario's reachability - covered-and-integrated,
+ * covered-but-not-integrated, or failed.
  */
+import { type EntryPointsFile, entryPointsForGroup, loadEntryPoints } from "./entry-points.js";
 import type { EnumeratedScenario } from "./enumerate.js";
 import { scanMarkers } from "./markers.js";
+import { checkReachability } from "./reachability.js";
 
 export type Outcome = "covered-and-integrated" | "covered-but-not-integrated" | "unwired" | "failed";
 
@@ -20,31 +20,43 @@ export interface ScenarioReport {
   note: string;
 }
 
-function stubOutcome(testName: string, file: string): { outcome: Outcome; note: string } {
-  return {
-    outcome: "covered-but-not-integrated",
-    note: `bound to "${testName}" in ${file}; reachability not checked yet (lands in a follow-up commit)`,
-  };
+interface BuildContext {
+  cwd: string;
+  markersByGroup: Map<string, Awaited<ReturnType<typeof scanMarkers>>>;
+  entryPoints: EntryPointsFile;
+}
+
+async function resolveOutcome(
+  ctx: BuildContext,
+  scenario: EnumeratedScenario,
+): Promise<{ outcome: Outcome; note: string }> {
+  let markers = ctx.markersByGroup.get(scenario.group);
+  if (!markers) {
+    markers = await scanMarkers(ctx.cwd, scenario.group);
+    ctx.markersByGroup.set(scenario.group, markers);
+  }
+
+  const binding = markers.get(scenario.id);
+  if (!binding) return { outcome: "unwired", note: "no test binds this scenario" };
+
+  return checkReachability({
+    cwd: ctx.cwd,
+    group: scenario.group,
+    testName: binding.testName,
+    testFile: binding.file,
+    entryPointFiles: entryPointsForGroup(ctx.entryPoints, scenario.group).files,
+  });
 }
 
 /** Build the report for one enumeration's worth of scenarios. Scans each
- * group's markers once, not once per scenario. */
+ * group's markers once, not once per scenario, and loads
+ * `entry-points.json` once for the whole run. */
 export async function buildReport(cwd: string, scenarios: EnumeratedScenario[]): Promise<ScenarioReport[]> {
-  const markersByGroup = new Map<string, Awaited<ReturnType<typeof scanMarkers>>>();
+  const ctx: BuildContext = { cwd, markersByGroup: new Map(), entryPoints: await loadEntryPoints(cwd) };
   const reports: ScenarioReport[] = [];
 
   for (const scenario of scenarios) {
-    let markers = markersByGroup.get(scenario.group);
-    if (!markers) {
-      markers = await scanMarkers(cwd, scenario.group);
-      markersByGroup.set(scenario.group, markers);
-    }
-
-    const binding = markers.get(scenario.id);
-    const { outcome, note } = binding
-      ? stubOutcome(binding.testName, binding.file)
-      : { outcome: "unwired" as const, note: "no test binds this scenario" };
-
+    const { outcome, note } = await resolveOutcome(ctx, scenario);
     reports.push({
       scenarioId: scenario.id,
       group: scenario.group,
