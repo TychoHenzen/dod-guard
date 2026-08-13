@@ -1,3 +1,15 @@
+## ADDED Requirements
+
+### Requirement: finishing covers and archives
+
+On a green integration check, `/step-by-step`'s Finishing phase SHALL run
+`dod-guard cover <id>` and then `openspec archive <id> --yes`.
+
+#### Scenario: Integration check passes at session end
+- **WHEN** the final integration check of a session passes
+- **THEN** Finishing runs `dod-guard cover <id>` and, when it reports zero
+  regressions against the ratchet baseline, runs `openspec archive <id> --yes`
+
 ## MODIFIED Requirements
 
 ### Requirement: interview writes an OpenSpec change
@@ -25,16 +37,6 @@ section.
 - **THEN** the change's `design.md` names that answer under Open Questions,
   and no requirement or scenario is written for it
 
-### Requirement: finishing covers and archives
-
-On a green integration check, `/step-by-step`'s Finishing phase SHALL run
-`dod-guard cover <id>` and then `openspec archive <id> --yes`.
-
-#### Scenario: Integration check passes at session end
-- **WHEN** the final integration check of a session passes
-- **THEN** Finishing runs `dod-guard cover <id>` and, when it reports zero
-  regressions against the ratchet baseline, runs `openspec archive <id> --yes`
-
 ### Requirement: cheap-step mirrors step-by-step
 
 Every requirement above that describes `/step-by-step` SHALL also hold for
@@ -47,6 +49,14 @@ Every requirement above that describes `/step-by-step` SHALL also hold for
   the same way, and its briefing still carries a `mode` field
 
 ## REMOVED Requirements
+
+### Requirement: finishing traces and archives
+
+**Reason**: `dod-guard trace` no longer exists. Superseded by `finishing
+covers and archives`, added above, which runs `dod-guard cover <id>` instead.
+
+**Migration**: `/step-by-step`'s Finishing phase now runs `dod-guard cover
+<id>` before `openspec archive <id> --yes`, not `dod-guard trace <id>`.
 
 ### Requirement: steps derive from the DoD as a schema artifact
 
