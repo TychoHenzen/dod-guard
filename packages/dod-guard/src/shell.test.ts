@@ -39,7 +39,7 @@ describe("buildShellInvocation", () => {
 // quoting bug, where every proof command silently failed with
 // "'echo' is not recognized as an internal or external command".
 
-describe("buildShellInvocation — real execution", () => {
+describe("buildShellInvocation - real execution", () => {
   it("runs a simple command and captures stdout", async () => {
     const { stdout, code } = await runShellCommand("echo ok", process.cwd());
     assert.equal(code, 0);
