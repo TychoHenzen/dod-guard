@@ -118,7 +118,8 @@
       "verify_surface": "code",
       "verify_cmd": "node scripts/ci/validate-plugins.mjs && node scripts/ci/check-skill-hygiene.mjs",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed",
+      "verdict": "validate-plugins OK (6 plugins, 18 skills), skill-hygiene OK (7 rules)"
     }
   ]
 }
