@@ -106,6 +106,7 @@
     "packages/dod-guard/src/openspec/fetch-instructions.ts",
     "packages/dod-guard/src/openspec/glob.test.ts",
     "packages/dod-guard/src/openspec/glob.ts",
+    "packages/dod-guard/src/openspec/ratchet-migration.test.ts",
     "packages/dod-guard/src/openspec/requirement-block.test.ts",
     "packages/dod-guard/src/openspec/requirement-block.ts",
     "packages/dod-guard/src/openspec/requirements.test.ts",

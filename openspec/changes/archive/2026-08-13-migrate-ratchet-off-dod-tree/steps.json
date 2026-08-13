@@ -1,0 +1,176 @@
+{
+  "goal": "migrate-ratchet-off-dod-tree",
+  "cwd": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "plan_source": "migrate-ratchet-off-dod-tree",
+  "plan_artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "done",
+      "requires": [
+        "specs",
+        "design"
+      ]
+    },
+    {
+      "id": "steps",
+      "outputPath": "steps.json",
+      "status": "ready",
+      "requires": [
+        "tasks"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "1.1",
+      "title": "Rewrite Setup (section 2) to generate `steps.json` via `dod-guard steps <change-id>` when absent, and to read prior state from `.step-session/steps.json` plus `progress.log` instead of `dod_tree`/`dod_status`/`dod_list`.",
+      "description": "Rewrite Setup (section 2) to generate `steps.json` via `dod-guard steps <change-id>` when absent, and to read prior state from `.step-session/steps.json` plus `progress.log` instead of `dod_tree`/`dod_status`/`dod_list`.",
+      "files": [],
+      "deps": [],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    },
+    {
+      "id": "1.2",
+      "title": "Rewrite the iteration prompt (section 4) so each sub-problem is one `steps.json` step, its scoped check is that step's own `verify_cmd` run as a plain shell command, and the \"concretize a draft leaf\" step is removed.",
+      "description": "Rewrite the iteration prompt (section 4) so each sub-problem is one `steps.json` step, its scoped check is that step's own `verify_cmd` run as a plain shell command, and the \"concretize a draft leaf\" step is removed.",
+      "files": [],
+      "deps": [
+        "1.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    },
+    {
+      "id": "1.3",
+      "title": "Replace the whole-document regression check with `dod-guard cover <change-id>`, run after every sub-problem, stopping before the next sub-problem on any regression.",
+      "description": "Replace the whole-document regression check with `dod-guard cover <change-id>`, run after every sub-problem, stopping before the next sub-problem on any regression.",
+      "files": [],
+      "deps": [
+        "1.2"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    },
+    {
+      "id": "1.4",
+      "title": "Drop the STUCK/`dod_amend` escalation path from section 5; the existing 3-repair-attempt cap becomes the sole escalation trigger, logged in `progress.log`.",
+      "description": "Drop the STUCK/`dod_amend` escalation path from section 5; the existing 3-repair-attempt cap becomes the sole escalation trigger, logged in `progress.log`.",
+      "files": [],
+      "deps": [
+        "1.3"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    },
+    {
+      "id": "1.5",
+      "title": "Rewrite Finish (section 6) to add new regression proofs by appending a Requirement/Scenario to the change's spec delta and a `tasks.md` item, then re-running `dod-guard steps <change-id>`, and to close with `dod-guard trace <change-id>` then `openspec archive <change-id> --yes` on exit 0, matching `/step-by-step`'s closing gate.",
+      "description": "Rewrite Finish (section 6) to add new regression proofs by appending a Requirement/Scenario to the change's spec delta and a `tasks.md` item, then re-running `dod-guard steps <change-id>`, and to close with `dod-guard trace <change-id>` then `openspec archive <change-id> --yes` on exit 0, matching `/step-by-step`'s closing gate.",
+      "files": [],
+      "deps": [
+        "1.4"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    },
+    {
+      "id": "2.1",
+      "title": "Replace the `dod-guard check --dod-id=<id> --node-path=0.children.1 --quiet` example in `cheap-step/SKILL.md` (line 118) with a plain per-step `verify_cmd` example.",
+      "description": "Replace the `dod-guard check --dod-id=<id> --node-path=0.children.1 --quiet` example in `cheap-step/SKILL.md` (line 118) with a plain per-step `verify_cmd` example.",
+      "files": [],
+      "deps": [
+        "1.5"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    },
+    {
+      "id": "2.2",
+      "title": "Replace the same dead example in `evomcp/skills/cascade/SKILL.md` (lines 74-76, 289).",
+      "description": "Replace the same dead example in `evomcp/skills/cascade/SKILL.md` (lines 74-76, 289).",
+      "files": [],
+      "deps": [
+        "2.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    },
+    {
+      "id": "2.3",
+      "title": "Replace the same dead example in `evomcp/agents/spec-writer.md`.",
+      "description": "Replace the same dead example in `evomcp/agents/spec-writer.md`.",
+      "files": [],
+      "deps": [
+        "2.2"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    },
+    {
+      "id": "3.1",
+      "title": "Add a regression test in `packages/dod-guard/src/openspec/ratchet-migration.test.ts` that reads the four files and asserts none contains `dod_tree`, `dod_refine`, `dod_status`, `dod_list`, `dod_add_node`, `dod_amend`, or `dod-guard check`. Carry the `// covers:` marker for this scenario directly above that test.",
+      "description": "Add a regression test in `packages/dod-guard/src/openspec/ratchet-migration.test.ts` that reads the four files and asserts none contains `dod_tree`, `dod_refine`, `dod_status`, `dod_list`, `dod_add_node`, `dod_amend`, or `dod-guard check`. Carry the `// covers:` marker for this scenario directly above that test.",
+      "files": [],
+      "deps": [
+        "2.3"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    },
+    {
+      "id": "3.2",
+      "title": "Run `node scripts/ci/check-skill-hygiene.mjs` and confirm it still passes.",
+      "description": "Run `node scripts/ci/check-skill-hygiene.mjs` and confirm it still passes.",
+      "files": [],
+      "deps": [
+        "3.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed"
+    }
+  ]
+}

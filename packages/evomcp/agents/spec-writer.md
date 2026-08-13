@@ -76,12 +76,14 @@ Clarify what "done" means. Key questions:
 What command, when run, will exit 0 on success and non-zero on failure?
 
 Preferred sources (in order):
-1. **Existing dod-guard DoD**: a DoD's test gate subtree is the ideal verify_cmd.
-   It runs in a SHELL, so use the CLI: `dod-guard check --dod-id=abc
-   --node-path=0.children.2 --quiet` (0 pass, 1 proof failed, 2 drafts, 3 usage).
+1. **A step's own verify_cmd**: for work bound to a `steps.json` scenario, copy
+   the whole-file test run straight out of that step's own `verify_cmd` field,
+   e.g. `node --experimental-test-module-mocks --test
+   packages/dod-guard/dist/cover/run.test.js`. It runs in a SHELL. Exit `0`
+   passes, any other exit fails.
 2. **Existing test suite**: `npm test -- --testNamePattern="auth login"`
 3. **Custom script**: keep it simple, because evomcp runs this hundreds of times.
-4. **New dod-guard DoD**: a minimal DoD with one test gate, for free diagnostics.
+4. **New test file**: a minimal test targeting the behavior, for free diagnostics.
 
 ### Step 3: Determine Strategy
 
@@ -192,7 +194,8 @@ defense). Use when the task is complex enough that cheating is a real risk.
    current state. Verify must discriminate. #1 failure mode of the cascade.
 3. **BE SPECIFIC.** `npm test` is not a verify command. Target exact test patterns.
 4. **SCOPE THE FILES.** Always set allowed_files for targeted changes.
-5. **PREFER DOD-GUARD.** If a relevant DoD exists, use it. Multi-layer oracle.
+5. **PREFER A STEP'S OWN VERIFY_CMD.** If one exists, use it rather than a
+   broader or hand-rolled command.
 6. **DON'T OVER-GATE.** Gates slow the inner loop, so use them only when verify
    is expensive.
 7. **ONE CONCERN.** 2+ independent parts → 2+ specs, rather than one combined.

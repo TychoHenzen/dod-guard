@@ -35,8 +35,8 @@ Before you start, call the evomcp `status` tool. If the proxy is not running
 and no key is configured, say so and run the base instead.
 
 `solve`, `evolve`, `orchestrate` and `status` are MCP tools. Never put one in
-a shell command or a `bash` fence. It is the same trap as `dod_check` against
-`dod-guard check`. The first is an MCP tool name. The second is the CLI.
+a shell command or a `bash` fence. It is the same trap as an MCP tool name
+against `dod-guard cover`, the CLI.
 
 ## When the trade pays, and which steps qualify
 
@@ -114,12 +114,12 @@ The spec is the worker's whole world. Write it this way:
    far more than one atomic step needs. An uncapped step spends the saving
    this skill exists to produce.
 
-For a step proved by a DoD subtree, `verify_cmd` uses the CLI:
-`dod-guard check --dod-id=<id> --node-path=0.children.1 --quiet`. Exit `0`
-passes. Exit `1` means a proof failed, or the document is tampered or stuck.
-Exit `2` means drafts remain on an unscoped run. Exit `3` is a usage error. A
-scoped run exits `0` when its own subtree passes, which is what makes a subtree
-usable here.
+For a step bound to a scenario, `verify_cmd` is the whole-file test run
+`steps.json` already carries for that step, e.g. `node
+--experimental-test-module-mocks --test packages/dod-guard/dist/cover/run.test.js`.
+Exit `0` passes, any other exit fails the step. Copy the command straight out
+of the step's own `verify_cmd` field rather than inventing a narrower one -
+that is the command `dod-guard steps` proved the scenario against.
 
 ```json
 {

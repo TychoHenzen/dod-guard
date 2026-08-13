@@ -71,19 +71,17 @@ successful run is labelled `post-solve-<task>`, so the pair reads as a span.
 
 ## The verify command is the oracle
 
-A verify command runs in a shell. A dod-guard check therefore goes through the
-CLI rather than the MCP tool name: write
-`dod-guard check --dod-id=<id> --node-path=<path> --quiet`, because `dod_check`
-does nothing in a shell. Find node paths with `dod-guard tree --dod-id=<id>`.
+A verify command runs in a shell. For a step bound to a scenario, that command
+is the whole-file test run `steps.json` already carries in that step's own
+`verify_cmd`, e.g. `node --experimental-test-module-mocks --test
+packages/dod-guard/dist/cover/run.test.js`. Exit `0` passes, any other exit
+fails the step. Copy the command straight out of the step's `verify_cmd`
+field rather than inventing a narrower one.
 
-dod-guard exit codes: `0` pass, `1` a proof failed or the document is tampered
-or stuck, `2` a full run with drafts remaining, `3` usage error or DoD not
-found. A scoped run with `--node-path` exits `0` when that subtree passes, which
-is what makes a subtree usable as a verify command.
-
-Prefer a DoD subtree over anything else, because it gives you a multi-layer
-oracle with per-gate diagnostics. Do not use a full DoD as the verify command.
-A full run is too slow for a repair loop, so scope it to a subtree instead.
+Prefer a step's own `verify_cmd` over anything broader, because it is scoped
+to exactly the scenario this task proves. Do not use a whole-suite run as the
+verify command. A full run is too slow for a repair loop, so scope it to the
+one step instead.
 
 Four rules for the command itself:
 
@@ -286,7 +284,8 @@ After you apply the patch, clear all four of these before you call the task
 done:
 
 1. The full test suite passes, not only the targeted tests.
-2. A full dod-guard check passes, when a DoD subtree was the verify command.
+2. Every step's own `verify_cmd` still passes, not only the one that was the
+   dispatch target.
 3. A gitevo checkpoint is taken.
 4. The commit message carries the verification evidence and any decision
    identifiers from `decisions.json` that shaped the spec.
