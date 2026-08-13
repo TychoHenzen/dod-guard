@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-13T11:45:26.371Z",
-  "total": 853,
+  "total": 857,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -94,7 +94,9 @@
     "packages/dod-guard/src/cover/reachability.ts",
     "packages/dod-guard/src/cover/report.test.ts",
     "packages/dod-guard/src/cover/report.ts",
+    "packages/dod-guard/src/cover/run-command.test.ts",
     "packages/dod-guard/src/cover/run-command.ts",
+    "packages/dod-guard/src/cover/run.test.ts",
     "packages/dod-guard/src/cover/run.ts",
     "packages/dod-guard/src/index.ts",
     "packages/dod-guard/src/openspec/build-steps.test.ts",
@@ -295,7 +297,8 @@
     "scripts/ci/check-skill-hygiene.test.mjs",
     "scripts/ci/fixtures/skill-hygiene.mjs",
     "scripts/ci/lib/fs-utils.mjs",
-    "scripts/ci/lib/skill-hygiene-rules.mjs"
+    "scripts/ci/lib/skill-hygiene-rules.mjs",
+    "scripts/ci/smoke-bundle.mjs"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -741,6 +744,10 @@
     "scripts/ci/check-skill-hygiene.test.mjs::file-length": 1,
     "scripts/ci/check-coverage-gate.mjs::complexity": 1,
     "scripts/ci/lib/fs-utils.mjs::complexity": 1,
-    "scripts/ci/lib/fs-utils.mjs::else-branch": 2
+    "scripts/ci/lib/fs-utils.mjs::else-branch": 2,
+    "scripts/ci/smoke-bundle.mjs::file-length": 1,
+    "scripts/ci/smoke-bundle.mjs::complexity": 1,
+    "scripts/ci/smoke-bundle.mjs::function-length": 1,
+    "scripts/ci/smoke-bundle.mjs::nesting-depth": 1
   }
 }

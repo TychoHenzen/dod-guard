@@ -3,13 +3,14 @@
 //
 // tsc and node --test both run against dist/*.js, never against the esbuild
 // bundle users actually execute. A wrongly-externalized dependency or a broken
-// banner only shows up here: the server must initialize and list its tools.
+// banner only shows up here: the server must initialize and answer tools/list,
+// even for a CLI-first package like dod-guard that registers zero tools.
 //
 // Usage: node scripts/ci/smoke-bundle.mjs <package-name>
 //
 // Exit codes:
-//   0  server initialized and listed tools
-//   1  server failed to start, answer, or expose tools
+//   0  server initialized and answered tools/list
+//   1  server failed to start or answer
 //   3  usage error
 
 import { spawn } from "node:child_process";
@@ -104,11 +105,14 @@ async function handshake(bundle, pkgName, expectedVersion) {
     }
 
     send(child, { jsonrpc: "2.0", method: "notifications/initialized" });
-    send(child, { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} });
-    const listed = await Promise.race([awaitResponse(state, 2), died, timeout]);
-    if (listed.error) throw new Error(`tools/list failed: ${JSON.stringify(listed.error)}`);
-    const tools = listed.result?.tools ?? [];
-    if (tools.length === 0) throw new Error("server exposes zero tools");
+
+    let tools = [];
+    if (init.result?.capabilities?.tools) {
+      send(child, { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} });
+      const listed = await Promise.race([awaitResponse(state, 2), died, timeout]);
+      if (listed.error) throw new Error(`tools/list failed: ${JSON.stringify(listed.error)}`);
+      tools = listed.result?.tools ?? [];
+    }
     if (state.junk.length > 0) throw new Error(`non-JSON output on stdout corrupts the MCP stream: ${state.junk[0]}`);
     return { serverName, version: init.result?.serverInfo?.version, tools: tools.map((t) => t.name) };
   } finally {

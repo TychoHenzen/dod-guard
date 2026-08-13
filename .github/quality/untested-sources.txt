@@ -1,5 +1,6 @@
 # Source files with no matching .test.ts. Ratcheted by scripts/ci/check-tests-present.mjs.
 # This list may shrink, never grow.
+packages/dod-guard/src/index.ts
 packages/dod-guard/src/checker-leaves.ts
 packages/dod-guard/src/checker-result.ts
 packages/dod-guard/src/mcp/dod-adversarial-gate.ts
