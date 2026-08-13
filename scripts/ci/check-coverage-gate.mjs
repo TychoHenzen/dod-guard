@@ -12,10 +12,10 @@
 // This runs against the bundle built from this checkout, never a globally
 // installed dod-guard.
 //
-// Usage: node scripts/ci/check-coverage-gate.mjs
+// Usage: node scripts/ci/check-coverage-gate.mjs [--write-baseline]
 //
 // Exit codes:
-//   0  no scenario regressed
+//   0  no scenario regressed (or, with --write-baseline, the baseline was written)
 //   1  at least one scenario regressed against the baseline
 //   3  the bundle is missing, so nothing could be checked
 
@@ -27,13 +27,16 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BUNDLE = join(ROOT, "packages", "dod-guard", "dist", "bundle.js");
 
-function main() {
+function main(argv) {
   if (!existsSync(BUNDLE)) {
     process.stderr.write(`ERROR: ${BUNDLE} is missing. Run 'npm run bundle -w packages/dod-guard' first.\n`);
     return 3;
   }
 
-  const run = spawnSync(process.execPath, [BUNDLE, "cover", "--all", `--cwd=${ROOT}`], {
+  const args = [BUNDLE, "cover", "--all", `--cwd=${ROOT}`];
+  if (argv.includes("--write-baseline")) args.push("--write-baseline");
+
+  const run = spawnSync(process.execPath, args, {
     cwd: ROOT,
     encoding: "utf-8",
   });
@@ -42,4 +45,4 @@ function main() {
   return run.status ?? 1;
 }
 
-process.exit(main());
+process.exit(main(process.argv.slice(2)));

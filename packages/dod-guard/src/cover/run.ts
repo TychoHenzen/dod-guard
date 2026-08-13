@@ -65,8 +65,9 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
   }
 
   const baseline = await readBaseline(opts.cwd);
-  const { adopted, regressions } = compareToBaseline(reports, baseline);
+  const { adopted, regressions, improved } = compareToBaseline(reports, baseline);
   for (const id of adopted) io.write(`  adopted: ${id}\n`);
+  for (const id of improved) io.write(`  improved: ${id}\n`);
 
   if (regressions.length === 0) {
     io.write(`\ncover OK - 0 regression(s)\n`);

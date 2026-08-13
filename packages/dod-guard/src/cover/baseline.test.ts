@@ -71,6 +71,23 @@ test("compareToBaseline reports no regression when a scenario stays unwired", ()
   assert.deepEqual(regressions, []);
 });
 
+test("compareToBaseline reports improvement when a baselined scenario reaches a better outcome", () => {
+  const { improved, regressions } = compareToBaseline([report("s", "covered-but-not-integrated")], { s: "unwired" });
+  assert.deepEqual(improved, ["s"]);
+  assert.deepEqual(regressions, []);
+});
+
+test("compareToBaseline reports no improvement when a scenario holds its outcome", () => {
+  const { improved } = compareToBaseline([report("s", "unwired")], { s: "unwired" });
+  assert.deepEqual(improved, []);
+});
+
+test("compareToBaseline does not report an adopted scenario as improved", () => {
+  const { improved, adopted } = compareToBaseline([report("new-scenario", "covered-and-integrated")], {});
+  assert.deepEqual(improved, []);
+  assert.deepEqual(adopted, ["new-scenario"]);
+});
+
 test("outcomesFromReport builds a scenario-id-keyed outcome map", () => {
   const outcomes = outcomesFromReport([report("s1", "unwired"), report("s2", "covered-and-integrated")]);
   assert.deepEqual(outcomes, { s1: "unwired", s2: "covered-and-integrated" });

@@ -90,13 +90,6 @@ jobs:
         run: |
           npm install -g @fission-ai/openspec@1.8.0
           openspec validate --all --strict --no-interactive
-      # Builds and bundles dod-guard itself, because a released binary can't
-      # see this checkout's own scenarios and markers - same reason the
-      # retired check-trace.mjs did this.
-      - run: npm run build -w packages/dod-guard
-      - run: npm run bundle -w packages/dod-guard
-      - name: Every scenario's coverage state holds or improves
-        run: node scripts/ci/check-coverage-gate.mjs
 
   static-analysis:
     needs: build-test
@@ -120,6 +113,11 @@ jobs:
         run: git diff --exit-code -- package-lock.json
 
       - run: npm run build
+
+      # Builds dod-guard itself, because a released binary can't see this
+      # checkout's own scenarios and markers - same reason the retired
+      # check-trace.mjs did this.
+      - run: npm run bundle -w packages/dod-guard
 
       # Autofix: apply Biome fixes, commit + push if any changes.
       - name: Biome autofix
@@ -182,9 +180,19 @@ jobs:
         if: steps.coverage.outcome == 'success'
         run: grep -qE "improved:|adopted:" coverage-report.txt && node scripts/ci/check-coverage.mjs --write-baseline || true
 
+      - name: Coverage-gate ratchet (scenarios)
+        id: coverage-gate
+        continue-on-error: true
+        run: |
+          node scripts/ci/check-coverage-gate.mjs | tee coverage-gate-report.txt
+          exit "${PIPESTATUS[0]}"
+      - name: Tighten coverage-gate baseline
+        if: steps.coverage-gate.outcome == 'success'
+        run: grep -qE "improved:|adopted:" coverage-gate-report.txt && node scripts/ci/check-coverage-gate.mjs --write-baseline || true
+
       - name: Commit & push autofixes and tightened baselines
         run: |
-          rm -f quality-report.txt tests-present.txt audit-report.txt coverage-report.txt
+          rm -f quality-report.txt tests-present.txt audit-report.txt coverage-report.txt coverage-gate-report.txt
           if ! git diff --exit-code --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -205,6 +213,7 @@ jobs:
           if [ "${{ steps.tests-present.outcome }}" = "failure" ]; then FAILED="$FAILED test-presence"; fi
           if [ "${{ steps.audit.outcome }}" = "failure" ]; then FAILED="$FAILED advisories"; fi
           if [ "${{ steps.coverage.outcome }}" = "failure" ]; then FAILED="$FAILED coverage"; fi
+          if [ "${{ steps.coverage-gate.outcome }}" = "failure" ]; then FAILED="$FAILED coverage-gate"; fi
           if [ -n "$FAILED" ]; then
             echo "RATCHET FAILED for:$FAILED — see the step logs above"
             exit 1

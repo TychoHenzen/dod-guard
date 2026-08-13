@@ -237,6 +237,19 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
         scenario. Add one breaking and one passing fixture case for it
       - Confirm the meta-test ("covers every rule the script defines") still
         passes with the new rule count
+- [ ] 5.12 `/tighten`'s `pick-target.mjs`, `seed-ledger.mjs`, and
+      `record-result.mjs` still implement the pre-5.8 ledger-only semantics:
+      a persistent queue keyed by file, with no change id anywhere. 5.8's
+      SKILL.md rewrite describes change-scoped, archive-driven completion
+      instead - one OpenSpec change per target, closing when that change's
+      `dod-guard cover` + `openspec archive` runs. Rework the three scripts
+      (and `lib/ledger.mjs`/`lib/ledger-file.mjs` underneath them) to match:
+      each picked target opens or resumes a change, `record-result.mjs`
+      records against that change's own artifacts rather than a shared
+      ledger file, and the ledger's role shrinks to the scanner queue 5.8's
+      SKILL.md already promises. Update `pick-target.test.mjs` and
+      `seed-ledger.test.mjs` for the new contract. This is what makes 5.8's
+      `[x]` true instead of aspirational
 
 ## 6. Docs and cleanup
 

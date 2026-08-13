@@ -21311,6 +21311,7 @@ async function writeBaseline(cwd, current) {
 function compareToBaseline(reports, baseline) {
   const adopted = [];
   const regressions = [];
+  const improved = [];
   for (const report of reports) {
     const before = baseline[report.scenarioId];
     if (before === void 0) {
@@ -21319,9 +21320,13 @@ function compareToBaseline(reports, baseline) {
     }
     if (outcomeRank(report.outcome) < outcomeRank(before)) {
       regressions.push({ scenarioId: report.scenarioId, before, now: report.outcome });
+      continue;
+    }
+    if (outcomeRank(report.outcome) > outcomeRank(before)) {
+      improved.push(report.scenarioId);
     }
   }
-  return { adopted, regressions };
+  return { adopted, regressions, improved };
 }
 function outcomesFromReport(reports) {
   return Object.fromEntries(reports.map((r) => [r.scenarioId, r.outcome]));
@@ -21479,8 +21484,10 @@ wrote coverage-gate baseline for ${reports.length} scenario(s)
     return EXIT_OK;
   }
   const baseline = await readBaseline(opts.cwd);
-  const { adopted, regressions } = compareToBaseline(reports, baseline);
+  const { adopted, regressions, improved } = compareToBaseline(reports, baseline);
   for (const id of adopted) io.write(`  adopted: ${id}
+`);
+  for (const id of improved) io.write(`  improved: ${id}
 `);
   if (regressions.length === 0) {
     io.write(`

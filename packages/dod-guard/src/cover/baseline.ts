@@ -37,11 +37,14 @@ interface BaselineComparison {
   adopted: string[];
   /** Scenario ids that regressed from the baseline's outcome to a worse one. */
   regressions: { scenarioId: string; before: Outcome; now: Outcome }[];
+  /** Scenario ids already in the baseline that reached a better outcome. */
+  improved: string[];
 }
 
 export function compareToBaseline(reports: ScenarioReport[], baseline: Record<string, Outcome>): BaselineComparison {
   const adopted: string[] = [];
   const regressions: BaselineComparison["regressions"] = [];
+  const improved: string[] = [];
 
   for (const report of reports) {
     const before = baseline[report.scenarioId];
@@ -51,10 +54,14 @@ export function compareToBaseline(reports: ScenarioReport[], baseline: Record<st
     }
     if (outcomeRank(report.outcome) < outcomeRank(before)) {
       regressions.push({ scenarioId: report.scenarioId, before, now: report.outcome });
+      continue;
+    }
+    if (outcomeRank(report.outcome) > outcomeRank(before)) {
+      improved.push(report.scenarioId);
     }
   }
 
-  return { adopted, regressions };
+  return { adopted, regressions, improved };
 }
 
 export function outcomesFromReport(reports: ScenarioReport[]): Record<string, Outcome> {

@@ -706,6 +706,27 @@
       "status": "completed"
     },
     {
+      "id": "5.12",
+      "title": "pick-target.mjs, seed-ledger.mjs, and record-result.mjs still implement pre-5.8 ledger-only semantics; rework for change-scoped, archive-driven completion matching 5.8 SKILL.md",
+      "description": "pick-target.mjs, seed-ledger.mjs, and record-result.mjs still implement pre-5.8 ledger-only semantics; rework for change-scoped, archive-driven completion matching 5.8 SKILL.md",
+      "files": [
+        "packages/dod-guard/skills/tighten/scripts/pick-target.mjs",
+        "packages/dod-guard/skills/tighten/scripts/seed-ledger.mjs",
+        "packages/dod-guard/skills/tighten/scripts/record-result.mjs",
+        "packages/dod-guard/skills/tighten/scripts/lib/ledger.mjs",
+        "packages/dod-guard/skills/tighten/scripts/lib/ledger-file.mjs",
+        "packages/dod-guard/skills/tighten/scripts/pick-target.test.mjs",
+        "packages/dod-guard/skills/tighten/scripts/seed-ledger.test.mjs"
+      ],
+      "deps": [
+        "5.11"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "npm test -w packages/dod-guard",
+      "manual_required": false,
+      "status": "pending"
+    },
+    {
       "id": "6.1",
       "title": "Remove `.step-session/` from `.gitignore`, `scripts/ci/lib/fs-utils.mjs`, `quality-refactor/scripts/lib/config.mjs`",
       "description": "Remove `.step-session/` from `.gitignore`, `scripts/ci/lib/fs-utils.mjs`, `quality-refactor/scripts/lib/config.mjs`",

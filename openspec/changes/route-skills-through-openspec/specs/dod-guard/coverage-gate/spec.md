@@ -102,14 +102,39 @@ already in the baseline that regresses to a worse outcome SHALL fail the run.
   `.github/quality/coverage-gate-baseline.json` and exits without checking
   for regressions
 
-### Requirement: The coverage gate replaces trace in CI
+#### Scenario: A previously baselined scenario reaches a better outcome
+
+- **WHEN** the baseline holds a scenario at one outcome and the current run
+  reports that same scenario at a strictly better outcome (for example
+  unwired to covered-but-not-integrated)
+- **THEN** cover reports it as improved and does not fail the run because of
+  it; the baseline is not rewritten until a separate `--write-baseline` run
+
+### Requirement: The coverage gate is a CI ratchet with a tighten step
 
 `scripts/ci/check-coverage-gate.mjs` SHALL run `dod-guard cover --all` against
 a freshly built and bundled `packages/dod-guard/dist/bundle.js`, in the
-`plugin-config` CI job, in place of the deleted `check-trace.mjs`.
+`static-analysis` CI job, in place of the deleted `check-trace.mjs`. It SHALL
+accept a `--write-baseline` flag and pass it through to the underlying
+`dod-guard cover --all` invocation. `static-analysis` SHALL run this ratchet
+with `continue-on-error: true`, and follow it with a tighten step that reruns
+the check with `--write-baseline` whenever the ratchet's own report names an
+adopted or improved scenario, mirroring the quality, test-presence, audit and
+per-package coverage ratchets already in that job. The `plugin-config` job
+SHALL NOT run this ratchet, because it holds no write permission and a second
+job pushing baseline commits would race `static-analysis`'s own push.
 
 #### Scenario: CI runs the coverage gate
 
-- **WHEN** the `plugin-config` job runs on a push to `master`
+- **WHEN** the `static-analysis` job runs on a push to `master`
 - **THEN** it builds and bundles `packages/dod-guard`, then runs
-  `dod-guard cover --all`, and the job fails if that run reports a regression
+  `dod-guard cover --all`, and the job's "Enforce ratchet outcomes" step fails
+  if that run reported a regression
+
+#### Scenario: CI tightens the coverage-gate baseline on improvement
+
+- **WHEN** the coverage-gate ratchet step succeeds (no regression) and its
+  report names at least one `adopted:` or `improved:` scenario
+- **THEN** the "Tighten coverage-gate baseline" step reruns
+  `check-coverage-gate.mjs --write-baseline`, and the resulting baseline
+  change is committed and pushed alongside the other tightened baselines
