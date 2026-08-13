@@ -168,7 +168,8 @@ See `standards/language-commands.md` for greenfield vs brownfield command varian
 }
 ```
 
-After GO: converge commit, proceed to final dod_check.
+After GO: converge commit, then file the phase 4 gate as
+`/dod-guard:adversarial-workflow` section "Phase 4, structural" describes.
 
 ## Anti-Pattern Schema (for postmortem capture)
 
