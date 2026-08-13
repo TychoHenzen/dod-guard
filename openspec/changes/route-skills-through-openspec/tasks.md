@@ -265,7 +265,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
       coverage-gate ratchet, and the current file responsibility table
 - [x] 6.3 Update `packages/dod-guard/README.md` and `USAGE.md` for the same
       `cover`/`steps` model
-- [ ] 6.4 Delete the DoD markdown format spec and predicate reference under
+- [x] 6.4 Delete the DoD markdown format spec and predicate reference under
       `packages/dod-guard/docs/`
 - [ ] 6.5 Fold `packages/dod-guard/docs/shortcomings.md`'s findings into this
       change's own `design.md` Context, then delete the file - it currently
