@@ -4,7 +4,7 @@
  * write a fresh ratchet baseline or check the report against the existing one.
  */
 import type { CliIo } from "../cli.js";
-import { compareToBaseline, outcomesFromReport, readBaseline, writeBaseline } from "./baseline.js";
+import { compareToBaseline, findOrphans, outcomesFromReport, readBaseline, writeBaseline } from "./baseline.js";
 import { enumerateAllScenarios, enumerateChangeScenarios } from "./enumerate.js";
 import { buildReport, summarizeReport } from "./report.js";
 
@@ -66,8 +66,10 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
 
   const baseline = await readBaseline(opts.cwd);
   const { adopted, regressions, improved } = compareToBaseline(reports, baseline);
+  const orphaned = opts.all ? findOrphans(reports, baseline) : [];
   for (const id of adopted) io.write(`  adopted: ${id}\n`);
   for (const id of improved) io.write(`  improved: ${id}\n`);
+  for (const id of orphaned) io.write(`  orphaned: ${id}\n`);
 
   if (regressions.length === 0) {
     io.write(`\ncover OK - 0 regression(s)\n`);

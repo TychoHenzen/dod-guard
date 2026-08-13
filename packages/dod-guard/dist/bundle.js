@@ -21328,6 +21328,10 @@ function compareToBaseline(reports, baseline) {
   }
   return { adopted, regressions, improved };
 }
+function findOrphans(reports, baseline) {
+  const currentIds = new Set(reports.map((r) => r.scenarioId));
+  return Object.keys(baseline).filter((id) => !currentIds.has(id));
+}
 function outcomesFromReport(reports) {
   return Object.fromEntries(reports.map((r) => [r.scenarioId, r.outcome]));
 }
@@ -21485,9 +21489,12 @@ wrote coverage-gate baseline for ${reports.length} scenario(s)
   }
   const baseline = await readBaseline(opts.cwd);
   const { adopted, regressions, improved } = compareToBaseline(reports, baseline);
+  const orphaned = opts.all ? findOrphans(reports, baseline) : [];
   for (const id of adopted) io.write(`  adopted: ${id}
 `);
   for (const id of improved) io.write(`  improved: ${id}
+`);
+  for (const id of orphaned) io.write(`  orphaned: ${id}
 `);
   if (regressions.length === 0) {
     io.write(`

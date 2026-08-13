@@ -101,12 +101,12 @@ the unknown unknowns live, and it produces no signal until markers exist.
       reports a scenario's state||A marker binds a scenario to a test`:
       covered-and-integrated with `cli.ts` declared, covered-but-not-integrated
       with it removed. Both temporary edits reverted after confirming
-- [ ] 3b.5 Give the ratchet a pawl. Add a "Tighten coverage-gate baseline" CI
+- [x] 3b.5 Give the ratchet a pawl. Add a "Tighten coverage-gate baseline" CI
       step, mirroring `quality-baseline.json`'s own tighten step. It commits a
       scenario's improvement back once reachability can produce
       covered-and-integrated at all. It stays inert while nothing is covered
       yet, and becomes load-bearing the day something is
-- [ ] 3b.6 Detect a renamed requirement or scenario title. A scenario id that
+- [x] 3b.6 Detect a renamed requirement or scenario title. A scenario id that
       was in the baseline but is missing from the current run is an orphan.
       `compareToBaseline` only iterates current scenarios, so a rename today
       silently re-adopts the new id at whatever outcome `cover` finds. A

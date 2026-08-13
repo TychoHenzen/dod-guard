@@ -110,6 +110,25 @@ already in the baseline that regresses to a worse outcome SHALL fail the run.
 - **THEN** cover reports it as improved and does not fail the run because of
   it; the baseline is not rewritten until a separate `--write-baseline` run
 
+#### Scenario: A baselined scenario id is missing from a whole-tree run
+
+- **WHEN** `dod-guard cover --all` runs and a scenario id the baseline holds
+  does not appear among the current run's scenario ids - because a
+  requirement or scenario title was renamed, which changes the id, or the
+  capability was deleted
+- **THEN** cover reports the id as orphaned and does not fail the run because
+  of it; running `dod-guard cover --all --write-baseline` rewrites the whole
+  baseline map from the current run and drops the orphaned id, which is the
+  intended way to clear a legitimate rename or deletion
+
+#### Scenario: A change-scoped run never reports an orphan
+
+- **WHEN** `dod-guard cover <change-id>` runs without `--all`
+- **THEN** cover does not compute or report orphaned scenario ids, even
+  though the change's own handful of scenarios leaves most of the baseline's
+  ids unmentioned in that run - a scoped run's absence of an id is not
+  evidence anything vanished
+
 ### Requirement: The coverage gate is a CI ratchet with a tighten step
 
 `scripts/ci/check-coverage-gate.mjs` SHALL run `dod-guard cover --all` against

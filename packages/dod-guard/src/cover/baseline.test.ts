@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
-import { compareToBaseline, outcomesFromReport, readBaseline, writeBaseline } from "./baseline.js";
+import { compareToBaseline, findOrphans, outcomesFromReport, readBaseline, writeBaseline } from "./baseline.js";
 import type { ScenarioReport } from "./report.js";
 
 async function withTempCwd(run: (cwd: string) => Promise<void>): Promise<void> {
@@ -87,7 +87,12 @@ test("compareToBaseline does not report an adopted scenario as improved", () => 
   assert.deepEqual(improved, []);
   assert.deepEqual(adopted, ["new-scenario"]);
 });
-
+test("findOrphans finds a vanished baseline id (only run.ts's --all path calls it); not a regression, no block on pass", () => {
+  const reports = [report("one-of-many", "unwired")];
+  const baseline = { "one-of-many": "unwired" as const, elsewhere: "covered-and-integrated" as const };
+  assert.deepEqual(findOrphans(reports, baseline), ["elsewhere"]);
+  assert.deepEqual(compareToBaseline(reports, baseline).regressions, []);
+});
 test("outcomesFromReport builds a scenario-id-keyed outcome map", () => {
   const outcomes = outcomesFromReport([report("s1", "unwired"), report("s2", "covered-and-integrated")]);
   assert.deepEqual(outcomes, { s1: "unwired", s2: "covered-and-integrated" });

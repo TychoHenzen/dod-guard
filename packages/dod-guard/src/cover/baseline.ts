@@ -64,6 +64,12 @@ export function compareToBaseline(reports: ScenarioReport[], baseline: Record<st
   return { adopted, regressions, improved };
 }
 
+/** Baseline ids missing from a run's scenarios (rename/deletion). Call only on --all: a scoped run's few scenarios would falsely orphan the rest. Report-only. */
+export function findOrphans(reports: ScenarioReport[], baseline: Record<string, Outcome>): string[] {
+  const currentIds = new Set(reports.map((r) => r.scenarioId));
+  return Object.keys(baseline).filter((id) => !currentIds.has(id));
+}
+
 export function outcomesFromReport(reports: ScenarioReport[]): Record<string, Outcome> {
   return Object.fromEntries(reports.map((r) => [r.scenarioId, r.outcome]));
 }
