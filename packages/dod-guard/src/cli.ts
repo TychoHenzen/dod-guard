@@ -17,6 +17,9 @@ COMMANDS
                                       covered-but-not-integrated, unwired, or failed
       [--write-baseline]             against the coverage-gate ratchet baseline.
                                       One of <change-id> or --all is required.
+                                      --write-baseline needs --all - it replaces
+                                      the whole baseline, and a change-scoped run
+                                      only sees its own scenarios.
                                       --cwd=<dir> overrides the working directory.
   (steps lands in a follow-up commit)
 `;

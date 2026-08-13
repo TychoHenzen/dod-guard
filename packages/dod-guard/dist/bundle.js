@@ -21317,6 +21317,10 @@ async function runCover(opts, io) {
     io.writeErr("ERROR: dod-guard cover needs a change id or --all.\n");
     return EXIT_USAGE_ERROR;
   }
+  if (opts.writeBaseline && !opts.all) {
+    io.writeErr("ERROR: --write-baseline needs --all - a change-scoped run would drop every other scenario.\n");
+    return EXIT_USAGE_ERROR;
+  }
   const scenarios = opts.all ? await enumerateAllScenarios(opts.cwd) : await enumerateChangeScenarios(opts.cwd, opts.changeId);
   if (scenarios.length === 0) {
     io.write(
@@ -21374,6 +21378,9 @@ COMMANDS
                                       covered-but-not-integrated, unwired, or failed
       [--write-baseline]             against the coverage-gate ratchet baseline.
                                       One of <change-id> or --all is required.
+                                      --write-baseline needs --all - it replaces
+                                      the whole baseline, and a change-scoped run
+                                      only sees its own scenarios.
                                       --cwd=<dir> overrides the working directory.
   (steps lands in a follow-up commit)
 `;

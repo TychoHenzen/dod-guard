@@ -101,4 +101,11 @@ describe("cover via runCli", () => {
     assert.equal(code, 0);
     assert.match(out(), /Nothing to cover/);
   });
+
+  it("errors with the usage exit code when --write-baseline is given without --all", async () => {
+    const { io, err } = captureIo();
+    const code = await runCli(["cover", "some-change", "--write-baseline", `--cwd=${cwd}`], io);
+    assert.equal(code, EXIT_USAGE_ERROR);
+    assert.match(err(), /--write-baseline needs --all/);
+  });
 });

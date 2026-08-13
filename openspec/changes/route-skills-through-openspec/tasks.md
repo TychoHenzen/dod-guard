@@ -95,6 +95,16 @@ unknowns live and produces no signal until markers exist.
       for the ratchet
 - [ ] 3b.4 Manual check: one real marker, one real entry-point declaration,
       confirm the outcome flips when the entry-point declaration is removed
+- [ ] 3b.5 Give the ratchet a pawl: a "Tighten coverage-gate baseline" CI step
+      (mirroring `quality-baseline.json`'s) that commits a scenario's
+      improvement back, once 3b can produce covered-and-integrated at all -
+      inert in 3a since nothing is covered yet, load-bearing once something is
+- [ ] 3b.6 Detect a renamed requirement or scenario title: a scenario id in the
+      baseline that no longer appears in the current run is an orphan.
+      `compareToBaseline` only iterates current scenarios, so a rename today
+      silently re-adopts the new id at whatever `cover` finds it - a
+      covered-and-integrated scenario can drop to unwired with no regression
+      reported, because the old and new ids never collide in the comparison
 
 ## 4. Rework `steps`
 

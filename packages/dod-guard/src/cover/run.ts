@@ -25,6 +25,14 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
     return EXIT_USAGE_ERROR;
   }
 
+  // writeBaseline replaces the whole scenarios map (see baseline.ts). A
+  // change-scoped run only ever enumerates its own handful of scenarios, so
+  // writing from one would drop every other scenario's recorded outcome.
+  if (opts.writeBaseline && !opts.all) {
+    io.writeErr("ERROR: --write-baseline needs --all - a change-scoped run would drop every other scenario.\n");
+    return EXIT_USAGE_ERROR;
+  }
+
   const scenarios = opts.all
     ? await enumerateAllScenarios(opts.cwd)
     : await enumerateChangeScenarios(opts.cwd, opts.changeId as string);
