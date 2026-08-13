@@ -267,7 +267,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
       `cover`/`steps` model
 - [x] 6.4 Delete the DoD markdown format spec and predicate reference under
       `packages/dod-guard/docs/`
-- [ ] 6.5 Fold `packages/dod-guard/docs/shortcomings.md`'s findings into this
+- [x] 6.5 Fold `packages/dod-guard/docs/shortcomings.md`'s findings into this
       change's own `design.md` Context, then delete the file - it currently
       describes a system that no longer exists
 - [ ] 6.6 Update four spots in the root `CLAUDE.md`. The CLI table gains

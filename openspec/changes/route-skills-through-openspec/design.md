@@ -12,6 +12,53 @@ instruction text, template, resolved output path, and dependencies. A skill that
 calls it needs to carry none of that. `src/openspec/steps.ts` already converts
 a plan-shaped input into a step array; nothing calls it yet.
 
+### What the proof engine's own investigation found
+
+An investigation dated 2026-07-20 (`docs/shortcomings.md`, since folded in here
+and deleted) read `packages/dod-guard/src/` end to end and tested the anti-cheat
+premise directly. Eight of its ten findings traced to one root: the agent being
+verified retained write authority over the definition of "verified." The
+fingerprint and audit-trail work raised the cost of editing the store file from
+outside the MCP tools, which was never the threat that mattered - the real
+attack surface was authorship, not tampering.
+
+The findings that mattered most for this change's decision to delete the engine
+rather than patch it:
+
+- **The threat model only covered out-of-band file edits.** Every one of
+  `dod_create`/`dod_refine`/`dod_amend`/`dod_add_node`/`dod_remove_node`
+  recomputed and re-stored the fingerprint on every call. An agent wanting a
+  weaker proof did not need to tamper; it could amend, and the fingerprint
+  quietly followed. The only friction was a warning after more than two
+  amendments - not a gate.
+- **Machine predicates were trivially satisfiable no-ops.** `output_contains`
+  and friends graded whatever the authored command printed. `echo PASS` plus
+  `output_contains: "PASS"` passed. Placeholder detection was a fixed regex
+  blocklist that could never enumerate every always-succeeding command, and
+  even a hit only warned - it never failed the proof.
+- **Nothing tied a proof to the actual code state.** No working-tree, build-state,
+  or cross-proof coupling existed anywhere in the source. Proofs ran
+  independently and could mutate the tree they ran in, so a full PASS meant
+  only "each command exited happily at some point," never "the current code
+  satisfies all of them simultaneously."
+- **The fingerprint omitted most proof-strength fields.** It hashed only
+  `command | predicate.type | value`, so editing a threshold like
+  `max_function_lines` in the store gutted a proof without changing the
+  fingerprint - the one mechanism meant to catch store edits was blind to the
+  fields most worth editing.
+- **Regression proofs self-captured their own baseline** and passed for free on
+  first run, with the baseline itself excluded from the fingerprint above -
+  a "no regression" gate whose reference point the graded party chose and
+  could edit undetected.
+- **Anti-cheat had real teeth only for manual/review proofs, and those were
+  entirely opt-in.** A DoD could ship with zero of them; the only mandatory
+  predicates were all machine-gameable per the findings above.
+
+Deletion fixed all of this by removing the thing that could be gamed rather
+than hardening it further: nobody authors the proof of "did a test bind to
+this scenario and actually reach it" except the test itself, existing before
+`cover` ever runs.
+
 ## Goals / Non-Goals
 
 **Goals:**
