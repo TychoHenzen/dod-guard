@@ -21184,6 +21184,7 @@ async function checkReachability(input) {
   const reportDir = await fs4.mkdtemp(path4.join(os.tmpdir(), "dod-guard-cover-"));
   const childEnv = { ...process.env };
   delete childEnv.NODE_TEST_CONTEXT;
+  delete childEnv.NODE_V8_COVERAGE;
   try {
     let stdout;
     try {

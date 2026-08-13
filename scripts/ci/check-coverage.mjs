@@ -59,12 +59,23 @@ function c8Args(pkg, reportDir) {
 
 /** Run one package's suite under c8 and read the totals it wrote. */
 function measure(pkg, reportDir) {
-  execFileSync("npx", c8Args(pkg, reportDir), {
-    cwd: ROOT,
-    encoding: "utf8",
-    shell: process.platform === "win32",
-    stdio: ["ignore", "ignore", "pipe"],
-  });
+  try {
+    execFileSync("npx", c8Args(pkg, reportDir), {
+      cwd: ROOT,
+      encoding: "utf8",
+      shell: process.platform === "win32",
+      stdio: ["ignore", "pipe", "pipe"],
+      // Default 1MB is too small for a full suite's TAP output on a real
+      // failure - a truncated buffer would report ENOBUFS instead of the
+      // actual test failure.
+      maxBuffer: 32 * 1024 * 1024,
+    });
+  } catch (err) {
+    const tail = (s) => (s ?? "").toString().trim().split("\n").slice(-40).join("\n");
+    throw new Error(
+      `${pkg}'s suite failed under c8 (exit ${err.status}):\n--- stdout (tail) ---\n${tail(err.stdout)}\n--- stderr (tail) ---\n${tail(err.stderr)}`,
+    );
+  }
   const summary = JSON.parse(readFileSync(join(reportDir, "coverage-summary.json"), "utf8"));
   return Object.fromEntries(METRICS.map((m) => [m, summary.total[m].pct]));
 }

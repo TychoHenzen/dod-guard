@@ -4,17 +4,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { EXIT_USAGE_ERROR, isCliInvocation, parseArgs, runCli } from "./cli.js";
-
-/** Collect CLI output instead of writing to the real streams. */
-function captureIo() {
-  const out: string[] = [];
-  const err: string[] = [];
-  return {
-    io: { write: (s: string) => out.push(s), writeErr: (s: string) => err.push(s) },
-    out: () => out.join(""),
-    err: () => err.join(""),
-  };
-}
+import { captureIo } from "./testing/capture-io.js";
 
 // ── parseArgs ───────────────────────────────────────────────────────────
 

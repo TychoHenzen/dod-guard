@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-13T11:45:26.371Z",
-  "total": 857,
+  "total": 859,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -124,6 +124,10 @@
     "packages/dod-guard/src/openspec/types.ts",
     "packages/dod-guard/src/shell.test.ts",
     "packages/dod-guard/src/shell.ts",
+    "packages/dod-guard/src/test-support/capture-io.test.ts",
+    "packages/dod-guard/src/test-support/capture-io.ts",
+    "packages/dod-guard/src/testing/spec-fixtures.test.ts",
+    "packages/dod-guard/src/testing/spec-fixtures.ts",
     "packages/evomcp/esbuild.config.mjs",
     "packages/evomcp/scripts/bootstrap-deps.js",
     "packages/evomcp/src/agent.test.ts",
@@ -294,6 +298,7 @@
     "packages/quality-guard/src/skips.test.ts",
     "packages/quality-guard/src/skips.ts",
     "scripts/ci/check-coverage-gate.mjs",
+    "scripts/ci/check-coverage.mjs",
     "scripts/ci/check-skill-hygiene.test.mjs",
     "scripts/ci/fixtures/skill-hygiene.mjs",
     "scripts/ci/lib/fs-utils.mjs",
@@ -748,6 +753,8 @@
     "scripts/ci/smoke-bundle.mjs::file-length": 1,
     "scripts/ci/smoke-bundle.mjs::complexity": 1,
     "scripts/ci/smoke-bundle.mjs::function-length": 1,
-    "scripts/ci/smoke-bundle.mjs::nesting-depth": 1
+    "scripts/ci/smoke-bundle.mjs::nesting-depth": 1,
+    "scripts/ci/check-coverage.mjs::file-length": 1,
+    "scripts/ci/check-coverage.mjs::complexity": 1
   }
 }

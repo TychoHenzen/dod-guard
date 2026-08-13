@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, test } from "node:test";
+import { writeUnwiredCoverageGateSpec } from "../testing/spec-fixtures.js";
 import { enumerateAllScenarios, enumerateChangeScenarios } from "./enumerate.js";
 
 let cwd: string;
@@ -10,21 +11,7 @@ let cwd: string;
 before(async () => {
   cwd = await fs.mkdtemp(path.join(os.tmpdir(), "dod-guard-enumerate-"));
 
-  const mainSpec = path.join(cwd, "openspec", "specs", "dod-guard", "coverage-gate", "spec.md");
-  await fs.mkdir(path.dirname(mainSpec), { recursive: true });
-  await fs.writeFile(
-    mainSpec,
-    [
-      "## Requirements",
-      "",
-      "### Requirement: cover reports a scenario's state",
-      "",
-      "#### Scenario: unwired",
-      "- **WHEN** no test binds to a scenario",
-      "- **THEN** cover reports it as unwired",
-      "",
-    ].join("\n"),
-  );
+  await writeUnwiredCoverageGateSpec(cwd);
 
   const deltaSpec = path.join(
     cwd,

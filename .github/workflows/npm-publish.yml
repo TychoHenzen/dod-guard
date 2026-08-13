@@ -120,6 +120,11 @@ jobs:
 
       - run: npm run build
 
+      # The coverage ratchet below runs dod-guard's own suite under c8, and
+      # steps-cli.test.ts shells out to the real openspec CLI.
+      - name: Install the openspec CLI
+        run: npm install -g @fission-ai/openspec@1.8.0
+
       # Builds dod-guard itself, because a released binary can't see this
       # checkout's own scenarios and markers - same reason the retired
       # check-trace.mjs did this.
@@ -179,6 +184,8 @@ jobs:
       - name: Coverage ratchet (per package)
         id: coverage
         continue-on-error: true
+        env:
+          OPENSPEC_TELEMETRY: 0
         run: |
           node scripts/ci/check-coverage.mjs | tee coverage-report.txt
           exit "${PIPESTATUS[0]}"

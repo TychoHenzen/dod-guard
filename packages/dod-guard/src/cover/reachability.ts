@@ -96,8 +96,14 @@ export async function checkReachability(input: ReachabilityInput): Promise<{ out
   const includeGlob = pkgDir.startsWith("packages/") ? `${pkgDir}/dist/**/*.js` : `${pkgDir}/**/*.js`;
   const pattern = `^${escapeForRegExp(input.testName)}$`;
   const reportDir = await fs.mkdtemp(path.join(os.tmpdir(), "dod-guard-cover-"));
+  // NODE_V8_COVERAGE tells V8 where to dump raw coverage. Inherited from a
+  // parent that is itself running under c8 - exactly what check-coverage.mjs
+  // does - it points this nested c8 at the outer run's own coverage
+  // directory, mixing the two runs' raw files together. The inner c8 manages
+  // its own directory via --report-dir; it needs none of the outer one.
   const childEnv = { ...process.env };
   delete childEnv.NODE_TEST_CONTEXT;
+  delete childEnv.NODE_V8_COVERAGE;
 
   try {
     let stdout: string;

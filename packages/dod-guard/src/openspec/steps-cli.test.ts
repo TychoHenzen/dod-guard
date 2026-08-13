@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "../cli.js";
+import { captureIo } from "../testing/capture-io.js";
 
 // These scenarios run against this repo's own openspec/ tree, not a temp
 // dir: `dod-guard steps` resolves tasks.md through the real `openspec` CLI
@@ -13,16 +14,6 @@ import { runCli } from "../cli.js";
 
 const REPO_ROOT = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..", "..", "..");
 const CHANGES_DIR = path.join(REPO_ROOT, "openspec", "changes");
-
-function captureIo() {
-  const out: string[] = [];
-  const err: string[] = [];
-  return {
-    io: { write: (s: string) => out.push(s), writeErr: (s: string) => err.push(s) },
-    out: () => out.join(""),
-    err: () => err.join(""),
-  };
-}
 
 async function readStepsJson(changeId: string): Promise<{ steps: unknown[]; [key: string]: unknown }> {
   const raw = await fs.readFile(path.join(CHANGES_DIR, changeId, "steps.json"), "utf-8");
@@ -36,6 +27,16 @@ async function writeChangeDir(changeId: string, tasksMd: string): Promise<void> 
 
 async function removeChangeDir(changeId: string): Promise<void> {
   await fs.rm(path.join(CHANGES_DIR, changeId), { recursive: true, force: true });
+}
+
+/** Runs `dod-guard steps` and asserts its one step stayed manual with no verify_cmd. */
+async function assertRunsAsManualStep(changeId: string): Promise<void> {
+  const { io } = captureIo();
+  await runCli(["steps", changeId, `--cwd=${REPO_ROOT}`], io);
+  const plan = await readStepsJson(changeId);
+  const [step] = plan.steps as Array<{ manual_required: boolean; verify_cmd: string }>;
+  assert.equal(step.manual_required, true);
+  assert.equal(step.verify_cmd, "");
 }
 
 // covers: dod-guard/steps-generation :: steps subcommand writes the change's plan :: A change with tasks gains a plan
@@ -75,12 +76,7 @@ test("a task with no covers annotation becomes a manual step alongside a bound o
   const changeId = "__steps_cli_test_mixed__";
   await writeChangeDir(changeId, ["## 1. Section", "", "- [ ] 1.1 No annotation here"].join("\n"));
   try {
-    const { io } = captureIo();
-    await runCli(["steps", changeId, `--cwd=${REPO_ROOT}`], io);
-    const plan = await readStepsJson(changeId);
-    const [step] = plan.steps as Array<{ manual_required: boolean; verify_cmd: string }>;
-    assert.equal(step.manual_required, true);
-    assert.equal(step.verify_cmd, "");
+    await assertRunsAsManualStep(changeId);
   } finally {
     await removeChangeDir(changeId);
   }
@@ -99,12 +95,7 @@ test("a covers annotation naming a scenario no test binds stays manual", async (
     ].join("\n"),
   );
   try {
-    const { io } = captureIo();
-    await runCli(["steps", changeId, `--cwd=${REPO_ROOT}`], io);
-    const plan = await readStepsJson(changeId);
-    const [step] = plan.steps as Array<{ manual_required: boolean; verify_cmd: string }>;
-    assert.equal(step.manual_required, true);
-    assert.equal(step.verify_cmd, "");
+    await assertRunsAsManualStep(changeId);
   } finally {
     await removeChangeDir(changeId);
   }

@@ -8,7 +8,7 @@
 import type { ScenarioReport } from "../cover/report.js";
 import type { TaskItem } from "./tasks-parser.js";
 
-export interface Step {
+interface Step {
   id: string;
   title: string;
   description: string;
