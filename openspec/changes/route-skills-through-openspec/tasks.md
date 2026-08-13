@@ -208,9 +208,9 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
 - [x] 5.4 Move `/quality-refactor` onto a change with `skip_specs: true`, waves
       into `tasks.md`, plan into the change's `steps.json`, judgment into
       `design.md`
-- [ ] 5.5 Give `/ratchet` a change id; close on `dod-guard cover` reporting zero
+- [x] 5.5 Give `/ratchet` a change id; close on `dod-guard cover` reporting zero
       regressions, then `openspec archive`
-- [ ] 5.6 Give `/adversarial-workflow` a change id; move its four GO/REVISE/STOP
+- [x] 5.6 Give `/adversarial-workflow` a change id; move its four GO/REVISE/STOP
       verdicts into `design.md`; close on cover then archive
 - [x] 5.7 Make `/blind-rewrite` write the code contract as the change's spec
       delta before deletion, leave only quarantine in `.blind/`

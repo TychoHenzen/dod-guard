@@ -5,6 +5,12 @@ description: Execute an existing Definition of Done autonomously, one sub-proble
 
 # Ratchet
 
+## Before you start
+
+You need a confirmed OpenSpec change id. No change means no work. Route to
+`/dod-guard:interview` or `/opsx:propose`, then come back. Every run of this
+skill works against `openspec/changes/<change-id>/`.
+
 ## 1. Routing
 
 Decide in the first two minutes.
@@ -18,7 +24,7 @@ Decide in the first two minutes.
 | Interdependent sub-problems plus regression risk | stay here |
 
 `/dod-guard:interview` owns requirements, the tree, the company baseline, the
-five-lens review, `dod_create`, and the pre-code baseline run. Never redo any of
+five-lens review, DoD creation, and the pre-code baseline run. Never redo any of
 that here. If the tree looks wrong, send the user back to that skill.
 
 ## 2. Setup
@@ -156,9 +162,18 @@ concrete leaf, which exits 1, blocks the finish.
 2. Call `evo_adopt` with the winning branch, then `evo_finish`.
 3. Call `evo_export_lessons`, then `memory_save` with `type: "project"` and the
    exported content.
-4. Report the passing leaf count, the branches you abandoned, and every
-   `MANUAL:` leaf the user still owes.
-5. Call `ScheduleWakeup` with `stop=true`.
+4. Run `dod-guard cover <change-id>`. It checks each scenario in the change's
+   spec deltas against a ratcheted baseline. Exit 0 means every scenario
+   matches or improves on the baseline. Exit 1 means one regressed. Exit 3
+   means usage error. On exit 1 or exit 3, stop here: report the regression
+   and do not archive.
+5. On exit 0, run `openspec archive <change-id> --yes`. It merges the change's
+   spec deltas into openspec/specs/ and moves the change under
+   changes/archive/. Run archive without asking the user first, the cover
+   check is the approval.
+6. Report the passing leaf count, the branches you abandoned, the cover and
+   archive outcome, and every `MANUAL:` leaf the user still owes.
+7. Call `ScheduleWakeup` with `stop=true`.
 
 ## 7. Missing servers
 
