@@ -53,10 +53,7 @@ test("an item covering an unwired scenario stays manual", () => {
 });
 
 test("an item covering a failed scenario stays manual", () => {
-  const steps = buildSteps(
-    [item("1.1", "g/c::r||s")],
-    [report("g/c::r||s", "failed", "node --test dist/x.test.js")],
-  );
+  const steps = buildSteps([item("1.1", "g/c::r||s")], [report("g/c::r||s", "failed", "node --test dist/x.test.js")]);
   assert.equal(steps[0].manual_required, true);
   assert.equal(steps[0].verify_cmd, "");
 });

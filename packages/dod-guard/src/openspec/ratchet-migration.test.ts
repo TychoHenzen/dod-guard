@@ -1,8 +1,8 @@
 // Requirement: none - see Task
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 

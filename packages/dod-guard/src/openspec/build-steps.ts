@@ -22,7 +22,10 @@ export interface Step {
 
 const BOUND_OUTCOMES = new Set(["covered-and-integrated", "covered-but-not-integrated"]);
 
-function verifyCmdFor(item: TaskItem, reportsById: Map<string, ScenarioReport>): { verify_cmd: string; manual_required: boolean } {
+function verifyCmdFor(
+  item: TaskItem,
+  reportsById: Map<string, ScenarioReport>,
+): { verify_cmd: string; manual_required: boolean } {
   const report = item.coversId ? reportsById.get(item.coversId) : undefined;
   if (report && BOUND_OUTCOMES.has(report.outcome) && report.runCommand) {
     return { verify_cmd: report.runCommand, manual_required: false };

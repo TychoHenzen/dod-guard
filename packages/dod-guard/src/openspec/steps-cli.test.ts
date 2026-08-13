@@ -115,9 +115,7 @@ test("two sections of two items each convert into four steps in source order", a
   const changeId = "__steps_cli_test_order__";
   await writeChangeDir(
     changeId,
-    ["## 1. First", "", "- [ ] 1.1 A", "- [ ] 1.2 B", "", "## 2. Second", "", "- [ ] 2.1 C", "- [ ] 2.2 D"].join(
-      "\n",
-    ),
+    ["## 1. First", "", "- [ ] 1.1 A", "- [ ] 1.2 B", "", "## 2. Second", "", "- [ ] 2.1 C", "- [ ] 2.2 D"].join("\n"),
   );
   try {
     const { io } = captureIo();
