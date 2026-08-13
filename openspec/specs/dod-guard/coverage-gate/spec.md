@@ -1,7 +1,7 @@
 # dod-guard/coverage-gate Specification
 
 ## Purpose
-TBD - created by archiving change route-skills-through-openspec. Update Purpose after archive.
+Binds OpenSpec scenarios to tests via `// covers:` markers in test files, enumerates coverage across a change or the whole spec tree, reports each scenario's state, and ratchets a baseline so coverage can only improve.
 ## Requirements
 ### Requirement: A scenario binds to a test through a marker in the test file
 

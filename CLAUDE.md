@@ -10,9 +10,9 @@ npm workspaces monorepo with five MCP server plugins for Claude Code, distribute
 |---------|----------|---------|
 | `dod-guard` | `dod-guard` | Anti-cheat DoD verification with behavioral predicates. Ships `/interview`, `/ratchet`, `/clean-house`, `/step-by-step`, `/cheap-step`, `/adversarial-workflow`, `/test-integrity-checker`, `/blind-rewrite`, `/tighten`, `/doc-reconcile`, `/skill-debug`, `/skill-migrate` skills. |
 | `quality-guard` | `quality-guard` | Structural quality gate: MCP tools, a PostToolUse ratchet hook, and the `/quality-refactor` skill with its scanner. |
-| `evomcp` | `evomcp` | Cascade solver: cheap-model fanout (best-of-N + repair chains) + scalar-fitness evolution. |
+| `evomcp` | `evomcp` | Cascade solver: cheap-model fanout (best-of-N + repair chains) + scalar-fitness evolution. Ships `/cascade` skill. |
 | `gitevo` | `gitevo` | Evolutionary git branching for LLM agents. Checkpoint, spawn, learn, abandon, adopt. |
-| `obsidian-rag` | `obsidian-rag` | RAG/memory on Obsidian vaults. Semantic search, note CRUD, memory recall. |
+| `obsidian-rag` | `obsidian-rag` | RAG/memory on Obsidian vaults. Semantic search, note CRUD, memory recall. Ships `/rag-memory` skill. |
 
 **Each package has its own CLAUDE.md** with detailed architecture, file responsibilities, and domain-specific rules. Read it before working in that package.
 
@@ -145,7 +145,7 @@ cannot see this checkout's own scenarios and markers. That build step lives in
 
 Every capability spec lives at `openspec/specs/<group>/<capability>/spec.md`, and the spec id is that path. So `openspec/specs/gitevo/memory-bus/spec.md` has the id `gitevo/memory-bus`.
 
-Six groups exist. Five match a package name: `dod-guard` (4 specs), `quality-guard` (5), `evomcp` (6), `gitevo` (4), `obsidian-rag` (5). The sixth, `openspec-dashboard` (3), names the tool under `tools/openspec-dashboard` instead.
+Six groups exist. Five match a package name: `dod-guard` (17 specs), `quality-guard` (7), `evomcp` (7), `gitevo` (4), `obsidian-rag` (6). The sixth, `openspec-dashboard` (3), names the tool under `tools/openspec-dashboard` instead.
 
 A change's delta directory must mirror the `openspec/specs/<group>/<capability>/spec.md` path exactly, at `openspec/changes/<id>/specs/<group>/<capability>/spec.md`. Get the group wrong and `openspec archive` creates a new flat capability instead of merging into the existing one, silently.
 

@@ -95,4 +95,10 @@ Install with:
 npm install @xenova/transformers
 ```
 
-Without it, only keyword search (FTS5) is available — still very usable.
+Without it, only keyword search (FTS5) is available - still very usable.
+
+## Bundled Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `/rag-memory` | Search, read, and write an Obsidian vault through the obsidian-rag MCP server. Context retrieval, memory operations, and knowledge graph traversal. |
