@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-13T11:45:26.371Z",
-  "total": 846,
+  "total": 849,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -288,7 +288,10 @@
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
-    "packages/quality-guard/src/skips.ts"
+    "packages/quality-guard/src/skips.ts",
+    "scripts/ci/check-skill-hygiene.test.mjs",
+    "scripts/ci/fixtures/skill-hygiene.mjs",
+    "scripts/ci/lib/skill-hygiene-rules.mjs"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -728,6 +731,9 @@
     "packages/dod-guard/src/openspec/tasks-parser.ts::else-branch": 1,
     "packages/dod-guard/src/openspec/steps-cli.ts::function-length": 1,
     "packages/dod-guard/src/openspec/steps-cli.test.ts::file-length": 1,
-    "packages/dod-guard/src/openspec/steps-cli.test.ts::function-length": 1
+    "packages/dod-guard/src/openspec/steps-cli.test.ts::function-length": 1,
+    "scripts/ci/lib/skill-hygiene-rules.mjs::file-length": 1,
+    "scripts/ci/lib/skill-hygiene-rules.mjs::complexity": 1,
+    "scripts/ci/check-skill-hygiene.test.mjs::file-length": 1
   }
 }

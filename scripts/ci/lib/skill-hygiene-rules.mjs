@@ -28,8 +28,6 @@ const PREDICATE_TYPES = [
   "convergence",
 ];
 
-const PROOF_CATEGORIES = ["behavioral", "wiring", "test_audit", "other"];
-
 /** Naming this many predicate types is a second copy of the vocabulary. */
 const VOCABULARY_COPY_FLOOR = 5;
 
@@ -71,32 +69,6 @@ function shippedDocs(root) {
   return out;
 }
 
-function schemaText(root) {
-  const file = join(root, "openspec", "schemas", "dod-guard-spec-driven", "schema.yaml");
-  return existsSync(file) ? readFileSync(file, "utf8") : null;
-}
-
-/**
- * One artifact's block from schema.yaml, without a YAML parser. A block runs
- * from its `- id: <name>` line to the next list entry at the same indent or
- * the next top-level key.
- */
-function artifactBlock(text, id) {
-  const lines = text.split(/\r?\n/);
-  const start = lines.findIndex((line) => new RegExp(`^(\\s*)-\\s+id:\\s*${id}\\s*$`).test(line));
-  if (start === -1) return null;
-  const indent = /^(\s*)-/.exec(lines[start])[1];
-  const nextEntry = new RegExp(`^${indent}-\\s+id:`);
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i++) {
-    if (nextEntry.test(lines[i]) || /^[A-Za-z_]/.test(lines[i])) {
-      end = i;
-      break;
-    }
-  }
-  return lines.slice(start, end).join("\n");
-}
-
 function requireOneSkill(root, name, check) {
   const skill = skillNamed(root, name);
   if (!skill) return [`the ${name} skill is missing`];
@@ -136,9 +108,11 @@ export const RULES = {
 
   "no-legacy-fallback": (root) => {
     const bad = [];
+    const claimsInterviewBuildsDod = /\binterview\b[^.]{0,80}\b(builds|generates)\b[^.]{0,20}\bDoD\b/i;
     for (const { path, text } of skills(root)) {
       if (text.includes("dod_create")) bad.push(`${path} still names dod_create`);
       if (text.includes("docs/plans")) bad.push(`${path} still writes to docs/plans`);
+      if (claimsInterviewBuildsDod.test(text)) bad.push(`${path} still claims interview builds a DoD`);
     }
     return bad;
   },
@@ -155,23 +129,16 @@ export const RULES = {
   "closing-gate": (root) =>
     CLOSING_GATE_SKILLS.flatMap((name) =>
       requireOneSkill(root, name, (skill) => {
-        const trace = skill.text.indexOf("dod-guard trace");
+        const cover = skill.text.indexOf("dod-guard cover");
         const archive = skill.text.indexOf("openspec archive");
         const bad = [];
-        if (trace === -1) bad.push(`${skill.path} never runs dod-guard trace`);
+        if (cover === -1) bad.push(`${skill.path} never runs dod-guard cover`);
         if (archive === -1) bad.push(`${skill.path} never runs openspec archive`);
-        if (trace !== -1 && archive !== -1 && trace > archive) {
-          bad.push(`${skill.path} archives before it traces, so it can ship an untraced leaf`);
+        if (cover !== -1 && archive !== -1 && cover > archive) {
+          bad.push(`${skill.path} archives before it covers, so it can ship a regressed scenario`);
         }
         return bad;
       }),
-    ),
-
-  "interview-fetches": (root) =>
-    requireOneSkill(root, "interview", (skill) =>
-      skill.text.includes("openspec instructions dod")
-        ? []
-        : [`${skill.path} does not fetch the dod rules with openspec instructions dod`],
     ),
 
   "refactor-skip-specs": (root) =>
@@ -180,40 +147,4 @@ export const RULES = {
         ? []
         : [`${skill.path} opens no change with skip_specs, so a refactor has nowhere to record its plan`],
     ),
-
-  "dod-instruction": (root) => {
-    const text = schemaText(root);
-    if (text === null) return ["openspec/schemas/dod-guard-spec-driven/schema.yaml is missing"];
-    const block = artifactBlock(text, "dod");
-    if (block === null) return ["the schema declares no dod artifact"];
-
-    const bad = [];
-    // The phrase, not the bare word: a real instruction says "a placeholder"
-    // when it warns against proof commands that contain one.
-    if (/placeholder instruction|later migration step/i.test(block)) {
-      bad.push("the dod instruction is still a placeholder");
-    }
-    const predicates = PREDICATE_TYPES.filter((type) => !block.includes(type));
-    if (predicates.length > 0) bad.push(`the dod instruction omits predicate type(s): ${predicates.join(", ")}`);
-    const categories = PROOF_CATEGORIES.filter((cat) => !block.includes(cat));
-    if (categories.length > 0) bad.push(`the dod instruction omits proof categor(ies): ${categories.join(", ")}`);
-    if (!block.includes("dod_generate")) bad.push("the dod instruction never names dod_generate as the producer");
-    return bad;
-  },
-
-  "schema-steps-deps": (root) => {
-    const text = schemaText(root);
-    if (text === null) return ["openspec/schemas/dod-guard-spec-driven/schema.yaml is missing"];
-    const block = artifactBlock(text, "steps");
-    if (block === null) return ["the schema declares no steps artifact"];
-
-    const requires = /requires:\s*((?:\s*-\s*\w+\s*)+)/.exec(block);
-    const listed = requires ? requires[1].match(/-\s*(\w+)/g).map((item) => item.replace(/-\s*/, "")) : [];
-    const bad = [];
-    if (!listed.includes("tasks")) bad.push("the steps artifact does not require tasks");
-    if (listed.includes("dod")) {
-      bad.push("the steps artifact still requires dod, which locks out a change with no spec delta");
-    }
-    return bad;
-  },
 };

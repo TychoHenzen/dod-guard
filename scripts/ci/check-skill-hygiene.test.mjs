@@ -8,7 +8,7 @@ import { readFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { goodTree, schema, write } from "./fixtures/skill-hygiene.mjs";
+import { goodTree, write } from "./fixtures/skill-hygiene.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(HERE, "check-skill-hygiene.mjs");
@@ -40,7 +40,6 @@ const SKILL = {
   tighten: "packages/dod-guard/skills/tighten/SKILL.md",
   refactor: "packages/quality-guard/skills/quality-refactor/SKILL.md",
 };
-const SCHEMA = "openspec/schemas/dod-guard-spec-driven/schema.yaml";
 const FETCHES = "Run `openspec instructions dod`.";
 
 const cases = [
@@ -106,6 +105,13 @@ const cases = [
     expect: /still writes to docs\/plans/,
   },
   {
+    rule: "no-legacy-fallback",
+    why: "a skill claims interview builds a DoD",
+    break: (root) =>
+      write(root, SKILL.ratchet, "Take a change id. `/dod-guard:interview` builds a DoD to start from.\n"),
+    expect: /still claims interview builds a DoD/,
+  },
+  {
     rule: "change-scoped",
     why: "a skill runs with no change id",
     break: (root) => write(root, SKILL.tighten, "# Tighten\n\nRank targets in a ledger and rewrite the worst.\n"),
@@ -113,52 +119,26 @@ const cases = [
   },
   {
     rule: "closing-gate",
-    why: "a skill never traces",
+    why: "a skill never covers",
     break: (root) => write(root, SKILL.ratchet, "Take a change id, then `openspec archive <change-id> --yes`.\n"),
-    expect: /never runs dod-guard trace/,
+    expect: /never runs dod-guard cover/,
   },
   {
     rule: "closing-gate",
-    why: "a skill archives before it traces",
+    why: "a skill archives before it covers",
     break: (root) =>
       write(
         root,
         SKILL.ratchet,
-        "Take a change id. Run `openspec archive <change-id> --yes`, then `dod-guard trace <change-id>`.\n",
+        "Take a change id. Run `openspec archive <change-id> --yes`, then `dod-guard cover <change-id>`.\n",
       ),
-    expect: /archives before it traces/,
-  },
-  {
-    rule: "interview-fetches",
-    why: "interview carries its own rules instead of fetching them",
-    break: (root) => write(root, SKILL.interview, "# Interview\n\nBuild the DoD yourself.\n"),
-    expect: /does not fetch the dod rules/,
+    expect: /archives before it covers/,
   },
   {
     rule: "refactor-skip-specs",
     why: "a refactor pass opens no spec-less change",
     break: (root) => write(root, SKILL.refactor, "# Quality refactor\n\nEmit a plan.\n"),
     expect: /opens no change with skip_specs/,
-  },
-  {
-    rule: "dod-instruction",
-    why: "the dod instruction is still a placeholder",
-    break: (root) =>
-      write(root, SCHEMA, schema({ dodInstruction: "      Placeholder. It lands in a later migration step.\n" })),
-    expect: /still a placeholder/,
-  },
-  {
-    rule: "dod-instruction",
-    why: "the dod instruction omits part of the vocabulary",
-    break: (root) =>
-      write(root, SCHEMA, schema({ dodInstruction: "      Use dod_generate. Predicates: exit_code.\n" })),
-    expect: /omits predicate type/,
-  },
-  {
-    rule: "schema-steps-deps",
-    why: "steps still blocks on dod",
-    break: (root) => write(root, SCHEMA, schema({ stepsRequires: "dod" })),
-    expect: /still requires dod/,
   },
 ];
 

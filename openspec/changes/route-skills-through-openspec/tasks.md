@@ -218,7 +218,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
       scanner queue closing on the target's change archiving
 - [x] 5.9 Drop the `dod_create` reference from `/test-integrity-checker`
 - [x] 5.10 Drop dod-guard tool-name references from `/clean-house`
-- [ ] 5.11 Update `check-skill-hygiene.mjs`'s rule set for the new vocabulary:
+- [x] 5.11 Update `check-skill-hygiene.mjs`'s rule set for the new vocabulary:
       - Retire `dod-instruction`, `schema-steps-deps`, and
         `interview-fetches`. Each one polices a deleted DoD schema artifact
         or fetch that no longer exists. Delete each rule from `RULES`, its
