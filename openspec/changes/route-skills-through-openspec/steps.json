@@ -750,7 +750,7 @@
       "verify_surface": "code",
       "verify_cmd": "",
       "manual_required": true,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "6.3",

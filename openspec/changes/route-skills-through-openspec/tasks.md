@@ -255,7 +255,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
 
 - [x] 6.1 Remove `.step-session/` from `.gitignore`, `scripts/ci/lib/fs-utils.mjs`,
       `quality-refactor/scripts/lib/config.mjs`
-- [ ] 6.2 Rewrite `packages/dod-guard/CLAUDE.md`: it documents 10 predicate
+- [x] 6.2 Rewrite `packages/dod-guard/CLAUDE.md`: it documents 10 predicate
       types, `checker.ts`, `evaluate-proof.ts`, `fingerprint.ts`, and
       `dod_check` - none of which exist. Replace the Architecture, "Core
       principle", "Predicate types", "Proof categories", "Proof execution
