@@ -24,6 +24,30 @@ parts.
 - **THEN** the file holds `goal`, `cwd`, `plan_source` set to the change id, and
   `plan_artifacts` taken from `openspec status --json --change <id>`
 
+### Requirement: a task binds to a scenario through an annotation
+
+A `tasks.md` item SHALL name the scenario it satisfies with an HTML comment,
+`<!-- covers: <group>/<capability> :: <requirement title> :: <scenario title> -->`,
+on the line directly below the item's checkbox line. `dod-guard steps` SHALL
+read that annotation to look up the scenario's `dod-guard cover` outcome,
+rather than matching task text against scenario titles. An item with no
+annotation has no scenario to look up, so it falls to the "an unbound task
+becomes a manual step" requirement below.
+
+#### Scenario: An annotated task resolves its bound test
+- **WHEN** a `tasks.md` item carries a covers annotation naming a scenario
+  that `dod-guard cover` reports as covered-and-integrated or
+  covered-but-not-integrated
+- **THEN** `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js`
+  exits 0, covering a step whose `verify_cmd` is that scenario's bound test's
+  run command
+
+#### Scenario: An annotated task naming an unwired scenario stays manual
+- **WHEN** a `tasks.md` item's annotation names a scenario `dod-guard cover`
+  reports as unwired or failed
+- **THEN** `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js`
+  exits 0, covering a step with `manual_required` true
+
 ### Requirement: a task item becomes a verified step
 
 Each `tasks.md` item SHALL produce one step whose `verify_cmd` is the run

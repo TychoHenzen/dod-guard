@@ -1,5 +1,5 @@
 {
-  "goal": "<!-- one-sentence goal for this change, matches the DoD's Goal -->",
+  "goal": "<!-- the change id, or a one-sentence goal for this change -->",
   "cwd": "<!-- absolute path to the target repo -->",
   "plan_source": "<!-- the change id this was generated from -->",
   "plan_artifacts": "<!-- the artifacts array from `openspec status --json --change <id>` at generation time, the staleness signal for an OpenSpec session -->",

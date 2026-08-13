@@ -1,10 +1,11 @@
 /**
  * dod-guard CLI. The proof/predicate engine that used to back `check`,
  * `status`, `tree`, `list`, and `trace` is gone - see
- * openspec/changes/route-skills-through-openspec. `steps` (task-bound) lands
- * in a later step of that change.
+ * openspec/changes/route-skills-through-openspec. `cover` and `steps` are
+ * the replacement surface.
  */
 import { runCover } from "./cover/run.js";
+import { runSteps } from "./openspec/steps-cli.js";
 
 const USAGE = `dod-guard - OpenSpec scenario coverage
 
@@ -21,7 +22,11 @@ COMMANDS
                                       the whole baseline, and a change-scoped run
                                       only sees its own scenarios.
                                       --cwd=<dir> overrides the working directory.
-  (steps lands in a follow-up commit)
+  steps <change-id>                  Derive openspec/changes/<id>/steps.json from
+                                      that change's tasks.md, binding each task's
+                                      verify_cmd through dod-guard cover where a
+                                      <!-- covers: --> annotation names a scenario.
+                                      --cwd=<dir> overrides the working directory.
 `;
 
 type Flags = Record<string, string | boolean>;
@@ -76,6 +81,8 @@ const COMMANDS: Record<string, Command> = {
       },
       io,
     ),
+  steps: (positional, flags, io) =>
+    runSteps({ cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(), changeId: positional[0] }, io),
 };
 
 /** Run the CLI. Returns the process exit code. Never calls process.exit itself. */

@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path8) {
-      let input = path8;
+    function removeDotSegments(path10) {
+      let input = path10;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path8, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path8 && path8 !== "/" ? path8 : void 0;
+        const [path10, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path10 && path10 !== "/" ? path10 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3653,49 +3653,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative4, options, skipNormalization) {
+    function resolveComponent(base, relative5, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative4 = parse3(serialize(relative4, options), options);
+        relative5 = parse3(serialize(relative5, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative4.scheme) {
-        target.scheme = relative4.scheme;
-        target.userinfo = relative4.userinfo;
-        target.host = relative4.host;
-        target.port = relative4.port;
-        target.path = removeDotSegments(relative4.path || "");
-        target.query = relative4.query;
+      if (!options.tolerant && relative5.scheme) {
+        target.scheme = relative5.scheme;
+        target.userinfo = relative5.userinfo;
+        target.host = relative5.host;
+        target.port = relative5.port;
+        target.path = removeDotSegments(relative5.path || "");
+        target.query = relative5.query;
       } else {
-        if (relative4.userinfo !== void 0 || relative4.host !== void 0 || relative4.port !== void 0) {
-          target.userinfo = relative4.userinfo;
-          target.host = relative4.host;
-          target.port = relative4.port;
-          target.path = removeDotSegments(relative4.path || "");
-          target.query = relative4.query;
+        if (relative5.userinfo !== void 0 || relative5.host !== void 0 || relative5.port !== void 0) {
+          target.userinfo = relative5.userinfo;
+          target.host = relative5.host;
+          target.port = relative5.port;
+          target.path = removeDotSegments(relative5.path || "");
+          target.query = relative5.query;
         } else {
-          if (!relative4.path) {
+          if (!relative5.path) {
             target.path = base.path;
-            if (relative4.query !== void 0) {
-              target.query = relative4.query;
+            if (relative5.query !== void 0) {
+              target.query = relative5.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative4.path[0] === "/") {
-              target.path = removeDotSegments(relative4.path);
+            if (relative5.path[0] === "/") {
+              target.path = removeDotSegments(relative5.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative4.path;
+                target.path = "/" + relative5.path;
               } else if (!base.path) {
-                target.path = relative4.path;
+                target.path = relative5.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative4.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative5.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative4.query;
+            target.query = relative5.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3703,7 +3703,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative4.fragment;
+      target.fragment = relative5.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -6902,12 +6902,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs7, exportName) {
+    function addFormats(ajv, list, fs8, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs7[f]);
+        ajv.addFormat(f, fs8[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -6917,7 +6917,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync } from "node:fs";
-import * as path7 from "node:path";
+import * as path9 from "node:path";
 import { fileURLToPath } from "node:url";
 
 // ../../node_modules/zod/v3/helpers/util.js
@@ -7279,8 +7279,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path8, errorMaps, issueData } = params;
-  const fullPath = [...path8, ...issueData.path || []];
+  const { data, path: path10, errorMaps, issueData } = params;
+  const fullPath = [...path10, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7395,11 +7395,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path8, key) {
+  constructor(parent, value, path10, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path8;
+    this._path = path10;
     this._key = key;
   }
   get path() {
@@ -10991,10 +10991,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path8) {
-  if (!path8)
+function getElementAtPath(obj, path10) {
+  if (!path10)
     return obj;
-  return path8.reduce((acc, key) => acc?.[key], obj);
+  return path10.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11314,11 +11314,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path8, issues) {
+function prefixIssues(path10, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path8);
+    iss.path.unshift(path10);
     return iss;
   });
 }
@@ -14729,11 +14729,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path8) {
-  if (path8.length === 0) {
+function getDotPath(path10) {
+  if (path10.length === 0) {
     return "object root";
   }
-  return path8.reduce((acc, seg, index) => {
+  return path10.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -20991,7 +20991,7 @@ var StdioServerTransport = class {
 
 // src/cover/baseline.ts
 import { promises as fs5 } from "node:fs";
-import * as path5 from "node:path";
+import * as path6 from "node:path";
 
 // src/cover/entry-points.ts
 import { promises as fs } from "node:fs";
@@ -21223,6 +21223,15 @@ async function checkReachability(input) {
   }
 }
 
+// src/cover/run-command.ts
+import * as path5 from "node:path";
+function buildTestRunCommand(cwd, group, testFile) {
+  const pkgDir = packageDirForGroup(group);
+  const execTestFile = distTestFile(cwd, pkgDir, testFile);
+  const relPath = path5.relative(cwd, execTestFile).split(path5.sep).join("/");
+  return `node --experimental-test-module-mocks --test ${relPath}`;
+}
+
 // src/cover/report.ts
 async function resolveOutcome(ctx, scenario) {
   let markers = ctx.markersByGroup.get(scenario.group);
@@ -21231,28 +21240,29 @@ async function resolveOutcome(ctx, scenario) {
     ctx.markersByGroup.set(scenario.group, markers);
   }
   const binding = markers.get(scenario.id);
-  if (!binding) return { outcome: "unwired", note: "no test binds this scenario" };
-  return checkReachability({
+  if (!binding) return { outcome: "unwired", note: "no test binds this scenario", runCommand: void 0 };
+  const runCommand = buildTestRunCommand(ctx.cwd, scenario.group, binding.file);
+  const { outcome, note } = await checkReachability({
     cwd: ctx.cwd,
     group: scenario.group,
     testName: binding.testName,
     testFile: binding.file,
     entryPointFiles: entryPointsForGroup(ctx.entryPoints, scenario.group).files
   });
+  return { outcome, note, runCommand };
 }
 async function buildReport(cwd, scenarios) {
   const ctx = { cwd, markersByGroup: /* @__PURE__ */ new Map(), entryPoints: await loadEntryPoints(cwd) };
   const reports = [];
   for (const scenario of scenarios) {
-    const { outcome, note } = await resolveOutcome(ctx, scenario);
+    const resolved = await resolveOutcome(ctx, scenario);
     reports.push({
       scenarioId: scenario.id,
       group: scenario.group,
       capability: scenario.capability,
       requirementTitle: scenario.requirementTitle,
       scenarioTitle: scenario.scenarioTitle,
-      outcome,
-      note
+      ...resolved
     });
   }
   return reports;
@@ -21281,7 +21291,7 @@ function summarizeReport(reports) {
 // src/cover/baseline.ts
 var NOTE = "Coverage outcome each scenario holds today. A drop below its own outcome fails the gate.";
 function baselinePath(cwd) {
-  return path5.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
+  return path6.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
 }
 async function readBaseline(cwd) {
   try {
@@ -21294,7 +21304,7 @@ async function readBaseline(cwd) {
 }
 async function writeBaseline(cwd, current) {
   const sorted = Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b)));
-  await fs5.mkdir(path5.dirname(baselinePath(cwd)), { recursive: true });
+  await fs5.mkdir(path6.dirname(baselinePath(cwd)), { recursive: true });
   await fs5.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
 `);
 }
@@ -21319,7 +21329,7 @@ function outcomesFromReport(reports) {
 
 // src/cover/enumerate.ts
 import { promises as fs6 } from "node:fs";
-import * as path6 from "node:path";
+import * as path7 from "node:path";
 
 // src/openspec/requirements.ts
 var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
@@ -21392,7 +21402,7 @@ function extractRequirementBlocks(content) {
 
 // src/cover/enumerate.ts
 function capabilityFromPath(specsDir, specFile) {
-  const rel = path6.relative(specsDir, specFile).split(path6.sep);
+  const rel = path7.relative(specsDir, specFile).split(path7.sep);
   if (rel.length < 3) return null;
   return { group: rel[0], capability: rel[1] };
 }
@@ -21423,10 +21433,10 @@ async function enumerateUnder(specsDir) {
   return out;
 }
 async function enumerateChangeScenarios(cwd, changeId) {
-  return enumerateUnder(path6.join(cwd, "openspec", "changes", changeId, "specs"));
+  return enumerateUnder(path7.join(cwd, "openspec", "changes", changeId, "specs"));
 }
 async function enumerateAllScenarios(cwd) {
-  return enumerateUnder(path6.join(cwd, "openspec", "specs"));
+  return enumerateUnder(path7.join(cwd, "openspec", "specs"));
 }
 
 // src/cover/run.ts
@@ -21487,6 +21497,168 @@ cover FAILED - ${regressions.length} regression(s)
   return EXIT_REGRESSION;
 }
 
+// src/openspec/steps-cli.ts
+import { promises as fs7 } from "node:fs";
+import * as path8 from "node:path";
+
+// src/openspec/build-steps.ts
+var BOUND_OUTCOMES = /* @__PURE__ */ new Set(["covered-and-integrated", "covered-but-not-integrated"]);
+function verifyCmdFor(item, reportsById) {
+  const report = item.coversId ? reportsById.get(item.coversId) : void 0;
+  if (report && BOUND_OUTCOMES.has(report.outcome) && report.runCommand) {
+    return { verify_cmd: report.runCommand, manual_required: false };
+  }
+  return { verify_cmd: "", manual_required: true };
+}
+function buildSteps(items, coverReports) {
+  const reportsById = new Map(coverReports.map((r) => [r.scenarioId, r]));
+  const steps = [];
+  for (const item of items) {
+    const { verify_cmd, manual_required } = verifyCmdFor(item, reportsById);
+    steps.push({
+      id: item.id,
+      title: item.text,
+      description: item.text,
+      files: [],
+      deps: steps.length > 0 ? [steps[steps.length - 1].id] : [],
+      verify_surface: "code",
+      verify_cmd,
+      manual_required,
+      status: "pending"
+    });
+  }
+  return steps;
+}
+
+// src/openspec/fetch-instructions.ts
+import { execFile as execFile3 } from "node:child_process";
+import { promisify as promisify3 } from "node:util";
+
+// src/shell.ts
+import { execFile as execFile2 } from "node:child_process";
+import { promisify as promisify2 } from "node:util";
+var execFileP2 = promisify2(execFile2);
+function buildShellInvocation(command) {
+  if (process.platform === "win32") {
+    return { shell: "cmd.exe", args: ["/d", "/s", "/c", `"${command}"`], verbatim: true };
+  }
+  return { shell: "/bin/sh", args: ["-c", command], verbatim: false };
+}
+
+// src/openspec/fetch-instructions.ts
+var execFileP3 = promisify3(execFile3);
+async function runOpenSpecJson(command, cwd) {
+  const { shell, args, verbatim } = buildShellInvocation(command);
+  let stdout;
+  try {
+    const run = await execFileP3(shell, args, {
+      cwd,
+      windowsHide: true,
+      windowsVerbatimArguments: verbatim,
+      maxBuffer: 10 * 1024 * 1024
+    });
+    stdout = run.stdout;
+  } catch (err) {
+    throw new Error(`'${command}' failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    throw new Error(`'${command}' did not print valid JSON.`);
+  }
+}
+async function fetchInstructions(changeId, cwd, artifactId) {
+  return runOpenSpecJson(`openspec instructions ${artifactId} --change ${changeId} --json`, cwd);
+}
+async function fetchStatus(changeId, cwd) {
+  return runOpenSpecJson(`openspec status --json --change ${changeId}`, cwd);
+}
+
+// src/openspec/tasks-parser.ts
+var CHECKBOX_RE = /^-\s*\[([ xX])\]\s*(.+?)\s*$/;
+var ID_RE = /^(\d+(?:\.\d+)*)\s+(.*)$/;
+var COVERS_RE = /^\s*<!--\s*covers:\s*(\S+\/\S+)\s*::\s*(.+?)\s*::\s*(.+?)\s*-->\s*$/;
+function parseCoversAnnotation(line) {
+  const match = line.match(COVERS_RE);
+  if (!match) return void 0;
+  const [, groupCapability, requirementTitle, scenarioTitle] = match;
+  const slashIndex = groupCapability.indexOf("/");
+  if (slashIndex === -1) return void 0;
+  return buildScenarioId(
+    groupCapability.slice(0, slashIndex),
+    groupCapability.slice(slashIndex + 1),
+    requirementTitle,
+    scenarioTitle
+  );
+}
+function parseTasksMarkdown(content) {
+  const lines = content.split("\n");
+  const items = [];
+  let fallbackIndex = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const checkbox = lines[i].match(CHECKBOX_RE);
+    if (!checkbox) continue;
+    const [, mark, rest] = checkbox;
+    const idMatch = rest.match(ID_RE);
+    fallbackIndex++;
+    const id = idMatch ? idMatch[1] : String(fallbackIndex);
+    const textParts = [idMatch ? idMatch[2] : rest];
+    let coversId;
+    let next = i + 1;
+    while (next < lines.length && !CHECKBOX_RE.test(lines[next]) && !/^#{1,6}\s/.test(lines[next])) {
+      const covers = parseCoversAnnotation(lines[next]);
+      if (covers) coversId = covers;
+      else if (lines[next].trim().length > 0) textParts.push(lines[next].trim());
+      next++;
+    }
+    items.push({ id, text: textParts.join(" "), checked: mark.toLowerCase() === "x", coversId });
+  }
+  return items;
+}
+
+// src/openspec/steps-cli.ts
+var EXIT_OK2 = 0;
+var EXIT_USAGE_ERROR2 = 3;
+async function readTasksMarkdown(resolvedOutputPath) {
+  try {
+    return await fs7.readFile(resolvedOutputPath, "utf-8");
+  } catch {
+    return void 0;
+  }
+}
+async function runSteps(opts, io) {
+  if (!opts.changeId) {
+    io.writeErr("ERROR: dod-guard steps needs a change id.\n");
+    return EXIT_USAGE_ERROR2;
+  }
+  let resolvedOutputPath;
+  try {
+    resolvedOutputPath = (await fetchInstructions(opts.changeId, opts.cwd, "tasks")).resolvedOutputPath;
+  } catch (err) {
+    io.writeErr(`ERROR: could not resolve tasks.md for "${opts.changeId}": ${err.message}
+`);
+    return EXIT_USAGE_ERROR2;
+  }
+  const content = await readTasksMarkdown(resolvedOutputPath);
+  if (content === void 0) {
+    io.writeErr(`ERROR: change "${opts.changeId}" has no tasks.md at ${resolvedOutputPath}.
+`);
+    return EXIT_USAGE_ERROR2;
+  }
+  const items = parseTasksMarkdown(content);
+  const scenarios = await enumerateChangeScenarios(opts.cwd, opts.changeId);
+  const coverReports = await buildReport(opts.cwd, scenarios);
+  const steps = buildSteps(items, coverReports);
+  const { artifacts } = await fetchStatus(opts.changeId, opts.cwd);
+  const outPath = path8.join(opts.cwd, "openspec", "changes", opts.changeId, "steps.json");
+  const plan = { goal: opts.changeId, cwd: opts.cwd, plan_source: opts.changeId, plan_artifacts: artifacts, steps };
+  await fs7.writeFile(outPath, `${JSON.stringify(plan, null, 2)}
+`, "utf-8");
+  io.write(`wrote ${steps.length} step(s) to ${outPath}
+`);
+  return EXIT_OK2;
+}
+
 // src/cli.ts
 var USAGE = `dod-guard - OpenSpec scenario coverage
 
@@ -21503,7 +21675,11 @@ COMMANDS
                                       the whole baseline, and a change-scoped run
                                       only sees its own scenarios.
                                       --cwd=<dir> overrides the working directory.
-  (steps lands in a follow-up commit)
+  steps <change-id>                  Derive openspec/changes/<id>/steps.json from
+                                      that change's tasks.md, binding each task's
+                                      verify_cmd through dod-guard cover where a
+                                      <!-- covers: --> annotation names a scenario.
+                                      --cwd=<dir> overrides the working directory.
 `;
 function parseArgs(argv) {
   const flags = {};
@@ -21528,7 +21704,7 @@ var defaultIo = {
   write: (s) => process.stdout.write(s),
   writeErr: (s) => process.stderr.write(s)
 };
-var EXIT_USAGE_ERROR2 = 3;
+var EXIT_USAGE_ERROR3 = 3;
 var COMMANDS = {
   cover: (positional, flags, io) => runCover(
     {
@@ -21538,7 +21714,8 @@ var COMMANDS = {
       writeBaseline: flags["write-baseline"] === true
     },
     io
-  )
+  ),
+  steps: (positional, flags, io) => runSteps({ cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(), changeId: positional[0] }, io)
 };
 async function runCli(argv, io = defaultIo) {
   const { command, flags, positional } = parseArgs(argv);
@@ -21552,14 +21729,14 @@ async function runCli(argv, io = defaultIo) {
 
 `);
     io.writeErr(USAGE);
-    return EXIT_USAGE_ERROR2;
+    return EXIT_USAGE_ERROR3;
   }
   try {
     return await handler(positional, flags, io);
   } catch (err) {
     io.writeErr(`ERROR: ${errorMessage(err)}
 `);
-    return EXIT_USAGE_ERROR2;
+    return EXIT_USAGE_ERROR3;
   }
 }
 function isCliInvocation(argv) {
@@ -21567,8 +21744,8 @@ function isCliInvocation(argv) {
 }
 
 // src/index.ts
-var _dirname = path7.dirname(fileURLToPath(import.meta.url));
-var _pkgPath = path7.join(_dirname, "..", "package.json");
+var _dirname = path9.dirname(fileURLToPath(import.meta.url));
+var _pkgPath = path9.join(_dirname, "..", "package.json");
 var _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 var server = new McpServer({ name: "dod-guard", version: _pkg.version });
 var _filename = fileURLToPath(import.meta.url);

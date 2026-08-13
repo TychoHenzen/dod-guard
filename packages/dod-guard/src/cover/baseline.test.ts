@@ -24,6 +24,7 @@ function report(scenarioId: string, outcome: ScenarioReport["outcome"]): Scenari
     scenarioTitle: "s",
     outcome,
     note: "",
+    runCommand: undefined,
   };
 }
 

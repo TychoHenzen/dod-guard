@@ -7,6 +7,7 @@ import { type EntryPointsFile, entryPointsForGroup, loadEntryPoints } from "./en
 import type { EnumeratedScenario } from "./enumerate.js";
 import { scanMarkers } from "./markers.js";
 import { checkReachability } from "./reachability.js";
+import { buildTestRunCommand } from "./run-command.js";
 
 export type Outcome = "covered-and-integrated" | "covered-but-not-integrated" | "unwired" | "failed";
 
@@ -18,6 +19,8 @@ export interface ScenarioReport {
   scenarioTitle: string;
   outcome: Outcome;
   note: string;
+  /** The bound test's whole-file run command - absent when unwired. */
+  runCommand: string | undefined;
 }
 
 interface BuildContext {
@@ -26,26 +29,26 @@ interface BuildContext {
   entryPoints: EntryPointsFile;
 }
 
-async function resolveOutcome(
-  ctx: BuildContext,
-  scenario: EnumeratedScenario,
-): Promise<{ outcome: Outcome; note: string }> {
+type ResolvedOutcome = { outcome: Outcome; note: string; runCommand: string | undefined };
+
+async function resolveOutcome(ctx: BuildContext, scenario: EnumeratedScenario): Promise<ResolvedOutcome> {
   let markers = ctx.markersByGroup.get(scenario.group);
   if (!markers) {
     markers = await scanMarkers(ctx.cwd, scenario.group);
     ctx.markersByGroup.set(scenario.group, markers);
   }
-
   const binding = markers.get(scenario.id);
-  if (!binding) return { outcome: "unwired", note: "no test binds this scenario" };
+  if (!binding) return { outcome: "unwired", note: "no test binds this scenario", runCommand: undefined };
 
-  return checkReachability({
+  const runCommand = buildTestRunCommand(ctx.cwd, scenario.group, binding.file);
+  const { outcome, note } = await checkReachability({
     cwd: ctx.cwd,
     group: scenario.group,
     testName: binding.testName,
     testFile: binding.file,
     entryPointFiles: entryPointsForGroup(ctx.entryPoints, scenario.group).files,
   });
+  return { outcome, note, runCommand };
 }
 
 /** Build the report for one enumeration's worth of scenarios. Scans each
@@ -56,15 +59,14 @@ export async function buildReport(cwd: string, scenarios: EnumeratedScenario[]):
   const reports: ScenarioReport[] = [];
 
   for (const scenario of scenarios) {
-    const { outcome, note } = await resolveOutcome(ctx, scenario);
+    const resolved = await resolveOutcome(ctx, scenario);
     reports.push({
       scenarioId: scenario.id,
       group: scenario.group,
       capability: scenario.capability,
       requirementTitle: scenario.requirementTitle,
       scenarioTitle: scenario.scenarioTitle,
-      outcome,
-      note,
+      ...resolved,
     });
   }
 

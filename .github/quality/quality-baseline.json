@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-13T11:45:26.371Z",
-  "total": 841,
+  "total": 846,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -93,8 +93,11 @@
     "packages/dod-guard/src/cover/reachability.ts",
     "packages/dod-guard/src/cover/report.test.ts",
     "packages/dod-guard/src/cover/report.ts",
+    "packages/dod-guard/src/cover/run-command.ts",
     "packages/dod-guard/src/cover/run.ts",
     "packages/dod-guard/src/index.ts",
+    "packages/dod-guard/src/openspec/build-steps.test.ts",
+    "packages/dod-guard/src/openspec/build-steps.ts",
     "packages/dod-guard/src/openspec/delta-sections.test.ts",
     "packages/dod-guard/src/openspec/dependency.test.ts",
     "packages/dod-guard/src/openspec/dependency.ts",
@@ -110,6 +113,10 @@
     "packages/dod-guard/src/openspec/scenario-block.ts",
     "packages/dod-guard/src/openspec/scenario-id.test.ts",
     "packages/dod-guard/src/openspec/scenario-id.ts",
+    "packages/dod-guard/src/openspec/steps-cli.test.ts",
+    "packages/dod-guard/src/openspec/steps-cli.ts",
+    "packages/dod-guard/src/openspec/tasks-parser.test.ts",
+    "packages/dod-guard/src/openspec/tasks-parser.ts",
     "packages/dod-guard/src/openspec/types.ts",
     "packages/dod-guard/src/shell.test.ts",
     "packages/dod-guard/src/shell.ts",
@@ -716,6 +723,11 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/dod-guard/src/openspec/tasks-parser.ts::complexity": 1,
+    "packages/dod-guard/src/openspec/tasks-parser.ts::else-branch": 1,
+    "packages/dod-guard/src/openspec/steps-cli.ts::function-length": 1,
+    "packages/dod-guard/src/openspec/steps-cli.test.ts::file-length": 1,
+    "packages/dod-guard/src/openspec/steps-cli.test.ts::function-length": 1
   }
 }

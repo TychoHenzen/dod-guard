@@ -1,0 +1,787 @@
+{
+  "goal": "route-skills-through-openspec",
+  "cwd": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "plan_source": "route-skills-through-openspec",
+  "plan_artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "done",
+      "requires": [
+        "specs",
+        "design"
+      ]
+    },
+    {
+      "id": "steps",
+      "outputPath": "steps.json",
+      "status": "ready",
+      "requires": [
+        "tasks"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "1.1",
+      "title": "Delete `openspec/changes/add-scenario-coverage-and-retroactive-specs/` (superseded; recoverable from commit `702c921`)",
+      "description": "Delete `openspec/changes/add-scenario-coverage-and-retroactive-specs/` (superseded; recoverable from commit `702c921`)",
+      "files": [],
+      "deps": [],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.2",
+      "title": "Rewrite this change's `proposal.md` and `design.md` to describe the proof-engine teardown and the coverage-gate rebuild",
+      "description": "Rewrite this change's `proposal.md` and `design.md` to describe the proof-engine teardown and the coverage-gate rebuild",
+      "files": [],
+      "deps": [
+        "1.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.3",
+      "title": "Rewrite this change's own `tasks.md` (this file) to match the new sequencing",
+      "description": "Rewrite this change's own `tasks.md` (this file) to match the new sequencing",
+      "files": [],
+      "deps": [
+        "1.2"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.4",
+      "title": "Delete this change's `dod.md` and `dod.md.scenario-map.json` (no `dod` artifact survives this change)",
+      "description": "Delete this change's `dod.md` and `dod.md.scenario-map.json` (no `dod` artifact survives this change)",
+      "files": [],
+      "deps": [
+        "1.3"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.5",
+      "title": "Rewrite `specs/dod-guard/steps-generation/spec.md` and `specs/dod-guard/change-scoped-skills/spec.md` (both still-unarchived ADDED capabilities of this change) for the task-bound, cover-based design",
+      "description": "Rewrite `specs/dod-guard/steps-generation/spec.md` and `specs/dod-guard/change-scoped-skills/spec.md` (both still-unarchived ADDED capabilities of this change) for the task-bound, cover-based design",
+      "files": [],
+      "deps": [
+        "1.4"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.6",
+      "title": "Rewrite `specs/dod-guard/build-skill-openspec-integration/spec.md` to drop the DoD-tree-derived `steps` requirement, keeping the plan-home and no-step-session requirements",
+      "description": "Rewrite `specs/dod-guard/build-skill-openspec-integration/spec.md` to drop the DoD-tree-derived `steps` requirement, keeping the plan-home and no-step-session requirements",
+      "files": [],
+      "deps": [
+        "1.5"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.7",
+      "title": "Delete `specs/dod-guard/generation-from-spec/spec.md` from this change's deltas. The capability itself gets a `## REMOVED Requirements` delta once the deletion it describes actually happens, written where the proof engine gets deleted below",
+      "description": "Delete `specs/dod-guard/generation-from-spec/spec.md` from this change's deltas. The capability itself gets a `## REMOVED Requirements` delta once the deletion it describes actually happens, written where the proof engine gets deleted below",
+      "files": [],
+      "deps": [
+        "1.6"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.8",
+      "title": "Add a `## REMOVED Requirements` delta for `dod-guard/trace-closure` too, written in that same pass, for the same reason",
+      "description": "Add a `## REMOVED Requirements` delta for `dod-guard/trace-closure` too, written in that same pass, for the same reason",
+      "files": [],
+      "deps": [
+        "1.7"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.1",
+      "title": "Delete `evaluate-proof.ts`, `fingerprint.ts`, `checker*.ts`, `import-gate.ts` and their tests. `buildShellInvocation`/`runCommand` were the one genuinely reusable piece (used by `fetch-instructions.ts`, needed by `cover` later) - extracted to `src/shell.ts` before the rest went",
+      "description": "Delete `evaluate-proof.ts`, `fingerprint.ts`, `checker*.ts`, `import-gate.ts` and their tests. `buildShellInvocation`/`runCommand` were the one genuinely reusable piece (used by `fetch-instructions.ts`, needed by `cover` later) - extracted to `src/shell.ts` before the rest went",
+      "files": [],
+      "deps": [
+        "1.8"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.2",
+      "title": "Strip the DoD-tree-specific portions of `author.ts`, `parser.ts`, `tree-utils.ts`, `types.ts`, `schemas.ts`, `store.ts`; delete what serves no other caller. All of them served no other caller, so all deleted outright, along with `openspec/scenario-identity.ts`, `openspec/checkability.ts`, `command-check.ts`, `format-result.ts`, and `constants.ts` (each dead code once its one caller was gone)",
+      "description": "Strip the DoD-tree-specific portions of `author.ts`, `parser.ts`, `tree-utils.ts`, `types.ts`, `schemas.ts`, `store.ts`; delete what serves no other caller. All of them served no other caller, so all deleted outright, along with `openspec/scenario-identity.ts`, `openspec/checkability.ts`, `command-check.ts`, `format-result.ts`, and `constants.ts` (each dead code once its one caller was gone)",
+      "files": [],
+      "deps": [
+        "2.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.3",
+      "title": "Delete `dod_create`, `dod_check`, `dod_refine`, `dod_add_node`, `dod_remove_node`, `dod_status`, `dod_tree`, `dod_amend`, `dod_list`, `dod_import`, `dod_generate`, `dod_store_migrate`, `dod_adversarial_gate` from `src/index.ts` (all 13)",
+      "description": "Delete `dod_create`, `dod_check`, `dod_refine`, `dod_add_node`, `dod_remove_node`, `dod_status`, `dod_tree`, `dod_amend`, `dod_list`, `dod_import`, `dod_generate`, `dod_store_migrate`, `dod_adversarial_gate` from `src/index.ts` (all 13)",
+      "files": [],
+      "deps": [
+        "2.2"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.4",
+      "title": "Delete the `check`, `status`, `tree`, `list`, `trace` CLI subcommands from `cli.ts`. `steps` deleted too rather than left half-working against a dead `trace.ts` import. The steps rebuild below reads `tasks.md` instead",
+      "description": "Delete the `check`, `status`, `tree`, `list`, `trace` CLI subcommands from `cli.ts`. `steps` deleted too rather than left half-working against a dead `trace.ts` import. The steps rebuild below reads `tasks.md` instead",
+      "files": [],
+      "deps": [
+        "2.3"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.5",
+      "title": "Delete `scripts/ci/check-trace.mjs` and its `plugin-config` CI wiring",
+      "description": "Delete `scripts/ci/check-trace.mjs` and its `plugin-config` CI wiring",
+      "files": [],
+      "deps": [
+        "2.4"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.6",
+      "title": "Delete the schema's `dod` artifact and its templates from `openspec/schemas/dod-guard-spec-driven/schema.yaml`, and `dod` from `apply.requires`",
+      "description": "Delete the schema's `dod` artifact and its templates from `openspec/schemas/dod-guard-spec-driven/schema.yaml`, and `dod` from `apply.requires`",
+      "files": [],
+      "deps": [
+        "2.5"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.7",
+      "title": "Write the deferred `## REMOVED Requirements` deltas for `dod-guard/generation-from-spec` and `dod-guard/trace-closure` (tasks 1.7, 1.8), naming exactly what got deleted",
+      "description": "Write the deferred `## REMOVED Requirements` deltas for `dod-guard/generation-from-spec` and `dod-guard/trace-closure` (tasks 1.7, 1.8), naming exactly what got deleted",
+      "files": [],
+      "deps": [
+        "2.6"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.8",
+      "title": "`npm run build -w packages/dod-guard && npm test -w packages/dod-guard` ran green with the engine gone, 212 tests and 0 failures, after a clean rebuild. Stale `dist/` output from deleted `.ts` sources had faked 71 failures on the first try",
+      "description": "`npm run build -w packages/dod-guard && npm test -w packages/dod-guard` ran green with the engine gone, 212 tests and 0 failures, after a clean rebuild. Stale `dist/` output from deleted `.ts` sources had faked 71 failures on the first try",
+      "files": [],
+      "deps": [
+        "2.7"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "17",
+      "title": "3a.1 Scenario identity: `<group>/<capability>::<requirement>||<scenario>`, reusing `extractRequirementBlocks` from `src/openspec/requirements.ts` (no second parser)",
+      "description": "3a.1 Scenario identity: `<group>/<capability>::<requirement>||<scenario>`, reusing `extractRequirementBlocks` from `src/openspec/requirements.ts` (no second parser)",
+      "files": [],
+      "deps": [
+        "2.8"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "18",
+      "title": "3a.2 Two enumeration modes: change-scoped (`openspec/changes/<id>/ specs/**/spec.md`) and whole-tree (`--all`, `openspec/specs/**/spec.md`), same report shape, same baseline",
+      "description": "3a.2 Two enumeration modes: change-scoped (`openspec/changes/<id>/ specs/**/spec.md`) and whole-tree (`--all`, `openspec/specs/**/spec.md`), same report shape, same baseline",
+      "files": [],
+      "deps": [
+        "17"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "19",
+      "title": "3a.3 Design and document the test-file marker format that binds a scenario to a named test; scan test files by regex, no execution",
+      "description": "3a.3 Design and document the test-file marker format that binds a scenario to a named test; scan test files by regex, no execution",
+      "files": [],
+      "deps": [
+        "18"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "20",
+      "title": "3a.4 Design and document `openspec/entry-points.json`, keyed by package dir. A group with no mapping, or no file, reports unwired with a reason instead of a crash",
+      "description": "3a.4 Design and document `openspec/entry-points.json`, keyed by package dir. A group with no mapping, or no file, reports unwired with a reason instead of a crash",
+      "files": [],
+      "deps": [
+        "19"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "21",
+      "title": "3a.5 Three-outcome report with reachability stubbed: unbound scenario is unwired, bound scenario is covered-but-not-integrated (placeholder until 3b)",
+      "description": "3a.5 Three-outcome report with reachability stubbed: unbound scenario is unwired, bound scenario is covered-but-not-integrated (placeholder until 3b)",
+      "files": [],
+      "deps": [
+        "20"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "22",
+      "title": "3a.6 Add the coverage-gate ratchet baseline (adopt-unseen, block-on-regression, mirroring `check-coverage.mjs`'s `readBaseline`/`writeBaseline`/`compare`)",
+      "description": "3a.6 Add the coverage-gate ratchet baseline (adopt-unseen, block-on-regression, mirroring `check-coverage.mjs`'s `readBaseline`/`writeBaseline`/`compare`)",
+      "files": [],
+      "deps": [
+        "21"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "23",
+      "title": "3a.7 Add `dod-guard cover [<change-id>] [--all] [--write-baseline]` to `cli.ts`, exit 0/1/3 matching the retired `check-trace.mjs` convention",
+      "description": "3a.7 Add `dod-guard cover [<change-id>] [--all] [--write-baseline]` to `cli.ts`, exit 0/1/3 matching the retired `check-trace.mjs` convention",
+      "files": [],
+      "deps": [
+        "22"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "24",
+      "title": "3a.8 Add `scripts/ci/check-coverage-gate.mjs` and wire it into `plugin-config` in place of the deleted `check-trace.mjs`",
+      "description": "3a.8 Add `scripts/ci/check-coverage-gate.mjs` and wire it into `plugin-config` in place of the deleted `check-trace.mjs`",
+      "files": [],
+      "deps": [
+        "23"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "25",
+      "title": "3a.9 Write the `dod-guard/coverage-gate` capability spec delta",
+      "description": "3a.9 Write the `dod-guard/coverage-gate` capability spec delta",
+      "files": [],
+      "deps": [
+        "24"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "26",
+      "title": "3b.1 Run a bound test in isolation via `--test-name-pattern`, under c8 scoped to its package's `dist/**/*.js` (mirroring `check-coverage.mjs`'s `c8Args`)",
+      "description": "3b.1 Run a bound test in isolation via `--test-name-pattern`, under c8 scoped to its package's `dist/**/*.js` (mirroring `check-coverage.mjs`'s `c8Args`)",
+      "files": [],
+      "deps": [
+        "25"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "27",
+      "title": "3b.2 Match the isolated run's per-file coverage against the package's declared entry-point files to decide covered-and-integrated vs covered-but-not-integrated",
+      "description": "3b.2 Match the isolated run's per-file coverage against the package's declared entry-point files to decide covered-and-integrated vs covered-but-not-integrated",
+      "files": [],
+      "deps": [
+        "26"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "28",
+      "title": "3b.3 A failing bound test reports as failing, folded into \"not covered\" for the ratchet",
+      "description": "3b.3 A failing bound test reports as failing, folded into \"not covered\" for the ratchet",
+      "files": [],
+      "deps": [
+        "27"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "29",
+      "title": "3b.4 Manual check: one real marker, one real entry-point declaration, confirm the outcome flips when the entry-point declaration is removed. Bound `cli.test.ts`'s `--help` test to `dod-guard/coverage-gate::cover reports a scenario's state||A marker binds a scenario to a test`: covered-and-integrated with `cli.ts` declared, covered-but-not-integrated with it removed. Both temporary edits reverted after confirming",
+      "description": "3b.4 Manual check: one real marker, one real entry-point declaration, confirm the outcome flips when the entry-point declaration is removed. Bound `cli.test.ts`'s `--help` test to `dod-guard/coverage-gate::cover reports a scenario's state||A marker binds a scenario to a test`: covered-and-integrated with `cli.ts` declared, covered-but-not-integrated with it removed. Both temporary edits reverted after confirming",
+      "files": [],
+      "deps": [
+        "28"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "30",
+      "title": "3b.5 Give the ratchet a pawl. Add a \"Tighten coverage-gate baseline\" CI step, mirroring `quality-baseline.json`'s own tighten step. It commits a scenario's improvement back once reachability can produce covered-and-integrated at all. It stays inert while nothing is covered yet, and becomes load-bearing the day something is",
+      "description": "3b.5 Give the ratchet a pawl. Add a \"Tighten coverage-gate baseline\" CI step, mirroring `quality-baseline.json`'s own tighten step. It commits a scenario's improvement back once reachability can produce covered-and-integrated at all. It stays inert while nothing is covered yet, and becomes load-bearing the day something is",
+      "files": [],
+      "deps": [
+        "29"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "31",
+      "title": "3b.6 Detect a renamed requirement or scenario title. A scenario id that was in the baseline but is missing from the current run is an orphan. `compareToBaseline` only iterates current scenarios, so a rename today silently re-adopts the new id at whatever outcome `cover` finds. A covered-and-integrated scenario can drop to unwired with no regression reported, because the old id and the new id never collide in the comparison",
+      "description": "3b.6 Detect a renamed requirement or scenario title. A scenario id that was in the baseline but is missing from the current run is an orphan. `compareToBaseline` only iterates current scenarios, so a rename today silently re-adopts the new id at whatever outcome `cover` finds. A covered-and-integrated scenario can drop to unwired with no regression reported, because the old id and the new id never collide in the comparison",
+      "files": [],
+      "deps": [
+        "30"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.1",
+      "title": "Add the \"a task binds to a scenario through an annotation\" requirement to `specs/dod-guard/steps-generation/spec.md` (done - see the two new scenarios already in that file) and confirm `openspec validate route-skills-through-openspec --strict --no-interactive` still passes",
+      "description": "Add the \"a task binds to a scenario through an annotation\" requirement to `specs/dod-guard/steps-generation/spec.md` (done - see the two new scenarios already in that file) and confirm `openspec validate route-skills-through-openspec --strict --no-interactive` still passes",
+      "files": [],
+      "deps": [
+        "31"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.2",
+      "title": "Write `packages/dod-guard/src/openspec/tasks-parser.ts`: parse `tasks.md` into ordered items, each carrying its checkbox state, text, and an optional `covers` scenario id read from the `<!-- covers: <group>/<capability> :: <requirement> :: <scenario> -->` annotation on the line below it. No second markdown parser - reuse whatever line-scanning approach `cover/markers.ts` already established for the same annotation shape in test files.",
+      "description": "Write `packages/dod-guard/src/openspec/tasks-parser.ts`: parse `tasks.md` into ordered items, each carrying its checkbox state, text, and an optional `covers` scenario id read from the `<!-- covers: <group>/<capability> :: <requirement> :: <scenario> -->` annotation on the line below it. No second markdown parser - reuse whatever line-scanning approach `cover/markers.ts` already established for the same annotation shape in test files.",
+      "files": [],
+      "deps": [
+        "4.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.3",
+      "title": "Write `packages/dod-guard/src/openspec/build-steps.ts`: `buildSteps(tasksItems, coverReports)` maps each parsed item to a step object (`id`, `title` from the task text, `description`, `files: []`, `deps` naming the immediately preceding step's id, `verify_surface: \"code\"`, `status: \"pending\"`). An item with a `covers` id whose `coverReports` entry is covered-and-integrated or covered-but-not-integrated gets that scenario's bound test's run command as `verify_cmd` and `manual_required: false`. Every other item (no annotation, or annotation naming an unwired/failed/absent scenario) gets `verify_cmd: \"\"` and `manual_required: true`.",
+      "description": "Write `packages/dod-guard/src/openspec/build-steps.ts`: `buildSteps(tasksItems, coverReports)` maps each parsed item to a step object (`id`, `title` from the task text, `description`, `files: []`, `deps` naming the immediately preceding step's id, `verify_surface: \"code\"`, `status: \"pending\"`). An item with a `covers` id whose `coverReports` entry is covered-and-integrated or covered-but-not-integrated gets that scenario's bound test's run command as `verify_cmd` and `manual_required: false`. Every other item (no annotation, or annotation naming an unwired/failed/absent scenario) gets `verify_cmd: \"\"` and `manual_required: true`.",
+      "files": [],
+      "deps": [
+        "4.2"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.4",
+      "title": "Write `packages/dod-guard/src/openspec/steps-cli.ts`. It resolves `tasks.md`'s path for a change id through the OpenSpec CLI, the same way `cover/run.ts` already does. It never composes `openspec/changes/<id>/tasks.md` from string parts. It runs `dod-guard cover <change-id>` to get `coverReports`, calls `buildSteps`, and writes `openspec/changes/<change-id>/steps.json`. That file holds `goal`, `cwd`, `plan_source` set to the change id, and `plan_artifacts` from `openspec status --json --change <id>`. It exits 0 on success and 3 when the change has no `tasks.md` or argv is malformed.",
+      "description": "Write `packages/dod-guard/src/openspec/steps-cli.ts`. It resolves `tasks.md`'s path for a change id through the OpenSpec CLI, the same way `cover/run.ts` already does. It never composes `openspec/changes/<id>/tasks.md` from string parts. It runs `dod-guard cover <change-id>` to get `coverReports`, calls `buildSteps`, and writes `openspec/changes/<change-id>/steps.json`. That file holds `goal`, `cwd`, `plan_source` set to the change id, and `plan_artifacts` from `openspec status --json --change <id>`. It exits 0 on success and 3 when the change has no `tasks.md` or argv is malformed.",
+      "files": [],
+      "deps": [
+        "4.3"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.5",
+      "title": "Wire `steps` into `cli.ts`'s `COMMANDS` map, same shape as `cover`'s entry",
+      "description": "Wire `steps` into `cli.ts`'s `COMMANDS` map, same shape as `cover`'s entry",
+      "files": [],
+      "deps": [
+        "4.4"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.6",
+      "title": "Write `packages/dod-guard/src/openspec/steps-cli.test.ts`. Give it one test per scenario in `steps-generation/spec.md`, seven in total, including the two the annotation requirement adds. Each test carries the matching `// covers:` marker. Each calls `runCli([\"steps\", ...])` rather than importing `build-steps.ts` directly. `dod-guard cover`'s entry-point check only reaches `covered-and-integrated` through the CLI path. So the marker's THEN clause must name `steps-cli.test.js`, not a direct import of the generator",
+      "description": "Write `packages/dod-guard/src/openspec/steps-cli.test.ts`. Give it one test per scenario in `steps-generation/spec.md`, seven in total, including the two the annotation requirement adds. Each test carries the matching `// covers:` marker. Each calls `runCli([\"steps\", ...])` rather than importing `build-steps.ts` directly. `dod-guard cover`'s entry-point check only reaches `covered-and-integrated` through the CLI path. So the marker's THEN clause must name `steps-cli.test.js`, not a direct import of the generator",
+      "files": [],
+      "deps": [
+        "4.5"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.7",
+      "title": "Declare `packages/dod-guard/src/cli.ts` as this capability's entry point in `openspec/entry-points.json` if it is not already listed (it is, from the coverage-gate work - confirm, do not duplicate)",
+      "description": "Declare `packages/dod-guard/src/cli.ts` as this capability's entry point in `openspec/entry-points.json` if it is not already listed (it is, from the coverage-gate work - confirm, do not duplicate)",
+      "files": [],
+      "deps": [
+        "4.6"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.8",
+      "title": "`npm run build -w packages/dod-guard && npm test -w packages/dod-guard` green; `dod-guard cover route-skills-through-openspec` reports every new steps-generation scenario covered-and-integrated; `dod-guard steps route-skills-through-openspec` writes a real `steps.json` mixing bound and manual steps",
+      "description": "`npm run build -w packages/dod-guard && npm test -w packages/dod-guard` green; `dod-guard cover route-skills-through-openspec` reports every new steps-generation scenario covered-and-integrated; `dod-guard steps route-skills-through-openspec` writes a real `steps.json` mixing bound and manual steps",
+      "files": [],
+      "deps": [
+        "4.7"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.9",
+      "title": "Rebundle and regenerate `.github/quality/coverage-gate-baseline.json` via `dod-guard cover --all --write-baseline`",
+      "description": "Rebundle and regenerate `.github/quality/coverage-gate-baseline.json` via `dod-guard cover --all --write-baseline`",
+      "files": [],
+      "deps": [
+        "4.8"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.1",
+      "title": "Rewrite `/interview`: drop the DoD authoring policy, the `dod_create` fallback, the `docs/plans/` path; add scenario-writing and test-binding guidance",
+      "description": "Rewrite `/interview`: drop the DoD authoring policy, the `dod_create` fallback, the `docs/plans/` path; add scenario-writing and test-binding guidance",
+      "files": [],
+      "deps": [
+        "4.9"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.2",
+      "title": "**Bootstrap.** Rewrite `packages/dod-guard/skills/step-by-step/SKILL.md`: - Delete the \"DoD subtree proofs\" section (lines ~137-143) outright. A bound step's `verify_cmd` is now the scenario's test command directly; there is no subtree command left to document. - In Finishing, replace the `dod-guard trace` paragraph with a `dod-guard cover <change-id>` run. Exit 0 means every scenario matches or improves on the coverage-gate baseline. Exit 1 means one scenario regressed. Exit 3 means usage error. On exit 1 or 3, stop and report the regression without archiving. On exit 0, run `openspec archive <change-id> --yes`. - Delete every `.step-session/`, `progress.log`, and `plan_mtime` reference; drop the plan-file (non-OpenSpec) session branch in \"Before you start\" and Persistence, keeping only the OpenSpec-change session shape. - Confirm `node scripts/ci/check-skill-hygiene.mjs --rule=no-step-session` and `--rule=plan-home` both exit 0 against the rewritten file",
+      "description": "**Bootstrap.** Rewrite `packages/dod-guard/skills/step-by-step/SKILL.md`: - Delete the \"DoD subtree proofs\" section (lines ~137-143) outright. A bound step's `verify_cmd` is now the scenario's test command directly; there is no subtree command left to document. - In Finishing, replace the `dod-guard trace` paragraph with a `dod-guard cover <change-id>` run. Exit 0 means every scenario matches or improves on the coverage-gate baseline. Exit 1 means one scenario regressed. Exit 3 means usage error. On exit 1 or 3, stop and report the regression without archiving. On exit 0, run `openspec archive <change-id> --yes`. - Delete every `.step-session/`, `progress.log`, and `plan_mtime` reference; drop the plan-file (non-OpenSpec) session branch in \"Before you start\" and Persistence, keeping only the OpenSpec-change session shape. - Confirm `node scripts/ci/check-skill-hygiene.mjs --rule=no-step-session` and `--rule=plan-home` both exit 0 against the rewritten file",
+      "files": [],
+      "deps": [
+        "5.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.3",
+      "title": "Strip `/cheap-step`'s `.step-session` and `progress.log` references",
+      "description": "Strip `/cheap-step`'s `.step-session` and `progress.log` references",
+      "files": [],
+      "deps": [
+        "5.2"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.4",
+      "title": "Move `/quality-refactor` onto a change with `skip_specs: true`, waves into `tasks.md`, plan into the change's `steps.json`, judgment into `design.md`",
+      "description": "Move `/quality-refactor` onto a change with `skip_specs: true`, waves into `tasks.md`, plan into the change's `steps.json`, judgment into `design.md`",
+      "files": [],
+      "deps": [
+        "5.3"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.5",
+      "title": "Give `/ratchet` a change id; close on `dod-guard cover` reporting zero regressions, then `openspec archive`",
+      "description": "Give `/ratchet` a change id; close on `dod-guard cover` reporting zero regressions, then `openspec archive`",
+      "files": [],
+      "deps": [
+        "5.4"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.6",
+      "title": "Give `/adversarial-workflow` a change id; move its four GO/REVISE/STOP verdicts into `design.md`; close on cover then archive",
+      "description": "Give `/adversarial-workflow` a change id; move its four GO/REVISE/STOP verdicts into `design.md`; close on cover then archive",
+      "files": [],
+      "deps": [
+        "5.5"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.7",
+      "title": "Make `/blind-rewrite` write the code contract as the change's spec delta before deletion, leave only quarantine in `.blind/`",
+      "description": "Make `/blind-rewrite` write the code contract as the change's spec delta before deletion, leave only quarantine in `.blind/`",
+      "files": [],
+      "deps": [
+        "5.6"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.8",
+      "title": "Make each `/tighten` target open a change; reduce the ledger to a scanner queue closing on the target's change archiving",
+      "description": "Make each `/tighten` target open a change; reduce the ledger to a scanner queue closing on the target's change archiving",
+      "files": [],
+      "deps": [
+        "5.7"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.9",
+      "title": "Drop the `dod_create` reference from `/test-integrity-checker`",
+      "description": "Drop the `dod_create` reference from `/test-integrity-checker`",
+      "files": [],
+      "deps": [
+        "5.8"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.10",
+      "title": "Drop dod-guard tool-name references from `/clean-house`",
+      "description": "Drop dod-guard tool-name references from `/clean-house`",
+      "files": [],
+      "deps": [
+        "5.9"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "5.11",
+      "title": "Update `check-skill-hygiene.mjs`'s rule set for the new vocabulary: - Retire `dod-instruction`, `schema-steps-deps`, and `interview-fetches`. Each one polices a deleted DoD schema artifact or fetch that no longer exists. Delete each rule from `RULES`, its fixture cases in `check-skill-hygiene.test.mjs`, and any now-unused fixture helpers in `fixtures/skill-hygiene.mjs` - Fix `closing-gate` in `skill-hygiene-rules.mjs`: it still checks for `dod-guard trace` before `openspec archive`; change it to `dod-guard cover` before `openspec archive`, matching `change-scoped-skills`'s spec. Update both `closing-gate` fixture cases in `check-skill-hygiene.test.mjs` and the `goodTree` fixture in `fixtures/skill-hygiene.mjs` (lines ~52-55, which still say `dod-guard trace`) - Extend `no-legacy-fallback` to also fail when a skill claims `/interview` generates or builds a DoD. This matches `change-scoped-skills`'s \"no skill claims interview builds a DoD\" scenario. Add one breaking and one passing fixture case for it - Confirm the meta-test (\"covers every rule the script defines\") still passes with the new rule count",
+      "description": "Update `check-skill-hygiene.mjs`'s rule set for the new vocabulary: - Retire `dod-instruction`, `schema-steps-deps`, and `interview-fetches`. Each one polices a deleted DoD schema artifact or fetch that no longer exists. Delete each rule from `RULES`, its fixture cases in `check-skill-hygiene.test.mjs`, and any now-unused fixture helpers in `fixtures/skill-hygiene.mjs` - Fix `closing-gate` in `skill-hygiene-rules.mjs`: it still checks for `dod-guard trace` before `openspec archive`; change it to `dod-guard cover` before `openspec archive`, matching `change-scoped-skills`'s spec. Update both `closing-gate` fixture cases in `check-skill-hygiene.test.mjs` and the `goodTree` fixture in `fixtures/skill-hygiene.mjs` (lines ~52-55, which still say `dod-guard trace`) - Extend `no-legacy-fallback` to also fail when a skill claims `/interview` generates or builds a DoD. This matches `change-scoped-skills`'s \"no skill claims interview builds a DoD\" scenario. Add one breaking and one passing fixture case for it - Confirm the meta-test (\"covers every rule the script defines\") still passes with the new rule count",
+      "files": [],
+      "deps": [
+        "5.10"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "6.1",
+      "title": "Remove `.step-session/` from `.gitignore`, `scripts/ci/lib/fs-utils.mjs`, `quality-refactor/scripts/lib/config.mjs`",
+      "description": "Remove `.step-session/` from `.gitignore`, `scripts/ci/lib/fs-utils.mjs`, `quality-refactor/scripts/lib/config.mjs`",
+      "files": [],
+      "deps": [
+        "5.11"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "6.2",
+      "title": "Rewrite `packages/dod-guard/CLAUDE.md`: it documents 10 predicate types, `checker.ts`, `evaluate-proof.ts`, `fingerprint.ts`, and `dod_check` - none of which exist. Replace the Architecture, \"Core principle\", \"Predicate types\", \"Proof categories\", \"Proof execution flow\", \"File responsibilities\", \"MCP tools\", and \"Adding a new predicate type\" sections with the `cover`/`steps` architecture: scenario identity, the marker convention, entry-point declaration, the coverage-gate ratchet, and the current file responsibility table",
+      "description": "Rewrite `packages/dod-guard/CLAUDE.md`: it documents 10 predicate types, `checker.ts`, `evaluate-proof.ts`, `fingerprint.ts`, and `dod_check` - none of which exist. Replace the Architecture, \"Core principle\", \"Predicate types\", \"Proof categories\", \"Proof execution flow\", \"File responsibilities\", \"MCP tools\", and \"Adding a new predicate type\" sections with the `cover`/`steps` architecture: scenario identity, the marker convention, entry-point declaration, the coverage-gate ratchet, and the current file responsibility table",
+      "files": [],
+      "deps": [
+        "6.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "6.3",
+      "title": "Update `packages/dod-guard/README.md` and `USAGE.md` for the same `cover`/`steps` model",
+      "description": "Update `packages/dod-guard/README.md` and `USAGE.md` for the same `cover`/`steps` model",
+      "files": [],
+      "deps": [
+        "6.2"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "6.4",
+      "title": "Delete the DoD markdown format spec and predicate reference under `packages/dod-guard/docs/`",
+      "description": "Delete the DoD markdown format spec and predicate reference under `packages/dod-guard/docs/`",
+      "files": [],
+      "deps": [
+        "6.3"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "6.5",
+      "title": "Fold `packages/dod-guard/docs/shortcomings.md`'s findings into this change's own `design.md` Context, then delete the file - it currently describes a system that no longer exists",
+      "description": "Fold `packages/dod-guard/docs/shortcomings.md`'s findings into this change's own `design.md` Context, then delete the file - it currently describes a system that no longer exists",
+      "files": [],
+      "deps": [
+        "6.4"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "6.6",
+      "title": "Update four spots in the root `CLAUDE.md`. The CLI table gains `steps` and `cover` and drops `check`, `status`, `tree`, `list`, and `trace`. The plugin-config gate table's `check-trace.mjs` row becomes `check-coverage-gate.mjs`. The Ratchets table gains the coverage-gate baseline. The `evomcp -> dod-guard` cross-package example command changes from `dod_check --node-path=0.children.1` to a `dod-guard cover`-bound test's run command",
+      "description": "Update four spots in the root `CLAUDE.md`. The CLI table gains `steps` and `cover` and drops `check`, `status`, `tree`, `list`, and `trace`. The plugin-config gate table's `check-trace.mjs` row becomes `check-coverage-gate.mjs`. The Ratchets table gains the coverage-gate baseline. The `evomcp -> dod-guard` cross-package example command changes from `dod_check --node-path=0.children.1` to a `dod-guard cover`-bound test's run command",
+      "files": [],
+      "deps": [
+        "6.5"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    }
+  ]
+}

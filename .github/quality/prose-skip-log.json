@@ -76,5 +76,13 @@
     "at": "2026-08-08T11:53:34.992Z",
     "acknowledged": true,
     "acknowledgement": "Reviewed: scratch output of a skill-migrate run. The file is the blind writer's candidate SKILL.md, judged by the skill's own gates (overlap, gap audit, regression check), not by the prose linter. It never ships from this path."
+  },
+  {
+    "file": "packages/dod-guard/src/cover/reachability.ts",
+    "reasons": [],
+    "exempt": false,
+    "at": "2026-08-13T11:46:32.494Z",
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: the header comment documents four separate empirically-verified Windows/c8/node:test pitfalls (shell:true dropping --test-name-pattern, c8's absolute source-mapped paths, per-function hit counts vs file-level coverage, and NODE_TEST_CONTEXT re-entry). Each claim carries the concrete repro that proved it. Splitting them into shorter sentences would separate a claim from the evidence that backs it, which is the harder cost here."
   }
 ]

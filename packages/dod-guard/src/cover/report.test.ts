@@ -77,6 +77,7 @@ function report(scenarioId: string, outcome: ScenarioReport["outcome"]): Scenari
     scenarioTitle: scenarioId,
     outcome,
     note: "",
+    runCommand: undefined,
   };
 }
 
