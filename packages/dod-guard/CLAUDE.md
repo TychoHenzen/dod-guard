@@ -17,12 +17,12 @@ The bundled output is `dist/bundle.js` - this is what ships as the package entry
 
 ## Architecture
 
-**dod-guard** is a scenario-coverage tool, not a proof-tree verifier. It has two
-surfaces: `cover` checks whether OpenSpec scenarios are bound to tests and those
-tests actually execute the package's declared entry points; `steps` derives a
-`steps.json` execution plan from a change's `tasks.md`, binding each task's
-`verify_cmd` through `cover` where a `<!-- covers: -->` annotation names a
-scenario.
+**dod-guard** is a scenario-coverage tool, not a proof-tree verifier. It has
+two surfaces. `cover` checks whether OpenSpec scenarios are bound to tests.
+It also checks whether those tests actually execute the package's declared
+entry points. `steps` derives a `steps.json` execution plan from a change's
+`tasks.md`. It binds each task's `verify_cmd` through `cover` where a
+`<!-- covers: -->` annotation names a scenario.
 
 ### Two entry points, one binary
 
@@ -44,12 +44,13 @@ title>||<scenario title>`. Built by `buildScenarioId()` in
 `src/openspec/scenario-id.ts`.
 
 **The three-outcome report.** `cover` resolves each scenario to one of four
-`Outcome` values (`src/cover/report.ts`): `unwired` (no test binds it),
-`covered-but-not-integrated` (a bound test passed but never reached a declared
-entry point, or the package declares none), `covered-and-integrated` (a bound
-test passed and reached a declared entry point), or `failed` (the bound test
-failed, or no test with that name exists). `failed` and `unwired` rank equally
-for the ratchet - a failing bound test proves nothing more than no test at all.
+`Outcome` values, defined in `src/cover/report.ts`. `unwired` means no test
+binds it. `covered-but-not-integrated` means a bound test passed but never
+reached a declared entry point, or the package declares none. `covered-and-integrated`
+means a bound test passed and reached a declared entry point. `failed` means
+the bound test failed, or no test with that name exists. `failed` and
+`unwired` rank equally for the ratchet. A failing bound test proves nothing
+more than no test at all.
 
 **The `// covers:` test marker.** A scenario binds to a test by a comment
 directly above the `test(`/`it(` call, read by regex, never by running the
@@ -58,19 +59,19 @@ test file. Format, quoted from `markers.ts`'s own header comment:
 
 **`openspec/entry-points.json`.** The files a project considers user-facing for
 each package, keyed by package directory (`entry-points.ts`). A package absent
-from this file gets an honest report - every one of its bound scenarios reports
-`covered-but-not-integrated` with a reason - rather than a crash or a silent
-pass.
+from this file gets an honest report instead of a crash or a silent pass.
+Every one of its bound scenarios reports `covered-but-not-integrated` with a
+reason.
 
 **The coverage-gate ratchet.** `.github/quality/coverage-gate-baseline.json`
-adopts a scenario the baseline has never seen at whatever outcome `cover` finds
-it at, and fails only when a scenario the baseline already scored regresses to
-a worse one (`baseline.ts`). `cover` also reports `improved` scenarios (rose
-above their baseline outcome) and, on an `--all` run, `orphaned` baseline ids
-(present in the baseline but absent from the current run - a rename or
-deletion, report-only). This is the same adopt-unseen/block-on-regression
+adopts a scenario the baseline has never seen, at whatever outcome `cover`
+finds it at (`baseline.ts`). It fails a run only when a scenario the baseline
+already scored regresses to a worse one. `cover` also reports `improved`
+scenarios, which rose above their baseline outcome. On an `--all` run it
+reports `orphaned` baseline ids too: present in the baseline, absent from the
+current run, report-only. This is the same adopt-unseen/block-on-regression
 pattern the root CLAUDE.md's Ratchets table documents for
-`coverage-baseline.json`; see that table for how CI invokes it.
+`coverage-baseline.json`. See that table for how CI invokes it.
 
 ### File responsibilities
 

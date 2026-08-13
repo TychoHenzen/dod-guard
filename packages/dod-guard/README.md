@@ -1,29 +1,30 @@
 # dod-guard
 
 An OpenSpec scenario-coverage tool for Claude Code. It answers one question a
-model cannot honestly answer about its own work: did a real test, not the
-agent that wrote the feature, actually exercise this scenario through
-something a user can reach?
+model cannot honestly answer about its own work. Did a real test exercise
+this scenario through something a user can reach? Not the agent that wrote
+the feature. A real, pre-existing test.
 
 ## What it does
 
 - **Scenario-to-test binding** - a scenario in `openspec/specs/*/spec.md`
-  counts as covered only when a `// covers:` marker in a test file names it,
-  read from the test file itself, never inferred by title match
+  counts as covered only when a `// covers:` marker in a test file names it.
+  The marker comes from the test file itself. Nothing infers a binding by
+  title match
 - **Reachability, not just execution** - a bound test that imports a function
   and calls it directly is not the same as a user reaching that function. The
   bound test runs under coverage instrumentation, scoped to its package's
   compiled output, and `cover` checks whether a project-declared entry point
   actually executed
-- **Four honest outcomes** - every scenario resolves to `unwired` (no test
-  binds it), `covered-but-not-integrated` (a bound test passed but never
-  reached a declared entry point), `covered-and-integrated` (a bound test
-  passed and reached one), or `failed` (the bound test failed, or no test with
-  that name exists)
+- **Four honest outcomes** - every scenario resolves to one of four states.
+  `unwired` means no test binds it. `covered-but-not-integrated` means a bound
+  test passed but never reached a declared entry point. `covered-and-integrated`
+  means a bound test passed and reached one. `failed` means the bound test
+  failed, or no test with that name exists
 - **Ratcheted, not a one-shot pass/fail** - `.github/quality/coverage-gate-baseline.json`
-  adopts a scenario it has never scored at whatever outcome `cover` finds, and
-  only fails when a scenario it already scored regresses to a worse outcome.
-  Existing debt is allowed; making it worse is not
+  adopts a scenario it has never scored at whatever outcome `cover` finds. It
+  fails a run only when a scenario it already scored regresses to a worse
+  outcome. Existing debt is allowed. Making it worse is not
 - **A generated execution plan** - `steps` reads a change's `tasks.md` and
   writes `openspec/changes/<id>/steps.json`, binding each task's `verify_cmd`
   through `cover` where a `<!-- covers: -->` annotation names a scenario
@@ -99,8 +100,8 @@ Exit codes:
 | `steps` | wrote `steps.json` | `3` usage error |
 
 `dod-guard cover <change-id>` scoped to one change exits `0` when that
-change's scenarios show no regressions, which is what makes it usable as a
-closing gate - `/step-by-step`'s Finishing phase runs it before calling
+change's scenarios show no regressions. That is what makes it usable as a
+closing gate. `/step-by-step`'s Finishing phase runs it before calling
 `openspec archive`.
 
 ## Skills
@@ -124,9 +125,9 @@ The plugin ships twelve skills.
 
 ### `/interview`
 
-Reads the code a change touches, then questions the user one item at a time
+Reads the code a change touches. Then questions the user one item at a time
 until requirements are confirmed and a written summary is locked in. Runs an
-adversarial review of that spec, writes the resulting scenarios into an
+adversarial review of that spec. Writes the resulting scenarios into an
 OpenSpec change, and marks how each scenario binds to a test. Never
 implements - the output is a change id, handed to an executor skill.
 
@@ -137,7 +138,7 @@ before writing code or plans.
 
 Executes a confirmed multi-step plan by dispatching one fresh subagent per
 atomic step. The orchestrator holds only the current step plus a compact
-result of the last one, which removes the pressure that makes models batch
+result of the last one. That removes the pressure that makes models batch
 steps, skip verification, or wrap up early. Reads and writes
 `openspec/changes/<id>/steps.json` - an OpenSpec change id is required. Its
 Finishing phase runs `dod-guard cover` and, on a clean result, `openspec
@@ -181,28 +182,29 @@ or security concern about multi-step work.
 
 ### `/clean-house`
 
-Hunts pairs where one implementation superseded another, using git
-archaeology to decide which side is dead, rescues work that landed on the
-dead side by mistake, then deletes on approval. Backwards compatibility never
-saves a file by default - only a named live consumer does.
+Hunts pairs where one implementation superseded another. Git archaeology
+decides which side is dead. Rescues work that landed on the dead side by
+mistake, then deletes on approval. Backwards compatibility never saves a
+file by default - only a named live consumer does.
 
 Triggers: "clean house," "dedupe," "clean up old versions," "remove dead
 implementations," "consolidate duplicates," "debloat."
 
 ### `/test-integrity-checker`
 
-Audits a test file for tests written to match the implementation instead of a
-specification - logic mirroring, output blessing, weak assertions
-(`toBeDefined`/`toBeTruthy`), mock-everything tests, and missing negative
-cases - then repairs one file into an oracle backed by a demonstrated fault.
+Audits a test file for tests written to match the implementation instead of
+a specification. It looks for logic mirroring, output blessing, weak
+assertions (`toBeDefined`/`toBeTruthy`), mock-everything tests, and missing
+negative cases. Then it repairs one file into an oracle backed by a
+demonstrated fault.
 
 Triggers: "audit my tests," "are these tests real," "the tests might be
 wrong," tests that assert only truthiness, or a mutant that survived.
 
 ### `/blind-rewrite`
 
-Deletes the target first, extracts a contract of what it does (not how it
-reads), and hands that contract to an author who never sees the original.
+Deletes the target first. Extracts a contract of what it does, not how it
+reads, and hands that contract to an author who never sees the original.
 Gates the result against the deleted copy with `overlap-scan.mjs`, which
 rejects paraphrase. Covers four shapes: a new interior behind an existing
 seam, no seam yet, a dependency swap, and prose with no test harness.
@@ -233,9 +235,9 @@ outdated docs."
 ### `/skill-debug`
 
 Debugs a skill from the sessions that ran it. Locates every recent run in
-session transcripts, compacts each into a numbered trace of what the agent
-actually did, and aligns that trace against what the SKILL.md required. Every
-proposed edit cites a step number from a real run.
+session transcripts. Compacts each one into a numbered trace of what the
+agent actually did, then aligns that trace against what the SKILL.md
+required. Every proposed edit cites a step number from a real run.
 
 Triggers: "debug this skill," "why did /x do that," "the skill ignored its
 own steps."
@@ -243,9 +245,9 @@ own steps."
 ### `/skill-migrate`
 
 Migrates a SKILL.md, agent definition, CLAUDE.md, memory file, or instinct
-file to work on newer models by blind rewrite: extracts a behavioral
-contract, classifies scaffolding versus essential instructions, and has a
-blind writer rebuild the artifact from that contract. Four automated gates -
+file to work on newer models by blind rewrite. It extracts a behavioral
+contract, then sorts each instruction into scaffolding or essential. A blind
+writer rebuilds the artifact from that contract. Four automated gates -
 overlap, gap audit, and two more - must clear before the migration ships.
 
 Triggers: "migrate this skill," "migrate this agent," "tune for a newer

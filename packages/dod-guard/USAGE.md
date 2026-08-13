@@ -59,10 +59,10 @@ You have a task
 
 ### `/dod-guard:interview` - Requirements Gathering
 
-**What it does:** Reads the code the change touches, questions the user one
-item at a time, confirms a written requirements summary, runs an adversarial
-review of that spec, then writes the resulting scenarios into an OpenSpec
-change and marks how each one binds to a test. Never implements.
+**What it does:** Reads the code the change touches. Questions the user one
+item at a time, then confirms a written requirements summary. Runs an
+adversarial review of that spec. Writes the resulting scenarios into an
+OpenSpec change and marks how each one binds to a test. Never implements.
 
 **When to use:**
 - Starting any non-trivial implementation task
@@ -117,9 +117,9 @@ on a clean result, `openspec archive`.
 | Config (env, settings, deps) | Config syntax valid + system starts | "File written" without validation |
 | Structural (refactors, renames) | Tests + build + diff review | "No type errors" without import check |
 
-**Key anti-pattern:** Build passes is not the same as visual/gameplay verification. Steps
-tagged `visual` or `gameplay` require actual visual verification or explicit
-human confirmation.
+**Key anti-pattern:** Build passes is not the same as visual/gameplay
+verification. A step tagged `visual` or `gameplay` needs someone to actually
+look at it, or confirm it by hand.
 
 **Session state:** Everything lives in the committed
 `openspec/changes/<id>/steps.json` - there is no separate working-copy
@@ -132,10 +132,10 @@ first `pending` step.
 
 ### `/dod-guard:cheap-step` - Cheap-Worker Step Execution
 
-**What it does:** Same atomic-step discipline as step-by-step - same
-`steps.json`, same staleness checks, same closing gate - with one
-substitution: implementation goes to the evomcp `solve` tool (cheap DeepSeek
-workers) instead of a dispatched host agent. The host model writes the
+**What it does:** Same atomic-step discipline as step-by-step. Same
+`steps.json`, same staleness checks, same closing gate. One substitution:
+implementation goes to the evomcp `solve` tool, which runs cheap DeepSeek
+workers, instead of a dispatched host agent. The host model writes the
 instruction, runs `verify_cmd` itself, and decides the verdict.
 
 **When to use:**
@@ -146,8 +146,8 @@ instruction, runs `verify_cmd` itself, and decides the verdict.
 
 **When to skip:**
 - Visual/gameplay steps (cheap workers cannot see - those stay host-only)
-- Steps requiring architectural decisions (host model should design, not
-  verify)
+- A step that needs an architectural decision (the host model should design
+  it, not just verify it)
 - Security-sensitive code
 
 **Before you start:** call the evomcp `status` tool. If the proxy is not
@@ -195,9 +195,9 @@ obsidian-rag - but still a ratchet.
 
 **What it does:** Drives one OpenSpec change through four rounds of hostile
 review, each closing with a verdict recorded in the change's `design.md`.
-Phase 1 (Spec Review) -> Phase 2 (Test Audit) -> Phase 3 (Implementation
-Review) -> Phase 4 (Structural Cleanup). A phase holding anything but GO
-blocks the next phase from starting.
+Spec review runs first, then a test audit, then implementation review, then
+structural cleanup. A round holding anything but GO blocks the next one from
+starting.
 
 **When to use:**
 - Security-sensitive or mission-critical features
@@ -212,22 +212,22 @@ blocks the next phase from starting.
 - Single-file changes with no integration surface
 
 **Starting point:** with no change id yet, pass the task to
-`/dod-guard:interview`, which files the phase 1 gate itself. With a change id
-in hand, resume from `design.md`'s `## Adversarial gate` entries rather than
-calling interview again - restart at the lowest phase whose verdict is
-anything but GO.
+`/dod-guard:interview`, which files the spec-review gate itself. With a
+change id in hand, resume from `design.md`'s `## Adversarial gate` entries
+instead of calling interview again. Restart at the earliest round whose
+verdict is anything but GO.
 
-**Model diversity:** Phase 2 and 3 reviewers should use a different
-model/provider than the implementation author. Same model reviewing its own
-output is a rubber-stamp risk.
+**Model diversity:** the test-audit and implementation-review reviewers
+should use a different model or provider than the implementation author.
+Same model reviewing its own output is a rubber-stamp risk.
 
 ---
 
 ### `/dod-guard:clean-house` - Duplicate/Obsolete Code Removal
 
-**What it does:** Finds pairs where one implementation superseded another,
-uses git history to decide which side is dead, rescues work that landed on
-the dead side by mistake, gets approval, then deletes.
+**What it does:** Finds pairs where one implementation superseded another.
+Git history decides which side is dead. Rescues work that landed on the
+dead side by mistake. Gets approval, then deletes.
 
 **When to use:**
 - Versioned APIs coexist (`/api/v1` + `/api/v2`)
@@ -268,8 +268,8 @@ be smaller.
 
 ### `/dod-guard:blind-rewrite` - Contract-Driven Rewrite
 
-**What it does:** Deletes the target, extracts a contract of what it does
-(not how it reads), and hands that contract to an author who never sees the
+**What it does:** Deletes the target. Extracts a contract of what it does,
+not how it reads, and hands that contract to an author who never sees the
 original. Gates the result against the deleted copy with `overlap-scan.mjs`,
 which rejects paraphrase. Four shapes: new interior behind an existing seam,
 no seam yet, dependency swap, and prose with no test harness.
@@ -286,10 +286,11 @@ no seam yet, dependency swap, and prose with no test harness.
 ### `/dod-guard:test-integrity-checker` - Test Integrity Audit
 
 **What it does:** Audits a test file for tests written to match the
-implementation instead of a specification - logic mirroring, output
-blessing, weak assertions (`toBeDefined`/`toBeTruthy`), mock-everything
-tests, symmetry/inverse tests that cancel a shared bug, missing negative
-cases - then repairs one file into a test backed by a demonstrated fault.
+implementation instead of a specification. It looks for logic mirroring,
+output blessing, weak assertions (`toBeDefined`/`toBeTruthy`), mock-everything
+tests, symmetry or inverse tests that cancel a shared bug, and missing
+negative cases. Then it repairs one file into a test backed by a
+demonstrated fault.
 
 **When to use:**
 - You don't trust tests that pass
@@ -302,15 +303,15 @@ cases - then repairs one file into a test backed by a demonstrated fault.
 - Snapshot files (they copy output by design)
 
 **Where a written spec exists:** measure the tests against those
-requirements instead, via `/dod-guard:adversarial-workflow` from its phase 2.
+requirements instead, via `/dod-guard:adversarial-workflow`'s test-audit round.
 
 ---
 
 ### `/dod-guard:doc-reconcile` - Contradiction Resolution
 
-**What it does:** Finds documents that contradict each other, dates each
-conflicting claim from its real edit history, and deletes the older side
-when the dating is decisive.
+**What it does:** Finds documents that contradict each other. Dates each
+conflicting claim from its real edit history. Deletes the older side when
+the dating is decisive.
 
 **When to use:**
 - Two docs give different numbers or facts for the same thing
@@ -325,9 +326,9 @@ when the dating is decisive.
 ### `/dod-guard:skill-debug` - Skill Debugging From Transcripts
 
 **What it does:** Locates every recent run of a target skill in session
-transcripts, compacts each into a numbered trace, and aligns that trace
-against what the SKILL.md required. Every proposed edit cites a step number
-from a real run - never a guess from taste.
+transcripts. Compacts each one into a numbered trace, then aligns that
+trace against what the SKILL.md required. Every proposed edit cites a step
+number from a real run, never a guess from taste.
 
 **When to use:**
 - A skill ignored its own steps
@@ -342,11 +343,11 @@ from a real run - never a guess from taste.
 ### `/dod-guard:skill-migrate` - Skill/Agent Migration
 
 **What it does:** Migrates a SKILL.md, agent definition, CLAUDE.md, memory
-file, or instinct file to work on newer models by blind rewrite: extracts a
-behavioral contract, classifies scaffolding versus essential instructions,
-and has a blind writer rebuild the artifact. Four automated gates - including
-an overlap check against the original and a gap audit - must clear before
-the migration ships.
+file, or instinct file to work on newer models by blind rewrite. It extracts
+a behavioral contract, then sorts each instruction into scaffolding or
+essential. A blind writer rebuilds the artifact from that contract. Four
+automated gates - including an overlap check against the original and a gap
+audit - must clear before the migration ships.
 
 **When to use:**
 - "Migrate this skill/agent," "tune for a newer model," "fix skill for
@@ -386,8 +387,8 @@ Same as Pattern 1 but 90%+ cheaper. Good for routine implementation work.
                                      review, structural cleanup
 ```
 
-Interview handles Phase 1 (spec review). Adversarial-workflow takes over from
-Phase 2. Maximum quality for security/mission-critical features.
+Interview handles spec review. Adversarial-workflow takes over from the
+test-audit round. Maximum quality for security/mission-critical features.
 
 ### Pattern 4: Interview -> Ratchet (Complex Multi-Problem)
 
@@ -442,8 +443,8 @@ duplicates.
 
 ## Verification Surface Reference
 
-Not all changes verify the same way. This table helps you correctly tag
-steps and choose the right skill:
+Not all changes verify the same way. Use this table to tag a step's
+verification surface and pick the right skill:
 
 | Surface | Examples | Can be machine-verified? | Skill compatibility |
 |---------|----------|--------------------------|---------------------|
@@ -453,10 +454,9 @@ steps and choose the right skill:
 | **Config** | Env vars, deps, settings | Yes - parse + start | All skills |
 | **Structural** | Renames, refactors, file moves | Yes - tests + diff | All skills |
 
-**The golden rule:** If a change modifies visual output, gameplay behavior,
-or anything a human would need to look at to confirm, `/step-by-step` flags
-that step for human confirmation rather than accepting a passing build as
-proof.
+**The golden rule:** a change might modify visual output, gameplay behavior,
+or anything else a human would need to look at. When it does, `/step-by-step`
+flags that step for human confirmation. A passing build is not proof.
 
 ## Platform Notes
 
