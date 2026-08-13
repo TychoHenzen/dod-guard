@@ -59,7 +59,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # dod-guard's own tests shell out to the real openspec CLI
+      # (fetchInstructions/fetchStatus in src/openspec/steps-cli.test.ts).
+      - name: Install the openspec CLI
+        run: npm install -g @fission-ai/openspec@1.8.0
       - run: npm test
+        env:
+          OPENSPEC_TELEMETRY: 0
       - name: Detect releases
         id: detect
         run: node scripts/ci/detect-releases.mjs
