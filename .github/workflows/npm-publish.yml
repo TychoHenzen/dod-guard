@@ -90,9 +90,13 @@ jobs:
         run: |
           npm install -g @fission-ai/openspec@1.8.0
           openspec validate --all --strict --no-interactive
-      # dod-guard trace and its proof-tree closure check are gone; see
-      # openspec/changes/route-skills-through-openspec. dod-guard cover
-      # replaces this step once it lands.
+      # Builds and bundles dod-guard itself, because a released binary can't
+      # see this checkout's own scenarios and markers - same reason the
+      # retired check-trace.mjs did this.
+      - run: npm run build -w packages/dod-guard
+      - run: npm run bundle -w packages/dod-guard
+      - name: Every scenario's coverage state holds or improves
+        run: node scripts/ci/check-coverage-gate.mjs
 
   static-analysis:
     needs: build-test

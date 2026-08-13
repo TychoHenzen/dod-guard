@@ -1,10 +1,6 @@
 import * as assert from "node:assert/strict";
-import { execFile } from "node:child_process";
 import { describe, it } from "node:test";
-import { promisify } from "node:util";
-import { buildShellInvocation } from "./shell.js";
-
-const execFileP = promisify(execFile);
+import { buildShellInvocation, runShellCommand } from "./shell.js";
 
 const isWindows = process.platform === "win32";
 
@@ -44,46 +40,34 @@ describe("buildShellInvocation", () => {
 // "'echo' is not recognized as an internal or external command".
 
 describe("buildShellInvocation — real execution", () => {
-  async function run(command: string): Promise<{ stdout: string; code: number }> {
-    const { shell, args, verbatim } = buildShellInvocation(command);
-    try {
-      const { stdout } = await execFileP(shell, args, {
-        cwd: process.cwd(),
-        windowsHide: true,
-        windowsVerbatimArguments: verbatim,
-      });
-      return { stdout, code: 0 };
-    } catch (err: any) {
-      return { stdout: err.stdout ?? "", code: err.code ?? 1 };
-    }
-  }
-
   it("runs a simple command and captures stdout", async () => {
-    const { stdout, code } = await run("echo ok");
+    const { stdout, code } = await runShellCommand("echo ok", process.cwd());
     assert.equal(code, 0);
     assert.match(stdout, /ok/);
   });
 
   it("preserves embedded double quotes", async () => {
     // The old escaping turned this into a no-op that exited 0 with no output.
-    const { stdout, code } = await run(isWindows ? 'node -e "console.log(42)"' : "node -e 'console.log(42)'");
+    const command = isWindows ? 'node -e "console.log(42)"' : "node -e 'console.log(42)'";
+    const { stdout, code } = await runShellCommand(command, process.cwd());
     assert.equal(code, 0);
     assert.match(stdout, /42/);
   });
 
   it("supports command chaining", async () => {
-    const { stdout } = await run("echo alpha && echo beta");
+    const { stdout } = await runShellCommand("echo alpha && echo beta", process.cwd());
     assert.match(stdout, /alpha/);
     assert.match(stdout, /beta/);
   });
 
   it("supports pipes", async () => {
-    const { stdout } = await run(isWindows ? "echo needle | findstr needle" : "echo needle | grep needle");
+    const command = isWindows ? "echo needle | findstr needle" : "echo needle | grep needle";
+    const { stdout } = await runShellCommand(command, process.cwd());
     assert.match(stdout, /needle/);
   });
 
   it("propagates a non-zero exit code", async () => {
-    const { code } = await run(isWindows ? "exit /b 3" : "exit 3");
+    const { code } = await runShellCommand(isWindows ? "exit /b 3" : "exit 3", process.cwd());
     assert.equal(code, 3);
   });
 });

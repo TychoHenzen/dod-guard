@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path2) {
-      let input = path2;
+    function removeDotSegments(path5) {
+      let input = path5;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path2, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path2 && path2 !== "/" ? path2 : void 0;
+        const [path5, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path5 && path5 !== "/" ? path5 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3653,49 +3653,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative, options, skipNormalization) {
+    function resolveComponent(base, relative2, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative = parse3(serialize(relative, options), options);
+        relative2 = parse3(serialize(relative2, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative.scheme) {
-        target.scheme = relative.scheme;
-        target.userinfo = relative.userinfo;
-        target.host = relative.host;
-        target.port = relative.port;
-        target.path = removeDotSegments(relative.path || "");
-        target.query = relative.query;
+      if (!options.tolerant && relative2.scheme) {
+        target.scheme = relative2.scheme;
+        target.userinfo = relative2.userinfo;
+        target.host = relative2.host;
+        target.port = relative2.port;
+        target.path = removeDotSegments(relative2.path || "");
+        target.query = relative2.query;
       } else {
-        if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
-          target.userinfo = relative.userinfo;
-          target.host = relative.host;
-          target.port = relative.port;
-          target.path = removeDotSegments(relative.path || "");
-          target.query = relative.query;
+        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
+          target.userinfo = relative2.userinfo;
+          target.host = relative2.host;
+          target.port = relative2.port;
+          target.path = removeDotSegments(relative2.path || "");
+          target.query = relative2.query;
         } else {
-          if (!relative.path) {
+          if (!relative2.path) {
             target.path = base.path;
-            if (relative.query !== void 0) {
-              target.query = relative.query;
+            if (relative2.query !== void 0) {
+              target.query = relative2.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative.path[0] === "/") {
-              target.path = removeDotSegments(relative.path);
+            if (relative2.path[0] === "/") {
+              target.path = removeDotSegments(relative2.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative.path;
+                target.path = "/" + relative2.path;
               } else if (!base.path) {
-                target.path = relative.path;
+                target.path = relative2.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative.query;
+            target.query = relative2.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3703,7 +3703,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative.fragment;
+      target.fragment = relative2.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -6902,12 +6902,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs, exportName) {
+    function addFormats(ajv, list, fs5, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs[f]);
+        ajv.addFormat(f, fs5[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -6917,7 +6917,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync } from "node:fs";
-import * as path from "node:path";
+import * as path4 from "node:path";
 import { fileURLToPath } from "node:url";
 
 // ../../node_modules/zod/v3/helpers/util.js
@@ -7279,8 +7279,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path2, errorMaps, issueData } = params;
-  const fullPath = [...path2, ...issueData.path || []];
+  const { data, path: path5, errorMaps, issueData } = params;
+  const fullPath = [...path5, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7395,11 +7395,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path2, key) {
+  constructor(parent, value, path5, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path2;
+    this._path = path5;
     this._key = key;
   }
   get path() {
@@ -10991,10 +10991,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path2) {
-  if (!path2)
+function getElementAtPath(obj, path5) {
+  if (!path5)
     return obj;
-  return path2.reduce((acc, key) => acc?.[key], obj);
+  return path5.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11314,11 +11314,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path2, issues) {
+function prefixIssues(path5, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path2);
+    iss.path.unshift(path5);
     return iss;
   });
 }
@@ -14729,11 +14729,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path2) {
-  if (path2.length === 0) {
+function getDotPath(path5) {
+  if (path5.length === 0) {
     return "object root";
   }
-  return path2.reduce((acc, seg, index) => {
+  return path5.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -20989,15 +20989,393 @@ var StdioServerTransport = class {
   }
 };
 
+// src/cover/baseline.ts
+import { promises as fs3 } from "node:fs";
+import * as path2 from "node:path";
+
+// src/cover/markers.ts
+import { promises as fs2 } from "node:fs";
+
+// src/openspec/glob.ts
+import { promises as fs } from "node:fs";
+import * as path from "node:path";
+function segmentToRegExp(segment) {
+  const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+  return new RegExp(`^${escaped}$`);
+}
+async function listEntries(dir) {
+  try {
+    return await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+async function walkFiles(dir, segment) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path.join(dir, e.name));
+}
+async function walkDirs(dir, segment, rest) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  const results = [];
+  for (const e of entries) {
+    if (e.isDirectory() && re.test(e.name)) {
+      results.push(...await resolveSegments(path.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+async function walkDoubleStar(dir, rest) {
+  const results = await resolveSegments(dir, rest);
+  const entries = await listEntries(dir);
+  for (const e of entries) {
+    if (e.isDirectory()) {
+      results.push(...await walkDoubleStar(path.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+async function resolveSegments(dir, segments) {
+  if (segments.length === 0) return [];
+  const [segment, ...rest] = segments;
+  if (segment === "**") return walkDoubleStar(dir, rest);
+  if (rest.length === 0) return walkFiles(dir, segment);
+  return walkDirs(dir, segment, rest);
+}
+async function resolveGlob(baseDir, pattern) {
+  const segments = pattern.split(/[\\/]/).filter((s) => s.length > 0);
+  return resolveSegments(baseDir, segments);
+}
+
+// src/openspec/scenario-id.ts
+function buildScenarioId(group, capability, requirementTitle, scenarioTitle) {
+  return `${group}/${capability}::${requirementTitle}||${scenarioTitle}`;
+}
+
+// src/cover/package-dir.ts
+function packageDirForGroup(group) {
+  if (group === "openspec-dashboard") return "tools/openspec-dashboard";
+  return `packages/${group}`;
+}
+function testGlobsForGroup(group) {
+  const pkgDir = packageDirForGroup(group);
+  if (pkgDir.startsWith("packages/")) return [`${pkgDir}/src/**/*.test.ts`];
+  return [`${pkgDir}/**/*.test.js`, `${pkgDir}/**/*.test.mjs`];
+}
+
+// src/cover/markers.ts
+var MARKER_RE = /^\s*\/\/\s*covers:\s*(\S+\/\S+)\s*::\s*(.+?)\s*::\s*(.+?)\s*$/;
+var TEST_CALL_RE = /^\s*(?:test|it)\(\s*(['"`])((?:\\.|(?!\1).)*)\1/;
+function markersInFile(file, content) {
+  const lines = content.split("\n");
+  const bindings = [];
+  for (let i = 0; i < lines.length; i++) {
+    const marker = lines[i].match(MARKER_RE);
+    if (!marker) continue;
+    const [, groupCapability, requirementTitle, scenarioTitle] = marker;
+    const slashIndex = groupCapability.indexOf("/");
+    if (slashIndex === -1) continue;
+    let next = i + 1;
+    while (next < lines.length && lines[next].trim().length === 0) next++;
+    const testCall = next < lines.length ? lines[next].match(TEST_CALL_RE) : null;
+    if (!testCall) continue;
+    bindings.push({
+      scenarioId: buildScenarioId(
+        groupCapability.slice(0, slashIndex),
+        groupCapability.slice(slashIndex + 1),
+        requirementTitle,
+        scenarioTitle
+      ),
+      file,
+      testName: testCall[2]
+    });
+  }
+  return bindings;
+}
+async function scanMarkers(cwd, group) {
+  const bindings = /* @__PURE__ */ new Map();
+  for (const pattern of testGlobsForGroup(group)) {
+    for (const file of await resolveGlob(cwd, pattern)) {
+      const content = await fs2.readFile(file, "utf-8");
+      for (const binding of markersInFile(file, content)) {
+        bindings.set(binding.scenarioId, binding);
+      }
+    }
+  }
+  return bindings;
+}
+
+// src/cover/report.ts
+function stubOutcome(testName, file) {
+  return {
+    outcome: "covered-but-not-integrated",
+    note: `bound to "${testName}" in ${file}; reachability not checked yet (lands in a follow-up commit)`
+  };
+}
+async function buildReport(cwd, scenarios) {
+  const markersByGroup = /* @__PURE__ */ new Map();
+  const reports = [];
+  for (const scenario of scenarios) {
+    let markers = markersByGroup.get(scenario.group);
+    if (!markers) {
+      markers = await scanMarkers(cwd, scenario.group);
+      markersByGroup.set(scenario.group, markers);
+    }
+    const binding = markers.get(scenario.id);
+    const { outcome, note } = binding ? stubOutcome(binding.testName, binding.file) : { outcome: "unwired", note: "no test binds this scenario" };
+    reports.push({
+      scenarioId: scenario.id,
+      group: scenario.group,
+      capability: scenario.capability,
+      requirementTitle: scenario.requirementTitle,
+      scenarioTitle: scenario.scenarioTitle,
+      outcome,
+      note
+    });
+  }
+  return reports;
+}
+function outcomeRank(outcome) {
+  switch (outcome) {
+    case "covered-and-integrated":
+      return 2;
+    case "covered-but-not-integrated":
+      return 1;
+    default:
+      return 0;
+  }
+}
+function summarizeReport(reports) {
+  const summary = {
+    "covered-and-integrated": 0,
+    "covered-but-not-integrated": 0,
+    unwired: 0,
+    failed: 0
+  };
+  for (const report of reports) summary[report.outcome]++;
+  return summary;
+}
+
+// src/cover/baseline.ts
+var NOTE = "Coverage outcome each scenario holds today. A drop below its own outcome fails the gate.";
+function baselinePath(cwd) {
+  return path2.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
+}
+async function readBaseline(cwd) {
+  try {
+    const raw = await fs3.readFile(baselinePath(cwd), "utf-8");
+    const parsed = JSON.parse(raw);
+    return parsed.scenarios ?? {};
+  } catch {
+    return {};
+  }
+}
+async function writeBaseline(cwd, current) {
+  const sorted = Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b)));
+  await fs3.mkdir(path2.dirname(baselinePath(cwd)), { recursive: true });
+  await fs3.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
+`);
+}
+function compareToBaseline(reports, baseline) {
+  const adopted = [];
+  const regressions = [];
+  for (const report of reports) {
+    const before = baseline[report.scenarioId];
+    if (before === void 0) {
+      adopted.push(report.scenarioId);
+      continue;
+    }
+    if (outcomeRank(report.outcome) < outcomeRank(before)) {
+      regressions.push({ scenarioId: report.scenarioId, before, now: report.outcome });
+    }
+  }
+  return { adopted, regressions };
+}
+function outcomesFromReport(reports) {
+  return Object.fromEntries(reports.map((r) => [r.scenarioId, r.outcome]));
+}
+
+// src/cover/enumerate.ts
+import { promises as fs4 } from "node:fs";
+import * as path3 from "node:path";
+
+// src/openspec/requirements.ts
+var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
+var SCENARIO_HEADING = /^#### Scenario:\s*(.+?)\s*$/;
+var SECTION_HEADING = /^##\s+(.+?)\s*$/;
+var REMOVED_SECTION = /^REMOVED\b/i;
+var THEN_LINE = /^-\s*\*\*THEN\*\*\s*(.*)$/;
+var OTHER_BULLET = /^-\s*\*\*[A-Z]+\*\*/;
+function finalizeScenario(state) {
+  if (state.currentScenario && state.currentReq) {
+    state.currentScenario.intent = state.thenParts.join(" ");
+    state.currentReq.scenarios.push(state.currentScenario);
+  }
+  state.currentScenario = null;
+  state.thenParts = [];
+  state.inThen = false;
+}
+function startRequirement(state, title) {
+  state.currentReq = state.inRemoved ? null : { title, scenarios: [] };
+  if (state.currentReq) state.blocks.push(state.currentReq);
+}
+function consumeHeading(state, line) {
+  const section = line.match(SECTION_HEADING);
+  if (section) {
+    finalizeScenario(state);
+    state.currentReq = null;
+    state.inRemoved = REMOVED_SECTION.test(section[1]);
+    return true;
+  }
+  const requirement = line.match(REQUIREMENT_HEADING);
+  if (requirement) {
+    finalizeScenario(state);
+    startRequirement(state, requirement[1]);
+    return true;
+  }
+  const scenario = line.match(SCENARIO_HEADING);
+  if (scenario) {
+    finalizeScenario(state);
+    state.currentScenario = { title: scenario[1], intent: "" };
+    return true;
+  }
+  return false;
+}
+function consumeLine(state, line) {
+  if (consumeHeading(state, line)) return;
+  const thenMatch = line.match(THEN_LINE);
+  if (thenMatch) {
+    state.thenParts.push(thenMatch[1].trim());
+    state.inThen = true;
+    return;
+  }
+  if (OTHER_BULLET.test(line)) {
+    state.inThen = false;
+    return;
+  }
+  if (state.inThen && line.trim().length > 0) {
+    const lastIndex = state.thenParts.length - 1;
+    state.thenParts[lastIndex] = `${state.thenParts[lastIndex]} ${line.trim()}`;
+  }
+}
+function newState() {
+  return { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false, inRemoved: false };
+}
+function extractRequirementBlocks(content) {
+  const state = newState();
+  for (const line of content.split("\n")) consumeLine(state, line);
+  finalizeScenario(state);
+  return state.blocks;
+}
+
+// src/cover/enumerate.ts
+function capabilityFromPath(specsDir, specFile) {
+  const rel = path3.relative(specsDir, specFile).split(path3.sep);
+  if (rel.length < 3) return null;
+  return { group: rel[0], capability: rel[1] };
+}
+async function scenariosFromFile(specsDir, specFile) {
+  const located = capabilityFromPath(specsDir, specFile);
+  if (!located) return [];
+  const content = await fs4.readFile(specFile, "utf-8");
+  const scenarios = [];
+  for (const block of extractRequirementBlocks(content)) {
+    for (const scenario of block.scenarios) {
+      scenarios.push({
+        id: buildScenarioId(located.group, located.capability, block.title, scenario.title),
+        group: located.group,
+        capability: located.capability,
+        requirementTitle: block.title,
+        scenarioTitle: scenario.title,
+        intent: scenario.intent,
+        specPath: specFile
+      });
+    }
+  }
+  return scenarios;
+}
+async function enumerateUnder(specsDir) {
+  const files = await resolveGlob(specsDir, "**/spec.md");
+  const out = [];
+  for (const file of files) out.push(...await scenariosFromFile(specsDir, file));
+  return out;
+}
+async function enumerateChangeScenarios(cwd, changeId) {
+  return enumerateUnder(path3.join(cwd, "openspec", "changes", changeId, "specs"));
+}
+async function enumerateAllScenarios(cwd) {
+  return enumerateUnder(path3.join(cwd, "openspec", "specs"));
+}
+
+// src/cover/run.ts
+var EXIT_OK = 0;
+var EXIT_REGRESSION = 1;
+var EXIT_USAGE_ERROR = 3;
+async function runCover(opts, io) {
+  if (!(opts.all || opts.changeId)) {
+    io.writeErr("ERROR: dod-guard cover needs a change id or --all.\n");
+    return EXIT_USAGE_ERROR;
+  }
+  const scenarios = opts.all ? await enumerateAllScenarios(opts.cwd) : await enumerateChangeScenarios(opts.cwd, opts.changeId);
+  if (scenarios.length === 0) {
+    io.write(
+      opts.all ? "No scenarios found under openspec/specs. Nothing to cover.\n" : `No spec deltas found for change "${opts.changeId}". Nothing to cover.
+`
+    );
+    return EXIT_OK;
+  }
+  const reports = await buildReport(opts.cwd, scenarios);
+  for (const report of reports) {
+    io.write(`  ${report.outcome.padEnd(26)} ${report.scenarioId}
+`);
+  }
+  const summary = summarizeReport(reports);
+  io.write(
+    `
+${reports.length} scenario(s): ${summary["covered-and-integrated"]} covered-and-integrated, ${summary["covered-but-not-integrated"]} covered-but-not-integrated, ${summary.unwired} unwired, ${summary.failed} failed
+`
+  );
+  if (opts.writeBaseline) {
+    await writeBaseline(opts.cwd, outcomesFromReport(reports));
+    io.write(`
+wrote coverage-gate baseline for ${reports.length} scenario(s)
+`);
+    return EXIT_OK;
+  }
+  const baseline = await readBaseline(opts.cwd);
+  const { adopted, regressions } = compareToBaseline(reports, baseline);
+  for (const id of adopted) io.write(`  adopted: ${id}
+`);
+  if (regressions.length === 0) {
+    io.write(`
+cover OK - 0 regression(s)
+`);
+    return EXIT_OK;
+  }
+  io.write(`
+cover FAILED - ${regressions.length} regression(s)
+
+`);
+  for (const r of regressions) io.write(`  ${r.scenarioId}: ${r.before} before, ${r.now} now
+`);
+  return EXIT_REGRESSION;
+}
+
 // src/cli.ts
-var USAGE = `dod-guard \u2014 OpenSpec scenario coverage
+var USAGE = `dod-guard - OpenSpec scenario coverage
 
 USAGE
   dod-guard <command> [options]
   dod-guard                          Start the MCP server on stdio (no args)
 
 COMMANDS
-  (none shipped yet - steps and cover land in a follow-up commit)
+  cover [<change-id>] [--all]        Report each scenario as covered-and-integrated,
+                                      covered-but-not-integrated, unwired, or failed
+      [--write-baseline]             against the coverage-gate ratchet baseline.
+                                      One of <change-id> or --all is required.
+                                      --cwd=<dir> overrides the working directory.
+  (steps lands in a follow-up commit)
 `;
 function parseArgs(argv) {
   const flags = {};
@@ -21022,8 +21400,18 @@ var defaultIo = {
   write: (s) => process.stdout.write(s),
   writeErr: (s) => process.stderr.write(s)
 };
-var EXIT_USAGE_ERROR = 3;
-var COMMANDS = {};
+var EXIT_USAGE_ERROR2 = 3;
+var COMMANDS = {
+  cover: (positional, flags, io) => runCover(
+    {
+      cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(),
+      changeId: positional[0],
+      all: flags.all === true,
+      writeBaseline: flags["write-baseline"] === true
+    },
+    io
+  )
+};
 async function runCli(argv, io = defaultIo) {
   const { command, flags, positional } = parseArgs(argv);
   if (flags.help === true || flags.h === true || command === "help") {
@@ -21036,14 +21424,14 @@ async function runCli(argv, io = defaultIo) {
 
 `);
     io.writeErr(USAGE);
-    return EXIT_USAGE_ERROR;
+    return EXIT_USAGE_ERROR2;
   }
   try {
     return await handler(positional, flags, io);
   } catch (err) {
     io.writeErr(`ERROR: ${errorMessage(err)}
 `);
-    return EXIT_USAGE_ERROR;
+    return EXIT_USAGE_ERROR2;
   }
 }
 function isCliInvocation(argv) {
@@ -21051,8 +21439,8 @@ function isCliInvocation(argv) {
 }
 
 // src/index.ts
-var _dirname = path.dirname(fileURLToPath(import.meta.url));
-var _pkgPath = path.join(_dirname, "..", "package.json");
+var _dirname = path4.dirname(fileURLToPath(import.meta.url));
+var _pkgPath = path4.join(_dirname, "..", "package.json");
 var _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 var server = new McpServer({ name: "dod-guard", version: _pkg.version });
 var _filename = fileURLToPath(import.meta.url);

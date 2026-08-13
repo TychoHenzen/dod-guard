@@ -53,20 +53,48 @@
 
 ## 3. Build `dod-guard cover`
 
-- [ ] 3.1 Design and document the test-file marker format that binds a scenario
-      to a named test
-- [ ] 3.2 Design and document the entry-point declaration file
-- [ ] 3.3 Implement coverage-instrumented reachability: bound test ran and
-      passed, and execution reached the scenario's implementation through a
-      declared entry point
-- [ ] 3.4 Implement the three-outcome report: covered-and-integrated,
-      covered-but-not-integrated, unwired
-- [ ] 3.5 Add `dod-guard cover <change-id>` to `cli.ts`
-- [ ] 3.6 Add the coverage ratchet baseline (adopt-unseen, block-on-regression,
-      mirroring `quality-baseline.json`)
-- [ ] 3.7 Add the CI gate script and wire it into `plugin-config` in place of
-      the deleted `check-trace.mjs`
-- [ ] 3.8 Write the `dod-guard/coverage-gate` capability spec delta
+Split at the reachability line: tasks 4.2 and 5.5 depend on `cover`'s output
+contract and exit codes, not on its instrumentation, so 3a lands first and
+unblocks steps 4-6 on its own. 3b (real reachability) is where the unknown
+unknowns live and produces no signal until markers exist.
+
+### 3a. Enumeration, marker binding, stubbed report, ratchet, CLI, CI
+
+- [x] 3a.1 Scenario identity: `<group>/<capability>::<requirement>||<scenario>`,
+      reusing `extractRequirementBlocks` from `src/openspec/requirements.ts`
+      (no second parser)
+- [x] 3a.2 Two enumeration modes: change-scoped (`openspec/changes/<id>/
+      specs/**/spec.md`) and whole-tree (`--all`, `openspec/specs/**/spec.md`),
+      same report shape, same baseline
+- [x] 3a.3 Design and document the test-file marker format that binds a
+      scenario to a named test; scan test files by regex, no execution
+- [x] 3a.4 Design and document `openspec/entry-points.json`, keyed by package
+      dir; a group with no mapping or no file reports unwired with a reason,
+      not a crash
+- [x] 3a.5 Three-outcome report with reachability stubbed: unbound scenario is
+      unwired, bound scenario is covered-but-not-integrated (placeholder until
+      3b)
+- [x] 3a.6 Add the coverage-gate ratchet baseline (adopt-unseen,
+      block-on-regression, mirroring `check-coverage.mjs`'s
+      `readBaseline`/`writeBaseline`/`compare`)
+- [x] 3a.7 Add `dod-guard cover [<change-id>] [--all] [--write-baseline]` to
+      `cli.ts`, exit 0/1/3 matching the retired `check-trace.mjs` convention
+- [x] 3a.8 Add `scripts/ci/check-coverage-gate.mjs` and wire it into
+      `plugin-config` in place of the deleted `check-trace.mjs`
+- [x] 3a.9 Write the `dod-guard/coverage-gate` capability spec delta
+
+### 3b. Real reachability
+
+- [ ] 3b.1 Run a bound test in isolation via `--test-name-pattern`, under c8
+      scoped to its package's `dist/**/*.js` (mirroring `check-coverage.mjs`'s
+      `c8Args`)
+- [ ] 3b.2 Match the isolated run's per-file coverage against the package's
+      declared entry-point files to decide covered-and-integrated vs
+      covered-but-not-integrated
+- [ ] 3b.3 A failing bound test reports as failing, folded into "not covered"
+      for the ratchet
+- [ ] 3b.4 Manual check: one real marker, one real entry-point declaration,
+      confirm the outcome flips when the entry-point declaration is removed
 
 ## 4. Rework `steps`
 

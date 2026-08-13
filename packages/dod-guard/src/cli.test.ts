@@ -1,5 +1,8 @@
 import * as assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { promises as fs } from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { after, before, describe, it } from "node:test";
 import { EXIT_USAGE_ERROR, isCliInvocation, parseArgs, runCli } from "./cli.js";
 
 /** Collect CLI output instead of writing to the real streams. */
@@ -69,5 +72,33 @@ describe("runCli", () => {
     const code = await runCli(["bogus"], io);
     assert.equal(code, EXIT_USAGE_ERROR);
     assert.match(err(), /unknown command "bogus"/);
+  });
+});
+
+// ── cover ───────────────────────────────────────────────────────────────
+
+describe("cover via runCli", () => {
+  let cwd: string;
+
+  before(async () => {
+    cwd = await fs.mkdtemp(path.join(os.tmpdir(), "dod-guard-cli-cover-"));
+  });
+
+  after(async () => {
+    await fs.rm(cwd, { recursive: true, force: true });
+  });
+
+  it("errors with the usage exit code when neither a change id nor --all is given", async () => {
+    const { io, err } = captureIo();
+    const code = await runCli(["cover", `--cwd=${cwd}`], io);
+    assert.equal(code, EXIT_USAGE_ERROR);
+    assert.match(err(), /needs a change id or --all/);
+  });
+
+  it("exits 0 with nothing to cover when --all finds no spec tree", async () => {
+    const { io, out } = captureIo();
+    const code = await runCli(["cover", "--all", `--cwd=${cwd}`], io);
+    assert.equal(code, 0);
+    assert.match(out(), /Nothing to cover/);
   });
 });

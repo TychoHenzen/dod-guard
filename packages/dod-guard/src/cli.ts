@@ -1,9 +1,11 @@
 /**
  * dod-guard CLI. The proof/predicate engine that used to back `check`,
  * `status`, `tree`, `list`, and `trace` is gone - see
- * openspec/changes/route-skills-through-openspec. `steps` (task-bound) and
- * `cover` (scenario-to-test coverage) land in later steps of that change.
+ * openspec/changes/route-skills-through-openspec. `steps` (task-bound) lands
+ * in a later step of that change.
  */
+import { runCover } from "./cover/run.js";
+
 const USAGE = `dod-guard - OpenSpec scenario coverage
 
 USAGE
@@ -11,7 +13,12 @@ USAGE
   dod-guard                          Start the MCP server on stdio (no args)
 
 COMMANDS
-  (none shipped yet - steps and cover land in a follow-up commit)
+  cover [<change-id>] [--all]        Report each scenario as covered-and-integrated,
+                                      covered-but-not-integrated, unwired, or failed
+      [--write-baseline]             against the coverage-gate ratchet baseline.
+                                      One of <change-id> or --all is required.
+                                      --cwd=<dir> overrides the working directory.
+  (steps lands in a follow-up commit)
 `;
 
 type Flags = Record<string, string | boolean>;
@@ -55,7 +62,18 @@ type Command = (positional: string[], flags: Flags, io: CliIo) => Promise<number
 /** Usage error exit code, matching the retired EXIT.ERROR contract. */
 export const EXIT_USAGE_ERROR = 3;
 
-const COMMANDS: Record<string, Command> = {};
+const COMMANDS: Record<string, Command> = {
+  cover: (positional, flags, io) =>
+    runCover(
+      {
+        cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(),
+        changeId: positional[0],
+        all: flags.all === true,
+        writeBaseline: flags["write-baseline"] === true,
+      },
+      io,
+    ),
+};
 
 /** Run the CLI. Returns the process exit code. Never calls process.exit itself. */
 export async function runCli(argv: string[], io: CliIo = defaultIo): Promise<number> {
