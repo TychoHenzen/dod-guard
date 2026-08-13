@@ -105,7 +105,7 @@ updated `package-lock.json` with the new package.
 | Job | What it blocks on |
 |-----|-------------------|
 | `build-test` | tsc, `npm test`, and `detect-releases.mjs`, which decides what publishes |
-| `plugin-config` | `validate-plugins.mjs` (see below), `check-skill-hygiene.mjs` (see below), `openspec validate --all --strict --no-interactive`, and `check-trace.mjs` (see below) |
+| `plugin-config` | `validate-plugins.mjs` (see below), `check-skill-hygiene.mjs` (see below), and `openspec validate --all --strict --no-interactive` |
 | `static-analysis` | Biome (autofix + strict) and four ratchets |
 | `package-integrity` | `check-pack.mjs` (every skill, agent and hook target is in the tarball; no `src/` or `node_modules`) and `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) |
 
@@ -127,22 +127,19 @@ at a fixture tree, which is how `check-skill-hygiene.test.mjs` gives every rule
 both a passing and a failing fixture. A rule that cannot fail is the failure
 mode a text guard invites, so a meta-test asserts every rule has one.
 
-`check-trace.mjs` runs `dod-guard trace` over every active change that has a
-`dod.md`. It is the OpenSpec closure gate. **An untraced leaf fails the gate.**
-A leaf that traces back to no scenario is a proof nobody asked for. That means
-the DoD drifted from the spec it should prove. The other direction only
-reports. A scenario that reaches no leaf and no `MANUAL:` draft is named in the
-output, and the exit code does not change. A spec is allowed to run ahead of
-the last converter run.
+`check-coverage-gate.mjs` runs `dod-guard cover --all` over the whole
+`openspec/specs/` tree, not just active changes, so a regression in an
+already-archived capability is not invisible. It is the coverage-gate ratchet,
+and it runs in `static-analysis` alongside the other four ratchets (see
+Ratchets, below) rather than in `plugin-config` - `plugin-config` has no push
+permission, and a second job pushing tightened baselines would race
+`static-analysis`'s own push non-fast-forward.
 
-A change with no `dod.md` is skipped rather than failed, so a proposal still in
-planning does not block the build. The gate builds and bundles `dod-guard`
-first, because a released binary cannot see this checkout's own `trace`. CI has
-no `~/.claude/dod-store/`, so `trace` parses the committed `dod.md` and its
-`dod.md.scenario-map.json` sidecar instead of the canonical store. Both are
-tracked by git for exactly this reason.
+The gate builds and bundles `dod-guard` first, because a released binary
+cannot see this checkout's own scenarios and markers. That build step lives in
+`static-analysis` for the same reason the check itself does.
 
-That last one matters because **the marketplace installs from git, not npm**. `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo. `files[]` governs npm installs only. Git tracking governs what `/plugin` users actually get.
+**The marketplace installs from git, not npm.** `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo. `files[]` governs npm installs only. Git tracking governs what `/plugin` users actually get.
 
 ### OpenSpec spec layout
 
@@ -162,6 +159,7 @@ Nesting makes a package prefix in the capability name redundant, so the name dro
 | test presence | `untested-sources.txt` | a new `src/*.ts` has no `*.test.ts` |
 | advisories | `audit-baseline.json` | a new high/critical advisory in production dependencies |
 | coverage | `coverage-baseline.json` | a package covers less than it did (`check-coverage.mjs`, statements, branches, functions and lines, 0.25 point slack) |
+| coverage-gate (scenarios) | `coverage-gate-baseline.json` | a scenario's `dod-guard cover` outcome regresses to a worse one than the baseline recorded (`check-coverage-gate.mjs`, adopt-unseen, block-on-regression, keyed by scenario id rather than by package) |
 
 Existing debt is allowed; making it worse is not. When a ratchet improves, CI rewrites the baseline in the same commit as the Biome autofixes, so the bar can only rise. To rebaseline by hand: `node scripts/ci/<script>.mjs --write-baseline`.
 
@@ -221,11 +219,23 @@ if (process.argv[1] === _filename) {
 
 ### OS awareness (dod-guard)
 
-Proof commands run on the **host OS**. `dod_create`/`dod_refine`/`dod_amend` validate that commands reference tools available on the current platform.
+A `verify_cmd` a `steps.json` step runs must reference tools available on the
+current platform - nothing in `dod-guard cover`/`steps` validates that for you
+before the step runs.
 
-Shell invocation is built by `buildShellInvocation()` in `evaluate-proof.ts` — the single place that knows how to reach a shell. On Windows it produces `cmd.exe /d /s /c "<command>"` with `windowsVerbatimArguments: true`. Both details are load-bearing: cmd.exe has no single-quote grouping (wrapping in `'...'` makes it look for a program named `'command`), and Node's default Windows quoting escapes embedded double quotes in a way cmd.exe doesn't understand, silently mangling `findstr /C:"x" file` and `node -e "..."` into no-ops that exit 0. Never hand-roll shell escaping elsewhere.
+Shell invocation is built by `buildShellInvocation()` in `src/shell.ts` - the
+single place that knows how to reach a shell. On Windows it produces
+`cmd.exe /d /s /c "<command>"` with `windowsVerbatimArguments: true`. Both
+details are load-bearing: cmd.exe has no single-quote grouping (wrapping in
+`'...'` makes it look for a program named `'command`), and Node's default
+Windows quoting escapes embedded double quotes in a way cmd.exe doesn't
+understand, silently mangling `findstr /C:"x" file` and `node -e "..."` into
+no-ops that exit 0. Never hand-roll shell escaping elsewhere.
 
-The `manual` predicate does not exist. Human-verified steps are **draft leaves** with a `MANUAL:` intent. A draft holds the verdict at INCOMPLETE, which is the correct "a human still owes us something" semantic.
+There is no `manual` predicate and no draft-leaf concept. A task with no
+`covers` annotation, or one naming an unwired/failed scenario, becomes a
+`manual_required: true` step in `steps.json` with an empty `verify_cmd` -
+`/step-by-step` holds it at `pending` until the user confirms it by hand.
 
 ### Biome config note
 
@@ -233,7 +243,7 @@ The `manual` predicate does not exist. Human-verified steps are **draft leaves**
 
 ## Cross-package concerns
 
-- **evomcp → dod-guard**: `verify_cmd` and `fitness_cmd` take **shell** commands, so they use the dod-guard CLI, not MCP tool names: `dod-guard check --dod-id=<id> --node-path=0.children.1 --quiet`. Exit codes: `0` pass · `1` a proof failed (or tampered/stuck) · `2` unscoped run with drafts remaining · `3` usage error. A scoped run exits 0 when that subtree passes — that is what makes a DoD subtree usable as a verify_cmd, since `checkDocument` always reports scoped runs as `incomplete`. `dod_check` is the MCP tool name and does nothing in a shell.
+- **evomcp -> dod-guard**: `verify_cmd` and `fitness_cmd` take **shell** commands. A step bound to a scenario via a `// covers:` marker uses that scenario's own whole-file test run command, e.g. `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js` - the same command `dod-guard steps` writes into `steps.json` for a bound step (`buildTestRunCommand` in `cover/run-command.ts`). Confirm any scenario's binding and reachability first with `dod-guard cover <change-id>`, exit `0` no regressions / `1` a regression / `3` usage error. There is no MCP tool equivalent - `cover` and `steps` are shell-only.
 - **gitevo → obsidian-rag**: `evo_export_lessons` outputs memory_save-compatible JSON for persistence
 - **evomcp → gitevo**: `gitevo-integration.ts` reads gitevo's SQLite memory bus (`.evo/memory.db`) to seed strategy prompts with past failures, elite solutions, and insights
 - **obsidian-rag**: Used by the session-start hook for memory injection across all packages
@@ -241,7 +251,5 @@ The `manual` predicate does not exist. Human-verified steps are **draft leaves**
 
 ## Documentation
 
-- `packages/dod-guard/README.md` — user-facing plugin docs
-- `packages/dod-guard/docs/` — DoD markdown format spec, predicate reference
-- `standards/dod-baselines.md` — company baseline categories (used at dod_create)
+- `packages/dod-guard/README.md`, `packages/dod-guard/USAGE.md` - user-facing plugin docs
 - `packages/*/CLAUDE.md` — per-package architecture docs (read before working in that package)

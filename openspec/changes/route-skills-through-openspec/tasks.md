@@ -270,7 +270,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
 - [x] 6.5 Fold `packages/dod-guard/docs/shortcomings.md`'s findings into this
       change's own `design.md` Context, then delete the file - it currently
       describes a system that no longer exists
-- [ ] 6.6 Update four spots in the root `CLAUDE.md`. The CLI table gains
+- [x] 6.6 Update four spots in the root `CLAUDE.md`. The CLI table gains
       `steps` and `cover` and drops `check`, `status`, `tree`, `list`, and
       `trace`. The plugin-config gate table's `check-trace.mjs` row becomes
       `check-coverage-gate.mjs`. The Ratchets table gains the coverage-gate
