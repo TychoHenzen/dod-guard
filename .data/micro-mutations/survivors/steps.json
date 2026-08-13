@@ -1,0 +1,77 @@
+{
+  "source": "packages/dod-guard/src/openspec/steps.ts",
+  "date": "2026-08-13T08:02:40.354Z",
+  "summary": {
+    "total": 43,
+    "killed": 31,
+    "survived": 8,
+    "timeout": 0,
+    "unviable": 4
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/openspec/steps.js",
+      "id": "4",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 10,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/steps.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 12,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/steps.js",
+      "id": "18",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 30,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/steps.js",
+      "id": "20",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 31,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/steps.js",
+      "id": "21",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 32,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/steps.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 35,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/steps.js",
+      "id": "38",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 59,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/steps.js",
+      "id": "41",
+      "mutator": "OptionalChaining",
+      "replacement": "leaf.intent.startsWith",
+      "dist_line": 59,
+      "dist_col": 17
+    }
+  ]
+}

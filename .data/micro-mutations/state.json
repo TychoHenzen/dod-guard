@@ -517,7 +517,7 @@
       },
       "lines": 289,
       "error_count": 0,
-      "recent_commits": 2,
+      "recent_commits": 3,
       "fingerprint": "e88146881c71807cd553df056bbc38a4e9df11e04b16816bd159882b56d74104",
       "dirty": true
     },
@@ -1277,13 +1277,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/openspec/checkability.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-13",
+      "last_result": {
+        "total": 38,
+        "caught": 31,
+        "missed": 6,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      },
       "lines": 57,
       "error_count": 0,
       "recent_commits": 3,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "13266609a948d0899fc8da52069a1c36bb4d8988d7d4480576a083412f68f16a",
+      "dirty": false
     },
     "packages/dod-guard/src/openspec/convert.ts": {
       "last_tested": "2026-08-12",
@@ -1400,77 +1408,51 @@
       "dirty": true
     },
     "packages/dod-guard/src/openspec/steps.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-13",
+      "last_result": {
+        "total": 43,
+        "caught": 31,
+        "missed": 8,
+        "timeout": 0,
+        "unviable": 4,
+        "status": "ok",
+        "error": null
+      },
       "lines": 81,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "431364d733199508ee5b3b2e9f23f8a45b11c1842a2df12f35393a0d7d008dcf",
+      "dirty": false
     },
     "packages/dod-guard/src/openspec/trace.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 110,
+      "last_tested": "2026-08-13",
+      "last_result": {
+        "total": 81,
+        "caught": 59,
+        "missed": 16,
+        "timeout": 0,
+        "unviable": 6,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 128,
       "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "recent_commits": 3,
+      "fingerprint": "12db751a584197225e127658732ff9fb5e8794aa4c8ab237abbf889c4d113b3e",
+      "dirty": false
     }
   },
   "cumulative": {
-    "total_mutants": 18497,
-    "caught": 7256,
-    "missed": 6508,
+    "total_mutants": 18659,
+    "caught": 7377,
+    "missed": 6538,
     "timeout": 85,
-    "unviable": 4648,
+    "unviable": 4659,
     "error": 44,
-    "runs": 119,
-    "files_tested": 119
+    "runs": 122,
+    "files_tested": 122
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/dod-guard/src/command-check.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/command-check.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/"
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/obsidian-rag/src/vault.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/obsidian-rag/dist/vault.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/"
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
-      "file": "packages/dod-guard/src/index.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src"
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "90beeef6cc6e8e4327b0e8fe514d754a605d7d39",
@@ -2825,6 +2807,48 @@
         "missed": 16,
         "timeout": 0,
         "unviable": 11,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-13",
+      "commit": "351072f63cb87357b4d0076bc6d5acabf57d9b81",
+      "file": "packages/dod-guard/src/openspec/trace.ts",
+      "result": {
+        "total": 81,
+        "caught": 59,
+        "missed": 16,
+        "timeout": 0,
+        "unviable": 6,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-13",
+      "commit": "351072f63cb87357b4d0076bc6d5acabf57d9b81",
+      "file": "packages/dod-guard/src/openspec/checkability.ts",
+      "result": {
+        "total": 38,
+        "caught": 31,
+        "missed": 6,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-13",
+      "commit": "351072f63cb87357b4d0076bc6d5acabf57d9b81",
+      "file": "packages/dod-guard/src/openspec/steps.ts",
+      "result": {
+        "total": 43,
+        "caught": 31,
+        "missed": 8,
+        "timeout": 0,
+        "unviable": 4,
         "status": "ok",
         "error": null
       }

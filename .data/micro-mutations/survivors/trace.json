@@ -1,0 +1,141 @@
+{
+  "source": "packages/dod-guard/src/openspec/trace.ts",
+  "date": "2026-08-13T08:02:29.998Z",
+  "summary": {
+    "total": 81,
+    "killed": 59,
+    "survived": 16,
+    "timeout": 0,
+    "unviable": 6
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "21",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 59,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "23",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 64,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "31",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 74,
+      "dist_col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "32",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 74,
+      "dist_col": 82
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "59",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 100,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "60",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 102,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "61",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 103,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "63",
+      "mutator": "EqualityOperator",
+      "replacement": "report.untracedScenarios.length >= 0",
+      "dist_line": 103,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "66",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 104,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "70",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 111,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "71",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 111,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "72",
+      "mutator": "EqualityOperator",
+      "replacement": "report.untracedLeaves.length >= 0",
+      "dist_line": 111,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "73",
+      "mutator": "EqualityOperator",
+      "replacement": "report.untracedLeaves.length <= 0",
+      "dist_line": 111,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "77",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 116,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "78",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 117,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/trace.js",
+      "id": "80",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 119,
+      "dist_col": 26
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "source": "packages/dod-guard/src/openspec/checkability.ts",
+  "date": "2026-08-13T08:02:35.736Z",
+  "summary": {
+    "total": 38,
+    "killed": 31,
+    "survived": 6,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/openspec/checkability.js",
+      "id": "2",
+      "mutator": "Regex",
+      "replacement": "/`([^`]*\\S[^`]*)`/",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/checkability.js",
+      "id": "20",
+      "mutator": "MethodExpression",
+      "replacement": "command",
+      "dist_line": 33,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/checkability.js",
+      "id": "21",
+      "mutator": "Regex",
+      "replacement": "/\\s/",
+      "dist_line": 33,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/checkability.js",
+      "id": "27",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 43,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/checkability.js",
+      "id": "34",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 56,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/checkability.js",
+      "id": "35",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 57,
+      "dist_col": 12
+    }
+  ]
+}
