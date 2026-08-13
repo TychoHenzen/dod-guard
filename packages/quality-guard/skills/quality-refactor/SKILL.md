@@ -6,8 +6,8 @@ description: >-
   cyclomatic complexity under 10, at most 7 parameters, no unnamed tuples,
   guard clauses instead of else, free functions instead of stateless methods,
   and aggressive deletion of dead, test-only, duplicate, and compatibility-shim
-  code. Ships a zero-dependency scanner and emits a `.step-session/steps.json`
-  plan for /dod-guard:step-by-step to execute one file at a time.
+  code. Ships a zero-dependency scanner and opens an OpenSpec change to hold
+  its wave plan for /dod-guard:step-by-step to execute one file at a time.
   TRIGGER when: user says "refactor this properly", "clean this up to a high
   standard", "enforce code quality", "quality pass", "reduce complexity",
   "split these files", "this file is too long", "remove dead code", or asks for
@@ -18,29 +18,23 @@ argument-hint: "[target: repo, folder path, module name, or file list]"
 
 ## What you deliver
 
-You produce one artifact: a step plan at `.step-session/steps.json` that `/dod-guard:step-by-step` executes
-one file at a time. You write the plan and stop. You run no step yourself, you change nothing about what the
-program does, and you dispatch no subagent of your own. The user approves the plan before any of it runs.
+A refactor changes no behavior, so it declares no capability, and still needs a place to record its plan.
+Open an OpenSpec change with `--skip-specs` before planning starts, and set `skip_specs: true` in that
+change's `.openspec.yaml`. Invent no requirement to satisfy validation; the change carries no spec delta.
+
+You produce one artifact: a step plan that `/dod-guard:step-by-step` executes one file at a time. You write
+the plan and stop. You run no step yourself, you change nothing about what the program does, and you dispatch
+no subagent of your own. The user approves the plan before any of it runs.
 
 The plan sorts its steps into six waves, named below. Write one step per file per wave. A step that would
 touch two files becomes two steps. The single exception is a deletion that has to update its call sites,
 which stays one step.
 
-```json
-{
-  "goal": "Quality refactor: <scope> to hard bounds, ratchet preferred bounds",
-  "cwd": "/absolute/path", "plan_source": "/absolute/path/.quality/units.json",
-  "steps": [
-    {
-      "id": "W1-01", "title": "Delete dead exports in src/tree-utils.ts",
-      "description": "Remove findInChildren (never referenced) and its tests.",
-      "files": ["src/tree-utils.ts", "src/tree-utils.test.ts"], "deps": [],
-      "verify_surface": "structural", "manual_required": false, "status": "pending",
-      "verify_cmd": "npm test && node \"$QS\" src --baseline=.quality/baseline.json --fail-on=regression"
-    }
-  ]
-}
-```
+Write the waves as checklist items in the change's `tasks.md`, one section per wave in the order below. Write
+the step plan itself to the change's `steps.json`, in the shape `/dod-guard:step-by-step` reads: a goal, a
+`cwd`, a `plan_source`, and a `steps` array, each step carrying an id, a title, a description naming its
+refactoring, the files it touches, its deps, `manual_required`, a `pending` status, and a `verify_cmd`. Run
+`openspec instructions steps --change <id>` for the exact field list rather than working from memory here.
 
 Set `verify_surface` to `structural` on every step you emit, with no exception. Passing tests and no fresh
 violations are what prove a refactor, rather than a compile that succeeded.
@@ -215,22 +209,24 @@ always real, and a clean scan is permission to keep reading rather than proof th
 **Phase 0.** Confirm the working tree is clean, and when it is dirty ask the user to stash, to include the
 changes, or to abort. Run the project's build and full test suite and record the result. Stop and report when
 either is already failing, because behavior preservation cannot be proved against a red baseline. Resolve the
-exact test command once and write it down, because every step uses it. Run `mkdir -p .quality`, then record
-the ratchet baseline with `--write-baseline=.quality/baseline.json`.
+exact test command once and write it down, because every step uses it. Open the OpenSpec change with
+`--skip-specs` and set `skip_specs: true` in its `.openspec.yaml`. Run `mkdir -p .quality`, then record the
+ratchet baseline with `--write-baseline=.quality/baseline.json`.
 
 **Phase 1.** Run the scanner twice over the scope. The first run is a worst-first summary with `--top=20`.
 The second writes per-file work units to `.quality/units.json` with `--format=units`, worst first, one entry
-per file naming every rule that file breaks. Then read those same files yourself for the five things no scanner sees,
-and write the findings to `.quality/judgment.md` under one heading per category.
+per file naming every rule that file breaks. `.quality/units.json` stays regenerable scanner output, not the
+plan. Then read those same files yourself for the five things no scanner sees, and write the findings to the
+change's `design.md` under one heading per category.
 
 **Phase 2.** Sort every unit into the six waves and hold that sequence. A file with violations in three waves
-yields three steps, one in each.
+yields three steps, one in each. Write the waves to the change's `tasks.md`, one checklist section per wave.
 
-**Phase 3.** Write `.step-session/steps.json` in the shape given at the top of this skill, one step per file
-per wave, each with a resolved `verify_cmd` and a `description` that names its refactoring.
+**Phase 3.** Write the change's `steps.json` in the shape described at the top of this skill, one step per
+file per wave, each with a resolved `verify_cmd` and a `description` that names its refactoring.
 
 **Phase 4.** Report to the user before any step runs: the number of files in scope, the total violation count
-with the error count called out, and anything in `judgment.md` that changes a public API or the file layout.
+with the error count called out, and anything in `design.md` that changes a public API or the file layout.
 Wait for the user to confirm. Leave the per-wave step counts and the verify command out of this report.
 `/dod-guard:step-by-step` shows both as soon as it takes over, and asks for approval of its own plan.
 

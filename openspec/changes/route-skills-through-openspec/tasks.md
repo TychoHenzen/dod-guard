@@ -185,7 +185,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
 
 ## 5. Skills
 
-- [ ] 5.1 Rewrite `/interview`: drop the DoD authoring policy, the `dod_create`
+- [x] 5.1 Rewrite `/interview`: drop the DoD authoring policy, the `dod_create`
       fallback, the `docs/plans/` path; add scenario-writing and test-binding
       guidance
 - [x] 5.2 **Bootstrap.** Rewrite `packages/dod-guard/skills/step-by-step/SKILL.md`:
@@ -204,20 +204,20 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
         session shape.
       - Confirm `node scripts/ci/check-skill-hygiene.mjs --rule=no-step-session`
         and `--rule=plan-home` both exit 0 against the rewritten file
-- [ ] 5.3 Strip `/cheap-step`'s `.step-session` and `progress.log` references
-- [ ] 5.4 Move `/quality-refactor` onto a change with `skip_specs: true`, waves
+- [x] 5.3 Strip `/cheap-step`'s `.step-session` and `progress.log` references
+- [x] 5.4 Move `/quality-refactor` onto a change with `skip_specs: true`, waves
       into `tasks.md`, plan into the change's `steps.json`, judgment into
       `design.md`
 - [ ] 5.5 Give `/ratchet` a change id; close on `dod-guard cover` reporting zero
       regressions, then `openspec archive`
 - [ ] 5.6 Give `/adversarial-workflow` a change id; move its four GO/REVISE/STOP
       verdicts into `design.md`; close on cover then archive
-- [ ] 5.7 Make `/blind-rewrite` write the code contract as the change's spec
+- [x] 5.7 Make `/blind-rewrite` write the code contract as the change's spec
       delta before deletion, leave only quarantine in `.blind/`
-- [ ] 5.8 Make each `/tighten` target open a change; reduce the ledger to a
+- [x] 5.8 Make each `/tighten` target open a change; reduce the ledger to a
       scanner queue closing on the target's change archiving
-- [ ] 5.9 Drop the `dod_create` reference from `/test-integrity-checker`
-- [ ] 5.10 Drop dod-guard tool-name references from `/clean-house`
+- [x] 5.9 Drop the `dod_create` reference from `/test-integrity-checker`
+- [x] 5.10 Drop dod-guard tool-name references from `/clean-house`
 - [ ] 5.11 Update `check-skill-hygiene.mjs`'s rule set for the new vocabulary:
       - Retire `dod-instruction`, `schema-steps-deps`, and
         `interview-fetches`. Each one polices a deleted DoD schema artifact

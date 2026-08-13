@@ -1,6 +1,6 @@
 ---
 name: interview
-description: Pin down requirements before any implementation task, feature request, bug fix, or refactor, and before writing code or plans. Use when requirements are unclear, when there is a risk of wrong assumptions, or when the user says "build X" without specs. It replaces brainstorming for implementation work. Read the existing code, then question the user one item at a time. Confirm a written requirements summary, then run an adversarial review of that spec. Generate a machine-checkable Definition of Done from the resulting spec change and hand off to an executor skill. The output is a change id and its DoD. This skill never implements.
+description: Pin down requirements before any implementation task, feature request, bug fix, or refactor, and before writing code or plans. Use when requirements are unclear, when there is a risk of wrong assumptions, or when the user says "build X" without specs. It replaces brainstorming for implementation work. Read the existing code, then question the user one item at a time. Confirm a written requirements summary, then run an adversarial review of that spec. Write the resulting scenarios into an OpenSpec change and mark how each one binds to a test, then hand off to an executor skill. The output is a change id. This skill never implements.
 ---
 
 # Interview
@@ -18,8 +18,8 @@ gate once and continue with questions.
 ## 2. Research before the first question
 
 Read the code that this change touches before you ask anything. Cover the
-modules named in the request, their callers, their tests, and any plan file
-under `docs/plans/`. Find the project's test runner, linter, and formatter.
+modules named in the request, their callers, and their tests. Find the
+project's test runner, linter, and formatter.
 
 Count the pre-existing lint violations and format violations now, with the
 project's own commands. Record both numbers. Section 5 needs them, and they
@@ -89,50 +89,21 @@ artifacts. Do not start implementation from inside this skill.
 
 Before you write, sort every interview answer into one of two piles. A
 confirmed answer becomes a requirement and its scenarios. An unconfirmed
-answer goes into `open_questions` instead, and never becomes a scenario.
-An answer is confirmed only when the user gave it directly, or confirmed
-it in the section 4 summary. An answer you inferred from reading the code
-is not confirmed, even if it seems obviously right. This matters because
-of how the generator works. Every scenario becomes a leaf, and a leaf is a
-proof the work must satisfy. So a scenario built from a guess becomes a
-proof of a guess. `open_risks` keeps its own job from earlier in this
-section, a company-baseline row that genuinely does not apply. Do not put
-unconfirmed answers there instead.
+answer becomes neither, and never becomes a scenario. An answer is
+confirmed only when the user gave it directly, or confirmed it in the
+section 4 summary. An answer you inferred from reading the code is not
+confirmed, even if it seems obviously right. This matters because a
+scenario built from a guess is a claim of done built on a guess.
 
-Where the unconfirmed answers go depends on which path built the document.
+Write every unconfirmed answer under an "Open questions" heading in the
+change's `design.md`. OpenSpec owns intent, and an unanswered question is
+intent. The change's own files survive to `openspec archive`, so the
+question travels with the shipped change.
 
-The `dod_create` fallback takes them directly, as
-`sections.open_questions` in the tool call.
-
-A generated DoD has no such field. `dod_generate` sets `requirements` and
-nothing else, and no tool adds a section afterwards. Do not hand-edit the
-rendered `dod.md` to add one. Every write regenerates that file from
-canonical storage, and `dod_check` writes on every run, so the next
-instruction in section 7 would erase it.
-
-Put them in the change instead, under an "Open questions" heading in its
-`proposal.md` or `design.md`. That is the right home anyway. OpenSpec owns
-intent and dod-guard owns proof, and an unanswered question is intent. The
-change's own files survive regeneration, and `openspec archive` keeps them
-with the shipped change.
-
-The spec delta decides the shape of the tree, not you. Every
-`### Requirement:` heading becomes one group node. Every `#### Scenario:`
-under it becomes one leaf. Take a change with three requirements and two
-scenarios each. Its DoD carries three groups of two leaves, whatever
-nesting or grouping choice the interview would otherwise have made.
-
-Whether a scenario becomes a machine-checkable leaf or a `MANUAL:` draft
-depends on one rule. Does its `THEN` line hold a backticked code span with
-a space in it, whose first word is a known tool? `npm`, `npx`, `node`,
-`git`, `openspec`, `dod-guard`, `grep`, `findstr`, `tsc`, and `biome` are
-the known tools. A scenario that puts a real command there becomes a
-concrete leaf, as long as that command also runs on this OS. That leaf
-proves itself by exit code 0. A scenario that only describes an outcome in
-prose becomes a draft leaf with a `MANUAL:` intent. A draft holds the
-document at INCOMPLETE.
-
-So write the proving command into the THEN line, not just the outcome:
+The spec delta decides the shape of the work, not a generator. Every
+`### Requirement:` heading names one behavior. Every `#### Scenario:`
+under it names one WHEN/THEN case that behavior must hold for. Write the
+scenario as an observable outcome, not as an implementation step:
 
 ```markdown
 ## ADDED Requirements
@@ -142,129 +113,69 @@ The system SHALL quote a field that holds an embedded comma.
 
 #### Scenario: Embedded comma survives a round trip
 - **WHEN** a row field contains a comma
-- **THEN** `npm test -- csv-serializer.test.ts` exits 0
+- **THEN** the exported field is wrapped in quotes and round-trips back to
+  the original value on re-import
 
 #### Scenario: Operator confirms the file opens cleanly
 - **WHEN** a completed export is downloaded
 - **THEN** the file opens in the spreadsheet tool with the right columns
 ```
 
-The first scenario becomes a concrete leaf, because its THEN line names a
-runnable `npm` command. The second becomes a `MANUAL:` draft, because its
-THEN line only describes an outcome. Put the command in a scenario's THEN
-line yourself while you draft the delta, if it deserves a machine check.
-Nothing later promotes prose into a command for you.
+A scenario names what must be true, never the proof. `dod-guard cover`
+decides whether it counts as done by finding a test bound to it, not by
+running a command a scenario names. That is the whole point of the
+switch: no agent authors its own passing grade.
 
-Every leaf the converter generates carries predicate `exit_code` at value
-0 and category `other`. It never picks a richer predicate or a category,
-and it never sets `timeout_ms` or `advisory`. Those choices happen after
-generation, in section 7, through `dod_amend` and `dod_refine`, using the
-tables below.
+### Binding a scenario to a test
 
-A predicate is `{type, value, timeout_ms}`. These 10 types are the whole
-vocabulary, and anything else is rejected.
+A scenario counts as covered only when a test carries a marker that names
+it. Write the marker on the line directly above the `test(` or `it(` call
+that exercises the scenario, in whatever test file already covers, or will
+cover, that behavior:
 
-| Predicate | Passes when |
-|---|---|
-| `exit_code` | the command exits with `value` |
-| `exit_code_not` | the command exits with anything but `value` |
-| `output_contains` | stdout plus stderr contains the substring `value` |
-| `output_not_contains` | that text does not contain `value` |
-| `output_matches` | that text matches the regex `value` |
-| `output_not_matches` | that text does not match the regex `value` |
-| `tdd` | the command failed on an earlier run, then passes |
-| `adversarial` | the gate for phase `value` is recorded GO |
-| `holdout` | the holdout test fingerprint is unchanged |
-| `convergence` | the phase 4 convergence audit reached GO |
+```typescript
+// covers: <group>/<capability> :: <requirement title> :: <scenario title>
+test("quotes a field with an embedded comma", () => {
+  ...
+});
+```
 
-`category` takes one of four values.
+`<group>/<capability>` is the spec's own id, the same path segments as
+`openspec/specs/<group>/<capability>/spec.md`. `<requirement title>` and
+`<scenario title>` are the exact text after `### Requirement:` and
+`#### Scenario:` in the delta, not a paraphrase. `dod-guard cover` matches
+on that text, so a marker that drifts from the delta's wording binds
+nothing.
 
-| Category | Use for |
-|---|---|
-| `behavioral` | a check that the feature does the right thing |
-| `wiring` | a check that the piece is reachable from the real system |
-| `test_audit` | a gate over the tests themselves |
-| `other` | anything the three above do not fit |
+You are not writing the test itself in this skill; the executor does that
+during implementation. What you do here is tell the executor, in the
+handoff and in the scenario's own wording, which test file should carry
+the marker, and confirm the scenario is phrased as something a single test
+can observe. A scenario nobody could bind a marker to (too many outcomes
+bundled into one WHEN/THEN) should split into two scenarios now, while
+splitting is cheap, rather than after the executor discovers it cannot
+write one test that proves it.
 
-Amend `timeout_ms` above the 120000 default for a slow tool.
+A marker with no test call after it binds nothing, and `dod-guard cover`
+reports the scenario the same as if the marker were never written. Note
+that as a risk in the handoff for any scenario the executor might satisfy
+that way by mistake.
 
-A proof often names a test file the implementer has not written yet. Amend
-those to a regex, not an exact name. Use `output_matches` with a pattern
-like `"export.*csv"`, so a reasonable naming choice still passes.
+### Declaring the entry point
 
-The generated tree carries no company baseline, no integration proof pair,
-and no `MANUAL:` inspection leaf for visual work. Add all three by hand,
-after generation, as described next.
+A bound test has to reach the scenario's code through a path a real user
+or caller would take, not only through the component's own internals.
+`dod-guard cover` checks this against `openspec/entry-points.json`, keyed
+by package or project directory, each value a list of files that count as
+a real entry point (the CLI, the MCP server's `index.ts`, and similar).
 
-### Company baseline
-
-The generator never applies the company baseline, so add it by hand after
-`dod_generate` runs, using `dod_add_node`.
-
-Set `type` from the request when the change lacks a company-baseline node
-of its own. A bug, defect, regression, or incident is `"bug"`. A feature,
-enhancement, refactor, or new component is `"general"`. Reserve
-`"minimal"` for work the user has explicitly held to no baseline.
-
-Read `standards/dod-baselines.md` and take the minimum proofs for that work
-type. Its `manual` predicate column is out of date, so add every row it
-marks manual as a `MANUAL:` draft leaf instead. Read
-`standards/language-commands.md` for the command that fits this project's
-language.
-
-Set lint and format proofs to the counts from section 2. Under 10
-violations, demand zero. At 10 or more, scope the proof to changed files or
-assert the count does not rise. Record both counts in the summary you give
-the user, so a later reader can check the bar.
-
-A baseline row can genuinely fail to apply, because the project has no
-linter or no test runner. Never drop such a row in silence. Tell the user
-about the omission.
-
-### Integration proof
-
-The generator adds no integration proof pair on its own. Add one after
-generation, with `dod_add_node`, for every feature the tree covers. The
-wiring leaf greps for the import, the registration, or the route that makes
-the piece reachable. The behavioral leaf drives the feature through the
-system's real entry point, not through the component's own API.
-
-Wiring alone catches "registered but broken". Behavior alone catches "works
-in the harness, unreachable in production". Neither may become a human step.
-Place this pair last among the machine-checkable leaves.
-
-### Human judgement
-
-dod-guard has no human-verification predicate. A step only a person can judge
-becomes a draft leaf whose `intent` starts with the literal prefix `MANUAL:`.
-Other skills key off that prefix, so write it exactly. Never invent a command
-that pretends to check a human's opinion.
-
-The generator turns a prose-only scenario into a `MANUAL:` draft
-automatically, but it adds no inspection leaf where the change adds none.
-After generation, add a `MANUAL:` inspection leaf with `dod_add_node` when
-the work touches `rendering/`, `ui/`, `graphics/`, `shaders/`, `sprites/`,
-`scenes/`, or `levels/`. Add one when a leaf intent mentions render,
-display, show, look, appear, or visual. Add one when it mentions movement,
-collision, spawn, ai behavior, or gameplay.
-
-A build that compiles proves nothing about what the screen shows. When in
-doubt, add the leaf. A needless check costs a minute. A missing one ships an
-unverified change.
-
-### Test-first requirements
-
-The baseline makes test-first work non-negotiable. A bug fix needs a
-regression test written red first. A feature needs unit tests written red
-first. This is the one case a single requirement needs two leaves, because
-a `tdd` proof alone cannot tell a real assertion from `assert true`. Add
-both with `dod_add_node` after generation:
-
-1. A leaf whose command greps the test file for a real assertion, predicate
-   `output_matches`, category `test_audit`. Example command:
-   `grep -nE "expect.*(header|comma|empty)" src/export.test.ts`.
-2. A leaf whose command runs that test, predicate `tdd` at value 0,
-   category `behavioral`. Example command: `npm test -- export.test.ts`.
+Read `openspec/entry-points.json` before you finish the interview. If the
+package or project this change touches already has an entry, note nothing
+further. If it does not, that is a gap the executor needs closed before
+`dod-guard cover` can report anything beyond covered-but-not-integrated
+for this change's scenarios. Say so plainly in the handoff, and name the
+file or files that should be added as that package's entry point, based on
+what you read in section 2.
 
 ## 6. Adversarial review of the spec
 
@@ -303,76 +214,27 @@ again. Cap this at 3 rounds. After a third `REVISE`, stop and ask the user
 for an explicit override. On `STOP`, report the blocker to the user and
 abort.
 
-## 7. Generate the document, then prove it runs
+## 7. Record the review, then check the ground you are handing off
 
-Call `dod_generate` with `change_id`, the kebab-case name `/opsx:propose`
-gave the change, and `cwd`. It reads that change's spec delta through the
-OpenSpec CLI, converts every `### Requirement:` and `#### Scenario:` into
-the tree section 5 described, and writes `dod.md` to
-`openspec/changes/<change_id>/dod.md`. The specs artifact must exist before
-you call it, because `dod_generate` depends on it.
+Record the adversarial verdict from section 6 under a "Phase 1 review"
+heading in the change's `design.md`: the verdict, each lens's finding
+count, and a one-line summary per lens. That is the change's own record,
+in the place `design.md` exists for.
 
-`dod_generate` is not reachable yet in the deployed plugin. This repo's
-skills run from the installed plugin cache, and that tool has not shipped
-there as of this session. If the call is unavailable, fall back to
-`dod_create` as described below.
-
-`dod_create` stays the fallback for work with no OpenSpec change, and for
-any session where `dod_generate` is not reachable. Call it with `title`,
-`goal`, `type`, `cwd`, `markdown_path`, `sections`, and `roots`. `type` is
-`"bug"`, `"general"`, or `"minimal"`. `sections` takes `requirements`,
-which is required, plus optional `decisions`, `current_state`,
-`research_notes`, `open_questions`, and `open_risks`. Never pass `dod_id`,
-because the tool rejects it. Point `markdown_path` at
-`docs/plans/YYYY-MM-DD-<topic>.md`.
-
-In this fallback you build `roots` by hand, so you need the node shape the
-generator would otherwise produce. A node with `children` is a group. A node
-without `children` is a leaf, and each leaf proves one behavior on its own. A
-leaf is concrete when `refinement` is `"concrete"`, and it then carries
-`command`, `predicate`, `description`, and `category`. A leaf is draft when
-`refinement` is `"draft"`, and it carries `intent` and nothing else. Set
-`advisory: true` on a leaf whose failure should be reported without failing
-the run. Mirror the spec delta: one group per requirement, one leaf per
-scenario.
-
-Create through one of the two tools, never by writing the markdown
-yourself. The proofs live in canonical storage, so editing the rendered
-file cannot weaken them.
-
-If the MCP server is not connected at all, write the markdown with the
-Write tool instead. Then tell the user plainly that the proofs are not
-locked and that anti-cheat verification is off for this document.
-
-Right after creation, record the review with `dod_adversarial_gate` at
-`phase: 1`, passing `dod_id`, `verdict`, `lenses`, and `summary`. Each lens
-entry is `{lens, findings, mandatory_minimum_met}`.
-
-Then run `dod_check` with the `dod_id` and no `nodePath`, before any code
-exists. Sort every leaf result into one of two piles:
-
-1. Expected to fail: the command ran and the feature is simply absent.
-2. Mis-authored: a missing tool, a wrong path, a shell error, a placeholder,
-   or a proof that passes already and therefore proves nothing.
-
-Fix every mis-authored leaf before you hand off. Use `dod_amend` with
-`dod_id`, `node_path`, `new_command`, `new_predicate`, `new_description`,
-and the required `reason`. Add `amend_justification` once a node has been
-amended three times. Use `dod_refine` with `mode: "concretize"` or
-`mode: "subdivide"` to turn a draft into a proof or into children. Use
-`dod_add_node` with `parent_path` and `title` for a check you missed, and
-for the company baseline, integration proof, human judgement, and
-test-first leaves from section 5. Re-run `dod_check` until only the
-expected-to-fail pile remains.
+Before you hand off, confirm the spec delta itself is coherent. Run
+`openspec validate <change-id> --strict` and fix anything it flags. This
+does not run `dod-guard cover`, and it should not: no test exists yet, so
+every scenario in this change is expected to be unwired. `cover` is the
+executor's gate, run once real tests exist and carry `covers:` markers,
+not this skill's.
 
 ## 8. Hand off and stop
 
-Report the change id and the `dod_id`. The executor needs both, because
-the change holds the requirements and the DoD holds the proofs. Report the
-root group count, the total leaf count, the concrete count, the draft
-count, and the `MANUAL:` count. Report the gate
-verdict and the markdown path. Report the baseline run as the number of
-leaves that passed and the number that failed as expected. Then name the
+Report the change id. Report the requirement count and the scenario count
+from the spec delta. Report the adversarial verdict from section 6. Name
+every scenario whose test binding or entry point is still an open item,
+per section 5, so the executor knows what to close before `dod-guard
+cover` reports it as more than covered-but-not-integrated. Then name the
 executor.
 
 | Shape of the work | Executor |
@@ -384,7 +246,7 @@ executor.
 | a small change whose own `tasks.md` covers the work, with no per-step gate needed | `/opsx:apply` |
 
 Tell the user which one you picked and why, in one sentence. A caller
-outside MCP verifies a subtree with
-`dod-guard check --dod-id=<id> --node-path=<path> --quiet`.
+outside a skill session verifies a change's scenarios with
+`dod-guard cover <change-id>`.
 
 Then stop. Do not start the work.

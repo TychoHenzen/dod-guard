@@ -8,7 +8,7 @@ description: >-
   5 or more steps and you want implementation to run on the cheap backend, or
   the user says "cheap step", "offload to deepseek", "use the cheap model for
   this", or "delegate the grunt work".
-argument-hint: "[plan file, .step-session/steps.json, or the plan just confirmed]"
+argument-hint: "[OpenSpec change id, plan file, or the plan just confirmed]"
 ---
 
 # Cheap step
@@ -19,8 +19,8 @@ run it. Everything in it holds here.
 ## What you inherit
 
 You inherit the whole base discipline. That covers splitting the plan and
-getting approval. It covers the session files at `.step-session/steps.json`
-and `.step-session/progress.log`, and every field name in them. It covers the
+getting approval. It covers the session file at
+`openspec/changes/<id>/steps.json`, and every field name in it. It covers the
 staleness checks, dependency order, and the four statuses. It covers the
 verdict gate, the repair cap, and the record-and-flush step. It covers the
 closing integration run and the final report.
@@ -79,8 +79,8 @@ It will pick a reading and build it.
 
 1. Re-read the step description and name every point where two readings fit.
 2. Ask the user with AskUserQuestion, one question per point.
-3. Write each answer into the step `description` in `steps.json`.
-4. Append the answer to `progress.log`, so a retry never re-asks.
+3. Write each answer into the step `description` in `steps.json`, so a retry
+   never re-asks.
 
 Confirm the check is stable too. Run `verify_cmd` twice before you dispatch. A
 worker cannot second-guess a flaky command. It will chase the noise and burn
@@ -164,8 +164,8 @@ got wrong.
 
 Allow two retries. If the second fails, do the step on the host yourself. Read
 whatever partial work came back first, then dispatch through the base's normal
-agent table. Set `status` to `completed` and leave `mode` as `cheap`. Append a
-line to `progress.log` saying the host finished it. Invent no new status value.
+agent table. Set `status` to `completed` and leave `mode` as `cheap`. Note in
+the step's own entry that the host finished it. Invent no new status value.
 
 Count those lines as you go. Once more than 30 in every 100 cheap steps end on
 the host, stop. This plan does not suit cheap workers. Say so, and finish the

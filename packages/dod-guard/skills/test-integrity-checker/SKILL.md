@@ -132,29 +132,23 @@ since a drop says a repair pulled a path out of testing.
 
 ## Locking, then the report
 
-A corrected test earns a digest once you worked its value out by hand, its fault demonstration
+A corrected test earns a binding once you worked its value out by hand, its fault demonstration
 passed, and the logic beneath it deserves defending. Every other test stays without one.
 
-`dod_create` takes a leaf whose refinement is concrete. Its `holdout` predicate runs the command,
-trims the output, matches that against the stored digest while ignoring case, and names the test once
-the two diverge. `/dod-guard:interview` covers the arguments around the leaf. This leaf runs under
-the Windows shell dod-guard uses, so copy the command character for character, escaping included,
-rather than re-quoting or reformatting it:
+Where the change carries an OpenSpec delta, add a `#### Scenario:` naming the behavior the
+corrected assertion now protects, and bind the test to it with a `covers:` marker directly above
+the test:
 
-```json
-{
-  "title": "rate limiter tests keep their hand-computed expectations",
-  "refinement": "concrete",
-  "command": "node -e \"const crypto = require('crypto'); const fs = require('fs'); const content = fs.readFileSync('<test file path>', 'utf8'); const hash = crypto.createHash('sha256').update(content).digest('hex'); console.log(hash);\"",
-  "predicate": { "type": "holdout", "value": "<the digest>" },
-  "description": "Fails once somebody weakens or deletes a corrected assertion",
-  "category": "test_audit"
-}
+```javascript
+// covers: <group>/<capability> :: <requirement title> :: <scenario title>
 ```
 
-`title` is mandatory, so dod-guard turns away a call without one. An unset `refinement` defaults to
-`draft`, a draft holds no command, and a digest check with no command to run leaves the DoD
-incomplete.
+`dod-guard cover` then reports the scenario covered once the marker names a real test that exercises
+it, and reports it uncovered again the moment somebody deletes the test or the marker. That is the
+project's mechanism for catching a weakened or removed corrected assertion; see
+`/dod-guard:interview` for how a scenario and its marker get written. Where the change has no
+delta to bind against, note in the report which corrected tests still want that binding once one
+exists.
 
 The report names every unit audited. Each repaired test appears with the pattern and the severity the
 agent gave it. Each finding left unrepaired appears with your reason. The fault demonstration's
