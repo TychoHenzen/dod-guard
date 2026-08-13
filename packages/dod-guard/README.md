@@ -1,16 +1,36 @@
 # dod-guard
 
-Anti-cheat Definition of Done verification for Claude Code. Locks proof commands in MCP storage so editing the rendered markdown cannot weaken verification.
+An OpenSpec scenario-coverage tool for Claude Code. It answers one question a
+model cannot honestly answer about its own work: did a real test, not the
+agent that wrote the feature, actually exercise this scenario through
+something a user can reach?
 
 ## What it does
 
-- **Locks proofs canonically** — proof commands stored in MCP, not in editable markdown
-- **Tamper-blocking** — SHA256 fingerprint mismatch forces the verdict to FAIL, not just a warning
-- **Behavioral predicates only** — no mechanical metrics (line counts, log counts) that a weak model can game without fixing behavior
-- **Scoped checking** — `node_path` verifies one subtree fast; an unscoped run with drafts left can never return PASS
-- **Amendment audit trail** — all proof modifications logged with mandatory reasons
-- **Stuck detection** — a node amended three or more times forces a STUCK verdict, overriding PASS. Repeatedly rewriting a proof until it goes green is the approach being wrong, not the proof
-- **Structured interviews** — `/interview` skill gathers requirements before implementation
+- **Scenario-to-test binding** - a scenario in `openspec/specs/*/spec.md`
+  counts as covered only when a `// covers:` marker in a test file names it,
+  read from the test file itself, never inferred by title match
+- **Reachability, not just execution** - a bound test that imports a function
+  and calls it directly is not the same as a user reaching that function. The
+  bound test runs under coverage instrumentation, scoped to its package's
+  compiled output, and `cover` checks whether a project-declared entry point
+  actually executed
+- **Four honest outcomes** - every scenario resolves to `unwired` (no test
+  binds it), `covered-but-not-integrated` (a bound test passed but never
+  reached a declared entry point), `covered-and-integrated` (a bound test
+  passed and reached one), or `failed` (the bound test failed, or no test with
+  that name exists)
+- **Ratcheted, not a one-shot pass/fail** - `.github/quality/coverage-gate-baseline.json`
+  adopts a scenario it has never scored at whatever outcome `cover` finds, and
+  only fails when a scenario it already scored regresses to a worse outcome.
+  Existing debt is allowed; making it worse is not
+- **A generated execution plan** - `steps` reads a change's `tasks.md` and
+  writes `openspec/changes/<id>/steps.json`, binding each task's `verify_cmd`
+  through `cover` where a `<!-- covers: -->` annotation names a scenario
+
+There is no proof tree, no predicate, and no command a model authors to grade
+its own work. The grade comes from whether a named, pre-existing test reached
+the code.
 
 ## Install
 
@@ -42,163 +62,218 @@ Add to your `.mcp.json`:
 npm install -g dod-guard
 ```
 
-## MCP Tools
+## MCP server
 
-| Tool | Description |
-|------|-------------|
-| `dod_create` | Create a locked DoD with a recursive `TaskNode` tree. Nodes are `draft` (intent only) or `concrete` (proof command + predicate). Validates that commands reference tools available on the host OS |
-| `dod_check` | Execute concrete proofs from canonical storage, return PASS/FAIL/INCOMPLETE. Drafts are reported but skipped, so the verdict stays INCOMPLETE while any remain. Optional `node_path` scopes the run to one subtree |
-| `dod_refine` | Turn a draft leaf into a concrete proof (`concretize`) or split it into child subtasks (`subdivide`) |
-| `dod_add_node` | Add a draft or concrete node under a task group, or at root level |
-| `dod_remove_node` | Remove a node and all its descendants |
-| `dod_tree` | Read-only dump of the node tree with stable IDs, paths, titles, and statuses. Use it to find `node_path` values without running proofs |
-| `dod_status` | Read the cached last check result without re-running |
-| `dod_amend` | Modify a concrete proof's command, predicate, or description with a mandatory audit trail. Resets the proof to pending |
-| `dod_list` | List all tracked DoDs with status |
-| `dod_import` | Parse an existing DoD markdown file into canonical storage and lock its proofs |
-| `dod_adversarial_gate` | Record a GO/REVISE/STOP verdict for a DoD phase. Used by `/adversarial-workflow` to block phase N+1 until phase N passes |
-| `dod_store_migrate` | One-time migration of legacy `steps`-format documents to the current `roots` tree format. Idempotent |
+The server registers **no tools**. Connecting to it over stdio (no CLI
+arguments) starts a bare MCP session with nothing to call. All of dod-guard's
+functionality - `cover` and `steps` - is a shell CLI, invoked the same binary
+by argument rather than through MCP tool calls.
 
 ## CLI
 
-The same binary is a shell CLI, so a DoD subtree can gate other tools:
+The same `dist/bundle.js` binary is both the MCP server and the CLI -
+`process.argv.slice(2)` decides which. With no arguments it starts the MCP
+stdio server; with arguments it runs a command:
 
 ```bash
-dod-guard check --dod-id=<id> [--node-path=0.children.1] [--quiet]
-dod-guard tree --dod-id=<id>      # find --node-path values
-dod-guard status --dod-id=<id>
-dod-guard list
+dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]
+dod-guard steps <change-id> [--cwd=<dir>]
 ```
 
-Exit codes: `0` pass · `1` a proof failed (or tampered/stuck) · `2` an unscoped run with drafts remaining · `3` usage error. A scoped run exits `0` when that subtree passes, which is what makes a subtree usable as a `verify_cmd` in evomcp or `/cheap-step`.
+`cover` reports each scenario as `covered-and-integrated`,
+`covered-but-not-integrated`, `unwired`, or `failed` against the coverage-gate
+ratchet baseline. One of `<change-id>` or `--all` is required.
+`--write-baseline` needs `--all` - it replaces the whole baseline, and a
+change-scoped run only ever sees its own scenarios. `--cwd=<dir>` overrides
+the working directory for either command.
+
+`steps` derives `openspec/changes/<id>/steps.json` from that change's own
+`tasks.md`, binding each task's `verify_cmd` through `dod-guard cover` where a
+`<!-- covers: -->` annotation names a scenario.
+
+Exit codes:
+
+| Command | `0` | Other |
+|---|---|---|
+| `cover` | no regressions against the baseline | `1` a regression, `3` usage error |
+| `steps` | wrote `steps.json` | `3` usage error |
+
+`dod-guard cover <change-id>` scoped to one change exits `0` when that
+change's scenarios show no regressions, which is what makes it usable as a
+closing gate - `/step-by-step`'s Finishing phase runs it before calling
+`openspec archive`.
 
 ## Skills
 
-The plugin ships eleven skills and fifteen specialized agents.
+The plugin ships twelve skills.
 
 | Skill | Use it for |
 |---|---|
-| [`/interview`](#interview) | Gathering requirements before any implementation |
-| [`/ratchet`](#ratchet) | Complex multi-sub-problem work with unknown unknowns |
-| [`/step-by-step`](#step-by-step) | Executing a multi-step plan without batching or corner-cutting |
-| [`/cheap-step`](#cheap-step) | The same, with implementation offloaded to a cheap model |
-| [`/adversarial-workflow`](#adversarial-workflow) | Gated 4-phase review on non-trivial features |
-| [`/clean-house`](#clean-house) | Hunting duplicate and obsolete implementations |
-| [`/test-integrity-checker`](#test-integrity-checker) | Tests that bless bugs instead of catching them |
+| [`/interview`](#interview) | Pinning down requirements before any implementation task |
+| [`/step-by-step`](#step-by-step) | Executing a confirmed multi-step plan one atomic step at a time |
+| [`/cheap-step`](#cheap-step) | The same plan, with implementation offloaded to cheap DeepSeek workers |
+| [`/ratchet`](#ratchet) | Executing an existing OpenSpec change autonomously, one sub-problem per loop iteration |
+| [`/adversarial-workflow`](#adversarial-workflow) | Driving one change through four rounds of hostile review, gated GO/REVISE/STOP |
+| [`/clean-house`](#clean-house) | Hunting duplicate and obsolete implementations with git archaeology |
+| [`/test-integrity-checker`](#test-integrity-checker) | Auditing tests written to match the implementation instead of a spec |
 | [`/blind-rewrite`](#blind-rewrite) | A rewrite that keeps coming back as a renamed variable |
-| [`/tighten`](#tighten) | Removing accidental complexity on a loop, one target at a time |
+| [`/tighten`](#tighten) | Removing accidental complexity one scanner-ranked target per invocation |
 | [`/doc-reconcile`](#doc-reconcile) | Documents that contradict each other |
-| [`/skill-debug`](#skill-debug) | A skill that does not do what its SKILL.md says |
-| [`/quality-refactor`](#quality-refactor) | Refactoring to an explicit, machine-checked quality bar (ships in quality-guard) |
+| [`/skill-debug`](#skill-debug) | A skill that ignored its own steps, debugged from real session transcripts |
+| [`/skill-migrate`](#skill-migrate) | Migrating a skill or agent definition to a newer model by blind rewrite |
 
 ### `/interview`
 
-Structured requirements gathering skill. Researches the codebase, asks targeted questions one at a time, builds a confirmed requirements summary, then creates a locked DoD via `dod_create`.
+Reads the code a change touches, then questions the user one item at a time
+until requirements are confirmed and a written summary is locked in. Runs an
+adversarial review of that spec, writes the resulting scenarios into an
+OpenSpec change, and marks how each scenario binds to a test. Never
+implements - the output is a change id, handed to an executor skill.
 
-The output is a self-contained spec with testable proofs — hand it to `/step-by-step` or `/ratchet` for implementation.
-
-Triggers: any implementation task, feature request, bug fix, or refactor, before writing code or plans.
+Triggers: any implementation task, feature request, bug fix, or refactor,
+before writing code or plans.
 
 ### `/step-by-step`
 
-Executes a multi-step plan by dispatching ONE fresh subagent per atomic step. The orchestrator holds only the current step plus a compact result of the last one, so its context stays lean regardless of step count — which removes the pressure that makes models batch steps, skip verification, and "wrap up" around step 5.
+Executes a confirmed multi-step plan by dispatching one fresh subagent per
+atomic step. The orchestrator holds only the current step plus a compact
+result of the last one, which removes the pressure that makes models batch
+steps, skip verification, or wrap up early. Reads and writes
+`openspec/changes/<id>/steps.json` - an OpenSpec change id is required. Its
+Finishing phase runs `dod-guard cover` and, on a clean result, `openspec
+archive`.
 
-Each step carries a `verify_surface` tag (`code`, `visual`, `gameplay`, `config`, `structural`) that decides what counts as verified. A passing build proves the code compiled; it proves nothing about what the UI looks like. Ships the `step-implementer` and `step-fixer` agents. Session state in `.step-session/` survives compaction.
-
-Triggers: "work through this step by step", "don't batch", or any plan with 5+ steps.
+Triggers: a plan with 5+ steps, a model starting to batch or cut corners, or
+"work through this step by step."
 
 ### `/cheap-step`
 
-`/step-by-step` with implementation offloaded to cheap-worker fanout (evomcp solve → DeepSeek). The host model writes the specs, reviews the results, and fixes what the cheap workers can't crack. 90%+ of the work costs pennies; the host model only touches the hard 10%.
+A delta over `/step-by-step`: everything about splitting the plan, the
+session file, staleness checks, and the closing gate is inherited unchanged.
+The one substitution is where implementation goes - to the evomcp `solve`
+tool (cheap DeepSeek workers) instead of a dispatched host agent. The host
+model still writes the spec, still runs verification, and still decides the
+verdict.
 
-Triggers: "cheap step", "offload to deepseek", "delegate the grunt work".
-
-### `/adversarial-workflow`
-
-Four phases, each gated by adversarial review before the next can run: Spec Review → Test Audit → Implementation Review → Structural Cleanup. Verdicts are stored canonically via `dod_adversarial_gate`, so `dod_check` blocks phase N+1 until phase N is GO.
-
-Ships six review agents: `adversarial-spec-reviewer`, `adversarial-security`, `adversarial-test-auditor`, `adversarial-new-hire`, `adversarial-saboteur`, `adversarial-spec-auditor`. The implementation-review agents have mandatory finding quotas — a reviewer that returns "looks good" has not reviewed.
-
-Triggers: "adversarial workflow", "gate this", "strict quality", "full adversarial pass".
-
-### `/test-integrity-checker`
-
-Detects and fixes tests that bless production bugs instead of catching them: logic mirroring (the test reimplements the same algorithm as the code), output blessing (expected values copied from buggy output), weak assertions (`toBeDefined`/`toBeTruthy`), mock-everything tests that pass vacuously, symmetry and inverse tests that cancel a shared bug, and missing negative cases. Ships the `test-integrity-auditor` agent.
-
-Triggers: "audit my tests", "are these tests real", "tests pass but the bug shipped".
+Triggers: a plan with 5+ steps where implementation should run on the cheap
+backend, "cheap step," "offload to deepseek," "delegate the grunt work."
 
 ### `/ratchet`
 
-Executes an existing DoD autonomously, combining dod-guard, gitevo, evomcp, obsidian-rag, and code-review-graph. Two-phase: interactive setup (route + recall + sub-problem ordering + user lock-in), then autonomous /loop execution with verification gates every cycle. For complex multi-sub-problem work. Build the DoD with `/interview` first.
+Executes an existing OpenSpec change autonomously, one sub-problem per loop
+iteration, re-running the whole change's coverage check every cycle so
+earlier work cannot silently break. Needs a confirmed change id - it does not
+gather requirements or build the plan; that's `/interview`'s job. Captures
+branches with gitevo and persists lessons at the end.
 
-Triggers: "solve with ratchet", "ratchet this", "complex problem", "multi-step solution".
+Triggers: interdependent sub-problems, unknown unknowns, real regression
+risk, "solve with ratchet," "ratchet this."
+
+### `/adversarial-workflow`
+
+Drives one OpenSpec change through four rounds of hostile review - spec,
+tests, implementation, structural cleanup - each closing with a GO/REVISE/STOP
+verdict recorded in the change's `design.md`. Reviewers run without the
+author's reasoning and must produce findings; "looks good" is not a review.
+
+Triggers: "gate this," "strict quality," "full adversarial pass," a quality
+or security concern about multi-step work.
 
 ### `/clean-house`
 
-Aggressively hunts down duplicate and obsolete implementations using git archaeology. Finds old versions of replaced features, traces authorship via git blame, migrates confused-model changes to the current version, then deletes dead code. Backwards compatibility is treated as irrelevant unless proven otherwise.
+Hunts pairs where one implementation superseded another, using git
+archaeology to decide which side is dead, rescues work that landed on the
+dead side by mistake, then deletes on approval. Backwards compatibility never
+saves a file by default - only a named live consumer does.
 
-Triggers: "clean house", "dedupe", "clean up old versions", "remove dead implementations", "consolidate duplicates", "debloat".
+Triggers: "clean house," "dedupe," "clean up old versions," "remove dead
+implementations," "consolidate duplicates," "debloat."
+
+### `/test-integrity-checker`
+
+Audits a test file for tests written to match the implementation instead of a
+specification - logic mirroring, output blessing, weak assertions
+(`toBeDefined`/`toBeTruthy`), mock-everything tests, and missing negative
+cases - then repairs one file into an oracle backed by a demonstrated fault.
+
+Triggers: "audit my tests," "are these tests real," "the tests might be
+wrong," tests that assert only truthiness, or a mutant that survived.
 
 ### `/blind-rewrite`
 
-Replaces an implementation by deleting it first, then rebuilding it from a contract that a fresh agent receives without ever seeing the old code. Fixes the failure where a model asked for a complete rewrite returns a renamed variable. Ships `blind-contract-extractor`, `blind-writer` and `blind-gap-auditor`, plus `overlap-scan.mjs`, a gate that scores the result against the deleted original and rejects paraphrase.
+Deletes the target first, extracts a contract of what it does (not how it
+reads), and hands that contract to an author who never sees the original.
+Gates the result against the deleted copy with `overlap-scan.mjs`, which
+rejects paraphrase. Covers four shapes: a new interior behind an existing
+seam, no seam yet, a dependency swap, and prose with no test harness.
 
-Triggers: "rewrite this properly", "complete rewrite", "no cosmetic changes", "swap this library", or a rewrite that came back as a cosmetic edit.
+Triggers: "rewrite this properly," "complete rewrite," "no cosmetic changes,"
+"swap this library," or a rewrite that came back as a cosmetic edit.
 
 ### `/tighten`
 
-An autonomous loop that removes accidental complexity one target per invocation. It ranks the repository by structural violations joined against git return-churn, then blind-rewrites the worst target. Ships `intent-analyst`, which separates necessary complexity from accidental, and `characterization-writer`, which builds an oracle when the target has none. Two gates must pass: the result has to be different, and it has to be smaller.
+An autonomous loop that removes accidental complexity one target per
+invocation. Ranks files by structural violations joined against git
+return-churn, opens an OpenSpec change scoped to the picked target, and
+blind-rewrites it. Two gates must pass: the result has to be different, and
+it has to be smaller.
 
-Triggers: "tighten the codebase", "remove accidental complexity", or wiring the skill into `/loop`.
+Triggers: "tighten the codebase," "remove accidental complexity," or wiring
+the skill into a loop or cron job.
 
 ### `/doc-reconcile`
 
-Finds documents that contradict each other, dates each conflicting claim from its real edit history, and deletes the older side when the dating is decisive. Ships the `doc-conflict-judge` agent.
+Finds documents that contradict each other, dates each conflicting claim from
+its real edit history, and deletes the older side when the dating is
+decisive.
 
-Triggers: "which doc is right", "the docs contradict each other", "remove outdated docs".
+Triggers: "which doc is right," "the docs contradict each other," "remove
+outdated docs."
 
 ### `/skill-debug`
 
-Debugs a skill from the sessions that ran it. `find-runs.mjs` locates every recent run in the session transcripts. `extract-run.mjs` compacts one run into a numbered trace of what the agent actually did. The skill then aligns that trace against what the SKILL.md required and reports each divergence with its cause. Every proposed edit cites a step number from a real run, so no skill gets rewritten from taste.
+Debugs a skill from the sessions that ran it. Locates every recent run in
+session transcripts, compacts each into a numbered trace of what the agent
+actually did, and aligns that trace against what the SKILL.md required. Every
+proposed edit cites a step number from a real run.
 
-Triggers: "debug this skill", "why did /x do that", "the skill ignored its own steps".
+Triggers: "debug this skill," "why did /x do that," "the skill ignored its
+own steps."
 
-### `/quality-refactor`
+### `/skill-migrate`
 
-Systematic refactoring to an explicit, machine-checked quality bar: one type per file, files under 300 lines, cyclomatic complexity under 10, at most 7 parameters, no unnamed tuples, guard clauses instead of `else`, free functions instead of stateless methods, and aggressive removal of dead, test-only, duplicate, and compatibility-shim code.
+Migrates a SKILL.md, agent definition, CLAUDE.md, memory file, or instinct
+file to work on newer models by blind rewrite: extracts a behavioral
+contract, classifies scaffolding versus essential instructions, and has a
+blind writer rebuild the artifact from that contract. Four automated gates -
+overlap, gap audit, and two more - must clear before the migration ships.
 
-Ships `scripts/quality-scan.mjs` — a zero-dependency structural scanner (TypeScript/JavaScript, C#, Rust, Python, Go, Java, C++) with a ratcheting baseline, so preferred bounds can only ever improve:
-
-```bash
-node "$QS" src --fail-on=error                                     # hard gate
-node "$QS" src --baseline=.quality/baseline.json --fail-on=regression   # ratchet
-```
-
-The skill produces a `.step-session/steps.json` plan ordered in waves (delete → dedupe → split → simplify → signatures → cosmetic) and hands it to `/step-by-step` for execution. It does not execute steps itself.
-
-Triggers: "refactor this properly", "clean this up to a high standard", "enforce code quality", "quality pass", "reduce complexity", "this file is too long".
+Triggers: "migrate this skill," "migrate this agent," "tune for a newer
+model," "fix skill for literal models."
 
 ### How the skills compose
 
-Two skills produce plans, two execute them, and the rest gate or clean up:
-
 ```
-PLAN                      EXECUTE                    GATE
-────                      ───────                    ────
-interview        ──┐   ┌─► step-by-step  ──► dod_check
-  → locked DoD     ├───┤     (step-implementer,        │
-quality-refactor ──┘   │      step-fixer)               │
-  → steps.json         └─► cheap-step                   │
-                             (evomcp → DeepSeek)        │
-                                                        ▼
-ratchet ─────────────► one sub-problem per loop iteration,
-                       ratchet gate every cycle
-
-adversarial-workflow ► dod_adversarial_gate ──► blocks phase N+1 until N is GO
-
-clean-house ─────────► deletes duplicate/obsolete implementations
-test-integrity-checker ► rewrites tests that bless bugs
+/interview          writes scenarios + test bindings into an OpenSpec change
+        |
+        v
+implementation       usually via /step-by-step or /cheap-step
+        |
+        v
+dod-guard cover <id> checks binding + reachability, ratcheted against
+                     the coverage-gate baseline
+        |
+   clean run
+        v
+openspec archive     run by /step-by-step's Finishing phase
 ```
+
+`/ratchet`, `/adversarial-workflow`, `/blind-rewrite`, and `/tighten` each
+work against a change id and close the same way: a clean `dod-guard cover`
+run followed by `openspec archive`. `/clean-house`,
+`/test-integrity-checker`, `/doc-reconcile`, `/skill-debug`, and
+`/skill-migrate` sit outside that loop - they clean up, audit, or repair
+rather than plan or execute a change.
 
 External dependencies, all optional:
 
@@ -207,117 +282,22 @@ External dependencies, all optional:
 | `ratchet` | gitevo, evomcp, obsidian-rag, code-review-graph | Manual branching and no learning persistence |
 | `cheap-step` | evomcp + a configured cheap model | Use `/step-by-step` instead |
 | `clean-house` | code-review-graph (dead-symbol scan), jscpd (duplication) | git archaeology and grep only |
-| `quality-refactor` | none — the scanner is zero-dependency | — |
 
-All eleven skills and fifteen agents ship inside the plugin. No manual installation.
-
-## How it works
-
-### Proof lifecycle
-
-```
-/interview → dod_create → dod_refine → [implement] → dod_check → PASS/FAIL
-                          (draft →                        ↓
-                           concrete)             dod_amend (if unreasonable)
-```
-
-1. **Create** — `/interview` or a direct `dod_create` call locks the node tree in `~/.claude/dod-store/`
-2. **Refine** — `dod_refine` turns draft leaves into concrete proofs, or subdivides them into subtasks
-3. **Implement** — work the tree; the proofs are the acceptance criteria
-4. **Check** — `dod_check` executes commands from the locked store, not from the markdown
-5. **Amend** — if a proof is genuinely unreasonable, `dod_amend` modifies it with a logged reason
-
-### Anti-cheat properties
-
-- Proof commands live in `~/.claude/dod-store/{uuid}.json`, not in the markdown file Claude reads and can rewrite
-- `dod_check` reads from the store — editing the rendered proof text has zero effect on verification
-- Each check prints a SHA256 fingerprint; a mismatch forces FAIL rather than warning
-- All amendments are permanently logged with timestamps and reasons
-- Three or more amendments on one node forces STUCK, which overrides PASS even when every proof is green
-
-### Predicate types
-
-| Type | Value | Passes when |
-|------|-------|-------------|
-| `exit_code` | `0` | Command exits 0 |
-| `exit_code` | `1` | Command exits 1 (e.g. grep no matches) |
-| `exit_code_not` | `0` | Command exits non-zero |
-| `output_contains` | `"text"` | stdout contains text |
-| `output_matches` | `"regex"` | stdout matches regex |
-| `output_not_contains` | `"text"` | stdout does NOT contain text |
-| `output_not_matches` | `"regex"` | stdout does NOT match regex |
-| `tdd` | `0` | **TDD enforcer.** Must be observed failing before it can pass |
-
-Three more are **gate predicates** — they read recorded state rather than running a check of their own:
-
-| Type | Value | Passes when |
-|------|-------|-------------|
-| `adversarial` | phase number | The DoD's `adversarial_gates[]` entry for that phase is GO. Written by `dod_adversarial_gate` |
-| `holdout` | SHA-256 | A holdout test's fingerprint still matches — the test was not weakened or deleted |
-| `convergence` | — | The Phase 4 convergence audit reached GO |
-
-**Core principle: behavioral predicates only.** Every proof is a concrete, falsifiable claim about what the implementation does. There are deliberately no mechanical quality metrics (line count, log count, assertion count) — weak models game those without fixing behavior. Structural quality is enforced separately by `/quality-refactor`, which uses a real scanner and a ratcheting baseline.
-
-**Advisory tier.** Any proof may set `advisory: true`: a failing advisory proof warns loudly but does not fail its node or the overall verdict. The flag is part of the proof fingerprint, so a hard gate cannot be silently downgraded.
-
-**Timeouts.** Proofs default to a 120s command timeout; set `timeout_ms` for slow tools.
-
-### TDD enforcement
-
-The `tdd` predicate enforces test-driven development by requiring proof of a red-green cycle:
-
-1. Write a failing test
-2. Run `dod_check` — records the failure (RED phase, `seen_failing=true`)
-3. Implement the feature
-4. Run `dod_check` again — test passes AND was previously seen failing → proof passes
-
-If a test passes without ever being observed failing, dod-guard rejects it with **"TDD VIOLATION"**. This prevents writing tests after implementation that merely confirm existing behavior.
-
-### Human-verified criteria
-
-Some acceptance criteria can't be machine-checked — "the app launches and the dashboard renders correctly". **There is no `manual` predicate.** A predicate whose verdict a model can request is a predicate a model can eventually talk its way past, so dod-guard does not have one.
-
-Instead, a human-verified criterion stays a **draft leaf** carrying a `MANUAL:` intent. Drafts are reported by `dod_check` but never executed, and any remaining draft holds the overall verdict at **INCOMPLETE** — never PASS, never FAIL. That is the correct semantic: "a human still owes us something" is not the same as "checked and failed".
-
-The consequence is the anti-cheat property. Claude cannot mark the criterion verified, because there is nothing to mark; the only way the verdict leaves INCOMPLETE is for a human to look, decide, and either `dod_refine` the draft into a real machine-checkable proof or accept the DoD as incomplete. A model working alone can never reach PASS on a DoD that contains one.
-
-### OS-correct commands (no bash-on-Windows)
-
-Proof commands execute on the **host OS** via `dod_check`. To stop the common failure of authoring Linux/bash commands that then fail on a Windows host (and the slow `dod_amend` cleanup that follows), dod-guard validates commands **up-front**:
-
-- On `dod_create`, `dod_refine`, and `dod_amend`, every proof command is parsed for the executables it invokes (across pipes and `&&`/`||`/`;` chains, respecting quotes).
-- Each executable is checked against the current OS: cmd.exe built-ins, anything on `PATH` (`where` / `command -v`), or a real file at the working directory.
-- If any tool is missing, the operation is **rejected** with the offending tools and a suggested native replacement (`grep`→`findstr`, `cat`→`type`, `ls`→`dir`, `rm`→`del`, …). The DoD is not created or amended until the commands are OS-correct.
-
-This forces correct commands at authoring time instead of discovering breakage at check time. Criteria that genuinely need a human stay draft leaves (see above) rather than becoming a shell command.
-
-Shell invocation lives in one place — `buildShellInvocation()` in `evaluate-proof.ts`. On Windows it produces `cmd.exe /d /s /c "<command>"` with `windowsVerbatimArguments: true`. Both details are load-bearing: cmd.exe has no single-quote grouping, and Node's default Windows quoting mangles embedded double quotes into no-ops that exit 0.
-
-### Tamper detection (blocking)
-
-Each DoD stores a SHA256 fingerprint of its proof set at creation time. On every `dod_check`, the current fingerprint is compared to the stored original. If they don't match — the store was edited outside `dod_amend` — the verdict is **forced to FAIL** (not merely warned). `dod_amend` legitimately re-locks the fingerprint, so real changes go through the audited path; a raw store edit can never return PASS.
-
-### Proof categories
-
-Every proof declares a `category` — `behavioral`, `wiring`, `other`, or `test_audit` — and each DoD declares a `type`: `bug`, `general`, or `minimal`. On `dod_create`, a non-`minimal` DoD with zero `behavioral` proofs is **warned** about, because a DoD proven entirely by wiring and structural checks proves that code exists, not that it works. Company baselines live in `standards/dod-baselines.md`.
-
-### Scoped checking
-
-`dod_check` accepts an optional `node_path` (use `dod_tree` or the CLI's `tree` command to find one). A scoped run executes only that subtree's proofs and carries every other leaf forward from its last recorded result — fast iteration without paying for the whole suite. Scoped runs never overwrite the canonical last full verdict.
-
-The MCP verdict for a scoped run is always **INCOMPLETE**, never PASS, so a scoped check cannot satisfy a completion gate. The CLI is deliberately different: `dod-guard check --node-path=... ` exits **0** when that subtree passes. That is what makes a DoD subtree usable as a `verify_cmd` in evomcp or `/cheap-step` — the shell needs a pass/fail signal for the part it just built, while the MCP verdict stays honest about the whole tree.
+All twelve skills ship inside the plugin. No manual installation.
 
 ## Development
 
 ```bash
 npm install
-npm run build    # TypeScript compilation → dist/
+npm run build    # TypeScript compilation -> dist/
 npm test         # build + node --test on dist/*.test.js
-npm run bundle   # esbuild → dist/bundle.js (what ships)
+npm run bundle   # esbuild -> dist/bundle.js (what ships)
 npm start        # run the MCP server
 ```
 
-`dist/bundle.js` is both the MCP server and the CLI — `process.argv.slice(2)` decides which. Publishing goes through a git tag (`dod-guard-v<version>`), never by copying a bundle into the plugin cache.
+`dist/bundle.js` is both the MCP server and the CLI - `process.argv.slice(2)`
+decides which. Publishing goes through a git tag (`dod-guard-v<version>`),
+never by copying a bundle into the plugin cache.
 
 ## License
 

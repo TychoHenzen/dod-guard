@@ -1,81 +1,100 @@
 # dod-guard Usage Guide
 
-How to pick the right skill for your goal. Project-agnostic — works for any codebase.
+How to pick the right skill for your goal. Project-agnostic - works for any
+codebase with an `openspec/` directory.
 
 ## Quick Reference: What Skill for What Goal
 
 | You want to... | Use | Why |
 |----------------|-----|-----|
-| Understand requirements before coding | `/dod-guard:interview` | Structured questioning + DoD tree + adversarial spec review |
-| Execute a complex multi-step plan correctly | `/dod-guard:step-by-step` | One fresh subagent per step, no batching, no shortcuts |
+| Understand requirements before coding | `/dod-guard:interview` | Structured questioning, writes scenarios + test bindings into an OpenSpec change |
+| Execute a confirmed multi-step plan correctly | `/dod-guard:step-by-step` | One fresh subagent per step, no batching, no shortcuts |
 | Same as above but cheaper (90%+ cost savings) | `/dod-guard:cheap-step` | DeepSeek workers implement, host model verifies |
-| Maximum quality with adversarial gates | `/dod-guard:adversarial-workflow` | 4-phase gated: Spec→Test→Implement→Cleanup |
-| Solve complex multi-sub-problem with ratchet | `/dod-guard:ratchet` | DoD gates every cycle, evolutionary branching, cross-session learning |
+| Solve interdependent sub-problems autonomously | `/dod-guard:ratchet` | Coverage-gate check every loop iteration, evolutionary branching |
+| Maximum quality with adversarial gates | `/dod-guard:adversarial-workflow` | 4-phase gated: Spec->Test->Implement->Cleanup, verdicts in `design.md` |
 | Find and delete duplicate/obsolete code | `/dod-guard:clean-house` | Git archaeology, confused-model detection, aggressive cleanup |
+| Remove accidental complexity in a codebase sweep | `/dod-guard:tighten` | Scanner-ranked targets, blind-rewritten one at a time |
+| Replace an implementation without a paraphrase | `/dod-guard:blind-rewrite` | Delete first, rebuild from a contract, gate against the deleted original |
+| Audit tests that bless bugs instead of catching them | `/dod-guard:test-integrity-checker` | Detects logic mirroring, output blessing, weak assertions |
+| Reconcile documents that contradict each other | `/dod-guard:doc-reconcile` | Dates each claim from real edit history, deletes the older side |
+| Fix a skill that ignored its own steps | `/dod-guard:skill-debug` | Debugs from real session transcripts, not guesswork |
+| Migrate a skill/agent to a newer model | `/dod-guard:skill-migrate` | Blind-rewrites from an extracted behavioral contract |
 
 ## Decision Flowchart
 
 ```
 You have a task
-│
-├─ Is it unclear what to build?
-│  └─ YES → /dod-guard:interview
-│     Then: pass the DoD to step-by-step, cheap-step, ratchet, or adversarial-workflow
-│
-├─ Is it a single straightforward change?
-│  └─ YES → Just do it. No skill needed.
-│
-├─ Is it a multi-step plan (5+ steps)?
-│  ├─ Budget-sensitive? → /dod-guard:cheap-step
-│  └─ Quality-critical? → /dod-guard:step-by-step
-│
-├─ Does it have interdependent sub-problems?
-│  └─ YES → /dod-guard:ratchet
-│     (Ratchet gates = can't break earlier sub-problems)
-│
-├─ Do you need maximum adversarial quality?
-│  └─ YES → /dod-guard:adversarial-workflow
-│     (4-phase gated: spec review → test audit → implementation review → cleanup)
-│
-├─ Is your codebase full of old/duplicate implementations?
-│  └─ YES → /dod-guard:clean-house
-│
-└─ Still unsure?
-   └─ Start with /dod-guard:interview — it's always safe
+|
++- Is it unclear what to build?
+|    YES -> /dod-guard:interview
+|    Then: pass the change id to step-by-step, cheap-step, ratchet,
+|    or adversarial-workflow
+|
++- Is it a single straightforward change?
+|    YES -> Just do it. No skill needed.
+|
++- Is it a confirmed multi-step plan (5+ steps)?
+|    Budget-sensitive? -> /dod-guard:cheap-step
+|    Quality-critical? -> /dod-guard:step-by-step
+|
++- Does it have interdependent sub-problems?
+|    YES -> /dod-guard:ratchet
+|    (needs a change id from interview first)
+|
++- Do you need maximum adversarial quality?
+|    YES -> /dod-guard:adversarial-workflow
+|    (4-phase gated: spec review -> test audit -> implementation review -> cleanup)
+|
++- Is your codebase full of old/duplicate implementations?
+|    YES -> /dod-guard:clean-house
+|
++- Do you want to sweep accidental complexity, not a named target?
+|    YES -> /dod-guard:tighten
+|
++- Still unsure?
+     Start with /dod-guard:interview - it's always safe
 ```
 
 ## Skill Details
 
-### `/dod-guard:interview` — Requirements Gathering + DoD Creation
+### `/dod-guard:interview` - Requirements Gathering
 
-**What it does:** Structured questioning → research → requirements → DoD tree → adversarial spec review → creates a locked DoD via `dod_create`.
+**What it does:** Reads the code the change touches, questions the user one
+item at a time, confirms a written requirements summary, runs an adversarial
+review of that spec, then writes the resulting scenarios into an OpenSpec
+change and marks how each one binds to a test. Never implements.
 
 **When to use:**
 - Starting any non-trivial implementation task
 - Requirements are unclear or incomplete
-- You want to prevent wrong-problem drift (implementing adjacent thing, not requested thing)
-- Before any other dod-guard skill (they all consume DoDs)
+- You want to prevent wrong-problem drift (implementing adjacent thing, not
+  requested thing)
+- Before any other dod-guard skill that plans or executes work
 
 **When to skip:**
 - Trivial 1-line changes, typo fixes
-- You already have a complete, locked DoD
+- You already have a confirmed OpenSpec change with its scenarios written
 - Pure research/exploration (no implementation planned)
 
 **What it produces:**
-- DoD markdown file in `docs/plans/`
-- Locked DoD in MCP canonical storage (SHA-256 fingerprint)
-- Hierarchical TaskNode tree (draft + concrete leaves)
-- Adversarial spec review gate (Phase 1 GO)
+- Scenarios in the change's spec delta under `openspec/changes/<id>/specs/`
+- A test binding for each scenario (a `// covers:` marker, added at
+  implementation time and checked by `dod-guard cover`)
 
-**Key output:** A `/goal` prompt you can hand to an autonomous agent.
+**Key output:** An OpenSpec change id you can hand to `/step-by-step`,
+`/cheap-step`, `/ratchet`, or `/adversarial-workflow`.
 
 **Budget:** 10-15 min interactive. Worth it for anything non-trivial.
 
 ---
 
-### `/dod-guard:step-by-step` — Sequential Multi-Step Execution
+### `/dod-guard:step-by-step` - Sequential Multi-Step Execution
 
-**What it does:** Decomposes a plan into atomic steps, dispatches ONE fresh subagent per step. Orchestrator context stays lean — no batching, no shortcuts, no "I'll combine steps 3 and 4." Each step gets full attention.
+**What it does:** Reads `openspec/changes/<id>/steps.json`, dispatches ONE
+fresh subagent per atomic step, verifies the result, records it, and moves
+on. Orchestrator context stays lean - no batching, no shortcuts, no "I'll
+combine steps 3 and 4." The Finishing phase runs `dod-guard cover <id>` and,
+on a clean result, `openspec archive`.
 
 **When to use:**
 - Plan has 5+ steps
@@ -84,7 +103,7 @@ You have a task
 - Quality matters more than token cost
 
 **When to skip:**
-- 1-3 trivial steps — just do them
+- 1-3 trivial steps - just do them
 - Single file, single change
 - Budget-sensitive (use cheap-step instead)
 
@@ -92,100 +111,123 @@ You have a task
 
 | Step type | Minimum verification | Common failure |
 |-----------|---------------------|----------------|
-| Code (logic, API, data) | Tests pass + build clean | — |
+| Code (logic, API, data) | Tests pass + build clean | - |
 | Visual (UI, rendering, CSS) | Tests + build + **launch app** OR mark as pending manual check | "Build passes" for a visual change = unverified |
 | Gameplay (physics, AI, behavior) | Tests + build + **playtest** OR mark as pending manual check | "Tests pass" for gameplay behavior = unverified |
 | Config (env, settings, deps) | Config syntax valid + system starts | "File written" without validation |
 | Structural (refactors, renames) | Tests + build + diff review | "No type errors" without import check |
 
-**Key anti-pattern:** Build passes ≠ visual/gameplay verification. This pattern caused 80% of dod-guard breakdown events. Steps tagged `visual` or `gameplay` require actual visual verification or explicit human confirmation.
+**Key anti-pattern:** Build passes is not the same as visual/gameplay verification. Steps
+tagged `visual` or `gameplay` require actual visual verification or explicit
+human confirmation.
 
-**Session recovery:** `.step-session/progress.log` survives compaction. Resume from first pending step.
+**Session state:** Everything lives in the committed
+`openspec/changes/<id>/steps.json` - there is no separate working-copy
+session file. A stale plan (goal mismatch, every step already done, or
+artifact statuses that drifted from the plan's snapshot) triggers a prompt
+to regenerate it with `dod-guard steps <id>`. A valid plan resumes from the
+first `pending` step.
 
 ---
 
-### `/dod-guard:cheap-step` — Cheap-Worker Step Execution
+### `/dod-guard:cheap-step` - Cheap-Worker Step Execution
 
-**What it does:** Same atomic-step discipline as step-by-step, but implementation runs on cheap workers (DeepSeek via evomcp). Host model writes specs, verifies results, and only touches code directly when cheap workers fail (expected ~10% of steps).
+**What it does:** Same atomic-step discipline as step-by-step - same
+`steps.json`, same staleness checks, same closing gate - with one
+substitution: implementation goes to the evomcp `solve` tool (cheap DeepSeek
+workers) instead of a dispatched host agent. The host model writes the
+instruction, runs `verify_cmd` itself, and decides the verdict.
 
 **When to use:**
 - Multi-step plan where steps are well-specified and verifiable
 - Routine implementation work (CRUD, wiring, config, mechanical refactors)
-- Budget-sensitive — 90%+ cost savings vs step-by-step
-- Any plan where >60% of steps are "implement X following pattern Y"
+- Budget-sensitive - 90%+ cost savings vs step-by-step
+- Any plan where most steps are "implement X following pattern Y"
 
 **When to skip:**
-- Visual/gameplay steps (cheap workers cannot see — must be host-only)
-- Steps requiring architectural decisions (host model should design, not verify)
+- Visual/gameplay steps (cheap workers cannot see - those stay host-only)
+- Steps requiring architectural decisions (host model should design, not
+  verify)
 - Security-sensitive code
-- Steps where the spec is harder to write than the implementation
 
-**Step modes:**
-- `cheap` — evomcp solve → host verifies → feedback/retry → host fallback
-- `host-only` — host implements directly (architecture, visual, gameplay, security)
-
-**Cost reality:** 20 steps where 18 pass on first try, 1 passes on retry, 1 needs host fix ≈ $0.50–1.00. Same work with all-host-model subagents ≈ $2–5.
-
-**Visual/gameplay rule:** Steps tagged `visual` or `gameplay` MUST be `host-only`. Cheap workers substitute "build passes" for verification — the exact pattern that caused 8 of 10 breakdown events.
+**Before you start:** call the evomcp `status` tool. If the proxy is not
+running and no key is configured, run `/dod-guard:step-by-step` instead.
 
 ---
 
-### `/dod-guard:ratchet` — Unified Ratcheting Workflow
+### `/dod-guard:ratchet` - Autonomous Sub-Problem Execution
 
-**What it does:** Executes a DoD that already exists, one sub-problem per loop iteration. Setup (interactive): route, recall prior attempts, order the sub-problems by dependency, checkpoint, and get the user to approve the order. Phase B (autonomous loop): one sub-problem per iteration, full regression check every cycle, so earlier work cannot silently break.
+**What it does:** Executes an existing OpenSpec change autonomously, one
+sub-problem per loop iteration. Setup (interactive): recall prior attempts,
+read the impact radius, decide sub-problem order, get the user to approve
+it. Then an autonomous loop: one sub-problem per iteration, `dod-guard cover`
+re-run every cycle so earlier work cannot silently break.
 
-**It does not build the DoD.** Requirements, the tree, the company baseline, the five-lens review, and `dod_create` all live in `/dod-guard:interview`. Run that first, then bring the `dod_id` here.
+**It does not build the plan.** Requirements, the scenarios, and the spec
+review all live in `/dod-guard:interview`. Run that first, then bring the
+change id here.
 
 **When to use:**
 - Problem has 2+ sub-problems with dependencies between them
-- Unknown unknowns — you'd burn tokens guessing
-- Regression risk is real — later changes could break earlier work
+- Unknown unknowns - you'd burn tokens guessing
+- Regression risk is real - later changes could break earlier work
 - Cross-session memory would help future similar problems
 
 **When to skip:**
 - Single straightforward change
-- You already have a complete DoD from interview — just use `/goal`
+- You already have a confirmed change from interview and a linear plan - use
+  `/dod-guard:step-by-step`
 - Trivial config change, typo fix, mechanical rename
 
-**The five tools:**
-- **dod-guard** — The ratchet teeth. DoD proofs that ALL must pass.
-- **gitevo** — Evolutionary branching. Spawn, learn, abandon, adopt.
-- **evomcp** — Cascade solver. Cheap model fanout, escalate stuck nodes.
-- **obsidian-rag** — Cross-session memory. Persist learnings.
-- **code-review-graph** — Impact analysis. Blast radius before changes.
+**What it composes:**
+- **dod-guard** - the coverage gate every iteration must clear
+- **gitevo** - evolutionary branching. Spawn, learn, abandon, adopt
+- **evomcp** - cascade solver. Cheap model fanout, escalate stuck nodes
+- **obsidian-rag** - cross-session memory. Persist learnings
+- **code-review-graph** - impact analysis. Blast radius before changes
 
-**Minimum viable ratchet:** dod-guard alone. No evomcp, no gitevo, no obsidian-rag — but still a ratchet.
+**Minimum viable ratchet:** dod-guard alone. No evomcp, no gitevo, no
+obsidian-rag - but still a ratchet.
 
 ---
 
-### `/dod-guard:adversarial-workflow` — 4-Phase Gated Quality
+### `/dod-guard:adversarial-workflow` - 4-Phase Gated Quality
 
-**What it does:** Each phase requires adversarial review before the next can execute. Phase 1 (Spec Review) → Phase 2 (Test Audit) → Phase 3 (Implementation Review) → Phase 4 (Structural Cleanup). Gates stored canonically via `dod_adversarial_gate` — dod_check blocks phase N+1 until phase N gate is GO.
+**What it does:** Drives one OpenSpec change through four rounds of hostile
+review, each closing with a verdict recorded in the change's `design.md`.
+Phase 1 (Spec Review) -> Phase 2 (Test Audit) -> Phase 3 (Implementation
+Review) -> Phase 4 (Structural Cleanup). A phase holding anything but GO
+blocks the next phase from starting.
 
 **When to use:**
 - Security-sensitive or mission-critical features
-- User says "adversarial workflow", "gate this", "strict quality"
+- User says "adversarial workflow," "gate this," "strict quality"
 - Multi-step implementation where you want hard-gate verification
-- After interview produces a DoD — run adversarial-workflow for maximum quality
+- After interview produces a change - run adversarial-workflow for maximum
+  quality
 
 **When to skip:**
 - Trivial changes (overhead of 4-phase review > benefit)
 - Prototype/exploratory work
 - Single-file changes with no integration surface
 
-**Lens counts by phase:**
-- Phase 1: 5 lenses (Security, Assumptions, Testability, Consistency, Implementability)
-- Phase 2: 3 lenses (Coverage, Falsifiability, Gap Detection)
-- Phase 3: 3 roles (Saboteur, New Hire, Spec Auditor)
-- Phase 4: Convergent structural audit (0 new findings on 2 consecutive runs)
+**Starting point:** with no change id yet, pass the task to
+`/dod-guard:interview`, which files the phase 1 gate itself. With a change id
+in hand, resume from `design.md`'s `## Adversarial gate` entries rather than
+calling interview again - restart at the lowest phase whose verdict is
+anything but GO.
 
-**Model diversity:** Phase 2 and 3 lenses should use a different model/provider than the implementation author. Same model reviewing its own output = rubber-stamp risk. Use haiku lenses against sonnet implementations, or sonnet lenses against DeepSeek implementations.
+**Model diversity:** Phase 2 and 3 reviewers should use a different
+model/provider than the implementation author. Same model reviewing its own
+output is a rubber-stamp risk.
 
 ---
 
-### `/dod-guard:clean-house` — Duplicate/Obsolete Code Removal
+### `/dod-guard:clean-house` - Duplicate/Obsolete Code Removal
 
-**What it does:** Four-phase hunt for duplicate and obsolete implementations: HUNT (structural name scan, near-name clusters, dead code detection) → BLAME (git archaeology, confused-model detection, divergence analysis) → VERIFY (reference check, test coverage, runtime path) → CLEAN (aggressive removal, migration of confused-model changes).
+**What it does:** Finds pairs where one implementation superseded another,
+uses git history to decide which side is dead, rescues work that landed on
+the dead side by mistake, gets approval, then deletes.
 
 **When to use:**
 - Versioned APIs coexist (`/api/v1` + `/api/v2`)
@@ -194,150 +236,256 @@ You have a task
 - Rewrite shipped but old code was never deleted
 - LLM keeps editing the wrong version of a feature
 
-**Confused-model detection:** If the old file has commits dated AFTER the new version was created, an LLM got confused and edited the wrong file. Migrate those changes to the new version, then delete the old one.
+**Confused-model detection:** If the old file has commits dated AFTER the new
+version was created, an LLM got confused and edited the wrong file. Migrate
+those changes to the new version, then delete the old one.
 
-**Hard rule:** Never keep old version "just in case." Git history IS your safety net.
+**Hard rule:** Never keep old version "just in case." Git history IS your
+safety net.
 
 ---
 
+### `/dod-guard:tighten` - Autonomous Complexity Removal
+
+**What it does:** Ranks the repository by structural violations joined
+against git return-churn, then blind-rewrites the worst target one
+invocation at a time. Opens an OpenSpec change scoped to the picked target,
+closes it on `dod-guard cover` reporting zero regressions plus `openspec
+archive`. Two gates must pass: the result has to be different, and it has to
+be smaller.
+
+**When to use:**
+- Sweeping accidental complexity with no single named target
+- Wiring a cleanup loop into a driver (`/loop`, cron) that calls it until the
+  queue empties
+
+**When to skip:**
+- You already have one named rewrite target - use `/dod-guard:blind-rewrite`
+  directly
+- Ordinary refactoring with a known scope
+
+---
+
+### `/dod-guard:blind-rewrite` - Contract-Driven Rewrite
+
+**What it does:** Deletes the target, extracts a contract of what it does
+(not how it reads), and hands that contract to an author who never sees the
+original. Gates the result against the deleted copy with `overlap-scan.mjs`,
+which rejects paraphrase. Four shapes: new interior behind an existing seam,
+no seam yet, dependency swap, and prose with no test harness.
+
+**When to use:**
+- A previous rewrite attempt came back as a renamed variable or cosmetic edit
+- "Rewrite this properly," "no cosmetic changes," "swap this library"
+
+**When to skip:**
+- Ordinary edits, bug fixes, additive features, or ordinary copy editing
+
+---
+
+### `/dod-guard:test-integrity-checker` - Test Integrity Audit
+
+**What it does:** Audits a test file for tests written to match the
+implementation instead of a specification - logic mirroring, output
+blessing, weak assertions (`toBeDefined`/`toBeTruthy`), mock-everything
+tests, symmetry/inverse tests that cancel a shared bug, missing negative
+cases - then repairs one file into a test backed by a demonstrated fault.
+
+**When to use:**
+- You don't trust tests that pass
+- Tests assert only truthiness, every dependency is mocked, or a round trip
+  is the only check
+- A mutant survived a mutation-testing pass
+
+**When to skip:**
+- Tests older than the implementation (nothing fitted to check against)
+- Snapshot files (they copy output by design)
+
+**Where a written spec exists:** measure the tests against those
+requirements instead, via `/dod-guard:adversarial-workflow` from its phase 2.
+
+---
+
+### `/dod-guard:doc-reconcile` - Contradiction Resolution
+
+**What it does:** Finds documents that contradict each other, dates each
+conflicting claim from its real edit history, and deletes the older side
+when the dating is decisive.
+
+**When to use:**
+- Two docs give different numbers or facts for the same thing
+- "Which doc is right," docs contradict each other, stale documentation
+
+**When to skip:**
+- Uncommitted changes are pending (a claim in an uncommitted file can't be
+  dated)
+
+---
+
+### `/dod-guard:skill-debug` - Skill Debugging From Transcripts
+
+**What it does:** Locates every recent run of a target skill in session
+transcripts, compacts each into a numbered trace, and aligns that trace
+against what the SKILL.md required. Every proposed edit cites a step number
+from a real run - never a guess from taste.
+
+**When to use:**
+- A skill ignored its own steps
+- "Why did /x do that"
+
+**When to skip:**
+- Writing a brand-new skill (use `/skill-creator`)
+- A bug in code the skill happened to touch, not the skill itself
+
+---
+
+### `/dod-guard:skill-migrate` - Skill/Agent Migration
+
+**What it does:** Migrates a SKILL.md, agent definition, CLAUDE.md, memory
+file, or instinct file to work on newer models by blind rewrite: extracts a
+behavioral contract, classifies scaffolding versus essential instructions,
+and has a blind writer rebuild the artifact. Four automated gates - including
+an overlap check against the original and a gap audit - must clear before
+the migration ships.
+
+**When to use:**
+- "Migrate this skill/agent," "tune for a newer model," "fix skill for
+  literal models"
+
+**When to skip:**
+- Writing a new skill (`/skill-creator`) or debugging a skill from
+  transcripts (`/skill-debug`)
+
 ## Cross-Skill Patterns
 
-### Pattern 1: Interview → Step-by-Step (Standard)
+### Pattern 1: Interview -> Step-by-Step (Standard)
 
 ```
-/dod-guard:interview     → DoD created, spec reviewed
-/dod-guard:step-by-step  → Execute the plan, one atomic step at a time
+/dod-guard:interview     -> change opened, scenarios + test bindings written
+/dod-guard:step-by-step  -> execute the plan, one atomic step at a time,
+                            close on dod-guard cover + openspec archive
 ```
 
-Most common pattern. Interview locks requirements. Step-by-step implements them without batching.
+Most common pattern. Interview locks requirements. Step-by-step implements
+them without batching.
 
-### Pattern 2: Interview → Cheap-Step (Budget)
+### Pattern 2: Interview -> Cheap-Step (Budget)
 
 ```
-/dod-guard:interview     → DoD created, spec reviewed
-/dod-guard:cheap-step    → Cheap workers implement, host verifies
+/dod-guard:interview     -> change opened, scenarios + test bindings written
+/dod-guard:cheap-step    -> cheap workers implement, host verifies
 ```
 
 Same as Pattern 1 but 90%+ cheaper. Good for routine implementation work.
 
-### Pattern 3: Interview → Adversarial (Maximum Quality)
+### Pattern 3: Interview -> Adversarial (Maximum Quality)
 
 ```
-/dod-guard:interview              → DoD created, spec reviewed (Phase 1 gate)
-/dod-guard:adversarial-workflow   → Phases 2-4: test audit, implementation review, cleanup
+/dod-guard:interview              -> change opened, phase 1 gate filed
+/dod-guard:adversarial-workflow   -> phases 2-4: test audit, implementation
+                                     review, structural cleanup
 ```
 
-Interview handles Phase 1 (spec review). Adversarial-workflow takes over from Phase 2. Maximum quality for security/mission-critical features.
+Interview handles Phase 1 (spec review). Adversarial-workflow takes over from
+Phase 2. Maximum quality for security/mission-critical features.
 
-### Pattern 4: Interview → Ratchet (Complex Multi-Problem)
+### Pattern 4: Interview -> Ratchet (Complex Multi-Problem)
 
 ```
-/dod-guard:interview     → DoD created
-/dod-guard:ratchet       → Phase A setup + Phase B autonomous loop
+/dod-guard:interview     -> change opened
+/dod-guard:ratchet       -> setup (route + recall + ordering) then autonomous
+                            loop, one sub-problem per iteration
 ```
 
-For complex problems with interdependent sub-problems. Ratchet gates prevent regressions across sub-problem boundaries.
+For complex problems with interdependent sub-problems. `dod-guard cover`
+re-runs every cycle to prevent regressions across sub-problem boundaries.
 
 ### Pattern 5: Adversarial with Cheap-Step Implementation
 
 ```
-/dod-guard:adversarial-workflow  → Phase 1 (spec review) GO
-                                 → Phase 2 (test audit)
-                                 → Phase 3: use /dod-guard:cheap-step for implementation
-                                 → Adversarial review of cheap-worker output
-                                 → Phase 4 (structural cleanup)
+/dod-guard:adversarial-workflow  -> Phase 1 (spec review) GO
+                                 -> Phase 2 (test audit)
+                                 -> Phase 3: use /dod-guard:cheap-step for
+                                   implementation
+                                 -> adversarial review of cheap-worker output
+                                 -> Phase 4 (structural cleanup)
 ```
 
-Cost-optimized adversarial quality. Spec and tests reviewed adversarially. Implementation offloaded to cheap workers. Cheap-worker output reviewed adversarially.
+Cost-optimized adversarial quality. Spec and tests reviewed adversarially.
+Implementation offloaded to cheap workers. Cheap-worker output reviewed
+adversarially.
 
-### Pattern 6: Step-by-Step → Clean-House (Post-Implementation)
+### Pattern 6: Step-by-Step -> Clean-House (Post-Implementation)
 
 ```
-/dod-guard:step-by-step  → Implement feature, possibly creating duplicate code
-/dod-guard:clean-house   → Hunt and remove any duplicates created during implementation
+/dod-guard:step-by-step  -> implement feature, possibly creating duplicate code
+/dod-guard:clean-house   -> hunt and remove any duplicates created during
+                            implementation
 ```
 
-After a large implementation, run clean-house to catch accidental duplicates.
+After a large implementation, run clean-house to catch accidental
+duplicates.
 
-## Anti-Patterns — What NOT to Do
+## Anti-Patterns - What NOT to Do
 
 | Anti-pattern | Why wrong | Correct approach |
 |-------------|-----------|-----------------|
 | Using interview for a 1-line fix | 10 min setup for 30 sec work. | Just do the fix. |
 | Using cheap-step for visual/gameplay work | Cheap workers can't see. They'll substitute "build passes." | Mark visual/gameplay steps as host-only. |
 | Skipping interview for non-trivial features | Wrong requirements = wrong implementation. | Interview always before non-trivial implementation. |
-| Running adversarial-workflow without a DoD | Nothing to gate against. | Create DoD via interview first. |
+| Running adversarial-workflow without a change id | Nothing to gate against. | Create the change via interview first. |
 | Using ratchet for a single change | Overkill. Ratchet setup costs 10-15 min. | Use step-by-step or just do it. |
-| "Build passes" for visual changes | Build ≠ visual output. 80% of breakdown events. | Launch the app and visually confirm, or mark as manual. |
-| Same model for test author + implementer | TDD theater — tests written to pass known implementation. | Model-diversity: different model for test audit lenses. |
-| Amending same node 3+ times without approach change | Fixation cycle. Same strategy, different parameters. | Re-read requirements. Change the approach, not the parameters. |
-| All concrete proofs, no manual for visual feature | Build-only verification for visual output = unverified. | Always include manual predicate for visual/gameplay changes. |
-| Dispatching adversarial lenses with same model as author | Rubber-stamp — model agrees with itself. | Model diversity or maximally different lens prompts. |
+| "Build passes" for visual changes | Build is not the same as visual output. | Launch the app and visually confirm, or mark as pending manual check. |
+| Same model for test author + implementer | Rubber-stamp review - tests written to pass a known implementation. | Model diversity: different model for test-audit reviewers. |
+| Skipping interview and writing scenarios by hand with no test binding | `dod-guard cover` reports every such scenario `unwired`, which the ratchet then treats as a regression risk the moment the baseline adopts it. | Write the `// covers:` marker in the test at the same time you write the test. |
+| Dispatching adversarial reviewers with the same model as the author | Rubber-stamp - model agrees with itself. | Model diversity or maximally different reviewer prompts. |
 
 ## Verification Surface Reference
 
-Not all changes verify the same way. This table helps you correctly tag steps and choose the right skill:
+Not all changes verify the same way. This table helps you correctly tag
+steps and choose the right skill:
 
-| Surface | Examples | Can be machine-verified? | Skill compatibility | Required proof types |
-|---------|----------|--------------------------|---------------------|---------------------|
-| **Code** | Logic, algorithms, data flow, API | Yes — tests, lint, build | All skills | behavioral + wiring |
-| **Visual** | UI, rendering, CSS, 3D, animations | Partially — build compiles, visual output needs eyes | step-by-step (manual verification), interview (manual predicate) | behavioral + wiring + **manual** |
-| **Gameplay** | Physics, AI, level design, balance | Partially — unit tests, playtest for feel | step-by-step (manual verification), interview (manual predicate) | behavioral + wiring + **manual** |
-| **Config** | Env vars, deps, settings | Yes — parse + start | All skills | wiring |
-| **Structural** | Renames, refactors, file moves | Yes — tests + diff | All skills | behavioral |
+| Surface | Examples | Can be machine-verified? | Skill compatibility |
+|---------|----------|--------------------------|---------------------|
+| **Code** | Logic, algorithms, data flow, API | Yes - tests, lint, build | All skills |
+| **Visual** | UI, rendering, CSS, 3D, animations | Partially - build compiles, visual output needs eyes | step-by-step (manual verification, human confirmation required) |
+| **Gameplay** | Physics, AI, level design, balance | Partially - unit tests, playtest for feel | step-by-step (manual verification, human confirmation required) |
+| **Config** | Env vars, deps, settings | Yes - parse + start | All skills |
+| **Structural** | Renames, refactors, file moves | Yes - tests + diff | All skills |
 
-**The golden rule:** If a change modifies visual output, gameplay behavior, or anything a human would need to look at to confirm — the DoD MUST include a `manual` predicate. No exceptions.
+**The golden rule:** If a change modifies visual output, gameplay behavior,
+or anything a human would need to look at to confirm, `/step-by-step` flags
+that step for human confirmation rather than accepting a passing build as
+proof.
 
 ## Platform Notes
 
-- **Windows (cmd.exe):** Proof commands must use Windows tools (`findstr`, `type`, `dir`), not Unix (`grep`, `cat`, `ls`). dod-guard validates at create time.
-- **Globs:** `cmd.exe` doesn't expand globs. Use tools that handle their own globbing (Biome, ripgrep) or explicit paths.
-- **Node test runner:** Outputs TAP format — never contains "tests pass". Use `exit_code` predicate for npm test, never `output_contains`.
-- **Visual verification on headless CI:** Impossible. Manual predicates are the only option. Batch multiple visual proofs under one manual check to reduce fatigue.
-
-## MCP Tool Quick Reference
-
-All dod-guard skills use these MCP tools under the hood. You rarely need to call them directly, but they're available:
-
-| Tool | Purpose | Called by |
-|------|---------|-----------|
-| `dod_create` | Build new DoD with TaskNode tree | interview |
-| `dod_check` | Run proofs, get pass/fail/stuck verdict | All skills |
-| `dod_refine` | Draft → concrete or subdivide | step-by-step, cheap-step, ratchet |
-| `dod_amend` | Modify concrete proof (audit trail) | All skills (when requirements change) |
-| `dod_tree` | Read-only structural dump | All skills (discover node paths) |
-| `dod_status` | Last check result without re-running | ratchet (loop iteration start) |
-| `dod_list` | List all tracked DoDs | Any skill (find existing DoDs) |
-| `dod_import` | Parse markdown DoD → canonical storage | recovery, migration |
-| `dod_adversarial_gate` | Record gate verdict (GO/REVISE/STOP) | adversarial-workflow |
-| `dod_add_node` | Add node to tree | ratchet (tightening), interview |
-| `dod_remove_node` | Remove node + descendants | clean-house, structural cleanup |
-
-## STUCK Verdict
-
-dod-guard now has a `stuck` verdict alongside `pass`/`fail`/`incomplete`/`pass_dirty`. A STUCK verdict means:
-
-- One or more proofs are failing after 3+ amendment cycles
-- The node has been amended repeatedly without an approach change
-- The approach itself is likely wrong — not the parameters
-
-**What to do when STUCK:**
-1. Read the stuck summary — it tells you which nodes and why
-2. Re-read the original requirements for those nodes
-3. Ask: "Is this implementing the right thing, or a convenient adjacent thing?"
-4. If wrong problem: re-spec with corrected requirements
-5. If right problem, wrong approach: re-spec with a DIFFERENT architectural approach
-6. If the requirement itself is unreasonable: `dod_remove_node` or `dod_amend` to split into achievable sub-goals
-
-STUCK is not failure — it's honest signaling. An agent that reports STUCK after N amendment cycles is behaving correctly, not failing. Binary "done/failed" forces agents to claim done when stuck. STUCK gives them an honest third option.
+- **Windows (cmd.exe):** `verify_cmd` entries a step runs must use tools
+  available on the host OS. `buildShellInvocation()` in `shell.ts` is the one
+  place that knows how to reach a shell, and on Windows it produces
+  `cmd.exe /d /s /c "<command>"` with `windowsVerbatimArguments: true`.
+- **Globs:** `cmd.exe` doesn't expand globs. Use tools that handle their own
+  globbing (Biome, ripgrep) or explicit paths.
+- **Node test runner:** Outputs TAP format - never contains "tests pass."
+  Check exit code, never stdout text, when scripting around `node --test`.
+- **Visual verification on headless CI:** Impossible. A step tagged `visual`
+  or `gameplay` needs a human in the loop, either at execution time or as a
+  follow-up confirmation before the change closes.
 
 ## Summary: Skill Selection by Goal
 
-1. **"I don't know exactly what to build"** → `/dod-guard:interview`
-2. **"Build this plan correctly, no shortcuts"** → `/dod-guard:step-by-step`
-3. **"Same as #2 but cheaper"** → `/dod-guard:cheap-step`
-4. **"Maximum adversarial quality"** → `/dod-guard:adversarial-workflow`
-5. **"Complex problem with sub-problem dependencies"** → `/dod-guard:ratchet`
-6. **"Codebase has old/duplicate implementations"** → `/dod-guard:clean-house`
+1. **"I don't know exactly what to build"** -> `/dod-guard:interview`
+2. **"Build this plan correctly, no shortcuts"** -> `/dod-guard:step-by-step`
+3. **"Same as #2 but cheaper"** -> `/dod-guard:cheap-step`
+4. **"Interdependent sub-problems, real regression risk"** -> `/dod-guard:ratchet`
+5. **"Maximum adversarial quality"** -> `/dod-guard:adversarial-workflow`
+6. **"Codebase has old/duplicate implementations"** -> `/dod-guard:clean-house`
+7. **"Sweep accidental complexity, no single named target"** -> `/dod-guard:tighten`
+8. **"Replace this one thing without a paraphrase"** -> `/dod-guard:blind-rewrite`
+9. **"Are these tests real"** -> `/dod-guard:test-integrity-checker`
+10. **"These docs disagree"** -> `/dod-guard:doc-reconcile`
+11. **"This skill isn't behaving right"** -> `/dod-guard:skill-debug`
+12. **"Migrate this skill/agent to a newer model"** -> `/dod-guard:skill-migrate`
 
-When in doubt: start with interview. It's always safe, and the DoD it produces can be fed to any other skill.
+When in doubt: start with interview. It's always safe, and the change it
+opens can be fed to any other skill.

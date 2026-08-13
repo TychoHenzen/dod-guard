@@ -263,7 +263,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
       predicate type" sections with the `cover`/`steps` architecture: scenario
       identity, the marker convention, entry-point declaration, the
       coverage-gate ratchet, and the current file responsibility table
-- [ ] 6.3 Update `packages/dod-guard/README.md` and `USAGE.md` for the same
+- [x] 6.3 Update `packages/dod-guard/README.md` and `USAGE.md` for the same
       `cover`/`steps` model
 - [ ] 6.4 Delete the DoD markdown format spec and predicate reference under
       `packages/dod-guard/docs/`
