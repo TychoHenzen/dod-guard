@@ -17,10 +17,7 @@ after(async () => {
 
 test("writes a spec.md with one requirement and one unwired scenario", async () => {
   await writeUnwiredCoverageGateSpec(cwd);
-  const raw = await fs.readFile(
-    path.join(cwd, "openspec", "specs", "dod-guard", "coverage-gate", "spec.md"),
-    "utf-8",
-  );
+  const raw = await fs.readFile(path.join(cwd, "openspec", "specs", "dod-guard", "coverage-gate", "spec.md"), "utf-8");
   assert.match(raw, /### Requirement: cover reports a scenario's state/);
   assert.match(raw, /#### Scenario: unwired/);
 });
