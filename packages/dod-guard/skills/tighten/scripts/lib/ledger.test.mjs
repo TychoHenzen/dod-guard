@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, it } from "node:test";
+import { changeIdForFile } from "./change-id.mjs";
 import {
   MAX_ATTEMPTS,
   buildLedger,
@@ -16,6 +20,18 @@ const ranked = (file, score) => ({
   churn: { returns: 3, fixReturns: 1 },
   hasOracle: true,
 });
+
+// nextTarget checks whether an accepted entry's change is still open on
+// disk, so most cases need a root with no openspec/changes/ at all.
+function emptyRoot() {
+  return mkdtempSync(join(tmpdir(), "ledger-"));
+}
+
+function openChangeRoot(file) {
+  const root = emptyRoot();
+  mkdirSync(join(root, "openspec", "changes", changeIdForFile(file)), { recursive: true });
+  return root;
+}
 
 describe("buildLedger", () => {
   it("marks every entry pending with no attempts", () => {
@@ -79,16 +95,34 @@ describe("mergeLedger", () => {
 describe("nextTarget", () => {
   it("returns the highest scoring pending entry", () => {
     const ledger = buildLedger([ranked("a.ts", 9), ranked("b.ts", 4)]);
-    assert.equal(nextTarget(ledger).file, "a.ts");
+    assert.equal(nextTarget(ledger, emptyRoot()).file, "a.ts");
   });
 
-  it("skips an accepted entry", () => {
+  it("skips an accepted entry whose change already archived", () => {
     const ledger = recordResult(
       buildLedger([ranked("a.ts", 9), ranked("b.ts", 4)]),
       "a.ts",
       { status: "accepted" },
     );
-    assert.equal(nextTarget(ledger).file, "b.ts");
+    assert.equal(nextTarget(ledger, emptyRoot()).file, "b.ts");
+  });
+
+  it("resumes an accepted entry whose change is still open", () => {
+    const ledger = recordResult(
+      buildLedger([ranked("a.ts", 9), ranked("b.ts", 4)]),
+      "a.ts",
+      { status: "accepted" },
+    );
+    assert.equal(nextTarget(ledger, openChangeRoot("a.ts")).file, "a.ts");
+  });
+
+  it("never returns a resistant entry, even with its change still open", () => {
+    const ledger = recordResult(
+      buildLedger([ranked("a.ts", 9), ranked("b.ts", 4)]),
+      "a.ts",
+      { status: "resistant", reason: "two failed cycles" },
+    );
+    assert.equal(nextTarget(ledger, openChangeRoot("a.ts")).file, "b.ts");
   });
 
   it("skips an entry that used up its attempts", () => {
@@ -96,14 +130,24 @@ describe("nextTarget", () => {
     for (let i = 0; i < MAX_ATTEMPTS; i += 1) {
       ledger = recordResult(ledger, "a.ts", { status: "pending" });
     }
-    assert.equal(nextTarget(ledger).file, "b.ts");
+    assert.equal(nextTarget(ledger, emptyRoot()).file, "b.ts");
   });
 
   it("returns null when nothing is left", () => {
     const ledger = recordResult(buildLedger([ranked("a.ts", 9)]), "a.ts", {
       status: "accepted",
     });
-    assert.equal(nextTarget(ledger), null);
+    assert.equal(nextTarget(ledger, emptyRoot()), null);
+  });
+});
+
+describe("changeIdForFile", () => {
+  it("slugs the file path under a tighten- prefix", () => {
+    assert.equal(changeIdForFile("src/foo/Bar.ts"), "tighten-src-foo-bar");
+  });
+
+  it("strips the extension and collapses separators", () => {
+    assert.equal(changeIdForFile("a/b_c.d.test.ts"), "tighten-a-b-c-d-test");
   });
 });
 

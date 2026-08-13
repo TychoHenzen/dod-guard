@@ -724,7 +724,7 @@
       "verify_surface": "code",
       "verify_cmd": "npm test -w packages/dod-guard",
       "manual_required": false,
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "6.1",

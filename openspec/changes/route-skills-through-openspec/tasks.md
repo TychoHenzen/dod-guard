@@ -237,7 +237,7 @@ rewrites, and the docs cleanup - is `/step-by-step`-able.
         scenario. Add one breaking and one passing fixture case for it
       - Confirm the meta-test ("covers every rule the script defines") still
         passes with the new rule count
-- [ ] 5.12 `/tighten`'s `pick-target.mjs`, `seed-ledger.mjs`, and
+- [x] 5.12 `/tighten`'s `pick-target.mjs`, `seed-ledger.mjs`, and
       `record-result.mjs` still implement the pre-5.8 ledger-only semantics:
       a persistent queue keyed by file, with no change id anywhere. 5.8's
       SKILL.md rewrite describes change-scoped, archive-driven completion

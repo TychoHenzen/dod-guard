@@ -57,6 +57,7 @@
     "packages/dod-guard/skills/skill-debug/scripts/lib/trace.test.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs",
     "packages/dod-guard/skills/skill-migrate/scripts/migration-check.test.mjs",
+    "packages/dod-guard/skills/tighten/scripts/lib/change-id.mjs",
     "packages/dod-guard/skills/tighten/scripts/lib/churn.mjs",
     "packages/dod-guard/skills/tighten/scripts/lib/churn.test.mjs",
     "packages/dod-guard/skills/tighten/scripts/lib/ledger-file.mjs",
