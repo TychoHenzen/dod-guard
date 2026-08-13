@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 /** Directories that are generated, vendored, or otherwise not source. */
-export const IGNORED_DIRS = new Set([".git", "node_modules", "dist", "coverage", ".step-session", ".quality"]);
+export const IGNORED_DIRS = new Set([".git", "node_modules", "dist", "coverage", ".quality"]);
 
 export function listDir(dir, predicate) {
   if (!existsSync(dir)) return [];

@@ -78,21 +78,18 @@ jobs:
       # Names, sources, hook targets, skill/agent frontmatter, encoding, files[] coverage.
       - name: Plugin configuration is consistent
         run: node scripts/ci/validate-plugins.mjs
+      # OpenSpec owns a change's artifacts, dod-guard owns proof, a skill owns
+      # choreography. This fails a skill that has taken back one of the others.
+      - name: Skills leave OpenSpec's job to OpenSpec
+        run: |
+          node --test scripts/ci/check-skill-hygiene.test.mjs
+          node scripts/ci/check-skill-hygiene.mjs
       - name: OpenSpec changes are valid
         env:
           OPENSPEC_TELEMETRY: 0
         run: |
           npm install -g @fission-ai/openspec@1.8.0
           openspec validate --all --strict --no-interactive
-      # Closure: a DoD leaf that traces to no scenario means the proofs drifted
-      # from the spec. Needs the bundle from this checkout, not a released one.
-      - name: DoD leaves trace to their scenarios
-        env:
-          OPENSPEC_TELEMETRY: 0
-        run: |
-          npm run build -w packages/dod-guard
-          npm run bundle -w packages/dod-guard
-          node scripts/ci/check-trace.mjs
 
   static-analysis:
     needs: build-test
@@ -116,6 +113,11 @@ jobs:
         run: git diff --exit-code -- package-lock.json
 
       - run: npm run build
+
+      # Builds dod-guard itself, because a released binary can't see this
+      # checkout's own scenarios and markers - same reason the retired
+      # check-trace.mjs did this.
+      - run: npm run bundle -w packages/dod-guard
 
       # Autofix: apply Biome fixes, commit + push if any changes.
       - name: Biome autofix
@@ -178,9 +180,19 @@ jobs:
         if: steps.coverage.outcome == 'success'
         run: grep -qE "improved:|adopted:" coverage-report.txt && node scripts/ci/check-coverage.mjs --write-baseline || true
 
+      - name: Coverage-gate ratchet (scenarios)
+        id: coverage-gate
+        continue-on-error: true
+        run: |
+          node scripts/ci/check-coverage-gate.mjs | tee coverage-gate-report.txt
+          exit "${PIPESTATUS[0]}"
+      - name: Tighten coverage-gate baseline
+        if: steps.coverage-gate.outcome == 'success'
+        run: grep -qE "improved:|adopted:" coverage-gate-report.txt && node scripts/ci/check-coverage-gate.mjs --write-baseline || true
+
       - name: Commit & push autofixes and tightened baselines
         run: |
-          rm -f quality-report.txt tests-present.txt audit-report.txt coverage-report.txt
+          rm -f quality-report.txt tests-present.txt audit-report.txt coverage-report.txt coverage-gate-report.txt
           if ! git diff --exit-code --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -201,6 +213,7 @@ jobs:
           if [ "${{ steps.tests-present.outcome }}" = "failure" ]; then FAILED="$FAILED test-presence"; fi
           if [ "${{ steps.audit.outcome }}" = "failure" ]; then FAILED="$FAILED advisories"; fi
           if [ "${{ steps.coverage.outcome }}" = "failure" ]; then FAILED="$FAILED coverage"; fi
+          if [ "${{ steps.coverage-gate.outcome }}" = "failure" ]; then FAILED="$FAILED coverage-gate"; fi
           if [ -n "$FAILED" ]; then
             echo "RATCHET FAILED for:$FAILED — see the step logs above"
             exit 1

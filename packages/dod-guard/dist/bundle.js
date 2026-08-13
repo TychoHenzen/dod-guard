@@ -101,7 +101,7 @@ var require_code = __commonJS({
     }
     exports._ = _;
     var plus = new _Code("+");
-    function str2(strs, ...args) {
+    function str(strs, ...args) {
       const expr = [safeStringify(strs[0])];
       let i = 0;
       while (i < args.length) {
@@ -112,7 +112,7 @@ var require_code = __commonJS({
       optimize(expr);
       return new _Code(expr);
     }
-    exports.str = str2;
+    exports.str = str;
     function addCodeArg(code, arg) {
       if (arg instanceof _Code)
         code.push(...arg._items);
@@ -155,7 +155,7 @@ var require_code = __commonJS({
       return;
     }
     function strConcat(c1, c2) {
-      return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str2`${c1}${c2}`;
+      return c2.emptyStr() ? c1 : c1.emptyStr() ? c2 : str`${c1}${c2}`;
     }
     exports.strConcat = strConcat;
     function interpolate(x) {
@@ -1117,22 +1117,22 @@ var require_util = __commonJS({
       return (0, codegen_1._)`${topSchemaRef}${schemaPath}${(0, codegen_1.getProperty)(keyword)}`;
     }
     exports.schemaRefOrVal = schemaRefOrVal;
-    function unescapeFragment(str2) {
-      return unescapeJsonPointer(decodeURIComponent(str2));
+    function unescapeFragment(str) {
+      return unescapeJsonPointer(decodeURIComponent(str));
     }
     exports.unescapeFragment = unescapeFragment;
-    function escapeFragment(str2) {
-      return encodeURIComponent(escapeJsonPointer(str2));
+    function escapeFragment(str) {
+      return encodeURIComponent(escapeJsonPointer(str));
     }
     exports.escapeFragment = escapeFragment;
-    function escapeJsonPointer(str2) {
-      if (typeof str2 == "number")
-        return `${str2}`;
-      return str2.replace(/~/g, "~0").replace(/\//g, "~1");
+    function escapeJsonPointer(str) {
+      if (typeof str == "number")
+        return `${str}`;
+      return str.replace(/~/g, "~0").replace(/\//g, "~1");
     }
     exports.escapeJsonPointer = escapeJsonPointer;
-    function unescapeJsonPointer(str2) {
-      return str2.replace(/~1/g, "/").replace(/~0/g, "~");
+    function unescapeJsonPointer(str) {
+      return str.replace(/~1/g, "/").replace(/~0/g, "~");
     }
     exports.unescapeJsonPointer = unescapeJsonPointer;
     function eachItem(xs, f) {
@@ -2157,8 +2157,8 @@ var require_json_schema_traverse = __commonJS({
         post(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
       }
     }
-    function escapeJsonPtr(str2) {
-      return str2.replace(/~/g, "~0").replace(/\//g, "~1");
+    function escapeJsonPtr(str) {
+      return str.replace(/~/g, "~0").replace(/\//g, "~1");
     }
   }
 });
@@ -2984,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve5.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3011,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve5(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3222,15 +3222,15 @@ var require_utils = __commonJS({
         return { host, isIPV6: false };
       }
     }
-    function findToken(str2, token) {
+    function findToken(str, token) {
       let ind = 0;
-      for (let i = 0; i < str2.length; i++) {
-        if (str2[i] === token) ind++;
+      for (let i = 0; i < str.length; i++) {
+        if (str[i] === token) ind++;
       }
       return ind;
     }
-    function removeDotSegments(path8) {
-      let input = path8;
+    function removeDotSegments(path10) {
+      let input = path10;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path8, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path8 && path8 !== "/" ? path8 : void 0;
+        const [path10, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path10 && path10 !== "/" ? path10 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3642,7 +3642,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve5(baseURI, relativeURI, options) {
+    function resolve2(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -3653,49 +3653,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative, options, skipNormalization) {
+    function resolveComponent(base, relative5, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative = parse3(serialize(relative, options), options);
+        relative5 = parse3(serialize(relative5, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative.scheme) {
-        target.scheme = relative.scheme;
-        target.userinfo = relative.userinfo;
-        target.host = relative.host;
-        target.port = relative.port;
-        target.path = removeDotSegments(relative.path || "");
-        target.query = relative.query;
+      if (!options.tolerant && relative5.scheme) {
+        target.scheme = relative5.scheme;
+        target.userinfo = relative5.userinfo;
+        target.host = relative5.host;
+        target.port = relative5.port;
+        target.path = removeDotSegments(relative5.path || "");
+        target.query = relative5.query;
       } else {
-        if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
-          target.userinfo = relative.userinfo;
-          target.host = relative.host;
-          target.port = relative.port;
-          target.path = removeDotSegments(relative.path || "");
-          target.query = relative.query;
+        if (relative5.userinfo !== void 0 || relative5.host !== void 0 || relative5.port !== void 0) {
+          target.userinfo = relative5.userinfo;
+          target.host = relative5.host;
+          target.port = relative5.port;
+          target.path = removeDotSegments(relative5.path || "");
+          target.query = relative5.query;
         } else {
-          if (!relative.path) {
+          if (!relative5.path) {
             target.path = base.path;
-            if (relative.query !== void 0) {
-              target.query = relative.query;
+            if (relative5.query !== void 0) {
+              target.query = relative5.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative.path[0] === "/") {
-              target.path = removeDotSegments(relative.path);
+            if (relative5.path[0] === "/") {
+              target.path = removeDotSegments(relative5.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative.path;
+                target.path = "/" + relative5.path;
               } else if (!base.path) {
-                target.path = relative.path;
+                target.path = relative5.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative5.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative.query;
+            target.query = relative5.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3703,7 +3703,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative.fragment;
+      target.fragment = relative5.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3926,7 +3926,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve5,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -3988,7 +3988,7 @@ var require_core = __commonJS({
     var util_1 = require_util();
     var $dataRefSchema = require_data();
     var uri_1 = require_uri();
-    var defaultRegExp = (str2, flags) => new RegExp(str2, flags);
+    var defaultRegExp = (str, flags) => new RegExp(str, flags);
     defaultRegExp.code = "new RegExp";
     var META_IGNORE_OPTIONS = ["removeAdditional", "useDefaults", "coerceTypes"];
     var EXT_SCOPE_NAMES = /* @__PURE__ */ new Set([
@@ -4341,7 +4341,7 @@ var require_core = __commonJS({
       errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
         if (!errors || errors.length === 0)
           return "No errors";
-        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text2, msg) => text2 + separator + msg);
+        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text, msg) => text + separator + msg);
       }
       $dataMetaSchema(metaSchema, keywordsJsonPointers) {
         const rules = this.RULES.all;
@@ -4783,16 +4783,16 @@ var require_ucs2length = __commonJS({
   "../../node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    function ucs2length(str2) {
-      const len = str2.length;
+    function ucs2length(str) {
+      const len = str.length;
       let length = 0;
       let pos = 0;
       let value;
       while (pos < len) {
         length++;
-        value = str2.charCodeAt(pos++);
+        value = str.charCodeAt(pos++);
         if (value >= 55296 && value <= 56319 && pos < len) {
-          value = str2.charCodeAt(pos);
+          value = str.charCodeAt(pos);
           if ((value & 64512) === 56320)
             pos++;
         }
@@ -6675,8 +6675,8 @@ var require_formats = __commonJS({
     }
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    function date3(str2) {
-      const matches = DATE.exec(str2);
+    function date3(str) {
+      const matches = DATE.exec(str);
       if (!matches)
         return false;
       const year = +matches[1];
@@ -6695,8 +6695,8 @@ var require_formats = __commonJS({
     }
     var TIME = /^(\d\d):(\d\d):(\d\d(?:\.\d+)?)(z|([+-])(\d\d)(?::?(\d\d))?)?$/i;
     function getTime(strictTimeZone) {
-      return function time3(str2) {
-        const matches = TIME.exec(str2);
+      return function time3(str) {
+        const matches = TIME.exec(str);
         if (!matches)
           return false;
         const hr = +matches[1];
@@ -6742,8 +6742,8 @@ var require_formats = __commonJS({
     var DATE_TIME_SEPARATOR = /t|\s/i;
     function getDateTime(strictTimeZone) {
       const time3 = getTime(strictTimeZone);
-      return function date_time(str2) {
-        const dateTime = str2.split(DATE_TIME_SEPARATOR);
+      return function date_time(str) {
+        const dateTime = str.split(DATE_TIME_SEPARATOR);
         return dateTime.length === 2 && date3(dateTime[0]) && time3(dateTime[1]);
       };
     }
@@ -6768,13 +6768,13 @@ var require_formats = __commonJS({
     }
     var NOT_URI_FRAGMENT = /\/|:/;
     var URI = /^(?:[a-z][a-z0-9+\-.]*:)(?:\/?\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:]|%[0-9a-f]{2})*@)?(?:\[(?:(?:(?:(?:[0-9a-f]{1,4}:){6}|::(?:[0-9a-f]{1,4}:){5}|(?:[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){4}|(?:(?:[0-9a-f]{1,4}:){0,1}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){3}|(?:(?:[0-9a-f]{1,4}:){0,2}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){2}|(?:(?:[0-9a-f]{1,4}:){0,3}[0-9a-f]{1,4})?::[0-9a-f]{1,4}:|(?:(?:[0-9a-f]{1,4}:){0,4}[0-9a-f]{1,4})?::)(?:[0-9a-f]{1,4}:[0-9a-f]{1,4}|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?))|(?:(?:[0-9a-f]{1,4}:){0,5}[0-9a-f]{1,4})?::[0-9a-f]{1,4}|(?:(?:[0-9a-f]{1,4}:){0,6}[0-9a-f]{1,4})?::)|[Vv][0-9a-f]+\.[a-z0-9\-._~!$&'()*+,;=:]+)\]|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)|(?:[a-z0-9\-._~!$&'()*+,;=]|%[0-9a-f]{2})*)(?::\d*)?(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*|\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)?|(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)(?:\?(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?(?:#(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?$/i;
-    function uri(str2) {
-      return NOT_URI_FRAGMENT.test(str2) && URI.test(str2);
+    function uri(str) {
+      return NOT_URI_FRAGMENT.test(str) && URI.test(str);
     }
     var BYTE = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/gm;
-    function byte(str2) {
+    function byte(str) {
       BYTE.lastIndex = 0;
-      return BYTE.test(str2);
+      return BYTE.test(str);
     }
     var MIN_INT32 = -(2 ** 31);
     var MAX_INT32 = 2 ** 31 - 1;
@@ -6788,11 +6788,11 @@ var require_formats = __commonJS({
       return true;
     }
     var Z_ANCHOR = /[^\\]\\Z/;
-    function regex(str2) {
-      if (Z_ANCHOR.test(str2))
+    function regex(str) {
+      if (Z_ANCHOR.test(str))
         return false;
       try {
-        new RegExp(str2);
+        new RegExp(str);
         return true;
       } catch (e) {
         return false;
@@ -6917,120 +6917,8 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync } from "node:fs";
-import * as path7 from "node:path";
+import * as path9 from "node:path";
 import { fileURLToPath } from "node:url";
-
-// ../../node_modules/zod/v3/external.js
-var external_exports = {};
-__export(external_exports, {
-  BRAND: () => BRAND,
-  DIRTY: () => DIRTY,
-  EMPTY_PATH: () => EMPTY_PATH,
-  INVALID: () => INVALID,
-  NEVER: () => NEVER,
-  OK: () => OK,
-  ParseStatus: () => ParseStatus,
-  Schema: () => ZodType,
-  ZodAny: () => ZodAny,
-  ZodArray: () => ZodArray,
-  ZodBigInt: () => ZodBigInt,
-  ZodBoolean: () => ZodBoolean,
-  ZodBranded: () => ZodBranded,
-  ZodCatch: () => ZodCatch,
-  ZodDate: () => ZodDate,
-  ZodDefault: () => ZodDefault,
-  ZodDiscriminatedUnion: () => ZodDiscriminatedUnion,
-  ZodEffects: () => ZodEffects,
-  ZodEnum: () => ZodEnum,
-  ZodError: () => ZodError,
-  ZodFirstPartyTypeKind: () => ZodFirstPartyTypeKind,
-  ZodFunction: () => ZodFunction,
-  ZodIntersection: () => ZodIntersection,
-  ZodIssueCode: () => ZodIssueCode,
-  ZodLazy: () => ZodLazy,
-  ZodLiteral: () => ZodLiteral,
-  ZodMap: () => ZodMap,
-  ZodNaN: () => ZodNaN,
-  ZodNativeEnum: () => ZodNativeEnum,
-  ZodNever: () => ZodNever,
-  ZodNull: () => ZodNull,
-  ZodNullable: () => ZodNullable,
-  ZodNumber: () => ZodNumber,
-  ZodObject: () => ZodObject,
-  ZodOptional: () => ZodOptional,
-  ZodParsedType: () => ZodParsedType,
-  ZodPipeline: () => ZodPipeline,
-  ZodPromise: () => ZodPromise,
-  ZodReadonly: () => ZodReadonly,
-  ZodRecord: () => ZodRecord,
-  ZodSchema: () => ZodType,
-  ZodSet: () => ZodSet,
-  ZodString: () => ZodString,
-  ZodSymbol: () => ZodSymbol,
-  ZodTransformer: () => ZodEffects,
-  ZodTuple: () => ZodTuple,
-  ZodType: () => ZodType,
-  ZodUndefined: () => ZodUndefined,
-  ZodUnion: () => ZodUnion,
-  ZodUnknown: () => ZodUnknown,
-  ZodVoid: () => ZodVoid,
-  addIssueToContext: () => addIssueToContext,
-  any: () => anyType,
-  array: () => arrayType,
-  bigint: () => bigIntType,
-  boolean: () => booleanType,
-  coerce: () => coerce,
-  custom: () => custom,
-  date: () => dateType,
-  datetimeRegex: () => datetimeRegex,
-  defaultErrorMap: () => en_default,
-  discriminatedUnion: () => discriminatedUnionType,
-  effect: () => effectsType,
-  enum: () => enumType,
-  function: () => functionType,
-  getErrorMap: () => getErrorMap,
-  getParsedType: () => getParsedType,
-  instanceof: () => instanceOfType,
-  intersection: () => intersectionType,
-  isAborted: () => isAborted,
-  isAsync: () => isAsync,
-  isDirty: () => isDirty,
-  isValid: () => isValid,
-  late: () => late,
-  lazy: () => lazyType,
-  literal: () => literalType,
-  makeIssue: () => makeIssue,
-  map: () => mapType,
-  nan: () => nanType,
-  nativeEnum: () => nativeEnumType,
-  never: () => neverType,
-  null: () => nullType,
-  nullable: () => nullableType,
-  number: () => numberType,
-  object: () => objectType,
-  objectUtil: () => objectUtil,
-  oboolean: () => oboolean,
-  onumber: () => onumber,
-  optional: () => optionalType,
-  ostring: () => ostring,
-  pipeline: () => pipelineType,
-  preprocess: () => preprocessType,
-  promise: () => promiseType,
-  quotelessJson: () => quotelessJson,
-  record: () => recordType,
-  set: () => setType,
-  setErrorMap: () => setErrorMap,
-  strictObject: () => strictObjectType,
-  string: () => stringType,
-  symbol: () => symbolType,
-  transformer: () => effectsType,
-  tuple: () => tupleType,
-  undefined: () => undefinedType,
-  union: () => unionType,
-  unknown: () => unknownType,
-  util: () => util,
-  void: () => voidType
-});
 
 // ../../node_modules/zod/v3/helpers/util.js
 var util;
@@ -7185,10 +7073,6 @@ var ZodIssueCode = util.arrayToEnum([
   "not_multiple_of",
   "not_finite"
 ]);
-var quotelessJson = (obj) => {
-  const json = JSON.stringify(obj, null, 2);
-  return json.replace(/"([^"]+)":/g, "$1:");
-};
 var ZodError = class _ZodError extends Error {
   get errors() {
     return this.issues;
@@ -7389,17 +7273,14 @@ var en_default = errorMap;
 
 // ../../node_modules/zod/v3/errors.js
 var overrideErrorMap = en_default;
-function setErrorMap(map) {
-  overrideErrorMap = map;
-}
 function getErrorMap() {
   return overrideErrorMap;
 }
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path8, errorMaps, issueData } = params;
-  const fullPath = [...path8, ...issueData.path || []];
+  const { data, path: path10, errorMaps, issueData } = params;
+  const fullPath = [...path10, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7422,7 +7303,6 @@ var makeIssue = (params) => {
     message: errorMessage2
   };
 };
-var EMPTY_PATH = [];
 function addIssueToContext(ctx, issueData) {
   const overrideMap = getErrorMap();
   const issue2 = makeIssue({
@@ -7515,11 +7395,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path8, key) {
+  constructor(parent, value, path10, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path8;
+    this._path = path10;
     this._key = key;
   }
   get path() {
@@ -10748,7 +10628,6 @@ ZodNaN.create = (params) => {
     ...processCreateParams(params)
   });
 };
-var BRAND = /* @__PURE__ */ Symbol("zod_brand");
 var ZodBranded = class extends ZodType {
   _parse(input) {
     const { ctx } = this._processInputParams(input);
@@ -10840,33 +10719,6 @@ ZodReadonly.create = (type, params) => {
     ...processCreateParams(params)
   });
 };
-function cleanParams(params, data) {
-  const p = typeof params === "function" ? params(data) : typeof params === "string" ? { message: params } : params;
-  const p2 = typeof p === "string" ? { message: p } : p;
-  return p2;
-}
-function custom(check2, _params = {}, fatal) {
-  if (check2)
-    return ZodAny.create().superRefine((data, ctx) => {
-      const r = check2(data);
-      if (r instanceof Promise) {
-        return r.then((r2) => {
-          if (!r2) {
-            const params = cleanParams(_params, data);
-            const _fatal = params.fatal ?? fatal ?? true;
-            ctx.addIssue({ code: "custom", ...params, fatal: _fatal });
-          }
-        });
-      }
-      if (!r) {
-        const params = cleanParams(_params, data);
-        const _fatal = params.fatal ?? fatal ?? true;
-        ctx.addIssue({ code: "custom", ...params, fatal: _fatal });
-      }
-      return;
-    });
-  return ZodAny.create();
-}
 var late = {
   object: ZodObject.lazycreate
 };
@@ -10909,9 +10761,6 @@ var ZodFirstPartyTypeKind;
   ZodFirstPartyTypeKind2["ZodPipeline"] = "ZodPipeline";
   ZodFirstPartyTypeKind2["ZodReadonly"] = "ZodReadonly";
 })(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
-var instanceOfType = (cls, params = {
-  message: `Input not instance of ${cls.name}`
-}) => custom((data) => data instanceof cls, params);
 var stringType = ZodString.create;
 var numberType = ZodNumber.create;
 var nanType = ZodNaN.create;
@@ -10946,23 +10795,9 @@ var optionalType = ZodOptional.create;
 var nullableType = ZodNullable.create;
 var preprocessType = ZodEffects.createWithPreprocess;
 var pipelineType = ZodPipeline.create;
-var ostring = () => stringType().optional();
-var onumber = () => numberType().optional();
-var oboolean = () => booleanType().optional();
-var coerce = {
-  string: ((arg) => ZodString.create({ ...arg, coerce: true })),
-  number: ((arg) => ZodNumber.create({ ...arg, coerce: true })),
-  boolean: ((arg) => ZodBoolean.create({
-    ...arg,
-    coerce: true
-  })),
-  bigint: ((arg) => ZodBigInt.create({ ...arg, coerce: true })),
-  date: ((arg) => ZodDate.create({ ...arg, coerce: true }))
-};
-var NEVER = INVALID;
 
 // ../../node_modules/zod/v4/core/core.js
-var NEVER2 = Object.freeze({
+var NEVER = Object.freeze({
   status: "aborted"
 });
 // @__NO_SIDE_EFFECTS__
@@ -11156,10 +10991,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path8) {
-  if (!path8)
+function getElementAtPath(obj, path10) {
+  if (!path10)
     return obj;
-  return path8.reduce((acc, key) => acc?.[key], obj);
+  return path10.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11174,14 +11009,14 @@ function promiseAllObject(promisesObj) {
 }
 function randomString(length = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyz";
-  let str2 = "";
+  let str = "";
   for (let i = 0; i < length; i++) {
-    str2 += chars[Math.floor(Math.random() * chars.length)];
+    str += chars[Math.floor(Math.random() * chars.length)];
   }
-  return str2;
+  return str;
 }
-function esc(str2) {
-  return JSON.stringify(str2);
+function esc(str) {
+  return JSON.stringify(str);
 }
 var captureStackTrace = Error.captureStackTrace ? Error.captureStackTrace : (..._args) => {
 };
@@ -11269,8 +11104,8 @@ var getParsedType2 = (data) => {
 };
 var propertyKeyTypes = /* @__PURE__ */ new Set(["string", "number", "symbol"]);
 var primitiveTypes = /* @__PURE__ */ new Set(["string", "number", "bigint", "boolean", "symbol", "undefined"]);
-function escapeRegex(str2) {
-  return str2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function clone(inst, def, params) {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
@@ -11479,11 +11314,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path8, issues) {
+function prefixIssues(path10, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path8);
+    iss.path.unshift(path10);
     return iss;
   });
 }
@@ -14894,11 +14729,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path8) {
-  if (path8.length === 0) {
+function getDotPath(path10) {
+  if (path10.length === 0) {
     return "object root";
   }
-  return path8.reduce((acc, seg, index) => {
+  return path10.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -15632,7 +15467,7 @@ function check(fn) {
   ch._zod.check = fn;
   return ch;
 }
-function custom2(fn, _params) {
+function custom(fn, _params) {
   return _custom(ZodCustom, fn ?? (() => true), _params);
 }
 function refine(fn, _params = {}) {
@@ -15670,7 +15505,7 @@ var LATEST_PROTOCOL_VERSION = "2025-11-25";
 var SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07"];
 var RELATED_TASK_META_KEY = "io.modelcontextprotocol/related-task";
 var JSONRPC_VERSION = "2.0";
-var AssertObjectSchema = custom2((v) => v !== null && (typeof v === "object" || typeof v === "function"));
+var AssertObjectSchema = custom((v) => v !== null && (typeof v === "object" || typeof v === "function"));
 var ProgressTokenSchema = union([string2(), number2().int()]);
 var CursorSchema = string2();
 var TaskCreationParamsSchema = looseObject({
@@ -19027,7 +18862,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -19044,7 +18879,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve2, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19122,7 +18957,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve5(parseResult.data);
+            resolve2(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19383,12 +19218,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve2, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve5, interval);
+      const timeoutId = setTimeout(resolve2, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20479,7 +20314,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21143,1434 +20978,64 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve5) => {
+    return new Promise((resolve2) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve5();
+        resolve2();
       } else {
-        this._stdout.once("drain", resolve5);
+        this._stdout.once("drain", resolve2);
       }
     });
   }
 };
 
-// src/author.ts
+// src/cover/baseline.ts
+import { promises as fs5 } from "node:fs";
+import * as path6 from "node:path";
+
+// src/cover/entry-points.ts
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 
-// src/checker-tree.ts
-function isLeaf(node) {
-  return !node.children || node.children.length === 0;
+// src/cover/package-dir.ts
+function packageDirForGroup(group) {
+  if (group === "openspec-dashboard") return "tools/openspec-dashboard";
+  return `packages/${group}`;
 }
-function hasDraftNodes(nodes) {
-  return nodes.some((node) => isLeaf(node) ? node.refinement === "draft" : hasDraftNodes(node.children ?? []));
-}
-function isBranchLocked(nodes) {
-  return !hasDraftNodes(nodes);
-}
-function countDraftNodes(nodes) {
-  return nodes.reduce((sum, node) => {
-    if (isLeaf(node)) return sum + (node.refinement === "draft" ? 1 : 0);
-    return sum + countDraftNodes(node.children ?? []);
-  }, 0);
-}
-function toIndex(segment) {
-  const idx = Number(segment);
-  return Number.isInteger(idx) ? idx : null;
-}
-function findNodeByPath(nodes, path8) {
-  if (!path8) return null;
-  const segments = path8.split(".").filter((s) => s !== "children");
-  let current = nodes;
-  let node = null;
-  for (const segment of segments) {
-    const idx = toIndex(segment);
-    if (idx === null || !current || idx < 0 || idx >= current.length) return null;
-    node = current[idx];
-    current = node.children;
-  }
-  return node;
-}
-function countNodeAmendments(amendments, nodePath) {
-  return amendments.filter((a) => a.node_path === nodePath && (a.action === "modified" || a.action === "refined")).length;
-}
-function checkAmendGate(amendments, resolvedPath, amendJustification) {
-  const count = countNodeAmendments(amendments, resolvedPath);
-  if (count < 3 || amendJustification) return null;
-  return `This node has been amended ${count} times. Provide amend_justification explaining why further amendments are needed.`;
-}
-function collectDraftLeaves(nodes, parentPath) {
-  const out = [];
-  nodes.forEach((node, i) => {
-    const path8 = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-    if (!isLeaf(node)) {
-      out.push(...collectDraftLeaves(node.children ?? [], path8));
-    } else if (node.refinement === "draft") {
-      out.push({ node, node_path: path8 });
-    }
-  });
-  return out;
+function testGlobsForGroup(group) {
+  const pkgDir = packageDirForGroup(group);
+  if (pkgDir.startsWith("packages/")) return [`${pkgDir}/src/**/*.test.ts`];
+  return [`${pkgDir}/**/*.test.js`, `${pkgDir}/**/*.test.mjs`];
 }
 
-// src/evaluate-proof.ts
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-var execFileP = promisify(execFile);
-function buildShellInvocation(command) {
-  if (process.platform === "win32") {
-    return { shell: "cmd.exe", args: ["/d", "/s", "/c", `"${command}"`], verbatim: true };
-  }
-  return { shell: "/bin/sh", args: ["-c", command], verbatim: false };
-}
-function diagnoseFailure(node, result) {
-  const pred = node.predicate;
-  if (!pred) return "No predicate defined \u2014 cannot diagnose failure.";
-  const value = pred.value;
-  const rawOutput = (result.output ?? "").slice(0, 500);
-  const code = result.exit_code ?? -1;
-  switch (pred.type) {
-    case "exit_code":
-      return `Expected exit code ${value ?? 0}, got ${code}. Command failed to execute successfully. Check the error output above.`;
-    case "exit_code_not":
-      return `Expected exit code other than ${value ?? 0}, got ${code}. Command succeeded when it should have failed \u2014 error handling may be missing.`;
-    case "output_contains":
-      return value ? `Expected output to contain "${value}" but it was not found in stdout/stderr. First 500 chars of output: "${rawOutput}"` : `Expected output to contain a value but none was specified in the predicate.`;
-    case "output_not_contains":
-      return `Expected output NOT to contain "${value}" but it was found. Check that the unwanted text is no longer produced.`;
-    case "output_matches":
-      return value ? `Expected output to match /${value}/ but no match was found. First 500 chars of output: "${rawOutput}"` : `Expected output to match a regex but none was specified.`;
-    case "output_not_matches":
-      return `Expected output NOT to match /${value}/ but a match was found.`;
-    case "tdd":
-      return result.error ?? "TDD proof failed. Check the test output above for specific failures.";
-    case "adversarial": {
-      const phase = pred.value !== void 0 ? Number(pred.value) : 0;
-      return `Adversarial gate for phase ${phase} not GO. Run dod_adversarial_gate to complete the adversarial review for this phase.`;
-    }
-    case "holdout": {
-      const expected = String(pred.value ?? "");
-      return `Holdout test fingerprint mismatch. Expected SHA-256 "${expected.slice(0, 16)}..." but got a different value. The holdout test may have been weakened or removed.`;
-    }
-    case "convergence":
-      return `Convergence audit not GO. Run the structural gates and convergence audit to reach stable state.`;
-    default:
-      return `Proof failed with exit code ${code}. Check the output above.`;
-  }
-}
-function evalPredicate(predicate, run2, output) {
-  const code = run2.code ?? -1;
-  switch (predicate.type) {
-    case "exit_code": {
-      const expected = predicate.value !== void 0 ? Number(predicate.value) : 0;
-      return code === expected ? { status: "pass" } : { status: "fail", error: `expected exit ${expected} but got ${code}` };
-    }
-    case "exit_code_not": {
-      const forbidden = predicate.value !== void 0 ? Number(predicate.value) : 0;
-      return code !== forbidden ? { status: "pass" } : { status: "fail", error: `exit code was ${code} (must not be ${forbidden})` };
-    }
-    case "output_contains": {
-      const needle = String(predicate.value ?? "");
-      return output.includes(needle) ? { status: "pass" } : { status: "fail", error: `output did not contain "${needle}"` };
-    }
-    case "output_not_contains": {
-      const needle = String(predicate.value ?? "");
-      return !output.includes(needle) ? { status: "pass" } : { status: "fail", error: `output contained "${needle}" (must not)` };
-    }
-    case "output_matches": {
-      const pattern = String(predicate.value ?? "");
-      try {
-        return new RegExp(pattern).test(output) ? { status: "pass" } : { status: "fail", error: `output did not match /${pattern}/` };
-      } catch {
-        return { status: "fail", error: `invalid regex: /${pattern}/` };
-      }
-    }
-    case "output_not_matches": {
-      const pattern = String(predicate.value ?? "");
-      try {
-        return !new RegExp(pattern).test(output) ? { status: "pass" } : { status: "fail", error: `output matched /${pattern}/ (must not match)` };
-      } catch {
-        return { status: "fail", error: `invalid regex: /${pattern}/` };
-      }
-    }
-    case "holdout": {
-      const expected = String(predicate.value ?? "").trim();
-      const actual = output.trim();
-      return actual.toLowerCase() === expected.toLowerCase() ? { status: "pass" } : { status: "fail", error: `holdout fingerprint mismatch: expected ${expected.slice(0, 16)}...` };
-    }
-    // adversarial and convergence are gate checks — evaluated in executeProof
-    // via opts.adversarial_gates, not via command output.
-    default:
-      return { status: "fail", error: `unknown predicate type: ${predicate.type}` };
-  }
-}
-async function runCommand(command, cwd, timeoutMs) {
-  const { shell, args, verbatim } = buildShellInvocation(command);
+// src/cover/entry-points.ts
+async function loadEntryPoints(cwd) {
   try {
-    const { stdout, stderr } = await execFileP(shell, args, {
-      cwd,
-      timeout: timeoutMs,
-      maxBuffer: 10 * 1024 * 1024,
-      // 10 MB
-      windowsHide: true,
-      windowsVerbatimArguments: verbatim
-    });
-    return { stdout, stderr, code: 0 };
-  } catch (err) {
-    return {
-      stdout: err.stdout ?? "",
-      stderr: err.stderr ?? "",
-      code: err.code ?? (err.signal !== void 0 ? 128 : 1)
-    };
-  }
-}
-async function executeProof(node, cwd, _opts = {}) {
-  if (!node.predicate) {
-    return {
-      node_path: "",
-      id: node.id,
-      title: node.title,
-      description: node.description ?? "",
-      status: "fail",
-      command: node.command ?? "",
-      error: "No predicate on node"
-    };
-  }
-  const predicate = node.predicate;
-  const timeoutMs = predicate.timeout_ms ?? 12e4;
-  const start = Date.now();
-  const result = {
-    node_path: "",
-    id: node.id,
-    title: node.title,
-    description: node.description ?? "",
-    status: "skipped",
-    command: node.command ?? ""
-  };
-  if (predicate.type === "tdd") {
-    if (!node.command) {
-      result.status = "fail";
-      result.error = "TDD proof missing command";
-      result.duration_ms = Date.now() - start;
-      return result;
-    }
-    const run3 = await runCommand(node.command, cwd, timeoutMs);
-    const elapsed2 = Date.now() - start;
-    result.output = (run3.stdout + run3.stderr).slice(0, 4e3);
-    result.exit_code = run3.code ?? -1;
-    result.duration_ms = elapsed2;
-    if (!node.seen_failing) {
-      if (run3.code !== 0 && run3.code !== null) {
-        result.status = "pass";
-        result.error = "RED: test fails as expected \u2014 now implement to make it pass.";
-        return result;
-      }
-      result.status = "fail";
-      result.error = "TDD RED phase: test should have failed first but it passed. Check that the test actually exercises new behavior.";
-      return result;
-    }
-    if (run3.code === 0) {
-      result.status = "pass";
-      return result;
-    }
-    result.status = "fail";
-    result.error = `TDD GREEN phase: test failed with exit code ${run3.code ?? -1}. Implementation is incomplete or broken. Check the test output above.`;
-    return result;
-  }
-  if (predicate.type === "adversarial" || predicate.type === "convergence") {
-    const elapsed2 = Date.now() - start;
-    const phase = predicate.value !== void 0 ? Number(predicate.value) : 0;
-    const gates = _opts.adversarial_gates ?? [];
-    const searchPhase = predicate.type === "convergence" ? 4 : phase;
-    const gate = gates.find((g) => g.phase === searchPhase);
-    result.duration_ms = elapsed2;
-    if (!gate) {
-      result.status = "fail";
-      result.error = `${predicate.type} gate: no gate found for phase ${searchPhase}. Run dod_adversarial_gate first.`;
-      result.diagnosis = diagnoseFailure(node, result);
-      return result;
-    }
-    if (gate.verdict !== "GO") {
-      result.status = "fail";
-      result.error = `${predicate.type} gate: verdict is ${gate.verdict} (need GO). ${gate.summary}`;
-      result.diagnosis = diagnoseFailure(node, result);
-      return result;
-    }
-    result.status = "pass";
-    result.output = `Gate phase ${searchPhase}: GO \u2014 ${gate.summary}`;
-    return result;
-  }
-  if (!node.command) {
-    result.status = "fail";
-    result.error = "Behavioral proof missing command";
-    result.duration_ms = Date.now() - start;
-    return result;
-  }
-  const run2 = await runCommand(node.command, cwd, timeoutMs);
-  const elapsed = Date.now() - start;
-  const output = run2.stdout + run2.stderr;
-  result.output = output.slice(0, 4e3);
-  result.exit_code = run2.code ?? -1;
-  result.duration_ms = elapsed;
-  const evaluation = evalPredicate(predicate, run2, output);
-  result.status = evaluation.status;
-  if (evaluation.error) result.error = evaluation.error;
-  if (result.status === "fail") {
-    result.diagnosis = diagnoseFailure(node, result);
-  }
-  return result;
-}
-
-// src/fingerprint.ts
-import { createHash } from "node:crypto";
-function flattenLeaf(node, index, parentPath) {
-  const currentPath = parentPath ? `${parentPath}.children.${index}` : `${index}`;
-  if (node.children && node.children.length > 0) {
-    return flattenConcreteLeaves(node.children, currentPath);
-  }
-  if (node.refinement === "concrete") {
-    return [{ node, node_path: currentPath }];
-  }
-  return [];
-}
-function flattenConcreteLeaves(nodes, parentPath) {
-  const results = [];
-  for (let i = 0; i < nodes.length; i++) {
-    results.push(...flattenLeaf(nodes[i], i, parentPath));
-  }
-  return results;
-}
-function computeProofFingerprint(roots) {
-  const leaves = flattenConcreteLeaves(roots);
-  if (leaves.length === 0) return "";
-  const sorted = leaves.slice().sort((a, b) => a.node.id.localeCompare(b.node.id));
-  const data = sorted.map(({ node }) => {
-    const parts = [];
-    parts.push(node.command ?? "");
-    parts.push(node.predicate?.type ?? "");
-    parts.push(node.predicate?.value !== void 0 ? String(node.predicate.value) : "");
-    if (node.predicate?.timeout_ms !== void 0) {
-      parts.push(`timeout_ms:${node.predicate.timeout_ms}`);
-    }
-    if (node.category !== void 0) {
-      parts.push(`category:${node.category}`);
-    }
-    if (node.advisory !== void 0) {
-      parts.push(`adv:${node.advisory}`);
-    }
-    return parts.join("|");
-  }).join("\n");
-  return createHash("sha256").update(data).digest("hex");
-}
-
-// src/checker-leaves.ts
-function isInScope(path8, nodePath) {
-  if (nodePath === void 0) return true;
-  return path8 === nodePath || path8.startsWith(`${nodePath}.`);
-}
-function toCarriedStatus(status) {
-  if (status === "pending" || status === "draft") return "skipped";
-  return status;
-}
-function carryForward(node, node_path) {
-  return {
-    node_path,
-    id: node.id,
-    title: node.title,
-    description: node.description ?? node.intent ?? node.title,
-    status: toCarriedStatus(node.last_status),
-    command: node.command ?? "",
-    output: node.last_output
-  };
-}
-async function runOne(node, node_path, cwd, amendments, adversarialGates) {
-  node.amend_count = countNodeAmendments(amendments, node_path);
-  const opts = { adversarial_gates: adversarialGates };
-  const result = await executeProof(node, cwd, opts);
-  result.node_path = node_path;
-  result.description = node.description ?? node.intent ?? node.title;
-  return result;
-}
-async function runConcreteLeaves(roots, cwd, amendments, adversarialGates, nodePath) {
-  const leaves = flattenConcreteLeaves(roots);
-  const entries = [];
-  for (const { node, node_path } of leaves) {
-    const result = isInScope(node_path, nodePath) ? await runOne(node, node_path, cwd, amendments, adversarialGates) : carryForward(node, node_path);
-    entries.push({ node, node_path, result });
-  }
-  return entries;
-}
-
-// src/checker-summary.ts
-function buildSummary(overall, counts) {
-  const draftNote = counts.draft > 0 ? `, ${counts.draft} draft(s) pending` : "";
-  return `${overall.toUpperCase()}: ${counts.pass}/${counts.total} proof(s) passed${draftNote}.`;
-}
-
-// src/checker-vcs.ts
-import { exec } from "node:child_process";
-import { promisify as promisify2 } from "node:util";
-var execP = promisify2(exec);
-async function captureVcsState(cwd) {
-  try {
-    const commit = await execP("git rev-parse HEAD", { cwd });
-    const status = await execP("git status --porcelain", { cwd });
-    return {
-      is_git_repo: true,
-      checked_commit: commit.stdout.trim(),
-      checked_dirty: status.stdout.trim().length > 0
-    };
+    const raw = await fs.readFile(path.join(cwd, "openspec", "entry-points.json"), "utf-8");
+    return JSON.parse(raw);
   } catch {
-    return { is_git_repo: false };
+    return {};
   }
+}
+function entryPointsForGroup(entryPoints, group) {
+  const pkgDir = packageDirForGroup(group);
+  const files = entryPoints[pkgDir];
+  return files === void 0 ? { files: [], declared: false } : { files, declared: true };
 }
 
-// src/checker-verdict.ts
-function computeOverall(v) {
-  if (v.tampered) return "fail";
-  if (v.scoped) return "incomplete";
-  if (v.draftCount > 0) return "incomplete";
-  if (v.stuck) return "stuck";
-  if (v.anyFail) return "fail";
-  if (v.dirty && !v.allowDirtyPass) return "pass_dirty";
-  return "pass";
-}
-
-// src/checker.ts
-function draftResult(node, node_path) {
-  return {
-    node_path,
-    id: node.id,
-    title: node.title,
-    description: node.description ?? node.intent ?? node.title,
-    status: "draft",
-    command: node.command ?? ""
-  };
-}
-function isUnderScope(path8, nodePath) {
-  if (nodePath === void 0) return false;
-  return path8 === nodePath || path8.startsWith(`${nodePath}.`);
-}
-function isNonAdvisoryFail(entry) {
-  return entry.result.status === "fail" && !entry.node.advisory;
-}
-function isStuck(entry) {
-  const amended = (entry.node.amend_count ?? 0) >= 3;
-  return isNonAdvisoryFail(entry) && amended;
-}
-function countLeafStatuses(leaves) {
-  const draft = leaves.filter((l) => l.status === "draft").length;
-  const pass = leaves.filter((l) => l.status === "pass").length;
-  return { pass, total: leaves.length - draft, draft };
-}
-async function gatherVcs(scoped, cwd) {
-  return scoped ? {} : captureVcsState(cwd);
-}
-function computeVerdict(doc, entries, scoped, vcs) {
-  const computedFingerprint = computeProofFingerprint(doc.roots);
-  const stored = doc.proof_fingerprint;
-  const tampered = stored !== void 0 && stored !== computedFingerprint;
-  const draftCount = countDraftNodes(doc.roots);
-  const overall = computeOverall({
-    tampered,
-    scoped,
-    draftCount,
-    stuck: entries.some(isStuck),
-    anyFail: entries.some(isNonAdvisoryFail),
-    dirty: vcs.checked_dirty === true,
-    allowDirtyPass: doc.allow_dirty_pass === true
-  });
-  return { overall, tampered, computedFingerprint, draftCount };
-}
-async function checkDocument(doc, cwdOverride, opts = {}) {
-  const cwd = cwdOverride ?? doc.cwd;
-  const { nodePath, summary } = opts;
-  const scoped = nodePath !== void 0;
-  const entries = await runConcreteLeaves(doc.roots, cwd, doc.amendments, doc.adversarial_gates ?? [], nodePath);
-  const vcs = await gatherVcs(scoped, cwd);
-  const draftEntries = collectDraftLeaves(doc.roots).filter(
-    ({ node_path }) => !isUnderScope(node_path, scoped ? nodePath : void 0)
-  );
-  const drafts = draftEntries.map(({ node, node_path }) => draftResult(node, node_path));
-  const leaves = [...entries.map((e) => e.result), ...drafts];
-  const verdict = computeVerdict(doc, entries, scoped, vcs);
-  const counts = countLeafStatuses(leaves);
-  return {
-    overall: verdict.overall,
-    leaves,
-    summary: buildSummary(verdict.overall, counts),
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    proof_fingerprint: verdict.computedFingerprint,
-    draft_count: verdict.draftCount,
-    ...scoped ? { scoped: true, ran_node_path: nodePath } : {},
-    ...verdict.tampered ? { tampered: true } : {},
-    summary_mode: summary === true ? true : void 0,
-    ...vcs
-  };
-}
-
-// src/format-result.ts
-function formatCheckResult(result) {
-  const l = [];
-  const stuckLabel = result.overall === "stuck" ? " \u{1F504} STUCK - approach may be wrong" : "";
-  l.push(`## DoD Check Result: ${result.overall.toUpperCase()}${stuckLabel}`);
-  l.push("");
-  if (result.tampered) {
-    l.push("\u{1F534} **TAMPER DETECTED** - proof-set fingerprint mismatch. Store was edited outside dod_amend.");
-    l.push("");
-  }
-  if (result.scoped) {
-    l.push(
-      `\u23F3 **Scoped run - node "${result.ran_node_path}" only.** Other nodes shown from their last check, not re-run.`
-    );
-    l.push("This is NOT a completion verdict. Run `dod_check` with no `nodePath` to verify the whole DoD.");
-    l.push("");
-  }
-  if (result.draft_count > 0) {
-    l.push(
-      `\u{1F4DD} **${result.draft_count} draft node(s)** - use dod_refine to concretize before a final pass is possible.`
-    );
-    l.push("");
-  }
-  const byRoot = /* @__PURE__ */ new Map();
-  for (const leaf of result.leaves) {
-    const rootIdx = leaf.node_path.split(".")[0];
-    if (!byRoot.has(rootIdx)) byRoot.set(rootIdx, []);
-    byRoot.get(rootIdx)?.push(leaf);
-  }
-  const summaryMode = result.summary_mode === true;
-  for (const [rootIdx, leaves] of byRoot) {
-    const passCount = leaves.filter((p) => p.status === "pass").length;
-    const failCount = leaves.filter((p) => p.status === "fail").length;
-    const skipCount = leaves.filter((p) => p.status === "skipped").length;
-    const draftCount = leaves.filter((p) => p.status === "draft").length;
-    const hasFail = failCount > 0;
-    const hasDraft = draftCount > 0;
-    const icon = hasFail ? "\u274C" : hasDraft ? "\u{1F4DD}" : "\u2705";
-    const status = hasFail ? "FAIL" : hasDraft ? "INCOMPLETE" : "PASS";
-    const rootTitle = leaves[0]?.title ?? `Root ${rootIdx}`;
-    const countStr = [
-      passCount > 0 ? `${passCount} pass` : "",
-      failCount > 0 ? `${failCount} fail` : "",
-      skipCount > 0 ? `${skipCount} skipped` : "",
-      draftCount > 0 ? `${draftCount} draft` : ""
-    ].filter(Boolean).join(", ");
-    l.push(`${icon} **${rootTitle}** - ${status} (${countStr})`);
-    for (const leaf of leaves) {
-      const depth = leaf.node_path.split(".children.").length - 1;
-      const indent = "  ".repeat(depth + 1);
-      if (leaf.status === "draft") {
-        if (summaryMode) continue;
-        l.push(`${indent}\u{1F4DD} ${leaf.description} - DRAFT (use dod_refine to concretize)`);
-      } else if (leaf.status === "pass") {
-        l.push(`${indent}\u2713 \`${leaf.command}\` -> ${leaf.description} (${leaf.duration_ms ?? 0}ms)`);
-      } else if (leaf.status === "skipped") {
-        l.push(`${indent}\u23F3 \`${leaf.command}\` - not verified${leaf.error ? `: ${leaf.error}` : ""}`);
-      } else {
-        l.push(`${indent}\u2717 \`${leaf.command}\` -> ${leaf.description}`);
-        if (leaf.exit_code !== void 0) l.push(`${indent}  exit code: ${leaf.exit_code}`);
-        if (leaf.error) l.push(`${indent}  error: ${leaf.error.split("\n").slice(0, 3).join(`
-${indent}  `)}`);
-        if (leaf.diagnosis) l.push(`${indent}  \u{1F4A1} Diagnosis: ${leaf.diagnosis}`);
-        if (leaf.output) l.push(`${indent}  output: ${leaf.output.split("\n").slice(0, 3).join(`
-${indent}  `)}`);
-      }
-    }
-    if (summaryMode && draftCount > 0) {
-      l.push(`  \u{1F4DD} ${draftCount} draft node(s) unchanged - use dod_refine to concretize`);
-    }
-    l.push("");
-  }
-  l.push(`**Summary:** ${result.summary}`);
-  l.push(`**Timestamp:** ${result.timestamp}`);
-  l.push(`**Proof fingerprint:** \`${result.proof_fingerprint}\``);
-  if (result.is_git_repo !== void 0) {
-    if (result.is_git_repo && result.checked_commit) {
-      const dirtyTag = result.checked_dirty ? " (DIRTY)" : " (clean)";
-      l.push(`**Git state:** \`${result.checked_commit.slice(0, 12)}\`${dirtyTag}`);
-    } else if (!result.is_git_repo) {
-      l.push(`**Git state:** not a git repository`);
-    }
-  }
-  return l.join("\n");
-}
-
-// src/author.ts
-function proofMark(status) {
-  switch (status) {
-    case "pass":
-      return "[x]";
-    case "skipped":
-      return "[~]";
-    case "draft":
-      return "[~]";
-    default:
-      return "[ ]";
-  }
-}
-function renderNode(node, depth, lines) {
-  const indent = "  ".repeat(depth);
-  const isLeaf2 = !node.children || node.children.length === 0;
-  if (isLeaf2) {
-    renderLeaf(node, indent, lines);
-  } else {
-    renderGroup(node, depth, indent, lines);
-  }
-}
-function renderGroup(node, depth, indent, lines) {
-  const children = node.children;
-  if (!children) return;
-  const hasDrafts = hasDraftNodes(children);
-  const allPass = isBranchLocked(children) && children.every((c) => c.refinement === "concrete" && (c.last_status === "pass" || c.last_status === "skipped")) && allLeavesPass(children);
-  let mark;
-  if (hasDrafts) mark = "[~]";
-  else if (allPass && children.length > 0) mark = "[x]";
-  else mark = "[ ]";
-  lines.push(`${indent}**${node.title}** ${mark}`);
-  lines.push("");
-  for (const child of children) {
-    renderNode(child, depth + 1, lines);
-  }
-}
-function allLeavesPass(nodes) {
-  for (const n of nodes) {
-    if (n.children && n.children.length > 0) {
-      if (!allLeavesPass(n.children)) return false;
-    } else if (n.refinement === "concrete") {
-      if (n.last_status !== "pass" && n.last_status !== "skipped") return false;
-    } else if (n.refinement === "draft") {
-      return false;
-    }
-  }
-  return true;
-}
-function renderLeaf(node, indent, lines) {
-  if (node.refinement === "draft") {
-    const mark2 = proofMark("draft");
-    lines.push(`${indent}- ${mark2} **Draft**: ${node.intent ?? node.title}`);
-    return;
-  }
-  const mark = proofMark(node.last_status);
-  let proofLine;
-  if (node.predicate?.type === "tdd") {
-    const tddState = node.seen_failing ? node.last_status === "pass" ? "GREEN" : "RED" : "AWAITING RED";
-    proofLine = `${indent}- ${mark} Proof (TDD ${tddState}): \`${node.command}\` -> ${node.description}`;
-  } else if (node.predicate?.type === "adversarial") {
-    const phase = node.predicate.value !== void 0 ? Number(node.predicate.value) : 0;
-    const phaseName = ["", "Spec", "Test", "Implement", "Cleanup"][phase] ?? `Phase ${phase}`;
-    const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
-    proofLine = `${indent}- ${mark} Proof (Adversarial ${phaseName} Gate ${gateState}): ${node.description}`;
-  } else if (node.predicate?.type === "convergence") {
-    const gateState = node.last_status === "pass" ? "GO" : node.last_status === "fail" ? "NOT GO" : "PENDING";
-    proofLine = `${indent}- ${mark} Proof (Convergence Audit ${gateState}): ${node.description}`;
-  } else if (node.predicate?.type === "holdout") {
-    const fingerprint = node.predicate.value ? String(node.predicate.value).slice(0, 12) : "unknown";
-    proofLine = `${indent}- ${mark} Proof (Holdout ${fingerprint}...): \`${node.command}\` -> ${node.description}`;
-  } else {
-    proofLine = `${indent}- ${mark} Proof: \`${node.command}\` -> ${node.description}`;
-  }
-  if (node.predicate) {
-    proofLine += ` <!--p:${JSON.stringify(node.predicate)}-->`;
-  }
-  lines.push(proofLine);
-  if (node.last_status === "fail" && node.last_output) {
-    const short = node.last_output.slice(0, 300);
-    lines.push(`${indent}  > \u26A0 ${short}`);
-  }
-}
-function renderMarkdown(doc) {
-  const l = [];
-  l.push(`# ${doc.title} - Requirements Spec`);
-  l.push("");
-  l.push("<claude_instructions>");
-  l.push("**For the implementer:** Work through each task below.");
-  l.push("1. Mark a task `[>]` when you begin working on it.");
-  l.push("2. Call `dod_check` to verify proofs - do NOT mark proofs manually.");
-  l.push("3. A task group is complete when ALL its concrete proofs pass via `dod_check`.");
-  l.push("4. Use `dod_refine` to turn a draft leaf into a concrete proof or subdivide into child tasks.");
-  l.push("5. If a proof cannot be met, use `dod_amend` to modify it with a reason.");
-  l.push("6. Continue until `dod_check` returns PASS - then stop and report done.");
-  l.push("");
-  l.push("**Behavioral predicates only.** Each proof is a concrete behavioral claim.");
-  l.push("Read failure diagnoses carefully - they tell you WHAT went wrong and what to fix.");
-  l.push("Proofs run on the HOST OS - write OS-correct commands (no bash on Windows).");
-  l.push("");
-  l.push(`**CWD:** \`${doc.cwd}\``);
-  l.push("");
-  l.push("**Anti-cheat:** Proofs stored canonically in MCP storage.");
-  l.push("`dod_check` executes commands from the canonical copy, not this markdown file.");
-  l.push("</claude_instructions>");
-  l.push("");
-  l.push(`**Goal:** ${doc.goal}`);
-  l.push("");
-  l.push(`**Date:** ${doc.date}`);
-  l.push(`**Target:** \`${doc.cwd}\``);
-  l.push(`**DoD ID:** \`${doc.id}\``);
-  if (doc.last_check) {
-    l.push(`**Last check:** ${doc.last_check.overall.toUpperCase()} (${doc.last_check.timestamp})`);
-  }
-  l.push("");
-  l.push("---");
-  const pushSection = (heading, tag, body) => {
-    l.push("");
-    l.push(`## ${heading}`);
-    l.push("");
-    l.push(`<${tag}>`);
-    l.push(body);
-    l.push(`</${tag}>`);
-  };
-  if (doc.sections.decisions) {
-    pushSection("Decisions (locked with user)", "decisions", doc.sections.decisions);
-  }
-  if (doc.sections.current_state) {
-    pushSection("Current state", "current_state", doc.sections.current_state);
-  }
-  pushSection("Requirements", "requirements", doc.sections.requirements);
-  if (doc.sections.research_notes) {
-    pushSection("Research Notes", "research_notes", doc.sections.research_notes);
-  }
-  if (doc.sections.open_questions) {
-    pushSection("Open Questions", "open_questions", doc.sections.open_questions);
-  }
-  l.push("");
-  l.push("---");
-  l.push("");
-  l.push("## Definition of Done");
-  l.push("");
-  l.push("<definition_of_done>");
-  for (let i = 0; i < doc.roots.length; i++) {
-    const root = doc.roots[i];
-    const isLeaf2 = !root.children || root.children.length === 0;
-    if (isLeaf2) {
-      l.push("");
-      renderLeaf(root, "", l);
-    } else {
-      const children = root.children;
-      if (!children) continue;
-      const hasDrafts = hasDraftNodes(children);
-      const allPass = isBranchLocked(children) && children.length > 0 && allLeavesPass(children);
-      let mark;
-      if (hasDrafts) mark = "[~]";
-      else if (allPass) mark = "[x]";
-      else mark = "[ ]";
-      l.push("");
-      l.push(`### ${root.title} ${mark}`);
-      l.push("");
-      for (const child of children) {
-        renderNode(child, 1, l);
-      }
-    }
-  }
-  l.push("");
-  l.push("</definition_of_done>");
-  if (doc.sections.open_risks) {
-    pushSection("Open risks", "open_risks", doc.sections.open_risks);
-  }
-  if (doc.amendments.length > 0) {
-    l.push("");
-    l.push("## Amendment log");
-    l.push("");
-    for (const a of doc.amendments) {
-      l.push(`- **${a.timestamp}** [${a.node_path}] ${a.action}: ${a.reason}`);
-    }
-  }
-  l.push("");
-  return l.join("\n");
-}
-async function writeMarkdown(doc) {
-  const content = renderMarkdown(doc);
-  const dir = path.dirname(doc.markdown_path);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(doc.markdown_path, content, "utf-8");
-}
-function updateDocFromCheckResult(doc, result) {
-  for (const leafResult of result.leaves) {
-    const node = findNodeByPath(doc.roots, leafResult.node_path);
-    if (!node) continue;
-    const ranPath = result.ran_node_path;
-    if (result.scoped && ranPath != null && leafResult.node_path !== ranPath && !leafResult.node_path.startsWith(`${ranPath}.`))
-      continue;
-    if (leafResult.status !== "draft") {
-      node.last_status = leafResult.status;
-      node.last_output = leafResult.diagnosis ? `${leafResult.output ?? ""}
-
-Diagnosis: ${leafResult.diagnosis}` : leafResult.output;
-      node.last_checked = result.timestamp;
-    }
-  }
-  if (result.scoped) return;
-  doc.last_check = {
-    timestamp: result.timestamp,
-    overall: result.overall,
-    summary: result.summary
-  };
-}
-
-// src/import-gate.ts
-function buildImportGateInfo(doc) {
-  if (!doc.import_source || doc.execution_confirmed !== false) {
-    return { blocked: false };
-  }
-  const executableLeaves = flattenConcreteLeaves(doc.roots).filter(({ node }) => node.command && node.predicate);
-  return {
-    blocked: true,
-    executableCount: executableLeaves.length,
-    commandList: executableLeaves.map(({ node }) => ({
-      title: node.title,
-      command: node.command ?? "",
-      description: node.description ?? ""
-    }))
-  };
-}
-
-// src/openspec/fetch-instructions.ts
-import { execFile as execFile2 } from "node:child_process";
-import { promisify as promisify3 } from "node:util";
-var execFileP2 = promisify3(execFile2);
-async function fetchInstructions(changeId, cwd) {
-  const command = `openspec instructions dod --change ${changeId} --json`;
-  const { shell, args, verbatim } = buildShellInvocation(command);
-  let stdout;
-  try {
-    const run2 = await execFileP2(shell, args, {
-      cwd,
-      windowsHide: true,
-      windowsVerbatimArguments: verbatim,
-      maxBuffer: 10 * 1024 * 1024
-    });
-    stdout = run2.stdout;
-  } catch (err) {
-    throw new Error(`'${command}' failed: ${err instanceof Error ? err.message : String(err)}`);
-  }
-  try {
-    return JSON.parse(stdout);
-  } catch {
-    throw new Error(`'${command}' did not print valid JSON.`);
-  }
-}
-
-// src/openspec/trace.ts
-import { promises as fs7 } from "node:fs";
-
-// src/parser.ts
-import { promises as fs2 } from "node:fs";
-function extractPredicateMetadata(line) {
-  const metaMatch = line.match(/<!--p:(.+?)-->/);
-  if (metaMatch) {
-    try {
-      const predicate = JSON.parse(metaMatch[1]);
-      const cleanLine = line.replace(/<!--p:.+?-->/, "").trimEnd();
-      return { predicate, cleanLine };
-    } catch {
-    }
-  }
-  return { predicate: null, cleanLine: line };
-}
-function markerToStatus(marker) {
-  if (marker === "x") return "pass";
-  if (marker === "~") return "skipped";
-  return "pending";
-}
-function parseLeafLine(line) {
-  const trimmed = line.trim();
-  const draftMatch = trimmed.match(/^-\s*\[[ ~]\s*\]\s*\*\*Draft\*\*:\s*(.+)$/i);
-  if (draftMatch) {
-    return {
-      id: "",
-      title: draftMatch[1].trim(),
-      refinement: "draft",
-      intent: draftMatch[1].trim(),
-      last_status: "draft"
-    };
-  }
-  const { predicate: metaPredicate, cleanLine } = extractPredicateMetadata(trimmed);
-  const proofMatch = cleanLine.match(/^-\s*\[([ x~>])\]\s*Proof(?:\s*\([^)]+\))?:\s*`([^`]+)`\s*->\s*(.+)$/);
-  if (proofMatch) {
-    const desc = proofMatch[3].trim();
-    if (metaPredicate) {
-      return {
-        id: "",
-        title: desc,
-        refinement: "concrete",
-        command: proofMatch[2].trim(),
-        predicate: metaPredicate,
-        description: desc,
-        last_status: markerToStatus(proofMatch[1])
-      };
-    }
-    return {
-      id: "",
-      title: desc,
-      refinement: "draft",
-      intent: desc,
-      last_status: "draft"
-    };
-  }
-  return null;
-}
-var SECTION_MAP = {
-  requirements: "requirements",
-  "research notes": "research_notes",
-  "open questions": "open_questions",
-  "open risks": "open_risks",
-  decisions: "decisions",
-  "current state": "current_state"
-};
-function parseSections(lines) {
-  const sections = { requirements: "" };
-  let currentSection = "";
-  let buf = [];
-  function flush() {
-    if (!currentSection) return;
-    sections[currentSection] = buf.join("\n").trim();
-    currentSection = "";
-    buf = [];
-  }
-  for (const line of lines) {
-    const h2Match = line.match(/^## (.+?)(?:\s*\(.*\))?$/);
-    if (h2Match) {
-      flush();
-      const heading = h2Match[1].trim().toLowerCase();
-      for (const [key, val] of Object.entries(SECTION_MAP)) {
-        if (heading.startsWith(key)) {
-          currentSection = val;
-          break;
-        }
-      }
-      continue;
-    }
-    if (line.match(/^---$/) && currentSection) {
-      flush();
-      continue;
-    }
-    if (currentSection) buf.push(line);
-  }
-  flush();
-  return sections;
-}
-function parseDodTree(lines, startIdx) {
-  const roots = [];
-  const stack = [];
-  let nodeCounter = 0;
-  for (let i = startIdx; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.match(/^## /)) break;
-    if (!line.trim()) continue;
-    const leadingSpaces = line.length - line.trimStart().length;
-    const rootMatch = line.match(/^### (.+?)(?:\s*\[([ x~])\])?\s*$/);
-    if (rootMatch) {
-      const node = {
-        id: `node-${nodeCounter++}`,
-        title: rootMatch[1].trim(),
-        refinement: "draft",
-        children: [],
-        last_status: "draft"
-      };
-      roots.push(node);
-      stack.length = 0;
-      stack.push({ node, depth: -1 });
-      continue;
-    }
-    const groupMatch = line.match(/^\s*\*\*(.+?)\*\*\s*\[([ x~])\]\s*$/);
-    if (groupMatch) {
-      const depth = Math.floor(leadingSpaces / 2);
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      const node = {
-        id: `node-${nodeCounter++}`,
-        title: groupMatch[1].trim(),
-        refinement: "draft",
-        children: [],
-        last_status: "draft"
-      };
-      if (parent?.children) parent.children.push(node);
-      stack.push({ node, depth });
-      continue;
-    }
-    const leaf = parseLeafLine(line);
-    if (leaf) {
-      leaf.id = `node-${nodeCounter++}`;
-      const depth = Math.floor(leadingSpaces / 2);
-      while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
-      const parent = stack.length > 0 ? stack[stack.length - 1].node : null;
-      if (parent?.children) parent.children.push(leaf);
-      else if (!parent) roots.push(leaf);
-    }
-  }
-  function cleanup(node) {
-    if (node.children?.length === 0) delete node.children;
-    if (node.children) for (const c of node.children) cleanup(c);
-  }
-  for (const r of roots) cleanup(r);
-  return roots;
-}
-function parseContent(content) {
-  if (process.env.DOD_DEBUG) console.debug("parser: parseContent", { length: content.length });
-  const lines = content.split("\n");
-  let title = "", goal = "", date3 = "", cwd = ".";
-  for (const line of lines) {
-    if (!title && line.startsWith("# ")) {
-      title = line.replace(/^#\s+/, "").replace(/ - Requirements Spec$/, "").trim();
-    }
-    const goalMatch = line.match(/^\*\*Goal:\*\*\s*(.+)/);
-    if (goalMatch) goal = goalMatch[1].trim();
-    const dateMatch = line.match(/^\*\*Date:\*\*\s*(.+)/);
-    if (dateMatch) date3 = dateMatch[1].trim();
-    const targetMatch = line.match(/^\*\*Target:\*\*\s*`?([^`]+)`?/);
-    if (targetMatch) cwd = targetMatch[1].trim();
-    const cwdMatch = line.match(/All commands run from `([^`]+)`/);
-    if (cwdMatch) cwd = cwdMatch[1].trim();
-  }
-  const sections = parseSections(lines);
-  let dodStart = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].match(/^## Definition of Done/)) {
-      dodStart = i + 1;
-      break;
-    }
-  }
-  const roots = dodStart >= 0 ? parseDodTree(lines, dodStart) : [];
-  return { title, goal, date: date3, cwd, sections, roots };
-}
-async function parseMarkdown(filePath) {
-  const content = await fs2.readFile(filePath, "utf-8");
-  return parseContent(content);
-}
-
-// src/store.ts
-import * as crypto from "node:crypto";
+// src/cover/markers.ts
 import { promises as fs3 } from "node:fs";
-import * as os from "node:os";
-import * as path2 from "node:path";
-function getStoreDir() {
-  return process.env.DOD_STORE_DIR || path2.join(os.homedir(), ".claude", "dod-store");
-}
-async function ensureStoreDir() {
-  await fs3.mkdir(getStoreDir(), { recursive: true });
-}
-function docPath(id) {
-  return path2.join(getStoreDir(), `${id}.json`);
-}
-function generateId() {
-  return crypto.randomUUID();
-}
-async function save(doc) {
-  await ensureStoreDir();
-  await fs3.writeFile(docPath(doc.id), JSON.stringify(doc, null, 2), "utf-8");
-}
-async function load(id) {
-  try {
-    const data = await fs3.readFile(docPath(id), "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("store: failed to load document", { id, err: err instanceof Error ? err.message : String(err) });
-    return null;
-  }
-}
-async function loadRaw(id) {
-  try {
-    const data = await fs3.readFile(docPath(id), "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("store: failed to loadRaw document", { id, err: err instanceof Error ? err.message : String(err) });
-    return null;
-  }
-}
-async function findByPath(markdownPath) {
-  await ensureStoreDir();
-  const files = await fs3.readdir(getStoreDir());
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const data = await fs3.readFile(path2.join(getStoreDir(), file), "utf-8");
-      const doc = JSON.parse(data);
-      const normalizedStored = path2.resolve(doc.markdown_path).toLowerCase();
-      const normalizedSearch = path2.resolve(markdownPath).toLowerCase();
-      if (normalizedStored === normalizedSearch) return doc;
-    } catch (err) {
-      console.error("store: failed to read file during findByPath", {
-        file,
-        err: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }
-  return null;
-}
-async function listAll() {
-  await ensureStoreDir();
-  const files = await fs3.readdir(getStoreDir());
-  const docs = [];
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const data = await fs3.readFile(path2.join(getStoreDir(), file), "utf-8");
-      docs.push(JSON.parse(data));
-    } catch (err) {
-      console.error("store: failed to read file during listAll", {
-        file,
-        err: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }
-  return docs;
-}
-function legacyStepToTaskNode(step) {
-  const children = step.proofs.map((p) => ({
-    id: p.id,
-    title: p.title ?? p.description ?? step.title,
-    refinement: "concrete",
-    command: p.command,
-    predicate: p.predicate,
-    description: p.description ?? "",
-    category: p.category,
-    advisory: p.advisory,
-    last_status: p.last_status ?? "pending",
-    last_output: p.last_output,
-    last_checked: p.last_checked
-  }));
-  return {
-    id: step.id,
-    title: step.title,
-    refinement: "concrete",
-    last_status: children.length > 0 ? "pending" : "draft",
-    children
-  };
-}
-async function migrateDoc(doc) {
-  if (doc.roots && Array.isArray(doc.roots) && doc.roots.length > 0) return false;
-  const legacySteps = doc.steps;
-  if (!(legacySteps && Array.isArray(legacySteps)) || legacySteps.length === 0) {
-    return false;
-  }
-  doc.roots = legacySteps.map(legacyStepToTaskNode);
-  delete doc.steps;
-  delete doc.locked;
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots);
-  await save(doc);
-  return true;
-}
-async function listAllRaw() {
-  await ensureStoreDir();
-  const files = await fs3.readdir(getStoreDir());
-  const docs = [];
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const data = await fs3.readFile(path2.join(getStoreDir(), file), "utf-8");
-      docs.push(JSON.parse(data));
-    } catch (err) {
-      console.error("store: failed to read file during listAllRaw", {
-        file,
-        err: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }
-  return docs;
-}
-
-// src/openspec/convert.ts
-import { promises as fs5 } from "node:fs";
-
-// src/command-check.ts
-import { execFile as execFile3 } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
-import * as path3 from "node:path";
-import { promisify as promisify4 } from "node:util";
-var execFileAsync = promisify4(execFile3);
-var isWindows = process.platform === "win32";
-var CMD_BUILTINS = /* @__PURE__ */ new Set([
-  "assoc",
-  "break",
-  "call",
-  "cd",
-  "chdir",
-  "cls",
-  "color",
-  "copy",
-  "date",
-  "del",
-  "dir",
-  "echo",
-  "endlocal",
-  "erase",
-  "exit",
-  "for",
-  "ftype",
-  "goto",
-  "if",
-  "md",
-  "mkdir",
-  "mklink",
-  "move",
-  "path",
-  "pause",
-  "popd",
-  "prompt",
-  "pushd",
-  "rd",
-  "rem",
-  "ren",
-  "rename",
-  "rmdir",
-  "set",
-  "setlocal",
-  "shift",
-  "start",
-  "time",
-  "title",
-  "type",
-  "ver",
-  "verify",
-  "vol"
-]);
-var OPERATOR_CHARS = /* @__PURE__ */ new Set(["|", "&", ";", "(", ")", "`", "\n", "\r"]);
-function isQuote(c) {
-  return c === '"' || c === "'";
-}
-function splitCommands(command) {
-  const segments = [];
-  let buf = "";
-  let quote = null;
-  for (const c of command) {
-    if (quote) {
-      buf += c;
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (isQuote(c)) {
-      quote = c;
-      buf += c;
-      continue;
-    }
-    if (OPERATOR_CHARS.has(c)) {
-      if (buf.trim()) segments.push(buf);
-      buf = "";
-      continue;
-    }
-    buf += c;
-  }
-  if (buf.trim()) segments.push(buf);
-  return segments;
-}
-function skipRedirection(s) {
-  let t = s.trim();
-  let changed = true;
-  while (changed) {
-    changed = false;
-    if (t[0] === ">" || t[0] === "<" || /^\d+>/.test(t)) {
-      const m = t.match(/^\S+\s*/);
-      t = (m ? t.slice(m[0].length) : t.slice(1)).trim();
-      changed = true;
-    }
-  }
-  return t;
-}
-function extractQuotedToken(s) {
-  const q = s[0];
-  const end = s.indexOf(q, 1);
-  const token = end === -1 ? s.slice(1) : s.slice(1, end);
-  return { token: token || null, rest: end === -1 ? "" : s.slice(end + 1) };
-}
-function extractBareToken(s) {
-  const m = s.match(/^(\S+)\s*/);
-  const token = m ? m[1] : s;
-  const rest = m ? s.slice(m[0].length) : "";
-  return { token, rest };
-}
-function isShellAssignment(s) {
-  if (!s) return false;
-  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(s);
-}
-function firstToken(segment) {
-  let s = skipRedirection(segment);
-  while (s.length > 0) {
-    if (isQuote(s[0])) {
-      const r2 = extractQuotedToken(s);
-      return r2.token;
-    }
-    const r = extractBareToken(s);
-    if (isShellAssignment(r.token)) {
-      s = r.rest.trim();
-      continue;
-    }
-    return r.token;
-  }
-  return null;
-}
-function hasAlnum(s) {
-  return /[A-Za-z0-9]/.test(s);
-}
-function extractCommandNames(command) {
-  const names = [];
-  for (const seg of splitCommands(command)) {
-    const tok = firstToken(seg);
-    if (tok && /^\d+$/.test(tok)) continue;
-    if (tok && hasAlnum(tok) && !names.includes(tok)) names.push(tok);
-  }
-  return names;
-}
-var existsCache = /* @__PURE__ */ new Map();
-async function onPath(name) {
-  try {
-    if (isWindows) {
-      await execFileAsync("where", [name], { timeout: 5e3, windowsHide: true });
-    } else {
-      await execFileAsync("/bin/sh", ["-c", `command -v -- "${name}"`], { timeout: 5e3 });
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-function looksLikePath(name) {
-  return name.includes("/") || name.includes("\\") || /^[A-Za-z]:/.test(name) || name.startsWith(".");
-}
-async function toolExists(name, cwd) {
-  const key = `${isWindows ? name.toLowerCase() : name}|${cwd}`;
-  const cached2 = existsCache.get(key);
-  if (cached2 !== void 0) return cached2;
-  let ok;
-  if (isWindows && CMD_BUILTINS.has(name.toLowerCase())) {
-    ok = true;
-  } else if (looksLikePath(name)) {
-    ok = resolvePathExists(name, cwd);
-  } else {
-    ok = await onPath(name);
-  }
-  existsCache.set(key, ok);
-  return ok;
-}
-function resolvePathExists(name, cwd) {
-  const base = path3.isAbsolute(name) ? name : path3.resolve(cwd, name);
-  const candidates = isWindows ? [base, `${base}.exe`, `${base}.cmd`, `${base}.bat`] : [base];
-  return candidates.some((p) => existsSync(p));
-}
-async function findMissingTools(commands, cwd) {
-  const missing = [];
-  for (const command of commands) {
-    const seen = /* @__PURE__ */ new Set();
-    for (const name of extractCommandNames(command)) {
-      if (seen.has(name)) continue;
-      seen.add(name);
-      if (!await toolExists(name, cwd)) missing.push({ command, tool: name });
-    }
-  }
-  return missing;
-}
-var GLOB_CHARS = /[*?[]/;
-function hasGlobWildcards(command) {
-  let quote = null;
-  for (const c of command) {
-    if (quote) {
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (c === '"' || c === "'") {
-      quote = c;
-      continue;
-    }
-    if (GLOB_CHARS.test(c)) return true;
-  }
-  return false;
-}
-function expandGlobsInCommand(command, cwd) {
-  if (process.platform !== "win32") return { expanded: command, expanded_count: 0 };
-  const dirGlobRe = /([A-Za-z0-9_.-]+)\\([*?][^\\]*)\\/g;
-  const dirGlobReFwd = /([A-Za-z0-9_.-]+)\/([*?][^/]*)\//g;
-  let expanded = command;
-  let count = 0;
-  const globResolve = (re, sep) => {
-    const matches = [];
-    for (const m of command.matchAll(re)) {
-      matches.push({ prefix: m[1], pattern: m[2], fullMatch: m[0] });
-    }
-    const seen = /* @__PURE__ */ new Set();
-    for (const { prefix, pattern, fullMatch } of matches) {
-      if (seen.has(fullMatch)) continue;
-      seen.add(fullMatch);
-      try {
-        const parentDir = path3.resolve(cwd, prefix);
-        if (!existsSync(parentDir)) continue;
-        const entries = readdirSync(parentDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((name) => wildcardMatch(name, pattern)).sort();
-        if (entries.length > 0) {
-          const replacement = entries.map((e) => `${prefix}${sep}${e}${sep}`).join(" ");
-          expanded = expanded.split(fullMatch).join(replacement);
-          count += entries.length;
-        }
-      } catch {
-      }
-    }
-  };
-  globResolve(dirGlobRe, "\\");
-  globResolve(dirGlobReFwd, "/");
-  return { expanded, expanded_count: count };
-}
-function wildcardMatch(str2, pattern) {
-  const re = new RegExp(
-    `^${pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`
-  );
-  return re.test(str2);
-}
-var PLACEHOLDER_PATTERNS = [
-  /^node\s+(?:-e|--eval)\s+["']?\s*process\.exit\s*\(\s*0\s*\)\s*["']?$/i,
-  /^node\s+(?:-e|--eval)\s+["']\s*["']$/i,
-  /^process\.exit\s*\(\s*0\s*\)$/i,
-  /^echo\s+(?:ok|done|pass(?:ed)?)$/i,
-  /^true$/,
-  /^:\s*$/,
-  /^exit\s+0$/i,
-  /^exit\s+\/b\s+0$/i,
-  /^cmd\s+\/c\s+["']?exit(?:\s+\/b)?\s+0["']?$/i,
-  /^rem\b/i
-];
-function isPlaceholderCommand(command) {
-  const cmd = command.trim();
-  if (!cmd) return false;
-  return PLACEHOLDER_PATTERNS.some((re) => re.test(cmd));
-}
-var currentOs = process.platform;
-
-// src/openspec/checkability.ts
-var COMMAND_SPAN = /`([^`]*\s[^`]*)`/;
-var ALLOWED_EXECUTABLES = /* @__PURE__ */ new Set([
-  "npm",
-  "npx",
-  "node",
-  "git",
-  "openspec",
-  "dod-guard",
-  "grep",
-  "findstr",
-  "tsc",
-  "biome"
-]);
-function extractCommand(scenario) {
-  const match = scenario.intent.match(COMMAND_SPAN);
-  return match ? match[1] : "";
-}
-function firstToken2(command) {
-  return command.trim().split(/\s+/)[0] ?? "";
-}
-function isCheckable(scenario) {
-  const command = extractCommand(scenario);
-  if (!command) return false;
-  return ALLOWED_EXECUTABLES.has(firstToken2(command));
-}
-async function isRunnable(scenario, cwd) {
-  if (!isCheckable(scenario)) return false;
-  const missing = await findMissingTools([extractCommand(scenario)], cwd);
-  return missing.length === 0;
-}
 
 // src/openspec/glob.ts
-import { promises as fs4 } from "node:fs";
-import * as path4 from "node:path";
+import { promises as fs2 } from "node:fs";
+import * as path2 from "node:path";
 function segmentToRegExp(segment) {
   const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
   return new RegExp(`^${escaped}$`);
 }
 async function listEntries(dir) {
   try {
-    return await fs4.readdir(dir, { withFileTypes: true });
+    return await fs2.readdir(dir, { withFileTypes: true });
   } catch {
     return [];
   }
@@ -22578,7 +21043,7 @@ async function listEntries(dir) {
 async function walkFiles(dir, segment) {
   const re = segmentToRegExp(segment);
   const entries = await listEntries(dir);
-  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path4.join(dir, e.name));
+  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path2.join(dir, e.name));
 }
 async function walkDirs(dir, segment, rest) {
   const re = segmentToRegExp(segment);
@@ -22586,7 +21051,7 @@ async function walkDirs(dir, segment, rest) {
   const results = [];
   for (const e of entries) {
     if (e.isDirectory() && re.test(e.name)) {
-      results.push(...await resolveSegments(path4.join(dir, e.name), rest));
+      results.push(...await resolveSegments(path2.join(dir, e.name), rest));
     }
   }
   return results;
@@ -22596,7 +21061,7 @@ async function walkDoubleStar(dir, rest) {
   const entries = await listEntries(dir);
   for (const e of entries) {
     if (e.isDirectory()) {
-      results.push(...await walkDoubleStar(path4.join(dir, e.name), rest));
+      results.push(...await walkDoubleStar(path2.join(dir, e.name), rest));
     }
   }
   return results;
@@ -22613,9 +21078,273 @@ async function resolveGlob(baseDir, pattern) {
   return resolveSegments(baseDir, segments);
 }
 
+// src/openspec/scenario-id.ts
+function buildScenarioId(group, capability, requirementTitle, scenarioTitle) {
+  return `${group}/${capability}::${requirementTitle}||${scenarioTitle}`;
+}
+
+// src/cover/markers.ts
+var MARKER_RE = /^\s*\/\/\s*covers:\s*(\S+\/\S+)\s*::\s*(.+?)\s*::\s*(.+?)\s*$/;
+var TEST_CALL_RE = /^\s*(?:test|it)\(\s*(['"`])((?:\\.|(?!\1).)*)\1/;
+function markersInFile(file, content) {
+  const lines = content.split("\n");
+  const bindings = [];
+  for (let i = 0; i < lines.length; i++) {
+    const marker = lines[i].match(MARKER_RE);
+    if (!marker) continue;
+    const [, groupCapability, requirementTitle, scenarioTitle] = marker;
+    const slashIndex = groupCapability.indexOf("/");
+    if (slashIndex === -1) continue;
+    let next = i + 1;
+    while (next < lines.length && lines[next].trim().length === 0) next++;
+    const testCall = next < lines.length ? lines[next].match(TEST_CALL_RE) : null;
+    if (!testCall) continue;
+    bindings.push({
+      scenarioId: buildScenarioId(
+        groupCapability.slice(0, slashIndex),
+        groupCapability.slice(slashIndex + 1),
+        requirementTitle,
+        scenarioTitle
+      ),
+      file,
+      testName: testCall[2]
+    });
+  }
+  return bindings;
+}
+async function scanMarkers(cwd, group) {
+  const bindings = /* @__PURE__ */ new Map();
+  for (const pattern of testGlobsForGroup(group)) {
+    for (const file of await resolveGlob(cwd, pattern)) {
+      const content = await fs3.readFile(file, "utf-8");
+      for (const binding of markersInFile(file, content)) {
+        bindings.set(binding.scenarioId, binding);
+      }
+    }
+  }
+  return bindings;
+}
+
+// src/cover/reachability.ts
+import { execFile } from "node:child_process";
+import { promises as fs4 } from "node:fs";
+import * as os from "node:os";
+import * as path4 from "node:path";
+import { promisify } from "node:util";
+
+// src/cover/dist-file.ts
+import * as path3 from "node:path";
+function distTestFile(cwd, pkgDir, srcTestFile) {
+  if (!pkgDir.startsWith("packages/")) return srcTestFile;
+  const srcRoot = path3.join(cwd, pkgDir, "src");
+  const rel = path3.relative(srcRoot, srcTestFile);
+  const distRoot = path3.join(cwd, pkgDir, "dist");
+  return path3.join(distRoot, rel.replace(/\.ts$/, ".js"));
+}
+
+// src/cover/reachability.ts
+var execFileP = promisify(execFile);
+function escapeForRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+async function fileExists(p) {
+  try {
+    await fs4.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+async function readIntegratedFiles(reportDir) {
+  try {
+    const raw = await fs4.readFile(path4.join(reportDir, "coverage-final.json"), "utf-8");
+    const coverage = JSON.parse(raw);
+    const integrated = /* @__PURE__ */ new Set();
+    for (const [file, fileCoverage] of Object.entries(coverage)) {
+      if (Object.values(fileCoverage.f).some((hits) => hits > 0)) integrated.add(file);
+    }
+    return integrated;
+  } catch {
+    return /* @__PURE__ */ new Set();
+  }
+}
+async function checkReachability(input) {
+  const pkgDir = packageDirForGroup(input.group);
+  const execTestFile = distTestFile(input.cwd, pkgDir, input.testFile);
+  if (!await fileExists(execTestFile)) {
+    const rel = path4.relative(input.cwd, execTestFile);
+    return { outcome: "failed", note: `compiled test file not found: ${rel} - run npm run build first` };
+  }
+  const c8Bin = path4.join(input.cwd, "node_modules", "c8", "bin", "c8.js");
+  if (!await fileExists(c8Bin)) {
+    return { outcome: "failed", note: "c8 is not installed at the repo root - run npm install" };
+  }
+  const includeGlob = pkgDir.startsWith("packages/") ? `${pkgDir}/dist/**/*.js` : `${pkgDir}/**/*.js`;
+  const pattern = `^${escapeForRegExp(input.testName)}$`;
+  const reportDir = await fs4.mkdtemp(path4.join(os.tmpdir(), "dod-guard-cover-"));
+  const childEnv = { ...process.env };
+  delete childEnv.NODE_TEST_CONTEXT;
+  try {
+    let stdout;
+    try {
+      const run = await execFileP(
+        process.execPath,
+        [
+          c8Bin,
+          `--include=${includeGlob}`,
+          "--reporter=json",
+          `--report-dir=${reportDir}`,
+          process.execPath,
+          "--experimental-test-module-mocks",
+          "--test",
+          `--test-name-pattern=${pattern}`,
+          execTestFile
+        ],
+        { cwd: input.cwd, shell: false, encoding: "utf-8", env: childEnv }
+      );
+      stdout = run.stdout;
+    } catch {
+      return { outcome: "failed", note: `bound test "${input.testName}" failed` };
+    }
+    if (!stdout.includes(`# Subtest: ${input.testName}`)) {
+      return { outcome: "failed", note: `no test named "${input.testName}" found in ${execTestFile}` };
+    }
+    if (input.entryPointFiles.length === 0) {
+      return {
+        outcome: "covered-but-not-integrated",
+        note: `bound test passed; no entry points declared for ${pkgDir} in openspec/entry-points.json`
+      };
+    }
+    const integratedFiles = await readIntegratedFiles(reportDir);
+    const integrated = input.entryPointFiles.some((file) => integratedFiles.has(path4.resolve(input.cwd, file)));
+    return integrated ? { outcome: "covered-and-integrated", note: "bound test passed and reached a declared entry point" } : { outcome: "covered-but-not-integrated", note: "bound test passed but reached no declared entry point" };
+  } finally {
+    await fs4.rm(reportDir, { recursive: true, force: true });
+  }
+}
+
+// src/cover/run-command.ts
+import * as path5 from "node:path";
+function buildTestRunCommand(cwd, group, testFile) {
+  const pkgDir = packageDirForGroup(group);
+  const execTestFile = distTestFile(cwd, pkgDir, testFile);
+  const relPath = path5.relative(cwd, execTestFile).split(path5.sep).join("/");
+  return `node --experimental-test-module-mocks --test ${relPath}`;
+}
+
+// src/cover/report.ts
+async function resolveOutcome(ctx, scenario) {
+  let markers = ctx.markersByGroup.get(scenario.group);
+  if (!markers) {
+    markers = await scanMarkers(ctx.cwd, scenario.group);
+    ctx.markersByGroup.set(scenario.group, markers);
+  }
+  const binding = markers.get(scenario.id);
+  if (!binding) return { outcome: "unwired", note: "no test binds this scenario", runCommand: void 0 };
+  const runCommand = buildTestRunCommand(ctx.cwd, scenario.group, binding.file);
+  const { outcome, note } = await checkReachability({
+    cwd: ctx.cwd,
+    group: scenario.group,
+    testName: binding.testName,
+    testFile: binding.file,
+    entryPointFiles: entryPointsForGroup(ctx.entryPoints, scenario.group).files
+  });
+  return { outcome, note, runCommand };
+}
+async function buildReport(cwd, scenarios) {
+  const ctx = { cwd, markersByGroup: /* @__PURE__ */ new Map(), entryPoints: await loadEntryPoints(cwd) };
+  const reports = [];
+  for (const scenario of scenarios) {
+    const resolved = await resolveOutcome(ctx, scenario);
+    reports.push({
+      scenarioId: scenario.id,
+      group: scenario.group,
+      capability: scenario.capability,
+      requirementTitle: scenario.requirementTitle,
+      scenarioTitle: scenario.scenarioTitle,
+      ...resolved
+    });
+  }
+  return reports;
+}
+function outcomeRank(outcome) {
+  switch (outcome) {
+    case "covered-and-integrated":
+      return 2;
+    case "covered-but-not-integrated":
+      return 1;
+    default:
+      return 0;
+  }
+}
+function summarizeReport(reports) {
+  const summary = {
+    "covered-and-integrated": 0,
+    "covered-but-not-integrated": 0,
+    unwired: 0,
+    failed: 0
+  };
+  for (const report of reports) summary[report.outcome]++;
+  return summary;
+}
+
+// src/cover/baseline.ts
+var NOTE = "Coverage outcome each scenario holds today. A drop below its own outcome fails the gate.";
+function baselinePath(cwd) {
+  return path6.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
+}
+async function readBaseline(cwd) {
+  try {
+    const raw = await fs5.readFile(baselinePath(cwd), "utf-8");
+    const parsed = JSON.parse(raw);
+    return parsed.scenarios ?? {};
+  } catch {
+    return {};
+  }
+}
+async function writeBaseline(cwd, current) {
+  const sorted = Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b)));
+  await fs5.mkdir(path6.dirname(baselinePath(cwd)), { recursive: true });
+  await fs5.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
+`);
+}
+function compareToBaseline(reports, baseline) {
+  const adopted = [];
+  const regressions = [];
+  const improved = [];
+  for (const report of reports) {
+    const before = baseline[report.scenarioId];
+    if (before === void 0) {
+      adopted.push(report.scenarioId);
+      continue;
+    }
+    if (outcomeRank(report.outcome) < outcomeRank(before)) {
+      regressions.push({ scenarioId: report.scenarioId, before, now: report.outcome });
+      continue;
+    }
+    if (outcomeRank(report.outcome) > outcomeRank(before)) {
+      improved.push(report.scenarioId);
+    }
+  }
+  return { adopted, regressions, improved };
+}
+function findOrphans(reports, baseline) {
+  const currentIds = new Set(reports.map((r) => r.scenarioId));
+  return Object.keys(baseline).filter((id) => !currentIds.has(id));
+}
+function outcomesFromReport(reports) {
+  return Object.fromEntries(reports.map((r) => [r.scenarioId, r.outcome]));
+}
+
+// src/cover/enumerate.ts
+import { promises as fs6 } from "node:fs";
+import * as path7 from "node:path";
+
 // src/openspec/requirements.ts
 var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
 var SCENARIO_HEADING = /^#### Scenario:\s*(.+?)\s*$/;
+var SECTION_HEADING = /^##\s+(.+?)\s*$/;
+var REMOVED_SECTION = /^REMOVED\b/i;
 var THEN_LINE = /^-\s*\*\*THEN\*\*\s*(.*)$/;
 var OTHER_BULLET = /^-\s*\*\*[A-Z]+\*\*/;
 function finalizeScenario(state) {
@@ -22627,20 +21356,34 @@ function finalizeScenario(state) {
   state.thenParts = [];
   state.inThen = false;
 }
+function startRequirement(state, title) {
+  state.currentReq = state.inRemoved ? null : { title, scenarios: [] };
+  if (state.currentReq) state.blocks.push(state.currentReq);
+}
+function consumeHeading(state, line) {
+  const section = line.match(SECTION_HEADING);
+  if (section) {
+    finalizeScenario(state);
+    state.currentReq = null;
+    state.inRemoved = REMOVED_SECTION.test(section[1]);
+    return true;
+  }
+  const requirement = line.match(REQUIREMENT_HEADING);
+  if (requirement) {
+    finalizeScenario(state);
+    startRequirement(state, requirement[1]);
+    return true;
+  }
+  const scenario = line.match(SCENARIO_HEADING);
+  if (scenario) {
+    finalizeScenario(state);
+    state.currentScenario = { title: scenario[1], intent: "" };
+    return true;
+  }
+  return false;
+}
 function consumeLine(state, line) {
-  const reqMatch = line.match(REQUIREMENT_HEADING);
-  if (reqMatch) {
-    finalizeScenario(state);
-    state.currentReq = { title: reqMatch[1], scenarios: [] };
-    state.blocks.push(state.currentReq);
-    return;
-  }
-  const scenarioMatch = line.match(SCENARIO_HEADING);
-  if (scenarioMatch) {
-    finalizeScenario(state);
-    state.currentScenario = { title: scenarioMatch[1], intent: "" };
-    return;
-  }
+  if (consumeHeading(state, line)) return;
   const thenMatch = line.match(THEN_LINE);
   if (thenMatch) {
     state.thenParts.push(thenMatch[1].trim());
@@ -22656,437 +21399,301 @@ function consumeLine(state, line) {
     state.thenParts[lastIndex] = `${state.thenParts[lastIndex]} ${line.trim()}`;
   }
 }
+function newState() {
+  return { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false, inRemoved: false };
+}
 function extractRequirementBlocks(content) {
-  const state = { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false };
-  for (const line of content.split("\n")) {
-    consumeLine(state, line);
-  }
+  const state = newState();
+  for (const line of content.split("\n")) consumeLine(state, line);
   finalizeScenario(state);
   return state.blocks;
 }
 
-// src/openspec/convert.ts
-async function scenarioLeaf(scenario, id, cwd) {
-  if (await isRunnable(scenario, cwd)) {
-    return {
-      id,
-      title: scenario.title,
-      refinement: "concrete",
-      command: extractCommand(scenario),
-      predicate: { type: "exit_code", value: 0 },
-      description: scenario.intent,
-      category: "other",
-      last_status: "pending"
-    };
-  }
-  return {
-    id,
-    title: scenario.title,
-    refinement: "draft",
-    intent: `MANUAL: ${scenario.intent}`,
-    last_status: "draft"
-  };
+// src/cover/enumerate.ts
+function capabilityFromPath(specsDir, specFile) {
+  const rel = path7.relative(specsDir, specFile).split(path7.sep);
+  if (rel.length < 3) return null;
+  return { group: rel[0], capability: rel[1] };
 }
-async function requirementGroup(block, index, cwd) {
-  const children = await Promise.all(
-    block.scenarios.map((scenario, si) => scenarioLeaf(scenario, `req-${index}-scenario-${si}`, cwd))
-  );
-  return {
-    id: `req-${index}`,
-    title: block.title,
-    refinement: "draft",
-    children,
-    last_status: "draft"
-  };
-}
-async function readDeltaFiles(instructions) {
-  const files = [];
-  for (const dep of instructions.dependencies) {
-    files.push(...await resolveGlob(instructions.changeDir, dep.path));
-  }
-  return files;
-}
-async function convertInstructionsToDod(instructions) {
-  const files = await readDeltaFiles(instructions);
-  const cwd = instructions.root.path;
-  const roots = [];
-  let index = 0;
-  for (const file of files) {
-    const content = await fs5.readFile(file, "utf-8");
-    for (const block of extractRequirementBlocks(content)) {
-      roots.push(await requirementGroup(block, index, cwd));
-      index++;
+async function scenariosFromFile(specsDir, specFile) {
+  const located = capabilityFromPath(specsDir, specFile);
+  if (!located) return [];
+  const content = await fs6.readFile(specFile, "utf-8");
+  const scenarios = [];
+  for (const block of extractRequirementBlocks(content)) {
+    for (const scenario of block.scenarios) {
+      scenarios.push({
+        id: buildScenarioId(located.group, located.capability, block.title, scenario.title),
+        group: located.group,
+        capability: located.capability,
+        requirementTitle: block.title,
+        scenarioTitle: scenario.title,
+        intent: scenario.intent,
+        specPath: specFile
+      });
     }
   }
-  return { resolvedOutputPath: instructions.resolvedOutputPath, roots };
+  return scenarios;
 }
-
-// src/openspec/scenario-identity.ts
-import { promises as fs6 } from "node:fs";
-function sidecarPath(resolvedOutputPath) {
-  return `${resolvedOutputPath}.scenario-map.json`;
-}
-function scenarioKey(groupTitle, scenarioTitle) {
-  return `${groupTitle}||${scenarioTitle}`;
-}
-async function readScenarioMap(resolvedOutputPath) {
-  try {
-    const raw = await fs6.readFile(sidecarPath(resolvedOutputPath), "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-async function writeScenarioMap(resolvedOutputPath, entries) {
-  await fs6.writeFile(sidecarPath(resolvedOutputPath), JSON.stringify(entries, null, 2), "utf-8");
-}
-function buildScenarioMap(convertedRoots, importedRoots) {
-  const entries = [];
-  convertedRoots.forEach((group, gi) => {
-    const importedGroup = importedRoots[gi];
-    for (const [li, leaf] of (group.children ?? []).entries()) {
-      const importedLeaf = importedGroup?.children?.[li];
-      if (importedLeaf) {
-        entries.push({ groupTitle: group.title, scenarioTitle: leaf.title, nodeId: importedLeaf.id });
-      }
-    }
-  });
-  return entries;
-}
-
-// src/openspec/trace.ts
-async function currentScenarioEntries(instructions) {
-  const entries = /* @__PURE__ */ new Map();
-  for (const file of await readDeltaFiles(instructions)) {
-    const content = await fs7.readFile(file, "utf-8");
-    for (const block of extractRequirementBlocks(content)) {
-      for (const scenario of block.scenarios) {
-        entries.set(scenarioKey(block.title, scenario.title), `${block.title} > ${scenario.title}`);
-      }
-    }
-  }
-  return entries;
-}
-function collectLeaves(roots) {
+async function enumerateUnder(specsDir) {
+  const files = await resolveGlob(specsDir, "**/spec.md");
   const out = [];
-  for (const group of roots) {
-    for (const leaf of group.children ?? []) {
-      out.push({ groupTitle: group.title, leaf });
-    }
-  }
+  for (const file of files) out.push(...await scenariosFromFile(specsDir, file));
   return out;
 }
-function untracedLeafDescriptions(roots, tracedNodeIds) {
-  return collectLeaves(roots).filter(({ leaf }) => !tracedNodeIds.has(leaf.id)).map(({ groupTitle, leaf }) => `${groupTitle} > ${leaf.title}`);
+async function enumerateChangeScenarios(cwd, changeId) {
+  return enumerateUnder(path7.join(cwd, "openspec", "changes", changeId, "specs"));
 }
-async function loadTraceTree(resolvedOutputPath) {
-  const stored = await findByPath(resolvedOutputPath);
-  if (stored) return stored;
-  try {
-    return await parseMarkdown(resolvedOutputPath);
-  } catch {
-    return null;
-  }
-}
-async function traceChange(changeId, instructions) {
-  const doc = await loadTraceTree(instructions.resolvedOutputPath);
-  if (!doc) {
-    return { changeId, hasDod: false, untracedLeaves: [], untracedScenarios: [] };
-  }
-  const scenarioMap = await readScenarioMap(instructions.resolvedOutputPath);
-  const tracedNodeIds = new Set(scenarioMap.map((e) => e.nodeId));
-  const tracedKeys = new Set(scenarioMap.map((e) => scenarioKey(e.groupTitle, e.scenarioTitle)));
-  const currentScenarios = await currentScenarioEntries(instructions);
-  const untracedScenarios = [...currentScenarios.entries()].filter(([key]) => !tracedKeys.has(key)).map(([, display]) => display);
-  return {
-    changeId,
-    hasDod: true,
-    untracedLeaves: untracedLeafDescriptions(doc.roots, tracedNodeIds),
-    untracedScenarios
-  };
-}
-function classifyOutcome(report) {
-  if (!report.hasDod) return "no-dod";
-  if (report.untracedLeaves.length > 0) return "blocked";
-  return "ok";
-}
-function formatTraceReport(report) {
-  if (!report.hasDod) {
-    return `No DoD found for change "${report.changeId}", in canonical storage or on disk. Run the openspec dod converter (renderAndImportDod) first.
-`;
-  }
-  const lines = [];
-  if (report.untracedScenarios.length > 0) {
-    lines.push("UNTRACED SCENARIOS (reported, not blocking):");
-    for (const s of report.untracedScenarios) lines.push(`  - ${s}`);
-  } else {
-    lines.push("All scenarios reach a leaf.");
-  }
-  if (report.untracedLeaves.length > 0) {
-    lines.push("UNTRACED LEAVES (blocking):");
-    for (const l of report.untracedLeaves) lines.push(`  - ${l}`);
-  } else {
-    lines.push("All leaves trace to a scenario.");
-  }
-  return `${lines.join("\n")}
-`;
+async function enumerateAllScenarios(cwd) {
+  return enumerateUnder(path7.join(cwd, "openspec", "specs"));
 }
 
-// src/tree-utils.ts
-var nodeIdCounter = 0;
-function resetNodeIdCounter() {
-  nodeIdCounter = 0;
-}
-function nextNodeId() {
-  return `node-${++nodeIdCounter}`;
-}
-function buildTaskNodes(inputs) {
-  return inputs.map((input) => {
-    const isGroup = !!(input.children && input.children.length > 0);
-    const effectiveRefinement = isGroup ? "concrete" : input.refinement ?? "draft";
-    const node = {
-      id: nextNodeId(),
-      title: input.title,
-      refinement: effectiveRefinement,
-      last_status: effectiveRefinement === "draft" ? "draft" : "pending"
-    };
-    if (isGroup && input.children) {
-      node.children = buildTaskNodes(input.children);
-    }
-    if (!isGroup && input.refinement === "draft") {
-      node.intent = input.intent;
-    }
-    if (!isGroup && input.refinement === "concrete") {
-      node.command = input.command;
-      node.predicate = input.predicate;
-      node.description = input.description;
-      node.category = input.category;
-      node.advisory = input.advisory;
-    }
-    return node;
-  });
-}
-function findNodeById(roots, id) {
-  function search(nodes, parentPath) {
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-      if (node.id === id) return { node, path: currentPath };
-      if (node.children) {
-        const found = search(node.children, currentPath);
-        if (found) return found;
-      }
-    }
-    return null;
+// src/cover/run.ts
+var EXIT_OK = 0;
+var EXIT_REGRESSION = 1;
+var EXIT_USAGE_ERROR = 3;
+async function runCover(opts, io) {
+  if (!(opts.all || opts.changeId)) {
+    io.writeErr("ERROR: dod-guard cover needs a change id or --all.\n");
+    return EXIT_USAGE_ERROR;
   }
-  return search(roots, "");
-}
-function countAllNodes(nodes) {
-  let count = 0;
-  for (const node of nodes) {
-    count++;
-    if (node.children) count += countAllNodes(node.children);
+  if (opts.writeBaseline && !opts.all) {
+    io.writeErr("ERROR: --write-baseline needs --all - a change-scoped run would drop every other scenario.\n");
+    return EXIT_USAGE_ERROR;
   }
-  return count;
-}
-function formatTree(roots, opts) {
-  const lines = [];
-  let displayRoots = roots;
-  let scopeLabel = "";
-  if (opts?.scopeId) {
-    const found = findNodeById(roots, opts.scopeId);
-    if (!found) return `ERROR: node not found by id "${opts.scopeId}".`;
-    displayRoots = found.node.children ? found.node.children : [found.node];
-    scopeLabel = ` (scoped to ${found.node.title} [${found.node.id}] @ ${found.path})`;
-  } else if (opts?.scopePath) {
-    const node = findNodeByPath(roots, opts.scopePath);
-    if (!node) return `ERROR: node not found at path "${opts.scopePath}".`;
-    displayRoots = node.children ? node.children : [node];
-    scopeLabel = ` (scoped to ${node.title} @ ${opts.scopePath})`;
+  const scenarios = opts.all ? await enumerateAllScenarios(opts.cwd) : await enumerateChangeScenarios(opts.cwd, opts.changeId);
+  if (scenarios.length === 0) {
+    io.write(
+      opts.all ? "No scenarios found under openspec/specs. Nothing to cover.\n" : `No spec deltas found for change "${opts.changeId}". Nothing to cover.
+`
+    );
+    return EXIT_OK;
   }
-  const totalNodes = countAllNodes(roots);
-  const draftCount = countAllDrafts(roots);
-  const concreteCount = countAllConcrete(roots);
-  if (opts?.title) lines.push(`${opts.title}${opts.id ? ` (${opts.id})` : ""}`);
-  lines.push(`${totalNodes} nodes: ${concreteCount} concrete, ${draftCount} draft${scopeLabel}`);
-  lines.push("");
-  function render(nodes, parentPath, depth) {
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      const currentPath = parentPath ? `${parentPath}.children.${i}` : `${i}`;
-      const indent = "  ".repeat(depth);
-      if (node.children && node.children.length > 0) {
-        const hasDrafts = hasDraftNodes(node.children);
-        const allPass = allGroupLeavesPass(node.children);
-        let groupMark = "";
-        if (allPass && !hasDrafts && node.children.length > 0) groupMark = " \u2713";
-        else if (hasDrafts) groupMark = " ~";
-        lines.push(`${indent}${currentPath} [${node.id}] GROUP: "${node.title}"${groupMark}`);
-        render(node.children, currentPath, depth + 1);
-      } else if (node.refinement === "concrete") {
-        const status = node.last_status ?? "pending";
-        const cat = node.category ? ` | ${node.category}` : "";
-        const adv = node.advisory ? " [advisory]" : "";
-        lines.push(`${indent}${currentPath} [${node.id}] PROOF: "${node.title}" (${status}${cat}${adv})`);
-      } else {
-        const intent = node.intent ? ` \u2014 ${node.intent.slice(0, 80)}${node.intent.length > 80 ? "..." : ""}` : "";
-        lines.push(`${indent}${currentPath} [${node.id}] DRAFT: "${node.title}"${intent}`);
-      }
-    }
+  const reports = await buildReport(opts.cwd, scenarios);
+  for (const report of reports) {
+    io.write(`  ${report.outcome.padEnd(26)} ${report.scenarioId}
+`);
   }
-  render(displayRoots, opts?.scopeId || opts?.scopePath ? "" : "", 0);
-  return lines.join("\n");
-}
-function countAllDrafts(nodes) {
-  let count = 0;
-  for (const node of nodes) {
-    if (node.children && node.children.length > 0) {
-      count += countAllDrafts(node.children);
-    } else if (node.refinement === "draft") {
-      count++;
-    }
-  }
-  return count;
-}
-function countAllConcrete(nodes) {
-  let count = 0;
-  for (const node of nodes) {
-    if (node.children && node.children.length > 0) {
-      count += countAllConcrete(node.children);
-    } else if (node.refinement === "concrete") {
-      count++;
-    }
-  }
-  return count;
-}
-function allGroupLeavesPass(nodes) {
-  for (const node of nodes) {
-    if (node.children && node.children.length > 0) {
-      if (!allGroupLeavesPass(node.children)) return false;
-    } else if (node.refinement === "concrete") {
-      if (node.last_status !== "pass" && node.last_status !== "skipped") return false;
-    }
-  }
-  return true;
-}
-function formatMissingTools(missing) {
-  const lines = [
-    `ERROR: ${missing.length} proof command(s) invoke tool(s) not available on this OS (${currentOs}).`,
-    "Proof commands run on THIS machine \u2014 author them for the target OS, not as portable/bash by default.",
-    ""
-  ];
-  for (const m of missing) {
-    const hint = suggestionFor(m.tool);
-    lines.push(`  \u2022 \`${m.tool}\` not found${hint ? ` \u2014 on ${currentOs} use: ${hint}` : ""}`);
-    lines.push(`    in: ${m.command}`);
-  }
-  lines.push("");
-  lines.push("Rewrite these commands for the current OS, then retry.");
-  return lines.join("\n");
-}
-function suggestionFor(tool) {
-  const map = {
-    grep: "findstr",
-    cat: "type",
-    sed: "(use PowerShell -replace or batch findstr with redirects)",
-    awk: "(use PowerShell or batch for /f)",
-    sh: "cmd /c",
-    bash: "cmd /c",
-    python3: "python",
-    make: "(Windows: install GNU Make or use npm scripts)",
-    cargo: "(install Rust via rustup.rs)"
-  };
-  return map[tool.toLowerCase()] ?? "";
-}
-async function checkCommandsForOs(roots, cwd) {
-  const commands = flattenConcreteLeaves(roots).flatMap(
-    ({ node }) => node.command && node.predicate ? [node.command] : []
+  const summary = summarizeReport(reports);
+  io.write(
+    `
+${reports.length} scenario(s): ${summary["covered-and-integrated"]} covered-and-integrated, ${summary["covered-but-not-integrated"]} covered-but-not-integrated, ${summary.unwired} unwired, ${summary.failed} failed
+`
   );
-  const missing = await findMissingTools(commands, cwd);
-  const lines = [];
-  const isWin = process.platform === "win32";
-  if (isWin) {
-    const globCmds = commands.filter(hasGlobWildcards);
-    if (globCmds.length > 0) {
-      lines.push(
-        `WARNING: ${globCmds.length} proof command(s) contain glob wildcards (*, ?, [) \u2014 cmd.exe does NOT expand globs.`,
-        "Use explicit paths or tools that handle their own globbing.",
-        ""
-      );
-      for (const cmd of globCmds) {
-        lines.push(`  \u2022 ${cmd}`);
-        const { expanded, expanded_count } = expandGlobsInCommand(cmd, cwd);
-        if (expanded_count > 0) {
-          lines.push(`    \u2192 Auto-expanded: \`${expanded}\``);
-          lines.push(`    \u2192 Copy the expanded form above and replace the glob in your proof command.`);
-        }
-      }
-      lines.push("");
+  if (opts.writeBaseline) {
+    await writeBaseline(opts.cwd, outcomesFromReport(reports));
+    io.write(`
+wrote coverage-gate baseline for ${reports.length} scenario(s)
+`);
+    return EXIT_OK;
+  }
+  const baseline = await readBaseline(opts.cwd);
+  const { adopted, regressions, improved } = compareToBaseline(reports, baseline);
+  const orphaned = opts.all ? findOrphans(reports, baseline) : [];
+  for (const id of adopted) io.write(`  adopted: ${id}
+`);
+  for (const id of improved) io.write(`  improved: ${id}
+`);
+  for (const id of orphaned) io.write(`  orphaned: ${id}
+`);
+  if (regressions.length === 0) {
+    io.write(`
+cover OK - 0 regression(s)
+`);
+    return EXIT_OK;
+  }
+  io.write(`
+cover FAILED - ${regressions.length} regression(s)
+
+`);
+  for (const r of regressions) io.write(`  ${r.scenarioId}: ${r.before} before, ${r.now} now
+`);
+  return EXIT_REGRESSION;
+}
+
+// src/openspec/steps-cli.ts
+import { promises as fs7 } from "node:fs";
+import * as path8 from "node:path";
+
+// src/openspec/build-steps.ts
+var BOUND_OUTCOMES = /* @__PURE__ */ new Set(["covered-and-integrated", "covered-but-not-integrated"]);
+function verifyCmdFor(item, reportsById) {
+  const report = item.coversId ? reportsById.get(item.coversId) : void 0;
+  if (report && BOUND_OUTCOMES.has(report.outcome) && report.runCommand) {
+    return { verify_cmd: report.runCommand, manual_required: false };
+  }
+  return { verify_cmd: "", manual_required: true };
+}
+function buildSteps(items, coverReports) {
+  const reportsById = new Map(coverReports.map((r) => [r.scenarioId, r]));
+  const steps = [];
+  for (const item of items) {
+    const { verify_cmd, manual_required } = verifyCmdFor(item, reportsById);
+    steps.push({
+      id: item.id,
+      title: item.text,
+      description: item.text,
+      files: [],
+      deps: steps.length > 0 ? [steps[steps.length - 1].id] : [],
+      verify_surface: "code",
+      verify_cmd,
+      manual_required,
+      status: "pending"
+    });
+  }
+  return steps;
+}
+
+// src/openspec/fetch-instructions.ts
+import { execFile as execFile3 } from "node:child_process";
+import { promisify as promisify3 } from "node:util";
+
+// src/shell.ts
+import { execFile as execFile2 } from "node:child_process";
+import { promisify as promisify2 } from "node:util";
+var execFileP2 = promisify2(execFile2);
+function buildShellInvocation(command) {
+  if (process.platform === "win32") {
+    return { shell: "cmd.exe", args: ["/d", "/s", "/c", `"${command}"`], verbatim: true };
+  }
+  return { shell: "/bin/sh", args: ["-c", command], verbatim: false };
+}
+
+// src/openspec/fetch-instructions.ts
+var execFileP3 = promisify3(execFile3);
+async function runOpenSpecJson(command, cwd) {
+  const { shell, args, verbatim } = buildShellInvocation(command);
+  let stdout;
+  try {
+    const run = await execFileP3(shell, args, {
+      cwd,
+      windowsHide: true,
+      windowsVerbatimArguments: verbatim,
+      maxBuffer: 10 * 1024 * 1024
+    });
+    stdout = run.stdout;
+  } catch (err) {
+    throw new Error(`'${command}' failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    throw new Error(`'${command}' did not print valid JSON.`);
+  }
+}
+async function fetchInstructions(changeId, cwd, artifactId) {
+  return runOpenSpecJson(`openspec instructions ${artifactId} --change ${changeId} --json`, cwd);
+}
+async function fetchStatus(changeId, cwd) {
+  return runOpenSpecJson(`openspec status --json --change ${changeId}`, cwd);
+}
+
+// src/openspec/tasks-parser.ts
+var CHECKBOX_RE = /^-\s*\[([ xX])\]\s*(.+?)\s*$/;
+var ID_RE = /^(\d+(?:\.\d+)*)\s+(.*)$/;
+var COVERS_RE = /^\s*<!--\s*covers:\s*(\S+\/\S+)\s*::\s*(.+?)\s*::\s*(.+?)\s*-->\s*$/;
+function parseCoversAnnotation(line) {
+  const match = line.match(COVERS_RE);
+  if (!match) return void 0;
+  const [, groupCapability, requirementTitle, scenarioTitle] = match;
+  const slashIndex = groupCapability.indexOf("/");
+  if (slashIndex === -1) return void 0;
+  return buildScenarioId(
+    groupCapability.slice(0, slashIndex),
+    groupCapability.slice(slashIndex + 1),
+    requirementTitle,
+    scenarioTitle
+  );
+}
+function parseTasksMarkdown(content) {
+  const lines = content.split("\n");
+  const items = [];
+  let fallbackIndex = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const checkbox = lines[i].match(CHECKBOX_RE);
+    if (!checkbox) continue;
+    const [, mark, rest] = checkbox;
+    const idMatch = rest.match(ID_RE);
+    fallbackIndex++;
+    const id = idMatch ? idMatch[1] : String(fallbackIndex);
+    const textParts = [idMatch ? idMatch[2] : rest];
+    let coversId;
+    let next = i + 1;
+    while (next < lines.length && !CHECKBOX_RE.test(lines[next]) && !/^#{1,6}\s/.test(lines[next])) {
+      const covers = parseCoversAnnotation(lines[next]);
+      if (covers) coversId = covers;
+      else if (lines[next].trim().length > 0) textParts.push(lines[next].trim());
+      next++;
     }
+    items.push({ id, text: textParts.join(" "), checked: mark.toLowerCase() === "x", coversId });
   }
-  if (missing.length > 0) {
-    lines.push(formatMissingTools(missing));
+  return items;
+}
+
+// src/openspec/steps-cli.ts
+var EXIT_OK2 = 0;
+var EXIT_USAGE_ERROR2 = 3;
+async function readTasksMarkdown(resolvedOutputPath) {
+  try {
+    return await fs7.readFile(resolvedOutputPath, "utf-8");
+  } catch {
+    return void 0;
   }
-  if (lines.length === 0) return null;
-  return lines.join("\n");
+}
+async function runSteps(opts, io) {
+  if (!opts.changeId) {
+    io.writeErr("ERROR: dod-guard steps needs a change id.\n");
+    return EXIT_USAGE_ERROR2;
+  }
+  let resolvedOutputPath;
+  try {
+    resolvedOutputPath = (await fetchInstructions(opts.changeId, opts.cwd, "tasks")).resolvedOutputPath;
+  } catch (err) {
+    io.writeErr(`ERROR: could not resolve tasks.md for "${opts.changeId}": ${err.message}
+`);
+    return EXIT_USAGE_ERROR2;
+  }
+  const content = await readTasksMarkdown(resolvedOutputPath);
+  if (content === void 0) {
+    io.writeErr(`ERROR: change "${opts.changeId}" has no tasks.md at ${resolvedOutputPath}.
+`);
+    return EXIT_USAGE_ERROR2;
+  }
+  const items = parseTasksMarkdown(content);
+  const scenarios = await enumerateChangeScenarios(opts.cwd, opts.changeId);
+  const coverReports = await buildReport(opts.cwd, scenarios);
+  const steps = buildSteps(items, coverReports);
+  const { artifacts } = await fetchStatus(opts.changeId, opts.cwd);
+  const outPath = path8.join(opts.cwd, "openspec", "changes", opts.changeId, "steps.json");
+  const plan = { goal: opts.changeId, cwd: opts.cwd, plan_source: opts.changeId, plan_artifacts: artifacts, steps };
+  await fs7.writeFile(outPath, `${JSON.stringify(plan, null, 2)}
+`, "utf-8");
+  io.write(`wrote ${steps.length} step(s) to ${outPath}
+`);
+  return EXIT_OK2;
 }
 
 // src/cli.ts
-var EXIT = {
-  /** All in-scope proofs passed. */
-  PASS: 0,
-  /** At least one in-scope proof failed, or the DoD is tampered/stuck. */
-  FAIL: 1,
-  /** Full run: every executed proof passed but draft nodes remain unrefined. */
-  INCOMPLETE: 2,
-  /** Usage error, DoD not found, or execution blocked by the import gate. */
-  ERROR: 3
-};
-var USAGE = `dod-guard \u2014 Definition of Done verification
+var USAGE = `dod-guard - OpenSpec scenario coverage
 
 USAGE
   dod-guard <command> [options]
   dod-guard                          Start the MCP server on stdio (no args)
 
 COMMANDS
-  check     Run a DoD's proofs and exit with a verdict code
-  status    Print the last cached check result without re-running proofs
-  tree      Print the DoD's node tree with paths (use to find --node-path values)
-  list      List all tracked DoDs
-  trace     Check OpenSpec closure for a change: leaf <-> scenario, both directions
-
-OPTIONS (check / status / tree)
-  --dod-id=<id>        DoD ID, as returned by dod_create or 'dod-guard list'
-  --path=<file>        Resolve the DoD by its markdown path instead of by ID
-  --node-path=<path>   Scope to one subtree, e.g. --node-path=0.children.1
-  --cwd=<dir>          Override the working directory proofs run in (check only)
-  --summary            Collapse unchanged draft nodes into a count line
-  --confirm-import     Confirm an imported DoD's commands are safe to execute
-  --quiet              Print only the verdict line; suppress per-proof output
-
-OPTIONS (trace)
-  --cwd=<dir>          Directory 'openspec instructions' resolves the change from (default: cwd)
-
-EXIT CODES (check)
-  0  pass         every in-scope proof passed
-  1  fail         a proof failed, or the DoD is tampered/stuck
-  2  incomplete   full run, proofs pass, but draft nodes remain
-  3  error        bad usage, DoD not found, or import gate blocked
-
-A scoped run (--node-path) exits 0 when that subtree's proofs pass, which is what
-makes it usable as a verify_cmd. Only an unscoped run can report code 2.
-
-EXIT CODES (trace)
-  0  pass    every DoD leaf traces to a scenario (untraced scenarios are only reported)
-  1  fail    at least one DoD leaf traces to no scenario
-  3  error   bad usage, or this change has no DoD in storage or on disk
-
-EXAMPLES
-  dod-guard check --dod-id=abc123
-  dod-guard check --dod-id=abc123 --node-path=0.children.1 --quiet
-  dod-guard check --path=docs/plans/2026-07-27-auth.md --cwd=/repo
-  dod-guard trace adopt-openspec-for-dod-proofs
-  dod-guard tree --dod-id=abc123
+  cover [<change-id>] [--all]        Report each scenario as covered-and-integrated,
+                                      covered-but-not-integrated, unwired, or failed
+      [--write-baseline]             against the coverage-gate ratchet baseline.
+                                      One of <change-id> or --all is required.
+                                      --write-baseline needs --all - it replaces
+                                      the whole baseline, and a change-scoped run
+                                      only sees its own scenarios.
+                                      --cwd=<dir> overrides the working directory.
+  steps <change-id>                  Derive openspec/changes/<id>/steps.json from
+                                      that change's tasks.md, binding each task's
+                                      verify_cmd through dod-guard cover where a
+                                      <!-- covers: --> annotation names a scenario.
+                                      --cwd=<dir> overrides the working directory.
 `;
 function parseArgs(argv) {
   const flags = {};
@@ -23103,174 +21710,32 @@ function parseArgs(argv) {
   }
   return { command: positional[0] ?? "", flags, positional: positional.slice(1) };
 }
-function str(flags, key) {
-  const v = flags[key];
-  return typeof v === "string" ? v : void 0;
-}
 function errorMessage(err) {
   if (err instanceof Error) return err.message;
   return String(err);
-}
-async function resolveDoc(flags, write) {
-  const dodId = str(flags, "dod-id");
-  const mdPath = str(flags, "path");
-  if (!(dodId || mdPath)) {
-    write("ERROR: pass --dod-id=<id> or --path=<file>. Run 'dod-guard list' to see tracked DoDs.\n");
-    return null;
-  }
-  const doc = dodId ? await load(dodId) : await findByPath(mdPath);
-  if (!doc) {
-    write(
-      dodId ? `ERROR: DoD ID "${dodId}" not found in the store. Run 'dod-guard list' to see tracked DoDs.
-` : `ERROR: no DoD registered for path "${mdPath}". Use dod_import to register an existing file.
-`
-    );
-    return null;
-  }
-  return doc;
-}
-function exitCodeFor(result) {
-  if (result.tampered || result.overall === "stuck" || result.overall === "fail") return EXIT.FAIL;
-  if (result.scoped) {
-    return result.leaves.some((l) => l.status === "fail") ? EXIT.FAIL : EXIT.PASS;
-  }
-  if (result.overall === "incomplete") return EXIT.INCOMPLETE;
-  return EXIT.PASS;
-}
-async function cmdCheck(flags, write, writeErr) {
-  const doc = await resolveDoc(flags, writeErr);
-  if (!doc) return EXIT.ERROR;
-  const nodePath = str(flags, "node-path");
-  if (nodePath && !findNodeByPath(doc.roots, nodePath)) {
-    writeErr(
-      `ERROR: node path "${nodePath}" not found in this DoD. Run 'dod-guard tree --dod-id=${doc.id}' to see valid paths.
-`
-    );
-    return EXIT.ERROR;
-  }
-  const gate = buildImportGateInfo(doc);
-  if (gate.blocked && flags["confirm-import"] !== true) {
-    writeErr(
-      [
-        `ERROR: import gate \u2014 this DoD was imported from "${doc.import_source}" and is not confirmed for execution.`,
-        `${gate.executableCount} proof command(s) would run. Review them with 'dod-guard tree --dod-id=${doc.id}',`,
-        "then re-run with --confirm-import once you are satisfied they are safe.",
-        ""
-      ].join("\n")
-    );
-    return EXIT.ERROR;
-  }
-  if (flags["confirm-import"] === true && doc.import_source) {
-    doc.execution_confirmed = true;
-    await save(doc);
-    await writeMarkdown(doc);
-  }
-  const result = await checkDocument(doc, str(flags, "cwd"), {
-    nodePath,
-    summary: flags.summary === true
-  });
-  if (!doc.proof_fingerprint && result.proof_fingerprint) {
-    doc.proof_fingerprint = result.proof_fingerprint;
-  }
-  updateDocFromCheckResult(doc, result);
-  await save(doc);
-  await writeMarkdown(doc);
-  if (flags.quiet === true) {
-    write(`${result.overall.toUpperCase()}: ${result.summary.split("\n")[0]}
-`);
-  } else {
-    write(`${formatCheckResult(result)}
-`);
-  }
-  return exitCodeFor(result);
-}
-async function cmdStatus(flags, write, writeErr) {
-  const doc = await resolveDoc(flags, writeErr);
-  if (!doc) return EXIT.ERROR;
-  if (!doc.last_check) {
-    write("No cached check result. Run 'dod-guard check' first.\n");
-    return EXIT.INCOMPLETE;
-  }
-  const { overall, summary, timestamp } = doc.last_check;
-  write(`${overall.toUpperCase()} (cached ${timestamp})
-${summary}
-`);
-  if (overall === "fail" || overall === "stuck") return EXIT.FAIL;
-  if (overall === "incomplete") return EXIT.INCOMPLETE;
-  return EXIT.PASS;
-}
-async function cmdTree(flags, write, writeErr) {
-  const doc = await resolveDoc(flags, writeErr);
-  if (!doc) return EXIT.ERROR;
-  write(`${formatTree(doc.roots)}
-`);
-  return EXIT.PASS;
-}
-function traceExitCodeFor(outcome) {
-  if (outcome === "no-dod") return EXIT.ERROR;
-  if (outcome === "blocked") return EXIT.FAIL;
-  return EXIT.PASS;
-}
-async function resolveInstructions(changeId, cwd, writeErr) {
-  try {
-    return await fetchInstructions(changeId, cwd);
-  } catch (err) {
-    writeErr(`ERROR: ${errorMessage(err)}
-`);
-    return null;
-  }
-}
-async function reportTrace(changeId, instructions, write, writeErr) {
-  const report = await traceChange(changeId, instructions);
-  const outcome = classifyOutcome(report);
-  const text2 = formatTraceReport(report);
-  if (outcome === "no-dod") {
-    writeErr(text2);
-    return traceExitCodeFor(outcome);
-  }
-  write(text2);
-  return traceExitCodeFor(outcome);
-}
-async function cmdTrace(positional, flags, write, writeErr) {
-  const changeId = positional[0];
-  if (!changeId) {
-    writeErr("ERROR: pass a change id, e.g. 'dod-guard trace adopt-openspec-for-dod-proofs'.\n");
-    return EXIT.ERROR;
-  }
-  const cwd = str(flags, "cwd") ?? process.cwd();
-  const instructions = await resolveInstructions(changeId, cwd, writeErr);
-  if (!instructions) return EXIT.ERROR;
-  return reportTrace(changeId, instructions, write, writeErr);
-}
-async function cmdList(write) {
-  const docs = await listAll();
-  if (docs.length === 0) {
-    write("No DoDs tracked. Create one with dod_create, or register an existing file with dod_import.\n");
-    return EXIT.PASS;
-  }
-  for (const doc of docs) {
-    const verdict = doc.last_check?.overall ?? "unchecked";
-    write(`${doc.id}  ${verdict.padEnd(11)}  ${doc.title}
-`);
-  }
-  return EXIT.PASS;
 }
 var defaultIo = {
   write: (s) => process.stdout.write(s),
   writeErr: (s) => process.stderr.write(s)
 };
+var EXIT_USAGE_ERROR3 = 3;
 var COMMANDS = {
-  check: (_p, flags, io) => cmdCheck(flags, io.write, io.writeErr),
-  status: (_p, flags, io) => cmdStatus(flags, io.write, io.writeErr),
-  tree: (_p, flags, io) => cmdTree(flags, io.write, io.writeErr),
-  trace: (positional, flags, io) => cmdTrace(positional, flags, io.write, io.writeErr),
-  list: (_p, _f, io) => cmdList(io.write)
+  cover: (positional, flags, io) => runCover(
+    {
+      cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(),
+      changeId: positional[0],
+      all: flags.all === true,
+      writeBaseline: flags["write-baseline"] === true
+    },
+    io
+  ),
+  steps: (positional, flags, io) => runSteps({ cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(), changeId: positional[0] }, io)
 };
 async function runCli(argv, io = defaultIo) {
   const { command, flags, positional } = parseArgs(argv);
   if (flags.help === true || flags.h === true || command === "help") {
     io.write(USAGE);
-    return EXIT.PASS;
+    return 0;
   }
   const handler = COMMANDS[command];
   if (!handler) {
@@ -23278,1188 +21743,25 @@ async function runCli(argv, io = defaultIo) {
 
 `);
     io.writeErr(USAGE);
-    return EXIT.ERROR;
+    return EXIT_USAGE_ERROR3;
   }
   try {
     return await handler(positional, flags, io);
   } catch (err) {
     io.writeErr(`ERROR: ${errorMessage(err)}
 `);
-    return EXIT.ERROR;
+    return EXIT_USAGE_ERROR3;
   }
 }
 function isCliInvocation(argv) {
   return argv.length > 0;
 }
 
-// src/mcp/resolve.ts
-function text(value) {
-  return { content: [{ type: "text", text: value }] };
-}
-function errorText(err) {
-  const msg = err instanceof Error ? err.message : String(err);
-  return msg.startsWith("ERROR:") ? msg : `ERROR: ${msg}`;
-}
-async function run(handler) {
-  try {
-    return text(await handler());
-  } catch (err) {
-    return text(errorText(err));
-  }
-}
-async function resolveDoc2(dodId, mdPath) {
-  if (!(dodId || mdPath)) {
-    return "ERROR: no dod_id or path given, DoD not found.";
-  }
-  const doc = dodId ? await load(dodId) : await findByPath(mdPath);
-  if (!doc) {
-    return dodId ? `ERROR: DoD "${dodId}" not found.` : `ERROR: no DoD registered for path "${mdPath}", not found.`;
-  }
-  return doc;
-}
-function isDocError(value) {
-  return typeof value === "string";
-}
-function isLegacyFormat(raw) {
-  const hasSteps = Array.isArray(raw.steps) && raw.steps.length > 0;
-  const hasRoots = Array.isArray(raw.roots) && raw.roots.length > 0;
-  return hasSteps && !hasRoots;
-}
-
-// src/mcp/dod-adversarial-gate.ts
-var PHASE_NAMES = ["", "Spec", "Test", "Implementation", "Structural"];
-async function handleDodAdversarialGate(params) {
-  const resolved = await resolveDoc2(params.dod_id);
-  if (isDocError(resolved)) return resolved;
-  const doc = resolved;
-  const gates = doc.adversarial_gates ?? [];
-  doc.adversarial_gates = gates;
-  const blocker = findBlockingPhase(gates, params.phase);
-  if (blocker) {
-    return `ERROR: Cannot record Phase ${params.phase} gate \u2014 Phase ${blocker.phase} (${PHASE_NAMES[blocker.phase]}) is ${blocker.verdict}.`;
-  }
-  const newGate = recordGate(gates, params);
-  await save(doc);
-  await writeMarkdown(doc);
-  const header = `Adversarial gate recorded: Phase ${params.phase} \u2014 ${params.verdict}`;
-  const counts = `Critical: ${newGate.critical_count}, Major: ${newGate.major_count}, Minor: ${newGate.minor_count}`;
-  const summaryLine = `Summary: ${params.summary}`;
-  return [header, counts, summaryLine, "", ...formatPhaseStatuses(gates)].join("\n");
-}
-function findBlockingPhase(gates, phase) {
-  for (let p = 1; p < phase; p++) {
-    const g = gates.find((x) => x.phase === p);
-    if (g?.verdict !== "GO") return { phase: p, verdict: g ? g.verdict : "PENDING" };
-  }
-  return null;
-}
-function countBySeverity(lenses, severity) {
-  return lenses.reduce((sum, l) => sum + l.findings.filter((f) => f.severity === severity).length, 0);
-}
-function recordGate(gates, params) {
-  const newGate = {
-    phase: params.phase,
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    verdict: params.verdict,
-    lenses: params.lenses,
-    critical_count: countBySeverity(params.lenses, "critical"),
-    major_count: countBySeverity(params.lenses, "major"),
-    minor_count: countBySeverity(params.lenses, "minor"),
-    summary: params.summary
-  };
-  const idx = gates.findIndex((g) => g.phase === params.phase);
-  if (idx >= 0) gates[idx] = newGate;
-  else gates.push(newGate);
-  return newGate;
-}
-function formatPhaseStatuses(gates) {
-  const lines = [];
-  for (let p = 1; p <= 4; p++) {
-    const g = gates.find((x) => x.phase === p);
-    lines.push(
-      g ? `Phase ${p} (${PHASE_NAMES[p]}): [x] ${g.verdict} \u2014 ${g.summary}` : `Phase ${p} (${PHASE_NAMES[p]}): [ ] PENDING`
-    );
-  }
-  return lines;
-}
-
-// src/mcp/dod-amend.ts
-async function handleDodAmend(params) {
-  const resolved = await resolveDoc2(params.dod_id);
-  if (isDocError(resolved)) return resolved;
-  const doc = resolved;
-  if (params.node_path === "*") {
-    if (params.node_id) return 'ERROR: node_id is incompatible with node_path="*"';
-    return amendBulk(doc, params);
-  }
-  return amendSingle(doc, params);
-}
-function resolveTarget(doc, params) {
-  if (params.node_id) {
-    const found = findNodeById(doc.roots, params.node_id);
-    if (!found) return `ERROR: node not found by id "${params.node_id}".`;
-    return { node: found.node, path: found.path };
-  }
-  const node = findNodeByPath(doc.roots, params.node_path);
-  if (!node) return `ERROR: node not found at path "${params.node_path}".`;
-  return { node, path: params.node_path };
-}
-async function rejectMissingTools(command, cwd) {
-  if (command.trim() === "") return null;
-  const missing = await findMissingTools([command], cwd);
-  return missing.length > 0 ? formatMissingTools(missing) : null;
-}
-function effectiveCommand(params, node) {
-  return params.new_command ?? node.command ?? "";
-}
-async function guardSingle(doc, params, node, path8) {
-  if (node.refinement === "draft") {
-    return "ERROR: node is a draft. Use dod_refine to concretize it first.";
-  }
-  const cmd = effectiveCommand(params, node);
-  const osMsg = await rejectMissingTools(cmd, doc.cwd);
-  if (osMsg) return osMsg;
-  return checkAmendGate(doc.amendments, path8, params.amend_justification);
-}
-async function amendSingle(doc, params) {
-  const target = resolveTarget(doc, params);
-  if (typeof target === "string") return target;
-  const { node, path: path8 } = target;
-  const guardMsg = await guardSingle(doc, params, node, path8);
-  if (guardMsg) return guardMsg;
-  applyAmendment({ node, path: path8 }, doc, params);
-  return finalizeAmend(doc);
-}
-async function bulkGateFailures(doc, params, leaves) {
-  if (params.new_command !== void 0) {
-    const osMsg = await rejectMissingTools(params.new_command, doc.cwd);
-    if (osMsg) return osMsg;
-  }
-  for (const { node_path } of leaves) {
-    const gateMsg = checkAmendGate(doc.amendments, node_path, params.amend_justification);
-    if (gateMsg) return gateMsg;
-  }
-  return null;
-}
-async function amendBulk(doc, params) {
-  const leaves = flattenConcreteLeaves(doc.roots);
-  if (leaves.length === 0) {
-    return "ERROR: no concrete leaves to amend. Refine drafts first.";
-  }
-  const blockMsg = await bulkGateFailures(doc, params, leaves);
-  if (blockMsg) return blockMsg;
-  for (const { node, node_path } of leaves) {
-    applyAmendment({ node, path: node_path }, doc, params);
-  }
-  return finalizeAmend(doc);
-}
-function applyAmendment(target, doc, params) {
-  const { node, path: path8 } = target;
-  const old_value = { command: node.command, predicate: node.predicate, description: node.description };
-  if (params.new_command !== void 0) node.command = params.new_command;
-  if (params.new_predicate !== void 0) node.predicate = params.new_predicate;
-  if (params.new_description !== void 0) node.description = params.new_description;
-  node.last_status = "pending";
-  doc.amendments.push({
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    node_path: path8,
-    action: "modified",
-    old_value,
-    new_value: { command: node.command, predicate: node.predicate, description: node.description },
-    reason: params.reason,
-    justification: params.amend_justification
-  });
-}
-async function finalizeAmend(doc) {
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
-  await save(doc);
-  await writeMarkdown(doc);
-  return "Proof amended and logged.\nStatus reset to pending. Run dod_check to re-verify.";
-}
-
-// src/mcp/dod-check.ts
-async function handleDodCheck(params) {
-  const resolved = await resolveDoc2(params.dod_id, params.path);
-  if (isDocError(resolved)) return resolved;
-  const doc = resolved;
-  if (params.nodePath && !findNodeByPath(doc.roots, params.nodePath)) {
-    return `ERROR: nodePath "${params.nodePath}" not found in this DoD.`;
-  }
-  const gateMsg = await applyImportGate(doc, params.confirm_import === true);
-  if (gateMsg) return gateMsg;
-  const result = await checkDocument(doc, params.cwd_override, {
-    nodePath: params.nodePath,
-    summary: params.summary === true
-  });
-  if (!doc.proof_fingerprint && result.proof_fingerprint) {
-    doc.proof_fingerprint = result.proof_fingerprint;
-  }
-  updateDocFromCheckResult(doc, result);
-  await save(doc);
-  await writeMarkdown(doc);
-  return formatCheckResult(result);
-}
-async function applyImportGate(doc, confirmed) {
-  const gate = buildImportGateInfo(doc);
-  if (!gate.blocked) return null;
-  if (!confirmed) return formatImportGate(doc, gate.executableCount, gate.commandList);
-  doc.execution_confirmed = true;
-  await save(doc);
-  await writeMarkdown(doc);
-  return null;
-}
-function formatCommandLine(c) {
-  return `- ${c.title}: \`${c.command}\` - ${c.description}`;
-}
-function formatImportGate(doc, executableCount, commandList) {
-  const lines = [
-    "## Import Gate: Execution Not Confirmed",
-    "",
-    `This DoD was imported from "${doc.import_source}" and has not been confirmed for execution.`,
-    `${executableCount} executable proof(s) would be run:`,
-    "",
-    ...commandList.map((c) => formatCommandLine(c)),
-    "",
-    "Review these commands, then call dod_check again with confirm_import: true."
-  ];
-  return lines.join("\n");
-}
-
-// src/mcp/dod-import.ts
-import * as path5 from "node:path";
-async function handleDodImport(params) {
-  const mdPath = path5.resolve(params.path);
-  const existing = await findByPath(mdPath);
-  if (existing) {
-    return `Already tracked as "${existing.title}" (ID: ${existing.id}).`;
-  }
-  const doc = await buildImportedDoc(params, mdPath);
-  const osError = await checkCommandsForOs(doc.roots, doc.cwd);
-  if (osError) return osError;
-  await save(doc);
-  await writeMarkdown(doc);
-  const concrete = flattenConcreteLeaves(doc.roots).length;
-  const draft = countDraftNodes(doc.roots);
-  return ["DoD imported.", "", `ID: ${doc.id}`, `Concrete proofs: ${concrete}`, `Draft nodes: ${draft}`].join("\n");
-}
-async function buildImportedDoc(params, mdPath) {
-  const parsed = await parseMarkdown(params.path);
-  const fingerprint = computeProofFingerprint(parsed.roots);
-  return {
-    id: generateId(),
-    title: parsed.title || path5.basename(mdPath),
-    goal: parsed.goal,
-    date: parsed.date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
-    cwd: parsed.cwd && parsed.cwd !== "." ? parsed.cwd : path5.resolve(params.cwd),
-    markdown_path: mdPath,
-    created_at: (/* @__PURE__ */ new Date()).toISOString(),
-    import_source: mdPath,
-    execution_confirmed: false,
-    sections: parsed.sections,
-    roots: parsed.roots,
-    proof_fingerprint: fingerprint || void 0,
-    amendments: []
-  };
-}
-
-// src/openspec/regenerate-dod.ts
-import { randomUUID as randomUUID2 } from "node:crypto";
-
-// src/mcp/locate-node.ts
-function locateInArray(roots, nodePath) {
-  const parts = nodePath.split(".");
-  const rootIdx = Number(parts[0]);
-  if (!Number.isInteger(rootIdx) || rootIdx < 0 || rootIdx >= roots.length) {
-    return { error: `ERROR: root index ${parts[0]} out of range (0-${roots.length - 1}).` };
-  }
-  let loc = { arr: roots, idx: rootIdx };
-  for (let i = 1; i < parts.length; i += 2) {
-    const stepped = stepInto(loc, parts, i);
-    if ("error" in stepped) return stepped;
-    loc = stepped;
-  }
-  return loc;
-}
-function stepInto(loc, parts, i) {
-  if (parts[i] !== "children") return { error: `ERROR: invalid node path.` };
-  const children = loc.arr[loc.idx]?.children;
-  if (!children) return { error: `ERROR: invalid node path.` };
-  const nextIdx = Number(parts[i + 1]);
-  if (!Number.isInteger(nextIdx) || nextIdx < 0 || nextIdx >= children.length) {
-    return { error: `ERROR: node index ${parts[i + 1]} out of range.` };
-  }
-  return { arr: children, idx: nextIdx };
-}
-
-// src/mcp/dod-remove-node.ts
-async function handleDodRemoveNode(params) {
-  const resolved = await resolveDoc2(params.dod_id);
-  if (isDocError(resolved)) return resolved;
-  const doc = resolved;
-  const pathResult = resolveNodePath(doc, params);
-  if (typeof pathResult !== "string") return pathResult.error;
-  const nodePath = pathResult;
-  const loc = locateInArray(doc.roots, nodePath);
-  if ("error" in loc) return loc.error;
-  const [removed] = loc.arr.splice(loc.idx, 1);
-  recordRemoval(doc, nodePath, removed);
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
-  await save(doc);
-  await writeMarkdown(doc);
-  const label = nodePath.includes(".") ? "node" : "root node";
-  return `Removed ${label} "${removed.title}" (${removed.refinement}) and all descendants.`;
-}
-function resolveNodePath(doc, params) {
-  if (!params.node_id) return params.node_path;
-  const found = findNodeById(doc.roots, params.node_id);
-  if (!found) return { error: `ERROR: node not found by id "${params.node_id}".` };
-  return found.path;
-}
-function recordRemoval(doc, nodePath, removed) {
-  doc.amendments.push({
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    node_path: nodePath,
-    action: "removed",
-    old_value: { title: removed.title, refinement: removed.refinement },
-    reason: `Removed node "${removed.title}"`
-  });
-}
-
-// src/tools/dod-add-node.ts
-async function handleDodAddNode(params) {
-  const {
-    dod_id,
-    parent_path,
-    parent_id: parentId,
-    title,
-    refinement,
-    intent,
-    command,
-    predicate,
-    description,
-    category,
-    advisory
-  } = params;
-  const doc = await load(dod_id);
-  if (!doc) throw new Error("ERROR: DoD not found.");
-  let resolvedParentPath = parent_path;
-  let parent = null;
-  if (parentId) {
-    const found = findNodeById(doc.roots, parentId);
-    if (!found) throw new Error(`ERROR: parent node not found by id "${parentId}".`);
-    parent = found.node;
-    resolvedParentPath = found.path;
-    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
-  } else if (parent_path) {
-    parent = findNodeByPath(doc.roots, parent_path);
-    if (!parent) throw new Error(`ERROR: parent node not found at path "${parent_path}".`);
-    if (!parent.children) throw new Error(`ERROR: parent "${parent.title}" is a leaf \u2014 cannot add children.`);
-  }
-  if (refinement === "concrete") {
-    if (!(command && predicate && description)) {
-      throw new Error("ERROR: concrete nodes require command, predicate, and description.");
-    }
-    if (command.trim() !== "") {
-      const missing = await findMissingTools([command], doc.cwd);
-      if (missing.length > 0) {
-        throw new Error(formatMissingTools(missing));
-      }
-    }
-  }
-  if (refinement === "draft" && !intent) {
-    throw new Error("ERROR: draft nodes require an intent describing what this will prove.");
-  }
-  const node = {
-    id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    title,
-    refinement,
-    last_status: refinement === "draft" ? "draft" : "pending"
-  };
-  if (refinement === "draft") node.intent = intent;
-  if (refinement === "concrete") {
-    node.command = command;
-    node.predicate = predicate;
-    node.description = description;
-    node.category = category;
-    if (advisory !== void 0) node.advisory = advisory;
-  }
-  if (parent) {
-    parent.children?.push(node);
-  } else {
-    doc.roots.push(node);
-  }
-  const fullPath = resolvedParentPath ? `${resolvedParentPath}.children.${(parent?.children?.length ?? 0) - 1}` : `${doc.roots.length - 1}`;
-  doc.amendments.push({
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    node_path: fullPath,
-    action: "added",
-    new_value: { title, refinement },
-    reason: `Added ${refinement} node: ${title}`
-  });
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
-  await save(doc);
-  await writeMarkdown(doc);
-  return {
-    path: fullPath,
-    message: `Node "${title}" (${refinement}) added at path "${fullPath}".
-Run dod_check to verify${refinement === "draft" ? " after refining with dod_refine" : ""}.`
-  };
-}
-
-// src/openspec/regenerate-dod.ts
-function sourceText(node) {
-  if (node.refinement === "concrete") return node.description ?? "";
-  return (node.intent ?? "").replace(/^MANUAL:\s*/, "");
-}
-function findGroupByTitle(roots, title) {
-  return roots.find((n) => n.title === title && n.children);
-}
-function addNodeParams(dodId, parentId, leaf) {
-  return {
-    dod_id: dodId,
-    parent_path: "",
-    parent_id: parentId,
-    title: leaf.title,
-    refinement: leaf.refinement,
-    intent: leaf.intent,
-    command: leaf.command,
-    predicate: leaf.predicate,
-    description: leaf.description,
-    category: leaf.category,
-    advisory: leaf.advisory
-  };
-}
-async function loadDocOrThrow(dodId) {
-  const doc = await load(dodId);
-  if (!doc) throw new Error(`ERROR: DoD "${dodId}" not found.`);
-  return doc;
-}
-async function ensureGroupId(dodId, groupTitle) {
-  const doc = await loadDocOrThrow(dodId);
-  const existing = findGroupByTitle(doc.roots, groupTitle);
-  if (existing) return existing.id;
-  const group = {
-    id: `group-${randomUUID2()}`,
-    title: groupTitle,
-    refinement: "draft",
-    children: [],
-    last_status: "draft"
-  };
-  doc.roots.push(group);
-  doc.amendments.push({
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    node_path: `${doc.roots.length - 1}`,
-    action: "added",
-    new_value: { title: group.title, refinement: group.refinement },
-    reason: `Added requirement group: ${group.title}`
-  });
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
-  await save(doc);
-  await writeMarkdown(doc);
-  return group.id;
-}
-async function addLeafGetId(dodId, parentId, leaf) {
-  const { path: path8 } = await handleDodAddNode(addNodeParams(dodId, parentId, leaf));
-  const doc = await loadDocOrThrow(dodId);
-  const node = findNodeByPath(doc.roots, path8);
-  if (!node) throw new Error(`ERROR: added node not found at path "${path8}".`);
-  return node.id;
-}
-async function amendChangedLeaf(dodId, oldLeaf, newLeaf) {
-  const res = await handleDodAmend({
-    dod_id: dodId,
-    node_path: "",
-    node_id: oldLeaf.id,
-    new_command: newLeaf.command,
-    new_predicate: newLeaf.predicate,
-    new_description: newLeaf.description,
-    reason: "Regenerated: scenario text changed"
-  });
-  if (res.startsWith("ERROR")) throw new Error(res);
-}
-async function mutateDraftText(dodId, nodeId, newIntent) {
-  const doc = await loadDocOrThrow(dodId);
-  const found = findNodeById(doc.roots, nodeId);
-  if (!found) throw new Error(`ERROR: node not found by id "${nodeId}".`);
-  const old_value = { intent: found.node.intent };
-  found.node.intent = newIntent;
-  doc.amendments.push({
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    node_path: found.path,
-    action: "modified",
-    old_value,
-    new_value: { intent: newIntent },
-    reason: "Regenerated: scenario text changed"
-  });
-  await save(doc);
-  await writeMarkdown(doc);
-}
-async function reconcileExisting(dodId, groupTitle, oldLeaf, newLeaf, summary) {
-  if (sourceText(oldLeaf) === sourceText(newLeaf) && oldLeaf.refinement === newLeaf.refinement) {
-    summary.unchanged++;
-    return oldLeaf.id;
-  }
-  if (oldLeaf.refinement === "concrete" && newLeaf.refinement === "concrete") {
-    await amendChangedLeaf(dodId, oldLeaf, newLeaf);
-    summary.amended.push(oldLeaf.id);
-    return oldLeaf.id;
-  }
-  if (oldLeaf.refinement === "draft" && newLeaf.refinement === "draft") {
-    await mutateDraftText(dodId, oldLeaf.id, newLeaf.intent ?? "");
-    summary.amended.push(oldLeaf.id);
-    return oldLeaf.id;
-  }
-  await handleDodRemoveNode({ dod_id: dodId, node_path: "", node_id: oldLeaf.id });
-  const parentId = await ensureGroupId(dodId, groupTitle);
-  const id = await addLeafGetId(dodId, parentId, newLeaf);
-  summary.removed.push(oldLeaf.id);
-  summary.added.push(id);
-  return id;
-}
-async function reconcileScenario(dodId, groupTitle, newLeaf, priorNodeId, summary) {
-  if (priorNodeId) {
-    const doc = await loadDocOrThrow(dodId);
-    const found = findNodeById(doc.roots, priorNodeId);
-    if (found) return reconcileExisting(dodId, groupTitle, found.node, newLeaf, summary);
-  }
-  const parentId = await ensureGroupId(dodId, groupTitle);
-  const id = await addLeafGetId(dodId, parentId, newLeaf);
-  summary.added.push(id);
-  return id;
-}
-async function removeIfPresent(dodId, nodeId, summary) {
-  const doc = await loadDocOrThrow(dodId);
-  if (!findNodeById(doc.roots, nodeId)) return;
-  await handleDodRemoveNode({ dod_id: dodId, node_path: "", node_id: nodeId });
-  summary.removed.push(nodeId);
-}
-async function reconcileAll(dodId, newRoots, priorById, summary) {
-  const nextMap = [];
-  const seenKeys = /* @__PURE__ */ new Set();
-  for (const newGroup of newRoots) {
-    for (const newLeaf of newGroup.children ?? []) {
-      const key = scenarioKey(newGroup.title, newLeaf.title);
-      seenKeys.add(key);
-      const nodeId = await reconcileScenario(dodId, newGroup.title, newLeaf, priorById.get(key), summary);
-      nextMap.push({ groupTitle: newGroup.title, scenarioTitle: newLeaf.title, nodeId });
-    }
-  }
-  return { nextMap, seenKeys };
-}
-async function regenerateDod(dodId, instructions) {
-  await loadDocOrThrow(dodId);
-  const converted = await convertInstructionsToDod(instructions);
-  const priorMap = await readScenarioMap(instructions.resolvedOutputPath);
-  const priorById = new Map(priorMap.map((e) => [scenarioKey(e.groupTitle, e.scenarioTitle), e.nodeId]));
-  const summary = { amended: [], added: [], removed: [], unchanged: 0 };
-  const { nextMap, seenKeys } = await reconcileAll(dodId, converted.roots, priorById, summary);
-  for (const entry of priorMap) {
-    if (!seenKeys.has(scenarioKey(entry.groupTitle, entry.scenarioTitle))) {
-      await removeIfPresent(dodId, entry.nodeId, summary);
-    }
-  }
-  await writeScenarioMap(instructions.resolvedOutputPath, nextMap);
-  return summary;
-}
-
-// src/openspec/import-dod.ts
-function buildRenderableDoc(instructions, roots, markdownPath) {
-  return {
-    id: "openspec-render",
-    title: instructions.changeName,
-    goal: instructions.description,
-    date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
-    cwd: instructions.root.path,
-    markdown_path: markdownPath,
-    created_at: (/* @__PURE__ */ new Date()).toISOString(),
-    execution_confirmed: false,
-    sections: { requirements: "Generated from OpenSpec spec deltas." },
-    roots,
-    amendments: []
-  };
-}
-async function renderAndImportDod(instructions) {
-  const converted = await convertInstructionsToDod(instructions);
-  const existing = await findByPath(converted.resolvedOutputPath);
-  if (existing) {
-    const summary = await regenerateDod(existing.id, instructions);
-    return formatRegenerateReport(existing.id, summary);
-  }
-  const doc = buildRenderableDoc(instructions, converted.roots, converted.resolvedOutputPath);
-  await writeMarkdown(doc);
-  const report = await handleDodImport({ path: converted.resolvedOutputPath, cwd: instructions.root.path });
-  if (report.startsWith("DoD imported.")) {
-    await recordScenarioIdentity(converted);
-  }
-  return report;
-}
-function formatRegenerateReport(dodId, summary) {
-  return [
-    "DoD regenerated.",
-    "",
-    `ID: ${dodId}`,
-    `Amended: ${summary.amended.length}`,
-    `Added: ${summary.added.length}`,
-    `Removed: ${summary.removed.length}`,
-    `Unchanged: ${summary.unchanged}`
-  ].join("\n");
-}
-async function recordScenarioIdentity(converted) {
-  const imported = await findByPath(converted.resolvedOutputPath);
-  if (!imported) return;
-  const map = buildScenarioMap(converted.roots, imported.roots);
-  await writeScenarioMap(converted.resolvedOutputPath, map);
-}
-
-// src/mcp/dod-generate.ts
-async function handleDodGenerate(params) {
-  const instructions = await fetchInstructions(params.change_id, params.cwd);
-  return renderAndImportDod(instructions);
-}
-
-// src/mcp/dod-list.ts
-function formatLegacyBlock(raw) {
-  const n = Array.isArray(raw.steps) ? raw.steps.length : 0;
-  const status = `${n} step(s) in old format.`;
-  const hint = "Run dod_store_migrate to upgrade.";
-  return [raw.title, `ID: ${raw.id}`, `Status: LEGACY | ${status} ${hint}`].join("\n");
-}
-function formatDocBlock(doc) {
-  const concrete = flattenConcreteLeaves(doc.roots).length;
-  const draft = countDraftNodes(doc.roots);
-  const draftClause = draft > 0 ? ` (${draft} draft)` : "";
-  const proofs = `${concrete} concrete proofs${draftClause}`;
-  const counts = `${doc.roots.length} roots, ${proofs}`;
-  const status = `Status: UNCHECKED | ${counts}`;
-  return [doc.title, `ID: ${doc.id}`, status].join("\n");
-}
-function formatBlock(raw) {
-  if (isLegacyFormat(raw)) return formatLegacyBlock(raw);
-  return formatDocBlock(raw);
-}
-async function handleDodList() {
-  const docs = await listAllRaw();
-  if (docs.length === 0) {
-    return "No DoD documents tracked. Use dod_create or dod_import to add one.";
-  }
-  return docs.map(formatBlock).join("\n\n");
-}
-
-// src/mcp/dod-status.ts
-async function handleDodStatus(params) {
-  const resolved = await resolveDoc2(params.dod_id, params.path);
-  if (isDocError(resolved)) return resolved;
-  const doc = resolved;
-  if (!doc.last_check) {
-    return `DoD "${doc.title}" has never been checked. Run dod_check first.`;
-  }
-  const leaves = flattenConcreteLeaves(doc.roots);
-  const passCount = leaves.filter((l) => l.node.last_status === "pass" || l.node.last_status === "skipped").length;
-  const draftCount = countDraftNodes(doc.roots);
-  const draftClause = draftCount > 0 ? `, ${draftCount} draft node(s)` : "";
-  return [
-    `Overall: ${doc.last_check.overall.toUpperCase()}`,
-    `Concrete proofs: ${passCount}/${leaves.length} pass${draftClause}`,
-    `Summary: ${doc.last_check.summary}`,
-    `Last checked: ${doc.last_check.timestamp}`
-  ].join("\n");
-}
-
-// src/mcp/dod-store-migrate.ts
-async function handleDodStoreMigrate(params) {
-  const dryRun = params.dry_run ?? false;
-  if (params.dod_id) return migrateOne(params.dod_id, dryRun);
-  return migrateBulk(dryRun);
-}
-function hasNonEmptyArray(value) {
-  return Array.isArray(value) && value.length > 0;
-}
-async function migrateOne(dodId, dryRun) {
-  const raw = await loadRaw(dodId);
-  if (!raw) return `ERROR: DoD "${dodId}" not found.`;
-  if (isLegacyFormat(raw)) return migrateRawDoc(raw, dryRun);
-  if (!(hasNonEmptyArray(raw.steps) || hasNonEmptyArray(raw.roots))) {
-    return `"${raw.title}" has no steps or roots \u2014 cannot migrate.`;
-  }
-  return `"${raw.title}" is already in the current format \u2014 no migration needed.`;
-}
-async function migrateBulk(dryRun) {
-  const docs = await listAllRaw();
-  const legacy = docs.filter(isLegacyFormat);
-  if (legacy.length === 0) {
-    return "No legacy documents found \u2014 all docs are in the current format.";
-  }
-  const lines = [];
-  for (const raw of legacy) lines.push(await migrateRawDoc(raw, dryRun));
-  return lines.join("\n");
-}
-function countLegacyProofs(raw) {
-  if (!Array.isArray(raw.steps)) return 0;
-  return raw.steps.reduce(
-    (sum, step) => sum + (Array.isArray(step.proofs) ? step.proofs.length : 0),
-    0
-  );
-}
-async function migrateRawDoc(raw, dryRun) {
-  const rootCount = Array.isArray(raw.steps) ? raw.steps.length : 0;
-  if (dryRun) {
-    const proofCount = countLegacyProofs(raw);
-    return `Would migrate: "${raw.title}" \u2192 ${rootCount} root task group(s), ${proofCount} proof(s).`;
-  }
-  const migrated = await migrateDoc(raw);
-  if (!migrated) {
-    return `"${raw.title}" is already in the current format \u2014 no migration needed.`;
-  }
-  const doc = raw;
-  await writeMarkdown(doc);
-  return `Migrated: "${doc.title}" \u2192 ${doc.roots.length} root task group(s).`;
-}
-
-// src/mcp/dod-tree.ts
-async function handleDodTree(params) {
-  const resolved = await resolveDoc2(params.dod_id, params.path);
-  if (isDocError(resolved)) return resolved;
-  const doc = resolved;
-  return formatTree(doc.roots, {
-    title: doc.title,
-    id: doc.id,
-    scopeId: params.node_id,
-    scopePath: params.node_path
-  });
-}
-
-// src/schemas.ts
-var PredicateSchema = external_exports.object({
-  type: external_exports.enum([
-    "exit_code",
-    "exit_code_not",
-    "output_contains",
-    "output_matches",
-    "output_not_contains",
-    "output_not_matches",
-    "tdd",
-    "adversarial",
-    "holdout",
-    "convergence"
-  ]),
-  value: external_exports.union([external_exports.number(), external_exports.string()]).optional(),
-  timeout_ms: external_exports.number().optional().describe("Override the default 120s command timeout in milliseconds. Use for slow tools like Stryker (600s).")
-});
-var ProofCategorySchema = external_exports.enum(["behavioral", "wiring", "other", "test_audit"]);
-var TaskNodeInputSchema = external_exports.lazy(
-  () => external_exports.object({
-    title: external_exports.string(),
-    refinement: external_exports.enum(["draft", "concrete"]).optional().default("draft"),
-    intent: external_exports.string().optional().describe("Required for draft nodes: what behavior this will prove"),
-    children: external_exports.array(TaskNodeInputSchema).optional().describe("Subtask decomposition \u2014 present on task groups"),
-    command: external_exports.string().optional(),
-    predicate: PredicateSchema.optional(),
-    description: external_exports.string().optional(),
-    category: ProofCategorySchema.optional(),
-    advisory: external_exports.boolean().optional()
-  })
-);
-var SectionsSchema = external_exports.object({
-  decisions: external_exports.string().optional(),
-  current_state: external_exports.string().optional(),
-  requirements: external_exports.string(),
-  research_notes: external_exports.string().optional(),
-  open_questions: external_exports.string().optional(),
-  open_risks: external_exports.string().optional()
-});
-
-// src/tools/dod-create.ts
-import * as path6 from "node:path";
-async function handleDodCreate(params) {
-  const { title, goal, type, cwd, markdown_path, sections, roots: rootInputs } = params;
-  const resolvedCwd = path6.resolve(cwd);
-  resetNodeIdCounter();
-  const roots = buildTaskNodes(rootInputs);
-  const osError = await checkCommandsForOs(roots, resolvedCwd);
-  if (osError) return osError;
-  const id = generateId();
-  const date3 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-  const fingerprint = computeProofFingerprint(roots);
-  const doc = {
-    id,
-    title,
-    goal,
-    date: date3,
-    type,
-    cwd: resolvedCwd,
-    markdown_path: path6.resolve(markdown_path),
-    created_at: (/* @__PURE__ */ new Date()).toISOString(),
-    execution_confirmed: true,
-    sections,
-    roots,
-    proof_fingerprint: fingerprint || void 0,
-    amendments: []
-  };
-  await save(doc);
-  await writeMarkdown(doc);
-  const concreteCount = flattenConcreteLeaves(roots).length;
-  const draftCount = countDraftNodes(roots);
-  const rootCount = roots.length;
-  const warnings = [];
-  const behavioralLeaves = flattenConcreteLeaves(roots).filter((l) => l.node.category === "behavioral");
-  if (behavioralLeaves.length === 0 && type !== "minimal") {
-    warnings.push("\u2022 No behavioral predicate proofs. Every DoD should have at least one");
-    warnings.push("  proof that verifies correct behavior (output_contains, output_matches, etc.).");
-  }
-  return [
-    "DoD created.",
-    "",
-    `ID: ${id}`,
-    `Path: ${markdown_path}`,
-    `Roots: ${rootCount}`,
-    `Concrete proofs: ${concreteCount}`,
-    `Draft nodes: ${draftCount}`,
-    fingerprint ? `Proof fingerprint: ${fingerprint}` : "",
-    warnings.length > 0 ? "" : "",
-    ...warnings,
-    "",
-    draftCount > 0 ? `${draftCount} draft node(s) \u2014 refine with dod_refine. Use dod_check(nodePath="0") for fast scoped iteration.` : "All nodes concrete \u2014 run dod_check to verify.",
-    ""
-  ].filter(Boolean).join("\n");
-}
-
-// src/tools/dod-refine.ts
-async function handleDodRefine(params) {
-  const {
-    dod_id,
-    node_path: nodePath,
-    node_id: nodeId,
-    mode,
-    command,
-    predicate,
-    description,
-    category,
-    advisory,
-    children
-  } = params;
-  const doc = await load(dod_id);
-  if (!doc) return "ERROR: DoD not found.";
-  let resolvedPath = nodePath;
-  let node = null;
-  if (nodeId) {
-    const found = findNodeById(doc.roots, nodeId);
-    if (!found) return `ERROR: node not found by id "${nodeId}".`;
-    node = found.node;
-    resolvedPath = found.path;
-  } else {
-    node = findNodeByPath(doc.roots, nodePath);
-  }
-  if (!node) return `ERROR: node not found at path "${nodePath}".`;
-  if (node.refinement !== "draft") return `ERROR: node "${node.title}" is already concrete. Use dod_amend to modify.`;
-  if (node.children && node.children.length > 0)
-    return `ERROR: node "${node.title}" is a task group with children \u2014 not a leaf. Refine its children instead.`;
-  const oldIntent = node.intent;
-  let placeholderWarn = [];
-  if (mode === "concretize") {
-    if (!(command && predicate)) {
-      return "ERROR: concretize mode requires command and predicate.";
-    }
-    const pred = predicate;
-    if (command.trim() !== "") {
-      const missing = await findMissingTools([command], doc.cwd);
-      if (missing.length > 0) {
-        return formatMissingTools(missing);
-      }
-    }
-    node.refinement = "concrete";
-    node.command = command;
-    node.predicate = pred;
-    node.description = description ?? "";
-    if (category) node.category = category;
-    if (advisory !== void 0) node.advisory = advisory;
-    node.intent = void 0;
-    node.last_status = "pending";
-    doc.amendments.push({
-      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      node_path: resolvedPath,
-      action: "refined",
-      old_value: { refinement: "draft", intent: oldIntent },
-      new_value: { refinement: "concrete", command, predicate: { ...pred }, description: description ?? "" },
-      reason: `Refined draft \u2192 concrete: ${description ?? ""}`
-    });
-    placeholderWarn = isPlaceholderCommand(command ?? "") ? [
-      "",
-      "\u26A0\uFE0F  PLACEHOLDER PROOF: This command always exits 0 \u2014 it provides zero verification.",
-      "The proof will pass dod_check regardless of whether the code actually works.",
-      "Replace with a real verification command before considering this DoD complete."
-    ] : [];
-  } else {
-    if (!children || children.length === 0) {
-      return "ERROR: subdivide mode requires at least one child in children array.";
-    }
-    const childNodes = children.map((c) => {
-      const childId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${Math.random().toString(36).slice(2, 4)}`;
-      return {
-        id: childId,
-        title: c.title,
-        refinement: "draft",
-        intent: c.intent,
-        last_status: "draft"
-      };
-    });
-    node.children = childNodes;
-    node.refinement = "concrete";
-    node.intent = void 0;
-    delete node.command;
-    delete node.predicate;
-    delete node.description;
-    delete node.category;
-    doc.amendments.push({
-      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      node_path: resolvedPath,
-      action: "refined",
-      old_value: { refinement: "draft", intent: oldIntent },
-      new_value: { refinement: "concrete", children: childNodes },
-      reason: `Subdivided into ${children.length} child draft nodes`
-    });
-  }
-  const draftCount = countDraftNodes(doc.roots);
-  doc.proof_fingerprint = computeProofFingerprint(doc.roots) || void 0;
-  await save(doc);
-  await writeMarkdown(doc);
-  const msg = mode === "concretize" ? [
-    `Node refined: "${node.title}" is now concrete.`,
-    `Command: \`${command}\``,
-    `Predicate: ${predicate.type}:${predicate.value ?? "(no value)"}`,
-    `Description: ${description}`,
-    ...placeholderWarn,
-    draftCount === 0 ? "\n\u{1F389} All nodes are now concrete \u2014 the DoD is fully verifiable. Run dod_check." : `
-${draftCount} draft node(s) remaining.`
-  ].join("\n") : [
-    `Node subdivided: "${node.title}" is now a task group with ${children?.length} child draft(s).`,
-    `Children: ${children?.map((c) => `"${c.title}"`).join(", ")}`,
-    `
-${draftCount} draft node(s) total. Refine each draft leaf before running dod_check.`
-  ].join("\n");
-  return msg;
-}
-
 // src/index.ts
-var _dirname = path7.dirname(fileURLToPath(import.meta.url));
-var _pkgPath = path7.join(_dirname, "..", "package.json");
+var _dirname = path9.dirname(fileURLToPath(import.meta.url));
+var _pkgPath = path9.join(_dirname, "..", "package.json");
 var _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 var server = new McpServer({ name: "dod-guard", version: _pkg.version });
-var REJECT_DOD_ID = [
-  "ERROR: dod_create creates NEW DoDs. To update an existing DoD,",
-  "use dod_amend for individual proofs or dod_check to verify.",
-  "The dod_id parameter is not accepted here",
-  "\u2014 it's only for dod_check, dod_amend, and other update tools."
-].join(" ");
-var CREATE_DESC = [
-  "Create a new DoD document with recursive TaskNode tree.",
-  "Nodes can be draft (intent-only) or concrete (with proof commands).",
-  "Proof commands run on the HOST OS",
-  "\u2014 write them for that OS (e.g. on Windows use findstr/type/dir,",
-  "not grep/cat/ls). Stores proof commands canonically in MCP storage",
-  "\u2014 editing the rendered markdown cannot weaken verification."
-].join(" ");
-var CHECK_DESC = [
-  "Verify a DoD's concrete proofs from canonical storage,",
-  "mark pass/fail, update the markdown, and return a verdict.",
-  "Draft nodes are reported but skipped.",
-  "Overall 'incomplete' while any drafts exist.",
-  "Pass `nodePath` to verify only a subtree (fast iteration);",
-  "scoped runs return INCOMPLETE and never PASS.",
-  "Use `dod_tree` to discover current node paths before scoping."
-].join(" ");
-var REFINE_DESC = [
-  "Refine a draft TaskNode. Two modes:",
-  "'concretize'",
-  "\u2014 supply a proof command/predicate/description",
-  "(draft leaf \u2192 concrete proof).",
-  "'subdivide'",
-  "\u2014 split into child subtasks",
-  "(draft leaf \u2192 task group with draft children).",
-  "Only works on draft leaves (no children, refinement=draft)."
-].join(" ");
-var AMEND_DESC = [
-  "Modify a concrete proof's command, predicate, or description",
-  "with a mandatory audit trail.",
-  "Use when requirements change and an original proof becomes unreasonable.",
-  "Resets the proof to pending.",
-  "Pass node_path='*' to bulk-amend all concrete leaves",
-  "(e.g. 'change all exit_code predicates to explicit value: 0')."
-].join(" ");
-var GATE_DESC = [
-  "Record an adversarial gate verdict for a DoD phase.",
-  "The skill orchestrator dispatches review subagents (lenses),",
-  "collects findings, computes the GO/REVISE/STOP verdict,",
-  "and records it here.",
-  "A DoD cannot progress to phase N+1 until phase N's gate is GO."
-].join(" ");
-server.tool(
-  "dod_create",
-  CREATE_DESC,
-  {
-    title: external_exports.string(),
-    goal: external_exports.string(),
-    type: external_exports.enum(["bug", "general", "minimal"]),
-    cwd: external_exports.string(),
-    markdown_path: external_exports.string(),
-    sections: SectionsSchema,
-    roots: external_exports.array(TaskNodeInputSchema),
-    dod_id: external_exports.string().optional()
-  },
-  async (params) => {
-    if (params.dod_id) return text(REJECT_DOD_ID);
-    return run(() => handleDodCreate(params));
-  }
-);
-server.tool(
-  "dod_check",
-  CHECK_DESC,
-  {
-    dod_id: external_exports.string().optional(),
-    path: external_exports.string().optional(),
-    cwd_override: external_exports.string().optional(),
-    nodePath: external_exports.string().optional(),
-    summary: external_exports.boolean().optional(),
-    confirm_import: external_exports.boolean().optional()
-  },
-  async (params) => run(() => handleDodCheck(params))
-);
-server.tool(
-  "dod_refine",
-  REFINE_DESC,
-  {
-    dod_id: external_exports.string(),
-    node_path: external_exports.string(),
-    node_id: external_exports.string().optional(),
-    mode: external_exports.enum(["concretize", "subdivide"]).optional().default("concretize"),
-    command: external_exports.string().optional(),
-    predicate: PredicateSchema.optional(),
-    description: external_exports.string().optional(),
-    category: ProofCategorySchema.optional(),
-    advisory: external_exports.boolean().optional(),
-    children: external_exports.array(external_exports.object({ title: external_exports.string(), intent: external_exports.string() })).optional()
-  },
-  async (params) => run(() => handleDodRefine(params))
-);
-server.tool(
-  "dod_add_node",
-  "Add a new TaskNode (draft or concrete) as a child of an existing task group, or at root level.",
-  {
-    dod_id: external_exports.string(),
-    parent_path: external_exports.string(),
-    parent_id: external_exports.string().optional(),
-    title: external_exports.string(),
-    refinement: external_exports.enum(["draft", "concrete"]).optional().default("draft"),
-    intent: external_exports.string().optional(),
-    command: external_exports.string().optional(),
-    predicate: PredicateSchema.optional(),
-    description: external_exports.string().optional(),
-    category: ProofCategorySchema.optional(),
-    advisory: external_exports.boolean().optional()
-  },
-  async (params) => run(async () => (await handleDodAddNode(params)).message)
-);
-server.tool(
-  "dod_remove_node",
-  "Remove a TaskNode and all its descendants from the DoD tree.",
-  {
-    dod_id: external_exports.string(),
-    node_path: external_exports.string(),
-    node_id: external_exports.string().optional()
-  },
-  async (params) => run(() => handleDodRemoveNode(params))
-);
-server.tool(
-  "dod_status",
-  "Get the last check result for a DoD without re-running proofs.",
-  {
-    dod_id: external_exports.string().optional(),
-    path: external_exports.string().optional()
-  },
-  async (params) => run(() => handleDodStatus(params))
-);
-server.tool(
-  "dod_tree",
-  "Display the full TaskNode tree with stable IDs, current paths, titles, and statuses. Read-only structural dump \u2014 no proof execution. Use to discover node paths without running dod_check. Accepts optional dod_id/path to select the DoD, and optional node_id/node_path to scope the view to a subtree.",
-  {
-    dod_id: external_exports.string().optional(),
-    path: external_exports.string().optional(),
-    node_id: external_exports.string().optional(),
-    node_path: external_exports.string().optional()
-  },
-  async (params) => run(() => handleDodTree(params))
-);
-server.tool(
-  "dod_amend",
-  AMEND_DESC,
-  {
-    dod_id: external_exports.string(),
-    node_path: external_exports.string(),
-    node_id: external_exports.string().optional(),
-    new_command: external_exports.string().optional(),
-    new_predicate: PredicateSchema.optional(),
-    new_description: external_exports.string().optional(),
-    reason: external_exports.string(),
-    amend_justification: external_exports.string().optional()
-  },
-  async (params) => run(() => handleDodAmend(params))
-);
-server.tool(
-  "dod_list",
-  "List all tracked DoD documents with their last check status.",
-  {},
-  async () => run(() => handleDodList())
-);
-server.tool(
-  "dod_import",
-  "Import an existing DoD markdown file into canonical MCP storage. Parses hierarchical tree structure from author.ts output format (<!--p:...--> metadata) or hand-written markdown (leaves become drafts).",
-  {
-    path: external_exports.string(),
-    cwd: external_exports.string()
-  },
-  async (params) => run(() => handleDodImport(params))
-);
-server.tool(
-  "dod_generate",
-  "Generate a DoD from an OpenSpec change and register it alongside that change. Fetches the change's instructions via the OpenSpec CLI, converts its spec deltas into a DoD tree, and imports or regenerates the tracked DoD for it.",
-  {
-    change_id: external_exports.string(),
-    cwd: external_exports.string()
-  },
-  async (params) => run(() => handleDodGenerate(params))
-);
-server.tool(
-  "dod_store_migrate",
-  "Migrate legacy DoD documents from the old 'steps' format to the current 'roots' TaskNode tree format. Idempotent \u2014 already-migrated docs are skipped. Run this once to upgrade all legacy docs.",
-  {
-    dod_id: external_exports.string().optional(),
-    dry_run: external_exports.boolean().optional().default(false)
-  },
-  async (params) => run(() => handleDodStoreMigrate(params))
-);
-var FINDING_SCHEMA = external_exports.object({
-  severity: external_exports.enum(["critical", "major", "minor", "blocker"]),
-  target: external_exports.string().optional(),
-  problem: external_exports.string(),
-  suggestion: external_exports.string().optional(),
-  evidence: external_exports.string().optional()
-});
-var LENS_SCHEMA = external_exports.object({
-  lens: external_exports.string(),
-  findings: external_exports.array(FINDING_SCHEMA),
-  mandatory_minimum_met: external_exports.boolean()
-});
-server.tool(
-  "dod_adversarial_gate",
-  GATE_DESC,
-  {
-    dod_id: external_exports.string(),
-    phase: external_exports.number().min(1).max(4),
-    verdict: external_exports.enum(["GO", "REVISE", "STOP"]),
-    lenses: external_exports.array(LENS_SCHEMA),
-    summary: external_exports.string()
-  },
-  async (params) => run(() => handleDodAdversarialGate(params))
-);
 var _filename = fileURLToPath(import.meta.url);
 async function main() {
   const transport = new StdioServerTransport();
@@ -24471,7 +21773,7 @@ if (process.argv[1] === _filename) {
     runCli(argv).then((code) => process.exit(code)).catch((err) => {
       process.stderr.write(`dod-guard CLI failed: ${err}
 `);
-      process.exit(3);
+      process.exit(1);
     });
   } else {
     main().catch((err) => {

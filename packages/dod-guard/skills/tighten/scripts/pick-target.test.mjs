@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import { changeIdForFile } from "./lib/change-id.mjs";
 
 const PICK = fileURLToPath(new URL("./pick-target.mjs", import.meta.url));
 const RECORD = fileURLToPath(new URL("./record-result.mjs", import.meta.url));
@@ -65,7 +66,7 @@ describe("pick-target CLI", () => {
     assert.match(run(PICK, dir, []).stdout, /oracle: existing tests/);
   });
 
-  it("exits 4 when every target is finished", () => {
+  it("exits 4 when an accepted target's change archived", () => {
     const dir = makeLedger(entry("src/a.ts", 90));
     run(RECORD, dir, ["--file=src/a.ts", "--status=accepted"]);
     const result = run(PICK, dir, []);
@@ -73,11 +74,24 @@ describe("pick-target CLI", () => {
     assert.match(result.stdout, /queue empty. accepted: 1/);
   });
 
+  it("prints the change id alongside an accepted target still open", () => {
+    const dir = makeLedger(entry("src/a.ts", 90));
+    run(RECORD, dir, ["--file=src/a.ts", "--status=accepted"]);
+    mkdirSync(join(dir, "openspec", "changes", changeIdForFile("src/a.ts")), {
+      recursive: true,
+    });
+    const result = run(PICK, dir, []);
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /file: src\/a\.ts/);
+    assert.match(result.stdout, new RegExp(`change: ${changeIdForFile("src/a.ts")}`));
+  });
+
   it("emits the raw entry under --json", () => {
     const dir = makeLedger(entry("src/a.ts", 90));
     const parsed = JSON.parse(run(PICK, dir, ["--json"]).stdout);
     assert.equal(parsed.file, "src/a.ts");
     assert.equal(parsed.status, "pending");
+    assert.equal(parsed.changeId, changeIdForFile("src/a.ts"));
   });
 });
 

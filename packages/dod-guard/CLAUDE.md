@@ -17,7 +17,12 @@ The bundled output is `dist/bundle.js` - this is what ships as the package entry
 
 ## Architecture
 
-**dod-guard** is an MCP server + Claude Code plugin that enforces Definition of Done verification with behavioral predicates. Proofs are stored canonically in `~/.claude/dod-store/` - the rendered markdown cannot influence verification. The one command that reads `dod.md` instead is `trace`, which never executes a proof and only needs leaf ids. See `loadTraceTree` in `src/openspec/trace.ts`.
+**dod-guard** is a scenario-coverage tool, not a proof-tree verifier. It has
+two surfaces. `cover` checks whether OpenSpec scenarios are bound to tests.
+It also checks whether those tests actually execute the package's declared
+entry points. `steps` derives a `steps.json` execution plan from a change's
+`tasks.md`. It binds each task's `verify_cmd` through `cover` where a
+`<!-- covers: -->` annotation names a scenario.
 
 ### Two entry points, one binary
 
@@ -25,95 +30,83 @@ The bundled output is `dist/bundle.js` - this is what ships as the package entry
 
 | Invocation | Behavior |
 |------------|----------|
-| `dod-guard` (no args) | Starts the MCP stdio server |
-| `dod-guard check --dod-id=<id> [--node-path=<p>] [--quiet]` | Runs proofs, exits `0` pass / `1` fail / `2` drafts remain / `3` usage error |
-| `dod-guard status\|tree\|list` | Read-only inspection |
-| `dod-guard trace <change-id>` | OpenSpec closure check, exits `0` closed / `1` a leaf traces to no scenario / `3` the change has no DoD |
+| `dod-guard` (no args) | Starts the MCP stdio server (registers no tools - see `index.ts`) |
+| `dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]` | Reports each scenario as covered-and-integrated, covered-but-not-integrated, unwired, or failed against `.github/quality/coverage-gate-baseline.json`. One of `<change-id>` or `--all` is required; `--write-baseline` needs `--all`. Exits `0` no regressions / `1` a regression / `3` usage error |
+| `dod-guard steps <change-id> [--cwd=<dir>]` | Writes `openspec/changes/<id>/steps.json` from that change's `tasks.md`. Exits `0` on success / `3` usage error |
 
-The CLI exists so `verify_cmd` / `fitness_cmd` in evomcp can gate on a DoD subtree - MCP tool names are not shell commands. Exit codes are a public contract. Changing them breaks every cascade and cheap-step spec in the wild. A scoped run exits 0 when its subtree passes even though `checkDocument` reports `incomplete`. See `exitCodeFor` in `cli.ts`.
+See the `USAGE` string in `cli.ts` for the authoritative, always-current command reference.
 
-### Core principle
+### Core concepts
 
-**Behavioral predicates only.** Every proof is a concrete, falsifiable claim about what the implementation should do. No mechanical quality metrics (line length, log count, assertion count) - those are noise that weak models game without fixing actual behavior.
+**Scenario identity.** A scenario's id is stable across a spec delta and its
+eventual merge into the main tree: `<group>/<capability>::<requirement
+title>||<scenario title>`. Built by `buildScenarioId()` in
+`src/openspec/scenario-id.ts`.
 
-### Predicate types (10 - 7 behavioral + 3 gate)
+**The three-outcome report.** `cover` resolves each scenario to one of four
+`Outcome` values, defined in `src/cover/report.ts`. `unwired` means no test
+binds it. `covered-but-not-integrated` means a bound test passed but never
+reached a declared entry point, or the package declares none. `covered-and-integrated`
+means a bound test passed and reached a declared entry point. `failed` means
+the bound test failed, or no test with that name exists. `failed` and
+`unwired` rank equally for the ratchet. A failing bound test proves nothing
+more than no test at all.
 
-| Type | Behavior |
-|------|----------|
-| `exit_code` / `exit_code_not` | Pass/fail based on exit code |
-| `output_contains` / `output_not_contains` | Substring match in combined stdout+stderr |
-| `output_matches` / `output_not_matches` | Regex match |
-| `tdd` | Test must fail first (RED), then pass (GREEN) |
-| `adversarial` | Checks DoD's `adversarial_gates[]` - gate for specified phase must be GO |
-| `holdout` | Verifies holdout test fingerprint (SHA-256) hasn't changed |
-| `convergence` | Checks convergence audit (Phase 4) reached GO |
+**The `// covers:` test marker.** A scenario binds to a test by a comment
+directly above the `test(`/`it(` call, read by regex, never by running the
+test file. Format, quoted from `markers.ts`'s own header comment:
+`// covers: <group>/<capability> :: <requirement title> :: <scenario title>`
 
-### Proof categories (4)
+**`openspec/entry-points.json`.** The files a project considers user-facing for
+each package, keyed by package directory (`entry-points.ts`). A package absent
+from this file gets an honest report instead of a crash or a silent pass.
+Every one of its bound scenarios reports `covered-but-not-integrated` with a
+reason.
 
-`"behavioral"` | `"wiring"` | `"other"` | `"test_audit"`
-
-### Proof execution flow (checker.ts)
-
-`checkDocument()` is the main entry point:
-1. Flatten concrete leaves (skips drafts, recurses into groups)
-2. For each leaf, `executeProof()` runs the command via `execFile()` with a timeout (default 120s)
-3. TDD proofs track `seen_failing` state across runs (must fail before passing)
-4. `computeProofFingerprint()` hashes all concrete leaves, then compares against the stored hash for tamper detection
-5. Any behavioral predicate failure makes the whole run FAIL
-6. Any node amended 3+ times triggers STUCK verdict (approach likely wrong, so re-read requirements) - overrides PASS even if all proofs pass
+**The coverage-gate ratchet.** `.github/quality/coverage-gate-baseline.json`
+adopts a scenario the baseline has never seen, at whatever outcome `cover`
+finds it at (`baseline.ts`). It fails a run only when a scenario the baseline
+already scored regresses to a worse one. `cover` also reports `improved`
+scenarios, which rose above their baseline outcome. On an `--all` run it
+reports `orphaned` baseline ids too: present in the baseline, absent from the
+current run, report-only. This is the same adopt-unseen/block-on-regression
+pattern the root CLAUDE.md's Ratchets table documents for
+`coverage-baseline.json`. See that table for how CI invokes it.
 
 ### File responsibilities
 
 | File | Role |
 |------|------|
-| `index.ts` | MCP server: tool registration, Zod schemas, import gate, amend gate, adversarial gate, manual elicitation |
-| `types.ts` | All types: `TaskNode`, `DodDocument`, `Predicate`, `CheckResult`, `LeafResult`, `ProofCategory`, `AdversarialGate`, `AdversarialLensResult`, `AdversarialFinding` |
-| `cli.ts` | Shell CLI: `dod-guard check\|status\|tree\|list`. Exit codes are the contract for evomcp `verify_cmd` - see `EXIT` and `exitCodeFor`. Bare `dod-guard` (no args) starts the MCP server instead |
-| `import-gate.ts` | `buildImportGateInfo()` - blocks execution of imported DoDs until confirmed. Shared by the MCP tool and the CLI |
-| `checker.ts` | Proof execution engine: VCS capture, leaf execution, predicate evaluation, tamper detection, amendment gate, STUCK verdict detection (node amended 3+ times) |
-| `evaluate-proof.ts` | Single proof execution: command run, predicate eval, failure diagnosis |
-| `fingerprint.ts` | Canonical fingerprint: `computeProofFingerprint()` (SHA-256 of command+type+value+options) |
-| `author.ts` | Markdown rendering: `<claude_instructions>`, sections, proof tree, predicate metadata |
-| `parser.ts` | Reverse: parse DoD markdown to `DodDocument` using `<!--p:JSON-->` metadata |
-| `store.ts` | JSON file persistence in `~/.claude/dod-store/{uuid}.json` |
-| `tree-utils.ts` | Tree utilities: ID-based path resolution, tree display, node counting, OS command validation |
-| `command-check.ts` | Validate proof commands: OS tool availability, glob expansion, placeholder detection |
-| `format-result.ts` | Format `CheckResult` into human-readable output |
-| `snapshot.ts` | Ephemeral git worktree isolation (kept for potential future use but checker no longer calls it) |
-| `schemas.ts` | Shared Zod schemas for Predicate and ProofCategory |
-| `tools/dod-create.ts` | Build new DoD |
-| `tools/dod-refine.ts` | Refine draft to concrete or subdivide |
-| `tools/dod-add-node.ts` | Add nodes to tree |
-
-### MCP tools
-
-| Tool | Purpose |
-|------|---------|
-| `dod_create` | Build a new DoD with roots tree, validate OS tool availability |
-| `dod_check` | Run all (or scoped) proofs, produce pass/fail/incomplete verdict |
-| `dod_refine` | Turn draft leaf into concrete or subdivide into children |
-| `dod_add_node` / `dod_remove_node` | Add/remove nodes |
-| `dod_amend` | Modify a concrete proof with audit trail |
-| `dod_status` | Read cached check result without re-running |
-| `dod_list` | List all tracked DoDs |
-| `dod_import` | Parse existing markdown DoD into canonical storage |
-| `dod_tree` | Read-only structural dump of node tree |
-| `dod_adversarial_gate` | Record adversarial gate verdict (GO/REVISE/STOP) for a DoD phase |
-
-### Adding a new predicate type
-
-1. Add type string to `Predicate.type` union in `types.ts`
-2. Add case in `evaluate-proof.ts`, in `evalPredicate()`
-3. Add case in `evaluate-proof.ts`, in `diagnoseFailure()`
-4. Add rendering in `author.ts`, in `renderLeaf()`
-5. Update `PredicateSchema` in `schemas.ts`
-6. Write tests
+| `index.ts` | MCP server: registers no tools, starts stdio transport or delegates to the CLI |
+| `cli.ts` | Shell CLI: `dod-guard cover\|steps`, argument parsing, `USAGE` string, exit codes |
+| `shell.ts` | `buildShellInvocation()` - the one place that knows how to reach a host shell (Windows quirks documented inline) |
+| `cover/run.ts` | `cover` top-level orchestration: enumerate scenarios, build the report, write or check against the ratchet baseline |
+| `cover/report.ts` | The three-outcome report: `buildReport()`, `Outcome`, `outcomeRank()`, `summarizeReport()` |
+| `cover/markers.ts` | Scans test files for `// covers:` comments and binds them to the next `test(`/`it(` call |
+| `cover/enumerate.ts` | Reads scenarios out of `openspec/specs/**/spec.md` (`--all`) or `openspec/changes/<id>/specs/**/spec.md` (change-scoped) |
+| `cover/entry-points.ts` | Loads and looks up `openspec/entry-points.json` |
+| `cover/baseline.ts` | The coverage-gate ratchet: read/write/compare `.github/quality/coverage-gate-baseline.json` |
+| `cover/reachability.ts` | Runs one bound test in isolation under c8, scoped to its package's compiled `dist/`, checks whether a declared entry point actually executed (per-function hit counts, not file-level coverage) |
+| `cover/run-command.ts` | Builds the whole-file `node --test <dist file>` command a bound test runs by, for use as a `verify_cmd` |
+| `cover/dist-file.ts` | Maps a source test file to the compiled `dist/` file `node --test` actually loads |
+| `cover/package-dir.ts` | Maps a spec group to its package/tool directory and test file globs |
+| `openspec/steps-cli.ts` | `steps` command: reads `tasks.md`, runs `cover`'s enumerate+report in-process, writes `steps.json` |
+| `openspec/build-steps.ts` | Turns parsed task items plus a `cover` report into a `/step-by-step`-shaped `Step[]` |
+| `openspec/tasks-parser.ts` | Parses `tasks.md` checkbox items and their `<!-- covers: -->` annotations |
+| `openspec/requirements.ts` | Parses `### Requirement:` / `#### Scenario:` blocks out of a spec delta's markdown |
+| `openspec/requirement-block.ts` | Type: one `### Requirement:` heading plus its scenarios |
+| `openspec/scenario-block.ts` | Type: one `#### Scenario:` heading reduced to its `THEN` intent text |
+| `openspec/scenario-id.ts` | `buildScenarioId()` - the stable scenario identity string |
+| `openspec/fetch-instructions.ts` | Shells out to `openspec instructions`/`openspec status --json` for artifact paths and the change's artifact graph |
+| `openspec/dependency.ts` | Type: one entry in `instructions --json`'s `dependencies` array |
+| `openspec/types.ts` | Type: `OpenSpecInstructions`, the parsed shape of `openspec instructions ... --json` |
+| `openspec/glob.ts` | Minimal glob resolver for `dependencies[].path` and test-file patterns (`*`, `**`) |
 
 ## Bundled Skills
 
 | Skill | Purpose |
 |-------|---------|
-| `interview` | Structured requirements gathering that yields behavioral predicates |
+| `interview` | Structured requirements gathering that writes scenarios into an OpenSpec change and marks how each binds to a test |
 | `ratchet` | Multi-step problem solving with verification gates |
 | `clean-house` | Hunt down duplicate/obsolete implementations |
 | `step-by-step` | Execute multi-step plans one atomic step at a time. An OpenSpec change also gets `openspec/changes/<id>/tasks.md`, checked off in the same update that marks a step completed in `steps.json` |

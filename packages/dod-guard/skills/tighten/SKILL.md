@@ -17,11 +17,20 @@ argument-hint: "[optional: path to seed the ledger from]"
 # Tighten
 
 A loop that removes accidental complexity, one target per invocation. It ranks
-files by structural violations joined with git return-churn, blind-rewrites
-the worst target through subagents, gates the result on being both different
-and smaller, and records every attempt in `.tighten/ledger.json`. A driver
+files by structural violations joined with git return-churn, opens an OpenSpec
+change scoped to the picked target (`openspec/changes/tighten-<slug>/`,
+reusing one already open on that path), blind-rewrites the target through
+subagents, and gates the result on being both different and smaller. A driver
 (/loop, cron, or a human) repeats the call until the queue empties. Scope:
 every file the scanner ranks is a candidate; each invocation touches one.
+
+`.tighten/ledger.json` is a scanner queue, not a completion record: it holds
+each candidate's current rank (violations x churn) and the last scan that
+produced it, nothing else. A target is done when its change id archives, not
+when the ledger says so - the ledger only decides what gets scanned next.
+`record-result.mjs` still writes an attempt outcome for the audit trail, but
+the queue drops a target on `openspec archive`, checked at Phase 1 pick time,
+not on `record-result.mjs --status=accepted`.
 
 ## Scripts (all under `${CLAUDE_PLUGIN_ROOT}`)
 
@@ -81,9 +90,13 @@ and tell the user: later phases delete files and roll back with
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/pick-target.mjs" --root=.
 ```
-On exit 4 the queue is empty: stop. Create working branch `tighten/<date>`
-on the first accepted target of a run. Every commit goes to that branch and
-none to master, because master is Phase 12's decision, made by the user.
+On exit 4 the queue is empty: stop. Before rewriting, open the target's
+change with `openspec propose` at id `tighten-<slug>` (or resume one already
+open for that path - `pick-target.mjs` skips a target whose change already
+archived, so a still-open id means a retry). Create working branch
+`tighten/<date>` on the first accepted target of a run. Every commit goes to
+that branch and none to master, because master is Phase 12's decision, made
+by the user.
 
 ## Phase 2: intent
 
@@ -199,6 +212,11 @@ Accepted: commit to the branch, then record:
 node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/record-result.mjs" \
   --file=<path> --status=accepted --commit=<sha> --after=<tangle score>
 ```
+This records the attempt only. The target itself is not closed yet - that
+happens at Phase 12, when the user archives `tighten-<slug>` after merging.
+Until archival, `pick-target.mjs` still sees the target as open and a rerun
+before the merge lands should resume the same change id rather than open a
+second one.
 Failed, first attempt: restore and record pending. The next invocation
 retries the target with fresh context.
 ```bash
@@ -261,16 +279,23 @@ rtk git merge --no-ff tighten/<date> -m "refactor: tighten <n> targets"
 ```bash
 rtk git push origin master
 ```
-5. Delete the branch after landing:
+5. Archive each merged target's change, which is what actually closes it:
+```bash
+rtk openspec archive tighten-<slug>
+```
+6. Delete the branch after landing:
 ```bash
 rtk git branch -d tighten/<date>
 ```
-To reject the run instead, force-delete the branch:
+To reject the run instead, force-delete the branch and leave the change
+open rather than archiving it:
 ```bash
 rtk git branch -D tighten/<date>
 ```
-The ledger survives either choice, because `.tighten/` is untracked. A
-target accepted on a thrown-away branch stays accepted, so the loop skips
-it from then on. Say that in the report. To requeue one, hand-edit its
-`.tighten/ledger.json` entry to `"status": "pending"` with `"attempts": 0`,
-because `record-result.mjs` would burn an attempt.
+The queue survives either choice, because `.tighten/` is untracked and only
+holds rank, not status. An archived target's change id no longer resolves
+under `openspec/changes/`, so `pick-target.mjs` drops it from then on; a
+rejected target keeps its change open and gets picked again, fresh context
+and all. Say which happened in the report. There is nothing to hand-edit in
+the ledger to requeue a target - reopening or leaving its change unarchived
+is enough.

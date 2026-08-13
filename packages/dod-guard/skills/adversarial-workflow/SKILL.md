@@ -1,37 +1,47 @@
 ---
 name: adversarial-workflow
-description: Drive one piece of work through a 4-phase review and record a gate at each stage. Use when the user asks for the adversarial workflow, says "gate this", asks for strict quality, asks for a full adversarial pass, asks for an adversarial review or a 4-phase review, or wants gates at each stage of spec, tests, implementation, and cleanup. Use it too when the user raises a quality or security concern about multi-step implementation work. Reviewers run without the author's reasoning and must produce findings. The product is four dod_adversarial_gate records against one dod_id.
-argument-hint: [task description or dod_id]
+description: Drive one piece of work through a 4-phase review and record a gate at each stage. Use when the user asks for the adversarial workflow, says "gate this", asks for strict quality, asks for a full adversarial pass, asks for an adversarial review or a 4-phase review, or wants gates at each stage of spec, tests, implementation, and cleanup. Use it too when the user raises a quality or security concern about multi-step implementation work. Reviewers run without the author's reasoning and must produce findings. The product is four GO/REVISE/STOP verdicts recorded in the change's design.md, plus the working feature.
+argument-hint: [task description or change id]
 ---
 # Adversarial workflow
 
 Drive one unit of work through four rounds of hostile review, each closing with a
-`dod_adversarial_gate` record on one shared `dod_id`. Those four records plus the working
-feature are the output. Delegate the building and spend your own turns judging what comes
-back. Scope is that single `dod_id`: another tree, or writing the code yourself, sits outside it.
+verdict recorded in `openspec/changes/<change-id>/design.md`. Those four entries plus
+the working feature are the output. Delegate the building and spend your own turns
+judging what comes back. Scope is that single change: another change, or writing the
+code yourself, sits outside it.
+
+## Before you start
+
+You need a confirmed OpenSpec change id. No change means no work. Route to
+`/dod-guard:interview` or `/opsx:propose`, then come back. Every run of this skill
+works against `openspec/changes/<change-id>/`, and every gate it files lands in that
+change's `design.md`.
 
 ## Starting point
 
-With no `dod_id` yet, pass the task to `/dod-guard:interview`, which collects requirements,
-builds the tree, reviews the spec, calls `dod_create` and files the phase 1 gate. Halt it
-there rather than letting it pass work onward, then carry on at phase 2 yourself.
+With no change id yet, pass the task to `/dod-guard:interview`, which collects
+requirements, writes the spec delta's scenarios, opens the change and files the phase 1
+gate in its `design.md`. Halt it there rather than letting it pass work onward, then
+carry on at phase 2 yourself.
 
-With a `dod_id` in hand, resume from the record rather than calling `/dod-guard:interview`,
-whose second run yields a separate DoD. Load `~/.claude/dod-store/<dod_id>.json`, or that
-file under `$DOD_STORE_DIR` when the variable is set, and read `adversarial_gates`. Entries
-sit in write order, so find each through its `phase` field rather than its index, and restart
-at the lowest phase whose verdict is anything but `GO`. Phase 1 holding `REVISE` returns to
-`/dod-guard:interview` rather than moving to phase 2, and a document with no phase 1 entry
-gets that spec round run here rather than later. `/dod-guard:interview`,
-`/dod-guard:clean-house`, `/dod-guard:ratchet` and `/dod-guard:test-integrity-checker` all
-feed work in, and the first two hand off at phase 2, so accept that as a start.
+With a change id in hand, resume from the record rather than calling
+`/dod-guard:interview`, whose second run yields a separate change. Read
+`openspec/changes/<change-id>/design.md` for its `## Adversarial gate` entries. Entries
+sit in write order, so find each through its `phase` field rather than its index, and
+restart at the lowest phase whose verdict is anything but `GO`. Phase 1 holding
+`REVISE` returns to `/dod-guard:interview` rather than moving to phase 2, and a
+`design.md` with no phase 1 entry gets that spec round run here rather than later.
+`/dod-guard:interview`, `/dod-guard:clean-house`, `/dod-guard:ratchet` and
+`/dod-guard:test-integrity-checker` all feed work in, and the first two hand off at
+phase 2, so accept that as a start.
 
 ## Round by round
 
 **Phase 1, spec.** Send the five spec lenses across the requirements and the tree. Then run a
 negative control: pick the lens that reported least, hand it the real spec with one flaw
 seeded inside that lens's own territory, and see whether it names the flaw. Skip the control
-after a `STOP`, on a spec under roughly 20 lines, or once this `dod_id` has seen two. A lens
+after a `STOP`, on a spec under roughly 20 lines, or once this change has seen two. A lens
 that misses its seeded flaw earns one repeat on a stronger model, and `summary` names that
 lens. File the gate at `phase: 1` last, so the control result reaches its `summary`.
 
@@ -42,17 +52,17 @@ each, and file the gate at `phase: 2`.
 **Phase 3, implementation.** Delegate the build to `/dod-guard:step-by-step` or
 `/dod-guard:cheap-step`, each of which halts at steps done, tests green and build clean,
 since the judging falls to you. Send the saboteur, the new hire and the spec auditor across
-the diff, run `dod_check` over the whole `dod_id`, and file the gate at `phase: 3`. Any
-`critical` finding here outlives the run through `memory_save` at `type: "project"`, or
-through `evo_learn` where gitevo runs. Use one of those two rather than inventing a
-project-local rules file.
+the diff, run `dod-guard cover <change-id>` over the change's spec deltas, and file the gate
+at `phase: 3`. Any `critical` finding here outlives the run through `memory_save` at
+`type: "project"`, or through `evo_learn` where gitevo runs. Use one of those two rather
+than inventing a project-local rules file.
 
-**Phase 4, structural.** Attach structural proofs with `dod_add_node`, or sharpen an existing
-draft placeholder with `dod_refine` at `mode: "concretize"`. Lift ready proof JSON for the
-project's language from `standards/structural-gates.md` in this package, and execute each
-proof before attaching it, so you know it can still report failure. For a language that file
-omits, author the proof, watch it fail on a broken file and pass on the real tree, then
-return the working section there. Audit, mend what the findings name, audit again, and quit
+**Phase 4, structural.** Lift ready proof commands for the project's language from
+`standards/structural-gates.md` in this package, and run each one directly before trusting
+it, so you know it can still report failure. For a language that file omits, author the
+command, watch it fail on a broken file and pass on the real tree, then return the working
+section there. Record each proof's outcome as a finding in the phase 4 gate entry, the same
+shape phases 1 through 3 use. Audit, mend what the findings name, audit again, and quit
 once two consecutive audits surface no fresh `critical` and no fresh `major`. Past 3 audits,
 escalate the remainder to the user. File the gate at `phase: 4`.
 
@@ -106,30 +116,49 @@ lens under its floor takes `mandatory_minimum_met: false`, and one `false` anywh
 the round to `REVISE` even where the severities alone would allow `GO`. A `NO_FINDINGS:` line
 with a reason clears the floor. On `REVISE`, mend what the findings name and rerun that
 round, to a limit of 3 rounds, then bring the remainder to the user. On `STOP`, reach the
-user immediately. File every round with `dod_adversarial_gate`, `REVISE` rounds included.
+user immediately.
 
-```json
-{
-  "dod_id": "<dod_id>", "phase": 3, "verdict": "REVISE",
-  "lenses": [
-    { "lens": "Saboteur", "mandatory_minimum_met": true, "findings": [
-      { "severity": "critical", "target": "src/auth/token.ts:42",
-        "problem": "Expired tokens still validate.",
-        "suggestion": "Compare exp with the clock before returning.",
-        "evidence": "token.test.js passes with exp in the past" } ] },
-    { "lens": "New hire", "mandatory_minimum_met": true, "findings": [] }
-  ],
-  "summary": "One critical in token checks. Saboteur opus, other lenses sonnet."
-}
+File every round yourself by appending a `## Adversarial gate` entry to
+`openspec/changes/<change-id>/design.md`, `REVISE` rounds included. Before appending a
+phase N entry, confirm every lower-numbered phase already has an entry reading `GO`;
+if one is absent or short of `GO`, stop and return to that phase instead of filing this
+one out of order.
+
+```markdown
+## Adversarial gate
+
+phase: 3
+verdict: REVISE
+lenses:
+  - lens: Saboteur
+    mandatory_minimum_met: true
+    findings:
+      - severity: critical
+        target: src/auth/token.ts:42
+        problem: Expired tokens still validate.
+        suggestion: Compare exp with the clock before returning.
+        evidence: token.test.js passes with exp in the past
+  - lens: New hire
+    mandatory_minimum_met: true
+    findings: []
+summary: One critical in token checks. Saboteur opus, other lenses sonnet.
 ```
 
-The tool turns down phase N while any lower-numbered phase is absent or short of `GO`. It
-answers with a line that opens `ERROR: Cannot record Phase`, naming that phase and its state.
-It stores nothing. A call that lands lists all four phases with their verdicts, so read the
-answer after every filing. `dod_check` polices no phase order itself. To make the DoD withhold
-a pass until the gates read `GO`, add a leaf with predicate
-`{"type": "adversarial", "value": 3}` for phase 3, which carries no `command`.
-`{"type": "convergence"}` takes no value and always reads phase 4.
+After appending, re-read `design.md` and confirm the entry landed and every phase up to
+this one reads in order. Nothing polices phase order automatically, so this read-back is
+the only check there is.
 
-Close out by reporting the `dod_id`, all four verdicts with their finding counts, the closing
-`dod_check` verdict, the markdown path, and every phase where independence came up short.
+## Finishing
+
+After phase 4 closes at `GO`, run `dod-guard cover <change-id>`. It checks each scenario
+in the change's spec deltas against a ratcheted baseline. Exit 0 means every scenario
+matches or improves on the baseline. Exit 1 means one regressed. Exit 3 means usage
+error. On exit 1 or exit 3, stop here: report the regression and do not archive.
+
+On exit 0, run `openspec archive <change-id> --yes`. It merges the change's spec deltas
+into `openspec/specs/` and moves the change under `changes/archive/`. Run archive
+without asking the user first, the cover check is the approval.
+
+Close out by reporting the change id, all four verdicts with their finding counts, the
+cover and archive outcome, the `design.md` path, and every phase where independence came
+up short.

@@ -5,6 +5,8 @@
 // A reseed must not erase that history. Otherwise the loop re-picks a target it
 // already failed twice, every time somebody refreshes the scores.
 
+import { changeIdForFile, isChangeOpen } from "./change-id.mjs";
+
 const LEDGER_VERSION = 1;
 export const MAX_ATTEMPTS = 2;
 
@@ -53,12 +55,20 @@ export function mergeLedger(ledger, ranked) {
   return { ...ledger, version: LEDGER_VERSION, entries };
 }
 
-function isAvailable(entry) {
-  return entry.status === "pending" && entry.attempts < MAX_ATTEMPTS;
+// An accepted entry is a retry candidate for as long as its change stays
+// unarchived; resistant is a permanent close, since nothing gets merged.
+function isAvailable(entry, root) {
+  if (entry.status === "pending") {
+    return entry.attempts < MAX_ATTEMPTS;
+  }
+  if (entry.status === "accepted") {
+    return isChangeOpen(root, changeIdForFile(entry.file));
+  }
+  return false;
 }
 
-export function nextTarget(ledger) {
-  return ledger.entries.find(isAvailable) ?? null;
+export function nextTarget(ledger, root) {
+  return ledger.entries.find((entry) => isAvailable(entry, root)) ?? null;
 }
 
 // Every cycle ends here, including the failed ones. An attempt that is not

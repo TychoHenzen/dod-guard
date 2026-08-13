@@ -75,7 +75,6 @@ export const IGNORED_DIRS = new Set([
   ".next",
   ".nuxt",
   ".svelte-kit",
-  ".step-session",
   ".quality",
 ]);
 

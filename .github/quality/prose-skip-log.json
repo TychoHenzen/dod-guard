@@ -76,5 +76,45 @@
     "at": "2026-08-08T11:53:34.992Z",
     "acknowledged": true,
     "acknowledgement": "Reviewed: scratch output of a skill-migrate run. The file is the blind writer's candidate SKILL.md, judged by the skill's own gates (overlap, gap audit, regression check), not by the prose linter. It never ships from this path."
+  },
+  {
+    "file": "packages/dod-guard/src/cover/reachability.ts",
+    "reasons": [],
+    "exempt": false,
+    "at": "2026-08-13T11:46:32.494Z",
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: the header comment documents four separate empirically-verified Windows/c8/node:test pitfalls (shell:true dropping --test-name-pattern, c8's absolute source-mapped paths, per-function hit counts vs file-level coverage, and NODE_TEST_CONTEXT re-entry). Each claim carries the concrete repro that proved it. Splitting them into shorter sentences would separate a claim from the evidence that backs it, which is the harder cost here."
+  },
+  {
+    "file": "packages/dod-guard/skills/interview/SKILL.md",
+    "reasons": [],
+    "exempt": false,
+    "at": "2026-08-13T16:36:00.084Z",
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: 11 style-only violations (long-sentence, clause-pileup, one semicolon, one rare word), from the OpenSpec-routing rewrite for task 5.1 of route-skills-through-openspec, already committed in cb0effb. No correctness issue. Left as debt rather than fixed here, since this session's own scope is 3b.5/3b.6/5.12/6.x, not a style pass on already-shipped skills. User confirmed 2026-08-13: acknowledge now, fix separately."
+  },
+  {
+    "file": "packages/quality-guard/skills/quality-refactor/SKILL.md",
+    "reasons": [],
+    "exempt": false,
+    "at": "2026-08-13T16:36:00.085Z",
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: 22 style-only violations (long-sentence, clause-pileup), from the OpenSpec-routing rewrite for task 5.4 of route-skills-through-openspec, already committed in cb0effb. No correctness issue. Left as debt rather than fixed here, for the same reason as the interview SKILL.md entry above. User confirmed 2026-08-13: acknowledge now, fix separately."
+  },
+  {
+    "file": "packages/dod-guard/skills/tighten/SKILL.md",
+    "reasons": [],
+    "exempt": false,
+    "at": "2026-08-13T16:36:00.085Z",
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: 24 style-only violations (long-sentence, clause-pileup), from the OpenSpec-routing rewrite for task 5.8 of route-skills-through-openspec, already committed in b1bd914. No correctness issue. Left as debt rather than fixed here, for the same reason as the interview SKILL.md entry above. User confirmed 2026-08-13: acknowledge now, fix separately."
+  },
+  {
+    "file": "packages/dod-guard/skills/adversarial-workflow/SKILL.md",
+    "reasons": [],
+    "exempt": false,
+    "at": "2026-08-13T16:36:00.086Z",
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: 32 style-only violations (long-sentence, clause-pileup), from the OpenSpec-routing rewrite for task 5.6 of route-skills-through-openspec, already committed in b1bd914. No correctness issue. Left as debt rather than fixed here, for the same reason as the interview SKILL.md entry above. User confirmed 2026-08-13: acknowledge now, fix separately."
   }
 ]

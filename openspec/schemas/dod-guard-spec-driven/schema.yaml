@@ -1,6 +1,6 @@
 name: dod-guard-spec-driven
 version: 1
-description: Spec-driven workflow - proposal, specs, design, tasks, dod, steps
+description: Spec-driven workflow - proposal, specs, design, tasks, steps
 artifacts:
   - id: proposal
     generates: proposal.md
@@ -348,57 +348,42 @@ artifacts:
     requires:
       - specs
       - design
-  - id: dod
-    generates: dod.md
-    description: Definition of Done proof tree generated from the change's spec deltas
-    template: dod.md
-    instruction: |
-      Placeholder instruction. The dod artifact's template and generation
-      workflow land in a later migration step.
-    requires:
-      - specs
   - id: steps
     generates: steps.json
-    description: Step-by-step execution plan derived from the DoD proof tree
+    description: Step-by-step execution plan derived from the change's tasks.md
     template: steps.json
     instruction: |
-      Generate the steps.json file that /dod-guard:step-by-step executes.
+      Write the plan that /dod-guard:step-by-step executes. It lives at
+      `openspec/changes/<id>/steps.json` and nowhere else.
 
-      Break the DoD proof tree into an ordered sequence of atomic steps. One
-      concrete leaf becomes one step, and that leaf's own proof command
-      becomes the step's verify_cmd. A draft leaf holding a `MANUAL:` intent
-      becomes a step with `manual_required` true and no verify_cmd, because
-      both already mean a human still owes us something.
+      **Do not hand-write the skeleton.** Run `dod-guard steps <change-id>`.
+      It reads `tasks.md` and derives the fields that must never drift from
+      it: one step per task item, that item's own text as the step's title
+      and description, and a dependency on the step before it. A task can
+      name the scenario it satisfies with a `<!-- covers: <group>/
+      <capability> :: <requirement title> :: <scenario title> -->`
+      annotation on the line below its checkbox. When `dod-guard cover`
+      reports that scenario covered-and-integrated or
+      covered-but-not-integrated, the step gets that scenario's bound test
+      as `verify_cmd` and `manual_required` false. Every other task -
+      unannotated, or naming a scenario `cover` doesn't yet see as covered -
+      becomes a step with `manual_required` true and an empty `verify_cmd`,
+      because a human still owes us something there.
 
-      Top-level fields: `goal` (one sentence, matches the DoD's Goal), `cwd`
-      (absolute path to the target repo), `plan_source` (the change id this
-      was generated from), `plan_artifacts` (the artifacts array from
-      `openspec status --json --change <id>` at generation time, which is
-      how /dod-guard:step-by-step detects a stale session), and `steps`
-      (array).
+      Then fill in the two fields a machine cannot know. `files` is the paths
+      the step reads or may modify. `verify_surface` is one of `code`,
+      `config`, `structural`, `visual` or `gameplay`. The command leaves them
+      empty and `code`, so an unfilled `files` reads as unfilled rather than
+      as decided. Correct the linear dependency chain too, wherever two steps
+      are genuinely independent.
 
-      Each entry in `steps` holds:
-      - `id`: short stable identifier
-      - `title`: one-line summary
-      - `description`: exact task text a worker executes verbatim
-      - `files`: array of paths the step reads or may modify
-      - `deps`: array of step ids that must be `completed` first
-      - `verify_surface`: one of `code`, `config`, `structural`, `visual`,
-        `gameplay`
-      - `verify_cmd`: a shell string (`&&` is valid) that proves the step
-      - `manual_required`: bool, true when a human must confirm before the
-        step is marked done
-      - `status`: one of `pending`, `completed`, `skipped`, `blocked` -
-        every generated step starts at `pending`
-
-      Order steps by dependency, matching the DoD tree's structure. Do not
-      invent steps that have no corresponding DoD proof or task.
+      `templates/steps.json` carries the field list. Read it rather than
+      restating it anywhere else. Do not invent a step that matches no task.
     requires:
-      - dod
+      - tasks
 apply:
   requires:
     - tasks
-    - dod
     - steps
   tracks: tasks.md
   instruction: |
