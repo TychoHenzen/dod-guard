@@ -104,7 +104,8 @@
       "verify_surface": "config",
       "verify_cmd": "",
       "manual_required": true,
-      "status": "pending"
+      "status": "completed",
+      "verdict": "marketplace.json (package + root) and plugin.json updated from 12 to 15 skills"
     },
     {
       "id": "4.2",
