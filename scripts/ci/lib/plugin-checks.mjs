@@ -85,8 +85,7 @@ export function createPluginChecks(report) {
       return report(file, `mcpServers must hold exactly one key named "${pkg.name}", got [${servers.join(", ")}]`);
     }
     const server = config.mcpServers[pkg.name];
-    if (server.command !== "npx")
-      report(file, `command must be "npx", got ${JSON.stringify(server.command)}`);
+    if (server.command !== "npx") report(file, `command must be "npx", got ${JSON.stringify(server.command)}`);
     if (server.args?.[0] !== pkg.name)
       report(file, `args[0] must be "${pkg.name}", got ${JSON.stringify(server.args?.[0])}`);
   }
