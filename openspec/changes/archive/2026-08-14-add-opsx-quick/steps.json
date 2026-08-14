@@ -1,0 +1,88 @@
+{
+  "goal": "add-opsx-quick",
+  "cwd": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "plan_source": "add-opsx-quick",
+  "plan_artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "done",
+      "requires": [
+        "specs",
+        "design"
+      ]
+    },
+    {
+      "id": "steps",
+      "outputPath": "steps.json",
+      "status": "done",
+      "requires": [
+        "tasks"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "1.1",
+      "title": "Create `packages/dod-guard/skills/opsx-quick/SKILL.md` with minimal clarification, adaptive artifact depth, steps generation, step-by-step handoff, and post-implementation spec sync",
+      "description": "Create `packages/dod-guard/skills/opsx-quick/SKILL.md` with minimal clarification, adaptive artifact depth, steps generation, step-by-step handoff, and post-implementation spec sync",
+      "files": [],
+      "deps": [],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "SKILL.md created with 5 phases: clarify, assess and create change, generate steps, hand off to step-by-step, post-implementation spec sync"
+    },
+    {
+      "id": "2.1",
+      "title": "Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the new skill",
+      "description": "Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the new skill",
+      "files": [],
+      "deps": [
+        "1.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "Updated 3 files: plugin.json, package marketplace.json, root marketplace.json. Count 21 -> 22."
+    },
+    {
+      "id": "2.2",
+      "title": "Run `validate-plugins.mjs` and `check-skill-hygiene.mjs` to confirm the new skill passes",
+      "description": "Run `validate-plugins.mjs` and `check-skill-hygiene.mjs` to confirm the new skill passes",
+      "files": [],
+      "deps": [
+        "2.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "validate-plugins: OK (6 plugins, 25 skills). check-skill-hygiene: OK (7 rules passed)."
+    }
+  ]
+}
