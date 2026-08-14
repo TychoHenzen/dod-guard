@@ -1,7 +1,7 @@
 // Requirement: none - see Task
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseTasksMarkdown } from "./tasks-parser.js";
+import { parseTasksMarkdown, writeTaskStatus } from "./tasks-parser.js";
 
 test("parses a checked and an unchecked item with their ids and text", () => {
   const items = parseTasksMarkdown(
@@ -52,4 +52,43 @@ test("stops an item's continuation at the next heading", () => {
 
 test("returns an empty array for content with no checkbox lines", () => {
   assert.deepEqual(parseTasksMarkdown("## Just a heading\n\nSome prose.\n"), []);
+});
+
+test("reads a status metadata comment", () => {
+  const items = parseTasksMarkdown(["- [ ] 1.1 Do the thing", "<!-- status: blocked -->"].join("\n"));
+  assert.equal(items[0].status, "blocked");
+});
+
+test("reads a verify_cmd metadata comment", () => {
+  const items = parseTasksMarkdown(["- [ ] 1.1 Do the thing", "<!-- verify_cmd: npm test -->"].join("\n"));
+  assert.equal(items[0].verifyCmd, "npm test");
+});
+
+test("reads a verify_surface metadata comment", () => {
+  const items = parseTasksMarkdown(["- [ ] 1.1 Do the thing", "<!-- verify_surface: visual -->"].join("\n"));
+  assert.equal(items[0].verifySurface, "visual");
+});
+
+test("reads a manual_required metadata comment as a boolean", () => {
+  const items = parseTasksMarkdown(["- [ ] 1.1 Do the thing", "<!-- manual_required: true -->"].join("\n"));
+  assert.equal(items[0].manualRequired, true);
+});
+
+test("writeTaskStatus flips a checkbox from unchecked to checked", () => {
+  const content = writeTaskStatus("- [ ] 1.1 Do the thing", "1.1", { checked: true });
+  assert.equal(content, "- [x] 1.1 Do the thing");
+});
+
+test("writeTaskStatus round-trips a status update through parseTasksMarkdown", () => {
+  const content = writeTaskStatus("- [ ] 1.1 Do the thing", "1.1", { status: "blocked" });
+  const items = parseTasksMarkdown(content);
+  assert.equal(items[0].status, "blocked");
+});
+
+test("writeTaskStatus preserves existing metadata when updating status", () => {
+  const original = ["- [ ] 1.1 Do the thing", "<!-- verify_cmd: npm test -->", "<!-- status: pending -->"].join("\n");
+  const content = writeTaskStatus(original, "1.1", { status: "skipped" });
+  const items = parseTasksMarkdown(content);
+  assert.equal(items[0].status, "skipped");
+  assert.equal(items[0].verifyCmd, "npm test");
 });
