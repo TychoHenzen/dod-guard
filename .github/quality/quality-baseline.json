@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "default",
-  "createdAt": "2026-08-13T20:42:41.823Z",
-  "total": 874,
+  "createdAt": "2026-08-14T21:49:42.009Z",
+  "total": 845,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -99,8 +99,6 @@
     "packages/dod-guard/src/cover/run.test.ts",
     "packages/dod-guard/src/cover/run.ts",
     "packages/dod-guard/src/index.ts",
-    "packages/dod-guard/src/openspec/build-steps.test.ts",
-    "packages/dod-guard/src/openspec/build-steps.ts",
     "packages/dod-guard/src/openspec/delta-sections.test.ts",
     "packages/dod-guard/src/openspec/dependency.test.ts",
     "packages/dod-guard/src/openspec/dependency.ts",
@@ -117,8 +115,6 @@
     "packages/dod-guard/src/openspec/scenario-block.ts",
     "packages/dod-guard/src/openspec/scenario-id.test.ts",
     "packages/dod-guard/src/openspec/scenario-id.ts",
-    "packages/dod-guard/src/openspec/steps-cli.test.ts",
-    "packages/dod-guard/src/openspec/steps-cli.ts",
     "packages/dod-guard/src/openspec/tasks-parser.test.ts",
     "packages/dod-guard/src/openspec/tasks-parser.ts",
     "packages/dod-guard/src/openspec/types.ts",
@@ -296,11 +292,7 @@
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
-    "packages/quality-guard/src/skips.ts",
-    "scripts/ci/check-skill-hygiene.test.mjs",
-    "scripts/ci/fixtures/skill-hygiene.mjs",
-    "scripts/ci/lib/plugin-checks.mjs",
-    "scripts/ci/lib/skill-hygiene-rules.mjs"
+    "packages/quality-guard/src/skips.ts"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -510,7 +502,6 @@
     "packages/dod-guard/src/cover/reachability.test.ts::file-length": 1,
     "packages/dod-guard/src/cover/reachability.ts::file-length": 1,
     "packages/dod-guard/src/openspec/delta-sections.test.ts::file-length": 1,
-    "packages/dod-guard/src/openspec/steps-cli.test.ts::file-length": 1,
     "packages/evomcp/src/attempt-result.test.ts::file-length": 1,
     "packages/evomcp/src/budget.ts::file-length": 1,
     "packages/evomcp/src/context.test.ts::file-length": 1,
@@ -634,8 +625,6 @@
     "packages/dod-guard/skills/doc-reconcile/scripts/lib/doc-corpus.mjs::function-length": 1,
     "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs::function-length": 1,
     "packages/dod-guard/src/cover/markers.ts::function-length": 1,
-    "packages/dod-guard/src/openspec/steps-cli.test.ts::function-length": 1,
-    "packages/dod-guard/src/openspec/steps-cli.ts::function-length": 1,
     "packages/evomcp/src/budget.ts::function-length": 1,
     "packages/evomcp/src/context.test.ts::function-length": 2,
     "packages/evomcp/src/convergence.ts::function-length": 4,
@@ -741,16 +730,6 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
-    "scripts/ci/lib/skill-hygiene-rules.mjs::file-length": 1,
-    "scripts/ci/lib/skill-hygiene-rules.mjs::complexity": 1,
-    "scripts/ci/check-skill-hygiene.test.mjs::file-length": 1,
-    "scripts/ci/lib/plugin-checks.mjs::complexity": 10,
-    "scripts/ci/lib/plugin-checks.mjs::function-length": 2,
-    "scripts/ci/lib/plugin-checks.mjs::unnamed-tuple": 1,
-    "scripts/ci/lib/plugin-checks.mjs::file-length": 1,
-    "scripts/ci/lib/plugin-checks.mjs::nesting-depth": 1,
-    "scripts/ci/lib/plugin-checks.mjs::param-count": 2,
-    "scripts/ci/lib/plugin-checks.mjs::else-branch": 6
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1
   }
 }
