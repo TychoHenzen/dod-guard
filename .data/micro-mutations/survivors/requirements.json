@@ -1,0 +1,357 @@
+{
+  "source": "packages/dod-guard/src/openspec/requirements.ts",
+  "date": "2026-08-14T07:58:18.302Z",
+  "summary": {
+    "total": 94,
+    "killed": 45,
+    "survived": 43,
+    "timeout": 0,
+    "unviable": 6
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "1",
+      "mutator": "Regex",
+      "replacement": "/^### Requirement:\\s*(.+?)\\s*/",
+      "dist_line": 1,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "0",
+      "mutator": "Regex",
+      "replacement": "/### Requirement:\\s*(.+?)\\s*$/",
+      "dist_line": 1,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "2",
+      "mutator": "Regex",
+      "replacement": "/^### Requirement:\\s(.+?)\\s*$/",
+      "dist_line": 1,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "3",
+      "mutator": "Regex",
+      "replacement": "/^### Requirement:\\S*(.+?)\\s*$/",
+      "dist_line": 1,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "6",
+      "mutator": "Regex",
+      "replacement": "/^### Requirement:\\s*(.+?)\\S*$/",
+      "dist_line": 1,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "7",
+      "mutator": "Regex",
+      "replacement": "/#### Scenario:\\s*(.+?)\\s*$/",
+      "dist_line": 2,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "8",
+      "mutator": "Regex",
+      "replacement": "/^#### Scenario:\\s*(.+?)\\s*/",
+      "dist_line": 2,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "9",
+      "mutator": "Regex",
+      "replacement": "/^#### Scenario:\\s(.+?)\\s*$/",
+      "dist_line": 2,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "10",
+      "mutator": "Regex",
+      "replacement": "/^#### Scenario:\\S*(.+?)\\s*$/",
+      "dist_line": 2,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "13",
+      "mutator": "Regex",
+      "replacement": "/^#### Scenario:\\s*(.+?)\\S*$/",
+      "dist_line": 2,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "15",
+      "mutator": "Regex",
+      "replacement": "/^##\\s+(.+?)\\s*/",
+      "dist_line": 5,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "16",
+      "mutator": "Regex",
+      "replacement": "/^##\\s(.+?)\\s*$/",
+      "dist_line": 5,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "18",
+      "mutator": "Regex",
+      "replacement": "/^##\\s+(.)\\s*$/",
+      "dist_line": 5,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "19",
+      "mutator": "Regex",
+      "replacement": "/^##\\s+(.+?)\\s$/",
+      "dist_line": 5,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "20",
+      "mutator": "Regex",
+      "replacement": "/^##\\s+(.+?)\\S*$/",
+      "dist_line": 5,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "21",
+      "mutator": "Regex",
+      "replacement": "/REMOVED\\b/i",
+      "dist_line": 6,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "23",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\*\\*THEN\\*\\*\\s*(.*)/",
+      "dist_line": 7,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "22",
+      "mutator": "Regex",
+      "replacement": "/-\\s*\\*\\*THEN\\*\\*\\s*(.*)$/",
+      "dist_line": 7,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "24",
+      "mutator": "Regex",
+      "replacement": "/^-\\s\\*\\*THEN\\*\\*\\s*(.*)$/",
+      "dist_line": 7,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "27",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\*\\*THEN\\*\\*\\S*(.*)$/",
+      "dist_line": 7,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "26",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\*\\*THEN\\*\\*\\s(.*)$/",
+      "dist_line": 7,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "29",
+      "mutator": "Regex",
+      "replacement": "/-\\s*\\*\\*[A-Z]+\\*\\*/",
+      "dist_line": 10,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "30",
+      "mutator": "Regex",
+      "replacement": "/^-\\s\\*\\*[A-Z]+\\*\\*/",
+      "dist_line": 10,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "31",
+      "mutator": "Regex",
+      "replacement": "/^-\\S*\\*\\*[A-Z]+\\*\\*/",
+      "dist_line": 10,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "32",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\*\\*[A-Z]\\*\\*/",
+      "dist_line": 10,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "33",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\*\\*[^A-Z]+\\*\\*/",
+      "dist_line": 10,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "41",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 18,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "45",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 25,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "49",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 32,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "55",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 42,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "59",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 47,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "60",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 47,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "61",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 48,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "69",
+      "mutator": "MethodExpression",
+      "replacement": "thenMatch[1]",
+      "dist_line": 57,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "71",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 61,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "70",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 58,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "72",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 61,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "73",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 61,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "74",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 62,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "76",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 65,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "81",
+      "mutator": "MethodExpression",
+      "replacement": "line",
+      "dist_line": 65,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "89",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 71,
+      "dist_col": 78
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/requirements.js",
+      "id": "90",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 71,
+      "dist_col": 90
+    }
+  ]
+}
