@@ -31,11 +31,11 @@ The plan sorts its steps into six waves, named below. Write one step per file pe
 touch two files becomes two steps. The single exception is a deletion that has to update its call sites,
 which stays one step.
 
-Write the waves as checklist items in the change's `tasks.md`, one section per wave in the order below, in
-the shape `/dod-guard:step-by-step` reads: each task is a `- [ ]` checkbox line naming its refactoring and
-the concrete target, followed by inline HTML comment metadata directly beneath it - `<!-- status: pending
--->`, `<!-- verify_cmd: ... -->`, `<!-- verify_surface: structural -->`, and `<!-- manual_required: false
--->`. A refactor step covers no scenario, so it carries no `<!-- covers: -->` annotation.
+Write the waves as checklist items in the change's `tasks.md`, one section per wave in the order below.
+Each task is a `- [ ]` checkbox line naming its refactoring and the concrete target. Inline HTML comment
+metadata goes directly beneath it: `<!-- status: pending -->`, `<!-- verify_cmd: ... -->`,
+`<!-- verify_surface: structural -->`, and `<!-- manual_required: false -->`. A refactor step covers no
+scenario, so it carries no `<!-- covers: -->` annotation.
 
 Set `verify_surface` to `structural` on every task you emit, with no exception. Passing tests and no fresh
 violations are what prove a refactor, rather than a compile that succeeded.
@@ -44,9 +44,9 @@ Build every `verify_cmd` by joining the project test command and the ratchet che
 into a real absolute path inside the comment, because the worker who reads a task briefing has no shell
 history.
 
-Name the refactoring in each task's text, taken from the catalog, such as Extract Function, Replace Nested
-Conditional with Guard Clauses, or Introduce Parameter Object, and pair it with the concrete target. A
-deletion task says what to delete and what to migrate.
+Name the refactoring in each task's text, taken from the catalog. Examples: Extract Function, Replace
+Nested Conditional with Guard Clauses, Introduce Parameter Object. Pair the name with the concrete
+target. A deletion task says what to delete and what to migrate.
 
 Hold each task to one file plus that file's test file plus its call sites. Write `<!-- status: pending -->`
 on every new task. The executor is what later flips it to `completed`, `skipped`, or `blocked`.
@@ -221,11 +221,12 @@ per file naming every rule that file breaks. `.quality/units.json` stays regener
 plan. Then read those same files yourself for the five things no scanner sees, and write the findings to the
 change's `design.md` under one heading per category.
 
-**Phase 2.** Sort every unit into the six waves and hold that sequence. A file with violations in three waves
-yields three tasks, one in each. Write the waves to the change's `tasks.md`, one checklist section per wave.
+**Phase 2, sort units into waves.** Place every unit into the six waves and hold that sequence. A file
+with violations in three waves yields three tasks, one in each. Write the waves to the change's
+`tasks.md`, one checklist section per wave.
 
-**Phase 3.** Write each task's inline metadata in the shape described at the top of this skill, one task per
-file per wave, each with a resolved `verify_cmd` and task text that names its refactoring.
+**Phase 3, write task metadata.** Add inline metadata to each task as described at the top of this skill.
+Write one task per file per wave, with a resolved `verify_cmd` and text that names its refactoring.
 
 **Phase 4.** Report to the user before any step runs: the number of files in scope, the total violation count
 with the error count called out, and anything in `design.md` that changes a public API or the file layout.
