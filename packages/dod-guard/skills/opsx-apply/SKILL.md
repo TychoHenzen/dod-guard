@@ -1,12 +1,12 @@
 ---
 name: opsx-apply
-description: Apply an OpenSpec change by routing execution through /dod-guard:step-by-step, then gate archival on dod-guard cover. Use when the user wants to start implementing, continue implementation, or work through tasks for a change. Regenerates stale steps.json before dispatch and does not implement tasks itself.
+description: Apply an OpenSpec change by routing execution through /dod-guard:step-by-step, then gate archival on dod-guard cover. Use when the user wants to start implementing, continue implementation, or work through tasks for a change. Checks tasks.md freshness before dispatch and does not implement tasks itself.
 ---
 
 # opsx-apply
 
 Thin routing layer over `/dod-guard:step-by-step`. This skill never
-implements a task itself. It selects the change, confirms `steps.json`
+implements a task itself. It selects the change, confirms `tasks.md`
 is current, hands execution to `/dod-guard:step-by-step`, and gates
 archival on `dod-guard cover` once that finishes.
 
@@ -15,21 +15,18 @@ this machine. If the user names one or the work lives in one, run
 `openspec store list --json` to discover registered store ids. Pass
 `--store <id>` on every OpenSpec command below (`status`, `list`,
 `archive`, `instructions`). Keep the flag on every applicable command for
-the rest of the workflow. `dod-guard steps` and `dod-guard cover` do not
-take `--store`. They resolve the change through `--cwd` instead.
+the rest of the workflow. `dod-guard cover` does not take `--store`. It
+resolves the change through `--cwd` instead.
 
 **Input**: Optionally specify a change name (e.g., `/opsx:apply add-auth`).
-If omitted, check if it can be inferred from conversation context. If
-vague or ambiguous you MUST prompt for available changes.
 
 ## 1. Select the change
 
 If a name is provided, use it. Otherwise:
-- Infer from conversation context if the user mentioned a change
 - Auto-select if only one active change exists, and announce the
   selection: "Using change: `<name>` (only active change)"
-- If ambiguous, run `openspec list --json` to get available changes and
-  ask the user to select one
+- If zero or multiple active changes exist, run `openspec list --json`
+  to get available changes and ask the user to select one
 
 Always announce: "Using change: `<name>`" and how to override (e.g.,
 `/opsx:apply <other>`).
@@ -44,22 +41,17 @@ If the change has no tasks (nothing to execute), report that and stop -
 there is nothing for step-by-step to do. Suggest `/opsx:continue` to
 create the missing artifact instead.
 
-## 3. Ensure steps.json exists and is current
+## 3. Confirm tasks.md is current
 
-Read `openspec/changes/<name>/steps.json` if present.
+Read the `<!-- plan_artifacts: ... -->` comment near the top of
+`openspec/changes/<name>/tasks.md`.
 
-**No `steps.json`:** Run `dod-guard steps <name>` to generate it, then
-continue.
-
-**`steps.json` exists:** Compare its `plan_artifacts` field against the
-`artifacts` field from the `openspec status --json` output taken in step 2.
-
-- **Match:** proceed directly to routing.
+- **No comment, or it matches the `artifacts` field from the `openspec
+  status --json` output taken in step 2:** proceed directly to routing.
+  `/dod-guard:step-by-step` resolves `verify_cmd`s itself on startup.
 - **Mismatch:** report the staleness (which artifacts changed status)
-  and offer to regenerate. If the user accepts, run `dod-guard steps
-  <name>` to overwrite `steps.json`, then continue. If the user declines,
-  proceed with the existing `steps.json` but note that step-by-step may
-  be executing against out-of-date task/verify_cmd bindings.
+  and note that `/dod-guard:step-by-step` will ask the user whether to
+  re-resolve `verify_cmd`s when it starts.
 
 ## 4. Route to step-by-step
 
@@ -99,8 +91,8 @@ gate or archive. Report the pause and wait for guidance.
 - This skill is a thin router: it never implements tasks, edits code, or
   checks off task checkboxes. All of that is `/dod-guard:step-by-step`'s
   job.
-- Always regenerate or confirm `steps.json` freshness before dispatching
-  to step-by-step - a stale plan can bind verify_cmds to artifacts that
-  no longer match the change's status.
+- Always check `tasks.md` freshness before dispatching to step-by-step -
+  a stale plan can bind verify_cmds to artifacts that no longer match the
+  change's status.
 - Never archive on a `cover` exit code other than `0`.
 - Auto-select only when exactly one active change exists; otherwise ask.

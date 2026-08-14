@@ -20,8 +20,8 @@ run it. Everything in it holds here.
 
 You inherit the whole base discipline. That covers splitting the plan and
 getting approval. It covers the session file at
-`openspec/changes/<id>/steps.json`, and every field name in it. It covers the
-staleness checks, dependency order, and the four statuses. It covers the
+`openspec/changes/<id>/tasks.md`, and every inline metadata field in it. It
+covers the staleness checks, task order, and the four statuses. It covers the
 verdict gate, the repair cap, and the record-and-flush step. It covers the
 closing integration run and the final report.
 
@@ -44,8 +44,8 @@ The saving is arbitrage between host tokens and backend tokens. A spec the
 worker can act on costs host tokens up front. That overhead buys nothing on a
 cheap host model. Run the base instead in that case.
 
-Record the choice per step in `steps.json` as `mode`, valued `cheap` or
-`host-only`. That is the only field you add. Rename nothing else.
+Record the choice per step in `tasks.md` as `<!-- mode: cheap -->` or
+`<!-- mode: host-only -->`. That is the only metadata you add.
 
 | Step | `mode` | Why |
 |---|---|---|
@@ -79,8 +79,8 @@ It will pick a reading and build it.
 
 1. Re-read the step description and name every point where two readings fit.
 2. Ask the user with AskUserQuestion, one question per point.
-3. Write each answer into the step `description` in `steps.json`, so a retry
-   never re-asks.
+3. Write each answer into the task's description line in `tasks.md`, so a
+   retry never re-asks.
 
 Confirm the check is stable too. Run `verify_cmd` twice before you dispatch. A
 worker cannot second-guess a flaky command. It will chase the noise and burn
@@ -115,23 +115,21 @@ The spec is the worker's whole world. Write it this way:
    this skill exists to produce.
 
 For a step bound to a scenario, `verify_cmd` is the whole-file test run
-`steps.json` already carries for that step, e.g. `node
---experimental-test-module-mocks --test packages/dod-guard/dist/cover/run.test.js`.
-Exit `0` passes, any other exit fails the step. Copy the command straight out
-of the step's own `verify_cmd` field rather than inventing a narrower one -
-that is the command `dod-guard steps` proved the scenario against.
+command resolved at startup from the cover lookup. Exit `0` passes, any
+other exit fails the step. Use the command the startup resolved for that
+task rather than inventing a narrower one.
 
 ```json
 {
   "goal": "TokenBucket.take(n) returns false once the bucket is empty and true again after one refill interval",
-  "verify_cmd": "npx vitest run src/limiter.test.ts",
+  "verify_cmd": "<project-test-command-for-this-file>",
   "cwd": "/absolute/path/to/repo",
   "allowed_files": ["src/limiter.ts"],
-  "context": "Requirement: WHEN take(n) is called on an empty bucket THEN it returns false. WHEN one refill interval has passed THEN it returns true again. src/limiter.test.ts already exists and is red. Copy the timer handling in src/backoff.ts. Use a monotonic clock. Add no dependencies.",
+  "context": "Requirement: WHEN take(n) is called on an empty bucket THEN it returns false. WHEN one refill interval has passed THEN it returns true again. The test file already exists and is red. Copy the timer handling in src/backoff.ts. Use a monotonic clock. Add no dependencies.",
   "strategy": "best-of-n",
   "fanout": 4,
   "budget_tokens": 30000,
-  "build_cmd": "npm run build"
+  "build_cmd": "<project-build-command>"
 }
 ```
 

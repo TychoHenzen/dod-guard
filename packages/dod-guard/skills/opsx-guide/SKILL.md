@@ -97,18 +97,16 @@ the "learn how this workflow works" option:
   through, no          specs delta            execution,          into main
   artifacts yet        design.md              gated on tests       specs
                         tasks.md
-                        steps.json
 
                        /opsx:update            /opsx:sync
                        revise the plan          merge without
-                       mid-flight,               archiving
-                       regenerate steps
+                       mid-flight                archiving
 
                         `-- or, for small scope --.
                                                     v
                                           /opsx:quick
                                           clarify -> minimal
-                                          artifacts -> steps ->
+                                          artifacts ->
                                           hands off to apply
                                           in one call
 
@@ -123,9 +121,9 @@ Artifacts by phase:
 
 - **Discover**: no artifacts required - `/opsx:explore` is for thinking
 - **Plan**: `openspec/changes/<id>/proposal.md`, `specs/<group>/<capability>/spec.md`
-  (the delta), `design.md`, `tasks.md`, `steps.json`
-- **Build**: tasks checked off in `tasks.md` and steps marked completed in
-  `steps.json` as `/opsx:apply` drives `/dod-guard:step-by-step`
+  (the delta), `design.md`, `tasks.md`
+- **Build**: tasks checked off and marked completed in `tasks.md` as
+  `/opsx:apply` drives `/dod-guard:step-by-step`
 - **Close**: the delta spec merges into `openspec/specs/<group>/<capability>/spec.md`,
   and the change directory moves into `openspec/changes/archive/`
 
@@ -226,12 +224,12 @@ every `/opsx:*` skill grouped by phase, one sentence each:
 
 **Plan**
 - `/opsx:propose` - generate a full proposal in one step: proposal, specs,
-  design, tasks, and a step plan.
+  design, and tasks.
 - `/opsx:quick` - lightweight flow for small, well-understood work: a few
-  clarifying questions, minimal artifacts, steps, and a hand-off to apply,
-  all in one call.
+  clarifying questions, minimal artifacts, and a hand-off to apply, all in
+  one call.
 - `/opsx:update` - revise a change's existing planning artifacts, keep them
-  coherent, regenerate `steps.json`, and re-validate.
+  coherent, and re-validate.
 
 **Build**
 - `/opsx:apply` - implement a change's tasks via step-by-step execution,

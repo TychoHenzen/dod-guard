@@ -1,12 +1,12 @@
 ---
 name: opsx-propose
-description: Propose a new change with all artifacts generated in one step, defaulting to the dod-guard-spec-driven schema and generating steps.json via the dod-guard CLI. Use when the user wants to describe what they want to build and get a complete proposal - proposal, specs, design, tasks, and a step plan - ready for implementation.
+description: Propose a new change with all artifacts generated in one step, defaulting to the dod-guard-spec-driven schema. Use when the user wants to describe what they want to build and get a complete proposal - proposal, specs, design, and tasks - ready for implementation.
 ---
 
 # opsx-propose
 
 Propose a new change - create the change and generate all artifacts in one
-step, then generate `steps.json` and validate before handoff.
+step, then validate before handoff.
 
 **Planning boundary**: This workflow creates planning artifacts only. The
 user request that selected or triggered this workflow authorizes planning
@@ -208,46 +208,25 @@ a description of what they want to build.
       - Ask the user to clarify
       - Then continue with creation
 
-6. **Generate steps.json**
-
-   Once `tasks.md` exists, generate the step plan:
-   ```bash
-   dod-guard steps "<name>"
-   ```
-   This reads `tasks.md`'s `<!-- covers: -->` annotations and writes
-   `openspec/changes/<name>/steps.json` with one step per task item.
-
-   A task whose `<!-- covers: -->` annotation binds to a test gets a
-   `verify_cmd`. A task with no annotation, or one naming an unwired or
-   failed scenario, becomes a step with `manual_required: true` and an
-   empty `verify_cmd`. `/step-by-step` holds that step at `pending` until
-   the user confirms it by hand.
-
-   Exit `3` means a usage error (for example, no such change). Fix the
-   change id and rerun rather than proceeding without `steps.json`.
-
-7. **Validate**
+6. **Validate**
    ```bash
    openspec validate "<name>" --strict --no-interactive
    ```
-   If validation reports errors, fix them in the affected artifact(s), then
-   re-run `dod-guard steps "<name>"` if `tasks.md` changed, and re-validate.
-   Repeat until validation passes before reporting the change as ready.
+   If validation reports errors, fix them in the affected artifact(s) and
+   re-validate. Repeat until validation passes before reporting the change
+   as ready.
 
-8. **Show final status**
+7. **Show final status**
    ```bash
    openspec status --change "<name>"
    ```
 
 **Output**
 
-After completing all artifacts, generating `steps.json`, and passing
-validation, summarize:
+After completing all artifacts and passing validation, summarize:
 - Change name and location
 - List of artifacts created with brief descriptions, plus any conditional
   artifact you skipped and why
-- Confirmation that `steps.json` was generated, and how many steps are
-  `manual_required`
 - What's ready: "All artifacts needed for implementation are ready and
   validation passes."
 - Prompt: "The artifacts are ready for review. When you are ready, run
@@ -291,6 +270,5 @@ validation, summarize:
 - If a change with that name already exists, ask whether the user wants
   to continue it or create a new one.
 - Verify each artifact file exists after writing before proceeding to next
-- Do not report the change as ready until `dod-guard steps` has run
-  against the final `tasks.md` and `openspec validate --strict
+- Do not report the change as ready until `openspec validate --strict
   --no-interactive` passes with no errors.

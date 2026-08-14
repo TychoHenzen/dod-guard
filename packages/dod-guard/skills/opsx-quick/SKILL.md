@@ -20,8 +20,7 @@ this machine. If the user names one or the work lives in one, run
 `--store <id>` on commands that read or write specs and changes (`new
 change`, `status`, `instructions`, `list`, `show`, `validate`, `archive`,
 `doctor`, `context`, `view`). Keep the flag on every applicable command
-for the rest of the workflow. `dod-guard steps` and `dod-guard cover` do
-not take `--store`.
+for the rest of the workflow. `dod-guard cover` does not take `--store`.
 
 **Input**: The user's request should include what they want to build, and
 optionally a change name. If no name is given, derive one in kebab-case
@@ -95,19 +94,13 @@ with `<!-- covers: <group>/<capability> :: <requirement title> ::
 
 An artifact whose `status` is already `skipped` must NOT be created.
 
-## Phase 3: Generate steps and validate
+## Phase 3: Validate
 
-```bash
-dod-guard steps "<name>"
-```
-
-Then validate:
 ```bash
 openspec validate "<name>" --strict --no-interactive
 ```
 
-If validation fails, fix the affected artifacts, regenerate steps if
-`tasks.md` changed, and re-validate.
+If validation fails, fix the affected artifacts and re-validate.
 
 **Task count warning**: If `tasks.md` has more than 8 items, warn the
 user that the full step-by-step pipeline will run inside this single

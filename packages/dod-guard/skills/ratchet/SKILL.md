@@ -1,6 +1,6 @@
 ---
 name: ratchet
-description: Execute an existing OpenSpec change autonomously, one sub-problem per loop iteration, until every step in its steps.json passes and dod-guard cover shows no regressions. Use when a problem has interdependent sub-problems, unknown unknowns, or real regression risk, and a single-shot attempt would waste tokens on wrong approaches. It needs a confirmed OpenSpec change id that already exists. It does not gather requirements and it does not write the change's spec deltas or tasks.md. Every iteration proves one sub-problem and then re-runs the whole document, so earlier work cannot silently break. It captures branches with gitevo and persists lessons at the end. Triggers - "solve with ratchet", "ratchet this", "ratcheting workflow", "run the change autonomously", "loop until the steps pass".
+description: Execute an existing OpenSpec change autonomously, one sub-problem per loop iteration, until every task in its tasks.md passes and dod-guard cover shows no regressions. Use when a problem has interdependent sub-problems, unknown unknowns, or real regression risk, and a single-shot attempt would waste tokens on wrong approaches. It needs a confirmed OpenSpec change id that already exists. It does not gather requirements and it does not write the change's spec deltas or tasks.md. Every iteration proves one sub-problem and then re-runs the whole document, so earlier work cannot silently break. It captures branches with gitevo and persists lessons at the end. Triggers - "solve with ratchet", "ratchet this", "ratcheting workflow", "run the change autonomously", "loop until the tasks pass".
 ---
 
 # Ratchet
@@ -36,22 +36,23 @@ Run these before any autonomous execution. Read-only work and checkpoints only.
 2. Call `evo_lessons` to read what earlier branches learned about this code.
 3. Call `get_impact_radius_tool` on the modules the change touches, to see the
    blast radius. Call `get_minimal_context_tool` for the files you will edit.
-4. Check for `openspec/changes/<change-id>/steps.json`. If it is missing, run
-   `dod-guard steps <change-id>` to generate it from the change's `tasks.md`.
-   If it exists, check it for staleness the same way `/dod-guard:step-by-step`
-   does: compare `openspec status --json --change <change-id>` artifact
-   statuses against the `plan_artifacts` snapshot recorded at generation time.
-   Stale state means asking the user whether to replace it (regenerate with
-   `dod-guard steps <change-id>`). Read every step's `status` in the file:
-   this is the prior state, since ratchet keeps no separate progress log.
+4. Check for `openspec/changes/<change-id>/tasks.md`. If it is missing, route
+   to `/dod-guard:interview` or `/opsx:propose`. If it exists, check it for
+   staleness the same way `/dod-guard:step-by-step` does: compare
+   `openspec status --json --change <change-id>` artifact statuses against the
+   `<!-- plan_artifacts: ... -->` snapshot in `tasks.md`. Stale state means
+   asking the user whether to re-resolve `verify_cmd`s. Read each task's
+   status from inline `<!-- status: -->` comments and checkbox marks: this is
+   the prior state, since ratchet keeps no separate progress log.
    Call `evo_summary` if a branch run started earlier.
 5. Probe which servers answer. Call `status()` for evomcp. Tell the user what
    is missing and read section 7 for what that costs. Never degrade in
    silence.
-6. Name the sub-problems from the `steps` array in `steps.json`. Each one is a
-   step with an `id` you can pass to a scoped check.
-7. Order the sub-problems by `deps`. A step whose output another step
-   consumes goes first. Record the order as a numbered list.
+6. Name the sub-problems from the tasks in `tasks.md`. Each one is a task
+   with an id you can pass to a scoped check.
+7. Order the sub-problems by the task order in `tasks.md`. A task whose
+   output another task consumes goes first. Record the order as a numbered
+   list.
 8. Call `evo_init`, then `evo_checkpoint` with a name like `baseline` and a
    description of the starting state.
 9. Show the user the ordered list and ask for approval.
@@ -105,10 +106,10 @@ Change: <change-id>
    after this sub-problem. Work only on that branch.
 2. Implement the sub-problem. Write the failing test first when the step's
    task description calls for test-first work.
-3. Verify the step: run its own `verify_cmd` from steps.json as a plain shell
-   command. Exit 0 passes. Any other exit code fails. A `manual_required` step
-   has no `verify_cmd` - hold it at pending and ask the user to confirm it by
-   hand instead of running anything.
+3. Verify the step: run its `verify_cmd` (resolved at startup from the cover
+   lookup) as a plain shell command. Exit 0 passes. Any other exit code fails.
+   A `manual_required` task has no `verify_cmd` - hold it at pending and ask
+   the user to confirm it by hand instead of running anything.
 4. On a failing exit code, repair and re-run step 3. Cap this at 3 repair
    attempts.
 5. Run the project formatter over the changed files. A stale format reads as a
@@ -150,7 +151,7 @@ implementation, spending one of the three repair attempts to fix the command is
 fine, but weakening it to force a pass is never acceptable - stop and ask the
 user instead.
 
-A step with no `verify_cmd` (`manual_required: true` in steps.json) is exactly
+A step with no `verify_cmd` (`manual_required`, resolved at startup) is exactly
 the human-judgment case. Collect those steps and hand them to the user at the
 end.
 
@@ -163,8 +164,7 @@ blocks the finish.
 
 1. Add a regression proof for each edge case the run turned up. Append a
    `### Requirement:`/`#### Scenario:` to the change's spec delta and a
-   matching `tasks.md` item carrying a `covers:` marker, then re-run
-   `dod-guard steps <change-id>` to regenerate `steps.json` with the new step.
+   matching `tasks.md` item carrying a `<!-- covers: -->` annotation.
    This is how the ratchet gains a tooth from what the run learned.
 2. Call `evo_adopt` with the winning branch, then `evo_finish`.
 3. Call `evo_export_lessons`, then `memory_save` with `type: "project"` and the
@@ -196,8 +196,8 @@ behavior, and its absence narrows the run without stopping it.
 
 When evomcp is present and a sub-problem has a clean scoped check, delegate it.
 Call `solve` with one `spec` object: `{goal, verify_cmd, cwd}`, where
-`verify_cmd` is the step's own command from `steps.json`, for example
-`node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js`.
+`verify_cmd` is the task's own command resolved at startup from the cover
+lookup.
 Add `strategy` as `"auto"`, `"best-of-n"`, or `"evolve"`, plus `budget_tokens`
 and `fanout` when you want to bound the run. Use `evolve` with `{goal,
 fitness_cmd, cwd, target_files}` only for a numeric score you want to push.

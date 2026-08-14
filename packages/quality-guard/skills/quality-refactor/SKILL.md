@@ -7,7 +7,8 @@ description: >-
   guard clauses instead of else, free functions instead of stateless methods,
   and aggressive deletion of dead, test-only, duplicate, and compatibility-shim
   code. Ships a zero-dependency scanner and opens an OpenSpec change to hold
-  its wave plan for /dod-guard:step-by-step to execute one file at a time.
+  its wave plan in tasks.md for /dod-guard:step-by-step to execute one file
+  at a time.
   TRIGGER when: user says "refactor this properly", "clean this up to a high
   standard", "enforce code quality", "quality pass", "reduce complexity",
   "split these files", "this file is too long", "remove dead code", or asks for
@@ -30,24 +31,25 @@ The plan sorts its steps into six waves, named below. Write one step per file pe
 touch two files becomes two steps. The single exception is a deletion that has to update its call sites,
 which stays one step.
 
-Write the waves as checklist items in the change's `tasks.md`, one section per wave in the order below. Write
-the step plan itself to the change's `steps.json`, in the shape `/dod-guard:step-by-step` reads: a goal, a
-`cwd`, a `plan_source`, and a `steps` array, each step carrying an id, a title, a description naming its
-refactoring, the files it touches, its deps, `manual_required`, a `pending` status, and a `verify_cmd`. Run
-`openspec instructions steps --change <id>` for the exact field list rather than working from memory here.
+Write the waves as checklist items in the change's `tasks.md`, one section per wave in the order below, in
+the shape `/dod-guard:step-by-step` reads: each task is a `- [ ]` checkbox line naming its refactoring and
+the concrete target, followed by inline HTML comment metadata directly beneath it - `<!-- status: pending
+-->`, `<!-- verify_cmd: ... -->`, `<!-- verify_surface: structural -->`, and `<!-- manual_required: false
+-->`. A refactor step covers no scenario, so it carries no `<!-- covers: -->` annotation.
 
-Set `verify_surface` to `structural` on every step you emit, with no exception. Passing tests and no fresh
+Set `verify_surface` to `structural` on every task you emit, with no exception. Passing tests and no fresh
 violations are what prove a refactor, rather than a compile that succeeded.
 
 Build every `verify_cmd` by joining the project test command and the ratchet check with `&&`. Expand `QS`
-into a real absolute path inside the file, because the worker who reads a step briefing has no shell history.
+into a real absolute path inside the comment, because the worker who reads a task briefing has no shell
+history.
 
-Name the refactoring in each `description`, taken from the catalog, such as Extract Function, Replace Nested
+Name the refactoring in each task's text, taken from the catalog, such as Extract Function, Replace Nested
 Conditional with Guard Clauses, or Introduce Parameter Object, and pair it with the concrete target. A
-deletion step says what to delete and what to migrate.
+deletion task says what to delete and what to migrate.
 
-Hold each step to one file plus that file's test file plus its call sites. Write `status` as `pending` on
-every new step. The executor is what later writes `completed`, `skipped` or `blocked`.
+Hold each task to one file plus that file's test file plus its call sites. Write `<!-- status: pending -->`
+on every new task. The executor is what later flips it to `completed`, `skipped`, or `blocked`.
 
 ## Wave order
 
@@ -220,10 +222,10 @@ plan. Then read those same files yourself for the five things no scanner sees, a
 change's `design.md` under one heading per category.
 
 **Phase 2.** Sort every unit into the six waves and hold that sequence. A file with violations in three waves
-yields three steps, one in each. Write the waves to the change's `tasks.md`, one checklist section per wave.
+yields three tasks, one in each. Write the waves to the change's `tasks.md`, one checklist section per wave.
 
-**Phase 3.** Write the change's `steps.json` in the shape described at the top of this skill, one step per
-file per wave, each with a resolved `verify_cmd` and a `description` that names its refactoring.
+**Phase 3.** Write each task's inline metadata in the shape described at the top of this skill, one task per
+file per wave, each with a resolved `verify_cmd` and task text that names its refactoring.
 
 **Phase 4.** Report to the user before any step runs: the number of files in scope, the total violation count
 with the error count called out, and anything in `design.md` that changes a public API or the file layout.

@@ -1,6 +1,6 @@
 ---
 name: opsx-update
-description: Revise an OpenSpec change's existing planning artifacts, keep them coherent with one another, regenerate steps.json when tasks change, and re-validate. Use when the user wants to revise a change's plan, fold new decisions into it, or reconcile its artifacts after an edit. Never edits code.
+description: Revise an OpenSpec change's existing planning artifacts, keep them coherent with one another, and re-validate. Use when the user wants to revise a change's plan, fold new decisions into it, or reconcile its artifacts after an edit. Never edits code.
 ---
 
 # opsx-update
@@ -17,21 +17,18 @@ read or write specs and changes (`new change`, `status`, `instructions`,
 `list`, `show`, `validate`, `archive`, `doctor`, `context`, `view`). Keep
 the flag on every applicable command for the rest of the workflow.
 
-Every unscoped example below is shorthand. `dod-guard steps` does not
-take `--store`. Without a store, commands act on the nearest local
-`openspec/` root.
+Every unscoped example below is shorthand. Without a store, commands
+act on the nearest local `openspec/` root.
 
 ## 2. Select the change
 
-**Input**: Optionally specify a change name. If omitted, check if it can be
-inferred from conversation context. If vague or ambiguous you MUST prompt for
-available changes.
+**Input**: Optionally specify a change name.
 
 If a name is provided, use it. Otherwise:
-- Infer from conversation context if the user mentioned a change
 - Auto-select if only one active change exists
-- If ambiguous, run `openspec list --json` to get available changes sorted
-  by most recently modified, and ask the user to select one
+- If zero or multiple active changes exist, run `openspec list --json`
+  to get available changes sorted by most recently modified, and ask
+  the user to select one
 
 When prompting, present the top 3-4 most recently modified changes as
 options, showing:
@@ -117,26 +114,9 @@ artifact and `openspec instructions "<artifact-id>" --change "<name>"
   openspec instructions "<artifact-id>" --change "<name>" --json
   ```
 
-## 7. Regenerate steps.json after any tasks.md edit
+## 7. Validate after each update
 
-If the confirmed edit touched `tasks.md` (a task added, reworded, removed,
-or its `<!-- covers: -->` annotation changed), regenerate the change's
-execution plan:
-
-```bash
-dod-guard steps "<name>"
-```
-
-This rewrites `openspec/changes/<name>/steps.json` from the current
-`tasks.md`, so a new task appears as a pending step and a reworded task's
-step description matches the new text. Report the result (success, or the
-usage/exit-code error if it fails). Skip this step entirely when the edit
-did not touch `tasks.md`.
-
-## 8. Validate after each update
-
-After writing any artifact revision (and after `dod-guard steps` ran, if
-it did), validate the change:
+After writing any artifact revision, validate the change:
 
 ```bash
 openspec validate "<name>" --strict --no-interactive
@@ -147,7 +127,7 @@ re-run validate. Repeat until it passes. If the fix is out of scope
 (for example, it needs an artifact that does not exist yet), defer to
 `/opsx:continue` and report the gap instead of forcing a fix.
 
-## 9. Point to the next step (guidance only - NEVER act on it)
+## 8. Point to the next step (guidance only - NEVER act on it)
 
 - Artifacts still missing -> suggest `/opsx:continue` to create them.
 - The user wants to implement, or the change is already implemented and
@@ -160,7 +140,6 @@ re-run validate. Repeat until it passes. If the fix is out of scope
 
 After each invocation, show:
 - Which artifacts were revised (and which proposed revisions were rejected)
-- Whether `steps.json` was regenerated
 - The result of `openspec validate`
 - Anything deferred to `/opsx:continue` (not-yet-created artifacts or files)
 - Where the change stands and the recommended next command
@@ -174,9 +153,8 @@ After each invocation, show:
   glob `resolvedOutputPath`.
 - Do not advance the build frontier: no new artifacts, no new files under
   glob artifacts - that is `/opsx:continue`'s job.
-- Confirm every edit with the user before writing.
-- Regenerate `steps.json` with `dod-guard steps "<name>"` after every
-  confirmed `tasks.md` edit, and re-validate after every confirmed edit.
+- Confirm every edit with the user before writing, and re-validate after
+  every confirmed edit.
 - If the request changes the change's *intent* rather than refining it,
   first verify whether the expanded-profile `/opsx:new` workflow is
   available. If it is, recommend starting fresh with `/opsx:new` (the
