@@ -1,7 +1,7 @@
 {
   "name": "dod-guard",
-  "version": "4.0.0",
-  "description": "OpenSpec scenario-coverage verification. Claude Code plugin with MCP server and 12 skills: /interview, /ratchet, /clean-house, /step-by-step, /cheap-step, /adversarial-workflow, /test-integrity-checker, /blind-rewrite, /tighten, /doc-reconcile, /skill-debug, and /skill-migrate.",
+  "version": "4.1.0",
+  "description": "OpenSpec scenario-coverage verification. Claude Code plugin with MCP server and 24 skills.",
   "type": "module",
   "main": "dist/bundle.js",
   "bin": {
