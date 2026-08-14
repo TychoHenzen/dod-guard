@@ -167,7 +167,8 @@
       "verify_surface": "config",
       "verify_cmd": "",
       "manual_required": true,
-      "status": "pending"
+      "status": "completed",
+      "verdict": "marketplace.json updated: 15 -> 21 skills"
     },
     {
       "id": "3.2",

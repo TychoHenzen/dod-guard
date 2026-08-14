@@ -57,5 +57,5 @@
 
 ## 3. Plugin configuration
 
-- [ ] 3.1 Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the six new skills in the description and update the skill count
+- [x] 3.1 Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the six new skills in the description and update the skill count
 - [ ] 3.2 Run `validate-plugins.mjs` and `check-skill-hygiene.mjs` to confirm all skills pass
