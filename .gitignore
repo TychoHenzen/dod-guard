@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
 
-# TypeScript (per-package .gitignore handles dist/ with bundle.js exceptions)
+# TypeScript (per-package .gitignore ignores dist/ entirely)
 *.tsbuildinfo
 
 # Tests & coverage

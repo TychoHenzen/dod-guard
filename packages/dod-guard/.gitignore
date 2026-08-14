@@ -5,11 +5,8 @@ node_modules/
 .idea/
 .vscode/
 
-# TypeScript compiler output (bundle.js is the distributed artifact)
-dist/**/*.js
-dist/**/*.d.ts
-dist/**/*.js.map
-!dist/bundle.js
+# TypeScript compiler output (CI publishes bundle.js to npm)
+dist/
 
 # Logs
 *.log

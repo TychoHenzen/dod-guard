@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Monorepo overview
 
-npm workspaces monorepo with five MCP server plugins for Claude Code, distributed via git-based marketplace + npm. Each package ships as a single `dist/bundle.js` (esbuild).
+npm workspaces monorepo with five MCP server plugins for Claude Code, distributed via npm. Each package builds to a single `dist/bundle.js` (esbuild). The git-based marketplace ships skills, agents, and plugin config; CI publishes the binary to npm.
 
 | Package | npm name | Purpose |
 |---------|----------|---------|
@@ -139,7 +139,7 @@ The gate builds and bundles `dod-guard` first, because a released binary
 cannot see this checkout's own scenarios and markers. That build step lives in
 `static-analysis` for the same reason the check itself does.
 
-**The marketplace installs from git, not npm.** `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo. `files[]` governs npm installs only. Git tracking governs what `/plugin` users actually get.
+**The marketplace installs from git, not npm.** `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo. `dist/bundle.js` is not tracked in git; CI publishes it to npm. The checkout carries skills, agents, hooks, and plugin config. `files[]` governs what npm includes in the tarball.
 
 ### OpenSpec spec layout
 
