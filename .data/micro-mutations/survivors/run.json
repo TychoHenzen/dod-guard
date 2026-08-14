@@ -1,0 +1,77 @@
+{
+  "source": "packages/dod-guard/src/cover/run.ts",
+  "date": "2026-08-14T07:58:12.513Z",
+  "summary": {
+    "total": 43,
+    "killed": 28,
+    "survived": 8,
+    "timeout": 0,
+    "unviable": 7
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/run.js",
+      "id": "22",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 30,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/run.js",
+      "id": "21",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 29,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/run.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 33,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/run.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 33,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/run.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 34,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/run.js",
+      "id": "26",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 34,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/run.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 35,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/run.js",
+      "id": "36",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 50,
+      "dist_col": 9
+    }
+  ]
+}
