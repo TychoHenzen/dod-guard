@@ -263,10 +263,8 @@ rtk git diff master...tighten/<date> --stat
 rtk git diff master...tighten/<date>
 ```
 2. Prove the branch green from a clean build, against every CI gate, not
-   only the target's suite:
-```bash
-rtk npm run clean && rtk npm run build && rtk npm test
-```
+   only the target's suite. Run the project's clean, build, and test
+   commands in sequence.
 3. Merge with `--no-ff` so each rewrite stays reviewable. Squashing erases
    the per-target boundary:
 ```bash

@@ -38,18 +38,13 @@ Files the user names are the files audited. Otherwise choose on recorded evidenc
 instinct. A mutant that survived is a logged case of this exact defect: one line of production code
 changed and the whole suite stayed green.
 
-Run inside this repository, `node scripts/mutation-queue.mjs` writes `.data/micro-mutations/queue.json`
-and ranks the least protective test files first. That script lives at the root of this repository
-alone, and ships in neither the plugin nor the npm package. A reader in another repository has no
-such list unless that project runs mutation testing itself.
-
-The file pairs `generated` with `queue`. Each `queue` entry names `source`, `test`, `date`, `summary`,
-`score`, `stale`, `unmapped` and `hotspots`. A `summary` names `total`, `killed`, `survived`,
-`timeout` and `unviable`, and each hotspot names `line`, `count` and `mutators`.
-Take the entries in order of `score`, highest first. A `stale` of true puts the survivor record before
-the current build and its line numbers past trusting, so rerun `scripts/micro-mutations.mjs` before
-touching those `hotspots`. A `test` of null means no test file exists, which calls for writing tests
-rather than auditing them, so log that entry and move down.
+If the project has a mutation-testing queue (e.g. a script that writes a
+ranked list of least-protective test files), use it. Each queue entry
+names a source file, its test file, a survival score, and hotspot line
+numbers. Take entries in order of score, highest first. A stale entry has
+line numbers that predate the current build, so rerun the mutation tool
+before touching those hotspots. An entry with no test file calls for
+writing tests rather than auditing them, so log it and move down.
 
 Without mutation data, pair the files by hand:
 
@@ -139,8 +134,9 @@ Where the change carries an OpenSpec delta, add a `#### Scenario:` naming the be
 corrected assertion now protects, and bind the test to it with a `covers:` marker directly above
 the test:
 
-```javascript
-// covers: <group>/<capability> :: <requirement title> :: <scenario title>
+```
+// covers: <group>/<capability> :: <requirement title> :: <scenario title>   (JS/TS/Go/Rust/C/Java)
+# covers: <group>/<capability> :: <requirement title> :: <scenario title>    (Python/Ruby/Shell)
 ```
 
 `dod-guard cover` then reports the scenario covered once the marker names a real test that exercises

@@ -70,7 +70,7 @@ rg --files | rg -i "^(old|legacy|compat|shims|deprecated|v[0-9])$|[\\/](old|lega
 ```
 
 ```
-rg -ln "_v[0-9]|[a-z](V[0-9]|Legacy|Compat|Shim)\b" -g "*.{ts,tsx,js,jsx,py,rs,go,cs,rb}"
+rg -ln "_v[0-9]|[a-z](V[0-9]|Legacy|Compat|Shim)\b" -g "*.{ts,tsx,js,jsx,py,rs,go,cs,rb,java,kt,swift}"
 ```
 
 ```
@@ -83,35 +83,18 @@ works on either separator. The third finds two implementations living in
 one file, which no filename scan reaches. The fourth finds one symbol
 defined in two places, so feed it names you already suspect.
 
-On a web project, add the route scan. Two handlers on one URL path is a
-pair even when both filenames look clean.
+On a web project, add a route scan. Two handlers on one URL path is a
+pair even when both filenames look clean. Use route-registration patterns
+for the project's framework, e.g. `router.get(`, `@Get(`, `@app.route(`,
+`r.HandleFunc(`. Group the hits by URL path. The same path under two
+prefixes, or under two version segments, is a candidate pair.
 
-```
-rg -n "(router|app)\.(get|post|put|patch|delete)\(|@(Get|Post|Put|Delete)\(" -g "*.{ts,js,py,rb,go}"
-```
+Also look for a barrel or re-export file still forwarding something that
+is gone. Search for re-export patterns in the project's language, e.g.
+`export .* from` in JS/TS, `__all__` in Python, `pub use` in Rust.
 
-```
-rg --files -g "route.{ts,js}" -g "handler.{ts,js}"
-```
-
-Group the hits by URL path. The same path under two prefixes, or under two
-version segments, is a candidate pair.
-
-Also look for a barrel file still re-exporting something that is gone.
-
-```
-rg -n "^export .* from ['\"]" -g "index.{ts,js}"
-```
-
-When the project has jscpd, add another signal:
-
-```
-npx jscpd src --min-tokens 50 --silent
-```
-
-That prints one prose line on stdout, of the form `Found 31 exact clones
-with 233(2.97%) duplicated lines in 49 (1 formats) files.` Read the
-percentage off that line. It writes no report file, and it prints no JSON.
+If the project has a copy-paste detection tool (jscpd, CPD, etc.), run it
+for another signal.
 
 Test a name pattern before you trust it. Run it, then count the lines it
 printed. A pattern that names a large share of the repository is measuring
@@ -261,9 +244,9 @@ with `mcp__code-review-graph__refactor_tool` at `mode="dead_code"`.
 Without it, trace the call path by hand. Find where the application wires
 things up, then follow the chain from there to the dying name.
 
-```
-rg -n "registerRoutes|app\.use|Router\(\)|createRouter|new Server" -g "*.{ts,js,py,rb,go}"
-```
+Search for the project's route or service registration patterns (e.g.
+`registerRoutes`, `app.use`, `app.route`, `r.HandleFunc`, `#[get(`).
+Use `rg` with a glob matching the project's source file extensions.
 
 Last, list dependencies whose only consumer is the dying side. Run the same
 sweep against the package name. A dependency left with no consumer goes in
@@ -308,11 +291,8 @@ Delete the test files that only covered the dying side, along with its
 fixtures, mocks, and test data. Those hits appear in your stage 3 sweep
 and would otherwise read as live references that block the removal.
 
-Remove a dependency whose only consumer just went.
-
-```
-npm remove zone-lookup
-```
+Remove a dependency whose only consumer just went, using the project's
+package manager (e.g. `npm remove`, `cargo remove`, `pip uninstall`).
 
 If a deletion turns out wrong, bring the file back from the last commit
 that held it.

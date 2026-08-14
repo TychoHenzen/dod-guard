@@ -129,15 +129,13 @@ switch: no agent authors its own passing grade.
 ### Binding a scenario to a test
 
 A scenario counts as covered only when a test carries a marker that names
-it. Write the marker on the line directly above the `test(` or `it(` call
-that exercises the scenario, in whatever test file already covers, or will
-cover, that behavior:
+it. Write the marker on the line directly above the test function call
+that exercises the scenario, using the comment syntax for the project's
+language:
 
-```typescript
-// covers: <group>/<capability> :: <requirement title> :: <scenario title>
-test("quotes a field with an embedded comma", () => {
-  ...
-});
+```
+// covers: <group>/<capability> :: <requirement title> :: <scenario title>   (JS/TS/Go/Rust/C/Java)
+# covers: <group>/<capability> :: <requirement title> :: <scenario title>    (Python/Ruby/Shell)
 ```
 
 `<group>/<capability>` is the spec's own id, the same path segments as

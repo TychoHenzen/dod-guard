@@ -59,14 +59,12 @@ Detect the tech stack by reading manifest files at the project root, in
 this order: `package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, and
 any `*.csproj` file.
 
-**A manifest is found:** Propose a `context` block for
-`openspec/config.yaml` naming the language, the test runner, and (when
-detectable) the bundler. For a Node.js project with a `typescript`
-dependency in `package.json`, name TypeScript as the language. Read
-`package.json`'s `scripts.test` and dependencies to find the test runner
-(`node:test`, `jest`, or `vitest`) and the bundler (`esbuild`, `webpack`,
-or `vite`). Show the proposed block to the user before writing it. Write
-it into `openspec/config.yaml` only if the user accepts.
+**A manifest is found:** Read the manifest to detect the language, the
+test command, and the build command. For each stack, use the same
+lightweight approach: find the manifest, extract the build and test
+commands it declares, and name the language. Show the proposed `context`
+block for `openspec/config.yaml` to the user before writing it. Write
+it only if the user accepts.
 
 **No recognizable manifest is found:** Ask the user to describe the tech
 stack. Write what they say into the `context` field of

@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-13T20:42:41.823Z",
-  "total": 843,
+  "total": 869,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -296,7 +296,11 @@
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
-    "packages/quality-guard/src/skips.ts"
+    "packages/quality-guard/src/skips.ts",
+    "scripts/ci/check-skill-hygiene.test.mjs",
+    "scripts/ci/fixtures/skill-hygiene.mjs",
+    "scripts/ci/lib/plugin-checks.mjs",
+    "scripts/ci/lib/skill-hygiene-rules.mjs"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -734,6 +738,16 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "scripts/ci/lib/skill-hygiene-rules.mjs::file-length": 1,
+    "scripts/ci/lib/skill-hygiene-rules.mjs::complexity": 1,
+    "scripts/ci/check-skill-hygiene.test.mjs::file-length": 1,
+    "scripts/ci/lib/plugin-checks.mjs::complexity": 10,
+    "scripts/ci/lib/plugin-checks.mjs::function-length": 2,
+    "scripts/ci/lib/plugin-checks.mjs::unnamed-tuple": 1,
+    "scripts/ci/lib/plugin-checks.mjs::file-length": 1,
+    "scripts/ci/lib/plugin-checks.mjs::nesting-depth": 1,
+    "scripts/ci/lib/plugin-checks.mjs::param-count": 2,
+    "scripts/ci/lib/plugin-checks.mjs::else-branch": 6
   }
 }

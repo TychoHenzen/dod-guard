@@ -23,16 +23,16 @@ root.
 
 `<capability-path>` is the spec directory relative to `specs/` (for example, `dod-guard/opsx-init` or `identity/user-auth`). It is `<group>/<capability>` - preserve the full path from each delta spec when resolving its main spec, which lives at `openspec/specs/<group>/<capability>/spec.md`.
 
-**Input**: Optionally specify a change name. If omitted, check if it can be inferred from conversation context. If vague or ambiguous you MUST prompt for available changes.
+**Input**: Optionally specify a change name.
 
 **Steps**
 
 1. **Select the change**
 
    If a name is provided, use it. Otherwise:
-   - Infer from conversation context if the user mentioned a change
    - Auto-select if only one active change exists
-   - If ambiguous, run `openspec list --json` to get available changes and ask the user to select one
+   - If zero or multiple active changes exist, run `openspec list --json`
+     to get available changes and ask the user to select one
 
    When prompting, show changes that have delta specs (under `specs/` directory).
 

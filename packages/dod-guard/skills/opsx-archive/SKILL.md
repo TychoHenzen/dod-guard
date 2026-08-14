@@ -27,19 +27,16 @@ root.
 `user-auth` or `identity/user-auth`). Preserve the full path from each delta
 spec when resolving its main spec.
 
-**Input**: Optionally specify a change name. If omitted, check if it can be
-inferred from conversation context. If vague or ambiguous you MUST prompt for
-available changes.
+**Input**: Optionally specify a change name.
 
 ## Steps
 
 ### 1. Select the change
 
 If a name is provided, use it. Otherwise:
-- Infer from conversation context if the user mentioned a change
 - Auto-select if only one active change exists
-- If two or more active changes exist and none was named, run `openspec
-  list --json` to get available changes and ask the user to select one
+- If zero or multiple active changes exist, run `openspec list --json`
+  to get available changes and ask the user to select one
 
 When prompting, show only active changes (not already archived). Include the
 schema used for each change if available.
@@ -190,7 +187,20 @@ context the rest of this workflow uses) and read its exit code:
 - **Exit 3 (usage error):** report the error `dod-guard cover` printed, and
   refuse to archive. Stop here.
 
-### 7. Perform the archive
+### 7. Code review gate
+
+Skipped entirely when the skip_specs check found `skip_specs: true`.
+
+Run `/code-review low` over the files the change touched. Determine the
+affected files by reading the tasks file and the change's spec to identify
+the packages and source paths listed in the impact section and capability
+modifications. Review only those files, not the entire repository.
+
+- **No findings:** proceed to the archive.
+- **One or more findings:** report the findings to the user and ask whether
+  to proceed or abort. The user may decide a finding is acceptable.
+
+### 8. Perform the archive
 
 Create an `archive` directory under `planningHome.changesDir` if it doesn't
 exist:
@@ -214,7 +224,7 @@ throughout. The `--yes` flag makes this non-interactive. The coverage
 gate (or the skip_specs exemption) already replaces the confirmation the
 generated skill would otherwise ask for.
 
-### 8. Display summary
+### 9. Display summary
 
 Show archive completion summary including:
 - Change name
@@ -248,8 +258,11 @@ Show archive completion summary including:
   separate user confirmation
 - Never archive on a coverage regression (exit 1) or a coverage error
   (exit 3) - report and stop
-- Skip the coverage gate only when `.openspec.yaml` sets `skip_specs: true`,
-  and in that case pass `--skip-specs` to `openspec archive`
+- The code review gate is advisory: the user can acknowledge findings and
+  proceed. The coverage gate is mandatory: a regression blocks the archive
+- Skip the coverage gate and the code review gate only when `.openspec.yaml`
+  sets `skip_specs: true`, and in that case pass `--skip-specs` to
+  `openspec archive`
 - Preserve `.openspec.yaml` when moving to archive (it moves with the
   directory)
 - Show clear summary of what happened, including the coverage gate result

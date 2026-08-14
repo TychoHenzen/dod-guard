@@ -1,0 +1,191 @@
+{
+  "goal": "skill-portability",
+  "cwd": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "plan_source": "skill-portability",
+  "plan_artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "skipped",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "done",
+      "requires": [
+        "specs",
+        "design"
+      ]
+    },
+    {
+      "id": "steps",
+      "outputPath": "steps.json",
+      "status": "ready",
+      "requires": [
+        "tasks"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "1.1",
+      "title": "Edit opsx-apply/SKILL.md: remove conversation-context inference for change selection",
+      "description": "Edit `opsx-apply/SKILL.md`: remove \"infer from conversation context\" for change selection. Keep the three-step resolution: argument, auto-select if one active change, prompt otherwise.",
+      "files": ["packages/dod-guard/skills/opsx-apply/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.2",
+      "title": "Edit opsx-update/SKILL.md: remove conversation-context inference for change selection",
+      "description": "Edit `opsx-update/SKILL.md`: same change as 1.1.",
+      "files": ["packages/dod-guard/skills/opsx-update/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.3",
+      "title": "Edit opsx-sync/SKILL.md: remove conversation-context inference for change selection",
+      "description": "Edit `opsx-sync/SKILL.md`: same change as 1.1.",
+      "files": ["packages/dod-guard/skills/opsx-sync/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.4",
+      "title": "Edit opsx-archive/SKILL.md: remove conversation-context inference for change selection",
+      "description": "Edit `opsx-archive/SKILL.md`: same change as 1.1.",
+      "files": ["packages/dod-guard/skills/opsx-archive/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.1",
+      "title": "Edit clean-house/SKILL.md: replace JS-only patterns with language-neutral equivalents",
+      "description": "Edit `clean-house/SKILL.md`: replace JS-only route patterns (`router.get`, `@Get`, `registerRoutes|app.use|Router()`), `npx jscpd`, `npm remove`, and `index.{ts,js}` barrel detection with language-neutral equivalents or angle-bracket placeholders.",
+      "files": ["packages/dod-guard/skills/clean-house/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.2",
+      "title": "Edit cheap-step/SKILL.md: replace project-specific example commands with placeholders",
+      "description": "Edit `cheap-step/SKILL.md`: replace `node --test packages/dod-guard/dist/...` example commands with `<project-test-command>` style placeholders.",
+      "files": ["packages/dod-guard/skills/cheap-step/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.3",
+      "title": "Edit ratchet/SKILL.md: replace project-specific example commands with placeholders",
+      "description": "Edit `ratchet/SKILL.md`: replace `node --test packages/dod-guard/dist/...` example commands with `<project-test-command>` style placeholders.",
+      "files": ["packages/dod-guard/skills/ratchet/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.4",
+      "title": "Edit tighten/SKILL.md: replace npm commands with generic placeholders",
+      "description": "Edit `tighten/SKILL.md`: replace `npm run clean && npm run build && npm test` in the merge procedure with `<project-clean-command> && <project-build-command> && <project-test-command>`.",
+      "files": ["packages/dod-guard/skills/tighten/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.5",
+      "title": "Edit interview/SKILL.md: show covers marker in multiple comment syntaxes",
+      "description": "Edit `interview/SKILL.md`: show the `// covers:` marker in multiple comment syntaxes (JS, Python, Rust, Go) instead of JS-only.",
+      "files": ["packages/dod-guard/skills/interview/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.6",
+      "title": "Edit test-integrity-checker/SKILL.md: replace project-specific paths, add multi-language markers",
+      "description": "Edit `test-integrity-checker/SKILL.md`: replace `scripts/mutation-queue.mjs` and `scripts/micro-mutations.mjs` with generic paths. Show the `// covers:` marker in multiple comment syntaxes.",
+      "files": ["packages/dod-guard/skills/test-integrity-checker/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "3.1",
+      "title": "Edit opsx-init/SKILL.md: replace deep Node.js detection with uniform lightweight detection",
+      "description": "Edit `opsx-init/SKILL.md`: replace the deep Node.js detection block (reading `package.json` scripts, identifying specific test runners and bundlers) with the same lightweight detection all other stacks already use: find the manifest, read build/test commands, report them.",
+      "files": ["packages/dod-guard/skills/opsx-init/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.1",
+      "title": "Run validate-plugins.mjs",
+      "description": "Run `validate-plugins.mjs` to confirm all edited SKILL.md files still pass manifest and reachability checks.",
+      "files": [],
+      "deps": ["1.1", "1.2", "1.3", "1.4", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "3.1"],
+      "verify_surface": "structural",
+      "verify_cmd": "node scripts/ci/validate-plugins.mjs",
+      "manual_required": false,
+      "status": "pending"
+    },
+    {
+      "id": "4.2",
+      "title": "Run check-skill-hygiene.mjs",
+      "description": "Run `check-skill-hygiene.mjs` to confirm no skill-hygiene rule is violated by the edits.",
+      "files": [],
+      "deps": ["4.1"],
+      "verify_surface": "structural",
+      "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs",
+      "manual_required": false,
+      "status": "pending"
+    }
+  ]
+}
