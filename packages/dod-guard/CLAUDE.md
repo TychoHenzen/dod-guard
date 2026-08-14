@@ -17,12 +17,11 @@ The bundled output is `dist/bundle.js` - this is what ships as the package entry
 
 ## Architecture
 
-**dod-guard** is a scenario-coverage tool, not a proof-tree verifier. It has
-two surfaces. `cover` checks whether OpenSpec scenarios are bound to tests.
-It also checks whether those tests actually execute the package's declared
-entry points. `steps` derives a `steps.json` execution plan from a change's
-`tasks.md`. It binds each task's `verify_cmd` through `cover` where a
-`<!-- covers: -->` annotation names a scenario.
+**dod-guard** is a scenario-coverage tool, not a proof-tree verifier. `cover`
+checks whether OpenSpec scenarios are bound to tests. It also checks whether
+those tests actually execute the package's declared entry points. A skill
+such as `/step-by-step` binds each `tasks.md` task's `verify_cmd` through
+`cover` where a `<!-- covers: -->` annotation names a scenario.
 
 ### Two entry points, one binary
 
@@ -32,7 +31,6 @@ entry points. `steps` derives a `steps.json` execution plan from a change's
 |------------|----------|
 | `dod-guard` (no args) | Starts the MCP stdio server (registers no tools - see `index.ts`) |
 | `dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]` | Reports each scenario as covered-and-integrated, covered-but-not-integrated, unwired, or failed against `.github/quality/coverage-gate-baseline.json`. One of `<change-id>` or `--all` is required; `--write-baseline` needs `--all`. Exits `0` no regressions / `1` a regression / `3` usage error |
-| `dod-guard steps <change-id> [--cwd=<dir>]` | Writes `openspec/changes/<id>/steps.json` from that change's `tasks.md`. Exits `0` on success / `3` usage error |
 
 See the `USAGE` string in `cli.ts` for the authoritative, always-current command reference.
 
@@ -78,7 +76,7 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | File | Role |
 |------|------|
 | `index.ts` | MCP server: registers no tools, starts stdio transport or delegates to the CLI |
-| `cli.ts` | Shell CLI: `dod-guard cover\|steps`, argument parsing, `USAGE` string, exit codes |
+| `cli.ts` | Shell CLI: `dod-guard cover`, argument parsing, `USAGE` string, exit codes |
 | `shell.ts` | `buildShellInvocation()` - the one place that knows how to reach a host shell (Windows quirks documented inline) |
 | `cover/run.ts` | `cover` top-level orchestration: enumerate scenarios, build the report, write or check against the ratchet baseline |
 | `cover/report.ts` | The three-outcome report: `buildReport()`, `Outcome`, `outcomeRank()`, `summarizeReport()` |
@@ -90,8 +88,6 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `cover/run-command.ts` | Builds the whole-file `node --test <dist file>` command a bound test runs by, for use as a `verify_cmd` |
 | `cover/dist-file.ts` | Maps a source test file to the compiled `dist/` file `node --test` actually loads |
 | `cover/package-dir.ts` | Maps a spec group to its package/tool directory and test file globs |
-| `openspec/steps-cli.ts` | `steps` command: reads `tasks.md`, runs `cover`'s enumerate+report in-process, writes `steps.json` |
-| `openspec/build-steps.ts` | Turns parsed task items plus a `cover` report into a `/step-by-step`-shaped `Step[]` |
 | `openspec/tasks-parser.ts` | Parses `tasks.md` checkbox items and their `<!-- covers: -->` annotations |
 | `openspec/requirements.ts` | Parses `### Requirement:` / `#### Scenario:` blocks out of a spec delta's markdown |
 | `openspec/requirement-block.ts` | Type: one `### Requirement:` heading plus its scenarios |
@@ -109,7 +105,7 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `interview` | Structured requirements gathering that writes scenarios into an OpenSpec change and marks how each binds to a test |
 | `ratchet` | Multi-step problem solving with verification gates |
 | `clean-house` | Hunt down duplicate/obsolete implementations |
-| `step-by-step` | Execute multi-step plans one atomic step at a time. An OpenSpec change also gets `openspec/changes/<id>/tasks.md`, checked off in the same update that marks a step completed in `steps.json` |
+| `step-by-step` | Execute multi-step plans one atomic step at a time. Reads and updates `openspec/changes/<id>/tasks.md`, checking off each task as it completes |
 | `cheap-step` | Step-by-step with evomcp cheap-worker fanout |
 | `adversarial-workflow` | 4-phase adversarial choreography (spec review, test audit, implementation review, structural gates) |
 | `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |

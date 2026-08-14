@@ -25,9 +25,6 @@ the feature. A real, pre-existing test.
   adopts a scenario it has never scored at whatever outcome `cover` finds. It
   fails a run only when a scenario it already scored regresses to a worse
   outcome. Existing debt is allowed. Making it worse is not
-- **A generated execution plan** - `steps` reads a change's `tasks.md` and
-  writes `openspec/changes/<id>/steps.json`, binding each task's `verify_cmd`
-  through `cover` where a `<!-- covers: -->` annotation names a scenario
 
 There is no proof tree, no predicate, and no command a model authors to grade
 its own work. The grade comes from whether a named, pre-existing test reached
@@ -67,8 +64,8 @@ npm install -g dod-guard
 
 The server registers **no tools**. Connecting to it over stdio (no CLI
 arguments) starts a bare MCP session with nothing to call. All of dod-guard's
-functionality - `cover` and `steps` - is a shell CLI, invoked the same binary
-by argument rather than through MCP tool calls.
+functionality - `cover` - is a shell CLI, invoked the same binary by argument
+rather than through MCP tool calls.
 
 ## CLI
 
@@ -78,7 +75,6 @@ stdio server; with arguments it runs a command:
 
 ```bash
 dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]
-dod-guard steps <change-id> [--cwd=<dir>]
 ```
 
 `cover` reports each scenario as `covered-and-integrated`,
@@ -86,18 +82,13 @@ dod-guard steps <change-id> [--cwd=<dir>]
 ratchet baseline. One of `<change-id>` or `--all` is required.
 `--write-baseline` needs `--all` - it replaces the whole baseline, and a
 change-scoped run only ever sees its own scenarios. `--cwd=<dir>` overrides
-the working directory for either command.
-
-`steps` derives `openspec/changes/<id>/steps.json` from that change's own
-`tasks.md`, binding each task's `verify_cmd` through `dod-guard cover` where a
-`<!-- covers: -->` annotation names a scenario.
+the working directory.
 
 Exit codes:
 
 | Command | `0` | Other |
 |---|---|---|
 | `cover` | no regressions against the baseline | `1` a regression, `3` usage error |
-| `steps` | wrote `steps.json` | `3` usage error |
 
 `dod-guard cover <change-id>` scoped to one change exits `0` when that
 change's scenarios show no regressions. That is what makes it usable as a
@@ -140,7 +131,7 @@ Executes a confirmed multi-step plan by dispatching one fresh subagent per
 atomic step. The orchestrator holds only the current step plus a compact
 result of the last one. That removes the pressure that makes models batch
 steps, skip verification, or wrap up early. Reads and writes
-`openspec/changes/<id>/steps.json` - an OpenSpec change id is required. Its
+`openspec/changes/<id>/tasks.md` - an OpenSpec change id is required. Its
 Finishing phase runs `dod-guard cover` and, on a clean result, `openspec
 archive`.
 

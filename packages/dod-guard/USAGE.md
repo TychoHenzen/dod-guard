@@ -90,7 +90,7 @@ OpenSpec change and marks how each one binds to a test. Never implements.
 
 ### `/dod-guard:step-by-step` - Sequential Multi-Step Execution
 
-**What it does:** Reads `openspec/changes/<id>/steps.json`, dispatches ONE
+**What it does:** Reads `openspec/changes/<id>/tasks.md`, dispatches ONE
 fresh subagent per atomic step, verifies the result, records it, and moves
 on. Orchestrator context stays lean - no batching, no shortcuts, no "I'll
 combine steps 3 and 4." The Finishing phase runs `dod-guard cover <id>` and,
@@ -122,18 +122,18 @@ verification. A step tagged `visual` or `gameplay` needs someone to actually
 look at it, or confirm it by hand.
 
 **Session state:** Everything lives in the committed
-`openspec/changes/<id>/steps.json` - there is no separate working-copy
+`openspec/changes/<id>/tasks.md` - there is no separate working-copy
 session file. A stale plan (goal mismatch, every step already done, or
 artifact statuses that drifted from the plan's snapshot) triggers a prompt
-to regenerate it with `dod-guard steps <id>`. A valid plan resumes from the
-first `pending` step.
+to the user about whether to re-resolve each task's `verify_cmd`. A valid
+plan resumes from the first uncompleted task.
 
 ---
 
 ### `/dod-guard:cheap-step` - Cheap-Worker Step Execution
 
 **What it does:** Same atomic-step discipline as step-by-step. Same
-`steps.json`, same staleness checks, same closing gate. One substitution:
+`tasks.md`, same staleness checks, same closing gate. One substitution:
 implementation goes to the evomcp `solve` tool, which runs cheap DeepSeek
 workers, instead of a dispatched host agent. The host model writes the
 instruction, runs `verify_cmd` itself, and decides the verdict.

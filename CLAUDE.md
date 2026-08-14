@@ -119,7 +119,7 @@ updated `package-lock.json` with the new package.
 
 `check-skill-hygiene.mjs` keeps a skill from taking back a job it does not own.
 OpenSpec owns a change's artifacts and the rules for authoring them, dod-guard
-owns proof, and a skill owns choreography. Ten rules, each selectable with
+owns proof, and a skill owns choreography. Seven rules, each selectable with
 `--rule=<name>`, and all of them run with no flag. They fail a skill that names
 a second home for the plan, carries its own predicate or category table, keeps
 a `dod_create` fallback, or runs with no change id. `--root=<dir>` points a rule
@@ -219,8 +219,8 @@ if (process.argv[1] === _filename) {
 
 ### OS awareness (dod-guard)
 
-A `verify_cmd` a `steps.json` step runs must reference tools available on the
-current platform - nothing in `dod-guard cover`/`steps` validates that for you
+A `verify_cmd` a `tasks.md` task runs must reference tools available on the
+current platform - nothing in `dod-guard cover` validates that for you
 before the step runs.
 
 Shell invocation is built by `buildShellInvocation()` in `src/shell.ts` - the
@@ -233,9 +233,9 @@ understand, silently mangling `findstr /C:"x" file` and `node -e "..."` into
 no-ops that exit 0. Never hand-roll shell escaping elsewhere.
 
 There is no `manual` predicate and no draft-leaf concept. A task with no
-`covers` annotation, or one naming an unwired/failed scenario, becomes a
-`manual_required: true` step in `steps.json` with an empty `verify_cmd` -
-`/step-by-step` holds it at `pending` until the user confirms it by hand.
+`covers` annotation, or one naming an unwired/failed scenario, becomes
+`manual_required` with no `verify_cmd` - `/step-by-step` holds it at
+`pending` until the user confirms it by hand.
 
 ### Biome config note
 
@@ -243,7 +243,7 @@ There is no `manual` predicate and no draft-leaf concept. A task with no
 
 ## Cross-package concerns
 
-- **evomcp -> dod-guard**: `verify_cmd` and `fitness_cmd` take **shell** commands. A step bound to a scenario via a `// covers:` marker uses that scenario's own whole-file test run command, e.g. `node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/steps-cli.test.js` - the same command `dod-guard steps` writes into `steps.json` for a bound step (`buildTestRunCommand` in `cover/run-command.ts`). Confirm any scenario's binding and reachability first with `dod-guard cover <change-id>`, exit `0` no regressions / `1` a regression / `3` usage error. There is no MCP tool equivalent - `cover` and `steps` are shell-only.
+- **evomcp -> dod-guard**: `verify_cmd` and `fitness_cmd` take **shell** commands. A task bound to a scenario via a `// covers:` marker uses that scenario's own whole-file test run command, e.g. `node --experimental-test-module-mocks --test packages/dod-guard/dist/cover/run.test.js` - the same command a bound task resolves as its `verify_cmd` (`buildTestRunCommand` in `cover/run-command.ts`). Confirm any scenario's binding and reachability first with `dod-guard cover <change-id>`, exit `0` no regressions / `1` a regression / `3` usage error. There is no MCP tool equivalent - `cover` is shell-only.
 - **gitevo → obsidian-rag**: `evo_export_lessons` outputs memory_save-compatible JSON for persistence
 - **evomcp → gitevo**: `gitevo-integration.ts` reads gitevo's SQLite memory bus (`.evo/memory.db`) to seed strategy prompts with past failures, elite solutions, and insights
 - **obsidian-rag**: Used by the session-start hook for memory injection across all packages
