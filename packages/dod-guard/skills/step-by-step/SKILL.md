@@ -18,35 +18,57 @@ record results. You never write implementation code.
 
 ## Before you start
 
-You need a confirmed OpenSpec change. No change means no work. Route to
-`/dod-guard:interview` or `/opsx:propose`, then come back. Every session
-runs against `openspec/changes/<id>/steps.json` and needs a change id.
+You need a confirmed OpenSpec change. No change means no work. Every
+session runs against `openspec/changes/<id>/tasks.md` and needs a
+change id. No `tasks.md` for that change means no work either: route to
+`/dod-guard:interview` or `/opsx:propose`, then come back.
 
-Check that file for staleness: wrong goal, every step already done,
-unknown status values, or missing `plan_source`. It is stale when
-`openspec status --json --change <id>` artifact statuses differ from the
-`plan_artifacts` snapshot at generation time. Stale state means asking
-the user whether to replace it (regenerate with `dod-guard steps <id>`).
-Valid state means resuming from the first `pending` step.
+Check the `<!-- plan_artifacts: ... -->` comment at the top of
+`tasks.md` for staleness. It is stale when `openspec status --json
+--change <id>` artifact statuses differ from that snapshot. Stale
+state means asking the user whether to re-resolve `verify_cmd`s (see
+Startup). Valid state means resuming from the first uncompleted task
+(`- [ ]` with no `blocked`/`skipped` status).
+
+## Startup
+
+Resolve every task's `verify_cmd` once, in memory, before presenting
+the plan.
+
+- Parse `tasks.md` into task items, each with its `<!-- covers: -->`
+  annotation if present.
+- For each task carrying a `covers` annotation, run `dod-guard cover
+  <change-id>` and look up that scenario's outcome. A covered outcome
+  gives its bound test's whole-file run command as the task's
+  `verify_cmd`, and `verify_surface` of `code` unless the task's own
+  `<!-- verify_surface: -->` annotation says otherwise.
+- A task whose scenario is unwired or failed, and any task with no
+  `covers` annotation at all, is `manual_required`. Do not attempt to
+  invent a `verify_cmd` for it.
+- Cache the resolved `verify_cmd`/`verify_surface`/`manual_required`
+  values for the session. Do not write them back into `tasks.md` -
+  they live in memory only, resolved fresh at the start of each
+  session.
 
 ## Three actors, three boundaries
 
 ### You (the orchestrator)
 
-- Present the plan for approval before executing anything. Show: goal,
-  step count, each title with its `verify_cmd`, a breakdown of
-  `verify_surface` types, and a count of the steps a human must confirm.
-  This is the only planned interruption.
+- Present the plan for approval before executing anything. Show: goal
+  (from the change's proposal), step count, each title with its
+  `verify_cmd`, a breakdown of `verify_surface` types, and a count of
+  the steps a human must confirm. This is the only planned
+  interruption.
 - Pick the right worker for each step (see dispatch table below).
 - Run `verify_cmd` yourself after every worker finishes. A worker's
   self-report informs your judgment. It does not replace the command.
 - Hold `manual_required` steps at `pending` until the user confirms.
-- Respect `deps`, not array order. A step starts only after all its
-  dependencies show `completed`.
-- After each verdict: update `steps.json`, keep Concerns and file lists
+- Respect the task order `tasks.md` lays out. A step starts only
+  after every earlier task in the file is resolved: `completed`, or
+  `skipped`/`blocked` with the user told.
+- After each verdict: update `tasks.md`, keep Concerns and file lists
   for the final report, then drop everything else about that step.
-  Carry forward only id, title, and verdict. Also check off the matching
-  item in `openspec/changes/<id>/tasks.md` (see Persistence).
+  Carry forward only id, title, and verdict (see Persistence).
 - When `verify_cmd` passes, commit the step's changes yourself. That
   commit is the rollback point. A failed or blocked step earns no
   commit. You commit. You never push. Pushing stays a human decision.
@@ -59,7 +81,7 @@ never name what correct means left regressions at 9.94 percent. Naming it
 cut them by about 70 percent.
 
 ```
-Task: {step description, verbatim from steps.json}
+Task: {step description, verbatim from tasks.md}
 Context: {what earlier steps produced}
 Requirement: {the scenario this step satisfies, its WHEN and THEN lines verbatim}
 Verification: {surface type}. Run exactly: {verify_cmd}
@@ -68,7 +90,7 @@ Files:
 - May modify: {paths}
 - Leave alone: {paths}
 Expected output: {concrete testable criteria}
-Working directory: {cwd}
+Working directory: {cwd, the current session's working directory}
 ```
 
 No scenario behind the step (plan-file and quality-refactor sessions have
@@ -131,43 +153,52 @@ build proves the compiler ran, nothing more.
 
 ## Persistence
 
-Session bookkeeping lives at `openspec/changes/<id>/steps.json`, committed
-like any other spec artifact. There is no other session store.
+Session bookkeeping lives entirely in `openspec/changes/<id>/tasks.md`,
+committed like any other spec artifact. There is no other session
+store, and no separate execution-plan file.
 
-**steps.json** carries the plan. Top level: `goal`, `cwd`, `plan_source`
-set to the change id, `plan_artifacts` (the `artifacts` array from
-`openspec status --json --change <id>`), and a `steps` array. Each entry
-holds `id`, `title`, `description`, `files` (array), `deps` (array),
-`verify_surface`, `verify_cmd` (a shell string where `&&` is valid),
-`manual_required` (bool), and `status`. Valid statuses: `pending`,
-`completed`, `skipped`, `blocked`. Ignore fields you do not recognize.
-`cheap-step` adds `mode` with values `cheap` or `host-only`.
+Each task is a single `- [ ]` / `- [x]` checkbox line. Inline metadata
+follows as HTML comments directly beneath it:
 
-Record each verdict as you go: id, what happened, and the shortest
-decisive evidence, folded into the step's own entry rather than a
-separate log.
+```
+- [ ] 1.1 Add the parser for inline metadata
+<!-- covers: dod-guard/step-by-step :: verify_cmd resolved at startup :: annotated task gets verify_cmd from cover -->
+<!-- status: pending -->
+<!-- verify_cmd: node --experimental-test-module-mocks --test packages/dod-guard/dist/openspec/tasks-parser.test.js -->
+<!-- verify_surface: code -->
+<!-- manual_required: false -->
+```
 
-**tasks.md** is the change's own task list at
-`openspec/changes/<id>/tasks.md`, in OpenSpec's own checklist format
-(`- [ ]` pending, `- [x]` done), one line per `steps.json` entry.
+`<!-- covers: ... -->` names the scenario, written by the plan's
+author. `<!-- verify_cmd: -->` and `<!-- verify_surface: -->` may be
+pre-filled by the plan's author too, but Startup resolves them fresh
+every session and this skill never writes them back to disk.
+`<!-- status: -->` is the one field this skill writes, and it holds
+the bare status word only: `pending`, `completed`, `skipped`, or
+`blocked`.
 
-A change that already has a `tasks.md`: match its existing lines to
-`steps.json` entries by task text, rather than overwriting it. Append any
-step that has no match. A change with none yet: write one from
-`steps.json` before the first step starts.
+Checked (`- [x]`) means `completed`. Unchecked (`- [ ]`) covers
+`pending`, `blocked`, and `skipped` alike - tell those three apart by
+the `<!-- status: -->` comment, never by the checkbox alone.
 
-Flip a line to `- [x]` in the same update where you set that step's
-`status` to `completed` in `steps.json`. That way `openspec status` never
-disagrees with your own record. A `skipped` or `blocked` step stays
-`- [ ]`.
+The task's own id, title, and verdict carry forward in your working
+memory for the final report (see Finishing) - `tasks.md` has no slot
+for verdict evidence, so do not write it there. Flip the checkbox to
+`- [x]` in the same update where you set `status: completed`. That way
+`openspec status` never disagrees with your own record. A `skipped` or
+`blocked` task keeps its checkbox at `- [ ]`.
+
+The `<!-- plan_artifacts: ... -->` comment near the top of `tasks.md`
+stores the staleness snapshot: the `artifacts` array from `openspec
+status --json --change <id>` at the time `verify_cmd`s were last
+resolved. Startup compares against it (see "Before you start").
 
 ## Callers
 
 These skills produce plans you execute: `/dod-guard:interview`,
 `/dod-guard:ratchet`, `/dod-guard:adversarial-workflow`,
 `/dod-guard:blind-rewrite`, `/quality-refactor`. `/opsx:propose` writes
-an OpenSpec change. A later `steps` artifact turns it into the
-steps.json you execute.
+`tasks.md` and the skill reads it directly.
 
 Under `adversarial-workflow`: finish at "steps done, tests pass, build
 clean" and stop. Do not review further.
