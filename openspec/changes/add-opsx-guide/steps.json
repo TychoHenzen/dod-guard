@@ -1,0 +1,72 @@
+{
+  "goal": "add-opsx-guide",
+  "cwd": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "plan_source": "add-opsx-guide",
+  "plan_artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "done",
+      "requires": ["proposal"]
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "done",
+      "requires": ["proposal"]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "done",
+      "requires": ["specs", "design"]
+    },
+    {
+      "id": "steps",
+      "outputPath": "steps.json",
+      "status": "done",
+      "requires": ["tasks"]
+    }
+  ],
+  "steps": [
+    {
+      "id": "1.1",
+      "title": "Create `packages/dod-guard/skills/opsx-guide/SKILL.md` with intent mapping, lifecycle diagram, concept explanations, worked examples, dashboard integration, and skill reference",
+      "description": "Create `packages/dod-guard/skills/opsx-guide/SKILL.md` with intent mapping, lifecycle diagram, concept explanations, worked examples, dashboard integration, and skill reference",
+      "files": ["packages/dod-guard/skills/opsx-guide/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.1",
+      "title": "Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the new skill",
+      "description": "Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the new skill",
+      "files": ["packages/dod-guard/.claude-plugin/marketplace.json", "packages/dod-guard/.claude-plugin/plugin.json", ".claude-plugin/marketplace.json"],
+      "deps": ["1.1"],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.2",
+      "title": "Run `validate-plugins.mjs` and `check-skill-hygiene.mjs` to confirm the new skill passes",
+      "description": "Run `validate-plugins.mjs` and `check-skill-hygiene.mjs` to confirm the new skill passes",
+      "files": [],
+      "deps": ["2.1"],
+      "verify_surface": "code",
+      "verify_cmd": "node scripts/ci/validate-plugins.mjs && node scripts/ci/check-skill-hygiene.mjs",
+      "manual_required": false,
+      "status": "pending"
+    }
+  ]
+}

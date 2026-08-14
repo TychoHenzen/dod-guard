@@ -1,0 +1,188 @@
+{
+  "goal": "override-opsx-skills",
+  "cwd": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "plan_source": "override-opsx-skills",
+  "plan_artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "done",
+      "requires": [
+        "specs",
+        "design"
+      ]
+    },
+    {
+      "id": "steps",
+      "outputPath": "steps.json",
+      "status": "done",
+      "requires": [
+        "tasks"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "1.1",
+      "title": "Create `packages/dod-guard/skills/opsx-explore/SKILL.md` with spec awareness, handoff to interview/propose, capability group awareness, and coverage context",
+      "description": "Create `packages/dod-guard/skills/opsx-explore/SKILL.md` with spec awareness, handoff to interview/propose, capability group awareness, and coverage context",
+      "files": [
+        "packages/dod-guard/skills/opsx-explore/SKILL.md"
+      ],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "Manual review confirmed by user"
+    },
+    {
+      "id": "1.2",
+      "title": "Create `packages/dod-guard/skills/opsx-propose/SKILL.md` with dod-guard-spec-driven schema default, steps generation via `dod-guard steps`, validation, and planning boundary",
+      "description": "Create `packages/dod-guard/skills/opsx-propose/SKILL.md` with dod-guard-spec-driven schema default, steps generation via `dod-guard steps`, validation, and planning boundary",
+      "files": [
+        "packages/dod-guard/skills/opsx-propose/SKILL.md"
+      ],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "Manual review confirmed by user"
+    },
+    {
+      "id": "1.3",
+      "title": "Create `packages/dod-guard/skills/opsx-apply/SKILL.md` with step-by-step routing, stale steps detection, coverage gate, and change selection",
+      "description": "Create `packages/dod-guard/skills/opsx-apply/SKILL.md` with step-by-step routing, stale steps detection, coverage gate, and change selection",
+      "files": [
+        "packages/dod-guard/skills/opsx-apply/SKILL.md"
+      ],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "Manual review confirmed by user"
+    },
+    {
+      "id": "1.4",
+      "title": "Create `packages/dod-guard/skills/opsx-update/SKILL.md` with steps regeneration, artifact coherence checks, validation, and planning boundary",
+      "description": "Create `packages/dod-guard/skills/opsx-update/SKILL.md` with steps regeneration, artifact coherence checks, validation, and planning boundary",
+      "files": [
+        "packages/dod-guard/skills/opsx-update/SKILL.md"
+      ],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "Manual review confirmed by user"
+    },
+    {
+      "id": "1.5",
+      "title": "Create `packages/dod-guard/skills/opsx-sync/SKILL.md` with intelligent merge for ADDED/MODIFIED/REMOVED operations, new capability creation, and path preservation",
+      "description": "Create `packages/dod-guard/skills/opsx-sync/SKILL.md` with intelligent merge for ADDED/MODIFIED/REMOVED operations, new capability creation, and path preservation",
+      "files": [
+        "packages/dod-guard/skills/opsx-sync/SKILL.md"
+      ],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "Manual review confirmed by user"
+    },
+    {
+      "id": "1.6",
+      "title": "Create `packages/dod-guard/skills/opsx-archive/SKILL.md` with coverage gate, skip-specs support, no-confirmation archive, and change selection",
+      "description": "Create `packages/dod-guard/skills/opsx-archive/SKILL.md` with coverage gate, skip-specs support, no-confirmation archive, and change selection",
+      "files": [
+        "packages/dod-guard/skills/opsx-archive/SKILL.md"
+      ],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "Manual review confirmed by user"
+    },
+    {
+      "id": "2.1",
+      "title": "Delete all six `.claude/skills/openspec-*` directories",
+      "description": "Delete all six `.claude/skills/openspec-*` directories",
+      "files": [
+        ".claude/skills/openspec-apply-change",
+        ".claude/skills/openspec-archive-change",
+        ".claude/skills/openspec-explore",
+        ".claude/skills/openspec-propose",
+        ".claude/skills/openspec-sync-specs",
+        ".claude/skills/openspec-update-change"
+      ],
+      "deps": [
+        "1.1",
+        "1.2",
+        "1.3",
+        "1.4",
+        "1.5",
+        "1.6"
+      ],
+      "verify_surface": "structural",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "All six .claude/skills/openspec-* directories deleted"
+    },
+    {
+      "id": "3.1",
+      "title": "Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the six new skills in the description and update the skill count",
+      "description": "Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the six new skills in the description and update the skill count",
+      "files": [
+        "packages/dod-guard/.claude-plugin/marketplace.json"
+      ],
+      "deps": [
+        "2.1"
+      ],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "completed",
+      "verdict": "marketplace.json updated: 15 -> 21 skills"
+    },
+    {
+      "id": "3.2",
+      "title": "Run `validate-plugins.mjs` and `check-skill-hygiene.mjs` to confirm all skills pass",
+      "description": "Run `validate-plugins.mjs` and `check-skill-hygiene.mjs` to confirm all skills pass",
+      "files": [],
+      "deps": [
+        "3.1"
+      ],
+      "verify_surface": "code",
+      "verify_cmd": "node scripts/ci/validate-plugins.mjs && node scripts/ci/check-skill-hygiene.mjs",
+      "manual_required": false,
+      "status": "completed",
+      "verdict": "validate-plugins.mjs and check-skill-hygiene.mjs both pass: 6 plugins, 24 skills, 24 agents, 7 hygiene rules"
+    }
+  ]
+}
