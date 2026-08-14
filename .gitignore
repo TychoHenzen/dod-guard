@@ -50,6 +50,9 @@ reports/
 # blind-rewrite scratch: quarantined original
 .blind/
 
+# spec-extract scratch: extracted spec files
+.spec-extract/
+
 # skill-migrate scratch: eval cases, sandboxes, benchmark runs
 .skill-migrate/
 

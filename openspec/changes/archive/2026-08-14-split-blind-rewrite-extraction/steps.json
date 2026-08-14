@@ -1,0 +1,169 @@
+{
+  "goal": "split-blind-rewrite-extraction",
+  "cwd": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "plan_source": "split-blind-rewrite-extraction",
+  "plan_artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "done",
+      "requires": [
+        "specs",
+        "design"
+      ]
+    },
+    {
+      "id": "steps",
+      "outputPath": "steps.json",
+      "status": "done",
+      "requires": [
+        "tasks"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "1.1",
+      "title": "Create `packages/dod-guard/skills/spec-extract/SKILL.md` with orchestration instructions for target classification, agent dispatch, output-format transform, file write, and OpenSpec merge",
+      "description": "Create `packages/dod-guard/skills/spec-extract/SKILL.md` with orchestration instructions for target classification, agent dispatch, output-format transform, file write, and OpenSpec merge",
+      "files": ["packages/dod-guard/skills/spec-extract/SKILL.md"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "1.2",
+      "title": "Add `.spec-extract/` to the repo `.gitignore` with a comment naming spec-extract as the writer",
+      "description": "Add `.spec-extract/` to the repo `.gitignore` with a comment naming spec-extract as the writer",
+      "files": [".gitignore"],
+      "deps": [],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.1",
+      "title": "Replace the inline extraction logic in `packages/dod-guard/skills/blind-rewrite/SKILL.md` with a delegation call to `/spec-extract`, keeping the banned-vocabulary screening and the human-review gate in blind-rewrite",
+      "description": "Replace the inline extraction logic in `packages/dod-guard/skills/blind-rewrite/SKILL.md` with a delegation call to `/spec-extract`, keeping the banned-vocabulary screening and the human-review gate in blind-rewrite",
+      "files": ["packages/dod-guard/skills/blind-rewrite/SKILL.md"],
+      "deps": ["1.1"],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "2.2",
+      "title": "Verify that the human-review gate still works with the file-based contract output from spec-extract",
+      "description": "Verify that the human-review gate still works with the file-based contract output from spec-extract",
+      "files": ["packages/dod-guard/skills/blind-rewrite/SKILL.md"],
+      "deps": ["2.1"],
+      "verify_surface": "structural",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "3.1",
+      "title": "Add `spec-extract` to `packages/dod-guard/.claude-plugin/plugin.json` skills list and update the skill count",
+      "description": "Add `spec-extract` to `packages/dod-guard/.claude-plugin/plugin.json` skills list and update the skill count",
+      "files": ["packages/dod-guard/.claude-plugin/plugin.json"],
+      "deps": ["1.1"],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "3.2",
+      "title": "Add `spec-extract` to `packages/dod-guard/.claude-plugin/marketplace.json`",
+      "description": "Add `spec-extract` to `packages/dod-guard/.claude-plugin/marketplace.json`",
+      "files": ["packages/dod-guard/.claude-plugin/marketplace.json"],
+      "deps": ["1.1"],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "3.3",
+      "title": "Update the root `.claude-plugin/marketplace.json` skill count",
+      "description": "Update the root `.claude-plugin/marketplace.json` skill count",
+      "files": [".claude-plugin/marketplace.json"],
+      "deps": ["3.1"],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "3.4",
+      "title": "Update `packages/dod-guard/CLAUDE.md` to list `/spec-extract` in the skill table",
+      "description": "Update `packages/dod-guard/CLAUDE.md` to list `/spec-extract` in the skill table",
+      "files": ["packages/dod-guard/CLAUDE.md"],
+      "deps": ["1.1"],
+      "verify_surface": "config",
+      "verify_cmd": "",
+      "manual_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "4.1",
+      "title": "Run `node scripts/ci/validate-plugins.mjs` and confirm the new skill passes manifest agreement, reachability, and description honesty checks",
+      "description": "Run `node scripts/ci/validate-plugins.mjs` and confirm the new skill passes manifest agreement, reachability, and description honesty checks",
+      "files": [],
+      "deps": ["3.1", "3.2", "3.3", "3.4"],
+      "verify_surface": "code",
+      "verify_cmd": "node scripts/ci/validate-plugins.mjs",
+      "manual_required": false,
+      "status": "pending"
+    },
+    {
+      "id": "4.2",
+      "title": "Run `node scripts/ci/check-skill-hygiene.mjs` and confirm spec-extract passes all ten rules",
+      "description": "Run `node scripts/ci/check-skill-hygiene.mjs` and confirm spec-extract passes all ten rules",
+      "files": [],
+      "deps": ["1.1"],
+      "verify_surface": "code",
+      "verify_cmd": "node scripts/ci/check-skill-hygiene.mjs",
+      "manual_required": false,
+      "status": "pending"
+    },
+    {
+      "id": "4.3",
+      "title": "Run `openspec validate --change split-blind-rewrite-extraction --strict` and confirm the change validates",
+      "description": "Run `openspec validate --change split-blind-rewrite-extraction --strict` and confirm the change validates",
+      "files": [],
+      "deps": ["4.1", "4.2"],
+      "verify_surface": "code",
+      "verify_cmd": "openspec validate --change split-blind-rewrite-extraction --strict --no-interactive",
+      "manual_required": false,
+      "status": "pending"
+    }
+  ]
+}

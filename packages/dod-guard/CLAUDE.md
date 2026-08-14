@@ -117,6 +117,8 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `tighten` | Autonomous blind-rewrite loop against accidental complexity. One target per invocation, ranked by structural violations times git return-churn, gated on both difference and reduction |
 | `skill-debug` | Debug a skill from the sessions that ran it. `find-runs.mjs` locates every recent run in `~/.claude/projects`, `extract-run.mjs` compacts one into a numbered trace, and the skill aligns that against what the SKILL.md required |
 | `skill-migrate` | Migrate a SKILL.md, agent definition, CLAUDE.md, memory file, or instinct file to post-4.6 models via blind rewrite. Extracts a behavioral contract, classifies scaffolding vs essential instructions, and blind-rewrites the artifact. `migration-check.mjs` resolves the artifact kind, scores it against that kind's own check set and weight table renormalized to 100, and refuses to compare a baseline of one kind against a run of another |
+| `spec-extract` | Extract an exhaustive OpenSpec-format behavioral spec from any code or prose target without deleting it. Dispatches `blind-contract-extractor` or `blind-prose-contract-extractor`, transforms the report into requirements and scenarios, and writes it as a spec file. Used standalone or as the extraction step inside `blind-rewrite` |
+| `opsx-guide` | Interactive guide to the OpenSpec workflow and the `/opsx:*` skills. Reads the project's real specs and coverage state, routes to the right skill. Never writes code or creates a change |
 
 ## Lessons
 

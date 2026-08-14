@@ -124,7 +124,9 @@ Find every copy of the target the author could reach: build output, rendered doc
 
 ### Phase 2: Extract contract
 
-Dispatch `dod-guard:blind-contract-extractor` for code targets, or `dod-guard:blind-prose-contract-extractor` for prose targets. The extractor returns: boundary and census (code) or dependency census (prose), `REQUIRED` and `OBSERVED` claims, leak paths, and banned vocabulary. Check every contract line against banned vocabulary before passing it to the author. When Phase 0 found a covering spec or change, merge its OpenSpec-sourced `REQUIRED` claims into the contract (see above) before Phase 3.
+Invoke `/spec-extract` with the target path. Write the output to `.blind/contract.spec.md`. The skill produces an OpenSpec-format spec with requirements, scenarios, and three appendix sections: usage census, leak list, and banned vocabulary.
+
+After `/spec-extract` finishes, strip the banned-vocabulary and leak-list appendix sections from the file before any contract line reaches the author. Read the banned-vocabulary list first and screen every remaining contract line against it. A line that contains a banned name gets rewritten to describe the behavior without naming the interior. The stripped appendices are orchestrator input, never author input.
 
 ### Phase 3: Human review
 

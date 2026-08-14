@@ -1,6 +1,6 @@
 ## 1. opsx-guide skill
 
-- [ ] 1.1 Create `packages/dod-guard/skills/opsx-guide/SKILL.md` with intent mapping, lifecycle diagram, concept explanations, worked examples, dashboard integration, and skill reference
+- [x] 1.1 Create `packages/dod-guard/skills/opsx-guide/SKILL.md` with intent mapping, lifecycle diagram, concept explanations, worked examples, dashboard integration, and skill reference
 <!-- covers: dod-guard/opsx-guide :: Intent mapping :: User wants to build something new -->
 <!-- covers: dod-guard/opsx-guide :: Intent mapping :: User wants to understand their specs -->
 <!-- covers: dod-guard/opsx-guide :: Intent mapping :: User wants to fix a bug -->
@@ -15,5 +15,5 @@
 
 ## 2. Plugin configuration
 
-- [ ] 2.1 Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the new skill
-- [ ] 2.2 Run `validate-plugins.mjs` and `check-skill-hygiene.mjs` to confirm the new skill passes
+- [x] 2.1 Update `packages/dod-guard/.claude-plugin/marketplace.json` to list the new skill
+- [x] 2.2 Run `validate-plugins.mjs` and `check-skill-hygiene.mjs` to confirm the new skill passes
