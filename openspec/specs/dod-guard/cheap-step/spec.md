@@ -2,22 +2,20 @@
 
 ## Purpose
 Skill that executes a confirmed multi-step plan like `/step-by-step`, substituting each eligible step's implementation with the evomcp `solve` tool running cheap DeepSeek workers instead of host agents.
-
 ## Requirements
-
 ### Requirement: inherits step-by-step base discipline
-The skill SHALL follow the same splitting, approval, `steps.json` persistence, staleness checks, dependency ordering, four statuses, verdict gate, repair cap, record-and-flush, closing integration, and final report as `/step-by-step`. The only substitution is the implementation dispatch mechanism.
+The skill SHALL follow the same splitting, approval, `tasks.md` persistence, staleness checks, dependency ordering, four statuses, verdict gate, repair cap, record-and-flush, closing integration, and final report as `/step-by-step`. The only substitution is the implementation dispatch mechanism.
 
 #### Scenario: step ordering matches step-by-step
-- **WHEN** `steps.json` defines dependencies between steps
-- **THEN** the skill executes steps in dependency order, the same as `/step-by-step` would
+- **WHEN** tasks.md defines sequential tasks
+- **THEN** the skill executes tasks in source order, the same as `/step-by-step` would
 
 #### Scenario: branch check after solve returns
 - **WHEN** solve returns and the checked-out branch differs from the session branch
 - **THEN** the skill switches back to the session branch before committing
 
 #### Scenario: commit after verified step
-- **WHEN** a step's verify_cmd passes
+- **WHEN** a task's verify_cmd passes
 - **THEN** the skill commits on the session branch as the base discipline requires
 
 ### Requirement: evomcp status check before first dispatch
@@ -32,23 +30,23 @@ The skill SHALL call the evomcp `status` tool before dispatching any step to `so
 - **THEN** the skill proceeds with cheap dispatch for eligible steps
 
 ### Requirement: per-step mode classification
-Each step in `steps.json` SHALL carry a `mode` field: `cheap` (eligible for solve dispatch) or `host-only` (must run on the host). Visual/gameplay, design/architecture, security-sensitive, and wide-scope (more than 3 files) steps SHALL be classified as `host-only`.
+Each task in `tasks.md` SHALL be classified as `cheap` (eligible for solve dispatch) or `host-only` (must run on the host). Visual/gameplay, design/architecture, security-sensitive, and wide-scope (more than 3 files) tasks SHALL be classified as `host-only`. The classification is determined at startup and does not require a `mode` field in `tasks.md`.
 
 #### Scenario: security-sensitive step stays on host
-- **WHEN** a step involves authentication or credential handling
-- **THEN** its mode is `host-only` and it dispatches to a host agent, not to `solve`
+- **WHEN** a task involves authentication or credential handling
+- **THEN** it is classified as `host-only` and dispatches to a host agent, not to `solve`
 
 #### Scenario: visual verification stays on host
-- **WHEN** a step's verify_surface is visual or gameplay
-- **THEN** its mode is `host-only` because the worker cannot see rendered output
+- **WHEN** a task's verify_surface is visual or gameplay
+- **THEN** it is classified as `host-only` because the worker cannot see rendered output
 
 #### Scenario: narrow step dispatches to solve
-- **WHEN** a step has no security concern, no design decision, and touches 3 or fewer files
-- **THEN** its mode is `cheap`
+- **WHEN** a task has no security concern, no design decision, and touches 3 or fewer files
+- **THEN** it is classified as `cheap`
 
 #### Scenario: mode split reported at plan approval
 - **WHEN** the plan is presented for user approval
-- **THEN** the skill reports how many steps go to cheap vs host-only
+- **THEN** the skill reports how many tasks go to cheap vs host-only
 
 ### Requirement: solve spec includes verify_cmd
 Each `solve` dispatch SHALL include a spec with at least `goal`, `verify_cmd`, and `cwd`. The `verify_cmd` SHALL be tested twice for flakiness before dispatch. Ambiguities SHALL be resolved via `AskUserQuestion` before writing the spec, because solve workers have no way to ask.
@@ -98,3 +96,4 @@ The skill SHALL retry a failed `solve` dispatch at most twice with a more specif
 #### Scenario: backend down switches to base
 - **WHEN** two failures never reach a verify result and status shows the proxy is down
 - **THEN** the skill tells the user and switches all remaining steps to host dispatch
+

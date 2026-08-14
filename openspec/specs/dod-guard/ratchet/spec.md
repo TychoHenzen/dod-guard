@@ -2,23 +2,21 @@
 
 ## Purpose
 Skill that executes an existing OpenSpec change autonomously in a loop, solving one sub-problem per iteration, re-running the whole verification document each time so earlier work cannot silently break. Captures branches with gitevo and persists lessons at the end.
-
 ## Requirements
-
 ### Requirement: requires a confirmed OpenSpec change id
-The skill SHALL NOT gather requirements or write spec deltas. It requires an existing, confirmed OpenSpec change id with `steps.json` already generated. When no change id is provided, the skill SHALL route to `/interview` or `/opsx:propose`.
+The skill SHALL NOT gather requirements or write spec deltas. It requires an existing, confirmed OpenSpec change id with `tasks.md` already written. When no change id is provided, the skill SHALL route to `/interview` or `/opsx:propose`.
 
 #### Scenario: no change id provided
 - **WHEN** the user invokes `/ratchet` without a change id
 - **THEN** the skill routes to `/interview` to gather requirements first
 
 #### Scenario: change id provided but steps.json missing
-- **WHEN** the user provides a change id and no steps.json exists for it
-- **THEN** the skill generates steps.json with `dod-guard steps` before starting the loop
+- **WHEN** the user provides a change id and no tasks.md exists for it
+- **THEN** the skill routes to `/opsx:propose` or `/interview` to create the task list first
 
 #### Scenario: change id with existing steps.json
-- **WHEN** the user provides a change id and a valid steps.json already exists
-- **THEN** the skill reads the prior state from steps.json and resumes from the first `pending` step
+- **WHEN** the user provides a change id and a valid tasks.md already exists
+- **THEN** the skill reads the prior state from tasks.md and resumes from the first uncompleted task
 
 ### Requirement: routing to the right executor
 The skill SHALL evaluate the plan shape before starting its loop. It SHALL route to `/step-by-step` for straightforward sequential plans, `/cheap-step` for plans with 5 or more cheap-eligible steps, and `/adversarial-workflow` for work needing phased review. It stays with ratchet only when the work has interdependent sub-problems, unknown unknowns, or real regression risk.
@@ -132,3 +130,4 @@ The skill SHALL use `ScheduleWakeup` with 60-120 second delays between iteration
 #### Scenario: missing wakeup kills the loop
 - **WHEN** an iteration ends without calling `ScheduleWakeup`
 - **THEN** the loop receives one fallback wakeup after roughly 20 minutes, then dies
+

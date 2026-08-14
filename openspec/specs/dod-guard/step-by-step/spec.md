@@ -2,9 +2,7 @@
 
 ## Purpose
 Executes a confirmed multi-step plan one atomic step at a time. Dispatches each step to a specialized worker agent, verifies the result, and persists progress directly in `tasks.md` so interrupted sessions can resume.
-
 ## Requirements
-
 ### Requirement: one step at a time, no parallel execution
 The skill SHALL execute exactly one step per cycle. It SHALL NOT start a new step until the current step's verification passes or its repair budget is exhausted. Steps SHALL execute in dependency order as defined in `tasks.md`.
 
@@ -69,35 +67,22 @@ Each step SHALL have a repair budget of two attempts. When both fail, the skill 
 - **WHEN** both attempts under the original description fail and the first attempt under the rewritten description passes
 - **THEN** the step is marked completed
 
-### Requirement: persistence in steps.json
-The skill SHALL write each step's status to `steps.json` after each state change. Valid states are `pending`, `completed`, `skipped`, and `blocked`. A new session SHALL resume from the last persisted state.
-
-#### Scenario: session interruption and resume
-- **WHEN** a session ends with the third step in progress and the first two completed
-- **THEN** a new session reads `steps.json` and resumes from the third step
-
-#### Scenario: tasks.md line checked off with step completion
-- **WHEN** a step's status changes to `completed` in steps.json
-- **THEN** the matching line in tasks.md flips from `- [ ]` to `- [x]` in the same update
-
-#### Scenario: skipped or blocked step stays unchecked
-- **WHEN** a step is marked `skipped` or `blocked`
-- **THEN** its tasks.md line stays at `- [ ]`
-
 ### Requirement: steps.json staleness check
-Before executing, the skill SHALL check whether `steps.json` is stale. It is stale when `openspec status --json --change <id>` artifact statuses differ from the `plan_artifacts` snapshot recorded at generation time. Stale state means asking the user whether to regenerate.
+Before executing, the skill SHALL check whether the change's artifact statuses from `openspec status --json` have changed since the last run. It SHALL store the snapshot as a `<!-- plan_artifacts: ... -->` comment at the top of `tasks.md`. Divergence means asking the user whether to re-resolve verify_cmds.
+
+When `tasks.md` does not exist, the skill SHALL route to `/dod-guard:interview` or `/opsx:propose`.
 
 #### Scenario: artifact statuses diverge from snapshot
-- **WHEN** the artifact statuses from `openspec status` differ from the `plan_artifacts` snapshot in steps.json
-- **THEN** the skill asks the user whether to regenerate steps.json via `dod-guard steps`
+- **WHEN** the artifact statuses from `openspec status` differ from the `<!-- plan_artifacts: ... -->` snapshot in tasks.md
+- **THEN** the skill asks the user whether to re-resolve verify_cmds
 
 #### Scenario: steps.json is fresh
-- **WHEN** artifact statuses match the `plan_artifacts` snapshot
-- **THEN** the skill resumes from the first `pending` step without regenerating
+- **WHEN** artifact statuses match the snapshot
+- **THEN** the skill resumes from the first uncompleted task without re-resolving
 
 #### Scenario: steps.json is missing
-- **WHEN** no steps.json exists for the change
-- **THEN** the skill generates it with `dod-guard steps`
+- **WHEN** no tasks.md exists for the change
+- **THEN** the skill routes to `/dod-guard:interview` or `/opsx:propose` and does not proceed
 
 ### Requirement: closing integration check and coverage
 After all steps pass, the skill SHALL run the full build and test suite. On a green result it SHALL run `dod-guard cover` on the change. It SHALL run `openspec archive` when `dod-guard cover` exits 0.
@@ -128,3 +113,4 @@ Steps with `manual_required: true` and an empty `verify_cmd` SHALL remain at `pe
 #### Scenario: only the user can skip a step
 - **WHEN** the orchestrator determines a step cannot be verified automatically
 - **THEN** it holds the step at `pending` rather than skipping on the user's behalf
+
