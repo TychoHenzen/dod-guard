@@ -5,8 +5,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { filesCovers, readFrontmatter, walkStrings } from "./fs-utils.mjs";
 
-// biome-ignore lint/suspicious/noTemplateCurlyInString: this is Claude Code's literal placeholder syntax
-const BUNDLE_ARG = "${CLAUDE_PLUGIN_ROOT}/dist/bundle.js";
 const PLUGIN_ROOT_REF = /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'\s]+)/g;
 // Model names and built-in agents are legal subagent_type values with no agent file.
 const BUILTIN_AGENTS = new Set(["sonnet", "opus", "haiku", "general-purpose", "Explore", "Plan", "claude"]);
@@ -87,9 +85,10 @@ export function createPluginChecks(report) {
       return report(file, `mcpServers must hold exactly one key named "${pkg.name}", got [${servers.join(", ")}]`);
     }
     const server = config.mcpServers[pkg.name];
-    if (server.command !== "node") report(file, `command must be "node", got ${JSON.stringify(server.command)}`);
-    if (server.args?.[0] !== BUNDLE_ARG)
-      report(file, `args[0] must be "${BUNDLE_ARG}", got ${JSON.stringify(server.args?.[0])}`);
+    if (server.command !== "npx")
+      report(file, `command must be "npx", got ${JSON.stringify(server.command)}`);
+    if (server.args?.[0] !== pkg.name)
+      report(file, `args[0] must be "${pkg.name}", got ${JSON.stringify(server.args?.[0])}`);
   }
 
   function checkHookTargets(pkg, file, plugin, manifest) {
