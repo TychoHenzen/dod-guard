@@ -84,10 +84,11 @@ function authoringCopies(skill) {
   if (named.length >= VOCABULARY_COPY_FLOOR) {
     bad.push(`${skill.path} names ${named.length} predicate types, so it holds a second copy of the vocabulary`);
   }
-  // Naming a step field in prose is fine. The schema template is the one
-  // place that spells the shape out, so a literal is the copy.
-  const literal = (skill.text.match(/```[\s\S]*?```/g) ?? []).some((b) => b.includes("verify_surface"));
-  if (literal) bad.push(`${skill.path} spells out the steps.json shape in a literal`);
+  // A JSON literal spelling out the old steps.json shape is a copy. HTML
+  // comment examples (`<!-- verify_surface: code -->`) are fine - that is
+  // the tasks.md inline metadata format skills document directly.
+  const jsonLiteral = (skill.text.match(/```json[\s\S]*?```/g) ?? []).some((b) => b.includes("verify_surface"));
+  if (jsonLiteral) bad.push(`${skill.path} spells out the steps.json shape in a JSON literal`);
   return bad;
 }
 
@@ -99,9 +100,9 @@ export const RULES = {
 
   "plan-home": (root) =>
     requireOneSkill(root, "step-by-step", (skill) =>
-      /openspec\/changes\/<id>\/steps\.json/.test(skill.text)
+      /openspec\/changes\/<id>\/tasks\.md/.test(skill.text)
         ? []
-        : [`${skill.path} does not name openspec/changes/<id>/steps.json as the plan home`],
+        : [`${skill.path} does not name openspec/changes/<id>/tasks.md as the plan home`],
     ),
 
   "no-authoring-copy": (root) => skills(root).flatMap(authoringCopies),

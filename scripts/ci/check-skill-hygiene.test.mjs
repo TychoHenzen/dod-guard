@@ -86,10 +86,10 @@ const cases = [
   },
   {
     rule: "no-authoring-copy",
-    why: "a skill spells out the steps.json shape",
+    why: "a skill spells out the steps.json shape in a JSON literal",
     break: (root) =>
       write(root, SKILL.refactor, 'Set `skip_specs: true`.\n\n```json\n{ "verify_surface": "code" }\n```\n'),
-    expect: /spells out the steps\.json shape/,
+    expect: /spells out the steps\.json shape in a JSON literal/,
   },
   {
     rule: "no-legacy-fallback",

@@ -13,7 +13,7 @@ export function write(root, rel, text) {
 
 const SKILLS = {
   "dod-guard/interview": "# Interview\n\nRun `openspec instructions dod --change <id>` and follow it.\n",
-  "dod-guard/step-by-step": "# Step by step\n\nThe plan lives at `openspec/changes/<id>/steps.json`.\n",
+  "dod-guard/step-by-step": "# Step by step\n\nThe plan lives at `openspec/changes/<id>/tasks.md`.\n",
   "dod-guard/cheap-step": "# Cheap step\n\nA delta over step-by-step.\n",
   "dod-guard/ratchet":
     "# Ratchet\n\nTake a change id. Finish with `dod-guard cover <change-id>`, then `openspec archive <change-id> --yes`.\n",
