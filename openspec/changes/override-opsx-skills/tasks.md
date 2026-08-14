@@ -53,7 +53,7 @@
 
 ## 2. Delete the generated skills
 
-- [ ] 2.1 Delete all six `.claude/skills/openspec-*` directories
+- [x] 2.1 Delete all six `.claude/skills/openspec-*` directories
 
 ## 3. Plugin configuration
 

@@ -151,7 +151,8 @@
       "verify_surface": "structural",
       "verify_cmd": "",
       "manual_required": true,
-      "status": "pending"
+      "status": "completed",
+      "verdict": "All six .claude/skills/openspec-* directories deleted"
     },
     {
       "id": "3.1",
