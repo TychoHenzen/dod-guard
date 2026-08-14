@@ -1,6 +1,6 @@
 name: dod-guard-spec-driven
 version: 1
-description: Spec-driven workflow - proposal, specs, design, tasks, steps
+description: Spec-driven workflow - proposal, specs, design, tasks
 artifacts:
   - id: proposal
     generates: proposal.md
@@ -348,43 +348,9 @@ artifacts:
     requires:
       - specs
       - design
-  - id: steps
-    generates: steps.json
-    description: Step-by-step execution plan derived from the change's tasks.md
-    template: steps.json
-    instruction: |
-      Write the plan that /dod-guard:step-by-step executes. It lives at
-      `openspec/changes/<id>/steps.json` and nowhere else.
-
-      **Do not hand-write the skeleton.** Run `dod-guard steps <change-id>`.
-      It reads `tasks.md` and derives the fields that must never drift from
-      it: one step per task item, that item's own text as the step's title
-      and description, and a dependency on the step before it. A task can
-      name the scenario it satisfies with a `<!-- covers: <group>/
-      <capability> :: <requirement title> :: <scenario title> -->`
-      annotation on the line below its checkbox. When `dod-guard cover`
-      reports that scenario covered-and-integrated or
-      covered-but-not-integrated, the step gets that scenario's bound test
-      as `verify_cmd` and `manual_required` false. Every other task -
-      unannotated, or naming a scenario `cover` doesn't yet see as covered -
-      becomes a step with `manual_required` true and an empty `verify_cmd`,
-      because a human still owes us something there.
-
-      Then fill in the two fields a machine cannot know. `files` is the paths
-      the step reads or may modify. `verify_surface` is one of `code`,
-      `config`, `structural`, `visual` or `gameplay`. The command leaves them
-      empty and `code`, so an unfilled `files` reads as unfilled rather than
-      as decided. Correct the linear dependency chain too, wherever two steps
-      are genuinely independent.
-
-      `templates/steps.json` carries the field list. Read it rather than
-      restating it anywhere else. Do not invent a step that matches no task.
-    requires:
-      - tasks
 apply:
   requires:
     - tasks
-    - steps
   tracks: tasks.md
   instruction: |
     Read context files, work through pending tasks, mark complete as you go.
