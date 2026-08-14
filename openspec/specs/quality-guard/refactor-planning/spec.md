@@ -22,14 +22,14 @@ requirement in order to satisfy validation.
 
 ### Requirement: the plan lands in the change
 
-`/quality-refactor` SHALL write its waves to `openspec/changes/<id>/tasks.md`
-and its step plan to `openspec/changes/<id>/steps.json`. Its public-API and
-file-layout judgment SHALL land in that change's `design.md`.
+`/quality-refactor` SHALL write its waves and step plan to
+`openspec/changes/<id>/tasks.md`. Its public-API and file-layout judgment
+SHALL land in that change's `design.md`.
 
 #### Scenario: The skill emits its plan
 - **WHEN** planning completes
 - **THEN** `node scripts/ci/check-skill-hygiene.mjs --rule=no-step-session`
-  exits 0, and the skill names the change directory as the home for both files
+  exits 0, and the skill names the change directory as the home for `tasks.md`
 
 #### Scenario: The scanner cache stays out of the change
 - **WHEN** the skill writes `.quality/units.json`
@@ -38,7 +38,7 @@ file-layout judgment SHALL land in that change's `design.md`.
 
 ### Requirement: the skill carries no copy of the steps shape
 
-`/quality-refactor` SHALL NOT restate the `steps.json` field list. It SHALL
+`/quality-refactor` SHALL NOT restate the `tasks.md` task shape. It SHALL
 point at `openspec instructions steps --change <id>` instead.
 
 #### Scenario: The skill describes what to emit

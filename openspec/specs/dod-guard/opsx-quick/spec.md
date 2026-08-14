@@ -29,11 +29,11 @@ The skill SHALL assess the change size and decide which artifacts to create. A s
 - **WHEN** the change crosses multiple packages or introduces architectural decisions
 - **THEN** the skill creates a proposal, specs, design, and tasks
 
-### Requirement: Automatic steps generation and handoff
-The skill SHALL generate `steps.json` via `dod-guard steps <change-id>` after writing tasks, fill in the `files` and `verify_surface` fields, and invoke `/dod-guard:step-by-step` for execution.
+### Requirement: Automatic handoff to step-by-step
+The skill SHALL write `tasks.md`, fill in the `files` and `verify_surface` details for each task, and invoke `/dod-guard:step-by-step` for execution. `/step-by-step` resolves each task's `verify_cmd` from `tasks.md` at startup; the skill SHALL NOT generate a separate steps file.
 
-#### Scenario: Steps generated and step-by-step invoked
-- **WHEN** tasks are written and steps generated
+#### Scenario: Tasks written and step-by-step invoked
+- **WHEN** `tasks.md` is written
 - **THEN** the skill invokes `/dod-guard:step-by-step` with the change id
 
 ### Requirement: Post-implementation spec sync
@@ -48,9 +48,9 @@ The skill SHALL offer to sync behavioral changes back to specs after implementat
 - **THEN** the skill asks whether to create retroactive spec deltas or archive as-is
 
 ### Requirement: Single-flow execution
-The skill SHALL run the entire flow (clarify, create change, generate steps, hand off to step-by-step) in one invocation without requiring the user to run separate slash commands between phases.
+The skill SHALL run the entire flow (clarify, create change, write tasks.md, hand off to step-by-step) in one invocation without requiring the user to run separate slash commands between phases.
 
 #### Scenario: Complete flow in one run
 - **WHEN** the user runs `/opsx:quick build a retry mechanism for the cascade solver`
-- **THEN** the skill asks clarifying questions, creates the change, generates steps, and hands off to step-by-step without the user typing another command
+- **THEN** the skill asks clarifying questions, creates the change, writes tasks.md, and hands off to step-by-step without the user typing another command
 

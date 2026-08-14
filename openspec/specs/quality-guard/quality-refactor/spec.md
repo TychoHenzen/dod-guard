@@ -43,7 +43,7 @@ The skill SHALL produce a step plan with one step per refactoring action, suitab
 - **THEN** it produces a `tasks.md` with numbered steps, each carrying a description and verification command, and hands off to `/step-by-step`
 
 #### Scenario: each step's verify_cmd joins test and ratchet commands
-- **WHEN** the skill writes a step in `steps.json`
+- **WHEN** the skill writes a step's `<!-- covers: -->` annotation in `tasks.md`
 - **THEN** the step's `verify_cmd` joins the project test command and the ratchet check with `&&`, and expands all paths to absolutes
 
 #### Scenario: OpenSpec change opened with skip-specs

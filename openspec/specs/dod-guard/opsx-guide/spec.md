@@ -32,7 +32,7 @@ The skill SHALL display an ASCII diagram showing the full lifecycle when the use
 - **THEN** the skill displays the lifecycle diagram with phases, skills, and artifacts
 
 ### Requirement: Concept explanations
-The skill SHALL explain OpenSpec concepts when the user asks. Concepts include: scenario, capability, requirement, change, delta spec, main spec, coverage, archiving, the dod-guard-spec-driven schema, and steps.json.
+The skill SHALL explain OpenSpec concepts when the user asks. Concepts include: scenario, capability, requirement, change, delta spec, main spec, coverage, archiving, the dod-guard-spec-driven schema, and tasks.md.
 
 #### Scenario: User asks what a scenario is
 - **WHEN** the user asks "what is a scenario?"

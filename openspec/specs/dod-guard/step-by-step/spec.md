@@ -1,12 +1,12 @@
 # dod-guard/step-by-step Specification
 
 ## Purpose
-Executes a confirmed multi-step plan one atomic step at a time. Dispatches each step to a specialized worker agent, verifies the result, and persists progress in `steps.json` so interrupted sessions can resume.
+Executes a confirmed multi-step plan one atomic step at a time. Dispatches each step to a specialized worker agent, verifies the result, and persists progress directly in `tasks.md` so interrupted sessions can resume.
 
 ## Requirements
 
 ### Requirement: one step at a time, no parallel execution
-The skill SHALL execute exactly one step per cycle. It SHALL NOT start a new step until the current step's verification passes or its repair budget is exhausted. Steps SHALL execute in dependency order as defined in `steps.json`.
+The skill SHALL execute exactly one step per cycle. It SHALL NOT start a new step until the current step's verification passes or its repair budget is exhausted. Steps SHALL execute in dependency order as defined in `tasks.md`.
 
 #### Scenario: dependent step waits
 - **WHEN** a later step depends on an earlier step that is not yet completed

@@ -78,15 +78,15 @@ change archives rather than when the ledger says so.
 
 ### Requirement: ratchet's loop runs on cover and steps, not the DoD-tree engine
 
-`/ratchet` SHALL check each sub-problem with that step's own `verify_cmd`
-from `steps.json`, and SHALL re-verify the whole change with
+`/ratchet` SHALL check each sub-problem with that task's own `verify_cmd`
+resolved from `tasks.md`, and SHALL re-verify the whole change with
 `dod-guard cover <change-id>` after every sub-problem, instead of the
 DoD-tree MCP tools or a `dod-guard check --dod-id=...` command.
 
 #### Scenario: A sub-problem is checked
 - **WHEN** a ratchet iteration verifies one sub-problem
-- **THEN** it runs that step's `verify_cmd` from `steps.json` as a plain
-  shell command
+- **THEN** it runs that task's `verify_cmd` resolved from `tasks.md` as a
+  plain shell command
 
 #### Scenario: The whole change is re-verified
 - **WHEN** a ratchet iteration finishes a sub-problem
