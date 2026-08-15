@@ -131,8 +131,13 @@ main { display: flex; flex: 1; min-height: 0; }
 .registered li { display: flex; gap: 10px; align-items: center; padding: 3px 0; }
 
 .cov-label { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 3px; margin-top: 4px; }
-.cov-bound { color: var(--done); border: 1px solid var(--done); font-family: ui-monospace, Consolas, monospace; }
 .cov-unbound { color: var(--ready); border: 1px solid var(--ready); }
+
+.cov-foldout { margin-top: 4px; border: 1px solid var(--done); border-radius: 4px; }
+.cov-foldout summary { cursor: pointer; font: 11px ui-monospace, Consolas, monospace; color: var(--done); padding: 2px 6px; list-style: none; }
+.cov-foldout summary::-webkit-details-marker { display: none; }
+.cov-foldout pre { margin: 0; padding: 8px 10px; background: #10141a; border-top: 1px solid var(--line); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; overflow-x: auto; }
+.cov-foldout code { color: var(--text); }
 
 .cov-count { font-size: 11px; flex: none; }
 .cov-full { color: var(--done); }
