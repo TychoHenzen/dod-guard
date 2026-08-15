@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "default",
-  "createdAt": "2026-08-15T07:51:46.498Z",
-  "total": 861,
+  "createdAt": "2026-08-15T08:36:33.696Z",
+  "total": 855,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -292,8 +292,7 @@
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
-    "packages/quality-guard/src/skips.ts",
-    "scripts/ci/smoke-bundle.mjs"
+    "packages/quality-guard/src/skips.ts"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -735,10 +734,6 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
-    "scripts/ci/smoke-bundle.mjs::complexity": 2,
-    "scripts/ci/smoke-bundle.mjs::file-length": 1,
-    "scripts/ci/smoke-bundle.mjs::function-length": 2,
-    "scripts/ci/smoke-bundle.mjs::nesting-depth": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1
   }
 }
