@@ -36,6 +36,9 @@
 
 ## 5. Verify
 
-- [ ] 5.1 Run `dod-guard cover --all` and confirm no regressions
-- [ ] 5.2 Run `npm test` across all packages to confirm no tests broke
-- [ ] 5.3 Run `dod-guard cover --all --write-baseline` to lock the new coverage level into the ratchet
+- [x] 5.1 Run `dod-guard cover --all` and confirm no regressions
+<!-- status: completed -->
+- [x] 5.2 Run `npm test` across all packages to confirm no tests broke
+<!-- status: completed -->
+- [x] 5.3 Run `dod-guard cover --all --write-baseline` to lock the new coverage level into the ratchet
+<!-- status: completed -->
