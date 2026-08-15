@@ -43,6 +43,7 @@ after(async () => {
   await fs.rm(cwd, { recursive: true, force: true });
 });
 
+// covers: dod-guard/coverage-gate :: cover enumerates scenarios from a change's deltas or the main spec tree :: cover --all reads the main spec tree
 test("enumerateAllScenarios reads the main spec tree, not a change's deltas", async () => {
   const scenarios = await enumerateAllScenarios(cwd);
   assert.equal(scenarios.length, 1);
@@ -51,6 +52,7 @@ test("enumerateAllScenarios reads the main spec tree, not a change's deltas", as
   assert.equal(scenarios[0].capability, "coverage-gate");
 });
 
+// covers: dod-guard/coverage-gate :: cover enumerates scenarios from a change's deltas or the main spec tree :: cover reads one change's spec deltas
 test("enumerateChangeScenarios reads one change's deltas, not the main tree", async () => {
   const scenarios = await enumerateChangeScenarios(cwd, "add-thing");
   assert.equal(scenarios.length, 1);

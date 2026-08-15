@@ -6,11 +6,6 @@ import { fileURLToPath } from "node:url";
 import type { EnumeratedScenario } from "./enumerate.js";
 import { buildReport, outcomeRank, type ScenarioReport, summarizeReport } from "./report.js";
 
-// buildReport's own logic (marker lookup, cache-per-group, assembling a
-// ScenarioReport) is what these tests cover. The reachability check itself -
-// pass/fail, integrated/not - is reachability.test.ts's job; this file only
-// needs one real bound scenario to prove buildReport actually calls it.
-
 const REPO_ROOT = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..", "..", "..");
 const FIXTURE_DIR = path.join(REPO_ROOT, "tools", "openspec-dashboard", "__report_test_fixture__");
 const TEST_FILE = path.join(FIXTURE_DIR, "sample.test.js");
@@ -46,6 +41,7 @@ after(async () => {
   await fs.rm(FIXTURE_DIR, { recursive: true, force: true });
 });
 
+// covers: dod-guard/coverage-gate :: cover reports a scenario's state :: No test binds a scenario
 test("buildReport reports an unbound scenario as unwired", async () => {
   const [report] = await buildReport(REPO_ROOT, [
     scenario({ id: "dod-guard/coverage-gate::req||unbound-scenario", scenarioTitle: "unbound-scenario" }),
@@ -54,18 +50,26 @@ test("buildReport reports an unbound scenario as unwired", async () => {
   assert.match(report.note, /no test binds this scenario/);
 });
 
-test("buildReport reports a bound, passing scenario with no declared entry points as covered-but-not-integrated", async () => {
+// covers: dod-guard/coverage-gate :: cover reports a scenario's state :: A marker binds a scenario to a test
+test("buildReport reports a bound scenario as bound", async () => {
   const [report] = await buildReport(REPO_ROOT, [
     scenario({ id: "dod-guard/coverage-gate::req||bound-scenario", scenarioTitle: "bound-scenario" }),
   ]);
-  assert.equal(report.outcome, "covered-but-not-integrated");
-  assert.match(report.note, /no entry points declared/);
+  assert.equal(report.outcome, "bound");
+  assert.match(report.note, /bound to/);
 });
 
-test("outcomeRank orders covered-and-integrated above covered-but-not-integrated above unwired and failed", () => {
-  assert.ok(outcomeRank("covered-and-integrated") > outcomeRank("covered-but-not-integrated"));
-  assert.ok(outcomeRank("covered-but-not-integrated") > outcomeRank("unwired"));
-  assert.equal(outcomeRank("unwired"), outcomeRank("failed"));
+test("outcomeRank orders bound above unwired", () => {
+  assert.ok(outcomeRank("bound") > outcomeRank("unwired"));
+});
+
+test("outcomeRank treats old baseline values as equivalent to bound", () => {
+  assert.equal(outcomeRank("covered-and-integrated"), outcomeRank("bound"));
+  assert.equal(outcomeRank("covered-but-not-integrated"), outcomeRank("bound"));
+});
+
+test("outcomeRank treats old failed as equivalent to unwired", () => {
+  assert.equal(outcomeRank("failed"), outcomeRank("unwired"));
 });
 
 function report(scenarioId: string, outcome: ScenarioReport["outcome"]): ScenarioReport {
@@ -77,7 +81,6 @@ function report(scenarioId: string, outcome: ScenarioReport["outcome"]): Scenari
     scenarioTitle: scenarioId,
     outcome,
     note: "",
-    runCommand: undefined,
   };
 }
 
@@ -85,9 +88,8 @@ test("summarizeReport counts each outcome", () => {
   const summary = summarizeReport([
     report("a", "unwired"),
     report("b", "unwired"),
-    report("c", "covered-and-integrated"),
+    report("c", "bound"),
   ]);
   assert.equal(summary.unwired, 2);
-  assert.equal(summary["covered-and-integrated"], 1);
-  assert.equal(summary["covered-but-not-integrated"], 0);
+  assert.equal(summary.bound, 1);
 });

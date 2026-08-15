@@ -16,9 +16,12 @@
 
 ## 3. Wire covers markers to existing dod-guard tests
 
-- [ ] 3.1 Audit `packages/dod-guard/src/**/*.test.ts` files (excluding the 5 files that already have markers) and identify which tests exercise a spec scenario
-- [ ] 3.2 Add `// covers:` markers to the identified tests in the dod-guard package
-- [ ] 3.3 Run `dod-guard cover --all` to confirm the newly wired markers are recognized and the bound count increases
+- [x] 3.1 Audit `packages/dod-guard/src/**/*.test.ts` files (excluding the 5 files that already have markers) and identify which tests exercise a spec scenario
+<!-- status: completed -->
+- [x] 3.2 Add `// covers:` markers to the identified tests in the dod-guard package
+<!-- status: completed -->
+- [x] 3.3 Run `dod-guard cover --all` to confirm the newly wired markers are recognized and the bound count increases
+<!-- status: completed -->
 
 ## 4. Wire covers markers to other packages
 

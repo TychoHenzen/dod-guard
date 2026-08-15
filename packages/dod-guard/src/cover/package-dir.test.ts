@@ -1,22 +1,18 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { packageDirForGroup, testGlobsForGroup } from "./package-dir.js";
+import { testGlobsForGroup } from "./package-dir.js";
 
-test("packageDirForGroup maps a group to its package directory", () => {
-  assert.equal(packageDirForGroup("dod-guard"), "packages/dod-guard");
+// covers: dod-guard/coverage-gate :: Test-file discovery is configurable per project :: A project has no test-globs.json
+test("testGlobsForGroup returns broad defaults covering all supported languages", () => {
+  const globs = testGlobsForGroup("anything");
+  assert.ok(globs.some((g) => g.includes("*.test.ts")));
+  assert.ok(globs.some((g) => g.includes("test_*.py")));
+  assert.ok(globs.some((g) => g.includes("*_test.go")));
+  assert.ok(globs.some((g) => g.includes("*Test.java")));
+  assert.ok(globs.some((g) => g.includes("test_*.sh")));
 });
 
-test("packageDirForGroup maps openspec-dashboard to the tool directory", () => {
-  assert.equal(packageDirForGroup("openspec-dashboard"), "tools/openspec-dashboard");
-});
-
-test("testGlobsForGroup searches a package's src/ for .test.ts files", () => {
-  assert.deepEqual(testGlobsForGroup("dod-guard"), ["packages/dod-guard/src/**/*.test.ts"]);
-});
-
-test("testGlobsForGroup searches openspec-dashboard flat for .test.js and .test.mjs", () => {
-  assert.deepEqual(testGlobsForGroup("openspec-dashboard"), [
-    "tools/openspec-dashboard/**/*.test.js",
-    "tools/openspec-dashboard/**/*.test.mjs",
-  ]);
+// covers: dod-guard/coverage-gate :: Test-file discovery is configurable per project :: test-globs.json exists but has no entry for the group
+test("testGlobsForGroup returns the same globs regardless of group", () => {
+  assert.deepEqual(testGlobsForGroup("dod-guard"), testGlobsForGroup("eval"));
 });

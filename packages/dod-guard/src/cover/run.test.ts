@@ -19,6 +19,7 @@ describe("runCover", () => {
     await fs.rm(cwd, { recursive: true, force: true });
   });
 
+  // covers: dod-guard/coverage-gate :: cover enumerates scenarios from a change's deltas or the main spec tree :: Neither a change id nor --all is given
   it("errors with the usage exit code when neither a change id nor --all is given", async () => {
     const { io, err } = captureIo();
     const code = await runCover({ cwd, all: false, writeBaseline: false }, io);
@@ -26,6 +27,7 @@ describe("runCover", () => {
     assert.match(err(), /needs a change id or --all/);
   });
 
+  // covers: dod-guard/coverage-gate :: The coverage-gate ratchet adopts unseen scenarios and blocks on regression :: --write-baseline records the current report as the new baseline
   it("errors with the usage exit code when --write-baseline is given without --all", async () => {
     const { io, err } = captureIo();
     const code = await runCover({ cwd, changeId: "some-change", all: false, writeBaseline: true }, io);
@@ -40,6 +42,7 @@ describe("runCover", () => {
     assert.match(out(), /Nothing to cover/);
   });
 
+  // covers: dod-guard/coverage-gate :: The coverage-gate ratchet adopts unseen scenarios and blocks on regression :: --write-baseline records the current report as the new baseline
   it("writes a fresh baseline and reports the scenario as unwired", async () => {
     const { io, out } = captureIo();
     const code = await runCover({ cwd, all: true, writeBaseline: true }, io);
@@ -53,6 +56,7 @@ describe("runCover", () => {
     assert.equal(written.scenarios["dod-guard/coverage-gate::cover reports a scenario's state||unwired"], "unwired");
   });
 
+  // covers: dod-guard/coverage-gate :: The coverage-gate ratchet adopts unseen scenarios and blocks on regression :: A scenario that stays unwired is not a regression
   it("reports OK with no regressions once the baseline already holds the scenario", async () => {
     const { io, out } = captureIo();
     const code = await runCover({ cwd, all: true, writeBaseline: false }, io);

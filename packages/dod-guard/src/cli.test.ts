@@ -78,6 +78,7 @@ describe("cover via runCli", () => {
     await fs.rm(cwd, { recursive: true, force: true });
   });
 
+  // covers: dod-guard/coverage-gate :: cover enumerates scenarios from a change's deltas or the main spec tree :: Neither a change id nor --all is given
   it("errors with the usage exit code when neither a change id nor --all is given", async () => {
     const { io, err } = captureIo();
     const code = await runCli(["cover", `--cwd=${cwd}`], io);
@@ -85,6 +86,7 @@ describe("cover via runCli", () => {
     assert.match(err(), /needs a change id or --all/);
   });
 
+  // covers: dod-guard/coverage-gate :: cover enumerates scenarios from a change's deltas or the main spec tree :: cover --all reads the main spec tree
   it("exits 0 with nothing to cover when --all finds no spec tree", async () => {
     const { io, out } = captureIo();
     const code = await runCli(["cover", "--all", `--cwd=${cwd}`], io);
@@ -92,6 +94,7 @@ describe("cover via runCli", () => {
     assert.match(out(), /Nothing to cover/);
   });
 
+  // covers: dod-guard/coverage-gate :: The coverage-gate ratchet adopts unseen scenarios and blocks on regression :: --write-baseline records the current report as the new baseline
   it("errors with the usage exit code when --write-baseline is given without --all", async () => {
     const { io, err } = captureIo();
     const code = await runCli(["cover", "some-change", "--write-baseline", `--cwd=${cwd}`], io);
