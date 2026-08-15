@@ -3,7 +3,12 @@
 import { el, firstLine } from "./dom.mjs";
 
 function coverageLabel(entry) {
-  if (entry) return el("span", { class: "cov-label cov-bound" }, entry.testName);
+  if (entry) {
+    return el("details", { class: "cov-foldout" }, [
+      el("summary", {}, entry.testName),
+      el("pre", {}, [el("code", {}, entry.testBody ?? "no body available")]),
+    ]);
+  }
   return el("span", { class: "cov-label cov-unbound" }, "no test");
 }
 
