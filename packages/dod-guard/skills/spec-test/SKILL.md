@@ -76,8 +76,10 @@ mirrors a buggy implementation passes and proves nothing.
    - The test name includes the scenario name
    - The WHEN clause becomes the test's setup and invocation
    - The THEN clause becomes the assertion
-   - Add a `// covers: <group>/<capability> :: <requirement title> :: <scenario title>`
-     marker above the `test()` or `it()` call
+   - Add a `covers:` marker on the line directly above the test declaration,
+     never inside the function body. Use the comment prefix for the file's
+     language: `//` for JS/TS/Go/Rust/Java/Kotlin, `#` for Python/Ruby/Shell.
+     Format: `<prefix> covers: <group>/<capability> :: <requirement title> :: <scenario title>`
 
 5. Write the test file to the appropriate location following the project's
    naming convention.
@@ -101,3 +103,14 @@ Print a summary:
 
 If all tests pass, the implementation agrees with the spec on every scenario
 tested.
+
+Print a coverage summary, scoped to the targeted capability or, when the user
+named one, the targeted requirement:
+- Total scenarios in scope
+- Covered count, broken down into pre-existing (already had a `covers:`
+  marker before this run) and newly generated (covered by a test written in
+  this run)
+- Uncovered count (scenarios in scope with no `covers:` marker after this
+  run, including any this run could not generate a test for per step 5 of
+  the Constraints)
+- Coverage percentage: covered / total scenarios in scope
