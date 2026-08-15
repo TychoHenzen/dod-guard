@@ -85,11 +85,7 @@ function report(scenarioId: string, outcome: ScenarioReport["outcome"]): Scenari
 }
 
 test("summarizeReport counts each outcome", () => {
-  const summary = summarizeReport([
-    report("a", "unwired"),
-    report("b", "unwired"),
-    report("c", "bound"),
-  ]);
+  const summary = summarizeReport([report("a", "unwired"), report("b", "unwired"), report("c", "bound")]);
   assert.equal(summary.unwired, 2);
   assert.equal(summary.bound, 1);
 });

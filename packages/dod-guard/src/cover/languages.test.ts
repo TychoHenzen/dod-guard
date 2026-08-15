@@ -17,10 +17,7 @@ test("Python: # covers: above def test_ binds the scenario", () => {
 });
 
 test("Python: async def test_ is recognized", () => {
-  const content = [
-    "# covers: mygroup/mycap :: req :: async scenario",
-    "async def test_async_handler():",
-  ].join("\n");
+  const content = ["# covers: mygroup/mycap :: req :: async scenario", "async def test_async_handler():"].join("\n");
   const bindings = markersInFile("test_async.py", content);
   assert.equal(bindings.length, 1);
   assert.equal(bindings[0].testName, "test_async_handler");
@@ -31,7 +28,7 @@ test("Go: // covers: above func Test binds the scenario", () => {
   const content = [
     "// covers: mygroup/mycap :: Req1 :: Scen1",
     "func TestSomething(t *testing.T) {",
-    '    assert.Equal(t, 1, 1)',
+    "    assert.Equal(t, 1, 1)",
     "}",
   ].join("\n");
   const bindings = markersInFile("something_test.go", content);
@@ -65,10 +62,7 @@ test("Rust: pub async fn after #[test] is recognized", () => {
 });
 
 test("Rust: marker directly above fn without #[test] binds nothing", () => {
-  const content = [
-    "// covers: mygroup/mycap :: req :: missing attr",
-    "fn test_no_attr() {",
-  ].join("\n");
+  const content = ["// covers: mygroup/mycap :: req :: missing attr", "fn test_no_attr() {"].join("\n");
   const bindings = markersInFile("lib.rs", content);
   assert.equal(bindings.length, 0);
 });
@@ -82,10 +76,7 @@ test("unknown extension returns zero bindings", () => {
 });
 
 test("Java: // covers: above public void testX binds", () => {
-  const content = [
-    "// covers: mygroup/mycap :: req :: java direct",
-    "public void testSomething() {",
-  ].join("\n");
+  const content = ["// covers: mygroup/mycap :: req :: java direct", "public void testSomething() {"].join("\n");
   const bindings = markersInFile("MyTest.java", content);
   assert.equal(bindings.length, 1);
   assert.equal(bindings[0].testName, "testSomething");
@@ -115,30 +106,21 @@ test("shell: # covers: above test_ function binds", () => {
 });
 
 test("Ruby: # covers: above def test_ binds", () => {
-  const content = [
-    "# covers: mygroup/mycap :: req :: ruby def",
-    "def test_something()",
-  ].join("\n");
+  const content = ["# covers: mygroup/mycap :: req :: ruby def", "def test_something()"].join("\n");
   const bindings = markersInFile("test_thing.rb", content);
   assert.equal(bindings.length, 1);
   assert.equal(bindings[0].testName, "test_something");
 });
 
 test("Ruby: # covers: above it block binds", () => {
-  const content = [
-    '# covers: mygroup/mycap :: req :: ruby it',
-    'it "does the right thing" do',
-  ].join("\n");
+  const content = ["# covers: mygroup/mycap :: req :: ruby it", 'it "does the right thing" do'].join("\n");
   const bindings = markersInFile("spec_thing.rb", content);
   assert.equal(bindings.length, 1);
   assert.equal(bindings[0].testName, "does the right thing");
 });
 
 test("Kotlin: // covers: above fun testX binds", () => {
-  const content = [
-    "// covers: mygroup/mycap :: req :: kotlin",
-    "fun testSomething() {",
-  ].join("\n");
+  const content = ["// covers: mygroup/mycap :: req :: kotlin", "fun testSomething() {"].join("\n");
   const bindings = markersInFile("MyTest.kt", content);
   assert.equal(bindings.length, 1);
   assert.equal(bindings[0].testName, "testSomething");

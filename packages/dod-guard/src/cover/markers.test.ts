@@ -78,10 +78,7 @@ test("scanMarkers binds both .ts and .py files when test-globs.json provides the
   );
   const globsDir = path.join(cwd, "openspec");
   await fs.mkdir(globsDir, { recursive: true });
-  await fs.writeFile(
-    path.join(globsDir, "test-globs.json"),
-    JSON.stringify({ eval: ["tests/eval/**/*.py"] }),
-  );
+  await fs.writeFile(path.join(globsDir, "test-globs.json"), JSON.stringify({ eval: ["tests/eval/**/*.py"] }));
   const bindings = await scanMarkers(cwd, "eval");
   const binding = bindings.get("eval/events::frozen||difficulty defaults");
   assert.ok(binding, "Python marker should bind");
