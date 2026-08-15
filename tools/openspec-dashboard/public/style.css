@@ -129,3 +129,12 @@ main { display: flex; flex: 1; min-height: 0; }
 .path { font: 12px ui-monospace, Consolas, monospace; }
 .row { display: flex; gap: 8px; margin-top: 8px; }
 .registered li { display: flex; gap: 10px; align-items: center; padding: 3px 0; }
+
+.cov-label { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 3px; margin-top: 4px; }
+.cov-bound { color: var(--done); border: 1px solid var(--done); font-family: ui-monospace, Consolas, monospace; }
+.cov-unbound { color: var(--ready); border: 1px solid var(--ready); }
+
+.cov-count { font-size: 11px; flex: none; }
+.cov-full { color: var(--done); }
+.cov-partial { color: var(--ready); }
+.cov-none { color: var(--dim); }
