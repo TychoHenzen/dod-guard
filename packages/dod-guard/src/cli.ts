@@ -13,8 +13,7 @@ USAGE
   dod-guard                          Start the MCP server on stdio (no args)
 
 COMMANDS
-  cover [<change-id>] [--all]        Report each scenario as covered-and-integrated,
-                                      covered-but-not-integrated, unwired, or failed
+  cover [<change-id>] [--all]        Report each scenario as bound or unwired
       [--write-baseline]             against the coverage-gate ratchet baseline.
                                       One of <change-id> or --all is required.
                                       --write-baseline needs --all - it replaces

@@ -159,22 +159,6 @@ reports the scenario the same as if the marker were never written. Note
 that as a risk in the handoff for any scenario the executor might satisfy
 that way by mistake.
 
-### Declaring the entry point
-
-A bound test has to reach the scenario's code through a path a real user
-or caller would take, not only through the component's own internals.
-`dod-guard cover` checks this against `openspec/entry-points.json`, keyed
-by package or project directory, each value a list of files that count as
-a real entry point (the CLI, the MCP server's `index.ts`, and similar).
-
-Read `openspec/entry-points.json` before you finish the interview. If the
-package or project this change touches already has an entry, note nothing
-further. If it does not, that is a gap the executor needs closed before
-`dod-guard cover` can report anything beyond covered-but-not-integrated
-for this change's scenarios. Say so plainly in the handoff, and name the
-file or files that should be added as that package's entry point, based on
-what you read in section 2.
-
 ## 6. Adversarial review of the spec
 
 Dispatch five lenses in parallel, over the confirmed summary and the spec
@@ -230,10 +214,9 @@ not this skill's.
 
 Report the change id. Report the requirement count and the scenario count
 from the spec delta. Report the adversarial verdict from section 6. Name
-every scenario whose test binding or entry point is still an open item,
-per section 5, so the executor knows what to close before `dod-guard
-cover` reports it as more than covered-but-not-integrated. Then name the
-executor.
+every scenario whose test binding is still an open item, per section 5,
+so the executor knows what to close before `dod-guard cover` reports it
+as bound. Then name the executor.
 
 | Shape of the work | Executor |
 |---|---|

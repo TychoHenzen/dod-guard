@@ -149,8 +149,10 @@ spec. Format:
 
 Each scenario gets a stable id: `<group>/<capability>::<requirement
 title>||<scenario title>`. That id is what `dod-guard cover` uses to check
-whether a test binds to it, via a `// covers:` comment directly above the
-`test()`/`it()` call.
+whether a test binds to it, via a `covers:` comment directly above the
+test declaration (`//` prefix for JS/TS/Go/Rust/Java/Kotlin, `#` for
+Python/Ruby/Shell). The marker must go above the declaration, not inside
+the function body.
 
 If `openspec list --specs --json` returned any specs, open one real
 `spec.md` and show one of its actual `### Requirement:` / `#### Scenario:`
@@ -182,8 +184,7 @@ Use the results of `openspec list --specs --json` from the orient step:
   (`openspec/specs/<group>/<capability>/spec.md`), name the capability, and
   show one of its actual scenarios. Then show how that scenario binds to a
   test: look for the `// covers:` comment matching its id, and reference
-  what `dod-guard cover --all` reported for it (`covered-and-integrated`,
-  `covered-but-not-integrated`, `unwired`, or `failed`). This makes the
+  what `dod-guard cover --all` reported for it (`bound` or `unwired`). This makes the
   scenario-to-test binding concrete instead of abstract.
 - **If the project has no `openspec/` directory**: say so plainly and
   suggest `/opsx:init` to set OpenSpec up before anything else in this

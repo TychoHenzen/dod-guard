@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-15T14:04:51.872Z",
-  "total": 855,
+  "total": 867,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -86,6 +86,8 @@
     "packages/dod-guard/src/cover/entry-points.ts",
     "packages/dod-guard/src/cover/enumerate.test.ts",
     "packages/dod-guard/src/cover/enumerate.ts",
+    "packages/dod-guard/src/cover/languages.test.ts",
+    "packages/dod-guard/src/cover/languages.ts",
     "packages/dod-guard/src/cover/markers.test.ts",
     "packages/dod-guard/src/cover/markers.ts",
     "packages/dod-guard/src/cover/package-dir.test.ts",
@@ -98,6 +100,8 @@
     "packages/dod-guard/src/cover/run-command.ts",
     "packages/dod-guard/src/cover/run.test.ts",
     "packages/dod-guard/src/cover/run.ts",
+    "packages/dod-guard/src/cover/test-globs.test.ts",
+    "packages/dod-guard/src/cover/test-globs.ts",
     "packages/dod-guard/src/index.ts",
     "packages/dod-guard/src/openspec/delta-sections.test.ts",
     "packages/dod-guard/src/openspec/dependency.test.ts",
@@ -292,7 +296,8 @@
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
-    "packages/quality-guard/src/skips.ts"
+    "packages/quality-guard/src/skips.ts",
+    "tools/openspec-dashboard/lib/markers.mjs"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -734,6 +739,14 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/dod-guard/src/cover/languages.ts::file-length": 1,
+    "tools/openspec-dashboard/lib/markers.mjs::complexity": 3,
+    "tools/openspec-dashboard/lib/markers.mjs::file-length": 1,
+    "tools/openspec-dashboard/lib/markers.mjs::function-length": 2,
+    "tools/openspec-dashboard/lib/markers.mjs::nesting-depth": 2,
+    "tools/openspec-dashboard/lib/markers.mjs::param-count": 1,
+    "tools/openspec-dashboard/lib/markers.mjs::else-branch": 1,
+    "packages/dod-guard/src/cover/languages.test.ts::file-length": 1
   }
 }

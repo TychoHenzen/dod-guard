@@ -78,8 +78,11 @@ OpenSpec change and marks how each one binds to a test. Never implements.
 
 **What it produces:**
 - Scenarios in the change's spec delta under `openspec/changes/<id>/specs/`
-- A test binding for each scenario (a `// covers:` marker, added at
-  implementation time and checked by `dod-guard cover`)
+- A test binding for each scenario (a `covers:` marker comment on the
+  line directly above the test declaration, added at implementation time
+  and checked by `dod-guard cover`. The marker must be above the
+  declaration, never inside the function body. Uses `//` for
+  JS/TS/Go/Rust/Java/Kotlin, `#` for Python/Ruby/shell)
 
 **Key output:** An OpenSpec change id you can hand to `/step-by-step`,
 `/cheap-step`, `/ratchet`, or `/adversarial-workflow`.
@@ -438,7 +441,8 @@ duplicates.
 | Using ratchet for a single change | Overkill. Ratchet setup costs 10-15 min. | Use step-by-step or just do it. |
 | "Build passes" for visual changes | Build is not the same as visual output. | Launch the app and visually confirm, or mark as pending manual check. |
 | Same model for test author + implementer | Rubber-stamp review - tests written to pass a known implementation. | Model diversity: different model for test-audit reviewers. |
-| Skipping interview and writing scenarios by hand with no test binding | `dod-guard cover` reports every such scenario `unwired`, which the ratchet then treats as a regression risk the moment the baseline adopts it. | Write the `// covers:` marker in the test at the same time you write the test. |
+| Skipping interview and writing scenarios by hand with no test binding | `dod-guard cover` reports every such scenario `unwired`, which the ratchet then treats as a regression risk the moment the baseline adopts it. | Write the `covers:` marker in the test at the same time you write the test. |
+| Putting the `covers:` marker inside the function body | The scanner looks forward from the marker for a test declaration. A marker inside the body finds no declaration and binds nothing. | Place the marker on the line directly above `def test_`, `test(`, `func Test`, etc. |
 | Dispatching adversarial reviewers with the same model as the author | Rubber-stamp - model agrees with itself. | Model diversity or maximally different reviewer prompts. |
 
 ## Verification Surface Reference

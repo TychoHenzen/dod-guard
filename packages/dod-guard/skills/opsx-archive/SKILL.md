@@ -182,7 +182,7 @@ context the rest of this workflow uses) and read its exit code:
   approval - do not additionally ask the user to confirm. Proceed to the
   archive.
 - **Exit 1 (a regression):** report which scenarios regressed (their id and
-  the outcome change, e.g. `covered-and-integrated -> unwired`), and refuse
+  the outcome change, e.g. `bound -> unwired`), and refuse
   to archive. Stop here.
 - **Exit 3 (usage error):** report the error `dod-guard cover` printed, and
   refuse to archive. Stop here.

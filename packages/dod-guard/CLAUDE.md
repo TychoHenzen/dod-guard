@@ -18,10 +18,10 @@ The bundled output is `dist/bundle.js` - this is what ships as the package entry
 ## Architecture
 
 **dod-guard** is a scenario-coverage tool, not a proof-tree verifier. `cover`
-checks whether OpenSpec scenarios are bound to tests. It also checks whether
-those tests actually execute the package's declared entry points. A skill
-such as `/step-by-step` binds each `tasks.md` task's `verify_cmd` through
-`cover` where a `<!-- covers: -->` annotation names a scenario.
+checks whether OpenSpec scenarios are bound to tests by scanning for `covers:`
+markers in test files. It never runs a test. A skill such as `/step-by-step`
+binds each `tasks.md` task's `verify_cmd` through `cover` where a
+`<!-- covers: -->` annotation names a scenario.
 
 ### Two entry points, one binary
 
@@ -30,7 +30,7 @@ such as `/step-by-step` binds each `tasks.md` task's `verify_cmd` through
 | Invocation | Behavior |
 |------------|----------|
 | `dod-guard` (no args) | Starts the MCP stdio server (registers no tools - see `index.ts`) |
-| `dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]` | Reports each scenario as covered-and-integrated, covered-but-not-integrated, unwired, or failed against `.github/quality/coverage-gate-baseline.json`. One of `<change-id>` or `--all` is required; `--write-baseline` needs `--all`. Exits `0` no regressions / `1` a regression / `3` usage error |
+| `dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]` | Reports each scenario as `bound` or `unwired` against `.github/quality/coverage-gate-baseline.json`. One of `<change-id>` or `--all` is required; `--write-baseline` needs `--all`. Exits `0` no regressions / `1` a regression / `3` usage error |
 
 See the `USAGE` string in `cli.ts` for the authoritative, always-current command reference.
 
@@ -41,25 +41,53 @@ eventual merge into the main tree: `<group>/<capability>::<requirement
 title>||<scenario title>`. Built by `buildScenarioId()` in
 `src/openspec/scenario-id.ts`.
 
-**The three-outcome report.** `cover` resolves each scenario to one of four
-`Outcome` values, defined in `src/cover/report.ts`. `unwired` means no test
-binds it. `covered-but-not-integrated` means a bound test passed but never
-reached a declared entry point, or the package declares none. `covered-and-integrated`
-means a bound test passed and reached a declared entry point. `failed` means
-the bound test failed, or no test with that name exists. `failed` and
-`unwired` rank equally for the ratchet. A failing bound test proves nothing
-more than no test at all.
+**The two-outcome report.** `cover` resolves each scenario to one of two
+`Outcome` values, defined in `src/cover/report.ts`. `bound` means a test
+carries a marker naming this scenario. `unwired` means no test binds it.
+`cover` never runs a test - it scans markers by regex. Whether a bound test
+passes is the language's own test runner's job.
 
-**The `// covers:` test marker.** A scenario binds to a test by a comment
-directly above the `test(`/`it(` call, read by regex, never by running the
-test file. Format, quoted from `markers.ts`'s own header comment:
-`// covers: <group>/<capability> :: <requirement title> :: <scenario title>`
+**The `covers:` test marker.** A scenario binds to a test by a comment
+placed on the line directly above the test declaration. The scanner reads
+the marker by regex, never by running the test file. The comment prefix
+and test-declaration pattern are determined by the file's extension
+(`languages.ts`). Format:
+`<comment-prefix> covers: <group>/<capability> :: <requirement title> :: <scenario title>`
 
-**`openspec/entry-points.json`.** The files a project considers user-facing for
-each package, keyed by package directory (`entry-points.ts`). A package absent
-from this file gets an honest report instead of a crash or a silent pass.
-Every one of its bound scenarios reports `covered-but-not-integrated` with a
-reason.
+The marker goes on the line immediately before the test declaration. It
+must not go inside the function body, even when the language allows
+comments there. The scanner looks forward from the marker to find the
+next test declaration; a marker inside the body has no declaration after
+it and binds nothing.
+
+```python
+# CORRECT - marker above the def
+# covers: eval/events :: ProbeTruth frozen :: difficulty defaults
+def test_probe_truth_difficulty():
+    assert truth.difficulty is None
+
+# WRONG - marker inside the body, binds nothing
+def test_probe_truth_difficulty():
+    # covers: eval/events :: ProbeTruth frozen :: difficulty defaults
+    assert truth.difficulty is None
+```
+
+```typescript
+// CORRECT - marker above the test call
+// covers: dod-guard/coverage-gate :: cover reports :: unwired
+test("cover reports unwired", async () => {});
+```
+
+Supported extensions: `.ts`/`.js`/`.mjs`/`.cjs` (`//`, `test(`/`it(`),
+`.py` (`#`, `def test_`), `.go` (`//`, `func Test`),
+`.rs` (`//`, `#[test]` then `fn`), `.rb` (`#`, `def test_` or `it`),
+`.java`/`.kt` (`//`, `void test`/`fun test` or `@Test` then method),
+`.sh`/`.bash` (`#`, `test_()` function).
+
+**`openspec/test-globs.json`.** Optional project-level override for
+test-file discovery, keyed by spec group. Shape:
+`{"<group>": ["glob1", "glob2"]}`. When absent or missing an entry for a
+group, `scanMarkers` falls back to the built-in globs in `package-dir.ts`.
 
 **The coverage-gate ratchet.** `.github/quality/coverage-gate-baseline.json`
 adopts a scenario the baseline has never seen, at whatever outcome `cover`
@@ -79,14 +107,12 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `cli.ts` | Shell CLI: `dod-guard cover`, argument parsing, `USAGE` string, exit codes |
 | `shell.ts` | `buildShellInvocation()` - the one place that knows how to reach a host shell (Windows quirks documented inline) |
 | `cover/run.ts` | `cover` top-level orchestration: enumerate scenarios, build the report, write or check against the ratchet baseline |
-| `cover/report.ts` | The three-outcome report: `buildReport()`, `Outcome`, `outcomeRank()`, `summarizeReport()` |
-| `cover/markers.ts` | Scans test files for `// covers:` comments and binds them to the next `test(`/`it(` call |
+| `cover/report.ts` | The two-outcome report: `buildReport()`, `Outcome` (`bound`/`unwired`), `outcomeRank()`, `summarizeReport()` |
+| `cover/markers.ts` | Scans test files for `covers:` comments and binds them to the next test declaration, dispatching on file extension |
+| `cover/languages.ts` | `LanguageSpec` interface and `LANG_TABLE`: maps file extensions to marker regex, test-declaration regex, and name extractor |
+| `cover/test-globs.ts` | Loads and validates `openspec/test-globs.json` for configurable test-file discovery per group |
 | `cover/enumerate.ts` | Reads scenarios out of `openspec/specs/**/spec.md` (`--all`) or `openspec/changes/<id>/specs/**/spec.md` (change-scoped) |
-| `cover/entry-points.ts` | Loads and looks up `openspec/entry-points.json` |
 | `cover/baseline.ts` | The coverage-gate ratchet: read/write/compare `.github/quality/coverage-gate-baseline.json` |
-| `cover/reachability.ts` | Runs one bound test in isolation under c8, scoped to its package's compiled `dist/`, checks whether a declared entry point actually executed (per-function hit counts, not file-level coverage) |
-| `cover/run-command.ts` | Builds the whole-file `node --test <dist file>` command a bound test runs by, for use as a `verify_cmd` |
-| `cover/dist-file.ts` | Maps a source test file to the compiled `dist/` file `node --test` actually loads |
 | `cover/package-dir.ts` | Maps a spec group to its package/tool directory and test file globs |
 | `openspec/tasks-parser.ts` | Parses `tasks.md` checkbox items and their `<!-- covers: -->` annotations |
 | `openspec/requirements.ts` | Parses `### Requirement:` / `#### Scenario:` blocks out of a spec delta's markdown |

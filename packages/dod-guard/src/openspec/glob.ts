@@ -33,12 +33,14 @@ async function walkDirs(dir: string, segment: string, rest: string[]): Promise<s
   return results;
 }
 
+const SKIP_DIRS = new Set(["node_modules", ".git", ".hg", "__pycache__", ".tox", ".mypy_cache", ".venv", "venv", ".env", "env"]);
+
 /** `**` matches zero or more directory levels (including zero). */
 async function walkDoubleStar(dir: string, rest: string[]): Promise<string[]> {
   const results = await resolveSegments(dir, rest);
   const entries = await listEntries(dir);
   for (const e of entries) {
-    if (e.isDirectory()) {
+    if (e.isDirectory() && !SKIP_DIRS.has(e.name)) {
       results.push(...(await walkDoubleStar(path.join(dir, e.name), rest)));
     }
   }

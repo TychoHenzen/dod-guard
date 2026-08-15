@@ -8,19 +8,12 @@ the feature. A real, pre-existing test.
 ## What it does
 
 - **Scenario-to-test binding** - a scenario in `openspec/specs/*/spec.md`
-  counts as covered only when a `// covers:` marker in a test file names it.
-  The marker comes from the test file itself. Nothing infers a binding by
+  counts as covered only when a `covers:` marker in a test file names it.
+  The comment prefix depends on the language. Nothing infers a binding by
   title match
-- **Reachability, not just execution** - a bound test that imports a function
-  and calls it directly is not the same as a user reaching that function. The
-  bound test runs under coverage instrumentation, scoped to its package's
-  compiled output, and `cover` checks whether a project-declared entry point
-  actually executed
-- **Four honest outcomes** - every scenario resolves to one of four states.
-  `unwired` means no test binds it. `covered-but-not-integrated` means a bound
-  test passed but never reached a declared entry point. `covered-and-integrated`
-  means a bound test passed and reached one. `failed` means the bound test
-  failed, or no test with that name exists
+- **Two honest outcomes** - every scenario resolves to `bound` (a test
+  carries a marker naming this scenario) or `unwired` (no test does).
+  `cover` never runs a test - it scans markers by regex
 - **Ratcheted, not a one-shot pass/fail** - `.github/quality/coverage-gate-baseline.json`
   adopts a scenario it has never scored at whatever outcome `cover` finds. It
   fails a run only when a scenario it already scored regresses to a worse
@@ -77,8 +70,7 @@ stdio server; with arguments it runs a command:
 dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]
 ```
 
-`cover` reports each scenario as `covered-and-integrated`,
-`covered-but-not-integrated`, `unwired`, or `failed` against the coverage-gate
+`cover` reports each scenario as `bound` or `unwired` against the coverage-gate
 ratchet baseline. One of `<change-id>` or `--all` is required.
 `--write-baseline` needs `--all` - it replaces the whole baseline, and a
 change-scoped run only ever sees its own scenarios. `--cwd=<dir>` overrides
@@ -253,8 +245,8 @@ model," "fix skill for literal models."
 implementation       usually via /step-by-step or /cheap-step
         |
         v
-dod-guard cover <id> checks binding + reachability, ratcheted against
-                     the coverage-gate baseline
+dod-guard cover <id> checks binding, ratcheted against the
+                     coverage-gate baseline
         |
    clean run
         v

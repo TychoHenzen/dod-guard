@@ -68,9 +68,8 @@ When the user asks how well a capability is tested, run:
 dod-guard cover --all
 ```
 
-Report the outcome (`covered-and-integrated`, `covered-but-not-integrated`,
-`unwired`, or `failed`) for the scenarios relevant to what they asked about,
-not the entire report.
+Report the outcome (`bound` or `unwired`) for the scenarios relevant to what
+they asked about, not the entire report.
 
 ## Handoff awareness
 

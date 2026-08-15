@@ -15,7 +15,9 @@ Check whether the target directory has an `openspec/` subdirectory.
 
 **No `openspec/` directory (fresh project):** Run `openspec init --tools
 claude`. Report the structure it created (the directories and files
-`openspec init` reports on stdout).
+`openspec init` reports on stdout). Then delete `.claude/commands/opsx/`
+if it exists - `openspec init --tools claude` generates generic opsx
+slash commands there, but dod-guard's own `opsx-*` skills replace them.
 
 **`openspec/` already exists:** Do not re-run `openspec init`. Instead
 report what is already set up:

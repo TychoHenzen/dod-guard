@@ -52,11 +52,7 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
   }
 
   const summary = summarizeReport(reports);
-  io.write(
-    `\n${reports.length} scenario(s): ${summary["covered-and-integrated"]} covered-and-integrated, ` +
-      `${summary["covered-but-not-integrated"]} covered-but-not-integrated, ${summary.unwired} unwired, ` +
-      `${summary.failed} failed\n`,
-  );
+  io.write(`\n${reports.length} scenario(s): ${summary.bound} bound, ${summary.unwired} unwired\n`);
 
   if (opts.writeBaseline) {
     await writeBaseline(opts.cwd, outcomesFromReport(reports));

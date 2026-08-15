@@ -1,22 +1,29 @@
 /**
- * A spec group maps 1:1 to the package or tool directory that implements it,
- * per root CLAUDE.md's "Monorepo overview": five groups match a package name
- * under `packages/`, the sixth (`openspec-dashboard`) names the tool under
- * `tools/openspec-dashboard`. `cover` uses this to find a group's test files
- * and, later, its `dist/**\/*.js` for coverage instrumentation.
+ * Default test-file globs when no `openspec/test-globs.json` entry exists for
+ * a group. Covers common test-file naming conventions across all languages
+ * the marker scanner supports (see languages.ts). Project-wide: `**` starts
+ * from the repo root. `resolveGlob`'s `walkDoubleStar` skips `node_modules`,
+ * `.git`, and other non-source directories.
  */
-export function packageDirForGroup(group: string): string {
-  if (group === "openspec-dashboard") return "tools/openspec-dashboard";
-  return `packages/${group}`;
-}
 
-/** Glob patterns for where a group's test files live, relative to the repo
- * root. Packages keep TypeScript sources under `src/`; `tools/
- * openspec-dashboard` has no such convention and runs plain JS, so it's
- * searched flat for both extensions. `resolveGlob` has no brace-expansion, so
- * this returns one pattern per extension instead of one braced pattern. */
-export function testGlobsForGroup(group: string): string[] {
-  const pkgDir = packageDirForGroup(group);
-  if (pkgDir.startsWith("packages/")) return [`${pkgDir}/src/**/*.test.ts`];
-  return [`${pkgDir}/**/*.test.js`, `${pkgDir}/**/*.test.mjs`];
+const DEFAULT_TEST_GLOBS: string[] = [
+  "**/*.test.ts",
+  "**/*.test.js",
+  "**/*.test.mjs",
+  "**/*.test.cjs",
+  "**/*.spec.ts",
+  "**/*.spec.js",
+  "**/test_*.py",
+  "**/*_test.py",
+  "**/*_test.go",
+  "**/*_test.rb",
+  "**/*_spec.rb",
+  "**/*Test.java",
+  "**/*Test.kt",
+  "**/test_*.sh",
+  "**/test_*.bash",
+];
+
+export function testGlobsForGroup(_group: string): string[] {
+  return DEFAULT_TEST_GLOBS;
 }
