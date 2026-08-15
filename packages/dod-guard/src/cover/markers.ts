@@ -18,6 +18,7 @@ interface MarkerBinding {
   scenarioId: string;
   file: string;
   testName: string;
+  testBody?: string;
 }
 
 export function markersInFile(file: string, content: string): MarkerBinding[] {
@@ -39,6 +40,8 @@ export function markersInFile(file: string, content: string): MarkerBinding[] {
     const testName = lang.findTestName(lines, i + 1);
     if (!testName) continue;
 
+    const testBody = lang.findTestBody?.(lines, i + 1) ?? undefined;
+
     bindings.push({
       scenarioId: buildScenarioId(
         groupCapability.slice(0, slashIndex),
@@ -48,6 +51,7 @@ export function markersInFile(file: string, content: string): MarkerBinding[] {
       ),
       file,
       testName,
+      ...(testBody ? { testBody } : {}),
     });
   }
 
