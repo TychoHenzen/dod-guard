@@ -9,8 +9,10 @@
 
 ## 2. Baseline cleanup
 
-- [ ] 2.1 Run `dod-guard cover --all --write-baseline` to drop the 11 orphaned entries from `dod-guard/generation-from-spec` (7) and `dod-guard/trace-closure` (4)
-- [ ] 2.2 Verify the rewritten baseline has no orphaned entries and the scenario count matches the current spec tree
+- [x] 2.1 Run `dod-guard cover --all --write-baseline` to drop the 11 orphaned entries from `dod-guard/generation-from-spec` (7) and `dod-guard/trace-closure` (4)
+<!-- status: completed -->
+- [x] 2.2 Verify the rewritten baseline has no orphaned entries and the scenario count matches the current spec tree
+<!-- status: completed -->
 
 ## 3. Wire covers markers to existing dod-guard tests
 
