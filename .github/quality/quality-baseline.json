@@ -359,6 +359,7 @@
     "packages/obsidian-rag/src/types.ts::types-per-file": 1,
     "packages/quality-guard/scripts/sentinel.d.mts::types-per-file": 1,
     "packages/quality-guard/src/scanner.ts::types-per-file": 1,
+    "packages/dod-guard/src/cover/baseline.test.ts::file-length": 1,
     "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs::file-length": 1,
     "packages/dod-guard/skills/skill-migrate/scripts/migration-check.test.mjs::file-length": 1,
     "packages/evomcp/src/agent.test.ts::file-length": 1,
