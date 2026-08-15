@@ -4,7 +4,7 @@
 // Interactive tools use Obsidian CLI as source of truth (v1.12+).
 // Indexer uses filesystem for bulk performance (CLI too slow for 1000+ notes).
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { McpServer, type ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -167,7 +167,17 @@ import { fileURLToPath } from "node:url";
 
 const _filename = fileURLToPath(import.meta.url);
 
-if (process.argv[1] === _filename) {
+function isMainModule(): boolean {
+  const arg = process.argv[1];
+  if (!arg) return false;
+  try {
+    return realpathSync(arg) === realpathSync(_filename);
+  } catch {
+    return arg === _filename;
+  }
+}
+
+if (isMainModule()) {
   main().catch((err) => {
     console.error("Fatal:", err);
     process.exit(1);

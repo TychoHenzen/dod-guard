@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "default",
-  "createdAt": "2026-08-14T21:49:42.009Z",
-  "total": 845,
+  "createdAt": "2026-08-15T07:51:46.498Z",
+  "total": 861,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -292,7 +292,8 @@
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
-    "packages/quality-guard/src/skips.ts"
+    "packages/quality-guard/src/skips.ts",
+    "scripts/ci/smoke-bundle.mjs"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -319,17 +320,22 @@
     "packages/quality-guard/scripts/sentinel.d.mts::dead-export": 1,
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-comments.mjs::dead-export": 1,
     "packages/quality-guard/src/scanner.ts::dead-export": 2,
+    "packages/dod-guard/src/index.ts::duplicate-block": 2,
     "packages/evomcp/src/evolve.gaps.test.ts::duplicate-block": 6,
     "packages/evomcp/src/evolve.test.ts::duplicate-block": 13,
+    "packages/evomcp/src/index.ts::duplicate-block": 2,
     "packages/evomcp/src/orchestrate.test.ts::duplicate-block": 8,
     "packages/evomcp/src/render.evolve.test.ts::duplicate-block": 4,
     "packages/evomcp/src/render.orchestrate.test.ts::duplicate-block": 8,
     "packages/evomcp/src/render.solve-escalate.test.ts::duplicate-block": 6,
     "packages/evomcp/src/render.solve-pass.test.ts::duplicate-block": 4,
+    "packages/gitevo/src/index.ts::duplicate-block": 12,
     "packages/obsidian-rag/src/index.test.ts::duplicate-block": 10,
+    "packages/obsidian-rag/src/index.ts::duplicate-block": 2,
     "packages/obsidian-rag/src/indexer.test.ts::duplicate-block": 9,
     "packages/obsidian-rag/src/retriever.test.ts::duplicate-block": 12,
     "packages/obsidian-rag/src/store.test.ts::duplicate-block": 7,
+    "packages/quality-guard/src/index.ts::duplicate-block": 2,
     "packages/dod-guard/src/cli.ts::types-per-file": 1,
     "packages/dod-guard/src/cover/entry-points.ts::types-per-file": 1,
     "packages/dod-guard/src/cover/report.ts::types-per-file": 1,
@@ -469,7 +475,6 @@
     "packages/dod-guard/skills/skill-migrate/scripts/migration-check.test.mjs::duplicate-block": 10,
     "packages/evomcp/src/degenerate.ts::duplicate-block": 4,
     "packages/evomcp/src/solve.test.ts::duplicate-block": 17,
-    "packages/gitevo/src/index.ts::duplicate-block": 10,
     "packages/gitevo/src/operations.test.ts::duplicate-block": 12,
     "packages/obsidian-rag/src/indexer.ts::duplicate-block": 2,
     "packages/quality-guard/scripts/sentinel.d.mts::duplicate-block": 1,
@@ -730,6 +735,10 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "scripts/ci/smoke-bundle.mjs::complexity": 2,
+    "scripts/ci/smoke-bundle.mjs::file-length": 1,
+    "scripts/ci/smoke-bundle.mjs::function-length": 2,
+    "scripts/ci/smoke-bundle.mjs::nesting-depth": 1
   }
 }

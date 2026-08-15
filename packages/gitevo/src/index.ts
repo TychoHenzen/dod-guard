@@ -9,7 +9,7 @@
  * export_lessons outputs memory-ready JSON for obsidian-rag import.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -251,7 +251,17 @@ async function main(): Promise<void> {
   await server.connect(transport);
 }
 
-if (process.argv[1] === _filename) {
+function isMainModule(): boolean {
+  const arg = process.argv[1];
+  if (!arg) return false;
+  try {
+    return realpathSync(arg) === realpathSync(_filename);
+  } catch {
+    return arg === _filename;
+  }
+}
+
+if (isMainModule()) {
   main().catch((err) => {
     process.stderr.write(`gitevo MCP server failed: ${err}\n`);
     process.exit(1);

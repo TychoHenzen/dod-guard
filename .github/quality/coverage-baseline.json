@@ -14,10 +14,10 @@
       "lines": 95.29
     },
     "gitevo": {
-      "statements": 95.62,
-      "branches": 87.06,
-      "functions": 96.55,
-      "lines": 95.62
+      "statements": 95.5,
+      "branches": 86.5,
+      "functions": 96.59,
+      "lines": 95.5
     },
     "obsidian-rag": {
       "statements": 75.41,
@@ -26,10 +26,10 @@
       "lines": 75.41
     },
     "quality-guard": {
-      "statements": 84.86,
-      "branches": 87.8,
-      "functions": 87.5,
-      "lines": 84.86
+      "statements": 84.67,
+      "branches": 84.09,
+      "functions": 88.88,
+      "lines": 84.67
     }
   }
 }

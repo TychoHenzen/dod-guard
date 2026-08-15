@@ -197,15 +197,26 @@ Gate scripts live in `scripts/ci/` and all run locally with no arguments (except
 All five MCP servers use the same guard so tests can import the server module without starting stdio:
 
 ```typescript
+import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 const _filename = fileURLToPath(import.meta.url);
+
+function isMainModule(): boolean {
+  const arg = process.argv[1];
+  if (!arg) return false;
+  try {
+    return realpathSync(arg) === realpathSync(_filename);
+  } catch {
+    return arg === _filename;
+  }
+}
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
 
-if (process.argv[1] === _filename) {
+if (isMainModule()) {
   main().catch((err) => {
     process.stderr.write(`<name> MCP server failed: ${err}\n`);
     process.exit(1);

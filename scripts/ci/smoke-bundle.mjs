@@ -138,11 +138,23 @@ async function main(argv) {
       `smoke OK — ${result.serverName} v${result.version} answered initialize and listed ${result.tools.length} tools\n`,
     );
     process.stdout.write(`  tools: ${result.tools.join(", ")}\n`);
-    return 0;
   } catch (err) {
     process.stdout.write(`smoke FAILED for ${pkgName}\n  ${err.message}\n`);
     return 1;
   }
+
+  const symlink = join(ROOT, "node_modules", pkgName, "dist", "bundle.js");
+  if (existsSync(symlink)) {
+    try {
+      await handshake(symlink, pkgName, expectedVersion);
+      process.stdout.write(`  symlink path OK\n`);
+    } catch (err) {
+      process.stdout.write(`smoke FAILED for ${pkgName} via symlink path\n  ${err.message}\n`);
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 main(process.argv.slice(2)).then((code) => {

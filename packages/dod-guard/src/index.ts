@@ -4,7 +4,7 @@
  * openspec/changes/route-skills-through-openspec. This server currently
  * registers no tools; `cover` lands in a later step of that change.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -24,7 +24,17 @@ async function main(): Promise<void> {
   await server.connect(transport);
 }
 
-if (process.argv[1] === _filename) {
+function isMainModule(): boolean {
+  const arg = process.argv[1];
+  if (!arg) return false;
+  try {
+    return realpathSync(arg) === realpathSync(_filename);
+  } catch {
+    return arg === _filename;
+  }
+}
+
+if (isMainModule()) {
   const argv = process.argv.slice(2);
   if (isCliInvocation(argv)) {
     runCli(argv)
