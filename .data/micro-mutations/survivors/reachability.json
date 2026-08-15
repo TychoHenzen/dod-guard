@@ -1,0 +1,109 @@
+{
+  "source": "packages/dod-guard/src/cover/reachability.ts",
+  "date": "2026-08-15T07:09:20.224Z",
+  "summary": {
+    "total": 91,
+    "killed": 64,
+    "survived": 12,
+    "timeout": 3,
+    "unviable": 12
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 56,
+      "dist_col": 84
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "15",
+      "mutator": "MethodExpression",
+      "replacement": "Object.values(fileCoverage.f).every(hits => hits > 0)",
+      "dist_line": 60,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "41",
+      "mutator": "MethodExpression",
+      "replacement": "pkgDir.endsWith(\"packages/\")",
+      "dist_line": 80,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "57",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 104,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "58",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 104,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "59",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 104,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "63",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 108,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "79",
+      "mutator": "MethodExpression",
+      "replacement": "input.entryPointFiles.every(file => integratedFiles.has(path.resolve(input.cwd, file)))",
+      "dist_line": 123,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "83",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 125,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "86",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 126,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "87",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 128,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/reachability.js",
+      "id": "90",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 129,
+      "dist_col": 58
+    }
+  ]
+}

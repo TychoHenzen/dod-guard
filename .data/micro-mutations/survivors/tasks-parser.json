@@ -1,0 +1,389 @@
+{
+  "source": "packages/dod-guard/src/openspec/tasks-parser.ts",
+  "date": "2026-08-15T07:09:34.869Z",
+  "summary": {
+    "total": 184,
+    "killed": 129,
+    "survived": 47,
+    "timeout": 5,
+    "unviable": 3
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "0",
+      "mutator": "Regex",
+      "replacement": "/-\\s*\\[([ xX])\\]\\s*(.+?)\\s*$/",
+      "dist_line": 3,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "2",
+      "mutator": "Regex",
+      "replacement": "/^-\\s\\[([ xX])\\]\\s*(.+?)\\s*$/",
+      "dist_line": 3,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "5",
+      "mutator": "Regex",
+      "replacement": "/^-\\s*\\[([ xX])\\]\\s(.+?)\\s*$/",
+      "dist_line": 3,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "10",
+      "mutator": "Regex",
+      "replacement": "/(\\d+(?:\\.\\d+)*)\\s+(.*)$/",
+      "dist_line": 4,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "11",
+      "mutator": "Regex",
+      "replacement": "/^(\\d+(?:\\.\\d+)*)\\s+(.*)/",
+      "dist_line": 4,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "12",
+      "mutator": "Regex",
+      "replacement": "/^(\\d(?:\\.\\d+)*)\\s+(.*)$/",
+      "dist_line": 4,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "14",
+      "mutator": "Regex",
+      "replacement": "/^(\\d+(?:\\.\\d+))\\s+(.*)$/",
+      "dist_line": 4,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "15",
+      "mutator": "Regex",
+      "replacement": "/^(\\d+(?:\\.\\d)*)\\s+(.*)$/",
+      "dist_line": 4,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "17",
+      "mutator": "Regex",
+      "replacement": "/^(\\d+(?:\\.\\d+)*)\\s(.*)$/",
+      "dist_line": 4,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "20",
+      "mutator": "Regex",
+      "replacement": "/\\s*<!--\\s*covers:\\s*(\\S+\\/\\S+)\\s*::\\s*(.+?)\\s*::\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "21",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*covers:\\s*(\\S+\\/\\S+)\\s*::\\s*(.+?)\\s*::\\s*(.+?)\\s*-->\\s*/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "23",
+      "mutator": "Regex",
+      "replacement": "/^\\S*<!--\\s*covers:\\s*(\\S+\\/\\S+)\\s*::\\s*(.+?)\\s*::\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "24",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\scovers:\\s*(\\S+\\/\\S+)\\s*::\\s*(.+?)\\s*::\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "26",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*covers:\\s(\\S+\\/\\S+)\\s*::\\s*(.+?)\\s*::\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "32",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*covers:\\s*(\\S+\\/\\S+)\\s::\\s*(.+?)\\s*::\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "34",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*covers:\\s*(\\S+\\/\\S+)\\s*::\\s(.+?)\\s*::\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "37",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*covers:\\s*(\\S+\\/\\S+)\\s*::\\s*(.+?)\\s::\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "39",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*covers:\\s*(\\S+\\/\\S+)\\s*::\\s*(.+?)\\s*::\\s(.+?)\\s*-->\\s*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "42",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*covers:\\s*(\\S+\\/\\S+)\\s*::\\s*(.+?)\\s*::\\s*(.+?)\\s-->\\s*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "45",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*covers:\\s*(\\S+\\/\\S+)\\s*::\\s*(.+?)\\s*::\\s*(.+?)\\s*-->\\S*$/",
+      "dist_line": 5,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "46",
+      "mutator": "Regex",
+      "replacement": "/\\s*<!--\\s*(status|verify_cmd|verify_surface|manual_required):\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 6,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "47",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*(status|verify_cmd|verify_surface|manual_required):\\s*(.+?)\\s*-->\\s*/",
+      "dist_line": 6,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "49",
+      "mutator": "Regex",
+      "replacement": "/^\\S*<!--\\s*(status|verify_cmd|verify_surface|manual_required):\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 6,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "50",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s(status|verify_cmd|verify_surface|manual_required):\\s*(.+?)\\s*-->\\s*$/",
+      "dist_line": 6,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "52",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*(status|verify_cmd|verify_surface|manual_required):\\s(.+?)\\s*-->\\s*$/",
+      "dist_line": 6,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "55",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*(status|verify_cmd|verify_surface|manual_required):\\s*(.+?)\\s-->\\s*$/",
+      "dist_line": 6,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "58",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\s*(status|verify_cmd|verify_surface|manual_required):\\s*(.+?)\\s*-->\\S*$/",
+      "dist_line": 6,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "59",
+      "mutator": "Regex",
+      "replacement": "/\\s*<!--\\s*status:/",
+      "dist_line": 7,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "61",
+      "mutator": "Regex",
+      "replacement": "/^\\S*<!--\\s*status:/",
+      "dist_line": 7,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "62",
+      "mutator": "Regex",
+      "replacement": "/^\\s*<!--\\sstatus:/",
+      "dist_line": 7,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "64",
+      "mutator": "Regex",
+      "replacement": "/#{1,6}\\s/",
+      "dist_line": 8,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "66",
+      "mutator": "Regex",
+      "replacement": "/^#{1,6}\\S/",
+      "dist_line": 8,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "76",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 13,
+      "dist_col": 77
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "86",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 21,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "88",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "dist_line": 21,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "112",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 41,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "130",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 51,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "132",
+      "mutator": "EqualityOperator",
+      "replacement": "lines[next].trim().length >= 0",
+      "dist_line": 51,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "134",
+      "mutator": "MethodExpression",
+      "replacement": "lines[next]",
+      "dist_line": 51,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "140",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= lines.length",
+      "dist_line": 62,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "146",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 64,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "147",
+      "mutator": "UpdateOperator",
+      "replacement": "fallbackIndex--",
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "148",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 67,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "157",
+      "mutator": "EqualityOperator",
+      "replacement": "next <= lines.length",
+      "dist_line": 74,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "170",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 86,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "172",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "dist_line": 86,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/tasks-parser.js",
+      "id": "173",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 88,
+      "dist_col": 9
+    }
+  ]
+}
