@@ -16,8 +16,13 @@ async function withTempCwd(run: (cwd: string) => Promise<void>): Promise<void> {
 }
 
 const report = (id: string, outcome: ScenarioReport["outcome"]): ScenarioReport => ({
-  scenarioId: id, group: "dod-guard", capability: "coverage-gate",
-  requirementTitle: "r", scenarioTitle: "s", outcome, note: "",
+  scenarioId: id,
+  group: "dod-guard",
+  capability: "coverage-gate",
+  requirementTitle: "r",
+  scenarioTitle: "s",
+  outcome,
+  note: "",
 });
 
 test("readBaseline returns an empty object when no baseline file exists yet", async () => {
