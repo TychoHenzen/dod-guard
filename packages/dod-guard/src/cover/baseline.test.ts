@@ -60,13 +60,9 @@ test("compareToBaseline reports a regression from bound to unwired", () => {
   assert.equal(regressions[0].now, "unwired");
 });
 
-test("compareToBaseline reports no regression when a scenario stays unwired", () => {
-  const { regressions } = compareToBaseline([report("s", "unwired")], { s: "unwired" });
-  assert.deepEqual(regressions, []);
-});
-
 // covers: dod-guard/coverage-gate :: The coverage-gate ratchet adopts unseen scenarios and blocks on regression :: A previously baselined scenario reaches a better outcome
-test("compareToBaseline reports improvement when a baselined scenario reaches a better outcome", () => {
+test("held outcome is not a regression, improved outcome is flagged", () => {
+  assert.deepEqual(compareToBaseline([report("s", "unwired")], { s: "unwired" }).regressions, []);
   const { improved, regressions } = compareToBaseline([report("s", "bound")], { s: "unwired" });
   assert.deepEqual(improved, ["s"]);
   assert.deepEqual(regressions, []);
