@@ -14,7 +14,7 @@ import { LANG_TABLE } from "./languages.js";
 import { testGlobsForGroup } from "./package-dir.js";
 import { loadTestGlobs } from "./test-globs.js";
 
-export interface MarkerBinding {
+interface MarkerBinding {
   scenarioId: string;
   file: string;
   testName: string;

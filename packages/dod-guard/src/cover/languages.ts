@@ -1,4 +1,4 @@
-export interface LanguageSpec {
+interface LanguageSpec {
   markerRe: RegExp;
   findTestName: (lines: string[], fromLine: number) => string | null;
 }

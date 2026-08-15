@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 
-export class TestGlobsError extends Error {
+class TestGlobsError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "TestGlobsError";
