@@ -1,9 +1,5 @@
-# openspec-dashboard/scenario-coverage Specification
+## MODIFIED Requirements
 
-## Purpose
-
-Shows which spec scenarios are backed by a test and names the test that proves each claim, so a reader can judge coverage without leaving the browser.
-## Requirements
 ### Requirement: The dashboard resolves scenario-to-test bindings for a project
 
 The dashboard SHALL resolve which scenarios in a project's spec tree are bound to tests by reading `// covers:` markers from that project's test files. It SHALL NOT run tests or spawn `dod-guard cover`. It SHALL scan markers directly, using the same marker format `dod-guard cover` uses. Each binding SHALL include the test body text: the source lines from the test declaration through the end of the test function.
@@ -37,14 +33,7 @@ The spec detail endpoint SHALL include a coverage map alongside the existing sce
 - **WHEN** a client requests the spec detail for a capability with 6 scenarios, 4 bound
 - **THEN** the response includes `boundCount: 4` and `totalCount: 6` alongside the coverage map
 
-### Requirement: Coverage data is cached until the project's openspec directory changes
-
-The dashboard SHALL cache resolved bindings for a project using the same modification-time key the other project reads use. A change to any file under the project's openspec directory or test files SHALL invalidate the cache.
-
-#### Scenario: Bindings are served from cache on repeated requests
-
-- **WHEN** a client requests the same spec detail twice with no file changes in between
-- **THEN** the second request returns the same coverage data without re-scanning marker files
+## ADDED Requirements
 
 ### Requirement: The test body extraction covers brace-delimited and indentation-delimited languages
 
@@ -64,4 +53,3 @@ The marker scanner SHALL extract the test body by reading forward from the test 
 
 - **WHEN** the scanner reads a test containing inner blocks (if/for/try) that add nested brace pairs
 - **THEN** the binding's `testBody` includes all lines through the outermost closing brace of the test function
-
