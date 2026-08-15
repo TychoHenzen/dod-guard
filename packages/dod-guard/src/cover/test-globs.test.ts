@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, test } from "node:test";
-import { loadTestGlobs, TestGlobsError } from "./test-globs.js";
+import { loadTestGlobs } from "./test-globs.js";
 
 let cwd: string;
 
@@ -44,7 +44,7 @@ test("loadTestGlobs throws on malformed entry", async () => {
   await assert.rejects(
     () => loadTestGlobs(cwd),
     (err: Error) => {
-      assert.ok(err instanceof TestGlobsError);
+      assert.equal(err.name, "TestGlobsError");
       assert.ok(err.message.includes('"bad"'));
       return true;
     },
@@ -58,7 +58,7 @@ test("loadTestGlobs throws on array with non-string elements", async () => {
   await assert.rejects(
     () => loadTestGlobs(cwd),
     (err: Error) => {
-      assert.ok(err instanceof TestGlobsError);
+      assert.equal(err.name, "TestGlobsError");
       assert.ok(err.message.includes('"mixed"'));
       return true;
     },
