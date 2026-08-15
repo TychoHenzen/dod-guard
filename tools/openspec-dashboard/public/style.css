@@ -138,3 +138,13 @@ main { display: flex; flex: 1; min-height: 0; }
 .cov-full { color: var(--done); }
 .cov-partial { color: var(--ready); }
 .cov-none { color: var(--dim); }
+
+.spec-tree { display: flex; flex-direction: column; gap: 2px; }
+.tree-folder { border: 1px solid rgba(141,154,171,0.25); border-radius: 6px; padding: 4px; margin-top: 4px; }
+.tree-folder > .tree-children { padding-left: 14px; display: flex; flex-direction: column; gap: 2px; }
+.tree-summary { cursor: pointer; display: flex; justify-content: space-between; gap: 8px; padding: 4px 8px; border-radius: 5px; list-style: none; }
+.tree-summary::-webkit-details-marker { display: none; }
+.tree-summary::before { content: "\25b6"; font-size: 9px; color: var(--dim); margin-right: 4px; transition: transform 0.15s; }
+.tree-folder[open] > .tree-summary::before { transform: rotate(90deg); }
+.tree-summary:hover { background: #202730; }
+.tree-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

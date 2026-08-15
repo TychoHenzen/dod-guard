@@ -36,13 +36,79 @@ function parseSpecTitles(specFilePath) {
   return requirements;
 }
 
+function specCoverage(specId, titles, bindings) {
+  const slashIndex = specId.indexOf("/");
+  if (slashIndex === -1) return { boundCount: 0, totalCount: 0 };
+  const group = specId.slice(0, slashIndex);
+  const capability = specId.slice(slashIndex + 1);
+  let total = 0;
+  let bound = 0;
+  for (const req of titles) {
+    for (const scenario of req.scenarios) {
+      total++;
+      if (bindings.get(`${group}/${capability}::${req.title}||${scenario}`)) bound++;
+    }
+  }
+  return { boundCount: bound, totalCount: total };
+}
+
+function buildSpecTree(specs, coverageBySpec) {
+  const root = {};
+  for (const spec of specs) {
+    const parts = spec.id.split("/");
+    let node = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!node[parts[i]]) node[parts[i]] = {};
+      node = node[parts[i]];
+    }
+    const cov = coverageBySpec.get(spec.id) ?? { boundCount: 0, totalCount: 0 };
+    node[parts[parts.length - 1]] = {
+      _leaf: true,
+      id: spec.id,
+      requirementCount: spec.requirementCount,
+      boundCount: cov.boundCount,
+      totalCount: cov.totalCount,
+    };
+  }
+  return root;
+}
+
+async function resolveAllCoverage(projectPath, specList, getCoverage) {
+  const groups = new Set();
+  for (const spec of specList) {
+    const slash = spec.id.indexOf("/");
+    if (slash !== -1) groups.add(spec.id.slice(0, slash));
+  }
+  const bindingsByGroup = new Map();
+  await Promise.all(
+    [...groups].map(async (group) => {
+      bindingsByGroup.set(group, await getCoverage(projectPath, group));
+    }),
+  );
+  const result = new Map();
+  for (const spec of specList) {
+    const slash = spec.id.indexOf("/");
+    if (slash === -1) {
+      result.set(spec.id, { boundCount: 0, totalCount: 0 });
+      continue;
+    }
+    const group = spec.id.slice(0, slash);
+    const capability = spec.id.slice(slash + 1);
+    const specFilePath = join(projectPath, "openspec", "specs", group, capability, "spec.md");
+    const titles = parseSpecTitles(specFilePath);
+    const bindings = bindingsByGroup.get(group) ?? new Map();
+    result.set(spec.id, specCoverage(spec.id, titles, bindings));
+  }
+  return result;
+}
+
 export function createReads({ read, cache }) {
   const ask = (project, key, args) =>
     cache.get(project.path, key, newestMtime(join(project.path, "openspec")), () =>
       read(project.path, args),
     );
 
-  async function coverageForGroup(projectPath, group) {
+  function coverageForGroup(projectPath, group) {
     return cache.get(
       projectPath,
       `coverage:${group}`,
@@ -56,13 +122,16 @@ export function createReads({ read, cache }) {
       ask(project, "changes", ["list", "--json"]),
       ask(project, "specs", ["list", "--specs", "--json"]),
     ]);
-    return { changes: changes.changes ?? [], specs: specs.specs ?? [] };
+    const specList = specs.specs ?? [];
+    const coverageBySpec = await resolveAllCoverage(project.path, specList, coverageForGroup);
+    const specTree = buildSpecTree(specList, coverageBySpec);
+    return { changes: changes.changes ?? [], specs: specList, specTree };
   }
 
   async function specDetail(project, id) {
     const spec = await ask(project, `spec:${id}`, ["show", id, "--json", "--type", "spec"]);
     const slashIndex = id.indexOf("/");
-    if (slashIndex === -1) return { ...spec, coverage: {} };
+    if (slashIndex === -1) return { ...spec, coverage: {}, boundCount: 0, totalCount: 0 };
 
     const group = id.slice(0, slashIndex);
     const capability = id.slice(slashIndex + 1);
@@ -83,7 +152,8 @@ export function createReads({ read, cache }) {
       }
     }
 
-    return { ...spec, coverage };
+    const cov = specCoverage(id, titles, bindings);
+    return { ...spec, coverage, boundCount: cov.boundCount, totalCount: cov.totalCount };
   }
 
   async function changeDetail(project, id) {

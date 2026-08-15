@@ -8,6 +8,7 @@
 //   OPENSPEC_DASHBOARD_PORT   preferred port, default 4400
 
 import { createServer } from "node:http";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApi } from "./lib/api.mjs";
@@ -16,7 +17,27 @@ import { createReader, locateCli } from "./lib/cli.mjs";
 import { createStore } from "./lib/registry.mjs";
 import { serveStatic } from "./lib/static.mjs";
 
-const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), "public");
+const __dir = dirname(fileURLToPath(import.meta.url));
+const PUBLIC_DIR = join(__dir, "public");
+const PID_FILE = join(__dir, ".dashboard.pid");
+
+function killPrior() {
+  if (!existsSync(PID_FILE)) return;
+  const pid = Number(readFileSync(PID_FILE, "utf-8").trim());
+  if (!pid) return;
+  try {
+    process.kill(pid);
+  } catch {}
+  try {
+    unlinkSync(PID_FILE);
+  } catch {}
+}
+
+killPrior();
+writeFileSync(PID_FILE, String(process.pid));
+process.on("exit", () => {
+  try { unlinkSync(PID_FILE); } catch {}
+});
 const HOST = "127.0.0.1";
 const FIRST_PORT = Number(process.env.OPENSPEC_DASHBOARD_PORT ?? 4400);
 const PORT_ATTEMPTS = 20;

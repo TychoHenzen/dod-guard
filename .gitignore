@@ -68,3 +68,5 @@ clipboard.txt
 # dod_create scratch: DoD markdown from smoke and anti-cheat test runs
 .cli-smoke.md
 test-anticheat.md
+# openspec-dashboard process lock
+.dashboard.pid

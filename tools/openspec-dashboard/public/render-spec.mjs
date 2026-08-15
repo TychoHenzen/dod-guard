@@ -50,16 +50,7 @@ export function renderSpec(spec) {
   const coverage = spec.coverage ?? {};
   return el("article", { class: "detail" }, [
     el("h2", {}, spec.title ?? spec.id),
-    el("p", { class: "meta" }, [
-      `${requirements.length} requirements`,
-      (() => {
-        const allScenarios = requirements.flatMap((r) => r.scenarios ?? []);
-        const total = allScenarios.length;
-        if (total === 0) return null;
-        const bound = countBound(allScenarios, coverage);
-        return el("span", { class: covClass(bound, total) }, `, ${bound}/${total} scenarios bound`);
-      })(),
-    ]),
+    el("p", { class: "meta" }, `${requirements.length} requirements`),
     spec.overview ? el("p", { class: "purpose" }, spec.overview) : null,
     requirements.length
       ? el(

@@ -20,7 +20,69 @@ export function renderTabs(projects, active, { onSelect, onScan }) {
   return [...tabs, el("button", { type: "button", class: "tab add", title: "Find projects", onclick: onScan }, "+")];
 }
 
-function entry(label, note, selected, onclick) {
+function covClass(bound, total) {
+  if (total === 0) return "cov-count cov-none";
+  if (bound === total) return "cov-count cov-full";
+  if (bound > 0) return "cov-count cov-partial";
+  return "cov-count cov-none";
+}
+
+function covText(bound, total) {
+  if (total === 0) return "";
+  return `${bound}/${total}`;
+}
+
+function specEntry(name, leaf, selected, onclick) {
+  return el("button", { type: "button", class: selected ? "entry selected" : "entry", onclick }, [
+    el("span", { class: "entry-name" }, name),
+    el("span", { class: covClass(leaf.boundCount, leaf.totalCount) }, covText(leaf.boundCount, leaf.totalCount)),
+  ]);
+}
+
+function aggregate(node) {
+  let bound = 0;
+  let total = 0;
+  for (const key of Object.keys(node)) {
+    if (key === "_leaf") continue;
+    const child = node[key];
+    if (child._leaf) {
+      bound += child.boundCount;
+      total += child.totalCount;
+    } else {
+      const sub = aggregate(child);
+      bound += sub.bound;
+      total += sub.total;
+    }
+  }
+  return { bound, total };
+}
+
+function treeNode(name, node, foldState, pathPrefix, { selection, onOpen, filter }) {
+  if (node._leaf) {
+    if (filter && !matches(node.id, filter)) return null;
+    const selected = selection?.kind === "spec" && selection.id === node.id;
+    return specEntry(name, node, selected, () => onOpen("spec", node.id));
+  }
+  const children = [];
+  for (const key of Object.keys(node).sort()) {
+    if (key === "_leaf") continue;
+    const child = treeNode(key, node[key], foldState, `${pathPrefix}/${key}`, { selection, onOpen, filter });
+    if (child) children.push(child);
+  }
+  if (children.length === 0) return null;
+  const agg = aggregate(node);
+  const path = `${pathPrefix}/${name}`;
+  const open = foldState.get(path) ?? true;
+  return el("details", { class: "tree-folder", open: open || undefined }, [
+    el("summary", { class: "tree-summary", onclick: () => foldState.set(path, !open) }, [
+      el("span", { class: "tree-name" }, name),
+      el("span", { class: covClass(agg.bound, agg.total) }, covText(agg.bound, agg.total)),
+    ]),
+    el("div", { class: "tree-children" }, children),
+  ]);
+}
+
+function changeEntry(label, note, selected, onclick) {
   return el("button", { type: "button", class: selected ? "entry selected" : "entry", onclick }, [
     el("span", { class: "entry-name" }, label),
     el("span", { class: "entry-note" }, note),
@@ -34,42 +96,27 @@ function group(title, rows) {
   ]);
 }
 
-// A spec id is "<package>/<name>" after the per-package split. An id with no
-// slash has no package, so it gets its own group titled by the full id.
-function splitSpecId(id) {
-  const cut = id.lastIndexOf("/");
-  return cut === -1 ? { title: id, label: id } : { title: id.slice(0, cut), label: id.slice(cut + 1) };
-}
-
-function groupSpecs(specs, { selection, onOpen }) {
-  const isOpen = (id) => selection?.kind === "spec" && selection.id === id;
-  const byTitle = new Map();
-  for (const spec of specs) {
-    const { title, label } = splitSpecId(spec.id);
-    const bucket = byTitle.get(title) ?? [];
-    bucket.push({ spec, label });
-    byTitle.set(title, bucket);
-  }
-  return [...byTitle.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([title, rows]) => {
-      const sorted = [...rows].sort((a, b) => a.label.localeCompare(b.label));
-      const specRows = sorted.map(({ spec, label }) =>
-        entry(label, `${spec.requirementCount} reqs`, isOpen(spec.id), () => onOpen("spec", spec.id)),
-      );
-      return group(title, specRows);
-    });
-}
-
-export function renderLists({ changes, specs }, { filter, selection, onOpen }) {
+export function renderLists({ changes, specTree }, { filter, selection, onOpen, foldState }) {
   const isOpen = (kind, id) => selection?.kind === kind && selection.id === id;
   const changeRows = changes
     .filter((change) => matches(change.name, filter))
     .map((change) =>
-      entry(change.name, `${change.completedTasks}/${change.totalTasks}`, isOpen("change", change.name), () =>
+      changeEntry(change.name, `${change.completedTasks}/${change.totalTasks}`, isOpen("change", change.name), () =>
         onOpen("change", change.name),
       ),
     );
-  const matchingSpecs = specs.filter((spec) => matches(spec.id, filter));
-  return [group("Active changes", changeRows), ...groupSpecs(matchingSpecs, { selection, onOpen })];
+  const treeNodes = [];
+  if (specTree) {
+    for (const key of Object.keys(specTree).sort()) {
+      const node = treeNode(key, specTree[key], foldState, "", { selection, onOpen, filter });
+      if (node) treeNodes.push(node);
+    }
+  }
+  const specsSection = el("div", { class: "group" }, [
+    el("h3", {}, "Specs"),
+    treeNodes.length
+      ? el("div", { class: "spec-tree" }, treeNodes)
+      : el("p", { class: "empty" }, "No specs."),
+  ]);
+  return [group("Active changes", changeRows), specsSection];
 }

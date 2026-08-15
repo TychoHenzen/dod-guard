@@ -15,7 +15,7 @@ const dom = {
   refresh: document.getElementById("refresh"),
 };
 
-const state = { projects: [], active: 0, overview: null, selection: null, filter: "", scan: null };
+const state = { projects: [], active: 0, overview: null, selection: null, filter: "", scan: null, foldState: new Map() };
 
 const problem = (err) => el("p", { class: "error" }, err.message);
 const notice = (text) => el("p", { class: "empty" }, text);
@@ -26,7 +26,7 @@ function paintTabs() {
 
 function paintLists() {
   if (!state.overview) return replace(dom.lists);
-  const options = { filter: state.filter, selection: state.selection, onOpen: openItem };
+  const options = { filter: state.filter, selection: state.selection, onOpen: openItem, foldState: state.foldState };
   replace(dom.lists, ...renderLists(state.overview, options));
 }
 

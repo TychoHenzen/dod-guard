@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-15T08:36:33.696Z",
-  "total": 855,
+  "total": 875,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -292,7 +292,13 @@
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
-    "packages/quality-guard/src/skips.ts"
+    "packages/quality-guard/src/skips.ts",
+    "tools/openspec-dashboard/lib/project-reads.mjs",
+    "tools/openspec-dashboard/lib/static.mjs",
+    "tools/openspec-dashboard/public/app.js",
+    "tools/openspec-dashboard/public/render-spec.mjs",
+    "tools/openspec-dashboard/public/sidebar.mjs",
+    "tools/openspec-dashboard/serve.mjs"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -734,6 +740,18 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "tools/openspec-dashboard/lib/project-reads.mjs::complexity": 4,
+    "tools/openspec-dashboard/lib/project-reads.mjs::function-length": 1,
+    "tools/openspec-dashboard/lib/project-reads.mjs::unused-local": 2,
+    "tools/openspec-dashboard/lib/project-reads.mjs::file-length": 1,
+    "tools/openspec-dashboard/lib/project-reads.mjs::param-count": 1,
+    "tools/openspec-dashboard/public/sidebar.mjs::complexity": 2,
+    "tools/openspec-dashboard/public/sidebar.mjs::file-length": 1,
+    "tools/openspec-dashboard/public/sidebar.mjs::param-count": 3,
+    "tools/openspec-dashboard/public/sidebar.mjs::else-branch": 1,
+    "tools/openspec-dashboard/public/app.js::else-branch": 1,
+    "tools/openspec-dashboard/public/render-spec.mjs::complexity": 2,
+    "tools/openspec-dashboard/serve.mjs::unused-local": 1
   }
 }

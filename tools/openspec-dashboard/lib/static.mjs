@@ -26,6 +26,6 @@ export function serveStatic(root, urlPath, res) {
     res.end("not found");
     return;
   }
-  res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" });
+  res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", "cache-control": "no-cache" });
   createReadStream(file).pipe(res);
 }
