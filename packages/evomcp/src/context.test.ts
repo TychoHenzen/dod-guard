@@ -22,6 +22,7 @@ async function freshCtx(): Promise<typeof import("./context.js")> {
 // ── assembleContext ─────────────────────────────────────────────────────
 
 describe("assembleContext", () => {
+  // covers: evomcp/candidate-screening :: Context is assembled deterministically across seven layers and cached :: Layer omitted when absent
   it("goal only → includes goal in output, has hash, estimates tokens", async () => {
     const { assembleContext } = await freshCtx();
     const result = assembleContext({ goal: "Fix the login bug" });
@@ -77,6 +78,7 @@ describe("assembleContext", () => {
     assert.ok(!result.assembled.includes("truncated"), "no truncation");
   });
 
+  // covers: evomcp/candidate-screening :: Context is assembled deterministically across seven layers and cached :: Identical layers hit the cache
   it("same layers twice → cached (same hash)", async () => {
     const { assembleContext } = await freshCtx();
     const layers = { goal: "Fix bug" };
@@ -88,6 +90,7 @@ describe("assembleContext", () => {
     assert.equal(a.estimatedTokens, b.estimatedTokens);
   });
 
+  // covers: evomcp/candidate-screening :: Context is assembled deterministically across seven layers and cached :: Assembled text exceeds the character budget
   it("truncated when > 16000 chars", async () => {
     const { assembleContext } = await freshCtx();
     const longGoal = "x".repeat(16_500);

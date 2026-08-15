@@ -93,6 +93,7 @@ describe("selectWinner", () => {
     adoptThrows = false;
   }
 
+  // covers: evomcp/solve :: A single survivor is adopted directly, several go through the judge :: Exactly one survivor
   it("skips the judge when only one candidate survived", async () => {
     reset();
     const only = attempt(0);
@@ -148,6 +149,7 @@ describe("selectWinner", () => {
     });
   });
 
+  // covers: evomcp/solve :: A single survivor is adopted directly, several go through the judge :: Several survivors
   it("adopts the branch the judge named and abandons the rest", async () => {
     reset();
     judgeWinner = "solve-strategy-1";
@@ -175,6 +177,7 @@ describe("selectWinner", () => {
     assert.equal(selection.verdict, undefined);
   });
 
+  // covers: evomcp/candidate-screening :: The judge compares multiple surviving candidates on a weighted rubric :: Judge output names a winner with no matching scores
   it("keeps the first survivor when the judge names a branch nobody has", async () => {
     reset();
     judgeWinner = "solve-strategy-9";

@@ -61,6 +61,7 @@ test("buildArgs omits every flag the caller did not set", () => {
   );
 });
 
+// covers: quality-guard/mcp-tools :: Scan reports without judging :: Scan a directory
 test("runScan parses the scanner report on success", () => {
   const fake = () => JSON.stringify({ summary: { total: 0 }, violations: [] });
   const result = runScan({ paths: ["src"] }, fake as never);
@@ -68,6 +69,7 @@ test("runScan parses the scanner report on success", () => {
   assert.deepEqual(result.report, { summary: { total: 0 }, violations: [] });
 });
 
+// covers: quality-guard/mcp-tools :: A failed scan is reported, not thrown :: Scanner exits non-zero with a report
 test("runScan treats a non-zero exit as a verdict, not a crash", () => {
   const fake = () => {
     const err = new Error("Command failed") as Error & { status: number; stdout: string };
@@ -80,6 +82,7 @@ test("runScan treats a non-zero exit as a verdict, not a crash", () => {
   assert.deepEqual(result.report, { comparison: { regressions: [{ file: "a.ts" }] } });
 });
 
+// covers: quality-guard/mcp-tools :: A failed scan is reported, not thrown :: Scanner cannot start
 test("runScan throws when the scanner produced no report at all", () => {
   const fake = () => {
     throw new Error("spawn ENOENT");

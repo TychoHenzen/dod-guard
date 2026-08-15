@@ -49,12 +49,14 @@ afterEach(() => {
 // ── getMemoryDb ───────────────────────────────────────────────────────────
 
 describe("getMemoryDb", () => {
+  // covers: gitevo/memory-bus :: Messages persist under .evo/ in a shared database :: First write in a fresh checkout
   it("creates database file", () => {
     getMemoryDb(tempDir);
     const dbPath = path.join(tempDir, ".evo", "memory.db");
     assert.ok(fs.existsSync(dbPath));
   });
 
+  // covers: gitevo/memory-bus :: Messages persist under .evo/ in a shared database :: Repeated calls against the same directory
   it("returns same instance on second call (cached)", () => {
     const db1 = getMemoryDb(tempDir);
     const db2 = getMemoryDb(tempDir);
@@ -89,6 +91,7 @@ describe("writeMessage", () => {
     assert.equal(messages[0].content, "const best = optimize();");
   });
 
+  // covers: gitevo/memory-bus :: A message carries a type, scope, content, metadata, and branch :: Failure signature recorded with a scope
   it("writes with scope", () => {
     writeMessage("FAILURE_SIGNATURE", "NullPointer at line 42", { scope: "auth-module" }, tempDir);
     const messages = queryMessages({ scope: "auth-module" }, tempDir);
@@ -96,6 +99,7 @@ describe("writeMessage", () => {
     assert.equal(messages[0].scope, "auth-module");
   });
 
+  // covers: gitevo/memory-bus :: A message carries a type, scope, content, metadata, and branch :: Elite solution recorded with metadata
   it("writes with metadata", () => {
     writeMessage("INSIGHT", "key finding", { metadata: { severity: "high", count: 5 } }, tempDir);
     const messages = queryMessages({}, tempDir);
@@ -112,6 +116,7 @@ describe("writeMessage", () => {
 // ── queryMessages ─────────────────────────────────────────────────────────
 
 describe("queryMessages", () => {
+  // covers: gitevo/memory-bus :: Messages are queryable by type and by scope :: Query filtered by type
   it("filters by type", () => {
     writeMessage("INSIGHT", "i1", {}, tempDir);
     writeMessage("INSIGHT", "i2", {}, tempDir);
@@ -159,12 +164,14 @@ describe("queryMessages", () => {
 // ── countMessages ─────────────────────────────────────────────────────────
 
 describe("countMessages", () => {
+  // covers: gitevo/memory-bus :: Message counts are available overall and per type :: Overall count
   it("counts all messages", () => {
     writeMessage("INSIGHT", "a", {}, tempDir);
     writeMessage("FAILURE_SIGNATURE", "b", {}, tempDir);
     assert.equal(countMessages(undefined, tempDir), 2);
   });
 
+  // covers: gitevo/memory-bus :: Message counts are available overall and per type :: Count for one type
   it("counts by type", () => {
     writeMessage("INSIGHT", "a", {}, tempDir);
     writeMessage("INSIGHT", "b", {}, tempDir);
@@ -206,6 +213,7 @@ describe("getEliteSolutions", () => {
 // ── Checkpoint operations ─────────────────────────────────────────────────
 
 describe("checkpoints", () => {
+  // covers: gitevo/memory-bus :: Checkpoint timestamps and a branch's spawn point are readable back :: Reading checkpoint timestamps
   it("records and retrieves checkpoints", () => {
     recordCheckpoint("evo-initial", "main", "First checkpoint", tempDir);
     recordCheckpoint("evo-mid", "feat-1", "After feature", tempDir);
@@ -243,6 +251,7 @@ describe("branches", () => {
     assert.equal(getBranchSpawnPoint("nonexistent", tempDir), null);
   });
 
+  // covers: gitevo/memory-bus :: Checkpoint timestamps and a branch's spawn point are readable back :: Spawn point kept unless replaced
   it("upserts branch on conflict", () => {
     recordBranch("feat-dup", "active", "evo-initial", 0.5, tempDir);
     recordBranch("feat-dup", "dead", undefined, 0.3, tempDir);
@@ -251,6 +260,7 @@ describe("branches", () => {
     assert.equal(spawn, "evo-initial");
   });
 
+  // covers: gitevo/memory-bus :: Checkpoint timestamps and a branch's spawn point are readable back :: Looking up a branch with no spawn record
   it("handles branch without spawn point", () => {
     recordBranch("orphan", "active", undefined, undefined, tempDir);
     assert.equal(getBranchSpawnPoint("orphan", tempDir), null);
@@ -265,6 +275,7 @@ describe("migrateLessons", () => {
     assert.equal(count, 0);
   });
 
+  // covers: gitevo/lesson-export :: Re-running init migrates the legacy file and then clears it :: Legacy file present on re-init
   it("migrates lessons.jsonl entries", () => {
     const lessonsPath = path.join(tempDir, ".evo", "lessons.jsonl");
     const lessons = [

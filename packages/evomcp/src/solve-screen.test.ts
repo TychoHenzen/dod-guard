@@ -45,6 +45,7 @@ function attempt(diff: string): AttemptResult {
 }
 
 describe("screenCandidate", () => {
+  // covers: evomcp/candidate-screening :: Screening runs the degenerate check before the allowed-files check :: Clean candidate touching a disallowed file
   it("accepts a plain edit inside the allow list", () => {
     const allowed = { ...spec, allowed_files: ["src/**"] };
     assert.equal(screenCandidate(attempt(edit("src/a.ts")), allowed), null);
@@ -54,6 +55,7 @@ describe("screenCandidate", () => {
     assert.equal(screenCandidate(attempt(""), spec), null);
   });
 
+  // covers: evomcp/candidate-screening :: Screening runs the degenerate check before the allowed-files check :: No allow list configured
   it("skips the allow-list filter when the caller set none", () => {
     assert.equal(screenCandidate(attempt(edit("docs/b.md")), spec), null);
   });
@@ -63,6 +65,7 @@ describe("screenCandidate", () => {
     assert.equal(screenCandidate(attempt(edit("docs/b.md")), empty), null);
   });
 
+  // covers: evomcp/candidate-screening :: Screening runs the degenerate check before the allowed-files check :: Clean candidate touching a disallowed file
   it("refuses a change that reaches outside the allow list", () => {
     const allowed = { ...spec, allowed_files: ["src/**"] };
     assert.equal(
@@ -80,6 +83,7 @@ describe("screenCandidate", () => {
     );
   });
 
+  // covers: evomcp/candidate-screening :: A candidate is rejected on any block finding or on multiple findings :: Two warn-only findings rejected
   it("refuses a change that guts the tests", () => {
     assert.equal(
       screenCandidate(attempt(GUTTED_TEST), spec),
@@ -87,6 +91,7 @@ describe("screenCandidate", () => {
     );
   });
 
+  // covers: evomcp/candidate-screening :: Screening runs the degenerate check before the allowed-files check :: Degenerate candidate never reaches the allowed-files check
   it("names the degenerate reason first when both filters would refuse", () => {
     const allowed = { ...spec, allowed_files: ["nothing/**"] };
     const reason = screenCandidate(attempt(GUTTED_TEST), allowed);

@@ -70,6 +70,7 @@ describe("orchestrate", () => {
 
   // ── Full lifecycle ──────────────────────────────────────────────────
 
+  // covers: evomcp/orchestration :: Playbook stages run in a fixed sequence :: Stages advance in fixed order
   it("drives through all 6 stages in order when solve passes", async () => {
     reset();
     const result = await orchestrateSolve({
@@ -94,6 +95,7 @@ describe("orchestrate", () => {
     assert.equal(result.stages[5].status, "passed"); // merge
   });
 
+  // covers: evomcp/orchestration :: A run reports one outcome drawn from its final state :: Completed run reports pass
   it("produces outcome=pass when all stages complete", async () => {
     reset();
     const result = await orchestrateSolve({
@@ -142,6 +144,7 @@ describe("orchestrate", () => {
 
   // ── Solve failure -> escalation ─────────────────────────────────────
 
+  // covers: evomcp/orchestration :: A failed automated stage aborts the run :: Solve failure aborts the run at IMPLEMENT
   it("escalates when solve fails", async () => {
     reset();
     solveOutcome = "escalate";
@@ -168,6 +171,7 @@ describe("orchestrate", () => {
 
   // ── Mutation testing ─────────────────────────────────────────────────
 
+  // covers: evomcp/orchestration :: IMPLEMENT and HARDEN run an automated check when configured :: HARDEN passes on a zero mutation-command exit
   it("runs mutation_cmd in harden stage", async () => {
     reset();
     runCommandExitCode = 0;
@@ -187,6 +191,7 @@ describe("orchestrate", () => {
     assert.match(hardenStage.message ?? "", /passed/);
   });
 
+  // covers: evomcp/orchestration :: IMPLEMENT and HARDEN run an automated check when configured :: HARDEN fails on a nonzero mutation-command exit
   it("reports mutation failure in harden stage", async () => {
     reset();
     runCommandExitCode = 2;
@@ -209,6 +214,7 @@ describe("orchestrate", () => {
 
   // ── Held-out tests ───────────────────────────────────────────────────
 
+  // covers: evomcp/orchestration :: MERGE gates on held-out tests when supplied :: Held-out tests pass
   it("runs held_out_tests in merge stage", async () => {
     reset();
     runCommandExitCode = 0;
@@ -228,6 +234,7 @@ describe("orchestrate", () => {
     assert.match(mergeStage.message ?? "", /passed/);
   });
 
+  // covers: evomcp/orchestration :: MERGE gates on held-out tests when supplied :: Held-out tests fail
   it("aborts when held_out_tests fail", async () => {
     reset();
     runCommandExitCode = 1;
@@ -275,6 +282,7 @@ describe("orchestrate", () => {
 
   // ── Gate enforcement via orchestrator flags ─────────────────────────
 
+  // covers: evomcp/orchestration :: A run reports one outcome drawn from its final state :: Every stage result carries timing
   it("includes stage results with per-stage status and timing", async () => {
     reset();
     const result = await orchestrateSolve({
@@ -326,6 +334,7 @@ describe("orchestrate", () => {
 
   // ── Token tracking ──────────────────────────────────────────────────
 
+  // covers: evomcp/orchestration :: IMPLEMENT and HARDEN run an automated check when configured :: IMPLEMENT drives an automated solve
   it("tracks solve tokens in implement stage", async () => {
     reset();
     const result = await orchestrateSolve({

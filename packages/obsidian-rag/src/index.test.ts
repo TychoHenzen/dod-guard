@@ -196,6 +196,7 @@ describe("waitForVault pattern", () => {
   // ── Memory recall path filtering pattern ───────────────────────────────
 
   describe("memory_recall path filtering", () => {
+    // covers: obsidian-rag/memory-store :: Recall searches the same stack as note search, scoped to memories :: A matching note outside Claude-Memories
     it("filters results to Claude-Memories/ path prefix", () => {
       const results = [
         { notePath: "Claude-Memories/reference/test.md", title: "Test", score: 0.9 },
@@ -210,6 +211,7 @@ describe("waitForVault pattern", () => {
       assert.equal(memoryResults[1].notePath, "Claude-Memories/user/feedback.md");
     });
 
+    // covers: obsidian-rag/memory-store :: Recall searches the same stack as note search, scoped to memories :: A matching note outside Claude-Memories
     it("returns empty when no memories match", () => {
       const results = [
         { notePath: "notes/regular.md", title: "Regular", score: 0.8 },
@@ -297,6 +299,7 @@ describe("create_note auto-indexing", () => {
     return { handlers, mockServer };
   }
 
+  // covers: obsidian-rag/note-access :: Creating or updating a note reindexes it immediately :: New note created
   it("calls indexNote after CLI success path", async () => {
     indexNoteCalls.length = 0;
     cliShouldThrowForCreate = false;
@@ -328,6 +331,7 @@ describe("create_note auto-indexing", () => {
     assert.ok(result.content[0].text.includes("Created note"));
   });
 
+  // covers: obsidian-rag/note-access :: Creating or updating a note reindexes it immediately :: New note created
   it("calls indexNote after FS fallback path", async () => {
     indexNoteCalls.length = 0;
     cliShouldThrowForCreate = true;
@@ -375,6 +379,7 @@ describe("reindex background embed", () => {
     return { handlers, mockServer };
   }
 
+  // covers: obsidian-rag/embedding-pipeline :: Background embedding returns a progress handle immediately :: Background embedding requested on a large vault
   it("returns immediately when embed:true — does not await embedAllChunks", async () => {
     reindexVaultCalls.length = 0;
     embedAllChunksCalls.length = 0;

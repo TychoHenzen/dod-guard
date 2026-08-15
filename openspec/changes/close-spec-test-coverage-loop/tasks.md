@@ -25,10 +25,14 @@
 
 ## 4. Wire covers markers to other packages
 
-- [ ] 4.1 Audit and wire markers in `packages/quality-guard/src/**/*.test.ts`
-- [ ] 4.2 Audit and wire markers in `packages/evomcp/src/**/*.test.ts`
-- [ ] 4.3 Audit and wire markers in `packages/gitevo/src/**/*.test.ts`
-- [ ] 4.4 Audit and wire markers in `packages/obsidian-rag/src/**/*.test.ts`
+- [x] 4.1 Audit and wire markers in `packages/quality-guard/src/**/*.test.ts`
+<!-- status: completed -->
+- [x] 4.2 Audit and wire markers in `packages/evomcp/src/**/*.test.ts`
+<!-- status: completed -->
+- [x] 4.3 Audit and wire markers in `packages/gitevo/src/**/*.test.ts`
+<!-- status: completed -->
+- [x] 4.4 Audit and wire markers in `packages/obsidian-rag/src/**/*.test.ts`
+<!-- status: completed -->
 
 ## 5. Verify
 

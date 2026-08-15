@@ -16,6 +16,7 @@ import {
 // ── createBudgetState ──────────────────────────────────────────────────
 
 describe("createBudgetState", () => {
+  // covers: evomcp/budget-escalation :: Every playbook stage carries a token and time budget :: Fresh budget state
   it("all stages initialized, total exhausted = false", () => {
     const state = createBudgetState();
 
@@ -35,6 +36,7 @@ describe("createBudgetState", () => {
     assert.deepStrictEqual(state.warnings, []);
   });
 
+  // covers: evomcp/budget-escalation :: Every playbook stage carries a token and time budget :: Overriding one stage
   it("overrides work for specific stages", () => {
     const state = createBudgetState({
       implement: { tokenLimit: 999_999 },
@@ -53,6 +55,7 @@ describe("createBudgetState", () => {
 // ── recordTokens ───────────────────────────────────────────────────────
 
 describe("recordTokens", () => {
+  // covers: evomcp/budget-escalation :: Recording tokens against one stage :: Recording tokens against one stage
   it("increments stage + total, generates warnings at 50/80/95/100%", () => {
     let state = createBudgetState();
     // spec tokenLimit = 20,000
@@ -141,6 +144,7 @@ describe("recordTime", () => {
 // ── recordAttempt ──────────────────────────────────────────────────────
 
 describe("recordAttempt", () => {
+  // covers: evomcp/budget-escalation :: Consumption is recorded per stage and rolled into a total :: Recording an attempt
   it("increments tokens + time + attempts", () => {
     let state = createBudgetState();
     state = recordAttempt(state, "implement", 10_000, 30_000);
@@ -168,6 +172,8 @@ describe("recordAttempt", () => {
 // ── recordVerifiedEdge ─────────────────────────────────────────────────
 
 describe("recordVerifiedEdge", () => {
+  // covers: evomcp/budget-escalation :: Cost per verified graph edge is the primary spend metric :: No edges verified yet
+  // covers: evomcp/budget-escalation :: Cost per verified graph edge is the primary spend metric :: A second edge lowers the per-edge cost
   it("increments edge count, calculates costPerVerifiedEdge", () => {
     let state = createBudgetState();
 
@@ -195,6 +201,7 @@ describe("recordVerifiedEdge", () => {
 // ── isStageExhausted ───────────────────────────────────────────────────
 
 describe("isStageExhausted", () => {
+  // covers: evomcp/budget-escalation :: A stage is exhausted when either resource reaches its limit :: Token limit reached
   it("true when tokens >= limit", () => {
     const state = createBudgetState({
       spec: { tokenLimit: 10_000 },
@@ -221,6 +228,7 @@ describe("isStageExhausted", () => {
 // ── fractionConsumed ───────────────────────────────────────────────────
 
 describe("fractionConsumed", () => {
+  // covers: evomcp/budget-escalation :: A stage is exhausted when either resource reaches its limit :: Fraction consumed picks the binding resource
   it("max of token fraction and time fraction", () => {
     const state = createBudgetState({
       spec: { tokenLimit: 100_000, timeLimitMs: 100_000 },
@@ -279,6 +287,7 @@ describe("totalCost", () => {
 // ── budgetSummary ──────────────────────────────────────────────────────
 
 describe("budgetSummary", () => {
+  // covers: evomcp/budget-escalation :: A human-readable summary reports spend, edges, and exhaustion :: Summary while under budget
   it("returns non-empty string with token counts", () => {
     let state = createBudgetState();
     state = recordTokens(state, "spec", 10_000);
@@ -305,6 +314,7 @@ describe("budgetSummary", () => {
     assert.ok(summary.includes("Cost per edge"), "cost per edge shown");
   });
 
+  // covers: evomcp/budget-escalation :: A human-readable summary reports spend, edges, and exhaustion :: Summary once exhausted
   it("includes budget exhausted warning when exhausted", () => {
     // Override total budget lower so we can exhaust total without
     // exceeding any single stage's budget (consumptionBar clamps).

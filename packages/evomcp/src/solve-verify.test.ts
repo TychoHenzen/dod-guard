@@ -80,6 +80,7 @@ describe("runVerification", () => {
     shellStatus = 0;
   }
 
+  // covers: evomcp/solve :: Verification runs the gate pipeline when any gate is configured, otherwise the bare verify command :: No lint, build, or test command configured
   it("runs the verify command alone when no other check is configured", async () => {
     reset();
     const outcome = await runVerification(base);
@@ -104,6 +105,7 @@ describe("runVerification", () => {
     assert.equal(outcome.output.includes("boom"), true);
   });
 
+  // covers: evomcp/solve :: Verification runs the gate pipeline when any gate is configured, otherwise the bare verify command :: A build or test command is configured
   it("hands every configured command to the gate pipeline", async () => {
     reset();
     gateResults = [gate("lint", true)];

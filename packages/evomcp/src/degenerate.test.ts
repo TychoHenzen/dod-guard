@@ -70,6 +70,7 @@ describe("detectDegenerate", () => {
   // ── Hardcoded test outputs ─────────────────────────────────────────────
 
   describe("hardcoded_test_output", () => {
+    // covers: evomcp/candidate-screening :: Degenerate detectors catch metric-gaming candidates :: Test input equals its expected output
     it("detects expect(fn('literal')).toBe('literal') as block", () => {
       const diff = insertDiff("src/login.test.ts", [`  expect(fn("admin")).toBe("admin")`]);
       const r = detectDegenerate(diff);
@@ -131,6 +132,7 @@ describe("detectDegenerate", () => {
   // ── Deleted assertions ─────────────────────────────────────────────────
 
   describe("deleted_assertion", () => {
+    // covers: evomcp/candidate-screening :: Degenerate detectors catch metric-gaming candidates :: Three or more assertions deleted
     it("blocks when 3+ assertion lines removed in test files", () => {
       const diff = deleteDiff("src/user.test.ts", [
         `  expect(result).toBe("ok")`,
@@ -197,6 +199,7 @@ describe("detectDegenerate", () => {
   // ── Broadened catches ──────────────────────────────────────────────────
 
   describe("broadened_catch", () => {
+    // covers: evomcp/candidate-screening :: Degenerate detectors catch metric-gaming candidates :: Specific catch replaced with a broad one
     it("blocks when specific catch replaced with broad Exception", () => {
       const diff = mixedDiff("src/handler.py", [
         { op: "-", text: "    except ValueError:" },
@@ -296,6 +299,7 @@ describe("detectDegenerate", () => {
       return insertDiff("src/handler.ts", lines);
     }
 
+    // covers: evomcp/candidate-screening :: Degenerate detectors catch metric-gaming candidates :: Type-suppression density over threshold
     it("blocks when >5% of added lines suppress type checking", () => {
       // 2/25 = 8% > 5% → block.  "x@ts-expect-error" matches \b(?:@ts-expect-error) because
       // 'x' is a word char directly before '@'.
@@ -357,6 +361,7 @@ describe("detectDegenerate", () => {
   // ── Disabled lint ──────────────────────────────────────────────────────
 
   describe("disabled_lint", () => {
+    // covers: evomcp/candidate-screening :: Degenerate detectors catch metric-gaming candidates :: Lint rule disabled
     it("blocks on eslint-disable", () => {
       const diff = insertDiff("src/app.ts", [`  // eslint-disable-next-line no-eval`, `  eval(code)`]);
       const r = detectDegenerate(diff);
@@ -434,6 +439,7 @@ describe("detectDegenerate", () => {
       return insertDiff("src/module.ts", lines);
     }
 
+    // covers: evomcp/candidate-screening :: Degenerate detectors catch metric-gaming candidates :: Long run of commented-out code
     it("warns on 3+ consecutive commented-out lines", () => {
       // Total 25 lines, run of 3 at start
       const diff = buildCommentedDiff(25, 0, 3);
@@ -492,6 +498,7 @@ describe("detectDegenerate", () => {
   // ── Empty tests ────────────────────────────────────────────────────────
 
   describe("empty_test", () => {
+    // covers: evomcp/candidate-screening :: Degenerate detectors catch metric-gaming candidates :: Empty test body
     it("blocks on test with empty arrow function body", () => {
       const diff = insertDiff("src/user.test.ts", [`test("returns null for missing user", () => {})`]);
       const r = detectDegenerate(diff);

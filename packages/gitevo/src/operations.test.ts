@@ -77,18 +77,21 @@ describe("evo_init", () => {
 
   after(() => teardownRepo(dir, origCwd));
 
+  // covers: gitevo/branch-lifecycle :: Init prepares a repository and is idempotent :: First init
   it("creates .evo/ directory and lessons.jsonl", () => {
     evo_init();
     assert.ok(fs.existsSync(path.join(dir, ".evo")), ".evo/ not created");
     assert.ok(fs.existsSync(path.join(dir, ".evo", "lessons.jsonl")), "lessons.jsonl not created");
   });
 
+  // covers: gitevo/branch-lifecycle :: Init prepares a repository and is idempotent :: First init
   it("tags evo-root", () => {
     evo_init();
     const tags = git(["tag", "-l"], dir);
     assert.ok(tags.includes("evo-root"), `evo-root not found in tags: ${tags}`);
   });
 
+  // covers: gitevo/branch-lifecycle :: Init prepares a repository and is idempotent :: Repeated init
   it("re-run clears lessons and re-tags root", () => {
     evo_init();
     const lessonsFile = path.join(dir, ".evo", "lessons.jsonl");
@@ -98,6 +101,7 @@ describe("evo_init", () => {
     assert.strictEqual(content, "", "lessons.jsonl should be cleared on re-run");
   });
 
+  // covers: gitevo/lesson-export :: Re-running init migrates the legacy file and then clears it :: Lessons already in the store are not lost
   it("re-run preserves previously learned lessons in SQLite", () => {
     evo_init();
     evo_learn("lesson that should survive re-init");
@@ -150,6 +154,7 @@ describe("evo_checkpoint", () => {
 
   after(() => teardownRepo(dir, origCwd));
 
+  // covers: gitevo/branch-lifecycle :: Checkpoint marks the current state under a name :: Checkpoint on a clean tree
   it("tags HEAD with evo-{name}", () => {
     evo_checkpoint("v1", "first checkpoint");
     const tags = git(["tag", "-l"], dir);
@@ -162,6 +167,7 @@ describe("evo_checkpoint", () => {
     assert.ok(tagInfo.includes("first checkpoint"), `description not in: ${tagInfo}`);
   });
 
+  // covers: gitevo/branch-lifecycle :: Checkpoint marks the current state under a name :: Checkpoint on a dirty tree
   it("auto-stashes dirty tree and preserves changes", () => {
     fs.writeFileSync(path.join(dir, "file.txt"), "dirty-for-checkpoint");
     const result = evo_checkpoint("v2", "auto-stash checkpoint");
@@ -213,6 +219,7 @@ describe("evo_learn and evo_lessons", () => {
 
   after(() => teardownRepo(dir, origCwd));
 
+  // covers: gitevo/lesson-export :: Recording a lesson attributes it to the active branch :: Lesson recorded on the current branch
   it("appends lesson with timestamp and branch", () => {
     evo_learn("this is a lesson");
     const output = evo_lessons();
@@ -229,6 +236,7 @@ describe("evo_learn and evo_lessons", () => {
     assert.ok(output.includes("lesson two"), `should contain lesson two: ${output}`);
   });
 
+  // covers: gitevo/lesson-export :: Listing lessons shows the newest first :: Multiple lessons listed newest first
   it("lists lessons newest first", () => {
     // Fresh init to clear
     evo_init();
@@ -240,6 +248,7 @@ describe("evo_learn and evo_lessons", () => {
     assert.ok(newerIdx < olderIdx, `newest should come first, got: ${output}`);
   });
 
+  // covers: gitevo/lesson-export :: Re-running init migrates the legacy file and then clears it :: Lessons already in the store are not lost
   it("lessons persist across multiple re-inits", () => {
     // Lessons in SQLite survive even after re-init clears JSONL (S03 fix)
     evo_init();
@@ -304,6 +313,7 @@ describe("evo_export_lessons", () => {
     }
   });
 
+  // covers: gitevo/lesson-export :: Export emits JSON the obsidian-rag memory_save tool accepts :: Empty store exports as an empty array
   it("returns empty array when no lessons", () => {
     const { dir: emptyDir, origCwd: emptyOrigCwd } = setupRepo();
     try {
@@ -316,6 +326,7 @@ describe("evo_export_lessons", () => {
     }
   });
 
+  // covers: gitevo/lesson-export :: Export identifiers are content-derived and idempotent :: Re-export produces identical ids
   it("produces same IDs on re-export (idempotent)", () => {
     const json1 = evo_export_lessons();
     const json2 = evo_export_lessons();
@@ -344,12 +355,14 @@ describe("evo_spawn", () => {
 
   after(() => teardownRepo(dir, origCwd));
 
+  // covers: gitevo/branch-lifecycle :: Spawn branches from a captured checkpoint :: Spawn from a known checkpoint
   it("creates branch from checkpoint and checks out", () => {
     evo_spawn("base", "feature-x");
     const branch = git(["branch", "--show-current"], dir);
     assert.strictEqual(branch, "feature-x");
   });
 
+  // covers: gitevo/branch-lifecycle :: Spawn and abandon auto-stash uncommitted work, but resolve the stash differently :: Spawn pops the stash
   it("auto-stashes dirty tree and pops after checkout", () => {
     git(["checkout", "master"], dir);
     fs.writeFileSync(path.join(dir, "file.txt"), "modified");
@@ -363,10 +376,12 @@ describe("evo_spawn", () => {
     git(["checkout", "."], dir);
   });
 
+  // covers: gitevo/branch-lifecycle :: Spawn branches from a captured checkpoint :: Spawn from an unknown checkpoint
   it("refuses unknown checkpoint", () => {
     assert.throws(() => evo_spawn("nonexistent", "feature-z"), EvoError);
   });
 
+  // covers: gitevo/branch-lifecycle :: Spawn branches from a captured checkpoint :: Spawn onto an existing branch name
   it("refuses existing branch name", () => {
     git(["branch", "existing-branch"], dir);
     assert.throws(() => evo_spawn("base", "existing-branch"), EvoError);
@@ -399,6 +414,7 @@ describe("evo_checkpoints and evo_branches", () => {
     assert.ok(output.includes("second version"), `desc not in output: ${output}`);
   });
 
+  // covers: gitevo/branch-lifecycle :: Listing operations report checkpoints, branches, and progress :: Listing attempt branches
   it("lists spawned branches", () => {
     const output = evo_branches();
     assert.ok(output.includes("feature-a"), `feature-a not in: ${output}`);
@@ -442,6 +458,7 @@ describe("evo_abandon", () => {
 
   after(() => teardownRepo(dir, origCwd));
 
+  // covers: gitevo/branch-lifecycle :: Checkpoint tags follow a fixed naming convention :: Dead branch tag shape
   it("tags current branch as evo-dead-{branch}", () => {
     const branch = git(["branch", "--show-current"], dir);
     evo_checkpoint("before-abandon", "pre-abandon");
@@ -455,6 +472,7 @@ describe("evo_abandon", () => {
     assert.ok(tags.includes(`evo-dead-${branch}`), `dead tag not found: ${tags}`);
   });
 
+  // covers: gitevo/branch-lifecycle :: Abandon reverts to the branch's spawn point :: Abandon naming an explicit checkpoint
   it("reverts to specified checkpoint", () => {
     evo_checkpoint("check", "check");
     fs.writeFileSync(path.join(dir, "file.txt"), "bad work");
@@ -468,6 +486,7 @@ describe("evo_abandon", () => {
     assert.ok(!content.includes("bad work"), `should not contain bad work: ${content}`);
   });
 
+  // covers: gitevo/branch-lifecycle :: Spawn and abandon auto-stash uncommitted work, but resolve the stash differently :: Abandon leaves the stash
   it("auto-stashes dirty tree before abandon", () => {
     fs.writeFileSync(path.join(dir, "file.txt"), "uncommitted-work");
     // Auto-stash handles dirty tree — abandon should succeed, not throw
@@ -487,6 +506,7 @@ describe("evo_abandon", () => {
     assert.ok(output.includes("giving up on this approach"), `lesson not recorded: ${output}`);
   });
 
+  // covers: gitevo/branch-lifecycle :: Abandon reverts to the branch's spawn point :: Abandon with no checkpoint named
   it("defaults to spawn checkpoint when no arg given (not HEAD~1)", () => {
     // Create a checkpoint to spawn from
     evo_checkpoint("spawn-origin", "origin for spawn test");
@@ -541,6 +561,7 @@ describe("evo_diff and evo_summary", () => {
 
   after(() => teardownRepo(dir, origCwd));
 
+  // covers: gitevo/branch-lifecycle :: Listing operations report checkpoints, branches, and progress :: Diff between two checkpoints
   it("returns diff between two checkpoints", () => {
     const output = evo_diff("a", "b");
     assert.ok(output, "diff should not be empty");
@@ -584,16 +605,19 @@ describe("evo_adopt and evo_finish", () => {
 
   after(() => teardownRepo(dir, origCwd));
 
+  // covers: gitevo/branch-lifecycle :: Adopt merges a branch into the root and refuses a dirty tree :: Adopt on a clean tree
   it("adopt merges branch into root", () => {
     evo_adopt("feature-branch");
     assert.ok(fs.existsSync(path.join(dir, "feature.txt")), "feature.txt should exist on master after adopt");
   });
 
+  // covers: gitevo/branch-lifecycle :: Adopt merges a branch into the root and refuses a dirty tree :: Adopt on a clean tree
   it("adopt tags as evo-adopted", () => {
     const tags = git(["tag", "-l"], dir);
     assert.ok(tags.includes("evo-adopted"), `evo-adopted not found: ${tags}`);
   });
 
+  // covers: gitevo/branch-lifecycle :: Finish adopts the active branch and removes gitevo state :: Finish from an attempt branch
   it("finish cleans all artifacts", () => {
     evo_finish();
     assert.ok(!fs.existsSync(path.join(dir, ".evo")), ".evo/ should be removed");
@@ -627,6 +651,7 @@ describe("evo_adopt merge conflict", () => {
 
   after(() => teardownRepo(dir, origCwd));
 
+  // covers: gitevo/branch-lifecycle :: Adopt aborts cleanly on a merge conflict :: Merge produces conflicts
   it("adopt aborts on merge conflict and cleans up MERGING state", () => {
     let caught: any;
     try {
@@ -765,6 +790,7 @@ describe("branch upsert", () => {
 
   after(() => teardownRepo(dir, origCwd));
 
+  // covers: gitevo/memory-bus :: Branch records keep one row per branch with its current status :: Recording the same branch twice
   it("spawn -> abandon -> adopt produces one row with final status", () => {
     evo_spawn("base", "upsert-branch");
 
@@ -803,6 +829,7 @@ describe("branch upsert", () => {
 // ── EvoConfig ──────────────────────────────────────────────────────────────
 
 describe("EvoConfig", () => {
+  // covers: gitevo/safety-gate :: Configuration controls what counts as source, where build output lives, and whether the stale check runs :: No settings file
   it("loadConfig returns defaults when no config file exists", () => {
     const { dir, origCwd } = setupRepo();
     try {
@@ -816,6 +843,7 @@ describe("EvoConfig", () => {
     }
   });
 
+  // covers: gitevo/safety-gate :: Configuration controls what counts as source, where build output lives, and whether the stale check runs :: Settings file overrides one key
   it("loadConfig merges user config with defaults", () => {
     const { dir, origCwd } = setupRepo();
     try {
@@ -837,6 +865,7 @@ describe("EvoConfig", () => {
     }
   });
 
+  // covers: gitevo/safety-gate :: Configuration controls what counts as source, where build output lives, and whether the stale check runs :: Settings file overrides one key
   it("loadConfig handles custom sourceExtensions", () => {
     const { dir, origCwd } = setupRepo();
     try {
@@ -852,6 +881,7 @@ describe("EvoConfig", () => {
     }
   });
 
+  // covers: gitevo/safety-gate :: Configuration controls what counts as source, where build output lives, and whether the stale check runs :: Settings file will not parse
   it("loadConfig returns defaults on invalid JSON", () => {
     const { dir, origCwd } = setupRepo();
     try {
@@ -866,6 +896,7 @@ describe("EvoConfig", () => {
     }
   });
 
+  // covers: gitevo/safety-gate :: A test-shaped build artifact is not flagged stale when its source language is not configured :: JS-only repository with a compiled test file
   it("JS-only repo doesn't flag .test.js as stale", () => {
     const { dir, origCwd } = setupRepo();
     try {

@@ -189,6 +189,7 @@ describe("solve", () => {
 
   // ── Checkpoint gate: no restore point, no attempts ──────────────────────
 
+  // covers: evomcp/solve :: A checkpoint gate runs before any attempt :: Checkpoint fails
   it("escalates with no attempt when the checkpoint fails", async () => {
     reset();
     checkpointFails = true;
@@ -207,6 +208,7 @@ describe("solve", () => {
 
   // ── Phase 1: First strategy passes, so the run can return ───────────────
 
+  // covers: evomcp/solve :: A checkpoint gate runs before any attempt :: Checkpoint succeeds
   it("first strategy passes verification immediately", async () => {
     reset();
     verifyExitCode = 0;
@@ -219,6 +221,7 @@ describe("solve", () => {
 
   // ── Phase 1: All strategies fail → repairs → escalation ─────────────────
 
+  // covers: evomcp/solve :: A run with no surviving attempt returns an escalation report :: Every attempt fails
   it("all strategies fail, repairs fail, escalates", async () => {
     reset();
     verifyExitCode = 1; // all verification fails
@@ -233,6 +236,7 @@ describe("solve", () => {
 
   // ── Phase 1: Strategy passes after repair ───────────────────────────────
 
+  // covers: evomcp/solve :: A failing attempt enters a bounded repair loop :: Ladder leaves the retry and resample rungs
   it("repair loop triggers for failed strategies", async () => {
     reset();
     verifyExitCode = 1; // all fail → triggers repair loop → escalates
@@ -243,6 +247,7 @@ describe("solve", () => {
     assert.ok(result.stats.candidates_generated >= 5); // initial 5 + repair candidates
   });
 
+  // covers: evomcp/solve :: A run with no surviving attempt returns an escalation report :: Every attempt fails
   it("escalation report includes best partial output", async () => {
     reset();
     verifyExitCode = 2;
@@ -292,6 +297,7 @@ describe("solve", () => {
     assert.ok(result.stats.candidates_generated > 0);
   });
 
+  // covers: evomcp/solve :: Attempts run one at a time :: Multiple plans sampled
   it("stats include plans_sampled and plans_deduped", async () => {
     reset();
     verifyExitCode = 0;
@@ -320,6 +326,7 @@ describe("solve", () => {
 
   // ── Timed out initial strategy ───────────────────────────────────────────
 
+  // covers: evomcp/solve :: Each attempt follows a fixed cycle :: Worker times out
   it("skips timed-out initial strategies", async () => {
     reset();
     spawnClaudeTimedOut = true; // all strategies time out
@@ -332,6 +339,7 @@ describe("solve", () => {
 
   // ── No-output lineage diagnostic ──────────────────────────────────────
 
+  // covers: evomcp/solve :: Each attempt follows a fixed cycle :: Worker produces no output
   it("reports no_output diagnostic when claude -p produces no output", async () => {
     reset();
     spawnClaudeEmptyOutput = true;
@@ -350,6 +358,7 @@ describe("solve", () => {
 
   // ── Escalation: dominant signature detection ─────────────────────────────
 
+  // covers: evomcp/solve :: Stuck and oscillating detection reads per-lineage signature history :: Same signature repeats
   it("escalation report identifies dominant failure signature", async () => {
     reset();
     verifyExitCode = 1;
@@ -434,6 +443,7 @@ describe("solve", () => {
 
   // ── Degenerate detection ──────────────────────────────────────────────
 
+  // covers: evomcp/solve :: Every non-surviving attempt is abandoned :: Attempt fails verification or screening
   it("rejects passing candidate with degenerate diff", async () => {
     reset();
     verifyExitCode = 0;
@@ -490,6 +500,7 @@ describe("solve", () => {
 
   // ── Lineage escalation through ladder ─────────────────────────────────
 
+  // covers: evomcp/solve :: A failing attempt enters a bounded repair loop :: Ladder leaves the retry and resample rungs
   it("lineage escalates through max attempts at retry rung", async () => {
     reset();
     verifyExitCode = 1; // all fail
@@ -523,6 +534,7 @@ describe("detectScalarFitness", () => {
     detectScalarFitness = mod.detectScalarFitness;
   });
 
+  // covers: evomcp/evolve :: A run measures baseline fitness before mutating anything :: Fitness command emits a number
   it("returns true when output has a number and exit 0", () => {
     const prevExit = verifyExitCode;
     const prevOutput = verifyOutput;
@@ -545,6 +557,7 @@ describe("detectScalarFitness", () => {
     verifyOutput = prevOutput;
   });
 
+  // covers: evomcp/evolve :: A run measures baseline fitness before mutating anything :: Fitness command emits no number
   it("returns false when output has no numeric score", () => {
     const prevExit = verifyExitCode;
     const prevOutput = verifyOutput;
@@ -580,6 +593,7 @@ describe("allowed_files enforcement", () => {
     mockDiffOutput = null;
   }
 
+  // covers: evomcp/candidate-screening :: Screening runs the degenerate check before the allowed-files check :: Clean candidate touching a disallowed file
   it("rejects candidate that touches files outside allowed_files", async () => {
     resetAE();
     verifyExitCode = 0;
@@ -633,6 +647,7 @@ describe("allowed_files enforcement", () => {
     assert.equal(result.outcome, "pass", "should pass when all changes are within allowed_files");
   });
 
+  // covers: evomcp/candidate-screening :: Screening runs the degenerate check before the allowed-files check :: No allow list configured
   it("skips allowed_files check when no pattern provided", async () => {
     resetAE();
     verifyExitCode = 0;

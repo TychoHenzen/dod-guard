@@ -34,6 +34,7 @@ function stateAtRung(rung: EscalationState["currentRung"], attempts: number): Es
 // ── createEscalationState ──────────────────────────────────────────────
 
 describe("createEscalationState", () => {
+  // covers: evomcp/budget-escalation :: The escalation ladder holds five rungs in a fixed order :: Fresh escalation state
   it("starts at 'retry' rung with 0 attempts and empty history", () => {
     const state = createEscalationState();
     assert.equal(state.currentRung, "retry");
@@ -46,6 +47,7 @@ describe("createEscalationState", () => {
 // ── evaluateEscalation ─────────────────────────────────────────────────
 
 describe("evaluateEscalation", () => {
+  // covers: evomcp/budget-escalation :: Five trigger signals can force escalation before the attempt cap :: No signal and under the attempt cap
   it("no triggers, under max → 'continue'", () => {
     const state = createEscalationState();
     const decision = evaluateEscalation(state, noSignals());
@@ -57,6 +59,7 @@ describe("evaluateEscalation", () => {
     assert.equal(decision.state.attemptsAtRung, 0);
   });
 
+  // covers: evomcp/budget-escalation :: Five trigger signals can force escalation before the attempt cap :: A single stuck signal escalates immediately
   it("stuck=true → 'escalate' to 'resample'", () => {
     const state = createEscalationState();
     const decision = evaluateEscalation(state, { ...noSignals(), stuck: true });
@@ -106,6 +109,7 @@ describe("evaluateEscalation", () => {
     assert.ok(decision.reason.includes("time"));
   });
 
+  // covers: evomcp/budget-escalation :: Each rung carries its own attempt budget :: Retry rung exhausts its attempt cap
   it("at max attempts for rung → 'escalate'", () => {
     const state = stateAtRung("retry", 3); // maxAttempts for retry is 3
     const decision = evaluateEscalation(state, noSignals());
@@ -115,6 +119,7 @@ describe("evaluateEscalation", () => {
     assert.ok(decision.reason.includes("max attempts"));
   });
 
+  // covers: evomcp/budget-escalation :: The human rung has nowhere higher to escalate to :: Human rung with a stuck signal
   it("at 'human' rung with stuck → 'abort'", () => {
     const state = stateAtRung("human", 1);
     const decision = evaluateEscalation(state, { ...noSignals(), stuck: true });
@@ -134,6 +139,7 @@ describe("evaluateEscalation", () => {
     assert.ok(decision.reason.includes("Human rung exhausted"));
   });
 
+  // covers: evomcp/budget-escalation :: The human rung has nowhere higher to escalate to :: Human rung with no trigger
   it("at 'human' rung without stuck/budget → 'continue'", () => {
     const state = stateAtRung("human", 0);
     const decision = evaluateEscalation(state, noSignals());
@@ -142,6 +148,7 @@ describe("evaluateEscalation", () => {
     assert.ok(decision.reason.includes("waiting for resolution"));
   });
 
+  // covers: evomcp/budget-escalation :: The escalation ladder holds five rungs in a fixed order :: Full ladder in order
   it("escalates through full ladder: retry → resample → re-decompose → stronger-model → human → abort", () => {
     let state = createEscalationState();
     let decision: ReturnType<typeof evaluateEscalation>;
@@ -191,6 +198,7 @@ describe("evaluateEscalation", () => {
 // ── recordSuccess ──────────────────────────────────────────────────────
 
 describe("recordSuccess", () => {
+  // covers: evomcp/budget-escalation :: Each rung carries its own attempt budget :: Escalating resets the attempt count at the new rung
   it("increments attemptsAtRung and totalAttempts", () => {
     const state = createEscalationState();
     const next = recordSuccess(state);
@@ -250,6 +258,7 @@ describe("recordFailure", () => {
 // ── isStuck ────────────────────────────────────────────────────────────
 
 describe("isStuck", () => {
+  // covers: evomcp/budget-escalation :: A stuck determination composes at least two trigger signals :: Two signals fire together
   it("returns true when 2 or more triggers fire", () => {
     assert.ok(
       isStuck({ stuck: true, oscillating: true, noProgress: false, budgetExhausted: false, timeExhausted: false }),
@@ -265,6 +274,7 @@ describe("isStuck", () => {
     );
   });
 
+  // covers: evomcp/budget-escalation :: A stuck determination composes at least two trigger signals :: Only one signal fires
   it("returns false when only 1 trigger fires", () => {
     assert.ok(
       !isStuck({ stuck: true, oscillating: false, noProgress: false, budgetExhausted: false, timeExhausted: false }),
@@ -291,6 +301,7 @@ describe("isStuck", () => {
 // ── resetToRetry ───────────────────────────────────────────────────────
 
 describe("resetToRetry", () => {
+  // covers: evomcp/budget-escalation :: A successful re-decomposition can return the ladder to retry :: Resetting after re-decompose succeeds
   it("resets to 'retry' rung with 0 attempts", () => {
     const state = stateAtRung("re-decompose", 2);
     const next = resetToRetry(state);

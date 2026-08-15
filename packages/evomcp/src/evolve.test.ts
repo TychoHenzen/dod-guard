@@ -178,6 +178,7 @@ describe("evolve", () => {
   });
 
   // error paths
+  // covers: evomcp/evolve :: A run measures baseline fitness before mutating anything :: Fitness command emits no number
   it("throws on no numeric score", async () => {
     extractScoreNull = true;
     await assert.rejects(
@@ -186,6 +187,7 @@ describe("evolve", () => {
     );
   });
 
+  // covers: evomcp/evolve :: Target files are read through glob patterns :: No pattern matches anything
   it("throws on no target files", async () => {
     await assert.rejects(
       () => evolveFn({ goal: "t", fitness_cmd: "echo 42", cwd: process.cwd(), target_files: ["nonexistent_*.zzz"] }),
@@ -194,6 +196,7 @@ describe("evolve", () => {
   });
 
   // happy path
+  // covers: evomcp/evolve :: A run measures baseline fitness before mutating anything :: Fitness command emits a number
   it("full evolution run", async () => {
     const r = await evolveFn({
       goal: "x",
@@ -295,6 +298,7 @@ describe("evolve", () => {
   });
 
   // edge cases
+  // covers: evomcp/evolve :: Each generation mutates a population under a concurrency cap :: Population larger than the concurrency cap
   it("timed-out mutations skipped", async () => {
     spawnTimedOut = true;
     runCmdBaseOutput = "30";
@@ -323,6 +327,7 @@ describe("evolve", () => {
     assert.equal(r.best_score, 50);
   });
 
+  // covers: evomcp/evolve :: Target files are read through glob patterns :: Pattern names a directory glob
   it("glob pattern targets", async () => {
     runCmdBaseOutput = "99";
     const r = await evolveFn({
@@ -351,6 +356,7 @@ describe("evolve", () => {
   });
 
   // coverage gaps: progressive scores
+  // covers: evomcp/evolve :: Each candidate is scored and gated before it can become best :: Winning score with passing gates
   it("tracks improving scores (lower=better)", async () => {
     runCmdBaseOutput = "100";
     useProgressiveScores = true;
@@ -382,6 +388,7 @@ describe("evolve", () => {
     assert.ok(r.best_score > 10, `expected higher than 10, got ${r.best_score}`);
   });
 
+  // covers: evomcp/evolve :: Token spending is tracked per candidate and accumulated :: A losing candidate still consumes tokens
   it("mean_score fallback when all timed out", async () => {
     spawnTimedOut = true;
     runCmdBaseOutput = "42";
@@ -396,6 +403,7 @@ describe("evolve", () => {
     assert.equal(r.fitness_history[0].mean_score, 42);
   });
 
+  // covers: evomcp/evolve :: The best patch so far carries forward between generations :: A generation improves on the best
   it("bestPatch applied between gens", async () => {
     runCmdBaseOutput = "50";
     useProgressiveScores = true;
@@ -411,6 +419,7 @@ describe("evolve", () => {
     assert.ok(r.best_score < 50);
   });
 
+  // covers: evomcp/evolve :: The run verifies the final state with the best patch applied :: Adoption succeeds
   it("final phase applies bestPatch", async () => {
     runCmdBaseOutput = "50";
     useProgressiveScores = true;
@@ -427,6 +436,7 @@ describe("evolve", () => {
 
   // ── Degenerate detection ──────────────────────────────────────────────
 
+  // covers: evomcp/evolve :: Each candidate is scored and gated before it can become best :: Winning score but failing gate
   it("skips degenerate candidate in elite selection", async () => {
     runCmdBaseOutput = "50";
     useProgressiveScores = true;

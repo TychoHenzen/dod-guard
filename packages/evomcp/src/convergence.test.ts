@@ -189,6 +189,7 @@ describe("detectOscillation", () => {
 // ── checkConvergence (aggregate) ───────────────────────────────────────
 
 describe("checkConvergence", () => {
+  // covers: evomcp/evolve :: The run stops early on convergence, stagnation or oscillation :: Convergence never triggers
   it("recommends continue for healthy diverse progress", () => {
     const history: FitnessHistoryPoint[] = [
       { generation: 0, best_score: 10 },
@@ -202,6 +203,7 @@ describe("checkConvergence", () => {
     assert.equal(report.oscillating, false);
   });
 
+  // covers: evomcp/evolve :: The run stops early on convergence, stagnation or oscillation :: Convergence detected before the generation limit
   it("recommends stop on convergence", () => {
     const history: FitnessHistoryPoint[] = [
       { generation: 0, best_score: 99 },

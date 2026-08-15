@@ -28,6 +28,7 @@ describe("readSignals", () => {
     assert.deepEqual(attempt.diagnostic.signature_history?.signatures, []);
   });
 
+  // covers: evomcp/solve :: Stuck and oscillating detection reads per-lineage signature history :: Same signature repeats
   it("calls three identical failures stuck", () => {
     const attempt = state();
     const signals = readSignals(attempt, ["a", "a", "a"]);
@@ -43,6 +44,7 @@ describe("readSignals", () => {
     assert.equal(attempt.diagnostic.failure_mode, "unknown");
   });
 
+  // covers: evomcp/solve :: Stuck and oscillating detection reads per-lineage signature history :: Signature alternates between two values
   it("calls an A to B to A history oscillating", () => {
     const attempt = state();
     const signals = readSignals(attempt, ["a", "b", "a"]);
@@ -116,6 +118,7 @@ describe("canContinue", () => {
     assert.equal(canContinue(decision("escalate", "resample")), true);
   });
 
+  // covers: evomcp/solve :: A failing attempt enters a bounded repair loop :: Ladder leaves the retry and resample rungs
   it("stops once the ladder leaves the retry and resample rungs", () => {
     assert.equal(canContinue(decision("escalate", "re-decompose")), false);
     assert.equal(canContinue(decision("escalate", "stronger-model")), false);

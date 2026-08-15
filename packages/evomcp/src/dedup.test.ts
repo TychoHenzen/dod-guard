@@ -32,6 +32,7 @@ describe("deduplicatePlans", () => {
     assert.equal(result.length, 1, "should dedup after normalizing");
   });
 
+  // covers: evomcp/candidate-screening :: Pre-fanout plans are deduplicated by token overlap :: Near-duplicate plan discarded
   it("removes plans with high token overlap", () => {
     const plans: Plan[] = [
       { id: "1", summary: "Add caching layer with Redis for performance optimization" },
@@ -41,6 +42,7 @@ describe("deduplicatePlans", () => {
     assert.equal(result.length, 1, "should dedup high-overlap plans");
   });
 
+  // covers: evomcp/candidate-screening :: Pre-fanout plans are deduplicated by token overlap :: Sufficiently different plan kept
   it("keeps genuinely different plans", () => {
     const plans: Plan[] = [
       { id: "1", summary: "Add Redis caching layer" },
@@ -74,6 +76,7 @@ describe("deduplicatePlans", () => {
     assert.equal(result.length, 1);
   });
 
+  // covers: evomcp/candidate-screening :: Tokenization for dedup filters stopwords and short tokens :: Stopword-only difference does not save a plan
   it("handles summaries with only stopwords", () => {
     const plans: Plan[] = [
       { id: "1", summary: "the a an" },

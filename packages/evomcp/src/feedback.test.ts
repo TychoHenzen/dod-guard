@@ -274,6 +274,7 @@ describe("compileFeedback — Jest/Vitest assertion failures", () => {
 });
 
 describe("compileFeedback — fallback for unparseable output", () => {
+  // covers: evomcp/candidate-screening :: Diagnostic feedback is parsed from verification output with attached context :: Unparseable output is preserved
   it("returns fallback diagnostic for entirely unparseable output", () => {
     const result = compileFeedback("Something completely unexpected happened here", "/tmp", "generic");
     assert.equal(result.length, 1);
@@ -320,6 +321,7 @@ describe("compileFeedback — mixed formats", () => {
 });
 
 describe("compileFeedback — deduplication", () => {
+  // covers: evomcp/candidate-screening :: Diagnostics are deduplicated, severity-sorted, and capped to a token budget :: Duplicate diagnostic dropped
   it("deduplicates identical file+line+message prefix", () => {
     const result = compileFeedback(
       ["src/test.ts(10,5): error TS1000: type mismatch", "src/test.ts(10,5): error TS1000: type mismatch"].join("\n"),
@@ -388,6 +390,7 @@ describe("compileFeedback — sorting", () => {
 });
 
 describe("compileFeedback — token budget capping", () => {
+  // covers: evomcp/candidate-screening :: Diagnostics are deduplicated, severity-sorted, and capped to a token budget :: Output exceeds the token budget
   it("drops info diagnostics when over token budget", () => {
     withTempDir((tmpDir) => {
       // Create a file with enough lines so context windows are non-trivial
@@ -459,6 +462,7 @@ describe("compileFeedback — token budget capping", () => {
 });
 
 describe("compileFeedback — context window attachment", () => {
+  // covers: evomcp/candidate-screening :: Diagnostic feedback is parsed from verification output with attached context :: Diagnostic with a resolvable file and line gets context
   it("reads 20-line context around diagnostic line", () => {
     withTempDir((tmpDir) => {
       const testFile = createTempFile(tmpDir, "test.ts", 50);
@@ -490,6 +494,7 @@ describe("compileFeedback — context window attachment", () => {
     });
   });
 
+  // covers: evomcp/candidate-screening :: Diagnostic feedback is parsed from verification output with attached context :: Diagnostic with no resolvable file gets no context
   it("skips context when file does not exist on disk", () => {
     const result = compileFeedback("nonexistent.ts(10,5): error TS1000: file not found", "/tmp", "tsc");
     assert.equal(result.length, 1);

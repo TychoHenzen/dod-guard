@@ -136,6 +136,7 @@ describe("runAttempt", () => {
     assert.deepEqual(spawnedBranches, ["solve-strategy-2"]);
   });
 
+  // covers: evomcp/solve :: Each attempt follows a fixed cycle :: Branch cannot be spawned or checked out
   it("records a branch it could not create as a run that never started", async () => {
     reset();
     spawnThrows = true;
@@ -161,6 +162,7 @@ describe("runAttempt", () => {
     assert.deepEqual(workerCalls, [{ prompt: "make it fast", timeoutMs: 300_000 }]);
   });
 
+  // covers: evomcp/solve :: Each attempt follows a fixed cycle :: Worker times out
   it("stops at a worker timeout, before any verification", async () => {
     reset();
     worker = { output: "partial", exitCode: 124, durationMs: 5, timedOut: true };
@@ -171,6 +173,7 @@ describe("runAttempt", () => {
     assert.deepEqual(commits, []);
   });
 
+  // covers: evomcp/solve :: Each attempt follows a fixed cycle :: Worker produces no output
   it("stops when the worker produced only whitespace", async () => {
     reset();
     worker = { output: "  \n \t ", exitCode: 0, durationMs: 5, timedOut: false };
@@ -187,6 +190,7 @@ describe("runAttempt", () => {
     assert.equal(state.diagnostic.claude_output_sample, "w".repeat(500));
   });
 
+  // covers: evomcp/solve :: Each attempt follows a fixed cycle :: Worker produces output
   it("commits the work and diffs it against the branch the run started on", async () => {
     reset();
     const state = await runAttempt(plan, openSession());

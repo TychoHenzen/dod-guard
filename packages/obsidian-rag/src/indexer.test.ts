@@ -92,23 +92,29 @@ describe("indexer", () => {
       assert.equal(chunks.length, 1);
       assert.equal(chunks[0].heading, "H");
     });
+    // covers: obsidian-rag/vault-indexing :: Chunking is heading-aware, bounded, and keeps code blocks intact :: Long content forces a split
     it("splits long content", () => {
       const long = `# H\n${"x".repeat(810)}\n# S2\n${"y".repeat(810)}`;
       assert.ok(mod.chunkMarkdown("t.md", long).length >= 2);
     });
+    // covers: obsidian-rag/vault-indexing :: Chunking is heading-aware, bounded, and keeps code blocks intact :: Short note
     it("empty content = 1 chunk", () => assert.equal(mod.chunkMarkdown("t.md", "").length, 1));
+    // covers: obsidian-rag/vault-indexing :: Chunking is heading-aware, bounded, and keeps code blocks intact :: Heading marks section
     it("headings create sections", () => {
       const chunks = mod.chunkMarkdown("t.md", "# S1\nText\n# S2\nMore");
       assert.equal(chunks[0].heading, "S2");
     });
+    // covers: obsidian-rag/vault-indexing :: Chunking is heading-aware, bounded, and keeps code blocks intact :: Heading text inside a code block
     it("code blocks intact", () => {
       const md = "# Intro\nText\n```\n# Not heading\n```\n# Real\nMore";
       assert.ok(mod.chunkMarkdown("t.md", md).length >= 1);
     });
+    // covers: obsidian-rag/vault-indexing :: Chunk identifiers are stable and unique within a note :: Many chunks from one note
     it("unique chunk IDs", () => {
       const chunks = mod.chunkMarkdown("n.md", "# A\n".repeat(50));
       assert.equal(new Set(chunks.map((c: any) => c.id)).size, chunks.length);
     });
+    // covers: obsidian-rag/vault-indexing :: Chunking is heading-aware, bounded, and keeps code blocks intact :: Long content forces a split
     it("multi-heading long forces split", () => {
       const content = `# Intro\n${"y".repeat(810)}\n# S2\n${"z".repeat(810)}`;
       assert.ok(mod.chunkMarkdown("t.md", content).length >= 2);
@@ -117,7 +123,9 @@ describe("indexer", () => {
 
   describe("hashContent", () => {
     it("16 chars hex", () => assert.ok(/^[0-9a-f]{16}$/.test(mod.hashContent("x"))));
+    // covers: obsidian-rag/vault-indexing :: A content hash drives incremental indexing :: Hash is stable and content-sensitive
     it("stable", () => assert.equal(mod.hashContent("a"), mod.hashContent("a")));
+    // covers: obsidian-rag/vault-indexing :: A content hash drives incremental indexing :: Hash is stable and content-sensitive
     it("different", () => assert.notEqual(mod.hashContent("a"), mod.hashContent("b")));
   });
 
@@ -132,6 +140,7 @@ describe("indexer", () => {
       assert.equal(await mod.indexVault("/v", "v1", mockStore), 2);
       assert.equal(storeChunks.length, 2);
     });
+    // covers: obsidian-rag/vault-indexing :: A content hash drives incremental indexing :: Unchanged note
     it("skips unchanged files", async () => {
       walkResult.push("a.md");
       readResults.set("a.md", { path: "a.md", title: "A", tags: [], links: [], content: "Same", raw: "Same" });
@@ -143,6 +152,7 @@ describe("indexer", () => {
     it("empty vault returns 0", async () => {
       assert.equal(await mod.indexVault("/v", "v1", mockStore), 0);
     });
+    // covers: obsidian-rag/embedding-pipeline :: Vectors are generated during normal indexing :: Vault indexed with an embedder available
     it("embeds chunks when embedder provided", async () => {
       walkResult.push("a.md");
       readResults.set("a.md", {
@@ -163,6 +173,7 @@ describe("indexer", () => {
       assert.ok(embedChunksCalls.length > 0);
       assert.equal(embedChunksCalls[0], "v1");
     });
+    // covers: obsidian-rag/embedding-pipeline :: Indexing accepts an embedder that may be absent :: Indexing runs with no embedder
     it("skips embedding when embedder is null", async () => {
       walkResult.push("a.md");
       readResults.set("a.md", {
@@ -178,6 +189,7 @@ describe("indexer", () => {
       await mod.indexVault("/v", "v1", mockStore, null);
       assert.equal(embedChunksCalls.length, 0);
     });
+    // covers: obsidian-rag/embedding-pipeline :: Indexing accepts an embedder that may be absent :: Indexing runs with no embedder
     it("skips embedding when embedder is undefined (default)", async () => {
       walkResult.push("a.md");
       readResults.set("a.md", {
@@ -194,6 +206,7 @@ describe("indexer", () => {
       assert.equal(embedChunksCalls.length, 0);
     });
 
+    // covers: obsidian-rag/vault-indexing :: Re-indexing a note deletes its old chunks before inserting new ones :: Note shrinks
     it("deletes old chunks when note shrinks (deleteChunksForNote called before re-insert)", async () => {
       walkResult.push("long.md");
       readResults.set("long.md", {
@@ -219,6 +232,7 @@ describe("indexer", () => {
       assert.notEqual(remaining[0].content, "old0");
     });
 
+    // covers: obsidian-rag/vault-indexing :: A full index walk reconciles the index against the filesystem :: Note deleted from disk
     it("reconciliation removes ghost notes (file missing on disk)", async () => {
       walkResult.push("alive.md");
       readResults.set("alive.md", { path: "alive.md", title: "Alive", tags: [], links: [], content: "X", raw: "X" });
@@ -250,6 +264,7 @@ describe("indexer", () => {
   });
 
   describe("indexNote", () => {
+    // covers: obsidian-rag/vault-indexing :: A single note can be indexed without a full walk :: Note written then indexed
     it("indexes a single note with content", async () => {
       readResults.set("Claude-Memories/reference/mem.md", {
         path: "Claude-Memories/reference/mem.md",
@@ -292,6 +307,7 @@ describe("indexer", () => {
       assert.ok(mockStore.deleteChunksForNote.mock.calls.length > 0);
     });
 
+    // covers: obsidian-rag/embedding-pipeline :: Vectors are generated during normal indexing :: Single note reindexed after a write
     it("embeds chunks when embedder provided", async () => {
       readResults.set("Claude-Memories/reference/embed.md", {
         path: "Claude-Memories/reference/embed.md",
@@ -314,6 +330,7 @@ describe("indexer", () => {
       assert.equal(embedChunksCalls[0], "v1");
     });
 
+    // covers: obsidian-rag/embedding-pipeline :: Indexing accepts an embedder that may be absent :: Indexing runs with no embedder
     it("skips embedding when embedder is null", async () => {
       readResults.set("Claude-Memories/reference/no-embed.md", {
         path: "Claude-Memories/reference/no-embed.md",
@@ -329,6 +346,7 @@ describe("indexer", () => {
       assert.equal(embedChunksCalls.length, before);
     });
 
+    // covers: obsidian-rag/vault-indexing :: A single note can be indexed without a full walk :: Single-note indexing failure is contained
     it("handles read errors gracefully (does not throw)", async () => {
       readThrows = true;
       // readNote will throw — indexNote should catch and not reject

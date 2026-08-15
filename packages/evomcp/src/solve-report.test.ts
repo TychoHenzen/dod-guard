@@ -81,6 +81,7 @@ describe("buildEscalation best partial patch", () => {
 });
 
 describe("buildEscalation summary", () => {
+  // covers: evomcp/solve :: A run with no surviving attempt returns an escalation report :: Every attempt fails
   it("reports zero lineages for an empty run", () => {
     const report = buildEscalation([], []);
     assert.equal(report.lineages_attempted, 0);
@@ -105,6 +106,7 @@ describe("buildEscalation summary", () => {
     assert.equal(buildEscalation([attempt()], []).summary.includes("Degenerate"), false);
   });
 
+  // covers: evomcp/solve :: A run with no surviving attempt returns an escalation report :: Some attempts were rejected by screening
   it("lists the rejections with their count", () => {
     const report = buildEscalation([attempt()], ["a rejected", "b rejected"]);
     assert.equal(report.summary.includes("Degenerate rejections (2): a rejected; b rejected"), true);
@@ -126,6 +128,7 @@ describe("buildEscalation summary", () => {
 });
 
 describe("checkpointFailure", () => {
+  // covers: evomcp/solve :: A checkpoint gate runs before any attempt :: Checkpoint fails
   it("names the checkpoint as the failure and reports no lineage", () => {
     const report = checkpointFailure("git is not a repository");
     assert.equal(report.failure_signature, "checkpoint_failed");

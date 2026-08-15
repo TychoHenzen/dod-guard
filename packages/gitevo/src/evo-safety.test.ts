@@ -44,6 +44,7 @@ function scope(root: string, config: EvoConfig = CONFIG): Scope {
 }
 
 describe("guardMove findings", () => {
+  // covers: gitevo/safety-gate :: Refusals are a dedicated error type :: An unresolved target reference
   it("refuses a destination that does not resolve", () => {
     const root = repo();
     assert.throws(
@@ -52,12 +53,14 @@ describe("guardMove findings", () => {
     );
   });
 
+  // covers: gitevo/safety-gate :: Three independent findings describe what a move would cost :: Tracked source missing at the destination
   it("names tracked source the destination does not have", () => {
     const found = findingsFor(scope(repo()));
     assert.equal(found.length, 1);
     assert.ok(found[0].includes("later.ts"));
   });
 
+  // covers: gitevo/safety-gate :: Three independent findings describe what a move would cost :: Untracked source file
   it("names uncommitted files that look like source", () => {
     const root = repo();
     fs.mkdirSync(path.join(root, "work"));
@@ -67,6 +70,7 @@ describe("guardMove findings", () => {
     assert.ok(found[0].includes("work/draft.ts"), found[0]);
   });
 
+  // covers: gitevo/safety-gate :: Three independent findings describe what a move would cost :: Build output with no surviving source
   it("names build output whose source is gone", () => {
     const root = repo();
     fs.mkdirSync(path.join(root, "dist"));
@@ -83,6 +87,7 @@ describe("guardMove findings", () => {
     assert.equal(findingsFor(scope(root)).filter((f) => f.includes("Build output")).length, 0);
   });
 
+  // covers: gitevo/safety-gate :: Configuration controls what counts as source, where build output lives, and whether the stale check runs :: Stale check disabled
   it("skips the build output finding when the settings say so", () => {
     const root = repo();
     fs.mkdirSync(path.join(root, "dist"));
@@ -91,6 +96,7 @@ describe("guardMove findings", () => {
     assert.equal(findingsFor(scope(root, quiet)).filter((f) => f.includes("Build output")).length, 0);
   });
 
+  // covers: gitevo/safety-gate :: A test-shaped build artifact is not flagged stale when its source language is not configured :: JS-only repository with a compiled test file
   it("leaves dist alone when no configured source compiles to it", () => {
     const root = repo();
     fs.mkdirSync(path.join(root, "dist"));
@@ -101,13 +107,16 @@ describe("guardMove findings", () => {
 });
 
 describe("guardMove", () => {
+  // covers: gitevo/safety-gate :: Three independent findings describe what a move would cost :: Safe move
   it("says nothing when the move is safe", () => {
     const root = repo();
     assert.equal(guardMove({ ...scope(root), target: "HEAD" }), "");
   });
 
+  // covers: gitevo/safety-gate :: The gate refuses the move by default and reports a diagnostic :: Costly move without force
   it("refuses a costly move", () => assert.throws(() => guardMove(scope(repo())), EvoError));
 
+  // covers: gitevo/safety-gate :: The gate refuses the move by default and reports a diagnostic :: Costly move with force
   it("reports rather than refuses when forced", () => {
     const report = guardMove(scope(repo()), true);
     assert.ok(report.includes("later.ts"));

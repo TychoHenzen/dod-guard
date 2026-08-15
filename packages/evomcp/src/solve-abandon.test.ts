@@ -44,6 +44,7 @@ describe("abandonBranch", () => {
     checkoutFails = false;
   }
 
+  // covers: evomcp/solve :: Every non-surviving attempt is abandoned :: Attempt fails verification or screening
   it("checks the branch out before abandoning it", async () => {
     reset();
     await abandonBranch("solve-strategy-2", "not selected", "/repo");
@@ -51,6 +52,7 @@ describe("abandonBranch", () => {
     assert.deepEqual(abandons, ["not selected"]);
   });
 
+  // covers: evomcp/solve :: Every non-surviving attempt is abandoned :: Branch was never created
   it("abandons nothing when the branch cannot be checked out", async () => {
     reset();
     checkoutFails = true;

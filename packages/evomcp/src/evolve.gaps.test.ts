@@ -149,6 +149,7 @@ describe("evolve gaps", () => {
   });
 
   // 1. Convergence stops the run early.
+  // covers: evomcp/evolve :: The run stops early on convergence, stagnation or oscillation :: Convergence detected before the generation limit
   it("stops the generation loop early when convergence reports stop", async () => {
     runCmdFirstOutput = "30";
     runCmdLaterOutput = "30";
@@ -171,6 +172,7 @@ describe("evolve gaps", () => {
   });
 
   // 2. A failing gate rejects a winning candidate.
+  // covers: evomcp/evolve :: Each candidate is scored and gated before it can become best :: Winning score but failing gate
   it("does not adopt a candidate with a winning score when its gate fails", async () => {
     runCmdFirstOutput = "50"; // baseline
     runCmdLaterOutput = "10"; // candidate: numerically better (lower = better by default)
@@ -191,6 +193,7 @@ describe("evolve gaps", () => {
   });
 
   // 3. Winner adoption fails and the run falls back, still returning the improvement.
+  // covers: evomcp/evolve :: The run verifies the final state with the best patch applied :: Adoption fails
   it("falls back and still returns the winning branch when adoptWinner throws", async () => {
     runCmdFirstOutput = "50"; // baseline
     runCmdLaterOutput = "10"; // candidate: better
@@ -213,6 +216,7 @@ describe("evolve gaps", () => {
   });
 
   // 4. Mutation calls run under a concurrency cap.
+  // covers: evomcp/evolve :: Each generation mutates a population under a concurrency cap :: Population larger than the concurrency cap
   it("never runs more than 4 mutation calls at once within a generation", async () => {
     runCmdFirstOutput = "5";
     runCmdLaterOutput = "5";

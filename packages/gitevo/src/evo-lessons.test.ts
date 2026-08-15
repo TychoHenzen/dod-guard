@@ -35,15 +35,19 @@ after(() => {
 });
 
 describe("lessons", () => {
+  // covers: gitevo/lesson-export :: Listing lessons shows the newest first :: No lessons recorded
   it("reports the empty case", () => assert.equal(evo_lessons(), "No lessons recorded."));
 
+  // covers: gitevo/lesson-export :: Export emits JSON the obsidian-rag memory_save tool accepts :: Empty store exports as an empty array
   it("exports the empty case as exactly []", () => assert.equal(evo_export_lessons(), "[]"));
 
+  // covers: gitevo/lesson-export :: Recording a lesson attributes it to the active branch :: Lesson recorded on the current branch
   it("attributes a lesson to the current branch", () => {
     const result = evo_learn("first lesson", { cwd: dir, rootBranch: "main" });
     assert.match(result, /^Lesson recorded on branch '.+'\.$/);
   });
 
+  // covers: gitevo/lesson-export :: Listing lessons shows the newest first :: Multiple lessons listed newest first
   it("numbers lessons newest first", () => {
     recordLesson(root, "side", "second lesson");
     const listed = evo_lessons().split("\n");
@@ -64,12 +68,14 @@ describe("lessons", () => {
     assert.equal(entries[0].id.length, "gitevo-".length + 12);
   });
 
+  // covers: gitevo/lesson-export :: Export identifiers are content-derived and idempotent :: Re-export produces identical ids
   it("gives the same ids on re-export", () => {
     const first = JSON.parse(evo_export_lessons()).map((e: { id: string }) => e.id);
     const again = JSON.parse(evo_export_lessons()).map((e: { id: string }) => e.id);
     assert.deepEqual(first, again);
   });
 
+  // covers: gitevo/lesson-export :: Export emits JSON the obsidian-rag memory_save tool accepts :: Long lesson content is truncated in the title only
   it("truncates a long title at 80 characters", () => {
     recordLesson(root, "side", "x".repeat(200));
     assert.equal(JSON.parse(evo_export_lessons()).length, 3);

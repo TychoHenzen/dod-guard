@@ -30,6 +30,7 @@ describe("cosineSimilarity", () => {
     assert.ok(Math.abs(cosineSimilarity([1, 0], [0, 1])) < 0.001);
   });
 
+  // covers: obsidian-rag/note-search :: A dimension mismatch between query and stored embeddings raises a clear error :: Stored embedding has a different dimension than the query embedding
   it("different lengths throws descriptive error", () => {
     assert.throws(() => cosineSimilarity([1, 2], [1, 2, 3]), /Embedding dimension mismatch/);
   });
@@ -40,6 +41,7 @@ describe("cosineSimilarity", () => {
 });
 
 describe("semanticSearch fast-path", () => {
+  // covers: obsidian-rag/note-search :: Semantic and hybrid search skip loading the embedder when no vector exists :: Vault has zero embedded chunks
   it("returns empty when embeddedChunks is 0", async () => {
     const { semanticSearch } = await import("./retriever.js");
     let embedderCalled = false;
@@ -71,6 +73,7 @@ describe("semanticSearch fast-path", () => {
     assert.equal(embedderCalled, false);
   });
 
+  // covers: obsidian-rag/note-search :: Semantic search compares embeddings by cosine similarity read from binary storage :: Comparing a query embedding against a stored embedding
   it("scores chunks via BLOB Float32Array embeddings", async () => {
     const { semanticSearch } = await import("./retriever.js");
 
@@ -134,6 +137,7 @@ describe("semanticSearch fast-path", () => {
 });
 
 describe("embedAllChunks", () => {
+  // covers: obsidian-rag/embedding-pipeline :: Background embedding returns a progress handle immediately :: Background embedding requested on a large vault
   it("embeds all unembedded chunks in a loop", async () => {
     const { embedAllChunks } = await import("./retriever.js");
 
@@ -183,6 +187,7 @@ describe("embedAllChunks", () => {
     assert.ok(mockStore.setIndexMeta.mock.calls.length >= 2);
   });
 
+  // covers: obsidian-rag/embedding-pipeline :: Background embedding returns a progress handle immediately :: No unembedded chunks remain
   it("returns immediately when no unembedded chunks exist", async () => {
     const { embedAllChunks } = await import("./retriever.js");
 
@@ -214,6 +219,7 @@ describe("embedAllChunks", () => {
 });
 
 describe("hybridSearch fast-path", () => {
+  // covers: obsidian-rag/note-search :: Semantic and hybrid search skip loading the embedder when no vector exists :: Hybrid search with no embeddings yet
   it("returns keyword-only when embeddedChunks is 0 and embedder is provided", async () => {
     const { hybridSearch } = await import("./retriever.js");
     let embedderCalled = false;
@@ -250,6 +256,7 @@ describe("hybridSearch fast-path", () => {
     assert.equal(embedderCalled, false);
   });
 
+  // covers: obsidian-rag/note-search :: Semantic and hybrid search skip loading the embedder when no vector exists :: No embedder supplied at all
   it("returns keyword-only when embedder is null regardless of embeddedChunks", async () => {
     const { hybridSearch } = await import("./retriever.js");
     const mockStore = {

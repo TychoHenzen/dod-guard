@@ -150,6 +150,7 @@ describe("repairLineage", () => {
     assert.equal(sent.includes("This is repair attempt #2."), true);
   });
 
+  // covers: evomcp/solve :: A failing attempt enters a bounded repair loop :: Repair times out
   it("stops at a worker timeout, before any verification", async () => {
     reset();
     ladderAllows = [true, true];
@@ -163,6 +164,7 @@ describe("repairLineage", () => {
     assert.deepEqual(commits, []);
   });
 
+  // covers: evomcp/solve :: A failing attempt enters a bounded repair loop :: Repair produces a passing result
   it("stops at the first repair that verifies", async () => {
     reset();
     ladderAllows = [true, true, true];
@@ -185,6 +187,7 @@ describe("repairLineage", () => {
     assert.equal(state.diff, "the repaired diff");
   });
 
+  // covers: evomcp/solve :: A failing attempt enters a bounded repair loop :: Ladder leaves the retry and resample rungs
   it("gives up as stuck once the ladder stops offering tries", async () => {
     reset();
     ladderAllows = [true, true, false];
@@ -204,6 +207,7 @@ describe("repairLineage", () => {
     assert.equal(state.diagnostic.verify_failed, true);
   });
 
+  // covers: evomcp/solve :: Stuck and oscillating detection reads per-lineage signature history :: Same signature repeats
   it("grows the failure history by one signature per try", async () => {
     reset();
     ladderAllows = [true, true, false];

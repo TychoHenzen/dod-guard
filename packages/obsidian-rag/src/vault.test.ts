@@ -107,8 +107,10 @@ describe("vault", () => {
     it("deduplicates", () => assert.deepStrictEqual(mod.extractWikilinks("[[A]] [[B]] [[A]]"), ["A", "B"]));
     it("strips heading anchors", () => assert.deepStrictEqual(mod.extractWikilinks("[[Note#section]]"), ["Note"]));
     it("strips aliases", () => assert.deepStrictEqual(mod.extractWikilinks("[[Note|display]]"), ["Note"]));
+    // covers: obsidian-rag/note-access :: Wikilinks are extracted from note content :: Link with an anchor and an alias
     it("strips anchor+alias", () => assert.deepStrictEqual(mod.extractWikilinks("[[Note#section|display]]"), ["Note"]));
     it("trims whitespace", () => assert.deepStrictEqual(mod.extractWikilinks("[[  spaced  ]]"), ["spaced"]));
+    // covers: obsidian-rag/note-access :: Wikilinks are extracted from note content :: Anchor-only link
     it("rejects #-only target", () => assert.deepStrictEqual(mod.extractWikilinks("[[#section]]"), []));
   });
 
@@ -133,16 +135,19 @@ describe("vault", () => {
       assert.ok(mkdirCalled.length > 0);
     });
 
+    // covers: obsidian-rag/note-access :: A note path cannot resolve outside the vault :: Path traversal via relative segments
     it("rejects ../ path traversal (write)", async () => {
       await assert.rejects(() => mod.writeNote("/v", "../../evil.md", {}, "traversal"), /Path traversal denied/);
     });
 
+    // covers: obsidian-rag/note-access :: A note path cannot resolve outside the vault :: Path traversal via backslash segments
     it("rejects ..\\ path traversal (write, backslash)", {
       skip: process.platform !== "win32" ? "backslash is a valid filename char on POSIX, not a separator" : false,
     }, async () => {
       await assert.rejects(() => mod.writeNote("/v", "..\\..\\evil2.md", {}, "traversal"), /Path traversal denied/);
     });
 
+    // covers: obsidian-rag/note-access :: A note path cannot resolve outside the vault :: Path traversal via relative segments
     it("rejects nested ../ path traversal (read)", async () => {
       await assert.rejects(() => mod.readNote("/v", "sub/../../../evil3.md"), /Path traversal denied/);
     });
@@ -186,6 +191,7 @@ describe("vault", () => {
   });
 
   describe("readNote", () => {
+    // covers: obsidian-rag/note-access :: Frontmatter is parsed into structured metadata :: Tags as a comma-separated string
     it("parses frontmatter", async () => {
       setFile("/v/t.md", "---\ntitle: My Note\ntags: dev, ops\n---\nContent here");
       const note = await mod.readNote("/v", "t.md");
@@ -257,6 +263,7 @@ describe("vault", () => {
       assert.equal((await mod.aggregateTags("/v")).size, 0);
     });
 
+    // covers: obsidian-rag/note-access :: Get tags aggregates tags with note counts :: Vault with tagged notes
     it("counts tags across files", async () => {
       setDir("/v", [
         { name: "a.md", isDirectory: () => false, isFile: () => true },

@@ -70,6 +70,7 @@ describe("runAttempts", () => {
     attemptPasses = false;
   }
 
+  // covers: evomcp/budget-escalation :: A budget stops retries, not first attempts :: Budget already exhausted before a first attempt
   it("gives every plan a first try even after the budget is gone", async () => {
     reset();
     const session = openSession(1000);
@@ -81,6 +82,7 @@ describe("runAttempts", () => {
     assert.equal(session.budgetExhausted, true);
   });
 
+  // covers: evomcp/solve :: Every non-surviving attempt is abandoned :: Attempt fails verification or screening
   it("abandons the branch of every attempt that does not survive", async () => {
     reset();
     const session = openSession();
@@ -92,6 +94,7 @@ describe("runAttempts", () => {
     assert.equal(run.survivors.length, 0);
   });
 
+  // covers: evomcp/solve :: Attempts run one at a time :: Multiple plans sampled
   it("keeps the branch of a surviving attempt", async () => {
     reset();
     attemptPasses = true;

@@ -11,6 +11,7 @@ function writeLog(root: string, records: SkipRecord[]): void {
   writeFileSync(path.join(root, SKIP_LOG), JSON.stringify(records, null, 2));
 }
 
+// covers: quality-guard/mcp-tools :: The tools and the gate agree on where records live :: Skip-log path changes on one side
 test("the server and the hook agree on where the skip log lives", () => {
   assert.equal(SKIP_LOG, HOOK_SKIP_LOG, "a drift here would hide waivers from quality_skips");
 });
@@ -32,6 +33,7 @@ test("readSkipLog reads records the hook wrote", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
+// covers: quality-guard/skip-sentinel :: Every waiver is written to an open record :: Log file is corrupt
 test("a corrupt log reads as empty rather than throwing", () => {
   const root = mkdtempSync(path.join(tmpdir(), "qg-skips-"));
   mkdirSync(path.join(root, path.dirname(SKIP_LOG)), { recursive: true });
@@ -40,11 +42,13 @@ test("a corrupt log reads as empty rather than throwing", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
+// covers: quality-guard/mcp-tools :: Waiver tool lists only open records :: Every waiver acknowledged
 test("formatSkips reports nothing open when every waiver is acknowledged", () => {
   const out = formatSkips([{ file: "src/a.ts", acknowledged: true }]);
   assert.equal(out, "No unacknowledged quality-gate waivers.");
 });
 
+// covers: quality-guard/mcp-tools :: Waiver tool lists only open records :: Open waivers exist
 test("formatSkips lists open waivers with their kind and reasons", () => {
   const out = formatSkips([
     { file: "src/a.ts", rebaseline: true, at: "2026-07-30T09:00:00.000Z", reasons: ["complexity: 8 before, 11 now"] },

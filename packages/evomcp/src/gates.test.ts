@@ -187,6 +187,7 @@ describe("GateRunner", () => {
     assert.equal(results[0].passed, false);
   });
 
+  // covers: evomcp/evolve :: Optional lint, build and test gates run before the baseline :: No gate commands configured
   it("skips gates with no command configured", async () => {
     const runner = new GateRunner({ build_cmd: undefined, test_cmd: undefined });
     const results = await runner.runAll("/tmp");

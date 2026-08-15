@@ -82,6 +82,7 @@ async function importFresh(): Promise<any> {
 // ── getBackendApiKey branches (fresh module each test) ────────────────────
 
 describe("getBackendApiKey — valid", () => {
+  // covers: evomcp/worker-dispatch :: The API key resolves in a fixed priority order :: Config file is the last resort
   it("returns key from backends.json", async () => {
     fsExistsSyncReturn = true;
     fsReadFileReturn = JSON.stringify({ default: "ds", backends: { ds: { apiKey: "sk-abc" } } });
@@ -91,6 +92,7 @@ describe("getBackendApiKey — valid", () => {
 });
 
 describe("getBackendApiKey — file missing", () => {
+  // covers: evomcp/worker-dispatch :: The API key resolves in a fixed priority order :: Config file missing or unreadable
   it("returns null", async () => {
     fsExistsSyncReturn = false;
     const m = await importFresh();
@@ -135,6 +137,7 @@ describe("getBackendApiKey — JSON parse error", () => {
 });
 
 describe("getBackendApiKey — re-probes after null", () => {
+  // covers: evomcp/worker-dispatch :: The API key resolves in a fixed priority order :: Late-created config file
   it("picks up late-created backends.json", async () => {
     fsExistsSyncReturn = false; // no file yet
     const m = await importFresh();
@@ -150,6 +153,7 @@ describe("getBackendApiKey — re-probes after null", () => {
 });
 
 describe("resolveApiKey — empty fallback", () => {
+  // covers: evomcp/worker-dispatch :: Dispatch requires a resolved API key :: No key anywhere
   it("returns empty when nothing configured", async () => {
     fsExistsSyncReturn = false;
     delete process.env.DEEPSEEK_API_KEY;
@@ -160,6 +164,7 @@ describe("resolveApiKey — empty fallback", () => {
 });
 
 describe("apiKeySource — backends_json", () => {
+  // covers: evomcp/worker-dispatch :: The caller can see where the key came from :: Status reporting
   it("returns backends_json when key from file", async () => {
     fsExistsSyncReturn = true;
     fsReadFileReturn = JSON.stringify({ default: "ds", backends: { ds: { apiKey: "sk-b" } } });
@@ -179,13 +184,16 @@ describe("agent — pure functions", () => {
 
   describe("hashFailure", () => {
     it("hex output", () => assert.ok(/^[0-9a-f]+$/.test(mod.hashFailure("err"))));
+    // covers: evomcp/worker-dispatch :: Failure output is hashed into a stable signature :: Same failure, different timestamps
     it("normalizes timestamps", () =>
       assert.equal(mod.hashFailure("2024-03-15T14:30:00 x"), mod.hashFailure("2025-01-01T00:00:00 x")));
+    // covers: evomcp/worker-dispatch :: Failure output is hashed into a stable signature :: Same failure, different file:line or temp path
     it("normalizes file:line", () =>
       assert.equal(mod.hashFailure("/a/foo.ts:42: x"), mod.hashFailure("/b/bar.ts:99: x")));
     it("normalizes hex", () => assert.equal(mod.hashFailure("0x7f8a x"), mod.hashFailure("0xdead x")));
     it("normalizes durations", () => assert.equal(mod.hashFailure("150.5ms x"), mod.hashFailure("9999.9ms x")));
     it("different errors differ", () => assert.notEqual(mod.hashFailure("TypeError"), mod.hashFailure("RefErr")));
+    // covers: evomcp/worker-dispatch :: Failure output is hashed into a stable signature :: Genuinely different failures
     it("two distinct long failures don't collide", () => {
       const longA =
         "Error: Connection refused\n  at Socket._onTimeout (node:net:1234:56)\n  at /home/user/project/src/db.ts:42:10\n  at connect (/home/user/project/src/db.ts:100:20)\n  [cause: 0x7f8a9b0c] 150.2ms\n".repeat(
@@ -308,10 +316,12 @@ describe("agent — pure functions", () => {
   });
 
   describe("resolveApiKey", () => {
+    // covers: evomcp/worker-dispatch :: The API key resolves in a fixed priority order :: Explicit key wins over the environment
     it("explicit key", () => {
       assert.equal(mod.resolveApiKey("explicit"), "explicit");
       assert.equal(mod.apiKeySource("explicit"), "option");
     });
+    // covers: evomcp/worker-dispatch :: The API key resolves in a fixed priority order :: Environment wins over the config file
     it("env key", () => {
       const p = process.env.DEEPSEEK_API_KEY;
       process.env.DEEPSEEK_API_KEY = "ek";
@@ -322,6 +332,7 @@ describe("agent — pure functions", () => {
   });
 
   describe("checkProxyHealth", () => {
+    // covers: evomcp/worker-dispatch :: Proxy health is checked, not assumed :: Proxy healthy
     it("healthy", async () => {
       process.env.DEEPSEEK_API_KEY = "sk";
       globalThis.fetch = mock.fn(async () => ({ ok: true, json: async () => ({ mode: "ds" }) })) as any;
@@ -331,12 +342,14 @@ describe("agent — pure functions", () => {
       globalThis.fetch = mock.fn(async () => ({ ok: false, json: async () => ({}) })) as any;
       assert.equal(await mod.checkProxyHealth(), false);
     });
+    // covers: evomcp/worker-dispatch :: Proxy health is checked, not assumed :: Proxy unreachable
     it("fetch throws", async () => {
       globalThis.fetch = mock.fn(async () => {
         throw new Error("ECONNREFUSED");
       }) as any;
       assert.equal(await mod.checkProxyHealth(), false);
     });
+    // covers: evomcp/worker-dispatch :: Proxy health is checked, not assumed :: Proxy responds without a mode
     it("no mode", async () => {
       globalThis.fetch = mock.fn(async () => ({ ok: true, json: async () => ({}) })) as any;
       assert.equal(await mod.checkProxyHealth(), false);
@@ -370,12 +383,14 @@ describe("agent — pure functions", () => {
       const r = await mod.spawnClaude("p", { cwd: process.cwd() });
       assert.equal(r.exitCode, 0);
     });
+    // covers: evomcp/worker-dispatch :: A failed or errored spawn still returns a result :: The claude binary cannot be found
     it("error", async () => {
       spawnThrows = true;
       process.env.DEEPSEEK_API_KEY = "sk";
       const r = await mod.spawnClaude("p", { cwd: process.cwd() });
       assert.equal(r.exitCode, -1);
     });
+    // covers: evomcp/worker-dispatch :: A system prompt travels through a temporary file :: System prompt supplied
     it("system prompt", async () => {
       spawnThrows = false;
       process.env.DEEPSEEK_API_KEY = "sk";
@@ -387,6 +402,7 @@ describe("agent — pure functions", () => {
       const r = await mod.spawnClaude("p", { cwd: process.cwd(), model: "h" });
       assert.equal(r.exitCode, 0);
     });
+    // covers: evomcp/worker-dispatch :: Prompts reach the worker over standard input :: Oversized prompt
     it("oversized prompt >32K chars", async () => {
       spawnThrows = false;
       spawnCallArgs.length = 0;
@@ -401,6 +417,7 @@ describe("agent — pure functions", () => {
       assert.equal(args[0], "-p");
       assert.equal(args.includes(bigPrompt), false, "prompt should not be in argv");
     });
+    // covers: evomcp/worker-dispatch :: Dispatch requires a resolved API key :: No key anywhere
     it("throws when no API key found", async () => {
       const saved = process.env.DEEPSEEK_API_KEY;
       delete process.env.DEEPSEEK_API_KEY;
@@ -412,11 +429,13 @@ describe("agent — pure functions", () => {
   });
 
   describe("ensureProxy", () => {
+    // covers: evomcp/worker-dispatch :: A dead proxy blocks worker dispatch until it recovers or is started :: Proxy already running
     it("healthy", async () => {
       process.env.DEEPSEEK_API_KEY = "sk";
       globalThis.fetch = mock.fn(async () => ({ ok: true, json: async () => ({ mode: "ds" }) })) as any;
       assert.equal(await mod.ensureProxy(), true);
     });
+    // covers: evomcp/worker-dispatch :: A dead proxy blocks worker dispatch until it recovers or is started :: Proxy down and no local installation
     it("no dir", async () => {
       process.env.DEEPSEEK_API_KEY = "sk";
       globalThis.fetch = mock.fn(async () => ({ ok: false, json: async () => ({}) })) as any;

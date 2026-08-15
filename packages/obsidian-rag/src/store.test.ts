@@ -223,6 +223,7 @@ describe("Store — FTS5 search", () => {
     if (existsSync(DB_DIR)) rmSync(DB_DIR, { recursive: true, force: true });
   });
 
+  // covers: obsidian-rag/note-search :: Three search modes are available :: Keyword-only query
   it("finds notes matching a search term in content", () => {
     const results = store.searchNotesFTS(VAULT, "carbonara", 10);
     assert.equal(results.length, 1);
@@ -319,11 +320,13 @@ describe("Store — FTS5 query sanitization", () => {
     assert.equal(results.length, 0);
   });
 
+  // covers: obsidian-rag/note-search :: A query is sanitized before it reaches the FTS5 engine :: Query holds a boolean keyword
   it("finds notes containing the word AND (treated as literal text, not FTS operator)", () => {
     const results = store.searchNotesFTS(VAULT, "AND", 10);
     assert.ok(results.length >= 1, "should find note with literal AND in content");
   });
 
+  // covers: obsidian-rag/note-search :: A query is sanitized before it reaches the FTS5 engine :: Query holds a boolean keyword
   it("finds notes containing the word OR (treated as literal text, not FTS operator)", () => {
     const results = store.searchNotesFTS(VAULT, "OR", 10);
     assert.ok(results.length >= 1, "should find note with literal OR in content");
@@ -365,12 +368,14 @@ describe("Store — FTS5 query sanitization", () => {
     assert.ok(Array.isArray(results));
   });
 
+  // covers: obsidian-rag/note-search :: A query is sanitized before it reaches the FTS5 engine :: Query holds an FTS5 special character
   it("strips colon operator without crashing", () => {
     const results = store.searchNotesFTS(VAULT, "auth:token", 10);
     assert.ok(Array.isArray(results));
     assert.ok(results.length >= 1, "should find note with auth:token content");
   });
 
+  // covers: obsidian-rag/note-search :: A query is sanitized before it reaches the FTS5 engine :: Query holds an FTS5 special character
   it("strips leading asterisk wildcard without crashing", () => {
     const results = store.searchNotesFTS(VAULT, "*separated", 10);
     assert.ok(Array.isArray(results));
@@ -397,6 +402,7 @@ describe("Store — FTS5 query sanitization", () => {
     assert.ok(Array.isArray(results));
   });
 
+  // covers: obsidian-rag/note-search :: A query is sanitized before it reaches the FTS5 engine :: Query is empty after sanitizing
   it("empty query after sanitization returns empty array", () => {
     // Query consisting only of characters that get stripped
     const results = store.searchNotesFTS(VAULT, "(*):", 10);
@@ -437,6 +443,7 @@ describe("Store — listing notes", () => {
     if (existsSync(DB_DIR)) rmSync(DB_DIR, { recursive: true, force: true });
   });
 
+  // covers: obsidian-rag/note-access :: Listing notes can be filtered by directory :: No directory given
   it("lists all notes when no directory filter", () => {
     const notes = store.listNotes(VAULT);
     assert.equal(notes.length, 3);
@@ -444,12 +451,14 @@ describe("Store — listing notes", () => {
     assert.ok(notes[1].path < notes[2].path);
   });
 
+  // covers: obsidian-rag/note-access :: Listing notes can be filtered by directory :: Directory given
   it("filters by directory prefix", () => {
     const notes = store.listNotes(VAULT, "folder-a/");
     assert.equal(notes.length, 2);
     for (const n of notes) assert.ok(n.path.startsWith("folder-a/"));
   });
 
+  // covers: obsidian-rag/note-access :: Listing notes can be filtered by directory :: No notes match
   it("returns empty for non-matching directory", () => {
     assert.deepStrictEqual(store.listNotes(VAULT, "nonexistent/"), []);
   });
@@ -604,6 +613,7 @@ describe("Store — chunks", () => {
     assert.equal(unembedded[0].id, "notes/long.md#0");
   });
 
+  // covers: obsidian-rag/embedding-pipeline :: Vectors are stored as binary blobs beside the legacy text column :: Reading stored vectors for search
   it("getChunksWithEmbeddings returns chunks with Float32Array from BLOB", () => {
     store.clearChunks(VAULT);
     store.upsertChunk(

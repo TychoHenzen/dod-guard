@@ -66,6 +66,7 @@ describe("finalize", () => {
     verdict = { winner: "solve-strategy-1", reasoning: "cleanest" };
   }
 
+  // covers: evomcp/solve :: A run with no surviving attempt returns an escalation report :: Every attempt fails
   it("escalates when nothing survived", async () => {
     reset();
     const run = openRun();
@@ -78,6 +79,7 @@ describe("finalize", () => {
     assert.deepEqual(selections, []);
   });
 
+  // covers: evomcp/solve :: A run with no surviving attempt returns an escalation report :: Some attempts were rejected by screening
   it("hands the refusal list to the escalation report", async () => {
     reset();
     const run = openRun();
@@ -106,6 +108,7 @@ describe("finalize", () => {
     assert.deepEqual((await finalize(adopted, openSession())).degenerate_rejections, ["a"]);
   });
 
+  // covers: evomcp/solve :: A single survivor is adopted directly, several go through the judge :: Exactly one survivor
   it("adopts the selected change when a survivor exists", async () => {
     reset();
     const run = openRun();

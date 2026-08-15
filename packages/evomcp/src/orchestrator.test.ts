@@ -28,6 +28,7 @@ describe("createOrchestrator", () => {
 // ── advanceStage ───────────────────────────────────────────────────────
 
 describe("advanceStage", () => {
+  // covers: evomcp/orchestration :: Playbook stages run in a fixed sequence :: Fresh run advances into SPEC
   it("advances from null to spec", () => {
     const state = createOrchestrator();
     const result = advanceStage(state);
@@ -86,6 +87,7 @@ describe("advanceStage", () => {
     assert.equal(result.stage, "merge");
   });
 
+  // covers: evomcp/orchestration :: Playbook stages run in a fixed sequence :: Run completes after MERGE
   it("completes after merge", () => {
     const state = createOrchestrator();
     for (const stage of ["spec", "test_author", "implement", "harden", "review", "merge"] as const) {
@@ -101,12 +103,14 @@ describe("advanceStage", () => {
 // ── checkStageGate ─────────────────────────────────────────────────────
 
 describe("checkStageGate", () => {
+  // covers: evomcp/orchestration :: Each stage gates entry on the prior stage's completion flag :: SPEC has no prerequisite
   it("spec always can enter", () => {
     const state = createOrchestrator();
     const gate = checkStageGate(state, "spec");
     assert.equal(gate.canEnter, true);
   });
 
+  // covers: evomcp/orchestration :: Each stage gates entry on the prior stage's completion flag :: TEST_AUTHOR blocked without a locked spec
   it("test_author blocked without spec_locked flag", () => {
     const state = createOrchestrator();
     const gate = checkStageGate(state, "test_author");
@@ -121,12 +125,14 @@ describe("checkStageGate", () => {
     assert.equal(gate.canEnter, true);
   });
 
+  // covers: evomcp/orchestration :: Each stage gates entry on the prior stage's completion flag :: IMPLEMENT blocked without red, locked tests
   it("implement blocked without tests_locked and tests_red", () => {
     const state = createOrchestrator();
     const gate = checkStageGate(state, "implement");
     assert.equal(gate.canEnter, false);
   });
 
+  // covers: evomcp/orchestration :: Each stage gates entry on the prior stage's completion flag :: IMPLEMENT enterable once tests are locked and red
   it("implement allowed with both test flags", () => {
     const state = createOrchestrator();
     state.flags.add("tests_locked");
@@ -135,6 +141,7 @@ describe("checkStageGate", () => {
     assert.equal(gate.canEnter, true);
   });
 
+  // covers: evomcp/orchestration :: Each stage gates entry on the prior stage's completion flag :: HARDEN, REVIEW, MERGE each require the prior pass flag
   it("harden blocked without implement_pass", () => {
     const state = createOrchestrator();
     const gate = checkStageGate(state, "harden");
@@ -157,6 +164,7 @@ describe("checkStageGate", () => {
 // ── completeStage ──────────────────────────────────────────────────────
 
 describe("completeStage", () => {
+  // covers: evomcp/orchestration :: Completing a stage sets its flag and records the attempt :: Completing SPEC starts TEST_AUTHOR
   it("sets spec_locked on spec complete", () => {
     const state = createOrchestrator();
     completeStage(state, "spec", 100, 500);
@@ -188,6 +196,7 @@ describe("completeStage", () => {
     assert.equal(state.flags.has("review_pass"), true);
   });
 
+  // covers: evomcp/orchestration :: Completing a stage sets its flag and records the attempt :: Completing MERGE marks the run done
   it("sets completed on merge", () => {
     const state = createOrchestrator();
     completeStage(state, "merge", 0, 0);
@@ -248,6 +257,7 @@ describe("stageToBudgetStage", () => {
 // ── loadPlaybook ───────────────────────────────────────────────────────
 
 describe("loadPlaybook", () => {
+  // covers: evomcp/orchestration :: The playbook loader names a stage sequence and its hard gates :: Every playbook type starts at SPEC and ends at MERGE
   it("returns stages for all playbook types", () => {
     for (const type of ["bugfix", "feature", "refactor", "test-harden", "reconcile", "review"] as const) {
       const pb = loadPlaybook(type);
@@ -261,6 +271,7 @@ describe("loadPlaybook", () => {
 // ── orchestratorSummary ────────────────────────────────────────────────
 
 describe("orchestratorSummary", () => {
+  // covers: evomcp/orchestration :: A run reports a human-readable status of the current state :: Summary names the current stage
   it("includes stage info", () => {
     const state = createOrchestrator();
     state.currentStage = "implement";
@@ -276,6 +287,7 @@ describe("orchestratorSummary", () => {
     assert.ok(summary.includes("spec_locked"));
   });
 
+  // covers: evomcp/orchestration :: A run reports a human-readable status of the current state :: Summary reports no flags plainly
   it("shows (none) when no flags", () => {
     const state = createOrchestrator();
     const summary = orchestratorSummary(state);
