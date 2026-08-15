@@ -1,6 +1,7 @@
 interface LanguageSpec {
   markerRe: RegExp;
   findTestName: (lines: string[], fromLine: number) => string | null;
+  findTestBody?: (lines: string[], fromLine: number) => string | null;
 }
 
 const SEP = String.raw`\s*(?:::|\|\|)\s*`;
@@ -14,7 +15,7 @@ function skipBlanks(lines: string[], from: number): number {
   return i;
 }
 
-function simpleFinder(re: RegExp, group: number): (lines: string[], from: number) => string | null {
+function simpleFinder(re: RegExp, group: number): LanguageSpec["findTestName"] {
   return (lines, from) => {
     const next = skipBlanks(lines, from);
     if (next >= lines.length) return null;
@@ -23,19 +24,73 @@ function simpleFinder(re: RegExp, group: number): (lines: string[], from: number
   };
 }
 
+// Resolves the declaration line for a single-line marker like findTestName's simpleFinder,
+// but returns the line index (for body extraction) instead of a captured name.
+function findDeclLineSimple(lines: string[], from: number, re: RegExp): number | null {
+  const next = skipBlanks(lines, from);
+  if (next >= lines.length) return null;
+  return re.test(lines[next]) ? next : null;
+}
+
+/** Net change in brace nesting a single line contributes. */
+function braceDelta(line: string): number {
+  const opens = line.match(/\{/g)?.length ?? 0;
+  const closes = line.match(/\}/g)?.length ?? 0;
+  return opens - closes;
+}
+
+// Extracts a body by counting open/close braces from the declaration line until nesting returns to zero.
+function extractBraceBody(lines: string[], startLine: number | null): string | null {
+  if (startLine === null || startLine >= lines.length) return null;
+  const bodyLines = [lines[startLine]];
+  let depth = braceDelta(lines[startLine]);
+  let i = startLine;
+  while (depth > 0) {
+    i++;
+    if (i >= lines.length) return null;
+    bodyLines.push(lines[i]);
+    depth += braceDelta(lines[i]);
+  }
+  return bodyLines.join("\n");
+}
+
+/** Leading whitespace width of a line, tabs counted as one column. */
+function lineIndent(line: string): number {
+  return line.match(/^(\s*)/)?.[1].length ?? 0;
+}
+
+/** Whether a line ends an indentation-delimited body: non-blank at or above declIndent. */
+function endsBodyAt(line: string, declIndent: number): boolean {
+  return line.trim().length !== 0 && lineIndent(line) <= declIndent;
+}
+
+// Extracts a body from the declaration line forward until a non-blank line at
+// equal or lesser indentation appears.
+function extractIndentBody(lines: string[], startLine: number | null): string | null {
+  if (startLine === null || startLine >= lines.length) return null;
+  const declIndent = lineIndent(lines[startLine]);
+  let end = startLine + 1;
+  while (end < lines.length && !endsBodyAt(lines[end], declIndent)) end++;
+  return lines.slice(startLine, end).join("\n");
+}
+
 const JS_SPEC: LanguageSpec = {
   markerRe: SLASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:test|it)\(\s*(['"`])((?:\\.|(?!\1).)*)\1/, 2),
+  findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:test|it)\(/)),
 };
 
 const PY_SPEC: LanguageSpec = {
   markerRe: HASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:async\s+)?def\s+(test_\w+)\s*\(/, 1),
+  findTestBody: (lines, from) =>
+    extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:async\s+)?def\s+test_\w+\s*\(/)),
 };
 
 const GO_SPEC: LanguageSpec = {
   markerRe: SLASH_MARKER,
   findTestName: simpleFinder(/^\s*func\s+(Test\w*)\s*\(/, 1),
+  findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*func\s+Test\w*\s*\(/)),
 };
 
 const RS_SPEC: LanguageSpec = {
@@ -49,6 +104,13 @@ const RS_SPEC: LanguageSpec = {
     const m = lines[fnLine].match(/^\s*(?:pub\s+)?(?:async\s+)?fn\s+(\w+)\s*\(/);
     return m ? m[1] : null;
   },
+  findTestBody: (lines, from) => {
+    const attrLine = skipBlanks(lines, from);
+    if (attrLine >= lines.length) return null;
+    if (!/^\s*#\[test\]/.test(lines[attrLine])) return null;
+    const fnLine = findDeclLineSimple(lines, attrLine + 1, /^\s*(?:pub\s+)?(?:async\s+)?fn\s+\w+\s*\(/);
+    return extractBraceBody(lines, fnLine);
+  },
 };
 
 const RB_SPEC: LanguageSpec = {
@@ -61,6 +123,8 @@ const RB_SPEC: LanguageSpec = {
     const itMatch = lines[next].match(/^\s*it\s*[\s(]+(['"`])((?:\\.|(?!\1).)*)\1/);
     return itMatch ? itMatch[2] : null;
   },
+  findTestBody: (lines, from) =>
+    extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:def\s+test_\w+\s*\(|it\s*[\s(]+)/)),
 };
 
 const JAVA_KT_SPEC: LanguageSpec = {
@@ -82,11 +146,26 @@ const JAVA_KT_SPEC: LanguageSpec = {
     }
     return null;
   },
+  findTestBody: (lines, from) => {
+    const next = skipBlanks(lines, from);
+    if (next >= lines.length) return null;
+    const directRe = /^\s*(?:(?:public|private|protected)\s+)?(?:static\s+)?(?:suspend\s+)?(?:void|fun)\s+test\w*\s*\(/i;
+    if (directRe.test(lines[next])) return extractBraceBody(lines, next);
+    if (/^\s*@Test/.test(lines[next])) {
+      const fnRe =
+        /^\s*(?:(?:public|private|protected)\s+)?(?:static\s+)?(?:suspend\s+)?(?:void|fun)\s+\w+\s*\(/;
+      const fnLine = findDeclLineSimple(lines, next + 1, fnRe);
+      return extractBraceBody(lines, fnLine);
+    }
+    return null;
+  },
 };
 
 const SH_SPEC: LanguageSpec = {
   markerRe: HASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:function\s+)?(test_\w+)\s*\(\s*\)/, 1),
+  findTestBody: (lines, from) =>
+    extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:function\s+)?test_\w+\s*\(\s*\)/)),
 };
 
 export const LANG_TABLE: ReadonlyMap<string, LanguageSpec> = new Map<string, LanguageSpec>([
