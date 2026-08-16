@@ -16,8 +16,8 @@
 
 ## 2. Stamp threading and cache consolidation
 
-- [ ] 2.1 Refactor `createReads` in `project-reads.mjs`: compute `newestMtime` once per view function (`overview`, `specDetail`, `changeDetail`) and pass the stamp to `ask()` and `coverageForGroup()` instead of each calling `newestMtime` independently
-<!-- status: pending -->
+- [x] 2.1 Refactor `createReads` in `project-reads.mjs`: compute `newestMtime` once per view function (`overview`, `specDetail`, `changeDetail`) and pass the stamp to `ask()` and `coverageForGroup()` instead of each calling `newestMtime` independently
+<!-- status: completed -->
 <!-- manual_required: true -->
 
 - [ ] 2.2 Convert `parseSpecTitles` in `project-reads.mjs` to async, and wrap the full `specDetail` computation in a single cache entry (`specView:<id>`) so re-opening a cached spec does zero file reads

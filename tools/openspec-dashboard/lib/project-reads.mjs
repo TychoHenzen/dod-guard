@@ -104,33 +104,30 @@ async function resolveAllCoverage(projectPath, specList, getCoverage) {
 }
 
 export function createReads({ read, cache }) {
-  const ask = (project, key, args) =>
-    cache.get(project.path, key, newestMtime(join(project.path, "openspec")), () =>
-      read(project.path, args),
-    );
+  const ask = (project, key, args, stamp) =>
+    cache.get(project.path, key, stamp, () => read(project.path, args));
 
-  function coverageForGroup(projectPath, group) {
-    return cache.get(
-      projectPath,
-      `coverage:${group}`,
-      newestMtime(join(projectPath, "openspec")),
-      () => scanMarkers(projectPath, group),
-    );
+  function coverageForGroup(projectPath, group, stamp) {
+    return cache.get(projectPath, `coverage:${group}`, stamp, () => scanMarkers(projectPath, group));
   }
 
   async function overview(project) {
+    const stamp = await newestMtime(join(project.path, "openspec"));
     const [changes, specs] = await Promise.all([
-      ask(project, "changes", ["list", "--json"]),
-      ask(project, "specs", ["list", "--specs", "--json"]),
+      ask(project, "changes", ["list", "--json"], stamp),
+      ask(project, "specs", ["list", "--specs", "--json"], stamp),
     ]);
     const specList = specs.specs ?? [];
-    const coverageBySpec = await resolveAllCoverage(project.path, specList, coverageForGroup);
+    const coverageBySpec = await resolveAllCoverage(project.path, specList, (projectPath, group) =>
+      coverageForGroup(projectPath, group, stamp),
+    );
     const specTree = buildSpecTree(specList, coverageBySpec);
     return { changes: changes.changes ?? [], specs: specList, specTree };
   }
 
   async function specDetail(project, id) {
-    const spec = await ask(project, `spec:${id}`, ["show", id, "--json", "--type", "spec"]);
+    const stamp = await newestMtime(join(project.path, "openspec"));
+    const spec = await ask(project, `spec:${id}`, ["show", id, "--json", "--type", "spec"], stamp);
     const slashIndex = id.indexOf("/");
     if (slashIndex === -1) return { ...spec, coverage: {}, boundCount: 0, totalCount: 0 };
 
@@ -139,7 +136,7 @@ export function createReads({ read, cache }) {
     const specFilePath = join(project.path, "openspec", "specs", group, capability, "spec.md");
     const titles = parseSpecTitles(specFilePath);
     const obligations = analyzeSpec(specFilePath);
-    const bindings = await coverageForGroup(project.path, group);
+    const bindings = await coverageForGroup(project.path, group, stamp);
     const coverage = {};
 
     const requirements = spec.requirements ?? [];
@@ -161,11 +158,12 @@ export function createReads({ read, cache }) {
   }
 
   async function changeDetail(project, id) {
+    const stamp = await newestMtime(join(project.path, "openspec"));
     const [detail, status] = await Promise.all([
-      ask(project, `change:${id}`, ["show", id, "--json", "--type", "change"]),
-      ask(project, `status:${id}`, ["status", "--change", id, "--json"]),
+      ask(project, `change:${id}`, ["show", id, "--json", "--type", "change"], stamp),
+      ask(project, `status:${id}`, ["status", "--change", id, "--json"], stamp),
     ]);
-    const tasks = parseTasks(join(project.path, "openspec", "changes", id, "tasks.md"));
+    const tasks = await parseTasks(join(project.path, "openspec", "changes", id, "tasks.md"));
     return { detail, artifacts: status.artifacts ?? [], tasks };
   }
 
