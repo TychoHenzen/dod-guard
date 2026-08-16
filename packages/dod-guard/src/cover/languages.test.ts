@@ -156,23 +156,17 @@ test("nested capability path with scenario-id delimiters binds correctly", () =>
 });
 
 test("JS: testBody extracts the brace-delimited body", () => {
-  const content = [
-    '// covers: g/c :: req :: scen',
-    'test("my test", () => {',
-    "  assert.equal(1, 1);",
-    "});",
-  ].join("\n");
+  const content = ["// covers: g/c :: req :: scen", 'test("my test", () => {', "  assert.equal(1, 1);", "});"].join(
+    "\n",
+  );
   const bindings = markersInFile("foo.test.ts", content);
   assert.equal(bindings.length, 1);
   assert.ok(bindings[0].testBody);
-  assert.ok(bindings[0].testBody!.includes("assert.equal(1, 1)"));
+  assert.ok(bindings[0].testBody?.includes("assert.equal(1, 1)"));
 });
 
 test("JS: testBody is undefined when no body follows marker", () => {
-  const content = [
-    '// covers: g/c :: req :: scen',
-    "// just a comment, no test",
-  ].join("\n");
+  const content = ["// covers: g/c :: req :: scen", "// just a comment, no test"].join("\n");
   const bindings = markersInFile("foo.test.ts", content);
   assert.equal(bindings.length, 0);
 });
@@ -189,59 +183,42 @@ test("Python: testBody extracts indent-delimited body", () => {
   const bindings = markersInFile("test_it.py", content);
   assert.equal(bindings.length, 1);
   assert.ok(bindings[0].testBody);
-  assert.ok(bindings[0].testBody!.includes("x = 1"));
-  assert.ok(bindings[0].testBody!.includes("assert x == 1"));
+  assert.ok(bindings[0].testBody?.includes("x = 1"));
+  assert.ok(bindings[0].testBody?.includes("assert x == 1"));
 });
 
 test("Go: testBody extracts brace-delimited body", () => {
-  const content = [
-    "// covers: g/c :: req :: scen",
-    "func TestThing(t *testing.T) {",
-    "    t.Log(\"ok\")",
-    "}",
-  ].join("\n");
+  const content = ["// covers: g/c :: req :: scen", "func TestThing(t *testing.T) {", '    t.Log("ok")', "}"].join(
+    "\n",
+  );
   const bindings = markersInFile("thing_test.go", content);
   assert.equal(bindings.length, 1);
   assert.ok(bindings[0].testBody);
-  assert.ok(bindings[0].testBody!.includes('t.Log("ok")'));
+  assert.ok(bindings[0].testBody?.includes('t.Log("ok")'));
 });
 
 test("Rust: testBody extracts body after #[test] fn", () => {
-  const content = [
-    "// covers: g/c :: req :: scen",
-    "#[test]",
-    "fn test_it() {",
-    "    assert_eq!(1, 1);",
-    "}",
-  ].join("\n");
+  const content = ["// covers: g/c :: req :: scen", "#[test]", "fn test_it() {", "    assert_eq!(1, 1);", "}"].join(
+    "\n",
+  );
   const bindings = markersInFile("lib.rs", content);
   assert.equal(bindings.length, 1);
   assert.ok(bindings[0].testBody);
-  assert.ok(bindings[0].testBody!.includes("assert_eq!(1, 1)"));
+  assert.ok(bindings[0].testBody?.includes("assert_eq!(1, 1)"));
 });
 
 test("Rust: testBody returns null when #[test] is missing", () => {
-  const content = [
-    "// covers: g/c :: req :: scen",
-    "fn not_a_test() {",
-    "    assert_eq!(1, 1);",
-    "}",
-  ].join("\n");
+  const content = ["// covers: g/c :: req :: scen", "fn not_a_test() {", "    assert_eq!(1, 1);", "}"].join("\n");
   const bindings = markersInFile("lib.rs", content);
   assert.equal(bindings.length, 0);
 });
 
 test("Ruby: testBody extracts indent-delimited body for def test_", () => {
-  const content = [
-    "# covers: g/c :: req :: scen",
-    "def test_something()",
-    "  assert_equal 1, 1",
-    "end",
-  ].join("\n");
+  const content = ["# covers: g/c :: req :: scen", "def test_something()", "  assert_equal 1, 1", "end"].join("\n");
   const bindings = markersInFile("test_thing.rb", content);
   assert.equal(bindings.length, 1);
   assert.ok(bindings[0].testBody);
-  assert.ok(bindings[0].testBody!.includes("assert_equal 1, 1"));
+  assert.ok(bindings[0].testBody?.includes("assert_equal 1, 1"));
 });
 
 test("Java: testBody extracts brace body for direct void test method", () => {
@@ -254,7 +231,7 @@ test("Java: testBody extracts brace body for direct void test method", () => {
   const bindings = markersInFile("MyTest.java", content);
   assert.equal(bindings.length, 1);
   assert.ok(bindings[0].testBody);
-  assert.ok(bindings[0].testBody!.includes("assertEquals(1, 1)"));
+  assert.ok(bindings[0].testBody?.includes("assertEquals(1, 1)"));
 });
 
 test("Java: testBody extracts brace body for @Test annotated method", () => {
@@ -268,18 +245,13 @@ test("Java: testBody extracts brace body for @Test annotated method", () => {
   const bindings = markersInFile("MyTest.java", content);
   assert.equal(bindings.length, 1);
   assert.ok(bindings[0].testBody);
-  assert.ok(bindings[0].testBody!.includes("assertTrue(true)"));
+  assert.ok(bindings[0].testBody?.includes("assertTrue(true)"));
 });
 
 test("Shell: testBody extracts brace-delimited body", () => {
-  const content = [
-    "# covers: g/c :: req :: scen",
-    "test_it_works() {",
-    '    assertEquals "1" "1"',
-    "}",
-  ].join("\n");
+  const content = ["# covers: g/c :: req :: scen", "test_it_works() {", '    assertEquals "1" "1"', "}"].join("\n");
   const bindings = markersInFile("run_tests.sh", content);
   assert.equal(bindings.length, 1);
   assert.ok(bindings[0].testBody);
-  assert.ok(bindings[0].testBody!.includes('assertEquals "1" "1"'));
+  assert.ok(bindings[0].testBody?.includes('assertEquals "1" "1"'));
 });
