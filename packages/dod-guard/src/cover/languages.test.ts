@@ -255,3 +255,78 @@ test("Shell: testBody extracts brace-delimited body", () => {
   assert.ok(bindings[0].testBody);
   assert.ok(bindings[0].testBody?.includes('assertEquals "1" "1"'));
 });
+
+test("JS: testBody handles unclosed braces gracefully", () => {
+  const content = [
+    '// covers: g/c :: req :: scen',
+    'test("unclosed", () => {',
+    "  doSomething();",
+  ].join("\n");
+  const bindings = markersInFile("foo.test.ts", content);
+  assert.equal(bindings.length, 1);
+  assert.equal(bindings[0].testBody, undefined);
+});
+
+test("JS: testBody handles nested braces", () => {
+  const content = [
+    '// covers: g/c :: req :: scen',
+    'test("nested", () => {',
+    "  if (true) {",
+    "    doA();",
+    "  }",
+    "});",
+  ].join("\n");
+  const bindings = markersInFile("foo.test.ts", content);
+  assert.equal(bindings.length, 1);
+  assert.ok(bindings[0].testBody);
+  assert.ok(bindings[0].testBody!.includes("doA()"));
+});
+
+test("Java: testBody returns undefined when neither @Test nor void test matches", () => {
+  const content = [
+    "// covers: g/c :: req :: scen",
+    "private String helperMethod() {",
+  ].join("\n");
+  const bindings = markersInFile("MyTest.java", content);
+  assert.equal(bindings.length, 0);
+});
+
+test("Kotlin: testBody extracts body for suspend fun", () => {
+  const content = [
+    "// covers: g/c :: req :: scen",
+    "@Test",
+    "suspend fun shouldWork() {",
+    "    verify()",
+    "}",
+  ].join("\n");
+  const bindings = markersInFile("MyTest.kt", content);
+  assert.equal(bindings.length, 1);
+  assert.ok(bindings[0].testBody);
+  assert.ok(bindings[0].testBody!.includes("verify()"));
+});
+
+test("Python: testBody handles test at end of file with no trailing function", () => {
+  const content = [
+    "# covers: g/c :: req :: scen",
+    "def test_last():",
+    "    assert True",
+  ].join("\n");
+  const bindings = markersInFile("test_it.py", content);
+  assert.equal(bindings.length, 1);
+  assert.ok(bindings[0].testBody);
+  assert.ok(bindings[0].testBody!.includes("assert True"));
+});
+
+test("JS: testBody with blank line between marker and test", () => {
+  const content = [
+    '// covers: g/c :: req :: scen',
+    "",
+    'test("spaced", () => {',
+    "  ok();",
+    "});",
+  ].join("\n");
+  const bindings = markersInFile("foo.test.ts", content);
+  assert.equal(bindings.length, 1);
+  assert.ok(bindings[0].testBody);
+  assert.ok(bindings[0].testBody!.includes("ok()"));
+});
