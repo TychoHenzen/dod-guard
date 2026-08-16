@@ -32,7 +32,7 @@
 
 ## 4. Smoke test
 
-- [ ] 4.1 Start the dashboard with `node tools/openspec-dashboard/serve.mjs`, open the browser, switch between specs and changes, and confirm views load without errors
-<!-- status: pending -->
+- [x] 4.1 Start the dashboard with `node tools/openspec-dashboard/serve.mjs`, open the browser, switch between specs and changes, and confirm views load without errors
+<!-- status: completed -->
 <!-- manual_required: true -->
 <!-- verify_surface: visual -->
