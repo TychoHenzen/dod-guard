@@ -90,9 +90,11 @@ function openScan() {
   });
 }
 
+let filterTimer;
 dom.filter.addEventListener("input", (event) => {
   state.filter = event.target.value;
-  paintLists();
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(paintLists, 150);
 });
 dom.refresh.addEventListener("click", () => openProject(state.active, true));
 

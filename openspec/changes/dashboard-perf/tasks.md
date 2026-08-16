@@ -26,8 +26,8 @@
 
 ## 3. Client-side optimization
 
-- [ ] 3.1 Add a 150ms debounce to the filter input handler in `app.js`
-<!-- status: pending -->
+- [x] 3.1 Add a 150ms debounce to the filter input handler in `app.js`
+<!-- status: completed -->
 <!-- manual_required: true -->
 
 ## 4. Smoke test
