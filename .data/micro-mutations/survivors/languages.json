@@ -1,0 +1,733 @@
+{
+  "source": "packages/dod-guard/src/cover/languages.ts",
+  "date": "2026-08-16T07:10:01.161Z",
+  "summary": {
+    "total": 206,
+    "killed": 115,
+    "survived": 90,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "5",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 7,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "7",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 7,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "8",
+      "mutator": "EqualityOperator",
+      "replacement": "i <= lines.length",
+      "dist_line": 7,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "9",
+      "mutator": "EqualityOperator",
+      "replacement": "i >= lines.length",
+      "dist_line": 7,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "12",
+      "mutator": "MethodExpression",
+      "replacement": "lines[i]",
+      "dist_line": 7,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "18",
+      "mutator": "EqualityOperator",
+      "replacement": "next > lines.length",
+      "dist_line": 14,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "17",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 14,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "20",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 20,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "22",
+      "mutator": "Regex",
+      "replacement": "/^\\s(?:test|it)\\(\\s*(['\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 22,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "21",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:test|it)\\(\\s*(['\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 22,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "24",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:test|it)\\(\\s(['\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 22,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "23",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:test|it)\\(\\s*(['\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 22,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "26",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:test|it)\\(\\s*([^'\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 22,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "25",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:test|it)\\(\\S*(['\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 22,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "28",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:test|it)\\(\\s*(['\"`])((?:\\\\.|(?=\\1).)*)\\1/",
+      "dist_line": 22,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "27",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:test|it)\\(\\s*(['\"`])((?:\\\\.|(?!\\1).))\\1/",
+      "dist_line": 22,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "30",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:async\\s+)?def\\s+(test_\\w+)\\s*\\(/",
+      "dist_line": 26,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "32",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:async\\s+)?def\\s+(test_\\w+)\\s*\\(/",
+      "dist_line": 26,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "34",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:async\\s)?def\\s+(test_\\w+)\\s*\\(/",
+      "dist_line": 26,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "36",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:async\\s+)?def\\s(test_\\w+)\\s*\\(/",
+      "dist_line": 26,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "41",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:async\\s+)?def\\s+(test_\\w+)\\S*\\(/",
+      "dist_line": 26,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "43",
+      "mutator": "Regex",
+      "replacement": "/\\s*func\\s+(Test\\w*)\\s*\\(/",
+      "dist_line": 30,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "45",
+      "mutator": "Regex",
+      "replacement": "/^\\S*func\\s+(Test\\w*)\\s*\\(/",
+      "dist_line": 30,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "46",
+      "mutator": "Regex",
+      "replacement": "/^\\s*func\\s(Test\\w*)\\s*\\(/",
+      "dist_line": 30,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "51",
+      "mutator": "Regex",
+      "replacement": "/^\\s*func\\s+(Test\\w*)\\S*\\(/",
+      "dist_line": 30,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "55",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 36,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "56",
+      "mutator": "EqualityOperator",
+      "replacement": "attrLine > lines.length",
+      "dist_line": 36,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "60",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 38,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "61",
+      "mutator": "Regex",
+      "replacement": "/\\s*#\\[test\\]/",
+      "dist_line": 38,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "63",
+      "mutator": "Regex",
+      "replacement": "/^\\S*#\\[test\\]/",
+      "dist_line": 38,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "66",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 41,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "67",
+      "mutator": "EqualityOperator",
+      "replacement": "fnLine > lines.length",
+      "dist_line": 41,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "69",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:pub\\s+)?(?:async\\s+)?fn\\s+(\\w+)\\s*\\(/",
+      "dist_line": 43,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "71",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:pub\\s+)?(?:async\\s+)?fn\\s+(\\w+)\\s*\\(/",
+      "dist_line": 43,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "73",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub\\s)?(?:async\\s+)?fn\\s+(\\w+)\\s*\\(/",
+      "dist_line": 43,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "76",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub\\s+)?(?:async\\s)?fn\\s+(\\w+)\\s*\\(/",
+      "dist_line": 43,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "78",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub\\s+)?(?:async\\s+)?fn\\s(\\w+)\\s*\\(/",
+      "dist_line": 43,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "83",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:pub\\s+)?(?:async\\s+)?fn\\s+(\\w+)\\S*\\(/",
+      "dist_line": 43,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "87",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 51,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "88",
+      "mutator": "EqualityOperator",
+      "replacement": "next > lines.length",
+      "dist_line": 51,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "90",
+      "mutator": "Regex",
+      "replacement": "/\\s*def\\s+(test_\\w+)\\s*[(\\n]/",
+      "dist_line": 53,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "92",
+      "mutator": "Regex",
+      "replacement": "/^\\S*def\\s+(test_\\w+)\\s*[(\\n]/",
+      "dist_line": 53,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "93",
+      "mutator": "Regex",
+      "replacement": "/^\\s*def\\s(test_\\w+)\\s*[(\\n]/",
+      "dist_line": 53,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "98",
+      "mutator": "Regex",
+      "replacement": "/^\\s*def\\s+(test_\\w+)\\S*[(\\n]/",
+      "dist_line": 53,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "102",
+      "mutator": "Regex",
+      "replacement": "/\\s*it\\s*[\\s(]+(['\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 56,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "104",
+      "mutator": "Regex",
+      "replacement": "/^\\S*it\\s*[\\s(]+(['\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 56,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "106",
+      "mutator": "Regex",
+      "replacement": "/^\\s*it\\S*[\\s(]+(['\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 56,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "107",
+      "mutator": "Regex",
+      "replacement": "/^\\s*it\\s*[\\s(](['\"`])((?:\\\\.|(?!\\1).)*)\\1/",
+      "dist_line": 56,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "116",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 64,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "117",
+      "mutator": "EqualityOperator",
+      "replacement": "next > lines.length",
+      "dist_line": 64,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "119",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s+(test\\w*)\\s*\\(/i",
+      "dist_line": 66,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "121",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s+(test\\w*)\\s*\\(/i",
+      "dist_line": 66,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "123",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s+(test\\w*)\\s*\\(/i",
+      "dist_line": 66,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "126",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s)?(?:suspend\\s+)?(?:void|fun)\\s+(test\\w*)\\s*\\(/i",
+      "dist_line": 66,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "127",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\S+)?(?:suspend\\s+)?(?:void|fun)\\s+(test\\w*)\\s*\\(/i",
+      "dist_line": 66,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "129",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s)?(?:void|fun)\\s+(test\\w*)\\s*\\(/i",
+      "dist_line": 66,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "130",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\S+)?(?:void|fun)\\s+(test\\w*)\\s*\\(/i",
+      "dist_line": 66,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "131",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s(test\\w*)\\s*\\(/i",
+      "dist_line": 66,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "136",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s+(test\\w*)\\S*\\(/i",
+      "dist_line": 66,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "139",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 69,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "141",
+      "mutator": "Regex",
+      "replacement": "/\\s*@Test/",
+      "dist_line": 69,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "143",
+      "mutator": "Regex",
+      "replacement": "/^\\S*@Test/",
+      "dist_line": 69,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "147",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 71,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "148",
+      "mutator": "EqualityOperator",
+      "replacement": "fnLine > lines.length",
+      "dist_line": 71,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "150",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s+(\\w+)\\s*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "152",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s+(\\w+)\\s*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "153",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s+(\\w+)\\s*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "154",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s+(\\w+)\\s*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "157",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s)?(?:suspend\\s+)?(?:void|fun)\\s+(\\w+)\\s*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "158",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\S+)?(?:suspend\\s+)?(?:void|fun)\\s+(\\w+)\\s*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "160",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s)?(?:void|fun)\\s+(\\w+)\\s*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "161",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\S+)?(?:void|fun)\\s+(\\w+)\\s*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "162",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s(\\w+)\\s*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "167",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:(?:public|private|protected)\\s+)?(?:static\\s+)?(?:suspend\\s+)?(?:void|fun)\\s+(\\w+)\\S*\\(/",
+      "dist_line": 73,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "169",
+      "mutator": "Regex",
+      "replacement": "/\\s*(?:function\\s+)?(test_\\w+)\\s*\\(\\s*\\)/",
+      "dist_line": 81,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "171",
+      "mutator": "Regex",
+      "replacement": "/^\\S*(?:function\\s+)?(test_\\w+)\\s*\\(\\s*\\)/",
+      "dist_line": 81,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "173",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:function\\s)?(test_\\w+)\\s*\\(\\s*\\)/",
+      "dist_line": 81,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "174",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:function\\S+)?(test_\\w+)\\s*\\(\\s*\\)/",
+      "dist_line": 81,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "178",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:function\\s+)?(test_\\w+)\\S*\\(\\s*\\)/",
+      "dist_line": 81,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "180",
+      "mutator": "Regex",
+      "replacement": "/^\\s*(?:function\\s+)?(test_\\w+)\\s*\\(\\S*\\)/",
+      "dist_line": 81,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "182",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 84,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "183",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 84,
+      "dist_col": 6
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "184",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 85,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "185",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 85,
+      "dist_col": 6
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "186",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 86,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "188",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 87,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "187",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 86,
+      "dist_col": 6
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "189",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 87,
+      "dist_col": 6
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "204",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 95,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/languages.js",
+      "id": "205",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 95,
+      "dist_col": 6
+    }
+  ]
+}

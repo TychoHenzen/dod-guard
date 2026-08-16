@@ -1,0 +1,173 @@
+{
+  "source": "packages/dod-guard/src/openspec/glob.ts",
+  "date": "2026-08-16T07:09:46.338Z",
+  "summary": {
+    "total": 63,
+    "killed": 42,
+    "survived": 20,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 5,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "21",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 26,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "23",
+      "mutator": "LogicalOperator",
+      "replacement": "e.isDirectory() || re.test(e.name)",
+      "dist_line": 26,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "25",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 32,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 34,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "26",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 33,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "28",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 35,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "29",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 36,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "30",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 37,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "31",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 38,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "32",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 39,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "33",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 40,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "34",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 41,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "35",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 42,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "38",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 49,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "40",
+      "mutator": "LogicalOperator",
+      "replacement": "e.isDirectory() || !SKIP_DIRS.has(e.name)",
+      "dist_line": 49,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "45",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 56,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "56",
+      "mutator": "MethodExpression",
+      "replacement": "pattern.split(/[\\\\/]/)",
+      "dist_line": 72,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "59",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 72,
+      "dist_col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/glob.js",
+      "id": "61",
+      "mutator": "EqualityOperator",
+      "replacement": "s.length >= 0",
+      "dist_line": 72,
+      "dist_col": 59
+    }
+  ]
+}

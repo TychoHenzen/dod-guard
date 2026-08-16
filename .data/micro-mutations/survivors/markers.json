@@ -1,0 +1,53 @@
+{
+  "source": "packages/dod-guard/src/cover/markers.ts",
+  "date": "2026-08-16T07:09:51.146Z",
+  "summary": {
+    "total": 37,
+    "killed": 31,
+    "survived": 5,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/markers.js",
+      "id": "4",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 19,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/markers.js",
+      "id": "7",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 22,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/markers.js",
+      "id": "18",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 29,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/markers.js",
+      "id": "20",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "dist_line": 29,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/markers.js",
+      "id": "31",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 43,
+      "dist_col": 9
+    }
+  ]
+}
