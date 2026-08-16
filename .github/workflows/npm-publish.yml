@@ -90,6 +90,10 @@ jobs:
         run: |
           node --test scripts/ci/check-skill-hygiene.test.mjs
           node scripts/ci/check-skill-hygiene.mjs
+      - name: Spec hygiene (compound requirement warnings)
+        run: |
+          node --test scripts/ci/check-spec-hygiene.test.mjs
+          node scripts/ci/check-spec-hygiene.mjs
       - name: OpenSpec changes are valid
         env:
           OPENSPEC_TELEMETRY: 0
