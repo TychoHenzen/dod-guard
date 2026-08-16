@@ -3,7 +3,7 @@
 // Every result goes through the cache, keyed on the newest modification time
 // under the project's openspec directory.
 
-import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { newestMtime } from "./cache.mjs";
 import { scanMarkers } from "./markers.mjs";
@@ -13,10 +13,10 @@ import { parseTasks } from "./tasks.mjs";
 const REQ_RE = /^###\s+Requirement:\s*(.+)/;
 const SCENARIO_RE = /^####\s+Scenario:\s*(.+)/;
 
-function parseSpecTitles(specFilePath) {
+async function parseSpecTitles(specFilePath) {
   let content;
   try {
-    content = readFileSync(specFilePath, "utf-8");
+    content = await readFile(specFilePath, "utf-8");
   } catch {
     return [];
   }
@@ -96,11 +96,43 @@ async function resolveAllCoverage(projectPath, specList, getCoverage) {
     const group = spec.id.slice(0, slash);
     const capability = spec.id.slice(slash + 1);
     const specFilePath = join(projectPath, "openspec", "specs", group, capability, "spec.md");
-    const titles = parseSpecTitles(specFilePath);
+    const titles = await parseSpecTitles(specFilePath);
     const bindings = bindingsByGroup.get(group) ?? new Map();
     result.set(spec.id, specCoverage(spec.id, titles, bindings));
   }
   return result;
+}
+
+async function computeSpecDetail(ctx) {
+  const { project, id, stamp, read, coverageForGroup } = ctx;
+  const spec = await read(project.path, ["show", id, "--json", "--type", "spec"]);
+  const slashIndex = id.indexOf("/");
+  if (slashIndex === -1) return { ...spec, coverage: {}, boundCount: 0, totalCount: 0 };
+
+  const group = id.slice(0, slashIndex);
+  const capability = id.slice(slashIndex + 1);
+  const specFilePath = join(project.path, "openspec", "specs", group, capability, "spec.md");
+  const titles = await parseSpecTitles(specFilePath);
+  const obligations = analyzeSpec(specFilePath);
+  const bindings = await coverageForGroup(project.path, group, stamp);
+  const coverage = {};
+
+  const requirements = spec.requirements ?? [];
+  for (let ri = 0; ri < requirements.length && ri < titles.length; ri++) {
+    const ob = obligations[ri];
+    if (ob) requirements[ri].obligationCount = ob.obligationCount;
+    const scenarios = requirements[ri].scenarios ?? [];
+    const scenarioTitles = titles[ri].scenarios;
+    for (let si = 0; si < scenarios.length && si < scenarioTitles.length; si++) {
+      const scenarioId = `${group}/${capability}::${titles[ri].title}||${scenarioTitles[si]}`;
+      scenarios[si].scenarioId = scenarioId;
+      const entry = bindings.get(scenarioId);
+      if (entry) coverage[scenarioId] = entry;
+    }
+  }
+
+  const cov = specCoverage(id, titles, bindings);
+  return { ...spec, coverage, boundCount: cov.boundCount, totalCount: cov.totalCount };
 }
 
 export function createReads({ read, cache }) {
@@ -127,34 +159,9 @@ export function createReads({ read, cache }) {
 
   async function specDetail(project, id) {
     const stamp = await newestMtime(join(project.path, "openspec"));
-    const spec = await ask(project, `spec:${id}`, ["show", id, "--json", "--type", "spec"], stamp);
-    const slashIndex = id.indexOf("/");
-    if (slashIndex === -1) return { ...spec, coverage: {}, boundCount: 0, totalCount: 0 };
-
-    const group = id.slice(0, slashIndex);
-    const capability = id.slice(slashIndex + 1);
-    const specFilePath = join(project.path, "openspec", "specs", group, capability, "spec.md");
-    const titles = parseSpecTitles(specFilePath);
-    const obligations = analyzeSpec(specFilePath);
-    const bindings = await coverageForGroup(project.path, group, stamp);
-    const coverage = {};
-
-    const requirements = spec.requirements ?? [];
-    for (let ri = 0; ri < requirements.length && ri < titles.length; ri++) {
-      const ob = obligations[ri];
-      if (ob) requirements[ri].obligationCount = ob.obligationCount;
-      const scenarios = requirements[ri].scenarios ?? [];
-      const scenarioTitles = titles[ri].scenarios;
-      for (let si = 0; si < scenarios.length && si < scenarioTitles.length; si++) {
-        const scenarioId = `${group}/${capability}::${titles[ri].title}||${scenarioTitles[si]}`;
-        scenarios[si].scenarioId = scenarioId;
-        const entry = bindings.get(scenarioId);
-        if (entry) coverage[scenarioId] = entry;
-      }
-    }
-
-    const cov = specCoverage(id, titles, bindings);
-    return { ...spec, coverage, boundCount: cov.boundCount, totalCount: cov.totalCount };
+    return cache.get(project.path, `specView:${id}`, stamp, () =>
+      computeSpecDetail({ project, id, stamp, read, coverageForGroup }),
+    );
   }
 
   async function changeDetail(project, id) {

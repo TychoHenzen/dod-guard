@@ -20,8 +20,8 @@
 <!-- status: completed -->
 <!-- manual_required: true -->
 
-- [ ] 2.2 Convert `parseSpecTitles` in `project-reads.mjs` to async, and wrap the full `specDetail` computation in a single cache entry (`specView:<id>`) so re-opening a cached spec does zero file reads
-<!-- status: pending -->
+- [x] 2.2 Convert `parseSpecTitles` in `project-reads.mjs` to async, and wrap the full `specDetail` computation in a single cache entry (`specView:<id>`) so re-opening a cached spec does zero file reads
+<!-- status: completed -->
 <!-- manual_required: true -->
 
 ## 3. Client-side optimization
