@@ -5,29 +5,29 @@
 // tree is a few dozen small files, so stat-walking it is far cheaper than
 // re-running a command that would return the same answer.
 
-import { readdirSync, statSync } from "node:fs";
+import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 
-function mtimeOf(path) {
+async function mtimeOf(path) {
   try {
-    return statSync(path).mtimeMs;
+    return (await stat(path)).mtimeMs;
   } catch {
     return 0;
   }
 }
 
 /** Newest modification time anywhere under dir, or 0 when it cannot be read. */
-export function newestMtime(dir) {
+export async function newestMtime(dir) {
   let entries;
   try {
-    entries = readdirSync(dir, { withFileTypes: true });
+    entries = await readdir(dir, { withFileTypes: true });
   } catch {
     return 0;
   }
-  let newest = mtimeOf(dir);
+  let newest = await mtimeOf(dir);
   for (const entry of entries) {
     const path = join(dir, entry.name);
-    const time = entry.isDirectory() ? newestMtime(path) : mtimeOf(path);
+    const time = entry.isDirectory() ? await newestMtime(path) : await mtimeOf(path);
     if (time > newest) newest = time;
   }
   return newest;
