@@ -1,10 +1,8 @@
 // cli.mjs - locate the OpenSpec CLI and run its reporting commands.
 //
-// Spawning "openspec" by name fails on Windows. The extensionless shim gives
-// ENOENT, and the .cmd launcher gives EINVAL because Node will not spawn a
-// batch file without a shell. Both launchers name the real entry file, so we
-// read it back and run it with this process's own node. That also avoids
-// hand-rolling shell quoting, which this repo has been burned by before.
+// `list` runs in-process via ListCommand to avoid the ~1s subprocess
+// startup cost. `show` and `status` still spawn because their root
+// resolver reads process.cwd, which is not safe to change per-request.
 
 import { execFile } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -12,13 +10,10 @@ import { delimiter, dirname, join, normalize } from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-
-/** Commands that only report state. The reader refuses anything else. */
 const READ_COMMANDS = new Set(["list", "show", "status"]);
 const LAUNCHER_NAMES = process.platform === "win32" ? ["openspec.cmd", "openspec"] : ["openspec"];
 const MAX_OUTPUT_BYTES = 32 * 1024 * 1024;
 
-/** Both npm launchers quote the entry file, relative to their own directory. */
 function entryFromLauncher(launcher) {
   const quoted = readFileSync(launcher, "utf8").match(/"([^"]+\.js)"/);
   if (!quoted) return null;
@@ -47,14 +42,56 @@ function searchPath() {
   return null;
 }
 
-/** Prefer an explicit override, then the launcher on the search path. */
 export function locateCli() {
   const override = process.env.OPENSPEC_JS;
   if (override) return existsSync(override) ? override : null;
   return searchPath();
 }
 
-/** A failing command reports its reason as JSON on stdout, with stderr empty. */
+function packageRoot(entry) {
+  let dir = dirname(entry);
+  for (let i = 0; i < 5; i++) {
+    if (existsSync(join(dir, "package.json"))) return dir;
+    dir = dirname(dir);
+  }
+  return null;
+}
+
+let ListCommandClass = null;
+
+async function getListCommand(entry) {
+  if (ListCommandClass) return ListCommandClass;
+  const root = packageRoot(entry);
+  if (!root) return null;
+  const mod = await import(`file:///${root.replace(/\\/g, "/")}/dist/core/list.js`);
+  ListCommandClass = mod.ListCommand;
+  return ListCommandClass;
+}
+
+let captureLock = Promise.resolve();
+
+async function captureJson(fn) {
+  const prev = captureLock;
+  let release;
+  captureLock = new Promise((r) => { release = r; });
+  await prev;
+  const chunks = [];
+  const origLog = console.log;
+  console.log = (...args) => chunks.push(args.map(String).join(" "));
+  try {
+    await fn();
+  } finally {
+    console.log = origLog;
+    release();
+  }
+  const text = chunks.join("\n");
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`openspec returned output that is not JSON: ${text.slice(0, 200)}`);
+  }
+}
+
 function statusMessage(stdout) {
   try {
     const messages = JSON.parse(stdout).status.map((item) => item.message).filter(Boolean);
@@ -74,25 +111,41 @@ function readFailure(args, err) {
   return new Error(`openspec ${args.join(" ")} failed: ${reason || "no output"}`);
 }
 
+async function readViaSubprocess(entry, cwd, args) {
+  let stdout;
+  try {
+    ({ stdout } = await execFileAsync(process.execPath, [entry, ...args], {
+      cwd,
+      maxBuffer: MAX_OUTPUT_BYTES,
+      windowsHide: true,
+    }));
+  } catch (err) {
+    throw readFailure(args, err);
+  }
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    throw new Error(`openspec ${args.join(" ")} returned output that is not JSON`);
+  }
+}
+
+async function listInProcess(entry, cwd, args) {
+  const Cls = await getListCommand(entry);
+  if (!Cls) return null;
+  const isSpecs = args.includes("--specs");
+  const cmd = new Cls();
+  return captureJson(() => cmd.execute(cwd, isSpecs ? "specs" : "changes", { json: true }));
+}
+
 export function createReader(entry) {
   return async function read(cwd, args) {
     if (!READ_COMMANDS.has(args[0])) {
       throw new Error(`refused: "${args[0]}" is not a read command`);
     }
-    let stdout;
-    try {
-      ({ stdout } = await execFileAsync(process.execPath, [entry, ...args], {
-        cwd,
-        maxBuffer: MAX_OUTPUT_BYTES,
-        windowsHide: true,
-      }));
-    } catch (err) {
-      throw readFailure(args, err);
+    if (args[0] === "list") {
+      const result = await listInProcess(entry, cwd, args);
+      if (result) return result;
     }
-    try {
-      return JSON.parse(stdout);
-    } catch {
-      throw new Error(`openspec ${args.join(" ")} returned output that is not JSON`);
-    }
+    return readViaSubprocess(entry, cwd, args);
   };
 }
