@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { newestMtime } from "./cache.mjs";
 import { scanMarkers } from "./markers.mjs";
+import { analyzeSpec } from "../../../scripts/ci/lib/obligation-count.mjs";
 import { parseTasks } from "./tasks.mjs";
 
 const REQ_RE = /^###\s+Requirement:\s*(.+)/;
@@ -137,11 +138,14 @@ export function createReads({ read, cache }) {
     const capability = id.slice(slashIndex + 1);
     const specFilePath = join(project.path, "openspec", "specs", group, capability, "spec.md");
     const titles = parseSpecTitles(specFilePath);
+    const obligations = analyzeSpec(specFilePath);
     const bindings = await coverageForGroup(project.path, group);
     const coverage = {};
 
     const requirements = spec.requirements ?? [];
     for (let ri = 0; ri < requirements.length && ri < titles.length; ri++) {
+      const ob = obligations[ri];
+      if (ob) requirements[ri].obligationCount = ob.obligationCount;
       const scenarios = requirements[ri].scenarios ?? [];
       const scenarioTitles = titles[ri].scenarios;
       for (let si = 0; si < scenarios.length && si < scenarioTitles.length; si++) {
