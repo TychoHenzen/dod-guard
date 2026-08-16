@@ -5,7 +5,7 @@
 // parse fails soft: an unreadable file returns null and the change still
 // renders, because its progress counts come from the CLI rather than here.
 
-import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 
 const SECTION = /^##\s+(.*\S)\s*$/;
 const ITEM = /^\s*-\s+\[([ xX])\]\s+(?:(\d+(?:\.\d+)*)\s+)?(.*)$/;
@@ -38,10 +38,10 @@ function applyLine(state, line) {
 }
 
 /** Sections of checkbox items, or null when the file cannot be read. */
-export function parseTasks(path) {
+export async function parseTasks(path) {
   let text;
   try {
-    text = readFileSync(path, "utf8");
+    text = await readFile(path, "utf8");
   } catch {
     return null;
   }

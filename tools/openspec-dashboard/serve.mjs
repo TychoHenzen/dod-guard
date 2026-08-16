@@ -82,7 +82,7 @@ const server = createServer((req, res) => {
     void handleApi(req, res, url);
     return;
   }
-  serveStatic(PUBLIC_DIR, url.pathname, res);
+  void serveStatic(PUBLIC_DIR, url.pathname, res);
 });
 
 let port = FIRST_PORT;

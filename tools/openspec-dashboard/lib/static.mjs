@@ -1,6 +1,7 @@
 // static.mjs - serve the public folder.
 
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
 import { extname, join, normalize, sep } from "node:path";
 
 const TYPES = {
@@ -12,20 +13,25 @@ const TYPES = {
   ".svg": "image/svg+xml",
 };
 
-function resolveFile(root, urlPath) {
+async function resolveFile(root, urlPath) {
   const wanted = urlPath === "/" ? "/index.html" : urlPath;
   const file = join(root, normalize(wanted).replace(/^[/\\]+/, ""));
   if (!file.startsWith(root + sep)) return null;
-  return existsSync(file) && statSync(file).isFile() ? file : null;
+  try {
+    const stats = await stat(file);
+    return stats.isFile() ? file : null;
+  } catch {
+    return null;
+  }
 }
 
-export function serveStatic(root, urlPath, res) {
-  const file = resolveFile(root, urlPath);
+export async function serveStatic(root, urlPath, res) {
+  const file = await resolveFile(root, urlPath);
   if (!file) {
     res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
     res.end("not found");
     return;
   }
-  res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", "cache-control": "no-cache" });
+  res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", "cache-control": "max-age=5" });
   createReadStream(file).pipe(res);
 }

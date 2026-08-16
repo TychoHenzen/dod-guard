@@ -6,12 +6,12 @@
 <!-- status: completed -->
 <!-- manual_required: true -->
 
-- [ ] 1.2 Convert `parseTasks` in `tasks.mjs` from `readFileSync` to async `readFile`
-<!-- status: pending -->
+- [x] 1.2 Convert `parseTasks` in `tasks.mjs` from `readFileSync` to async `readFile`
+<!-- status: completed -->
 <!-- manual_required: true -->
 
-- [ ] 1.3 Convert `resolveFile` in `static.mjs` from `existsSync`/`statSync` to async `stat`, and change `cache-control` from `no-cache` to `max-age=5`
-<!-- status: pending -->
+- [x] 1.3 Convert `resolveFile` in `static.mjs` from `existsSync`/`statSync` to async `stat`, and change `cache-control` from `no-cache` to `max-age=5`
+<!-- status: completed -->
 <!-- manual_required: true -->
 
 ## 2. Stamp threading and cache consolidation
