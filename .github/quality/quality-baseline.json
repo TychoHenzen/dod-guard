@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-15T21:25:30.129Z",
-  "total": 852,
+  "total": 863,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -288,7 +288,13 @@
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
-    "packages/quality-guard/src/skips.ts"
+    "packages/quality-guard/src/skips.ts",
+    "scripts/ci/check-spec-hygiene.mjs",
+    "scripts/ci/check-spec-hygiene.test.mjs",
+    "scripts/ci/lib/obligation-count.mjs",
+    "scripts/ci/lib/obligation-count.test.mjs",
+    "tools/openspec-dashboard/lib/project-reads.mjs",
+    "tools/openspec-dashboard/public/render-spec.mjs"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -727,6 +733,12 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "scripts/ci/lib/obligation-count.mjs::complexity": 1,
+    "scripts/ci/lib/obligation-count.mjs::function-length": 1,
+    "tools/openspec-dashboard/lib/project-reads.mjs::complexity": 5,
+    "tools/openspec-dashboard/lib/project-reads.mjs::function-length": 1,
+    "tools/openspec-dashboard/lib/project-reads.mjs::file-length": 1,
+    "tools/openspec-dashboard/public/render-spec.mjs::complexity": 2
   }
 }
