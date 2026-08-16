@@ -149,11 +149,11 @@ const JAVA_KT_SPEC: LanguageSpec = {
   findTestBody: (lines, from) => {
     const next = skipBlanks(lines, from);
     if (next >= lines.length) return null;
-    const directRe = /^\s*(?:(?:public|private|protected)\s+)?(?:static\s+)?(?:suspend\s+)?(?:void|fun)\s+test\w*\s*\(/i;
+    const directRe =
+      /^\s*(?:(?:public|private|protected)\s+)?(?:static\s+)?(?:suspend\s+)?(?:void|fun)\s+test\w*\s*\(/i;
     if (directRe.test(lines[next])) return extractBraceBody(lines, next);
     if (/^\s*@Test/.test(lines[next])) {
-      const fnRe =
-        /^\s*(?:(?:public|private|protected)\s+)?(?:static\s+)?(?:suspend\s+)?(?:void|fun)\s+\w+\s*\(/;
+      const fnRe = /^\s*(?:(?:public|private|protected)\s+)?(?:static\s+)?(?:suspend\s+)?(?:void|fun)\s+\w+\s*\(/;
       const fnLine = findDeclLineSimple(lines, next + 1, fnRe);
       return extractBraceBody(lines, fnLine);
     }

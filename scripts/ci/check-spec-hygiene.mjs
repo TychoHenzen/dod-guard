@@ -19,8 +19,8 @@
 
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { analyzeSpec } from "./lib/obligation-count.mjs";
 import { toPosix, walkFiles } from "./lib/fs-utils.mjs";
+import { analyzeSpec } from "./lib/obligation-count.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -62,7 +62,9 @@ function main() {
   const specsRoot = resolve(repoRoot, "openspec", "specs");
 
   const { totalRequirements, compoundCount, uncoveredTotal } = scanSpecs(specsRoot);
-  process.stdout.write(`${totalRequirements} requirements, ${compoundCount} compound, ${uncoveredTotal} uncovered obligations\n`);
+  process.stdout.write(
+    `${totalRequirements} requirements, ${compoundCount} compound, ${uncoveredTotal} uncovered obligations\n`,
+  );
   return strict && compoundCount > 0 ? 1 : 0;
 }
 
