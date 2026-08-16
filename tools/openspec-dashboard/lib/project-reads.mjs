@@ -6,7 +6,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { newestMtime } from "./cache.mjs";
-import { scanMarkers } from "./markers.mjs";
+import { scanMarkers, scanAllMarkers } from "./markers.mjs";
 import { analyzeSpec } from "../../../scripts/ci/lib/obligation-count.mjs";
 import { parseTasks } from "./tasks.mjs";
 
@@ -74,18 +74,7 @@ function buildSpecTree(specs, coverageBySpec) {
   return root;
 }
 
-async function resolveAllCoverage(projectPath, specList, getCoverage) {
-  const groups = new Set();
-  for (const spec of specList) {
-    const slash = spec.id.indexOf("/");
-    if (slash !== -1) groups.add(spec.id.slice(0, slash));
-  }
-  const bindingsByGroup = new Map();
-  await Promise.all(
-    [...groups].map(async (group) => {
-      bindingsByGroup.set(group, await getCoverage(projectPath, group));
-    }),
-  );
+async function resolveAllCoverage(projectPath, specList, allBindings) {
   const result = new Map();
   for (const spec of specList) {
     const slash = spec.id.indexOf("/");
@@ -97,8 +86,7 @@ async function resolveAllCoverage(projectPath, specList, getCoverage) {
     const capability = spec.id.slice(slash + 1);
     const specFilePath = join(projectPath, "openspec", "specs", group, capability, "spec.md");
     const titles = await parseSpecTitles(specFilePath);
-    const bindings = bindingsByGroup.get(group) ?? new Map();
-    result.set(spec.id, specCoverage(spec.id, titles, bindings));
+    result.set(spec.id, specCoverage(spec.id, titles, allBindings));
   }
   return result;
 }
@@ -143,16 +131,19 @@ export function createReads({ read, cache }) {
     return cache.get(projectPath, `coverage:${group}`, stamp, () => scanMarkers(projectPath, group));
   }
 
+  function allMarkers(projectPath, stamp) {
+    return cache.get(projectPath, "markers:all", stamp, () => scanAllMarkers(projectPath));
+  }
+
   async function overview(project) {
     const stamp = await newestMtime(join(project.path, "openspec"));
-    const [changes, specs] = await Promise.all([
+    const [changes, specs, allBindings] = await Promise.all([
       ask(project, "changes", ["list", "--json"], stamp),
       ask(project, "specs", ["list", "--specs", "--json"], stamp),
+      allMarkers(project.path, stamp),
     ]);
     const specList = specs.specs ?? [];
-    const coverageBySpec = await resolveAllCoverage(project.path, specList, (projectPath, group) =>
-      coverageForGroup(projectPath, group, stamp),
-    );
+    const coverageBySpec = await resolveAllCoverage(project.path, specList, allBindings);
     const specTree = buildSpecTree(specList, coverageBySpec);
     return { changes: changes.changes ?? [], specs: specList, specTree };
   }
