@@ -143,6 +143,9 @@ main { display: flex; flex: 1; min-height: 0; }
 .cov-full { color: var(--done); }
 .cov-partial { color: var(--ready); }
 .cov-none { color: var(--dim); }
+.cov-obligation-warn { color: #b45309; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cov-obligation-warn { color: #fbbf24; } }
+:root[data-theme="dark"] .cov-obligation-warn { color: #fbbf24; }
 
 .spec-tree { display: flex; flex-direction: column; gap: 2px; }
 .tree-folder { border: 1px solid rgba(141,154,171,0.25); border-radius: 6px; padding: 4px; margin-top: 4px; }

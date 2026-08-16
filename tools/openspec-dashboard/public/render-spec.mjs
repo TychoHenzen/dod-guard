@@ -30,6 +30,13 @@ function covClass(bound, total) {
   return "cov-count cov-none";
 }
 
+function obligationChip(requirement, scenarioCount) {
+  const count = requirement.obligationCount ?? 0;
+  const delta = count - scenarioCount;
+  if (delta <= 0) return null;
+  return el("span", { class: "cov-count cov-obligation-warn" }, `${delta} uncovered`);
+}
+
 function requirementBlock(requirement, index, coverage) {
   const scenarios = requirement.scenarios ?? [];
   const bound = countBound(scenarios, coverage);
@@ -38,6 +45,7 @@ function requirementBlock(requirement, index, coverage) {
       el("span", { class: "req-num" }, index + 1),
       el("span", { class: "req-title" }, firstLine(requirement.text)),
       el("span", { class: covClass(bound, scenarios.length) }, `${bound}/${scenarios.length} bound`),
+      obligationChip(requirement, scenarios.length),
     ]),
     el("p", { class: "req-text" }, requirement.text ?? ""),
     scenarios.length
