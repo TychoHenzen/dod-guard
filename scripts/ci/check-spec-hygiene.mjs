@@ -7,7 +7,11 @@
 // openspec/specs/**/spec.md, warns on every compound requirement, and prints
 // a summary line.
 //
-// Usage: node scripts/ci/check-spec-hygiene.mjs [--strict]
+// Usage: node scripts/ci/check-spec-hygiene.mjs [--strict] [--root=<dir>]
+//
+// --root exists so the test suite can point the scan at a fixture tree
+// instead of the repository. It is resolved as the repo root, and specs are
+// read from <root>/openspec/specs.
 //
 // Exit codes:
 //   0  no compound requirements, or warning mode (no --strict)
@@ -19,15 +23,14 @@ import { analyzeSpec } from "./lib/obligation-count.mjs";
 import { toPosix, walkFiles } from "./lib/fs-utils.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SPECS_ROOT = resolve(REPO_ROOT, "openspec", "specs");
 
-function specId(specFilePath) {
-  const posix = toPosix(SPECS_ROOT, specFilePath);
+function specId(specsRoot, specFilePath) {
+  const posix = toPosix(specsRoot, specFilePath);
   return posix.replace(/\/spec\.md$/, "");
 }
 
-function scanSpecs() {
-  const specFiles = walkFiles(SPECS_ROOT)
+function scanSpecs(specsRoot) {
+  const specFiles = walkFiles(specsRoot)
     .filter((file) => file.endsWith("spec.md"))
     .sort();
 
@@ -36,7 +39,7 @@ function scanSpecs() {
   let uncoveredTotal = 0;
 
   for (const specFile of specFiles) {
-    const id = specId(specFile);
+    const id = specId(specsRoot, specFile);
     for (const req of analyzeSpec(specFile)) {
       totalRequirements += 1;
       if (req.delta <= 0) continue;
@@ -52,8 +55,13 @@ function scanSpecs() {
 }
 
 function main() {
-  const strict = process.argv.includes("--strict");
-  const { totalRequirements, compoundCount, uncoveredTotal } = scanSpecs();
+  const args = process.argv.slice(2);
+  const strict = args.includes("--strict");
+  const rootArg = args.find((arg) => arg.startsWith("--root="));
+  const repoRoot = rootArg ? resolve(rootArg.slice("--root=".length)) : REPO_ROOT;
+  const specsRoot = resolve(repoRoot, "openspec", "specs");
+
+  const { totalRequirements, compoundCount, uncoveredTotal } = scanSpecs(specsRoot);
   process.stdout.write(`${totalRequirements} requirements, ${compoundCount} compound, ${uncoveredTotal} uncovered obligations\n`);
   return strict && compoundCount > 0 ? 1 : 0;
 }
