@@ -41,8 +41,9 @@
 - [x] 3.3 Specify wave writing: every `## N.` group heading up front, checkboxes for the near wave only, `<!-- covers: -->` on each bound item, and no plan format beyond those two levels.
 <!-- covers: dod-guard/opsx-continue :: Task groups are named before they are expanded :: First pass writes all headings and one expanded wave -->
 <!-- status: completed -->
-- [ ] 3.4 Specify re-invocation: leave expanded groups and their checked state untouched, expand the next heading-only group, append rather than renumber, and read the implementation the earlier waves produced first.
+- [x] 3.4 Specify re-invocation: leave expanded groups and their checked state untouched, expand the next heading-only group, append rather than renumber, and read the implementation the earlier waves produced first.
 <!-- covers: dod-guard/opsx-continue :: Re-invocation expands the next wave :: Second run expands the second group only -->
+<!-- status: completed -->
 - [ ] 3.5 Specify the two remaining re-invocation cases: report and ask the user when implementation contradicts a proposal assumption about a later group, and report a fully expanded plan without writing.
 <!-- covers: dod-guard/opsx-continue :: Re-invocation expands the next wave :: No unexpanded group remains -->
 - [ ] 3.6 Specify per-artifact validation with `openspec validate <id> --strict --no-interactive`, repairing and re-validating before moving to the next artifact.

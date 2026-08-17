@@ -74,11 +74,19 @@ it, and never treat it as blocking a downstream artifact that requires
 it - the schema already resolved that. Name it as skipped in the run's
 report (see section 8's **Output**).
 
-If every artifact the schema defines is already `done` or `skipped`
-when this skill starts, before doing anything else: create nothing,
-write nothing, and report that the change is already fully planned.
-That is not an error - point the user at `/opsx-update` for revisions
-instead (see section 8).
+Write-nothing exit: only when both hold. Every artifact the schema
+defines is already `done` or `skipped`, AND every `## N.` group in
+`tasks.md` already carries checkbox items. The tasks artifact reports
+`done` from its first write onward even while later groups are still
+bare headings, so status alone is not enough - check the groups too.
+When both hold, before doing anything else: create nothing, write
+nothing, and report that the change is already fully planned. That is
+not an error - point the user at `/opsx-update` for revisions instead
+(see section 8).
+
+When every artifact is `done` or `skipped` but a heading-only group
+remains, this is not the write-nothing case - it is the next wave.
+Continue to section 5 or 6.
 
 ## 5. Plan `tasks.md` in waves
 
@@ -122,9 +130,35 @@ change, not a bug this skill works to avoid triggering early.
 
 Running this skill again against the same change must be safe: it picks
 up wherever the previous run left off rather than repeating work.
-(The rules for what stays untouched, what gets expanded next, and how
-learning from an earlier wave feeds a later one are specified in a later
-step of this skill's own build.)
+
+Leave every already-expanded group untouched. A group that already
+carries `- [ ]` items is not rewritten, and a checked item stays
+checked - this skill never revises what a prior run or a later manual
+edit produced. Expand only the first group that is still heading-only.
+Every group after that stays a bare heading, exactly as section 5
+already requires on a first pass.
+
+Before writing the next wave's items, read the implementation the
+already-expanded groups produced - the code and tests those waves
+wrote, not just the proposal. Write the new group's items against what
+that work actually turned out to need, not the original guess the
+proposal made before any of it existed. A wave that only ever reread
+the proposal would keep replanning the same guess instead of learning
+from what shipped.
+
+If a group is discovered mid-flight that the original heading list did
+not anticipate, append it as a new `## N.` heading at the end rather
+than inserting it and renumbering the groups after it. A task's id
+comes from its item text, not from the heading number, so renumbering
+breaks nothing - but it churns the file for no gain, since every
+already-expanded group's headings would shift for an insertion that
+adds no information the file didn't already have room for. Appending
+keeps every prior wave's heading numbers stable across re-invocations.
+
+(The remaining re-invocation cases - what happens on a change with no
+groups left to expand, and how this interacts with a group added by
+`/opsx-update` - are specified in a later step of this skill's own
+build.)
 
 ## 7. Validate after each artifact
 
@@ -133,10 +167,14 @@ later step of this skill's own build.)
 
 ## 8. Point to the next step (guidance only - NEVER act on it)
 
-- Every planning artifact done, all task groups expanded -> suggest
-  `/opsx:apply` to start implementation.
-- The change is already fully planned when this skill starts -> report
-  that, write nothing, and point at `/opsx-update` for revisions instead.
+- Every planning artifact done or skipped, and every `## N.` group in
+  `tasks.md` already carries checkbox items -> suggest `/opsx:apply` to
+  start implementation.
+- That same state holds when this skill starts -> report that, write
+  nothing, and point at `/opsx-update` for revisions instead (section 4).
+- Every artifact done or skipped but a heading-only group remains ->
+  this run expanded (or should next run) that group; suggest running
+  `/opsx-continue` again to expand the following one, until none remain.
 
 **Output**
 
