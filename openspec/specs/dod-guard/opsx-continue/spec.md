@@ -1,13 +1,12 @@
-## Purpose
+# dod-guard/opsx-continue Specification
 
+## Purpose
 Carries an OpenSpec change forward from whatever artifacts it already has to a
 plan that can be implemented, creating each missing artifact in the schema's
 build order. Plans large work in waves: every task group is named up front, and
 one group at a time is expanded into checkboxes, so later detail is written with
 what earlier implementation taught rather than guessed before it.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: The skill advances the build frontier
 
 `/opsx-continue` SHALL create a change's missing planning artifacts and SHALL
@@ -89,3 +88,4 @@ passes.
   artifact
 - **THEN** the skill repairs that artifact and re-runs validate rather than
   proceeding to the next artifact
+
