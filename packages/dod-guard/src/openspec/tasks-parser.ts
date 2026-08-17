@@ -66,15 +66,15 @@ export function parseTasksMarkdown(content: string): TaskItem[] {
   }
   return items;
 }
-export function parseTaskGroups(content: string): { id: string; items: TaskItem[] }[] {
+export function parseTaskGroups(content: string): { id: string; title: string; items: TaskItem[] }[] {
   const lines = content.split("\n");
-  const groups: { id: string; items: TaskItem[] }[] = [];
-  let current: { id: string; items: TaskItem[] } | undefined;
+  const groups: { id: string; title: string; items: TaskItem[] }[] = [];
+  let current: { id: string; title: string; items: TaskItem[] } | undefined;
   let fallbackIndex = 0;
   for (let i = 0; i < lines.length; i++) {
     const heading = lines[i].match(GROUP_HEADING_RE);
     if (heading) {
-      current = { id: heading[1], items: [] };
+      current = { id: heading[1], title: lines[i].replace(/^##\s+/, ""), items: [] };
       groups.push(current);
       continue;
     }

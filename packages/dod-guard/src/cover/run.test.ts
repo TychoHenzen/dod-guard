@@ -4,7 +4,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { captureIo } from "../testing/capture-io.js";
-import { writeUnwiredCoverageGateSpec } from "../testing/spec-fixtures.js";
+import { writeChangeSpecDelta, writeChangeTasks, writeUnwiredCoverageGateSpec } from "../testing/spec-fixtures.js";
 import { runCover } from "./run.js";
 
 describe("runCover", () => {
@@ -62,5 +62,30 @@ describe("runCover", () => {
     const code = await runCover({ cwd, all: true, writeBaseline: false }, io);
     assert.equal(code, 0);
     assert.match(out(), /cover OK - 0 regression\(s\)/);
+  });
+
+  // covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A fully expanded plan passes the check
+  it("performs no plan-incomplete report when every group carries a checkbox", async () => {
+    await writeChangeSpecDelta(cwd, "add-widget");
+    await writeChangeTasks(cwd, "add-widget", ["## 1. Setup", "", "- [ ] 1.1 do something", ""].join("\n"));
+
+    const { io, out } = captureIo();
+    const code = await runCover({ cwd, changeId: "add-widget", all: false, writeBaseline: false }, io);
+    assert.equal(code, 0);
+    assert.doesNotMatch(out(), /plan incomplete/);
+  });
+
+  it("names an unexpanded group and returns the plan-incomplete exit code", async () => {
+    await writeChangeSpecDelta(cwd, "add-gadget");
+    await writeChangeTasks(
+      cwd,
+      "add-gadget",
+      ["## 1. Setup", "", "- [ ] 1.1 do something", "", "## 2. Baseline adoption", ""].join("\n"),
+    );
+
+    const { io, out } = captureIo();
+    const code = await runCover({ cwd, changeId: "add-gadget", all: false, writeBaseline: false }, io);
+    assert.equal(code, 4);
+    assert.match(out(), /plan incomplete - 1 unexpanded group: 2\. Baseline adoption/);
   });
 });

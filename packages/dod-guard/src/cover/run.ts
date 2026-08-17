@@ -3,7 +3,10 @@
  * deltas, or the whole main tree), build the three-outcome report, and either
  * write a fresh ratchet baseline or check the report against the existing one.
  */
-import type { CliIo } from "../cli.js";
+import { promises as fs } from "node:fs";
+import * as path from "node:path";
+import { EXIT_PLAN_INCOMPLETE, type CliIo } from "../cli.js";
+import { parseTaskGroups } from "../openspec/tasks-parser.js";
 import { compareToBaseline, findOrphans, outcomesFromReport, readBaseline, writeBaseline } from "./baseline.js";
 import { enumerateAllScenarios, enumerateChangeScenarios } from "./enumerate.js";
 import { buildReport, summarizeReport } from "./report.js";
@@ -19,15 +22,33 @@ const EXIT_OK = 0;
 const EXIT_REGRESSION = 1;
 const EXIT_USAGE_ERROR = 3;
 
+/** Numbered group headings in a change's tasks.md with no checkbox item. Missing tasks.md means none. */
+async function findUnexpandedGroups(cwd: string, changeId: string): Promise<string[]> {
+  const tasksPath = path.join(cwd, "openspec", "changes", changeId, "tasks.md");
+  const content = await fs.readFile(tasksPath, "utf-8").catch(() => "");
+  if (!content) return [];
+  return parseTaskGroups(content)
+    .filter((group) => group.items.length === 0)
+    .map((group) => group.title);
+}
+
+/** Plan-incomplete exit code for a change-scoped run with an unexpanded group, else undefined. */
+async function checkPlanComplete(opts: CoverOptions, io: CliIo): Promise<number | undefined> {
+  if (opts.all) return undefined;
+  const unexpanded = await findUnexpandedGroups(opts.cwd, opts.changeId as string);
+  if (unexpanded.length === 0) return undefined;
+  const noun = unexpanded.length === 1 ? "group" : "groups";
+  io.write(`\nplan incomplete - ${unexpanded.length} unexpanded ${noun}: ${unexpanded.join(", ")}\n`);
+  return EXIT_PLAN_INCOMPLETE;
+}
+
 export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
   if (!(opts.all || opts.changeId)) {
     io.writeErr("ERROR: dod-guard cover needs a change id or --all.\n");
     return EXIT_USAGE_ERROR;
   }
 
-  // writeBaseline replaces the whole scenarios map (see baseline.ts). A
-  // change-scoped run only ever enumerates its own handful of scenarios, so
-  // writing from one would drop every other scenario's recorded outcome.
+  // writeBaseline replaces the whole scenarios map; a change-scoped run would drop the rest.
   if (opts.writeBaseline && !opts.all) {
     io.writeErr("ERROR: --write-baseline needs --all - a change-scoped run would drop every other scenario.\n");
     return EXIT_USAGE_ERROR;
@@ -47,9 +68,7 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
   }
 
   const reports = await buildReport(opts.cwd, scenarios);
-  for (const report of reports) {
-    io.write(`  ${report.outcome.padEnd(26)} ${report.scenarioId}\n`);
-  }
+  for (const report of reports) io.write(`  ${report.outcome.padEnd(26)} ${report.scenarioId}\n`);
 
   const summary = summarizeReport(reports);
   io.write(`\n${reports.length} scenario(s): ${summary.bound} bound, ${summary.unwired} unwired\n`);
@@ -69,10 +88,10 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
 
   if (regressions.length === 0) {
     io.write(`\ncover OK - 0 regression(s)\n`);
-    return EXIT_OK;
+    return (await checkPlanComplete(opts, io)) ?? EXIT_OK;
   }
 
   io.write(`\ncover FAILED - ${regressions.length} regression(s)\n\n`);
   for (const r of regressions) io.write(`  ${r.scenarioId}: ${r.before} before, ${r.now} now\n`);
-  return EXIT_REGRESSION;
+  return (await checkPlanComplete(opts, io)) ?? EXIT_REGRESSION;
 }
