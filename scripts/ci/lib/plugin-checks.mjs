@@ -46,7 +46,8 @@ export function createPluginChecks(report) {
       if (!skills.includes(slug))
         report(file, `${label} mentions /${slug} but no such skill ships (have: ${skills.join(", ") || "none"})`);
     }
-    const claim = /Ships (\d+) skills?/.exec(description);
+    // Both phrasings ship today: "Ships 29 skills" and "MCP server and 29 skills".
+    const claim = /(\d+) skills?\b/.exec(description);
     if (claim && Number(claim[1]) !== skills.length) {
       report(file, `${label} claims ${claim[1]} skills but ${skills.length} ship`);
     }
@@ -54,6 +55,8 @@ export function createPluginChecks(report) {
 
   function checkManifest(pkg, manifest) {
     const file = join(pkg.dir, "package.json");
+    // npm shows this description too, so its skill count drifts the same way a manifest's does.
+    checkSkillMentions(file, manifest.description ?? "", pkg.skills, "package.json description");
     if (manifest.name !== pkg.name) report(file, `name "${manifest.name}" does not match directory "${pkg.name}"`);
     if (manifest.main !== "dist/bundle.js")
       report(file, `main must be dist/bundle.js, got ${JSON.stringify(manifest.main)}`);
