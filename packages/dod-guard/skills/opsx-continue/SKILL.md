@@ -83,11 +83,40 @@ instead (see section 8).
 ## 5. Plan `tasks.md` in waves
 
 When the artifact being created is the tasks artifact, do not write every
-task fully expanded in one pass. Name every unit of work the proposal and
-specs imply as a group heading up front, and expand checkbox items for
-the nearest wave only. (The heading format, which wave counts as
-"nearest", and the covers-annotation rule for an expanded item are
-specified in a later step of this skill's own build.)
+task fully expanded in one pass. `openspec instructions` still owns how a
+`tasks.md` heading and checkbox item are authored - format, numbering,
+what a task line says. What follows is this skill's own choreography for
+which of those headings get checkbox items on a given run, not a second
+copy of OpenSpec's authoring rules.
+
+Write a `## N. <group>` heading for every unit of work the proposal and
+specs imply, including work that cannot yet be broken down into checkbox
+items. Expand `- [ ]` checkbox items under the near wave only - the near
+wave is the first group with no checkbox items under it, or on a first
+pass over an empty `tasks.md`, the first group. Leave every later group
+as a bare heading with no checkboxes.
+
+When a checkbox item's work maps to a spec scenario, put
+the covers annotation on the line directly after it, as one unwrapped
+line:
+
+```
+<!-- covers: <group>/<capability> :: <requirement title> :: <scenario title> -->
+```
+
+The parser reads it as a single line, so never wrap it. An item with no matching
+scenario carries no annotation - do not invent one to fill the slot.
+
+Do not introduce a plan format beyond those two levels. No nested
+checkboxes under an item, no per-group metadata block, no second plan
+file alongside `tasks.md`. A heading and, where expanded, its flat list
+of checkbox items is the whole shape.
+
+A heading-only group is not a defect to route around. `dod-guard cover
+<change-id>` names every `## <digits>.` heading with no checkbox items
+and exits with the plan-incomplete code, refusing to archive the change
+until every group is expanded. That is the intended gate on a wave-planned
+change, not a bug this skill works to avoid triggering early.
 
 ## 6. Re-invocation
 
