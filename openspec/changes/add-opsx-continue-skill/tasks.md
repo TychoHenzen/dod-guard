@@ -60,7 +60,9 @@
 - [x] 4.2 Update `packages/dod-guard/skills/opsx-apply/SKILL.md` the same way.
 - [x] 4.3 Add the skill to `packages/dod-guard/.claude-plugin/marketplace.json`, `packages/dod-guard/.claude-plugin/plugin.json`, and the root `.claude-plugin/marketplace.json`, changing all three "Ships 28 skills" claims to 29.
 - [x] 4.4 Add the skill row to the `packages/dod-guard/CLAUDE.md` Bundled Skills table and to the dod-guard skill list in the root `CLAUDE.md`.
-- [ ] 4.5 Run `node scripts/ci/validate-plugins.mjs` and confirm the skill count, every `/slug` reference, and git tracking of the new file all pass.
+- [x] 4.5 Run `node scripts/ci/validate-plugins.mjs` and confirm the skill count, every `/slug` reference, and git tracking of the new file all pass.
+<!-- status: completed -->
+
 
 ## 5. Gates and baselines
 
