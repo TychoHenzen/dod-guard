@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "default",
-  "createdAt": "2026-08-16T07:23:15.483Z",
-  "total": 874,
+  "createdAt": "2026-08-17T09:08:38.171Z",
+  "total": 852,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -288,15 +288,7 @@
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
-    "packages/quality-guard/src/skips.ts",
-    "tools/openspec-dashboard/lib/cache.mjs",
-    "tools/openspec-dashboard/lib/cli.mjs",
-    "tools/openspec-dashboard/lib/markers.mjs",
-    "tools/openspec-dashboard/lib/project-reads.mjs",
-    "tools/openspec-dashboard/lib/static.mjs",
-    "tools/openspec-dashboard/lib/tasks.mjs",
-    "tools/openspec-dashboard/public/app.js",
-    "tools/openspec-dashboard/serve.mjs"
+    "packages/quality-guard/src/skips.ts"
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
@@ -359,6 +351,7 @@
     "packages/quality-guard/src/scanner.ts::types-per-file": 1,
     "packages/dod-guard/skills/skill-migrate/scripts/migration-check.mjs::file-length": 1,
     "packages/dod-guard/skills/skill-migrate/scripts/migration-check.test.mjs::file-length": 1,
+    "packages/dod-guard/src/cover/languages.test.ts::file-length": 1,
     "packages/evomcp/src/agent.test.ts::file-length": 1,
     "packages/evomcp/src/agent.ts::file-length": 1,
     "packages/evomcp/src/budget.test.ts::file-length": 1,
@@ -506,7 +499,6 @@
     "packages/dod-guard/skills/tighten/scripts/seed-ledger.test.mjs::file-length": 1,
     "packages/dod-guard/src/cli.test.ts::file-length": 1,
     "packages/dod-guard/src/cli.ts::file-length": 1,
-    "packages/dod-guard/src/cover/languages.test.ts::file-length": 1,
     "packages/dod-guard/src/cover/languages.ts::file-length": 1,
     "packages/dod-guard/src/openspec/delta-sections.test.ts::file-length": 1,
     "packages/evomcp/src/attempt-result.test.ts::file-length": 1,
@@ -735,21 +727,6 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
-    "tools/openspec-dashboard/lib/cache.mjs::unused-local": 1,
-    "tools/openspec-dashboard/lib/cache.mjs::param-count": 1,
-    "tools/openspec-dashboard/serve.mjs::unused-local": 1,
-    "tools/openspec-dashboard/public/app.js::file-length": 1,
-    "tools/openspec-dashboard/public/app.js::else-branch": 1,
-    "tools/openspec-dashboard/lib/markers.mjs::complexity": 1,
-    "tools/openspec-dashboard/lib/project-reads.mjs::complexity": 5,
-    "tools/openspec-dashboard/lib/project-reads.mjs::unused-local": 1,
-    "tools/openspec-dashboard/lib/project-reads.mjs::file-length": 1,
-    "tools/openspec-dashboard/lib/project-reads.mjs::function-length": 2,
-    "tools/openspec-dashboard/lib/project-reads.mjs::param-count": 1,
-    "tools/openspec-dashboard/lib/cli.mjs::unused-local": 1,
-    "tools/openspec-dashboard/lib/cli.mjs::file-length": 1,
-    "tools/openspec-dashboard/lib/cli.mjs::complexity": 2,
-    "tools/openspec-dashboard/lib/cli.mjs::function-length": 2
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1
   }
 }
