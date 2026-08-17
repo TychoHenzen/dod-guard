@@ -67,12 +67,6 @@ concrete files that exist on disk, already glob-expanded for glob artifacts
 (e.g. `specs/**/*.md`). Do NOT write to `resolvedOutputPath`: for a glob
 artifact it is still the glob pattern, not a real file.
 
-`/opsx:continue` is an expanded-profile workflow and may not be installed.
-Before suggesting it anywhere below, verify that it is available. If it is
-unavailable, `openspec status --change "<name>" --json` shows the next
-artifact and `openspec instructions "<artifact-id>" --change "<name>"
---json` explains how to create it.
-
 ## 4. Understand the request
 
 - If the user asked for a specific revision ("the design now uses X"), that
@@ -100,7 +94,7 @@ artifact and `openspec instructions "<artifact-id>" --change "<name>"
     references it so the user can reword the task or drop the annotation.
 - Revise only files that already exist (`existingOutputPaths`). Do NOT
   create artifacts that don't exist yet. Do NOT invent new files under a
-  glob artifact. Note them and point the user to `/opsx:continue`.
+  glob artifact. Note them and point the user to `/dod-guard:opsx-continue`.
 - If the change is already coherent, say so and make no edits.
 
 ## 6. Confirm and apply, one artifact at a time
@@ -125,11 +119,11 @@ openspec validate "<name>" --strict --no-interactive
 If validation fails, fix the reported error in the relevant artifact and
 re-run validate. Repeat until it passes. If the fix is out of scope
 (for example, it needs an artifact that does not exist yet), defer to
-`/opsx:continue` and report the gap instead of forcing a fix.
+`/dod-guard:opsx-continue` and report the gap instead of forcing a fix.
 
 ## 8. Point to the next step (guidance only - NEVER act on it)
 
-- Artifacts still missing -> suggest `/opsx:continue` to create them.
+- Artifacts still missing -> suggest `/dod-guard:opsx-continue` to create them.
 - The user wants to implement, or the change is already implemented and
   the code may not match the revised plan -> suggest `/opsx:apply`. If
   the user asks to code mid-conversation, refuse and point to
@@ -141,7 +135,7 @@ re-run validate. Repeat until it passes. If the fix is out of scope
 After each invocation, show:
 - Which artifacts were revised (and which proposed revisions were rejected)
 - The result of `openspec validate`
-- Anything deferred to `/opsx:continue` (not-yet-created artifacts or files)
+- Anything deferred to `/dod-guard:opsx-continue` (not-yet-created artifacts or files)
 - Where the change stands and the recommended next command
 
 **Guardrails**
@@ -152,7 +146,7 @@ After each invocation, show:
 - Edit only the concrete files in `existingOutputPaths`; never write to a
   glob `resolvedOutputPath`.
 - Do not advance the build frontier: no new artifacts, no new files under
-  glob artifacts - that is `/opsx:continue`'s job.
+  glob artifacts - that is `/dod-guard:opsx-continue`'s job.
 - Confirm every edit with the user before writing, and re-validate after
   every confirmed edit.
 - If the request changes the change's *intent* rather than refining it,

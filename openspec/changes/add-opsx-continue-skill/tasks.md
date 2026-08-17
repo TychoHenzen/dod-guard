@@ -56,7 +56,7 @@
 
 ## 4. Rewire references and register the skill
 
-- [ ] 4.1 Update `packages/dod-guard/skills/opsx-update/SKILL.md`: `/opsx:continue` becomes the real `/dod-guard:opsx-continue`, dropping the "expanded-profile workflow and may not be installed" hedge and its availability check.
+- [x] 4.1 Update `packages/dod-guard/skills/opsx-update/SKILL.md`: `/opsx:continue` becomes the real `/dod-guard:opsx-continue`, dropping the "expanded-profile workflow and may not be installed" hedge and its availability check.
 - [ ] 4.2 Update `packages/dod-guard/skills/opsx-apply/SKILL.md` the same way.
 - [ ] 4.3 Add the skill to `packages/dod-guard/.claude-plugin/marketplace.json`, `packages/dod-guard/.claude-plugin/plugin.json`, and the root `.claude-plugin/marketplace.json`, changing all three "Ships 28 skills" claims to 29.
 - [ ] 4.4 Add the skill row to the `packages/dod-guard/CLAUDE.md` Bundled Skills table and to the dod-guard skill list in the root `CLAUDE.md`.

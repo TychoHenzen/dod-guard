@@ -32,7 +32,7 @@ If a name is provided, use it. Otherwise:
   user to select one
 
 Always announce: "Using change: <name>" and how to override (e.g.,
-`/opsx:continue <other>`).
+`/dod-guard:opsx-continue <other>`).
 
 ## 3. Read the change's artifact state
 
