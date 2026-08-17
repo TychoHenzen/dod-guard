@@ -143,6 +143,7 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `spec-explore` | Discover missing requirements, edge cases, and implicit assumptions in an existing spec by comparing it against the implementation. Produces a delta spec the user can selectively adopt |
 | `spec-test` | Generate tests from spec WHEN/THEN contracts without reading the implementation for expected values. Reports contradictions between spec and code instead of silently adjusting assertions |
 | `opsx-guide` | Interactive guide to the OpenSpec workflow and the `/opsx:*` skills. Reads the project's real specs and coverage state, routes to the right skill. Never writes code or creates a change |
+| `publish` | Publish workflow for the monorepo: npm packages get version bump, gate check, commit, push, CI monitoring. Code-only plugins under `plugins/` need a `plugin.json` version bump too |
 
 ## Lessons
 

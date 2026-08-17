@@ -1,7 +1,7 @@
 {
   "name": "dod-guard",
   "version": "4.4.0",
-  "description": "OpenSpec scenario-coverage verification. Claude Code plugin with MCP server and 27 skills.",
+  "description": "OpenSpec scenario-coverage verification. Claude Code plugin with MCP server and 28 skills.",
   "type": "module",
   "main": "dist/bundle.js",
   "bin": {
