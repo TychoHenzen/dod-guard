@@ -32,8 +32,9 @@
 
 ## 3. The /opsx-continue skill
 
-- [ ] 3.1 Write `packages/dod-guard/skills/opsx-continue/SKILL.md` with frontmatter `name: opsx-continue`, a description, and store selection matching the other `opsx-*` skills. It reads artifact ids and paths from `openspec status --change <id> --json` and never hardcodes them.
+- [x] 3.1 Write `packages/dod-guard/skills/opsx-continue/SKILL.md` with frontmatter `name: opsx-continue`, a description, and store selection matching the other `opsx-*` skills. It reads artifact ids and paths from `openspec status --change <id> --json` and never hardcodes them.
 <!-- covers: dod-guard/opsx-continue :: The skill advances the build frontier :: A change holding only a proposal -->
+<!-- status: completed -->
 - [ ] 3.2 Specify the skipped-artifact and already-planned cases: create nothing for a `skipped` artifact, and when every artifact exists, write nothing and point at `/opsx-update`.
 <!-- covers: dod-guard/opsx-continue :: The skill advances the build frontier :: An artifact marked skipped stays absent -->
 - [ ] 3.3 Specify wave writing: every `## N.` group heading up front, checkboxes for the near wave only, `<!-- covers: -->` on each bound item, and no plan format beyond those two levels.
