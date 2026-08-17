@@ -99,6 +99,36 @@ describe("runCover", () => {
     assert.match(out(), /plan incomplete - 1 unexpanded group: 2\. Baseline adoption/);
   });
 
+  // covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A prose heading is not a group heading
+  it("does not treat a prose heading or a subheading as a group", async () => {
+    await writeChangeSpecDelta(cwd, "add-fixture");
+    await writeChangeTasks(
+      cwd,
+      "add-fixture",
+      [
+        "# Tasks",
+        "",
+        "## 1. Real group",
+        "",
+        "- [ ] 1.1 do something",
+        "",
+        "## Notes",
+        "",
+        "some prose with no checkbox",
+        "",
+        "### Working memory",
+        "",
+        "more prose with no checkbox",
+        "",
+      ].join("\n"),
+    );
+
+    const { io, out } = captureIo();
+    const code = await runCover({ cwd, changeId: "add-fixture", all: false, writeBaseline: false }, io);
+    assert.equal(code, 0);
+    assert.doesNotMatch(out(), /plan incomplete/);
+  });
+
   // covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: An --all run skips the check
   it("skips the plan-incomplete check on an --all run even when a change id names an unexpanded group", async () => {
     await writeChangeSpecDelta(cwd, "add-trap");
