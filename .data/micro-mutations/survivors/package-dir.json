@@ -1,0 +1,93 @@
+{
+  "source": "packages/dod-guard/src/cover/package-dir.ts",
+  "date": "2026-08-17T07:34:20.152Z",
+  "summary": {
+    "total": 17,
+    "killed": 7,
+    "survived": 10,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 10,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 11,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 12,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 13,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 14,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 16,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 18,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 19,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 21,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/package-dir.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 23,
+      "dist_col": 5
+    }
+  ]
+}

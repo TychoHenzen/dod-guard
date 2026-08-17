@@ -1,0 +1,45 @@
+{
+  "source": "packages/dod-guard/src/openspec/fetch-instructions.ts",
+  "date": "2026-08-17T07:34:03.106Z",
+  "summary": {
+    "total": 15,
+    "killed": 11,
+    "survived": 4,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/openspec/fetch-instructions.js",
+      "id": "2",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 18,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/fetch-instructions.js",
+      "id": "3",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 20,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/fetch-instructions.js",
+      "id": "4",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 * 1024 / 1024",
+      "dist_line": 22,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/openspec/fetch-instructions.js",
+      "id": "5",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 / 1024",
+      "dist_line": 22,
+      "dist_col": 24
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "source": "packages/dod-guard/src/shell.ts",
+  "date": "2026-08-17T07:34:16.785Z",
+  "summary": {
+    "total": 36,
+    "killed": 13,
+    "survived": 8,
+    "timeout": 1,
+    "unviable": 14
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/shell.js",
+      "id": "2",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 18,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/shell.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 18,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/shell.js",
+      "id": "21",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 27,
+      "dist_col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/shell.js",
+      "id": "22",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 * 1024 / 1024",
+      "dist_line": 30,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/shell.js",
+      "id": "23",
+      "mutator": "ArithmeticOperator",
+      "replacement": "10 / 1024",
+      "dist_line": 30,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/shell.js",
+      "id": "24",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 31,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/dod-guard/dist/shell.js",
+      "id": "28",
+      "mutator": "LogicalOperator",
+      "replacement": "err.stdout && \"\"",
+      "dist_line": 38,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/shell.js",
+      "id": "30",
+      "mutator": "LogicalOperator",
+      "replacement": "err.stderr && \"\"",
+      "dist_line": 39,
+      "dist_col": 21
+    }
+  ]
+}
