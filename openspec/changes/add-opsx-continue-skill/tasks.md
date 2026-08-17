@@ -26,7 +26,9 @@
 - [x] 2.5 Confirm a `## Notes` heading and a `### ` subheading are not treated as groups, matching only `## <digits>.`.
 <!-- covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A prose heading is not a group heading -->
 <!-- status: completed -->
-- [ ] 2.6 Run the finished check over every `tasks.md` under `openspec/changes/archive/` and confirm it flags only `2026-08-17-neurodivergent-output-style`, matching the measurement design.md records.
+- [x] 2.6 Run the finished check over every `tasks.md` under `openspec/changes/archive/` and confirm it flags only `2026-08-17-neurodivergent-output-style`, matching the measurement design.md records.
+<!-- status: completed -->
+
 
 ## 3. The /opsx-continue skill
 
