@@ -75,6 +75,16 @@ describe("runCover", () => {
     assert.doesNotMatch(out(), /plan incomplete/);
   });
 
+  // covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A change with no tasks.md is not blocked by this check
+  it("performs no plan-incomplete report for a change with no tasks.md", async () => {
+    await writeChangeSpecDelta(cwd, "add-sprocket");
+
+    const { io, out } = captureIo();
+    const code = await runCover({ cwd, changeId: "add-sprocket", all: false, writeBaseline: false }, io);
+    assert.equal(code, 0);
+    assert.doesNotMatch(out(), /plan incomplete/);
+  });
+
   it("names an unexpanded group and returns the plan-incomplete exit code", async () => {
     await writeChangeSpecDelta(cwd, "add-gadget");
     await writeChangeTasks(
