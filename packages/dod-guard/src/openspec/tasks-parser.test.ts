@@ -1,7 +1,7 @@
 // Requirement: none - see Task
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseTasksMarkdown, writeTaskStatus } from "./tasks-parser.js";
+import { parseTaskGroups, parseTasksMarkdown, writeTaskStatus } from "./tasks-parser.js";
 
 test("parses a checked and an unchecked item with their ids and text", () => {
   const items = parseTasksMarkdown(
@@ -83,6 +83,23 @@ test("writeTaskStatus round-trips a status update through parseTasksMarkdown", (
   const content = writeTaskStatus("- [ ] 1.1 Do the thing", "1.1", { status: "blocked" });
   const items = parseTasksMarkdown(content);
   assert.equal(items[0].status, "blocked");
+});
+
+// covers: dod-guard/coverage-gate :: The task parser exposes group headings and their items :: Groups and items are reported together
+test("reports group headings with the items that fall under each one", () => {
+  const content = [
+    "## 1. First group",
+    "- [ ] 1.1 First item",
+    "- [ ] 1.2 Second item",
+    "## 2. Second group",
+  ].join("\n");
+  const groups = parseTaskGroups(content);
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0].id, "1");
+  assert.equal(groups[0].items.length, 2);
+  assert.equal(groups[1].id, "2");
+  assert.equal(groups[1].items.length, 0);
+  assert.equal(parseTasksMarkdown(content).length, 2);
 });
 
 test("writeTaskStatus preserves existing metadata when updating status", () => {
