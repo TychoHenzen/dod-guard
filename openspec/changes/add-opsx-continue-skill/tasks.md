@@ -5,8 +5,9 @@
 - [x] 1.1 Add a group-aware read to `packages/dod-guard/src/openspec/tasks-parser.ts`: expose each `## <digits>.` heading with the checkbox items beneath it, leaving `parseTasksMarkdown` and every existing item field unchanged.
 <!-- covers: dod-guard/coverage-gate :: The task parser exposes group headings and their items :: Groups and items are reported together -->
 <!-- status: completed -->
-- [ ] 1.2 Cover the case of a checkbox item appearing above the first group heading, so it still parses as a task and belongs to no group.
+- [x] 1.2 Cover the case of a checkbox item appearing above the first group heading, so it still parses as a task and belongs to no group.
 <!-- covers: dod-guard/coverage-gate :: The task parser exposes group headings and their items :: Items above the first group heading still parse -->
+<!-- status: completed -->
 
 ## 2. cover refuses an unexpanded plan
 

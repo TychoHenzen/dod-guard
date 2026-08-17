@@ -19,5 +19,14 @@
     "at": "2026-08-16T11:14:00.669Z",
     "acknowledged": true,
     "acknowledgement": "Reviewed: the function bindingsForGroup was removed or renamed in a prior edit. The waiver references stale code. The rebaseline adopted the current counts and the function no longer exists at line 77."
+  },
+  {
+    "file": "packages/dod-guard/src/openspec/tasks-parser.ts",
+    "reasons": [
+      "file-length: 0 before, 1 now\n  packages/dod-guard/src/openspec/tasks-parser.ts:1: file is 123 lines"
+    ],
+    "rebaseline": true,
+    "at": "2026-08-17T13:25:10.992Z",
+    "acknowledged": false
   }
 ]

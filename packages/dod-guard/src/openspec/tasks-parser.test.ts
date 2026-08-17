@@ -102,6 +102,23 @@ test("reports group headings with the items that fall under each one", () => {
   assert.equal(parseTasksMarkdown(content).length, 2);
 });
 
+// covers: dod-guard/coverage-gate :: The task parser exposes group headings and their items :: Items above the first group heading still parse
+test("reports an item above the first group heading as a task with no group", () => {
+  const content = [
+    "- [ ] 0.1 Ungrouped item",
+    "## 1. First group",
+    "- [ ] 1.1 Grouped item",
+  ].join("\n");
+  const items = parseTasksMarkdown(content);
+  assert.equal(items.length, 2);
+  assert.equal(items[0].id, "0.1");
+  assert.equal(items[1].id, "1.1");
+  const groups = parseTaskGroups(content);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].items.length, 1);
+  assert.equal(groups[0].items[0].id, "1.1");
+});
+
 test("writeTaskStatus preserves existing metadata when updating status", () => {
   const original = ["- [ ] 1.1 Do the thing", "<!-- verify_cmd: npm test -->", "<!-- status: pending -->"].join("\n");
   const content = writeTaskStatus(original, "1.1", { status: "skipped" });
