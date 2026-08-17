@@ -11,8 +11,9 @@
 
 ## 2. cover refuses an unexpanded plan
 
-- [ ] 2.1 Add the plan-incomplete exit code to `packages/dod-guard/src/cli.ts`, distinct from the regression and usage-error codes, and extend the `USAGE` string to name it.
+- [x] 2.1 Add the plan-incomplete exit code to `packages/dod-guard/src/cli.ts`, distinct from the regression and usage-error codes, and extend the `USAGE` string to name it.
 <!-- covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A heading-only group blocks the run -->
+<!-- status: completed -->
 - [ ] 2.2 Read the change's `tasks.md` in the change-scoped path of `packages/dod-guard/src/cover/run.ts`, report every unexpanded group by name, and exit with the plan-incomplete code.
 <!-- covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A fully expanded plan passes the check -->
 - [ ] 2.3 Skip the check when `tasks.md` is absent, so ordinary planning before the artifact exists is not blocked.

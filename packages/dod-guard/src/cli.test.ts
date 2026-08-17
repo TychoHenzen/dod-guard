@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, describe, it } from "node:test";
-import { EXIT_USAGE_ERROR, isCliInvocation, parseArgs, runCli } from "./cli.js";
+import { EXIT_PLAN_INCOMPLETE, EXIT_USAGE_ERROR, isCliInvocation, parseArgs, runCli } from "./cli.js";
 import { captureIo } from "./testing/capture-io.js";
 
 // ── parseArgs ───────────────────────────────────────────────────────────
@@ -62,6 +62,17 @@ describe("runCli", () => {
     const code = await runCli(["bogus"], io);
     assert.equal(code, EXIT_USAGE_ERROR);
     assert.match(err(), /unknown command "bogus"/);
+  });
+
+  // covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A heading-only group blocks the run
+  it("documents the plan-incomplete exit code as distinct from regression and usage-error codes", async () => {
+    assert.notEqual(EXIT_PLAN_INCOMPLETE, 1);
+    assert.notEqual(EXIT_PLAN_INCOMPLETE, EXIT_USAGE_ERROR);
+
+    const { io, out } = captureIo();
+    const code = await runCli(["--help"], io);
+    assert.equal(code, 0);
+    assert.match(out(), /4\s+the change's tasks\.md has an unexpanded group/);
   });
 });
 

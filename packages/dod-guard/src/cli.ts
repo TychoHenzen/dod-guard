@@ -20,6 +20,12 @@ COMMANDS
                                       the whole baseline, and a change-scoped run
                                       only sees its own scenarios.
                                       --cwd=<dir> overrides the working directory.
+
+EXIT CODES
+  0   no regressions
+  1   a coverage regression
+  3   usage error
+  4   the change's tasks.md has an unexpanded group
 `;
 
 type Flags = Record<string, string | boolean>;
@@ -62,6 +68,9 @@ type Command = (positional: string[], flags: Flags, io: CliIo) => Promise<number
 
 /** Usage error exit code, matching the retired EXIT.ERROR contract. */
 export const EXIT_USAGE_ERROR = 3;
+
+/** Not 1: a skill branching on the exit code would report an unexpanded plan as a regression. */
+export const EXIT_PLAN_INCOMPLETE = 4;
 
 const COMMANDS: Record<string, Command> = {
   cover: (positional, flags, io) =>
