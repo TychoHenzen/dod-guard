@@ -17,6 +17,7 @@
     ],
     "rebaseline": true,
     "at": "2026-08-16T11:14:00.669Z",
-    "acknowledged": false
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: the function bindingsForGroup was removed or renamed in a prior edit. The waiver references stale code. The rebaseline adopted the current counts and the function no longer exists at line 77."
   }
 ]
