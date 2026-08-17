@@ -50,7 +50,9 @@
 - [x] 3.6 Specify per-artifact validation with `openspec validate <id> --strict --no-interactive`, repairing and re-validating before moving to the next artifact.
 <!-- covers: dod-guard/opsx-continue :: The change is validated after each artifact :: Validation fails after an artifact is written -->
 <!-- status: completed -->
-- [ ] 3.7 Confirm the new SKILL.md passes `node scripts/ci/check-skill-hygiene.mjs`, which runs `no-authoring-copy`, `no-legacy-fallback`, and `no-step-session` against every skill.
+- [x] 3.7 Confirm the new SKILL.md passes `node scripts/ci/check-skill-hygiene.mjs`, which runs `no-authoring-copy`, `no-legacy-fallback`, and `no-step-session` against every skill.
+<!-- status: completed -->
+
 
 ## 4. Rewire references and register the skill
 
