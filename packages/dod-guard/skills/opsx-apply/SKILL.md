@@ -38,7 +38,7 @@ openspec status --change "<name>" --json
 ```
 
 If the change has no tasks (nothing to execute), report that and stop -
-there is nothing for step-by-step to do. Suggest `/opsx:continue` to
+there is nothing for step-by-step to do. Suggest `/dod-guard:opsx-continue` to
 create the missing artifact instead.
 
 ## 3. Confirm tasks.md is current
