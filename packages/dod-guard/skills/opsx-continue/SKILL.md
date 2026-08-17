@@ -155,10 +155,24 @@ already-expanded group's headings would shift for an insertion that
 adds no information the file didn't already have room for. Appending
 keeps every prior wave's heading numbers stable across re-invocations.
 
-(The remaining re-invocation cases - what happens on a change with no
-groups left to expand, and how this interacts with a group added by
-`/opsx-update` - are specified in a later step of this skill's own
-build.)
+If what the already-expanded groups' implementation shows contradicts an
+assumption the proposal made about a later group - the later group's plan
+only made sense given something about an earlier group that shipped
+differently - stop before writing that later wave. Report three things: what
+the proposal assumed, what the implementation actually showed, and what this
+skill would write for that group's items instead given the new information.
+Then ask the user before writing anything. Do not adjust the proposal to
+match - that is `/opsx-update`'s job, and this skill never revises an
+artifact that already exists (this document's opening paragraph, section 8's
+guardrails). Point the user at `/opsx-update` if the proposal itself needs
+changing. Only after the user answers does this skill write the next wave,
+and only what the user confirmed.
+
+If every `## N.` group in `tasks.md` already carries checkbox items - no
+heading-only group remains - and every artifact is `done` or `skipped`, this
+is section 4's write-nothing exit: write no items, report that the plan is
+fully expanded, and point the user at `/opsx:apply` to start implementation
+(section 8).
 
 ## 7. Validate after each artifact
 
