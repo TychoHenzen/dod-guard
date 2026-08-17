@@ -47,8 +47,9 @@
 - [x] 3.5 Specify the two remaining re-invocation cases: report and ask the user when implementation contradicts a proposal assumption about a later group, and report a fully expanded plan without writing.
 <!-- covers: dod-guard/opsx-continue :: Re-invocation expands the next wave :: No unexpanded group remains -->
 <!-- status: completed -->
-- [ ] 3.6 Specify per-artifact validation with `openspec validate <id> --strict --no-interactive`, repairing and re-validating before moving to the next artifact.
+- [x] 3.6 Specify per-artifact validation with `openspec validate <id> --strict --no-interactive`, repairing and re-validating before moving to the next artifact.
 <!-- covers: dod-guard/opsx-continue :: The change is validated after each artifact :: Validation fails after an artifact is written -->
+<!-- status: completed -->
 - [ ] 3.7 Confirm the new SKILL.md passes `node scripts/ci/check-skill-hygiene.mjs`, which runs `no-authoring-copy`, `no-legacy-fallback`, and `no-step-session` against every skill.
 
 ## 4. Rewire references and register the skill

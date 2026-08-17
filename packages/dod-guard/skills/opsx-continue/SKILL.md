@@ -176,8 +176,36 @@ fully expanded, and point the user at `/opsx:apply` to start implementation
 
 ## 7. Validate after each artifact
 
-(The validate-and-repair loop after each artifact write is specified in a
-later step of this skill's own build.)
+After writing (or invoking a delegated skill or command to write) any
+artifact - a full artifact in section 4, or a wave in section 5 or 6 - run:
+
+```bash
+openspec validate "<name>" --strict --no-interactive
+```
+
+`--strict` and `--no-interactive` are both required, not optional.
+`--no-interactive` matters because this skill runs unattended inside a
+longer workflow; a prompt would hang it with nothing able to answer it.
+
+Validate right after that write, before moving to the next artifact or the
+next wave. An error found immediately names the artifact that caused it;
+the same error found three artifacts later leaves the cause ambiguous
+among everything written since.
+
+If validate reports an error, repair the artifact just written and
+re-validate. Repeat until it passes before continuing. The repair loop
+targets only that artifact. If the error text points at an artifact from
+an earlier write in this run or a prior run, that is a revision, and this
+skill does not revise an artifact that already exists (this document's
+opening paragraph, section 8's guardrails). Stop, report the error and which
+earlier artifact it implicates, and point the user at `/opsx-update`
+instead of touching it.
+
+If repair does not converge - the same error persists after a repair
+attempt, or a fix introduces a new one with no end in sight - stop after a
+reasonable number of attempts. Report the error text, what was tried, and
+leave the artifact on disk as it stands rather than deleting it. Do not
+mark the run as done and do not silently move on to the next artifact.
 
 ## 8. Point to the next step (guidance only - NEVER act on it)
 
@@ -196,7 +224,8 @@ After each invocation, show:
 - Which artifacts were created, and which were already present or
   skipped
 - Which `tasks.md` group(s), if any, were expanded this run
-- The result of `openspec validate`
+- The result of `openspec validate` after the last write, and any repairs
+  it took to get there
 - Where the change stands and the recommended next command
 
 **Guardrails**
