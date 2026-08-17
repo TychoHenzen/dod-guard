@@ -59,6 +59,29 @@ test("enumerateChangeScenarios reads one change's deltas, not the main tree", as
   assert.equal(scenarios[0].id, "dod-guard/coverage-gate::a new requirement||a new scenario");
 });
 
+test("enumerateAllScenarios handles nested capability paths", async () => {
+  const nestedSpec = path.join(cwd, "openspec", "specs", "eval", "generators", "assoc", "spec.md");
+  await fs.mkdir(path.dirname(nestedSpec), { recursive: true });
+  await fs.writeFile(
+    nestedSpec,
+    [
+      "## Requirements",
+      "",
+      "### Requirement: stream shape",
+      "",
+      "#### Scenario: position sequence",
+      "- **WHEN** generating a stream",
+      "- **THEN** positions have no gaps",
+      "",
+    ].join("\n"),
+  );
+  const scenarios = await enumerateAllScenarios(cwd);
+  const nested = scenarios.find((s) => s.group === "eval");
+  assert.ok(nested, "should find the nested spec");
+  assert.equal(nested.capability, "generators/assoc");
+  assert.equal(nested.id, "eval/generators/assoc::stream shape||position sequence");
+});
+
 test("enumerateChangeScenarios returns nothing for a change with no specs directory", async () => {
   const scenarios = await enumerateChangeScenarios(cwd, "no-such-change");
   assert.deepEqual(scenarios, []);

@@ -27,7 +27,7 @@ export interface EnumeratedScenario {
 function capabilityFromPath(specsDir: string, specFile: string): { group: string; capability: string } | null {
   const rel = path.relative(specsDir, specFile).split(path.sep);
   if (rel.length < 3) return null; // expects <group>/<capability>/spec.md
-  return { group: rel[0], capability: rel[1] };
+  return { group: rel[0], capability: rel.slice(1, -1).join("/") };
 }
 
 async function scenariosFromFile(specsDir: string, specFile: string): Promise<EnumeratedScenario[]> {
