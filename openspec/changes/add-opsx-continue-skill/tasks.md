@@ -20,8 +20,9 @@
 - [x] 2.3 Skip the check when `tasks.md` is absent, so ordinary planning before the artifact exists is not blocked.
 <!-- covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A change with no tasks.md is not blocked by this check -->
 <!-- status: completed -->
-- [ ] 2.4 Leave `--all` runs alone: they read no `tasks.md` and never return the plan-incomplete code.
+- [x] 2.4 Leave `--all` runs alone: they read no `tasks.md` and never return the plan-incomplete code.
 <!-- covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: An --all run skips the check -->
+<!-- status: completed -->
 - [ ] 2.5 Confirm a `## Notes` heading and a `### ` subheading are not treated as groups, matching only `## <digits>.`.
 <!-- covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A prose heading is not a group heading -->
 - [ ] 2.6 Run the finished check over every `tasks.md` under `openspec/changes/archive/` and confirm it flags only `2026-08-17-neurodivergent-output-style`, matching the measurement design.md records.

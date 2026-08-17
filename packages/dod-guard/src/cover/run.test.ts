@@ -98,4 +98,19 @@ describe("runCover", () => {
     assert.equal(code, 4);
     assert.match(out(), /plan incomplete - 1 unexpanded group: 2\. Baseline adoption/);
   });
+
+  // covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: An --all run skips the check
+  it("skips the plan-incomplete check on an --all run even when a change id names an unexpanded group", async () => {
+    await writeChangeSpecDelta(cwd, "add-trap");
+    await writeChangeTasks(
+      cwd,
+      "add-trap",
+      ["## 1. Setup", "", "- [ ] 1.1 do something", "", "## 2. Unexpanded", ""].join("\n"),
+    );
+
+    const { io, out } = captureIo();
+    const code = await runCover({ cwd, changeId: "add-trap", all: true, writeBaseline: false }, io);
+    assert.equal(code, 0);
+    assert.doesNotMatch(out(), /plan incomplete/);
+  });
 });
