@@ -66,6 +66,9 @@
 
 ## 5. Gates and baselines
 
-- [ ] 5.1 Run `npm run clean && npm run build && npm test` from the root and confirm green.
-- [ ] 5.2 Rebaseline the quality and coverage baselines for the new and changed source files in this same commit, and confirm no new entry is needed in `untested-sources.txt`.
-- [ ] 5.3 Run `npx @biomejs/biome check packages/*/src/`, `node scripts/ci/check-coverage-gate.mjs`, and `node scripts/ci/check-skill-hygiene.mjs`, and confirm all three pass.
+- [x] 5.1 Run `npm run clean && npm run build && npm test` from the root and confirm green.
+<!-- status: completed -->
+- [x] 5.2 Rebaseline the quality and coverage baselines for the new and changed source files in this same commit, and confirm no new entry is needed in `untested-sources.txt`.
+<!-- status: completed -->
+- [x] 5.3 Run `npx @biomejs/biome check packages/*/src/`, `node scripts/ci/check-coverage-gate.mjs`, and `node scripts/ci/check-skill-hygiene.mjs`, and confirm all three pass.
+<!-- status: completed -->

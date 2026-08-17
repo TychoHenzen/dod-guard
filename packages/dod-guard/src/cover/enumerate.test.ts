@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, test } from "node:test";
-import { writeUnwiredCoverageGateSpec } from "../testing/spec-fixtures.js";
+import { writeChangeSpecDelta, writeUnwiredCoverageGateSpec } from "../testing/spec-fixtures.js";
 import { enumerateAllScenarios, enumerateChangeScenarios } from "./enumerate.js";
 
 let cwd: string;
@@ -12,31 +12,7 @@ before(async () => {
   cwd = await fs.mkdtemp(path.join(os.tmpdir(), "dod-guard-enumerate-"));
 
   await writeUnwiredCoverageGateSpec(cwd);
-
-  const deltaSpec = path.join(
-    cwd,
-    "openspec",
-    "changes",
-    "add-thing",
-    "specs",
-    "dod-guard",
-    "coverage-gate",
-    "spec.md",
-  );
-  await fs.mkdir(path.dirname(deltaSpec), { recursive: true });
-  await fs.writeFile(
-    deltaSpec,
-    [
-      "## ADDED Requirements",
-      "",
-      "### Requirement: a new requirement",
-      "",
-      "#### Scenario: a new scenario",
-      "- **WHEN** something happens",
-      "- **THEN** something else happens",
-      "",
-    ].join("\n"),
-  );
+  await writeChangeSpecDelta(cwd, "add-thing");
 });
 
 after(async () => {

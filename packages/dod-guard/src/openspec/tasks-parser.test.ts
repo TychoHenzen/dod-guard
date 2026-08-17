@@ -87,12 +87,9 @@ test("writeTaskStatus round-trips a status update through parseTasksMarkdown", (
 
 // covers: dod-guard/coverage-gate :: The task parser exposes group headings and their items :: Groups and items are reported together
 test("reports group headings with the items that fall under each one", () => {
-  const content = [
-    "## 1. First group",
-    "- [ ] 1.1 First item",
-    "- [ ] 1.2 Second item",
-    "## 2. Second group",
-  ].join("\n");
+  const content = ["## 1. First group", "- [ ] 1.1 First item", "- [ ] 1.2 Second item", "## 2. Second group"].join(
+    "\n",
+  );
   const groups = parseTaskGroups(content);
   assert.equal(groups.length, 2);
   assert.equal(groups[0].id, "1");
@@ -104,11 +101,7 @@ test("reports group headings with the items that fall under each one", () => {
 
 // covers: dod-guard/coverage-gate :: The task parser exposes group headings and their items :: Items above the first group heading still parse
 test("reports an item above the first group heading as a task with no group", () => {
-  const content = [
-    "- [ ] 0.1 Ungrouped item",
-    "## 1. First group",
-    "- [ ] 1.1 Grouped item",
-  ].join("\n");
+  const content = ["- [ ] 0.1 Ungrouped item", "## 1. First group", "- [ ] 1.1 Grouped item"].join("\n");
   const items = parseTasksMarkdown(content);
   assert.equal(items.length, 2);
   assert.equal(items[0].id, "0.1");

@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "default",
-  "createdAt": "2026-08-17T09:08:38.171Z",
-  "total": 848,
+  "createdAt": "2026-08-17T14:32:44.442Z",
+  "total": 853,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -292,6 +292,7 @@
   ],
   "counts": {
     "packages/dod-guard/skills/blind-rewrite/scripts/lib/contract-file.mjs::dead-export": 1,
+    "packages/dod-guard/src/openspec/tasks-parser.ts::dead-export": 1,
     "packages/dod-guard/src/shell.ts::dead-export": 1,
     "packages/evomcp/src/agent.ts::dead-export": 4,
     "packages/evomcp/src/budget.ts::dead-export": 3,
@@ -445,6 +446,7 @@
     "packages/dod-guard/skills/doc-reconcile/scripts/lib/line-history.mjs::test-only-export": 2,
     "packages/dod-guard/src/cover/markers.ts::test-only-export": 1,
     "packages/dod-guard/src/openspec/fetch-instructions.ts::test-only-export": 2,
+    "packages/dod-guard/src/openspec/tasks-parser.ts::test-only-export": 2,
     "packages/dod-guard/src/shell.ts::test-only-export": 1,
     "packages/evomcp/src/agent.ts::test-only-export": 2,
     "packages/evomcp/src/budget.ts::test-only-export": 6,
@@ -498,7 +500,10 @@
     "packages/dod-guard/src/cli.test.ts::file-length": 1,
     "packages/dod-guard/src/cli.ts::file-length": 1,
     "packages/dod-guard/src/cover/languages.ts::file-length": 1,
+    "packages/dod-guard/src/cover/run.test.ts::file-length": 1,
     "packages/dod-guard/src/openspec/delta-sections.test.ts::file-length": 1,
+    "packages/dod-guard/src/openspec/tasks-parser.test.ts::file-length": 1,
+    "packages/dod-guard/src/openspec/tasks-parser.ts::file-length": 1,
     "packages/evomcp/src/attempt-result.test.ts::file-length": 1,
     "packages/evomcp/src/budget.ts::file-length": 1,
     "packages/evomcp/src/convergence.test.ts::file-length": 1,
@@ -723,7 +728,6 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
-    "packages/dod-guard/src/openspec/tasks-parser.ts::file-length": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1
   }
 }

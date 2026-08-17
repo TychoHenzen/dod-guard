@@ -5,7 +5,7 @@
  */
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import { EXIT_PLAN_INCOMPLETE, type CliIo } from "../cli.js";
+import { type CliIo, EXIT_PLAN_INCOMPLETE } from "../cli.js";
 import { parseTaskGroups } from "../openspec/tasks-parser.js";
 import { compareToBaseline, findOrphans, outcomesFromReport, readBaseline, writeBaseline } from "./baseline.js";
 import { enumerateAllScenarios, enumerateChangeScenarios } from "./enumerate.js";
