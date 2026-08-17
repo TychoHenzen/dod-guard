@@ -27,6 +27,7 @@
     ],
     "rebaseline": true,
     "at": "2026-08-17T13:25:10.992Z",
-    "acknowledged": false
+    "acknowledged": true,
+    "acknowledgement": "Reviewed: tasks-parser.ts grew past the ceiling by adding task-group parsing for the plan-completeness check. Parsing tasks.md is one job and the file still does only that job. The parse/write split is a real seam and is deferred, not denied."
   }
 ]
