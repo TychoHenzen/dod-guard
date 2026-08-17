@@ -39,7 +39,7 @@
     },
     {
       "name": "natural-output-style",
-      "description": "Output style only. Natural makes Claude write plain prose every turn - common words, short sentences, active voice, no filler and no marketing words. Keeps exact technical terms and explains them in plain words on the spot. It mirrors the rules ste-lint checks mechanically, so replies meet the same bar files do. Keeps Claude Code's built-in coding behavior. No MCP server, no skills, no hooks.",
+      "description": "Two output styles. Natural: plain prose, common words, short sentences, active voice, no filler. Neurodivergent: tuned for an AuDHD reader with demand avoidance - choice-first, memoryless, no obligations, interest-first ordering. Both keep Claude Code's built-in coding behavior. No MCP server, no skills, no hooks.",
       "source": "./plugins/natural-output-style",
       "category": "writing"
     }

@@ -1,7 +1,9 @@
 # natural-output-style
 
-One output style, `Natural`. It makes Claude write plain prose every turn:
-common words, short sentences, active voice, and no filler.
+Two output styles, `Natural` and `Neurodivergent`. Natural makes Claude
+write plain prose every turn: common words, short sentences, active voice,
+and no filler. Neurodivergent tunes output for a reader with AuDHD and
+demand avoidance: choice-first framing, no obligations, no body language.
 
 The rule text mirrors what `ste-lint` checks by machine. A reply written
 under this style passes the same bar the checker holds files to. The style
@@ -24,11 +26,29 @@ writes the way it gets measured.
   and word length. A long rare word can fail the score inside a short
   sentence.
 
+## What the Neurodivergent style asks for
+
+Tuned for a reader with AuDHD, PDA-type demand avoidance, absent
+interoception, and no procedural automation. The core rules:
+
+- Never issue demands or imperatives. Show the situation and offer two
+  genuine options (low-effort and high-effort versions of the same task).
+- Lead with what is interesting, not what is important. Interest is the
+  reader's only motivational engine.
+- Each turn is self-contained. No streaks, no chains, no "as we
+  discussed." A missed step breaks nothing.
+- No body or feeling language. The reader cannot feel internal states.
+  Use concrete, external, observable criteria.
+- No social suggestions. No "ask a teammate" or "pair on this."
+- Time estimates are information for choosing, not deadlines or pressure.
+- Matter-of-fact tone. Errors are information. Recovery is cheap.
+
 ## What ships
 
 | Path | Role |
 |------|------|
-| `output-styles/natural.md` | The style itself |
+| `output-styles/natural.md` | The Natural style |
+| `output-styles/neurodivergent.md` | The Neurodivergent style |
 | `.claude-plugin/plugin.json` | Plugin manifest |
 
 No MCP server, no skills, no agents, no hooks. That is why this plugin sits
