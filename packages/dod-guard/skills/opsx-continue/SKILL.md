@@ -70,9 +70,15 @@ dependency artifacts it names, from disk, before writing. If the
 invoke that instead of writing the file directly.
 
 An artifact with status `skipped` is satisfied as-is; create nothing for
-it. (Full handling of the skipped case, and of the fully-planned change
-that needs no artifacts at all, is specified in a later step of this
-skill's own build.)
+it, and never treat it as blocking a downstream artifact that requires
+it - the schema already resolved that. Name it as skipped in the run's
+report (see section 8's **Output**).
+
+If every artifact the schema defines is already `done` or `skipped`
+when this skill starts, before doing anything else: create nothing,
+write nothing, and report that the change is already fully planned.
+That is not an error - point the user at `/opsx-update` for revisions
+instead (see section 8).
 
 ## 5. Plan `tasks.md` in waves
 
