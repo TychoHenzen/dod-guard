@@ -1,0 +1,69 @@
+{
+  "source": "packages/dod-guard/src/testing/spec-fixtures.ts",
+  "date": "2026-08-18T07:21:30.996Z",
+  "summary": {
+    "total": 43,
+    "killed": 11,
+    "survived": 7,
+    "timeout": 0,
+    "unviable": 25
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/testing/spec-fixtures.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 9,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/testing/spec-fixtures.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 10,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/testing/spec-fixtures.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 12,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/testing/spec-fixtures.js",
+      "id": "14",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 14,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/testing/spec-fixtures.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/testing/spec-fixtures.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 16,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/testing/spec-fixtures.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 17,
+      "dist_col": 12
+    }
+  ]
+}

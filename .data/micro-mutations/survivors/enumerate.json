@@ -1,0 +1,29 @@
+{
+  "source": "packages/dod-guard/src/cover/enumerate.ts",
+  "date": "2026-08-18T07:21:27.477Z",
+  "summary": {
+    "total": 29,
+    "killed": 26,
+    "survived": 2,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/enumerate.js",
+      "id": "2",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 18,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/enumerate.js",
+      "id": "12",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 24,
+      "dist_col": 9
+    }
+  ]
+}

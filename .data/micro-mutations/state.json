@@ -266,9 +266,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 88,
+      "lines": 95,
       "error_count": 0,
-      "recent_commits": 11,
+      "recent_commits": 12,
       "fingerprint": "e88146881c71807cd553df056bbc38a4e9df11e04b16816bd159882b56d74104",
       "dirty": true
     },
@@ -529,13 +529,21 @@
       "dirty": true
     },
     "packages/evomcp/src/solve-attempt.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-18",
+      "last_result": {
+        "total": 48,
+        "caught": 43,
+        "missed": 3,
+        "timeout": 0,
+        "unviable": 2,
+        "status": "ok",
+        "error": null
+      },
       "lines": 72,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "5f71f845ae19126b48ba93b1d5f886c72bf88b3f7da35bd45a74d420d345980b",
+      "dirty": false
     },
     "packages/evomcp/src/solve-context.ts": {
       "last_tested": null,
@@ -940,13 +948,21 @@
       "dirty": false
     },
     "packages/dod-guard/src/cover/enumerate.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-18",
+      "last_result": {
+        "total": 29,
+        "caught": 26,
+        "missed": 2,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      },
       "lines": 63,
       "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "recent_commits": 2,
+      "fingerprint": "c4058eea6f3173f26ae67757abe33367768fd5ceca0821a1bd22526c1cd6b9b0",
+      "dirty": false
     },
     "packages/dod-guard/src/cover/markers.ts": {
       "last_tested": "2026-08-16",
@@ -1010,9 +1026,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 66,
+      "lines": 83,
       "error_count": 0,
-      "recent_commits": 5,
+      "recent_commits": 7,
       "fingerprint": "8e64da760279be60fc52d1c3c84f34f4a773f5927a2a8084b5ffa731d0e76afa",
       "dirty": true
     },
@@ -1036,11 +1052,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 98,
+      "lines": 120,
       "error_count": 0,
-      "recent_commits": 2,
+      "recent_commits": 4,
       "fingerprint": "4470eeefb7684fc43c9c9bdbbeaf0d4c3c05af739eb95e8d2f859cb1d90a753e",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/shell.ts": {
       "last_tested": "2026-08-17",
@@ -1069,13 +1085,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/testing/spec-fixtures.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 21,
+      "last_tested": "2026-08-18",
+      "last_result": {
+        "total": 43,
+        "caught": 11,
+        "missed": 7,
+        "timeout": 0,
+        "unviable": 25,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 46,
       "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "recent_commits": 2,
+      "fingerprint": "dc7a5f070494a142fd8fc5b1058f607a47ad580316a536d50634ecd1c79428f3",
+      "dirty": false
     },
     "packages/dod-guard/src/cover/languages.ts": {
       "last_tested": "2026-08-16",
@@ -1105,58 +1129,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 19518,
-    "caught": 7928,
-    "missed": 6792,
+    "total_mutants": 19638,
+    "caught": 8008,
+    "missed": 6804,
     "timeout": 94,
-    "unviable": 4704,
+    "unviable": 4732,
     "error": 44,
-    "runs": 134,
-    "files_tested": 134
+    "runs": 137,
+    "files_tested": 137
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/tree-utils.ts",
-      "result": {
-        "total": 164,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 164,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/evomcp/src/dedup.ts",
-      "result": {
-        "total": 167,
-        "caught": 77,
-        "missed": 87,
-        "timeout": 3,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/tools/dod-create.ts",
-      "result": {
-        "total": 47,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 47,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "2f117f279d50109efc411771b33d789c9077e92b",
@@ -2511,6 +2493,48 @@
         "missed": 10,
         "timeout": 0,
         "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-18",
+      "commit": "e60602e33d4187e6d688a84fca42e287d58ef029",
+      "file": "packages/dod-guard/src/cover/enumerate.ts",
+      "result": {
+        "total": 29,
+        "caught": 26,
+        "missed": 2,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-18",
+      "commit": "e60602e33d4187e6d688a84fca42e287d58ef029",
+      "file": "packages/dod-guard/src/testing/spec-fixtures.ts",
+      "result": {
+        "total": 43,
+        "caught": 11,
+        "missed": 7,
+        "timeout": 0,
+        "unviable": 25,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-18",
+      "commit": "e60602e33d4187e6d688a84fca42e287d58ef029",
+      "file": "packages/evomcp/src/solve-attempt.ts",
+      "result": {
+        "total": 48,
+        "caught": 43,
+        "missed": 3,
+        "timeout": 0,
+        "unviable": 2,
         "status": "ok",
         "error": null
       }

@@ -1,0 +1,37 @@
+{
+  "source": "packages/evomcp/src/solve-attempt.ts",
+  "date": "2026-08-18T07:21:40.376Z",
+  "summary": {
+    "total": 48,
+    "killed": 43,
+    "survived": 3,
+    "timeout": 0,
+    "unviable": 2
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/solve-attempt.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 18,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/solve-attempt.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 46,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/solve-attempt.js",
+      "id": "28",
+      "mutator": "ArithmeticOperator",
+      "replacement": "plan.index - 1",
+      "dist_line": 46,
+      "dist_col": 32
+    }
+  ]
+}
