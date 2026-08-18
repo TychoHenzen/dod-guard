@@ -30,7 +30,7 @@ binds each `tasks.md` task's `verify_cmd` through `cover` where a
 | Invocation | Behavior |
 |------------|----------|
 | `dod-guard` (no args) | Starts the MCP stdio server (registers no tools - see `index.ts`) |
-| `dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]` | Reports each scenario as `bound` or `unwired` against `.github/quality/coverage-gate-baseline.json`. One of `<change-id>` or `--all` is required; `--write-baseline` needs `--all`. Exits `0` no regressions / `1` a regression / `3` usage error |
+| `dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]` | Reports each scenario as `bound` or `unwired` against `.github/quality/coverage-gate-baseline.json`. One of `<change-id>` or `--all` is required; `--write-baseline` needs `--all`. Exits `0` no regressions / `1` a regression / `3` usage error / `4` an unexpanded task group / `5` a fully expanded plan binding none of the change's scenarios |
 
 See the `USAGE` string in `cli.ts` for the authoritative, always-current command reference.
 
@@ -113,6 +113,7 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `cover/test-globs.ts` | Loads and validates `openspec/test-globs.json` for configurable test-file discovery per group |
 | `cover/enumerate.ts` | Reads scenarios out of `openspec/specs/**/spec.md` (`--all`) or `openspec/changes/<id>/specs/**/spec.md` (change-scoped) |
 | `cover/baseline.ts` | The coverage-gate ratchet: read/write/compare `.github/quality/coverage-gate-baseline.json` |
+| `cover/plan-checks.ts` | The two plan checks a change-scoped run adds on top of coverage: `checkPlanComplete` (a numbered group with no checkbox) and `checkPlanBound` (a finished plan that binds no scenario) |
 | `cover/package-dir.ts` | Maps a spec group to its package/tool directory and test file globs |
 | `openspec/tasks-parser.ts` | Parses `tasks.md` checkbox items and their `<!-- covers: -->` annotations |
 | `openspec/requirements.ts` | Parses `### Requirement:` / `#### Scenario:` blocks out of a spec delta's markdown |

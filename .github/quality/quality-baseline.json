@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-17T14:32:44.442Z",
-  "total": 853,
+  "total": 854,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -88,6 +88,8 @@
     "packages/dod-guard/src/cover/markers.ts",
     "packages/dod-guard/src/cover/package-dir.test.ts",
     "packages/dod-guard/src/cover/package-dir.ts",
+    "packages/dod-guard/src/cover/plan-checks.test.ts",
+    "packages/dod-guard/src/cover/plan-checks.ts",
     "packages/dod-guard/src/cover/report.test.ts",
     "packages/dod-guard/src/cover/report.ts",
     "packages/dod-guard/src/cover/run.test.ts",
@@ -728,6 +730,7 @@
     "packages/obsidian-rag/src/indexer.ts::comment-restates-code": 1,
     "packages/obsidian-rag/src/tools.ts::comment-restates-code": 3,
     "packages/evomcp/src/degenerate.test.ts::todo-marker": 4,
-    "packages/evomcp/src/degenerate.ts::todo-marker": 1
+    "packages/evomcp/src/degenerate.ts::todo-marker": 1,
+    "packages/dod-guard/src/cover/plan-checks.test.ts::file-length": 1
   }
 }
