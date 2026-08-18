@@ -1,3 +1,0 @@
-schema: dod-guard-spec-driven
-created: 2026-08-19
-goal: A coverage regression outranks the plan checks in cover's exit code
