@@ -195,27 +195,22 @@ describe("runCover", () => {
   // covers: dod-guard/coverage-gate :: A coverage regression outranks the plan checks in the exit code :: A regression alongside an unbound plan
   it("returns the regression exit code, naming both the regression and the unnamed scenarios", async (t) => {
     const isolated = await isolatedCwd(t);
-    await writeChangeSpecDelta(isolated, "add-gizmo-regression");
-    await writeChangeTasks(
-      isolated,
-      "add-gizmo-regression",
-      [
-        "## 1. Setup",
-        "",
-        "- [ ] 1.1 do something",
-        "",
-        "## 2. Baseline adoption",
-        "",
-        "- [ ] 2.1 do something else",
-        "",
-      ].join("\n"),
-    );
-
     const scenarioId = "dod-guard/coverage-gate::a new requirement||a new scenario";
+    const tasks = [
+      "## 1. Setup",
+      "",
+      "- [ ] 1.1 do something",
+      "",
+      "## 2. Baseline adoption",
+      "",
+      "- [ ] 2.1 do something else",
+      "",
+    ];
+    await writeChangeSpecDelta(isolated, "add-gizmo-regression");
+    await writeChangeTasks(isolated, "add-gizmo-regression", tasks.join("\n"));
     const baselinePath = path.join(isolated, ".github", "quality", "coverage-gate-baseline.json");
     await fs.mkdir(path.dirname(baselinePath), { recursive: true });
     await fs.writeFile(baselinePath, JSON.stringify({ scenarios: { [scenarioId]: "bound" } }));
-
     const { io, out } = captureIo();
     const code = await runCover(
       { cwd: isolated, changeId: "add-gizmo-regression", all: false, writeBaseline: false },
@@ -225,6 +220,27 @@ describe("runCover", () => {
     assert.match(out(), new RegExp(`${scenarioId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}: bound before, unwired now`));
     assert.match(out(), /plan unbound/);
     assert.doesNotMatch(out(), /plan incomplete/);
+  });
+
+  // covers: dod-guard/coverage-gate :: A coverage regression outranks the plan checks in the exit code :: A regression on its own is unaffected
+  it("returns the regression exit code when neither plan check fires", async (t) => {
+    const isolated = await isolatedCwd(t);
+    const scenarioId = "dod-guard/coverage-gate::a new requirement||a new scenario";
+    await writeChangeSpecDelta(isolated, "add-thermostat");
+    await writeChangeTasks(
+      isolated,
+      "add-thermostat",
+      ["## 1. Setup", "", "- [ ] 1.1 do something", COVERS, ""].join("\n"),
+    );
+    const baselinePath = path.join(isolated, ".github", "quality", "coverage-gate-baseline.json");
+    await fs.mkdir(path.dirname(baselinePath), { recursive: true });
+    await fs.writeFile(baselinePath, JSON.stringify({ scenarios: { [scenarioId]: "bound" } }));
+    const { io, out } = captureIo();
+    const code = await runCover({ cwd: isolated, changeId: "add-thermostat", all: false, writeBaseline: false }, io);
+    assert.equal(code, 1);
+    assert.match(out(), new RegExp(`${scenarioId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}: bound before, unwired now`));
+    assert.doesNotMatch(out(), /plan incomplete/);
+    assert.doesNotMatch(out(), /plan unbound/);
   });
 
   // covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: An --all run skips the check
