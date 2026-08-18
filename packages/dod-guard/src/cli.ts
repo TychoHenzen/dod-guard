@@ -27,6 +27,10 @@ EXIT CODES
   3   usage error
   4   the change's tasks.md has an unexpanded group
   5   the change's plan is fully expanded but names none of its scenarios
+
+  A regression outranks both plan codes: 1 wins over 4 or 5, though both
+  plan checks still run and still write their reports. Between the plan
+  codes, order holds: when nothing regressed, 4 wins over 5.
 `;
 
 type Flags = Record<string, string | boolean>;
