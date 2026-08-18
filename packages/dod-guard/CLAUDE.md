@@ -32,6 +32,8 @@ binds each `tasks.md` task's `verify_cmd` through `cover` where a
 | `dod-guard` (no args) | Starts the MCP stdio server (registers no tools - see `index.ts`) |
 | `dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]` | Reports each scenario as `bound` or `unwired` against `.github/quality/coverage-gate-baseline.json`. One of `<change-id>` or `--all` is required; `--write-baseline` needs `--all`. Exits `0` no regressions / `1` a regression / `3` usage error / `4` an unexpanded task group / `5` a fully expanded plan naming none of the change's scenarios |
 
+A regression outranks both plan codes: when a change-scoped run finds one, it exits `1` even when a plan check would also have fired, though both plan checks still run and still write their reports on that path. Between the plan codes themselves, order holds: when nothing regressed, `4` is reported ahead of `5`.
+
 See the `USAGE` string in `cli.ts` for the authoritative, always-current command reference.
 
 ### Core concepts
