@@ -26,7 +26,7 @@ EXIT CODES
   1   a coverage regression
   3   usage error
   4   the change's tasks.md has an unexpanded group
-  5   the change's plan is fully expanded but binds none of its scenarios
+  5   the change's plan is fully expanded but names none of its scenarios
 `;
 
 type Flags = Record<string, string | boolean>;

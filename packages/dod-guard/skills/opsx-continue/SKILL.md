@@ -141,8 +141,8 @@ scenario carries no annotation - do not invent one to fill the slot.
 
 Before writing the wave, check its items against the change's scenarios as
 a set. When the spec deltas carry at least one scenario and not one item in
-the wave binds to any of them, stop. Report the scenarios, report the items
-drafted, and ask the user before writing anything. A whole wave that binds
+the wave names any of them, stop. Report the scenarios, report the items
+drafted, and ask the user before writing anything. A whole wave that names
 nothing means the items and the specs describe different work, and one of
 the two is wrong.
 

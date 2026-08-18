@@ -41,21 +41,21 @@ document for a later task to write.
 
 Before writing a wave's checkbox items, `/opsx-continue` SHALL check them
 against the change's scenarios. When the change's spec deltas carry at least one
-scenario and no item in the wave binds to any of them, the skill SHALL stop,
+scenario and no item in the wave names any of them, the skill SHALL stop,
 SHALL report the scenario list together with the items it drafted, and SHALL ask
 the user before writing the wave.
 
 This applies to the wave taken as a whole. A single item that maps to no
 scenario SHALL still carry no annotation, and SHALL NOT be given an invented one.
 
-#### Scenario: A wave that binds no scenario
+#### Scenario: A wave that names no scenario
 - **WHEN** the change's deltas carry six scenarios and every item drafted for
-  the wave maps to none of them
+  the wave names none of them
 - **THEN** the skill reports the six scenarios and the drafted items, and asks
   the user rather than writing the wave
 
-#### Scenario: A single unbound item in an otherwise bound wave
-- **WHEN** a wave's items bind to scenarios except one that adds a dependency
+#### Scenario: A single unannotated item in an otherwise annotated wave
+- **WHEN** a wave's items name scenarios except one that adds a dependency
 - **THEN** that item carries no annotation and the wave is written without a
   stop
 
