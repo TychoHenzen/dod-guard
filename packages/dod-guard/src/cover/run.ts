@@ -74,7 +74,9 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
 
   io.write(`\ncover FAILED - ${regressions.length} regression(s)\n\n`);
   for (const r of regressions) io.write(`  ${r.scenarioId}: ${r.before} before, ${r.now} now\n`);
-  return (
-    (await checkPlanComplete(opts, io)) ?? (await checkPlanBound(opts, scenarioIds(reports), io)) ?? EXIT_REGRESSION
-  );
+  // A regression outranks a plan complaint in the exit code: a caller branching on
+  // the code must be told about it. Both checks still run so their reports print.
+  await checkPlanComplete(opts, io);
+  await checkPlanBound(opts, scenarioIds(reports), io);
+  return EXIT_REGRESSION;
 }
