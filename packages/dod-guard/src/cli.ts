@@ -26,6 +26,7 @@ EXIT CODES
   1   a coverage regression
   3   usage error
   4   the change's tasks.md has an unexpanded group
+  5   the change's plan is fully expanded but binds none of its scenarios
 `;
 
 type Flags = Record<string, string | boolean>;
@@ -71,6 +72,9 @@ export const EXIT_USAGE_ERROR = 3;
 
 /** Not 1: a skill branching on the exit code would report an unexpanded plan as a regression. */
 export const EXIT_PLAN_INCOMPLETE = 4;
+
+/** Distinct from 4: the plan is fully expanded, it just implements none of the change's scenarios. */
+export const EXIT_PLAN_UNBOUND = 5;
 
 const COMMANDS: Record<string, Command> = {
   cover: (positional, flags, io) =>

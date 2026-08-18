@@ -3,13 +3,11 @@
  * deltas, or the whole main tree), build the three-outcome report, and either
  * write a fresh ratchet baseline or check the report against the existing one.
  */
-import { promises as fs } from "node:fs";
-import * as path from "node:path";
-import { type CliIo, EXIT_PLAN_INCOMPLETE } from "../cli.js";
-import { parseTaskGroups } from "../openspec/tasks-parser.js";
+import type { CliIo } from "../cli.js";
 import { compareToBaseline, findOrphans, outcomesFromReport, readBaseline, writeBaseline } from "./baseline.js";
 import { enumerateAllScenarios, enumerateChangeScenarios } from "./enumerate.js";
-import { buildReport, summarizeReport } from "./report.js";
+import { checkPlanBound, checkPlanComplete } from "./plan-checks.js";
+import { buildReport, type ScenarioReport, summarizeReport } from "./report.js";
 
 interface CoverOptions {
   cwd: string;
@@ -22,25 +20,8 @@ const EXIT_OK = 0;
 const EXIT_REGRESSION = 1;
 const EXIT_USAGE_ERROR = 3;
 
-/** Numbered group headings in a change's tasks.md with no checkbox item. Missing tasks.md means none. */
-async function findUnexpandedGroups(cwd: string, changeId: string): Promise<string[]> {
-  const tasksPath = path.join(cwd, "openspec", "changes", changeId, "tasks.md");
-  const content = await fs.readFile(tasksPath, "utf-8").catch(() => "");
-  if (!content) return [];
-  return parseTaskGroups(content)
-    .filter((group) => group.items.length === 0)
-    .map((group) => group.title);
-}
-
-/** Plan-incomplete exit code for a change-scoped run with an unexpanded group, else undefined. */
-async function checkPlanComplete(opts: CoverOptions, io: CliIo): Promise<number | undefined> {
-  if (opts.all) return undefined;
-  const unexpanded = await findUnexpandedGroups(opts.cwd, opts.changeId as string);
-  if (unexpanded.length === 0) return undefined;
-  const noun = unexpanded.length === 1 ? "group" : "groups";
-  io.write(`\nplan incomplete - ${unexpanded.length} unexpanded ${noun}: ${unexpanded.join(", ")}\n`);
-  return EXIT_PLAN_INCOMPLETE;
-}
+/** The scenario ids in a report, which is what the plan-unbound check compares against. */
+const scenarioIds = (reports: ScenarioReport[]): string[] => reports.map((report) => report.scenarioId);
 
 export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
   if (!(opts.all || opts.changeId)) {
@@ -88,10 +69,12 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
 
   if (regressions.length === 0) {
     io.write(`\ncover OK - 0 regression(s)\n`);
-    return (await checkPlanComplete(opts, io)) ?? EXIT_OK;
+    return (await checkPlanComplete(opts, io)) ?? (await checkPlanBound(opts, scenarioIds(reports), io)) ?? EXIT_OK;
   }
 
   io.write(`\ncover FAILED - ${regressions.length} regression(s)\n\n`);
   for (const r of regressions) io.write(`  ${r.scenarioId}: ${r.before} before, ${r.now} now\n`);
-  return (await checkPlanComplete(opts, io)) ?? EXIT_REGRESSION;
+  return (
+    (await checkPlanComplete(opts, io)) ?? (await checkPlanBound(opts, scenarioIds(reports), io)) ?? EXIT_REGRESSION
+  );
 }

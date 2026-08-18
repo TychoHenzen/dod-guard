@@ -7,6 +7,9 @@ import { captureIo } from "../testing/capture-io.js";
 import { writeChangeSpecDelta, writeChangeTasks, writeUnwiredCoverageGateSpec } from "../testing/spec-fixtures.js";
 import { runCover } from "./run.js";
 
+/** Names the scenario writeChangeSpecDelta creates, so a finished plan reads as annotated. */
+const COVERS = "<!-- covers: dod-guard/coverage-gate :: a new requirement :: a new scenario -->";
+
 describe("runCover", () => {
   let cwd: string;
 
@@ -67,7 +70,7 @@ describe("runCover", () => {
   // covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: A fully expanded plan passes the check
   it("performs no plan-incomplete report when every group carries a checkbox", async () => {
     await writeChangeSpecDelta(cwd, "add-widget");
-    await writeChangeTasks(cwd, "add-widget", ["## 1. Setup", "", "- [ ] 1.1 do something", ""].join("\n"));
+    await writeChangeTasks(cwd, "add-widget", ["## 1. Setup", "", "- [ ] 1.1 do something", COVERS, ""].join("\n"));
 
     const { io, out } = captureIo();
     const code = await runCover({ cwd, changeId: "add-widget", all: false, writeBaseline: false }, io);
@@ -111,6 +114,7 @@ describe("runCover", () => {
         "## 1. Real group",
         "",
         "- [ ] 1.1 do something",
+        COVERS,
         "",
         "## Notes",
         "",
