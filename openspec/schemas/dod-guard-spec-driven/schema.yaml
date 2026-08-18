@@ -48,6 +48,15 @@ artifacts:
       Do not invent a requirement just to satisfy validation.
 
 
+      A change never delivers a plan - the change is the plan, and this
+
+      proposal is its draft. So never list this change's own planning
+
+      artifacts, or a document restating them, as a deliverable. Describe the
+
+      behavior the change gives the system instead.
+
+
       Keep it concise (1-2 pages). Focus on the "why" not the "how" -
 
       implementation details belong in design.md.
