@@ -11,10 +11,14 @@
 
 ## 2. Move the shipping proof out of files[]
 
-- [ ] 2.1 In `scripts/ci/lib/plugin-checks.mjs`, delete the `files[]` reachability rules and extend the existing git-tracked assertion to also cover each package's `dist/bundle.js` and every hook command target resolved from `plugin.json`. A skill, agent, hook script, or bundle that git does not track must still fail.
-- [ ] 2.2 Add a test fixture pair for the new assertion, one passing and one failing, matching how `check-skill-hygiene.test.mjs` gives every rule both. A rule that cannot fail is the failure mode this repo already guards against.
-- [ ] 2.3 Delete `scripts/ci/check-pack.mjs` and `scripts/ci/detect-releases.mjs`. Grep the repo for both filenames and remove every remaining reference.
-- [ ] 2.4 Run `node scripts/ci/validate-plugins.mjs` locally. It must pass against the tracked bundles from 1.2.
+- [x] 2.1 In `scripts/ci/lib/plugin-checks.mjs`, delete the `files[]` reachability rules and extend the existing git-tracked assertion to also cover each package's `dist/bundle.js` and every hook command target resolved from `plugin.json`. A skill, agent, hook script, or bundle that git does not track must still fail.
+<!-- status: completed -->
+- [x] 2.2 Add a test fixture pair for the new assertion, one passing and one failing, matching how `check-skill-hygiene.test.mjs` gives every rule both. A rule that cannot fail is the failure mode this repo already guards against.
+<!-- status: completed -->
+- [x] 2.3 Delete `scripts/ci/check-pack.mjs` and `scripts/ci/detect-releases.mjs`. Grep the repo for both filenames and remove every remaining reference.
+<!-- status: completed -->
+- [x] 2.4 Run `node scripts/ci/validate-plugins.mjs` locally. It must pass against the tracked bundles from 1.2.
+<!-- status: completed -->
 
 ## 3. Rework CI
 

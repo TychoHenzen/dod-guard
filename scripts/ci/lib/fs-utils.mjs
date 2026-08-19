@@ -28,14 +28,6 @@ export function toPosix(root, file) {
   return relative(root, file).split("\\").join("/");
 }
 
-/** npm `files` semantics: a bare directory entry ships everything under it. */
-export function filesCovers(fileEntries, path) {
-  return fileEntries.some((raw) => {
-    const entry = raw.replace(/\/+$/, "");
-    return path === entry || path.startsWith(`${entry}/`);
-  });
-}
-
 /** Minimal frontmatter reader — top-level scalar keys only, enough for name/description. */
 export function readFrontmatter(file) {
   const lines = readFileSync(file, "utf8").split(/\r?\n/);

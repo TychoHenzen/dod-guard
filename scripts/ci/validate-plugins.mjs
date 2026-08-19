@@ -20,6 +20,7 @@ import {
   checkJsonSyntax,
   checkOrphanPluginContent,
   checkShippedContent,
+  createTrackedPredicate,
 } from "./lib/content-checks.mjs";
 import { listDir } from "./lib/fs-utils.mjs";
 import { createPluginChecks } from "./lib/plugin-checks.mjs";
@@ -48,6 +49,24 @@ function loadPackages() {
     .filter((pkg) => existsSync(join(pkg.dir, "package.json")));
 }
 
+function summarize(packages, standalone, counts) {
+  const skillCount = packages.reduce((n, p) => n + p.skills.length, 0);
+  const agentCount = packages.reduce((n, p) => n + p.agents.length, 0);
+  const pluginCount = packages.length + standalone.length;
+  const { styleCount, jsonCount, contentCount } = counts;
+  return `${pluginCount} plugins, ${skillCount} skills, ${agentCount} agents, ${styleCount} output styles, ${jsonCount} JSON files, ${contentCount} shipped docs`;
+}
+
+function emitResult(scanned) {
+  if (violations.length === 0) {
+    process.stdout.write(`plugin configuration OK — ${scanned}\n`);
+    return 0;
+  }
+  process.stdout.write(`plugin configuration FAILED — ${violations.length} violation(s) across ${scanned}\n\n`);
+  for (const v of violations) process.stdout.write(`  ${v.file}\n    ${v.message}\n`);
+  return 1;
+}
+
 function main() {
   const packages = loadPackages();
   const standalone = loadStandalonePlugins(ROOT);
@@ -56,7 +75,8 @@ function main() {
     return 3;
   }
 
-  const { checkPackage, checkMarketplace } = createPluginChecks(report);
+  const isTracked = createTrackedPredicate(ROOT, report);
+  const { checkPackage, checkMarketplace } = createPluginChecks(report, isTracked);
   for (const pkg of packages) checkPackage(pkg, packages);
   checkMarketplace(join(ROOT, ".claude-plugin", "marketplace.json"), packages, true);
 
@@ -64,19 +84,9 @@ function main() {
   const jsonCount = checkJsonSyntax(ROOT, report);
   checkOrphanPluginContent(ROOT, report);
   const contentCount = checkShippedContent(ROOT, report);
-  checkGitTracked(ROOT, [...packages, ...standalone], report);
+  checkGitTracked([...packages, ...standalone], report, isTracked);
 
-  const skillCount = packages.reduce((n, p) => n + p.skills.length, 0);
-  const agentCount = packages.reduce((n, p) => n + p.agents.length, 0);
-  const pluginCount = packages.length + standalone.length;
-  const scanned = `${pluginCount} plugins, ${skillCount} skills, ${agentCount} agents, ${styleCount} output styles, ${jsonCount} JSON files, ${contentCount} shipped docs`;
-  if (violations.length === 0) {
-    process.stdout.write(`plugin configuration OK — ${scanned}\n`);
-    return 0;
-  }
-  process.stdout.write(`plugin configuration FAILED — ${violations.length} violation(s) across ${scanned}\n\n`);
-  for (const v of violations) process.stdout.write(`  ${v.file}\n    ${v.message}\n`);
-  return 1;
+  return emitResult(summarize(packages, standalone, { styleCount, jsonCount, contentCount }));
 }
 
 process.exitCode = main();

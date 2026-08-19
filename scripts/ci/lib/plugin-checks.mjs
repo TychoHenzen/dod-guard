@@ -3,7 +3,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { filesCovers, readFrontmatter, walkStrings } from "./fs-utils.mjs";
+import { readFrontmatter, walkStrings } from "./fs-utils.mjs";
 
 const PLUGIN_ROOT_REF = /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'\s]+)/g;
 // Model names and built-in agents are legal subagent_type values with no agent file.
@@ -22,7 +22,7 @@ function badCodePoint(text) {
   return null;
 }
 
-export function createPluginChecks(report) {
+export function createPluginChecks(report, isTracked) {
   function readJson(file) {
     try {
       return JSON.parse(readFileSync(file, "utf8"));
@@ -64,17 +64,6 @@ export function createPluginChecks(report) {
       report(file, `version must be x.y.z, got ${JSON.stringify(manifest.version)}`);
     const wanted = `packages/${pkg.name}`;
     if (manifest.repository?.directory !== wanted) report(file, `repository.directory must be "${wanted}"`);
-    if (!Array.isArray(manifest.files)) {
-      report(file, "files[] missing — npm would publish the whole package directory");
-      return;
-    }
-    for (const required of ["dist/bundle.js", ".mcp.json", ".claude-plugin/plugin.json"]) {
-      if (!filesCovers(manifest.files, required)) report(file, `files[] does not ship ${required}`);
-    }
-    for (const dir of ["skills", "agents"]) {
-      if (pkg[dir].length > 0 && !filesCovers(manifest.files, `${dir}/x`))
-        report(file, `files[] does not ship ${dir}/ (${pkg[dir].length} present)`);
-    }
   }
 
   function checkMcpConfig(pkg) {
@@ -88,21 +77,25 @@ export function createPluginChecks(report) {
       return report(file, `mcpServers must hold exactly one key named "${pkg.name}", got [${servers.join(", ")}]`);
     }
     const server = config.mcpServers[pkg.name];
-    if (server.command !== "npx") report(file, `command must be "npx", got ${JSON.stringify(server.command)}`);
-    if (server.args?.[0] !== pkg.name)
-      report(file, `args[0] must be "${pkg.name}", got ${JSON.stringify(server.args?.[0])}`);
+    // Literal string, not a template: this is the exact byte sequence every .mcp.json ships.
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: intentionally literal, see comment above
+    const expectedArg = "${CLAUDE_PLUGIN_ROOT}/dist/bundle.js";
+    if (server.command !== "node") report(file, `command must be "node", got ${JSON.stringify(server.command)}`);
+    if (server.args?.[0] !== expectedArg)
+      report(file, `args[0] must be ${JSON.stringify(expectedArg)}, got ${JSON.stringify(server.args?.[0])}`);
   }
 
-  function checkHookTargets(pkg, file, plugin, manifest) {
+  function checkHookTargets(pkg, file, plugin) {
     const commands = [];
     walkStrings(plugin.hooks ?? {}, (text, path) => {
       if (path.endsWith("command")) commands.push(text);
     });
     for (const command of commands) {
       for (const [, rel] of command.matchAll(PLUGIN_ROOT_REF)) {
-        if (!existsSync(join(pkg.dir, rel))) report(file, `hook command targets missing file: ${rel}`);
-        else if (Array.isArray(manifest.files) && !filesCovers(manifest.files, rel)) {
-          report(join(pkg.dir, "package.json"), `files[] does not ship hook target ${rel}`);
+        const target = join(pkg.dir, rel);
+        if (!existsSync(target)) report(file, `hook command targets missing file: ${rel}`);
+        else if (isTracked && !isTracked(target)) {
+          report(file, `hook command targets untracked file: ${rel}`);
         }
       }
     }
@@ -121,7 +114,7 @@ export function createPluginChecks(report) {
     if (plugin.version !== undefined && plugin.version !== manifest.version) {
       report(file, `version "${plugin.version}" disagrees with package.json "${manifest.version}"`);
     }
-    checkHookTargets(pkg, file, plugin, manifest);
+    checkHookTargets(pkg, file, plugin);
   }
 
   function checkSkills(pkg) {
@@ -201,12 +194,24 @@ export function createPluginChecks(report) {
     }
   }
 
+  function checkBundle(pkg) {
+    const bundle = join(pkg.dir, "dist", "bundle.js");
+    if (!existsSync(bundle)) {
+      report(bundle, "dist/bundle.js missing - the plugin has no built server and cannot start");
+      return;
+    }
+    if (isTracked && !isTracked(bundle)) {
+      report(bundle, "dist/bundle.js not tracked by git - /plugin installs from the repo, so this file would not ship");
+    }
+  }
+
   /** Run every per-package check for one plugin. */
   function checkPackage(pkg, packages) {
     const manifest = readJson(join(pkg.dir, "package.json"));
     if (!manifest) return;
     checkEncoding(join(pkg.dir, "package.json"), manifest);
     checkManifest(pkg, manifest);
+    checkBundle(pkg);
     checkMcpConfig(pkg);
     checkPluginJson(pkg, manifest);
     checkSkills(pkg);

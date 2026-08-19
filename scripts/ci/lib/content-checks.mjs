@@ -94,10 +94,11 @@ export function checkShippedContent(root, report) {
 }
 
 /**
- * The marketplace installs plugins by checking out this repo, so an untracked
- * or gitignored skill exists locally and nowhere else.
+ * Builds a predicate that answers "does git track this absolute path" -
+ * shared by checkGitTracked and the plugin-checks bundle/hook-target rules
+ * so `git ls-files` runs once instead of once per caller.
  */
-export function checkGitTracked(root, plugins, report) {
+export function createTrackedPredicate(root, report) {
   let tracked;
   try {
     tracked = new Set(
@@ -105,16 +106,24 @@ export function checkGitTracked(root, plugins, report) {
     );
   } catch (err) {
     report(root, `cannot list git-tracked files: ${err.message}`);
-    return;
+    return null;
   }
+  return (file) => tracked.has(toPosix(root, file));
+}
+
+/**
+ * The marketplace installs plugins by checking out this repo, so an untracked
+ * or gitignored skill exists locally and nowhere else.
+ */
+export function checkGitTracked(plugins, report, isTracked) {
+  if (!isTracked) return;
   for (const pkg of plugins) {
     const shipped = ["skills", "agents", "output-styles", ".claude-plugin"].flatMap((dir) =>
       walkFiles(join(pkg.dir, dir)),
     );
     shipped.push(join(pkg.dir, ".mcp.json"));
     for (const file of shipped.filter((f) => existsSync(f))) {
-      const rel = toPosix(root, file);
-      if (!tracked.has(rel))
+      if (!isTracked(file))
         report(file, "not tracked by git — /plugin installs from the repo, so this file would not ship");
     }
   }

@@ -81,7 +81,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Names, sources, hook targets, skill/agent frontmatter, encoding, files[] coverage.
+      # Every rule gets a passing and a failing fixture, so a check that can
+      # only ever pass gets caught here rather than in a real clone.
+      - name: Plugin configuration rules have failing fixtures
+        run: node --test scripts/ci/validate-plugins.test.mjs
+      # Names, sources, hook targets, skill/agent frontmatter, encoding, git-tracked shipping.
       - name: Plugin configuration is consistent
         run: node scripts/ci/validate-plugins.mjs
       # OpenSpec owns a change's artifacts, dod-guard owns proof, a skill owns
