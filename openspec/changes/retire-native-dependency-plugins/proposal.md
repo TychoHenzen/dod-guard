@@ -18,8 +18,25 @@ Verified on 2026-08-19 by running each cached bundle directly from
 `~/.claude/plugins/cache/`. `dod-guard` and `quality-guard` answer an MCP
 `initialize` from the same location; the other three do not.
 
-The owner's decision is to retire the three rather than keep npm alive to serve
-them. They have been switched off already: `~/.claude/settings.json` sets
+That breakage is the occasion for this change, not its reason. The reason is
+that in roughly six months of deployment the three have been used approximately
+never, and their runtime artifacts say so. Measured 2026-08-19:
+
+| Artifact | Size | Last written |
+|----------|------|--------------|
+| `DeepSeekCustom/.evo/memory.db` | 28 KB | 2026-08-06 |
+| `ClaudeSeeker/.evostudio/memory.db` | 20 KB | 2026-07-20 |
+| `~/.claude/obsidian-rag/obsidian-rag.db` | 12.9 MB | 2026-07-23 |
+| this repo's own `.evo/` | empty, no db | created 2026-07-12 |
+
+The obsidian-rag database is large because something indexed a vault once, then
+never wrote again. The gitevo databases are barely past an empty schema. evomcp
+left no artifact at all. So the honest ordering is: they were not earning their
+place, and the native-dependency break is what forced the question rather than
+what answers it. Had they been in daily use, the right response would have been
+to fix delivery for them, not to delete them.
+
+They are switched off already: `~/.claude/settings.json` sets
 `obsidian-rag@dod-guard`, `evomcp@dod-guard` and `gitevo@dod-guard` to `false`.
 This change removes them from the repository, which is the only disable the
 repository itself supports.

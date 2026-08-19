@@ -55,11 +55,19 @@ pipeline this repo just removed, to serve three plugins their owner has
 switched off. It also leaves two delivery mechanisms to document and two ways
 for a release to be half done.
 
-The cost is real and should be stated plainly: 24,000 lines of source and 56
-test files, most of it well covered. `evomcp` measured 95.29 percent statements
-and `gitevo` 95.5 percent at the last coverage run. This is not dead code being
-swept up. It is working code being retired because its delivery mechanism no
-longer exists and its owner does not use it.
+The volume is large: 24,000 lines of source and 56 test files, with `evomcp` at
+95.29 percent statement coverage and `gitevo` at 95.5 percent. That is worth
+naming, but not as a cost, and an earlier draft of this document had it wrong.
+
+Coverage measures how thoroughly a test suite exercises code. It says nothing
+about whether anyone ran that code in anger. These three carry excellent
+coverage over six months of near-total disuse, so the suites were exercising
+paths no user reached. Deleting them forfeits test quality, not delivered value.
+
+The real cost of deletion is the option to use these later, and that option
+priced itself: six months was long enough to exercise it and nobody did. The
+work is recoverable from git history if that judgment turns out wrong, which is
+the only reason the volume is tolerable at all.
 
 ### `/ratchet` is the hard part, and it gets decided before anything is deleted
 
