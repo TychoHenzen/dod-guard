@@ -4,7 +4,13 @@ import * as path from "node:path";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import type { EnumeratedScenario } from "./enumerate.js";
-import { buildReport, outcomeRank, type ScenarioReport, summarizeReport } from "./report.js";
+import {
+  buildReport,
+  outcomeRank,
+  type CoverageGateResult,
+  type ScenarioReport,
+  summarizeReport,
+} from "./report.js";
 
 const REPO_ROOT = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..", "..", "..");
 const FIXTURE_DIR = path.join(REPO_ROOT, "tools", "openspec-dashboard", "__report_test_fixture__");
@@ -57,6 +63,31 @@ test("buildReport reports a bound scenario as bound", async () => {
   ]);
   assert.equal(report.outcome, "bound");
   assert.match(report.note, /bound to/);
+});
+
+test("CoverageGateResult keeps binding and gate metadata structured", () => {
+  const result: CoverageGateResult = {
+    reports: [
+      {
+        ...report("dod-guard/coverage-gate::req||bound-scenario", "bound"),
+        binding: {
+          testFile: "packages/dod-guard/src/cover/report.test.ts",
+          testName: "a bound test",
+          language: "typescript",
+          verifyCmd: "node --test packages/dod-guard/src/cover/report.test.ts",
+        },
+      },
+    ],
+    adopted: ["dod-guard/coverage-gate::req||bound-scenario"],
+    regressions: [{ scenarioId: "dod-guard/coverage-gate::req||unwired-scenario", before: "bound", now: "unwired" }],
+    improved: ["dod-guard/coverage-gate::req||bound-scenario"],
+    orphaned: ["dod-guard/coverage-gate::req||removed-scenario"],
+    planComplete: 4,
+    planBound: 5,
+  };
+
+  assert.equal(result.reports[0].binding?.verifyCmd, "node --test packages/dod-guard/src/cover/report.test.ts");
+  assert.equal(result.regressions[0].before, "bound");
 });
 
 test("outcomeRank orders bound above unwired", () => {

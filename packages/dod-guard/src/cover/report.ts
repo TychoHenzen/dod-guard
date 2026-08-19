@@ -7,6 +7,16 @@ import { scanMarkers } from "./markers.js";
 
 export type Outcome = "bound" | "unwired";
 
+/** A marker binding discovered for a scenario. A command can be absent when
+ * the file has a supported parser but no resolvable whole-file runner. */
+export interface ScenarioBinding {
+  testFile: string;
+  testName: string;
+  language: string;
+  verifyCmd?: string;
+  unresolvedReason?: string;
+}
+
 export interface ScenarioReport {
   scenarioId: string;
   group: string;
@@ -14,7 +24,25 @@ export interface ScenarioReport {
   requirementTitle: string;
   scenarioTitle: string;
   outcome: Outcome;
+  binding?: ScenarioBinding;
   note: string;
+}
+
+export interface ScenarioRegression {
+  scenarioId: string;
+  before: Outcome;
+  now: Outcome;
+}
+
+/** The result shared by command-line and plugin coverage callers. */
+export interface CoverageGateResult {
+  reports: ScenarioReport[];
+  adopted: string[];
+  regressions: ScenarioRegression[];
+  improved: string[];
+  orphaned: string[];
+  planComplete?: number;
+  planBound?: number;
 }
 
 /** Build the report for one enumeration's worth of scenarios. Scans each
