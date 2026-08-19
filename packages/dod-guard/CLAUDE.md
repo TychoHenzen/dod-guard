@@ -135,7 +135,6 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `ratchet` | Multi-step problem solving with verification gates |
 | `clean-house` | Hunt down duplicate/obsolete implementations |
 | `step-by-step` | Execute multi-step plans one atomic step at a time. Reads and updates `openspec/changes/<id>/tasks.md`, checking off each task as it completes |
-| `cheap-step` | Step-by-step with evomcp cheap-worker fanout |
 | `adversarial-workflow` | 4-phase adversarial choreography (spec review, test audit, implementation review, structural gates) |
 | `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |
 | `blind-rewrite` | Delete an implementation, rebuild it from a contract a fresh agent gets without seeing the original, then gate the result against the deleted code. Shape D covers prose with no test harness: the contract carries claims and their strength, and `overlap-scan.mjs --mode=prose` scores sentences and their order. Code contracts (shapes A, B, C) are written as OpenSpec `### Requirement:` and `#### Scenario:` blocks, so a repo with `openspec/` can seed them from an existing spec and write the leftovers back as a delta under `openspec/changes/<id>/` |

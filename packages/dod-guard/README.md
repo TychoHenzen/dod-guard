@@ -84,13 +84,12 @@ closing gate. `/step-by-step`'s Finishing phase runs it before calling
 
 ## Skills
 
-The plugin ships twelve skills.
+The plugin ships eleven skills.
 
 | Skill | Use it for |
 |---|---|
 | [`/interview`](#interview) | Pinning down requirements before any implementation task |
 | [`/step-by-step`](#step-by-step) | Executing a confirmed multi-step plan one atomic step at a time |
-| [`/cheap-step`](#cheap-step) | The same plan, with implementation offloaded to cheap DeepSeek workers |
 | [`/ratchet`](#ratchet) | Executing an existing OpenSpec change autonomously, one sub-problem per loop iteration |
 | [`/adversarial-workflow`](#adversarial-workflow) | Driving one change through four rounds of hostile review, gated GO/REVISE/STOP |
 | [`/clean-house`](#clean-house) | Hunting duplicate and obsolete implementations with git archaeology |
@@ -125,17 +124,6 @@ archive`.
 Triggers: a plan with 5+ steps, a model starting to batch or cut corners, or
 "work through this step by step."
 
-### `/cheap-step`
-
-A delta over `/step-by-step`: everything about splitting the plan, the
-session file, staleness checks, and the closing gate is inherited unchanged.
-The one substitution is where implementation goes - to the evomcp `solve`
-tool (cheap DeepSeek workers) instead of a dispatched host agent. The host
-model still writes the spec, still runs verification, and still decides the
-verdict.
-
-Triggers: a plan with 5+ steps where implementation should run on the cheap
-backend, "cheap step," "offload to deepseek," "delegate the grunt work."
 
 ### `/ratchet`
 
@@ -237,7 +225,7 @@ model," "fix skill for literal models."
 /interview          writes scenarios + test bindings into an OpenSpec change
         |
         v
-implementation       usually via /step-by-step or /cheap-step
+implementation       usually via /step-by-step
         |
         v
 dod-guard cover <id> checks binding, ratcheted against the
@@ -260,10 +248,9 @@ External dependencies, all optional:
 | Skill | Wants | Degrades to |
 |---|---|---|
 | `ratchet` | gitevo, evomcp, obsidian-rag, code-review-graph | Manual branching and no learning persistence |
-| `cheap-step` | evomcp + a configured cheap model | Use `/step-by-step` instead |
 | `clean-house` | code-review-graph (dead-symbol scan), jscpd (duplication) | git archaeology and grep only |
 
-All twelve skills ship inside the plugin. No manual installation.
+All eleven skills ship inside the plugin. No manual installation.
 
 ## Development
 
