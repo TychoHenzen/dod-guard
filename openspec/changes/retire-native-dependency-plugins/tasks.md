@@ -24,7 +24,8 @@
 <!-- status: completed -->
 - [x] 3.4 Remove the three from the hardcoded package lists in `scripts/ci/check-coverage.mjs` (line 29) and `scripts/dev-mode.mjs` (line 11). Grep for other five-element package lists; these two were found by search, not by an exhaustive audit.
 <!-- status: completed -->
-- [ ] 3.5 Run `npm install` at the root so `package-lock.json` drops the three workspaces. `npm ci` refuses a lock file that disagrees with the workspace list, and CI dies at its first step. Commit the updated lock file.
+- [x] 3.5 Run `npm install` at the root so `package-lock.json` drops the three workspaces. `npm ci` refuses a lock file that disagrees with the workspace list, and CI dies at its first step. Commit the updated lock file.
+<!-- status: completed -->
 
 ## 4. Regenerate the baselines
 
