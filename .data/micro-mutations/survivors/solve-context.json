@@ -1,0 +1,101 @@
+{
+  "source": "packages/evomcp/src/solve-context.ts",
+  "date": "2026-08-19T07:21:49.680Z",
+  "summary": {
+    "total": 32,
+    "killed": 21,
+    "survived": 11,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "7",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 26,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 26,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 26,
+      "dist_col": 87
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "12",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 31,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "16",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 43,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "17",
+      "mutator": "BooleanLiteral",
+      "replacement": "attempt.failureSignature",
+      "dist_line": 44,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "18",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 44,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "19",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 44,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "21",
+      "mutator": "MethodExpression",
+      "replacement": "attempt.summary",
+      "dist_line": 48,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "25",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 59,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/evomcp/dist/solve-context.js",
+      "id": "29",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 60,
+      "dist_col": 28
+    }
+  ]
+}

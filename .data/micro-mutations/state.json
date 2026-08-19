@@ -266,9 +266,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 95,
+      "lines": 98,
       "error_count": 0,
-      "recent_commits": 12,
+      "recent_commits": 14,
       "fingerprint": "e88146881c71807cd553df056bbc38a4e9df11e04b16816bd159882b56d74104",
       "dirty": true
     },
@@ -546,13 +546,21 @@
       "dirty": false
     },
     "packages/evomcp/src/solve-context.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-19",
+      "last_result": {
+        "total": 32,
+        "caught": 21,
+        "missed": 11,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 69,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "1c31a188ee491d7e22faf424083f6cbf6c904b7861a62d63c501332f4bc46a48",
+      "dirty": false
     },
     "packages/evomcp/src/solve-files.ts": {
       "last_tested": "2026-08-10",
@@ -766,13 +774,21 @@
       "dirty": true
     },
     "packages/quality-guard/src/scanner.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-19",
+      "last_result": {
+        "total": 56,
+        "caught": 47,
+        "missed": 8,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      },
       "lines": 68,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "7568e31690af68dd9c666cfbd9a9defba32f5fe07beeac8709ece1f3e9759376",
+      "dirty": false
     },
     "packages/quality-guard/src/skips.ts": {
       "last_tested": null,
@@ -1026,9 +1042,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 83,
+      "lines": 67,
       "error_count": 0,
-      "recent_commits": 7,
+      "recent_commits": 8,
       "fingerprint": "8e64da760279be60fc52d1c3c84f34f4a773f5927a2a8084b5ffa731d0e76afa",
       "dirty": true
     },
@@ -1126,61 +1142,36 @@
       "recent_commits": 2,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
+    },
+    "packages/dod-guard/src/cover/plan-checks.ts": {
+      "last_tested": "2026-08-19",
+      "last_result": {
+        "total": 73,
+        "caught": 51,
+        "missed": 21,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 84,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "b3bb8534339e06d2fbd62d3681d6c6514eb377481df1696471358714d4db36f8",
+      "dirty": false
     }
   },
   "cumulative": {
-    "total_mutants": 19638,
-    "caught": 8008,
-    "missed": 6804,
+    "total_mutants": 19799,
+    "caught": 8127,
+    "missed": 6844,
     "timeout": 94,
-    "unviable": 4732,
+    "unviable": 4734,
     "error": 44,
-    "runs": 137,
-    "files_tested": 137
+    "runs": 140,
+    "files_tested": 140
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/format-result.ts",
-      "result": {
-        "total": 191,
-        "caught": 145,
-        "missed": 44,
-        "timeout": 0,
-        "unviable": 2,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/index.ts",
-      "result": {
-        "total": 827,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 827,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/obsidian-rag/src/vault.ts",
-      "result": {
-        "total": 160,
-        "caught": 84,
-        "missed": 65,
-        "timeout": 2,
-        "unviable": 9,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "2f117f279d50109efc411771b33d789c9077e92b",
@@ -2535,6 +2526,48 @@
         "missed": 3,
         "timeout": 0,
         "unviable": 2,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-19",
+      "commit": "faf2391934697f733a52a6f02859a0c004501eeb",
+      "file": "packages/dod-guard/src/cover/plan-checks.ts",
+      "result": {
+        "total": 73,
+        "caught": 51,
+        "missed": 21,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-19",
+      "commit": "faf2391934697f733a52a6f02859a0c004501eeb",
+      "file": "packages/evomcp/src/solve-context.ts",
+      "result": {
+        "total": 32,
+        "caught": 21,
+        "missed": 11,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-19",
+      "commit": "faf2391934697f733a52a6f02859a0c004501eeb",
+      "file": "packages/quality-guard/src/scanner.ts",
+      "result": {
+        "total": 56,
+        "caught": 47,
+        "missed": 8,
+        "timeout": 0,
+        "unviable": 1,
         "status": "ok",
         "error": null
       }

@@ -1,0 +1,77 @@
+{
+  "source": "packages/quality-guard/src/scanner.ts",
+  "date": "2026-08-19T07:21:54.762Z",
+  "summary": {
+    "total": 56,
+    "killed": 47,
+    "survived": 8,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/quality-guard/dist/scanner.js",
+      "id": "1",
+      "mutator": "ArithmeticOperator",
+      "replacement": "32 / 1024",
+      "dist_line": 13,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/quality-guard/dist/scanner.js",
+      "id": "0",
+      "mutator": "ArithmeticOperator",
+      "replacement": "32 * 1024 / 1024",
+      "dist_line": 13,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/quality-guard/dist/scanner.js",
+      "id": "32",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 33,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/scanner.js",
+      "id": "38",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 45,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/quality-guard/dist/scanner.js",
+      "id": "40",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 47,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/quality-guard/dist/scanner.js",
+      "id": "41",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 48,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/quality-guard/dist/scanner.js",
+      "id": "50",
+      "mutator": "MethodExpression",
+      "replacement": "failure.stdout",
+      "dist_line": 57,
+      "dist_col": 51
+    },
+    {
+      "file": "packages/quality-guard/dist/scanner.js",
+      "id": "53",
+      "mutator": "LogicalOperator",
+      "replacement": "failure.status && 1",
+      "dist_line": 58,
+      "dist_col": 32
+    }
+  ]
+}
