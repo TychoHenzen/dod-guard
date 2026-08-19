@@ -1,11 +1,12 @@
 #!/usr/bin/env node
+
 // smoke-bundle-standalone - run every packaged bundle with no repository
 // node_modules available to resolve external dependencies. The package.json
 // copied beside each bundle is expected runtime metadata, not a dependency
 // installation or plugin cache.
 
-import { cp, mkdtemp, mkdir, readFile, readdir, rm, stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -125,7 +126,12 @@ export async function discoverBundles() {
       throw err;
     }
     const manifest = JSON.parse(await readFile(join(packageDir, "package.json"), "utf8"));
-    bundles.push({ name: manifest.name, version: manifest.version, path: bundle, manifest: join(packageDir, "package.json") });
+    bundles.push({
+      name: manifest.name,
+      version: manifest.version,
+      path: bundle,
+      manifest: join(packageDir, "package.json"),
+    });
   }
   return bundles.sort((left, right) => left.name.localeCompare(right.name));
 }
@@ -183,11 +189,11 @@ async function main() {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main()
-  .catch((err) => {
-    process.stderr.write(`standalone bundle smoke error: ${err.message}\n`);
-    process.exitCode = 1;
-  })
-  .then((code) => {
-    if (code !== undefined) process.exitCode = code;
-  });
+    .catch((err) => {
+      process.stderr.write(`standalone bundle smoke error: ${err.message}\n`);
+      process.exitCode = 1;
+    })
+    .then((code) => {
+      if (code !== undefined) process.exitCode = code;
+    });
 }

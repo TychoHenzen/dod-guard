@@ -1,11 +1,4 @@
 {
   "note": "Known high/critical advisories in production dependencies. New ones fail CI.",
-  "known": [
-    {
-      "id": "1138114",
-      "package": "js-yaml",
-      "severity": "high",
-      "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported"
-    }
-  ]
+  "known": []
 }

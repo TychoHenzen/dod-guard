@@ -10,12 +10,9 @@ export function buildUnbundledBundle(root) {
     bundle,
     'import "fixture-dependency-that-is-not-bundled";\n' +
       'process.stdin.setEncoding("utf8");\n' +
-      'process.stdin.resume();\n',
+      "process.stdin.resume();\n",
   );
-  writeFileSync(
-    manifest,
-    JSON.stringify({ name: "fixture-unbundled", version: "1.0.0", type: "module" }),
-  );
+  writeFileSync(manifest, JSON.stringify({ name: "fixture-unbundled", version: "1.0.0", type: "module" }));
   return {
     name: "fixture-unbundled",
     version: "1.0.0",
