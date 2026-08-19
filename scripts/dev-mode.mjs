@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const INSTALLED = join(homedir(), ".claude", "plugins", "installed_plugins.json");
 const MONO_ROOT = resolve(fileURLToPath(import.meta.url), "..", "..");
 const MARKETPLACE = "dod-guard";
-const PLUGINS = ["dod-guard", "evomcp", "gitevo", "obsidian-rag", "quality-guard"];
+const PLUGINS = ["dod-guard", "quality-guard"];
 
 const data = JSON.parse(readFileSync(INSTALLED, "utf-8"));
 let changed = 0;

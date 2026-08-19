@@ -1,7 +1,4 @@
 {
   "packages/dod-guard": ["packages/dod-guard/src/cli.ts", "packages/dod-guard/src/index.ts"],
-  "packages/quality-guard": ["packages/quality-guard/src/index.ts"],
-  "packages/evomcp": ["packages/evomcp/src/index.ts"],
-  "packages/gitevo": ["packages/gitevo/src/index.ts"],
-  "packages/obsidian-rag": ["packages/obsidian-rag/src/cli.ts", "packages/obsidian-rag/src/index.ts"]
+  "packages/quality-guard": ["packages/quality-guard/src/index.ts"]
 }

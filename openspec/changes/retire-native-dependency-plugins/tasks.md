@@ -22,7 +22,8 @@
 <!-- status: completed -->
 - [x] 3.3 Grep every remaining `SKILL.md` and agent file for `evo_`, `memory_recall`, `memory_save`, `solve`, `orchestrate`, `evomcp`, `gitevo` and `obsidian-rag`. Any hit is a skill naming a tool that no longer exists. `validate-plugins.mjs` resolves `subagent_type` references but not tool names in prose, so nothing catches this today. Consider promoting the grep to a `check-skill-hygiene.mjs` rule with a passing and failing fixture, which is where this repo keeps assertions of exactly this shape.
 <!-- status: completed -->
-- [ ] 3.4 Remove the three from the hardcoded package lists in `scripts/ci/check-coverage.mjs` (line 29) and `scripts/dev-mode.mjs` (line 11). Grep for other five-element package lists; these two were found by search, not by an exhaustive audit.
+- [x] 3.4 Remove the three from the hardcoded package lists in `scripts/ci/check-coverage.mjs` (line 29) and `scripts/dev-mode.mjs` (line 11). Grep for other five-element package lists; these two were found by search, not by an exhaustive audit.
+<!-- status: completed -->
 - [ ] 3.5 Run `npm install` at the root so `package-lock.json` drops the three workspaces. `npm ci` refuses a lock file that disagrees with the workspace list, and CI dies at its first step. Commit the updated lock file.
 
 ## 4. Regenerate the baselines

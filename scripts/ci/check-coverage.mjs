@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BASELINE = join(ROOT, ".github", "quality", "coverage-baseline.json");
-const PACKAGES = ["dod-guard", "evomcp", "gitevo", "obsidian-rag", "quality-guard"];
+const PACKAGES = ["dod-guard", "quality-guard"];
 const METRICS = ["statements", "branches", "functions", "lines"];
 
 // Slack in percentage points. dod-guard drives a real server over stdio, and a
