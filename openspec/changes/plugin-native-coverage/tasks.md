@@ -30,8 +30,9 @@
 
 ## 4. Plugin-native interface
 
-- [ ] 4.1 Register a plugin-native coverage operation that accepts the consumer workspace and coverage scope
+- [x] 4.1 Register a plugin-native coverage operation that accepts the consumer workspace and coverage scope
 <!-- covers: dod-guard/coverage-runtime :: The installed plugin exposes the coverage engine :: A consumer invokes coverage after plugin installation -->
+<!-- status: completed -->
 - [ ] 4.2 Resolve installed runtime resources without requiring consumer `PATH` or workspace configuration
 <!-- covers: dod-guard/coverage-runtime :: The installed plugin exposes the coverage engine :: Shell and plugin callers use the same engine -->
 - [ ] 4.3 Serialize structured scenario, verification, ratchet, and plan-check results for Pensieve

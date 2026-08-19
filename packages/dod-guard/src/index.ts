@@ -9,13 +9,41 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 import { isCliInvocation, runCli } from "./cli.js";
+import { runCoverage } from "./cover/run.js";
 
 const _dirname = path.dirname(fileURLToPath(import.meta.url));
 const _pkgPath = path.join(_dirname, "..", "package.json");
 const _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 
-const server = new McpServer({ name: "dod-guard", version: _pkg.version });
+export function createServer(): McpServer {
+  const server = new McpServer({ name: "dod-guard", version: _pkg.version });
+
+  server.registerTool(
+    "cover",
+    {
+      description: "Report OpenSpec scenario coverage for a consumer workspace.",
+      inputSchema: {
+        cwd: z.string().describe("Absolute path to the consumer workspace."),
+        changeId: z.string().optional().describe("OpenSpec change id to scan."),
+        all: z.boolean().optional().default(false).describe("Scan all main OpenSpec specifications."),
+      },
+    },
+    async ({ cwd, changeId, all }) => {
+      const result = await runCoverage({ cwd, changeId, all, writeBaseline: false });
+      const serialized = JSON.stringify(result);
+      return {
+        content: [{ type: "text", text: serialized }],
+        structuredContent: JSON.parse(serialized),
+      };
+    },
+  );
+
+  return server;
+}
+
+const server = createServer();
 
 const _filename = fileURLToPath(import.meta.url);
 
