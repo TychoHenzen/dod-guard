@@ -33,7 +33,8 @@
 <!-- status: completed -->
 - [x] 4.2 Check `.github/quality/skip-log.json` (3 matches) and `prose-skip-log.json` (2 matches) for entries under the deleted paths and clear them.
 <!-- status: completed -->
-- [ ] 4.3 Read the resulting baseline diff and confirm it removes only the deleted packages' rows. A wholesale removal can read as improvement to a ratchet that adopts on unseen and blocks on regression, so the diff is the check, not the exit code.
+- [x] 4.3 Read the resulting baseline diff and confirm it removes only the deleted packages' rows. A wholesale removal can read as improvement to a ratchet that adopts on unseen and blocks on regression, so the diff is the check, not the exit code.
+<!-- status: completed -->
 
 ## 5. Add the gate that would have caught this
 
