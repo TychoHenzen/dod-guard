@@ -118,7 +118,7 @@ jobs:
       # Builds dod-guard itself, because a released binary can't see this
       # checkout's own scenarios and markers - same reason the retired
       # check-trace.mjs did this. Unscoped, this also rebuilds and refreshes
-      # all five tracked dist/bundle.js files, so CI, not a developer's
+      # both tracked dist/bundle.js files, so CI, not a developer's
       # working tree, is what builds what ships.
       - run: npm run bundle
 

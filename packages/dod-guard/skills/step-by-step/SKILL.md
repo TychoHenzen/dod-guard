@@ -42,7 +42,7 @@ change id. No `tasks.md` for that change means no work either: route to
 Check the `<!-- plan_artifacts: ... -->` comment at the top of
 `tasks.md` for staleness. It is stale when `openspec status --json
 --change <id>` artifact statuses differ from that snapshot. Stale
-state means asking the user whether to re-resolve `verify_cmd`s (see
+state means re-resolving `verify_cmd`s before presenting the plan (see
 Startup). Valid state means resuming from the first uncompleted task
 (`- [ ]` with no `blocked`/`skipped` status).
 
@@ -75,6 +75,14 @@ the plan.
   `verify_cmd`, a breakdown of `verify_surface` types, and a count of
   the steps a human must confirm. This is the only planned
   interruption.
+- Treat plan approval as authority to execute every automated step.
+  Do not ask for confirmation after a passing verification. Commit it
+  and continue immediately.
+- Treat "approve for me" as delegated judgment within the confirmed
+  requirement and file scope. Resolve routine implementation choices
+  yourself. Record any choice as an assumption in the final report.
+- Keep each user answer active for the rest of the run. Apply it to
+  matching later decisions without asking again.
 - Pick the right worker for each step (see dispatch table below).
 - Run `verify_cmd` yourself after every worker finishes. A worker's
   self-report informs your judgment. It does not replace the command.
@@ -129,10 +137,13 @@ workers add a fourth:
 - `step-debugger` may return NO-REPRO. Supply the missing detail or
   ask the user.
 
-On AMBIGUOUS: use `AskUserQuestion` in Claude or `request_user_input` in Codex. If neither tool is
-available, end the turn with one concise question. Include the worker's interpretations as options.
-Wait for the answer. Re-dispatch with the
-answer added to Context.
+On AMBIGUOUS, first decide whether every interpretation stays inside the
+confirmed requirement and file scope. If so, choose the smallest reversible
+interpretation. Record it as an assumption. Re-dispatch without asking the
+user. Ask only when the interpretations change observable requirements,
+cross the listed file scope, destroy data, push, or need protected tool
+approval. Include the interpretations as options. Re-dispatch with the
+answer added to Context. Do not ask again about that decision later.
 
 ### The user
 

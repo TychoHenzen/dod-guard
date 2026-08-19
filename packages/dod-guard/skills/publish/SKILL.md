@@ -1,6 +1,6 @@
 ---
 name: publish
-description: Publish or release workflow for the dod-guard monorepo - run every CI gate locally, commit, push to master, watch CI (including its follow-up autofix commit), then tell the user to run /plugin update and /reload-plugins. Every plugin, code-only or npm-backed, needs a plugin.json version bump for its own content changes so the plugin cache re-copies.
+description: Publish or release workflow for the dod-guard monorepo - run every CI gate locally, commit, push to master, watch CI (including its follow-up autofix commit), then tell the user to run /plugin update and /reload-plugins. Every plugin needs a plugin.json version bump for its own content changes so the plugin cache re-copies.
 allowed-tools: [Read, Edit, Write, Glob, Bash(git *), Bash(npm *), Bash(npx *), Bash(gh *), Bash(rtk *), Bash(ls *), Bash(node *)]
 ---
 
@@ -16,9 +16,9 @@ You are a publish workflow guide for the dod-guard monorepo. Follow this procedu
 
 **Nothing publishes to npm.** The marketplace installs straight from a git checkout of this repo, tracked `dist/bundle.js` included. A release is: push to master, wait for CI to go green, then `/plugin update` + `/reload-plugins`.
 
-`static-analysis` rebuilds all five tracked bundles and, if anything drifted, commits and pushes a follow-up `chore: apply Biome autofixes, tightened baselines and rebuilt bundles [skip ci]` commit. That means the commit you pushed is not necessarily the one that ends up on master - always resync after CI finishes (Step 6).
+`static-analysis` rebuilds both tracked bundles and, if anything drifted, commits and pushes a follow-up `chore: apply Biome autofixes, tightened baselines and rebuilt bundles [skip ci]` commit. That means the commit you pushed is not necessarily the one that ends up on master - always resync after CI finishes (Step 6).
 
-**Every plugin's `plugin.json` version is a cache key, not a release trigger.** `/plugin update` copies files into `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`. A content change with no version bump is invisible: the cache already has that version and does not re-copy. Bump the version in `<plugin>/.claude-plugin/plugin.json` (root-level for `plugins/natural-output-style`, `packages/<name>/.claude-plugin/plugin.json` for the five packages) whenever you change any file that plugin ships. This applies equally to all five npm-backed packages now that none of them get a version from npm, and to `plugins/natural-output-style`, which never did.
+**Every plugin's `plugin.json` version is a cache key, not a release trigger.** `/plugin update` copies files into `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`. A content change with no version bump is invisible: the cache already has that version and does not re-copy. Bump the version in `<plugin>/.claude-plugin/plugin.json` (root-level for `plugins/natural-output-style`, or `packages/<name>/.claude-plugin/plugin.json` for the two package plugins) whenever you change any file that plugin ships. This applies to both package plugins and to `plugins/natural-output-style`.
 
 There is no other reason to touch a version number. `validate-plugins.mjs` only checks that `plugin.json`'s version, when present, matches `package.json` - it does not require either to change.
 
@@ -185,5 +185,5 @@ Report final results.
 3. **Always `git fetch` + rebase before starting (Step 0)** - CI pushes autofix, bundle, and baseline commits to master
 4. **Build, test, bundle and the `scripts/ci/` gates must pass before committing** - the full list is in Step 2
 5. **Never invoke `/commit` from this skill** - commit inline in Step 3
-6. **Every plugin needs its own `plugin.json` version bump for its own content changes** - the plugin cache is keyed by version, so an unchanged version means an unchanged cache, npm-backed packages included
+6. **Every plugin needs its own `plugin.json` version bump for its own content changes** - the plugin cache is keyed by version, so an unchanged version means an unchanged cache
 7. **Re-sync after CI (Step 6) before telling the user to update** - `static-analysis` may have pushed a commit after yours
