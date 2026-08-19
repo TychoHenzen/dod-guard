@@ -38,7 +38,7 @@ The skill SHALL dispatch each step to the worker agent that matches its type. Pl
 - **THEN** the skill surfaces the question to the user and re-dispatches with the answer
 
 ### Requirement: verification after every step
-Each step SHALL have a `verify_cmd` that the orchestrator runs after the worker returns. A step passes when its verify_cmd exits 0. The orchestrator verifies independently rather than trusting the worker's claim.
+Each step with a resolved `verify_cmd` SHALL have that command run by the orchestrator after the worker returns. A verified step passes when its `verify_cmd` exits 0. A step without a resolved command is unverified, not manual. The orchestrator verifies independently rather than trusting the worker's claim when a command exists.
 
 #### Scenario: worker claims success but verify_cmd fails
 - **WHEN** the worker reports success but the step's verify_cmd exits non-zero
@@ -99,18 +99,9 @@ After all steps pass, the skill SHALL run the full build and test suite. On a gr
 - **WHEN** the full build and test suite fails after all steps complete
 - **THEN** the skill reports the failure and does not run `dod-guard cover`
 
-### Requirement: manual steps hold for user confirmation
-Steps with `manual_required: true` and an empty `verify_cmd` SHALL remain at `pending` status until the user explicitly confirms them. The skill SHALL present the step description and wait.
+### Requirement: plan approval authorizes unverified steps
+The skill SHALL execute every step after plan approval, including steps with `manual_required: true` or an empty `verify_cmd`. It SHALL record those steps as unverified after the worker returns `DONE`. It SHALL NOT request another permission solely because automated verification is unavailable.
 
-#### Scenario: manual step presented to user
-- **WHEN** the skill reaches a step with `manual_required: true`
-- **THEN** it presents the step description and does not advance until the user confirms
-
-#### Scenario: user confirms manual step
-- **WHEN** the user explicitly confirms a `manual_required` step
-- **THEN** the skill marks it `completed` and advances to the next step
-
-#### Scenario: only the user can skip a step
-- **WHEN** the orchestrator determines a step cannot be verified automatically
-- **THEN** it holds the step at `pending` rather than skipping on the user's behalf
-
+#### Scenario: manual-required step does not request permission
+- **WHEN** a step has `manual_required: true` and no resolved `verify_cmd`
+- **THEN** the skill executes it under the existing plan approval, records the step as unverified, and does not ask the user for another permission

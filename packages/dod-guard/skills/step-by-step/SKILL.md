@@ -58,9 +58,10 @@ the plan.
   gives its bound test's whole-file run command as the task's
   `verify_cmd`, and `verify_surface` of `code` unless the task's own
   `<!-- verify_surface: -->` annotation says otherwise.
-- A task whose scenario is unwired or failed, and any task with no
-  `covers` annotation at all, is `manual_required`. Do not attempt to
-  invent a `verify_cmd` for it.
+- A task whose scenario is unwired or failed has no resolved
+  `verify_cmd`. Do not attempt to invent one.
+- `manual_required: true` records that automated verification is unavailable.
+  It does not request permission or pause execution after plan approval.
 - Cache the resolved `verify_cmd`/`verify_surface`/`manual_required`
   values for the session. Do not write them back into `tasks.md` -
   they live in memory only, resolved fresh at the start of each
@@ -73,7 +74,7 @@ the plan.
 - Present the plan for approval before executing anything. Show: goal
   (from the change's proposal), step count, each title with its
   `verify_cmd`, a breakdown of `verify_surface` types, and a count of
-  the steps a human must confirm. This is the only planned
+  the steps that will be unverified. This is the only planned
   interruption.
 - Treat plan approval as authority to execute every automated step.
   Do not ask for confirmation after a passing verification. Commit it
@@ -86,7 +87,10 @@ the plan.
 - Pick the right worker for each step (see dispatch table below).
 - Run `verify_cmd` yourself after every worker finishes. A worker's
   self-report informs your judgment. It does not replace the command.
-- Hold `manual_required` steps at `pending` until the user confirms.
+- Execute every step after plan approval, including steps marked
+  `manual_required: true` or steps with an empty `verify_cmd`. When the
+  worker returns `DONE`, commit the step and record that it completed without
+  automated verification.
 - Respect the task order `tasks.md` lays out. A step starts only
   after every earlier task in the file is resolved: `completed`, or
   `skipped`/`blocked` with the user told.
@@ -108,7 +112,8 @@ cut them by about 70 percent.
 Task: {step description, verbatim from tasks.md}
 Context: {what earlier steps produced}
 Requirement: {the scenario this step satisfies, its WHEN and THEN lines verbatim}
-Verification: {surface type}. Run exactly: {verify_cmd}
+Verification: {surface type}. Run exactly: {verify_cmd}, or report
+`unverified` when no command is resolved.
 Files:
 - Read before starting: {paths}
 - May modify: {paths}
@@ -260,7 +265,7 @@ Deliver a report containing:
 - Integration check result
 - Cover and archive outcome
 - Reasons for any blocked or skipped steps
-- Visual or gameplay steps still awaiting confirmation
+- Visual or gameplay steps recorded as unverified
 - All changed files
 - All worker Concerns, grouped by step
 - The commits made along the way, one per passed step
