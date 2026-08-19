@@ -15,8 +15,9 @@
 - [x] 2.2 Implement adapters for the currently supported language families and preserve unknown-extension skipping
 <!-- covers: dod-guard/coverage-runtime :: Test-command resolution is language-aware and portable :: An unsupported test file does not create a binding -->
 <!-- status: completed -->
-- [ ] 2.3 Add consumer-workspace runner configuration and explicit unresolved-command errors
+- [x] 2.3 Add consumer-workspace runner configuration and explicit unresolved-command errors
 <!-- covers: dod-guard/coverage-runtime :: Test-command resolution is language-aware and portable :: A language has no resolvable runner -->
+<!-- status: completed -->
 
 ## 3. CLI integration
 

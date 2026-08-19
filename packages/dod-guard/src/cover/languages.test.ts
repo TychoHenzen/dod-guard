@@ -40,6 +40,32 @@ test("Kotlin uses a Kotlin adapter rather than the Java adapter", () => {
   assert.equal(LANG_TABLE.get(".kt")?.language, "kotlin");
 });
 
+test("language adapters append a workspace-relative test file to a configured runner", () => {
+  const adapter = LANG_TABLE.get(".ts");
+  assert.ok(adapter);
+  assert.deepEqual(
+    adapter.resolveWholeFileCommand({
+      workspaceRoot: "/consumer-workspace",
+      testFile: "/consumer-workspace/tests/example.test.ts",
+      projectConfig: { javascript: "node --test" },
+    }),
+    { command: 'node --test "tests/example.test.ts"' },
+  );
+});
+
+test("language adapters report malformed runner commands", () => {
+  const adapter = LANG_TABLE.get(".py");
+  assert.ok(adapter);
+  assert.deepEqual(
+    adapter.resolveWholeFileCommand({
+      workspaceRoot: "/consumer-workspace",
+      testFile: "/consumer-workspace/tests/test_example.py",
+      projectConfig: { python: [] },
+    }),
+    { unresolvedReason: "runner command for python in openspec/test-runners.json must be a non-empty string" },
+  );
+});
+
 // covers: dod-guard/coverage-gate :: A scenario binds to a test through a marker in the test file :: A Python test file carries a covers marker above def test_
 test("Python: # covers: above def test_ binds the scenario", () => {
   const content = [

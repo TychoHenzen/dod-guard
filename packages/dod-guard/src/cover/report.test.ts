@@ -15,6 +15,7 @@ import {
 const REPO_ROOT = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..", "..", "..");
 const FIXTURE_DIR = path.join(REPO_ROOT, "tools", "openspec-dashboard", "__report_test_fixture__");
 const TEST_FILE = path.join(FIXTURE_DIR, "sample.test.js");
+const RUNNER_CONFIG = path.join(FIXTURE_DIR, "openspec", "test-runners.json");
 
 function scenario(overrides: Partial<EnumeratedScenario>): EnumeratedScenario {
   return {
@@ -72,6 +73,31 @@ test("buildReport reports a bound scenario as bound", async () => {
   });
   assert.match(report.note, /no runner command is configured for javascript test files/);
   assert.match(report.note, /bound to/);
+});
+
+test("buildReport resolves a configured language runner from the consumer workspace", async () => {
+  await fs.mkdir(path.dirname(RUNNER_CONFIG), { recursive: true });
+  await fs.writeFile(RUNNER_CONFIG, JSON.stringify({ javascript: "node --test" }));
+  const [report] = await buildReport(FIXTURE_DIR, [
+    scenario({ id: "dod-guard/coverage-gate::req||bound-scenario", scenarioTitle: "bound-scenario" }),
+  ]);
+  assert.equal(report.outcome, "bound");
+  assert.equal(report.binding?.verifyCmd, 'node --test "sample.test.js"');
+  assert.equal(report.binding?.unresolvedReason, undefined);
+  assert.match(report.note, /verify with node --test/);
+  await fs.rm(path.dirname(RUNNER_CONFIG), { recursive: true, force: true });
+});
+
+test("buildReport retains a binding when its runner configuration is malformed", async () => {
+  await fs.mkdir(path.dirname(RUNNER_CONFIG), { recursive: true });
+  await fs.writeFile(RUNNER_CONFIG, "[");
+  const [report] = await buildReport(FIXTURE_DIR, [
+    scenario({ id: "dod-guard/coverage-gate::req||bound-scenario", scenarioTitle: "bound-scenario" }),
+  ]);
+  assert.equal(report.outcome, "bound");
+  assert.equal(report.binding?.verifyCmd, undefined);
+  assert.equal(report.binding?.unresolvedReason, "openspec/test-runners.json contains invalid JSON");
+  await fs.rm(path.dirname(RUNNER_CONFIG), { recursive: true, force: true });
 });
 
 test("CoverageGateResult keeps binding and gate metadata structured", () => {

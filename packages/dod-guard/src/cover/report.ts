@@ -4,6 +4,8 @@
  */
 import type { EnumeratedScenario } from "./enumerate.js";
 import { scanMarkers } from "./markers.js";
+import { LANG_TABLE } from "./languages.js";
+import { loadTestRunnerConfig, type TestRunnerConfigLoadResult } from "./test-runners.js";
 import * as path from "node:path";
 
 export type Outcome = "bound" | "unwired";
@@ -46,28 +48,20 @@ export interface CoverageGateResult {
   planBound?: number;
 }
 
-const LANGUAGE_BY_EXTENSION: ReadonlyMap<string, string> = new Map([
-  [".ts", "typescript"],
-  [".js", "javascript"],
-  [".mjs", "javascript"],
-  [".cjs", "javascript"],
-  [".py", "python"],
-  [".go", "go"],
-  [".rs", "rust"],
-  [".rb", "ruby"],
-  [".java", "java"],
-  [".kt", "kotlin"],
-  [".sh", "shell"],
-  [".bash", "shell"],
-]);
-
-function reportBinding(file: string, testName: string): ScenarioBinding {
-  const language = LANGUAGE_BY_EXTENSION.get(path.extname(file).toLowerCase()) ?? "unknown";
+function reportBinding(file: string, testName: string, workspaceRoot: string, runnerConfig: TestRunnerConfigLoadResult): ScenarioBinding {
+  const adapter = LANG_TABLE.get(path.extname(file).toLowerCase());
+  const language = adapter?.language ?? "unknown";
+  const resolution = adapter?.resolveWholeFileCommand({
+    workspaceRoot,
+    testFile: file,
+    projectConfig: "config" in runnerConfig ? runnerConfig.config : {},
+    ...("unresolvedReason" in runnerConfig ? { configError: runnerConfig.unresolvedReason } : {}),
+  }) ?? { unresolvedReason: `no runner command is configured for ${language} test files` };
   return {
     testFile: file,
     testName,
     language,
-    unresolvedReason: `no runner command is configured for ${language} test files`,
+    ...("command" in resolution ? { verifyCmd: resolution.command } : { unresolvedReason: resolution.unresolvedReason }),
   };
 }
 
@@ -76,6 +70,7 @@ function reportBinding(file: string, testName: string): ScenarioBinding {
 export async function buildReport(cwd: string, scenarios: EnumeratedScenario[]): Promise<ScenarioReport[]> {
   const markersByGroup = new Map<string, Awaited<ReturnType<typeof scanMarkers>>>();
   const reports: ScenarioReport[] = [];
+  const runnerConfig = await loadTestRunnerConfig(cwd);
 
   for (const scenario of scenarios) {
     let markers = markersByGroup.get(scenario.group);
@@ -84,7 +79,7 @@ export async function buildReport(cwd: string, scenarios: EnumeratedScenario[]):
       markersByGroup.set(scenario.group, markers);
     }
     const binding = markers.get(scenario.id);
-    const reportedBinding = binding ? reportBinding(binding.file, binding.testName) : undefined;
+    const reportedBinding = binding ? reportBinding(binding.file, binding.testName, cwd, runnerConfig) : undefined;
     reports.push({
       scenarioId: scenario.id,
       group: scenario.group,
@@ -94,7 +89,7 @@ export async function buildReport(cwd: string, scenarios: EnumeratedScenario[]):
       outcome: binding ? "bound" : "unwired",
       ...(reportedBinding ? { binding: reportedBinding } : {}),
       note: binding
-        ? `bound to ${binding.testName} in ${binding.file}; ${reportedBinding?.unresolvedReason}`
+        ? `bound to ${binding.testName} in ${binding.file}${reportedBinding?.verifyCmd ? `; verify with ${reportedBinding.verifyCmd}` : `; ${reportedBinding?.unresolvedReason}`}`
         : "no test binds this scenario",
     });
   }

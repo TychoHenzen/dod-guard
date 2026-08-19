@@ -1,8 +1,11 @@
+import * as path from "node:path";
+
 /** Inputs a language adapter needs to construct a command from the consumer's workspace. */
 export interface WholeFileCommandContext {
   workspaceRoot: string;
   testFile: string;
   projectConfig: Readonly<Record<string, unknown>>;
+  configError?: string;
 }
 
 /** The command an adapter can construct, or why its registered language has no runnable command. */
@@ -19,8 +22,29 @@ export interface LanguageAdapter {
   resolveWholeFileCommand: (context: WholeFileCommandContext) => WholeFileCommandResolution;
 }
 
-function unresolvedCommand(language: string): LanguageAdapter["resolveWholeFileCommand"] {
-  return () => ({ unresolvedReason: `no runner command is configured for ${language} test files` });
+function quoteCommandArgument(value: string): string {
+  return `"${value.replace(/"/g, '\\"')}"`;
+}
+
+function configuredCommand(language: string): LanguageAdapter["resolveWholeFileCommand"] {
+  return ({ workspaceRoot, testFile, projectConfig, configError }) => {
+    if (configError) return { unresolvedReason: configError };
+
+    const runner = projectConfig[language];
+    if (runner === undefined) {
+      return { unresolvedReason: `no runner command is configured for ${language} test files` };
+    }
+    if (typeof runner !== "string" || runner.trim().length === 0) {
+      return { unresolvedReason: `runner command for ${language} in openspec/test-runners.json must be a non-empty string` };
+    }
+
+    const relativeTestFile = path.relative(workspaceRoot, testFile);
+    if (relativeTestFile.length === 0 || relativeTestFile === ".." || relativeTestFile.startsWith(`..${path.sep}`)) {
+      return { unresolvedReason: `test file is outside the consumer workspace: ${testFile}` };
+    }
+
+    return { command: `${runner.trim()} ${quoteCommandArgument(relativeTestFile.split(path.sep).join("/"))}` };
+  };
 }
 
 const SEP = String.raw`\s*(?:::|\|\|)\s*`;
@@ -98,7 +122,7 @@ const JS_SPEC: LanguageAdapter = {
   markerRe: SLASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:test|it)\(\s*(['"`])((?:\\.|(?!\1).)*)\1/, 2),
   findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:test|it)\(/)),
-  resolveWholeFileCommand: unresolvedCommand("javascript"),
+  resolveWholeFileCommand: configuredCommand("javascript"),
 };
 
 const PY_SPEC: LanguageAdapter = {
@@ -107,7 +131,7 @@ const PY_SPEC: LanguageAdapter = {
   findTestName: simpleFinder(/^\s*(?:async\s+)?def\s+(test_\w+)\s*\(/, 1),
   findTestBody: (lines, from) =>
     extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:async\s+)?def\s+test_\w+\s*\(/)),
-  resolveWholeFileCommand: unresolvedCommand("python"),
+  resolveWholeFileCommand: configuredCommand("python"),
 };
 
 const GO_SPEC: LanguageAdapter = {
@@ -115,7 +139,7 @@ const GO_SPEC: LanguageAdapter = {
   markerRe: SLASH_MARKER,
   findTestName: simpleFinder(/^\s*func\s+(Test\w*)\s*\(/, 1),
   findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*func\s+Test\w*\s*\(/)),
-  resolveWholeFileCommand: unresolvedCommand("go"),
+  resolveWholeFileCommand: configuredCommand("go"),
 };
 
 const RS_SPEC: LanguageAdapter = {
@@ -137,7 +161,7 @@ const RS_SPEC: LanguageAdapter = {
     const fnLine = findDeclLineSimple(lines, attrLine + 1, /^\s*(?:pub\s+)?(?:async\s+)?fn\s+\w+\s*\(/);
     return extractBraceBody(lines, fnLine);
   },
-  resolveWholeFileCommand: unresolvedCommand("rust"),
+  resolveWholeFileCommand: configuredCommand("rust"),
 };
 
 const RB_SPEC: LanguageAdapter = {
@@ -153,7 +177,7 @@ const RB_SPEC: LanguageAdapter = {
   },
   findTestBody: (lines, from) =>
     extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:def\s+test_\w+\s*\(|it\s*[\s(]+)/)),
-  resolveWholeFileCommand: unresolvedCommand("ruby"),
+  resolveWholeFileCommand: configuredCommand("ruby"),
 };
 
 const JAVA_KT_SPEC: LanguageAdapter = {
@@ -189,7 +213,7 @@ const JAVA_KT_SPEC: LanguageAdapter = {
     }
     return null;
   },
-  resolveWholeFileCommand: unresolvedCommand("java"),
+  resolveWholeFileCommand: configuredCommand("java"),
 };
 
 const SH_SPEC: LanguageAdapter = {
@@ -198,13 +222,13 @@ const SH_SPEC: LanguageAdapter = {
   findTestName: simpleFinder(/^\s*(?:function\s+)?(test_\w+)\s*\(\s*\)/, 1),
   findTestBody: (lines, from) =>
     extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:function\s+)?test_\w+\s*\(\s*\)/)),
-  resolveWholeFileCommand: unresolvedCommand("shell"),
+  resolveWholeFileCommand: configuredCommand("shell"),
 };
 
 const KOTLIN_SPEC: LanguageAdapter = {
   ...JAVA_KT_SPEC,
   language: "kotlin",
-  resolveWholeFileCommand: unresolvedCommand("kotlin"),
+  resolveWholeFileCommand: configuredCommand("kotlin"),
 };
 
 export const LANG_TABLE: ReadonlyMap<string, LanguageAdapter> = new Map<string, LanguageAdapter>([
