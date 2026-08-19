@@ -3,18 +3,36 @@ import { test } from "node:test";
 import { LANG_TABLE } from "./languages.js";
 import { markersInFile } from "./markers.js";
 
-test("language adapters declare their language and unresolved whole-file command result", () => {
-  const adapter = LANG_TABLE.get(".py");
-  assert.ok(adapter);
-  assert.equal(adapter.language, "python");
-  assert.deepEqual(
-    adapter.resolveWholeFileCommand({
-      workspaceRoot: "/consumer-workspace",
-      testFile: "/consumer-workspace/tests/test_example.py",
-      projectConfig: {},
-    }),
-    { unresolvedReason: "no runner command is configured for python test files" },
-  );
+test("language adapters cover each supported extension with an unresolved command until runner configuration exists", () => {
+  const expectedLanguages = new Map([
+    [".ts", "javascript"],
+    [".js", "javascript"],
+    [".mjs", "javascript"],
+    [".cjs", "javascript"],
+    [".py", "python"],
+    [".go", "go"],
+    [".rs", "rust"],
+    [".rb", "ruby"],
+    [".java", "java"],
+    [".kt", "kotlin"],
+    [".sh", "shell"],
+    [".bash", "shell"],
+  ]);
+
+  assert.deepEqual(new Map([...LANG_TABLE].map(([extension, adapter]) => [extension, adapter.language])), expectedLanguages);
+
+  for (const [extension, language] of expectedLanguages) {
+    const adapter = LANG_TABLE.get(extension);
+    assert.ok(adapter);
+    assert.deepEqual(
+      adapter.resolveWholeFileCommand({
+        workspaceRoot: "/consumer-workspace",
+        testFile: `/consumer-workspace/tests/test_example${extension}`,
+        projectConfig: {},
+      }),
+      { unresolvedReason: `no runner command is configured for ${language} test files` },
+    );
+  }
 });
 
 test("Kotlin uses a Kotlin adapter rather than the Java adapter", () => {
