@@ -38,7 +38,8 @@
 
 ## 5. Add the gate that would have caught this
 
-- [ ] 5.1 Add a check that copies each package's `dist/bundle.js` to a temporary directory with no `node_modules` ancestor and runs the same MCP initialize handshake `smoke-bundle.mjs` runs. A bundle needing anything it did not bundle must fail. Copying rather than launching in place is deliberate: the property under test is "this file starts with nothing around it", and a CI runner has no plugin cache.
+- [x] 5.1 Add a check that copies each package's `dist/bundle.js` to a temporary directory with no `node_modules` ancestor and runs the same MCP initialize handshake `smoke-bundle.mjs` runs. A bundle needing anything it did not bundle must fail. Copying rather than launching in place is deliberate: the property under test is "this file starts with nothing around it", and a CI runner has no plugin cache.
+<!-- status: completed -->
 - [ ] 5.2 Prove the gate is not vacuous. Build a fixture bundle that imports a package it does not bundle, and confirm the check fails on it and passes on a real one. A gate that cannot fail is the failure mode this repo already guards against, and it is exactly what went wrong here: `smoke-bundle.mjs` runs inside the repo, where `node_modules` resolves upward, so it could never have caught an unbundled dependency.
 - [ ] 5.3 Wire it into the `package-integrity` job in `.github/workflows/ci.yml`, next to `Bundle MCP handshake`. That job has no push permission, so it cannot race `static-analysis`.
 
