@@ -27,7 +27,7 @@ default `dod-guard-spec-driven` schema that is:
   binding each task to a scenario)
 
 `<group>` matches the package the capability belongs to (for example
-`dod-guard`, `quality-guard`, `evomcp`, `gitevo`, `obsidian-rag`), and
+`dod-guard` or `quality-guard`), and
 `<capability>` is the feature name without a package prefix (the group
 directory already provides that). Preserve an existing capability's full
 path and follow the project's established organization for new

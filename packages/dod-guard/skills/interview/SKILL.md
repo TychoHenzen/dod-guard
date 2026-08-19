@@ -221,8 +221,7 @@ as bound. Then name the executor.
 | Shape of the work | Executor |
 |---|---|
 | 5 or more discrete steps | `/dod-guard:step-by-step` |
-| the same, with evomcp fanout per step | `/dod-guard:cheap-step` |
-| interdependent sub-problems, regression risk, unknown unknowns | `/dod-guard:ratchet`, at its Phase B |
+| interdependent sub-problems, regression risk, unknown unknowns | `/dod-guard:step-by-step`, with the risks called out in the handoff |
 | quality or security gates needed at each stage | `/dod-guard:adversarial-workflow`, resuming at its Phase 2 |
 | a small change whose own `tasks.md` covers the work, with no per-step gate needed | `/opsx:apply` |
 

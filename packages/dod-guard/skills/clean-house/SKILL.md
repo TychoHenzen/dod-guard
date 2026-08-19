@@ -314,6 +314,5 @@ when it matches nothing. To prove a name is absent from build or lint
 output instead, run that command and use `output_not_contains`.
 
 Report what you deleted, what you kept and why, what you ported before
-deleting, and every weak pair you left alone. When gitevo is running, save
-one lesson with `evo_learn` and put the whole lesson in its `content`
-argument.
+deleting, and every weak pair you left alone. Include any reusable lesson in
+the final report so a later cleanup can apply it.

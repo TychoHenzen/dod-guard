@@ -32,9 +32,9 @@ sit in write order, so find each through its `phase` field rather than its index
 restart at the lowest phase whose verdict is anything but `GO`. Phase 1 holding
 `REVISE` returns to `/dod-guard:interview` rather than moving to phase 2, and a
 `design.md` with no phase 1 entry gets that spec round run here rather than later.
-`/dod-guard:interview`, `/dod-guard:clean-house`, `/dod-guard:ratchet` and
-`/dod-guard:test-integrity-checker` all feed work in, and the first two hand off at
-phase 2, so accept that as a start.
+`/dod-guard:interview`, `/dod-guard:clean-house`, and
+`/dod-guard:test-integrity-checker` all feed work in. Interview and clean-house
+can hand off at phase 2, so accept that as a start.
 
 ## Round by round
 
@@ -49,13 +49,13 @@ lens. File the gate at `phase: 1` last, so the control result reaches its `summa
 that before auditing starts. Send the test auditor across its three lenses, one dispatch
 each, and file the gate at `phase: 2`.
 
-**Phase 3, implementation.** Delegate the build to `/dod-guard:step-by-step` or
-`/dod-guard:cheap-step`, each of which halts at steps done, tests green and build clean,
-since the judging falls to you. Send the saboteur, the new hire and the spec auditor across
-the diff, run `dod-guard cover <change-id>` over the change's spec deltas, and file the gate
-at `phase: 3`. Any `critical` finding here outlives the run through `memory_save` at
-`type: "project"`, or through `evo_learn` where gitevo runs. Use one of those two rather
-than inventing a project-local rules file.
+**Phase 3, implementation.** Delegate the build to `/dod-guard:step-by-step`, which
+halts at steps done, tests green, and build clean, since the judging falls to you.
+Send the saboteur, the new hire, and the spec auditor across the diff, run
+`dod-guard cover <change-id>` over the change's spec deltas, and file the gate at
+`phase: 3`. If a critical finding should survive this run, record it in the
+change's `design.md` summary and in the final report. Do not create a separate
+project-local rules file.
 
 **Phase 4, structural.** Lift ready proof commands for the project's language from
 `standards/structural-gates.md` in this package, and run each one directly before trusting
@@ -82,7 +82,7 @@ escalate the remainder to the user. File the gate at `phase: 4`.
 | `opus` | `sonnet` | `opus` |
 | `sonnet` | `opus` or `haiku` | `opus` |
 | `haiku` | `sonnet` or `opus` | `opus` |
-| not Claude, such as a `/dod-guard:cheap-step` worker | any Claude model | `opus` |
+| not Claude, such as an external executor | any Claude model | `opus` |
 
 `opus` is both the saboteur's default and its floor, so leave it there rather than trading
 down. Independence spans reviewer models, phase 2 test authorship and the closing report
@@ -151,7 +151,7 @@ the only check there is.
 ## Finishing
 
 After phase 4 closes at `GO`, run `dod-guard cover <change-id>`. It checks each scenario
-in the change's spec deltas against a ratcheted baseline. Exit 0 means every scenario
+in the change's spec deltas against the coverage baseline. Exit 0 means every scenario
 matches or improves on the baseline. Exit 1 means one regressed. Exit 3 means usage
 error. On exit 1 or exit 3, stop here: report the regression and do not archive.
 

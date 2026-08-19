@@ -1,6 +1,6 @@
 ---
 name: opsx-explore
-description: Enter explore mode - a thinking partner for exploring ideas, investigating problems, and clarifying requirements before or during a change. Use when the user wants to think through something before formalizing it. Aware of existing OpenSpec specs, dod-guard's six capability groups, coverage state, and when to hand off to /interview or /opsx:propose.
+description: Enter explore mode - a thinking partner for exploring ideas, investigating problems, and clarifying requirements before or during a change. Use when the user wants to think through something before formalizing it. Aware of existing OpenSpec specs, the package's capability groups, coverage state, and when to hand off to /interview or /opsx:propose.
 ---
 
 # opsx-explore
@@ -54,11 +54,9 @@ capability or creates a new one.
 
 ## Capability group awareness
 
-This repo organizes specs into six groups: `dod-guard` (17 specs),
-`quality-guard` (7), `evomcp` (7), `gitevo` (4), `obsidian-rag` (6), and
-`openspec-dashboard` (3). When the idea would touch specs in two or more of these groups, name the
-affected groups. Raise whether the change should be split along that
-boundary.
+This repo organizes specs into package-level capability groups. When the idea
+would touch specs in two or more groups, name the affected groups. Raise
+whether the change should be split along that boundary.
 
 ## Coverage context
 
