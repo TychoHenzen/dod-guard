@@ -51,7 +51,8 @@
 <!-- status: completed -->
 - [x] 6.2 Update `packages/dod-guard/CLAUDE.md`'s skills table for whatever tasks 1.2 and 2.1 removed.
 <!-- status: completed -->
-- [ ] 6.3 Run `node scripts/ci/validate-plugins.mjs`, `node scripts/ci/check-skill-hygiene.mjs`, `openspec validate --all --strict --no-interactive`, and `npm test` at the root. All four must pass.
+- [x] 6.3 Run `node scripts/ci/validate-plugins.mjs`, `node scripts/ci/check-skill-hygiene.mjs`, `openspec validate --all --strict --no-interactive`, and `npm test` at the root. All four must pass.
+<!-- status: completed -->
 
 ## 7. Retire the npm packages
 
