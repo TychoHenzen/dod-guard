@@ -42,7 +42,8 @@
 
 ## 5. Consumer fixtures and regression tests
 
-- [ ] 5.1 Add a fixture consumer workspace that invokes the installed plugin surface without plugin-repository paths
+- [x] 5.1 Add a fixture consumer workspace that invokes the installed plugin surface without plugin-repository paths
+<!-- status: completed -->
 - [ ] 5.2 Add marker-binding and command-resolution tests for TypeScript, Python, Go, Rust, Ruby, JVM, and shell adapters
 <!-- covers: dod-guard/coverage-gate :: cover reports a scenario's state :: A marker binds a scenario to a test -->
 - [ ] 5.3 Add tests proving shell and plugin-native callers return equivalent coverage results

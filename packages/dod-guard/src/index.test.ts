@@ -3,12 +3,16 @@ import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { build } from "esbuild";
 import { createServer } from "./index.js";
 import { writeChangeSpecDelta, writeChangeTasks, writeUnwiredCoverageGateSpec } from "./testing/spec-fixtures.js";
 
 const COVERS = "<!-- covers: dod-guard/coverage-gate :: a new requirement :: a new scenario -->";
+const PACKAGE_ROOT = path.resolve(fileURLToPath(import.meta.url), "..", "..");
 
 describe("plugin-native cover", () => {
   let cwd: string;
@@ -52,6 +56,61 @@ describe("plugin-native cover", () => {
     });
 
     await Promise.all([client.close(), server.close()]);
+  });
+
+  // covers: dod-guard/coverage-runtime :: The installed plugin exposes the coverage engine :: A consumer invokes coverage after plugin installation
+  it("runs cover from a plugin installed in the consumer workspace", async () => {
+    const consumerWorkspace = await fs.mkdtemp(path.join(os.tmpdir(), "dod-guard-consumer-"));
+    const installedPackage = path.join(consumerWorkspace, "node_modules", "dod-guard");
+    const installedBundle = path.join(installedPackage, "dist", "bundle.js");
+    await fs.mkdir(path.dirname(installedBundle), { recursive: true });
+    await Promise.all([
+      fs.copyFile(path.join(PACKAGE_ROOT, "package.json"), path.join(installedPackage, "package.json")),
+      writeUnwiredCoverageGateSpec(consumerWorkspace),
+      build({
+        entryPoints: [path.join(PACKAGE_ROOT, "src", "index.ts")],
+        bundle: true,
+        platform: "node",
+        target: "node18",
+        format: "esm",
+        outfile: installedBundle,
+      }),
+    ]);
+
+    const client = new Client({ name: "dod-guard-consumer", version: "1.0.0" });
+    const transport = new StdioClientTransport({ command: process.execPath, args: [installedBundle], cwd: consumerWorkspace });
+
+    try {
+      await client.connect(transport);
+      const tools = await client.listTools();
+      assert.ok(tools.tools.some((tool) => tool.name === "cover"));
+      assert.ok(installedBundle.startsWith(consumerWorkspace));
+      assert.ok(!installedBundle.startsWith(PACKAGE_ROOT));
+
+      const result = await client.callTool({ name: "cover", arguments: { cwd: consumerWorkspace, all: true } });
+      assert.equal(result.isError, undefined);
+      assert.deepEqual(result.structuredContent, {
+        reports: [
+          {
+            scenarioId: "dod-guard/coverage-gate::cover reports a scenario's state||unwired",
+            group: "dod-guard",
+            capability: "coverage-gate",
+            requirementTitle: "cover reports a scenario's state",
+            scenarioTitle: "unwired",
+            outcome: "unwired",
+            note: "no test binds this scenario",
+          },
+        ],
+        adopted: ["dod-guard/coverage-gate::cover reports a scenario's state||unwired"],
+        regressions: [],
+        improved: [],
+        orphaned: [],
+      });
+    } finally {
+      await client.close();
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+      await fs.rm(consumerWorkspace, { recursive: true, force: true });
+    }
   });
 
   it("serializes an unwired scenario with ratchet and plan-check results", async () => {
