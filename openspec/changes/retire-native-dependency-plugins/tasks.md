@@ -58,6 +58,9 @@
 
 - [x] 7.1 Push and confirm CI is green before anything leaves the machine. `git-only-plugin-distribution` proved this order matters: its own section 5 was blocked because npm was still the only working path for the three plugins this change deletes.
 <!-- status: completed -->
-- [ ] 7.2 Ask the user to run `npm login`. `npm whoami` returned 401 on this machine on 2026-08-19 and login is interactive.
-- [ ] 7.3 Run `npm deprecate <pkg>@"*" "Moved to the git marketplace at github.com/TychoHenzen/dod-guard - install with /plugin marketplace add, not npm."` for `dod-guard`, `quality-guard`, `evomcp`, `gitevo` and `obsidian-rag`. Verify each with `npm view <pkg> deprecated`. Deprecate, never unpublish: unpublish is one-way, the free window is 72 hours, and the names lock for 24 hours.
-- [ ] 7.4 Tell the user that `~/.claude/settings.json` lines 161 to 163 hold now-dead keys for `obsidian-rag@dod-guard`, `evomcp@dod-guard` and `gitevo@dod-guard`. That file is outside the repo and theirs to clear.
+- [x] 7.2 Ask the user to run `npm login`. `npm whoami` returned 401 on this machine on 2026-08-19 and login is interactive.
+<!-- status: completed -->
+- [x] 7.3 Run `npm deprecate <pkg>@"*" "Moved to the git marketplace at github.com/TychoHenzen/dod-guard - install with /plugin marketplace add, not npm."` for `dod-guard`, `quality-guard`, `evomcp`, `gitevo` and `obsidian-rag`. Verify each with `npm view <pkg> deprecated`. Deprecate, never unpublish: unpublish is one-way, the free window is 72 hours, and the names lock for 24 hours.
+<!-- status: completed -->
+- [x] 7.4 Tell the user that `~/.claude/settings.json` lines 161 to 163 hold now-dead keys for `obsidian-rag@dod-guard`, `evomcp@dod-guard` and `gitevo@dod-guard`. That file is outside the repo and theirs to clear.
+<!-- status: completed -->
