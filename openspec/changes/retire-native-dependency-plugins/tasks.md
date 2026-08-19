@@ -31,7 +31,8 @@
 
 - [x] 4.1 Regenerate every baseline from the reduced tree, in this order and only after task 3 lands: the quality baseline (390 lines name the three), `check-coverage.mjs --write-baseline` (3 lines), `check-coverage-gate.mjs --write-baseline` (357 lines). Do not hand-edit any of them; a half-removed entry adopts a file at the wrong counts.
 <!-- status: completed -->
-- [ ] 4.2 Check `.github/quality/skip-log.json` (3 matches) and `prose-skip-log.json` (2 matches) for entries under the deleted paths and clear them.
+- [x] 4.2 Check `.github/quality/skip-log.json` (3 matches) and `prose-skip-log.json` (2 matches) for entries under the deleted paths and clear them.
+<!-- status: completed -->
 - [ ] 4.3 Read the resulting baseline diff and confirm it removes only the deleted packages' rows. A wholesale removal can read as improvement to a ratchet that adopts on unseen and blocks on regression, so the diff is the check, not the exit code.
 
 ## 5. Add the gate that would have caught this
