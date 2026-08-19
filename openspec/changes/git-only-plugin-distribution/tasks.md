@@ -49,5 +49,17 @@
 ## 5. Retire the npm packages
 
 - [ ] 5.1 Confirm the git path works end to end first: `/plugin update` plus `/reload-plugins`, then check that dod-guard and quality-guard both answer an MCP `tools/list`. Do not proceed past this until they do.
+<!-- status: blocked -->
 - [ ] 5.2 Ask the user to run `npm login`, since `npm whoami` returns 401 on this machine and login is interactive.
+<!-- status: blocked -->
 - [ ] 5.3 Run `npm deprecate <pkg>@"*" "Moved to the git marketplace at github.com/TychoHenzen/dod-guard - install with /plugin marketplace add, not npm."` for `dod-guard`, `quality-guard`, `evomcp`, `gitevo`, and `obsidian-rag`. Verify each with `npm view <pkg> deprecated`.
+<!-- status: blocked -->
+
+<!-- BLOCKER (2026-08-19): better-sqlite3 is a native module, marked external in
+     gitevo, evomcp and obsidian-rag esbuild configs. It cannot be bundled. The
+     plugin checkout has no node_modules, so `node ${CLAUDE_PLUGIN_ROOT}/dist/bundle.js`
+     fails with ERR_MODULE_NOT_FOUND for those three. dod-guard and quality-guard
+     have no native dep and work. Neither proposal.md nor design.md considered
+     native dependencies. smoke-bundle.mjs cannot catch this: it runs inside the
+     repo, where node_modules resolves upward. Section 5 must not proceed - npx is
+     currently the only working path for the three broken plugins. -->
