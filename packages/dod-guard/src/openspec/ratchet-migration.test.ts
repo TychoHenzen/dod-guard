@@ -17,10 +17,10 @@ const FORBIDDEN_TOKENS = [
 ];
 
 const TARGET_FILES = [
-  "packages/dod-guard/skills/ratchet/SKILL.md",
-  "packages/dod-guard/skills/cheap-step/SKILL.md",
-  "packages/evomcp/skills/cascade/SKILL.md",
-  "packages/evomcp/agents/spec-writer.md",
+  "packages/dod-guard/skills/step-by-step/SKILL.md",
+  "packages/dod-guard/skills/opsx-quick/SKILL.md",
+  "packages/dod-guard/skills/opsx-propose/SKILL.md",
+  "packages/dod-guard/skills/test-integrity-checker/SKILL.md",
 ];
 
 // covers: dod-guard/change-scoped-skills :: no skill or agent references the removed DoD-tree tools :: A grep for the removed tools finds nothing
