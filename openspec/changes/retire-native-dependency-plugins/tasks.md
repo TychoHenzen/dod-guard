@@ -1,6 +1,7 @@
 ## 1. Decide what survives before deleting anything
 
-- [ ] 1.1 Decide `/dod-guard:ratchet`'s fate. It names ten `evo_*` tools plus `memory_recall` and `memory_save`, and its documented loop captures branches with gitevo and persists lessons at the end. Either rewrite it to run without checkpointing, or retire it with the packages. Record the decision in this change's design.md before task 3.1 deletes anything. Do not start by editing the file.
+- [x] 1.1 Decide `/dod-guard:ratchet`'s fate. It names ten `evo_*` tools plus `memory_recall` and `memory_save`, and its documented loop captures branches with gitevo and persists lessons at the end. Either rewrite it to run without checkpointing, or retire it with the packages. Record the decision in this change's design.md before task 3.1 deletes anything. Do not start by editing the file.
+<!-- status: completed -->
 - [ ] 1.2 Delete `packages/dod-guard/skills/cheap-step/`. It exists only to route each step's implementation to evomcp's `solve` tool, so it has no meaning without evomcp. Remove its marketplace and description mentions in the same commit, then confirm with `node scripts/ci/validate-plugins.mjs`, which fails on a `/slug` in a description naming a skill that does not ship.
 
 ## 2. Rewrite the skills that name the three packages

@@ -69,18 +69,22 @@ priced itself: six months was long enough to exercise it and nobody did. The
 work is recoverable from git history if that judgment turns out wrong, which is
 the only reason the volume is tolerable at all.
 
-### `/ratchet` is the hard part, and it gets decided before anything is deleted
+### Retire `/ratchet` with the native-dependency packages
 
 `ratchet` names ten `evo_*` tools, `memory_recall` and `memory_save`. Its
 documented loop captures branches with gitevo and persists lessons at the end.
-Strip those and what remains is "run the change autonomously until cover
-passes", which is close to `/dod-guard:step-by-step` with a loop around it.
+Without those dependencies, its remaining behavior would be "run the change
+autonomously until cover passes", which substantially overlaps
+`/dod-guard:step-by-step` while losing ratchet's defining checkpoint and lesson
+persistence. Rewriting it would preserve a second orchestration loop without
+preserving the capability that justified it. The decision is therefore to
+retire `/ratchet` and delete its skill with the evomcp, gitevo and obsidian-rag
+packages.
 
-So `ratchet` gets a decision, not a patch: rewrite it without checkpointing, or
-retire it. Task 1.1 makes that call first, because deleting gitevo before
-deciding leaves a skill referencing tools that do not exist, and
-`validate-plugins.mjs` only catches that for `subagent_type` references, not for
-tool names in prose.
+Task 1.1 records this decision before task 3.1 deletes anything. This ordering
+prevents deleting gitevo while leaving a skill that references tools that no
+longer exist. `validate-plugins.mjs` catches `subagent_type` references but not
+tool names in prose, so the explicit decision and task 2.1 deletion are needed.
 
 `cheap-step` needs no such decision. It exists to route implementation to
 evomcp's `solve`, so it goes with evomcp.
@@ -139,7 +143,8 @@ are written from a tree that no longer contains them.
 
 ## Migration Plan
 
-1. Decide `/ratchet`'s fate and rewrite or retire it. Nothing is deleted yet.
+1. Record the decision to retire `/ratchet` and delete it with the packages.
+   Nothing is deleted yet.
 2. Rewrite the five other dod-guard skills that name the three packages.
 3. Delete the three package directories, their specs, and their marketplace
    entries in one commit, so no window exists where the marketplace names a
