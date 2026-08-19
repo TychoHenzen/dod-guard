@@ -47,8 +47,9 @@
 - [x] 5.2 Add marker-binding and command-resolution tests for TypeScript, Python, Go, Rust, Ruby, JVM, and shell adapters
 <!-- covers: dod-guard/coverage-gate :: cover reports a scenario's state :: A marker binds a scenario to a test -->
 <!-- status: completed -->
-- [ ] 5.3 Add tests proving shell and plugin-native callers return equivalent coverage results
+- [x] 5.3 Add tests proving shell and plugin-native callers return equivalent coverage results
 <!-- covers: dod-guard/coverage-runtime :: Shell and plugin callers use the same engine :: Shell and plugin callers use the same engine -->
+<!-- status: completed -->
 
 ## 6. Verification and documentation
 

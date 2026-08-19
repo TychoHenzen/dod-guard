@@ -8,6 +8,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { build } from "esbuild";
+import { runCoverage } from "./cover/run.js";
 import { createServer } from "./index.js";
 import { writeChangeSpecDelta, writeChangeTasks, writeUnwiredCoverageGateSpec } from "./testing/spec-fixtures.js";
 
@@ -143,5 +144,45 @@ describe("plugin-native cover", () => {
     assert.equal(serialized.planBound, 5);
 
     await Promise.all([client.close(), server.close()]);
+  });
+
+  // covers: dod-guard/coverage-runtime :: The installed plugin exposes the coverage engine :: Shell and plugin callers use the same engine
+  it("returns the same coverage result for shell and plugin callers", async (t) => {
+    const workspace = await fs.mkdtemp(path.join(os.tmpdir(), "dod-guard-cover-equivalence-"));
+    t.after(async () => {
+      await fs.rm(workspace, { recursive: true, force: true });
+    });
+
+    const changeId = "equivalent-coverage";
+    const scenarioId = "dod-guard/coverage-gate::a new requirement||a new scenario";
+    await writeChangeSpecDelta(workspace, changeId);
+    await writeChangeTasks(
+      workspace,
+      changeId,
+      ["## 1. Setup", "", "- [ ] 1.1 do something", "", "## 2. Unexpanded", ""].join("\n"),
+    );
+    const baselinePath = path.join(workspace, ".github", "quality", "coverage-gate-baseline.json");
+    await fs.mkdir(path.dirname(baselinePath), { recursive: true });
+    await fs.writeFile(baselinePath, JSON.stringify({ scenarios: { [scenarioId]: "bound" } }));
+
+    const options = { cwd: workspace, changeId, all: false, writeBaseline: false };
+    const shellResult = await runCoverage(options);
+    const server = createServer();
+    const client = new Client({ name: "dod-guard-equivalence", version: "1.0.0" });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    try {
+      await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+      const pluginResult = await client.callTool({ name: "cover", arguments: { cwd: workspace, changeId } });
+
+      assert.equal(pluginResult.isError, undefined);
+      assert.deepEqual(pluginResult.structuredContent, shellResult);
+      assert.equal(shellResult.reports[0].outcome, "unwired");
+      assert.deepEqual(shellResult.regressions, [{ scenarioId, before: "bound", now: "unwired" }]);
+      assert.equal(shellResult.planComplete, 4);
+      assert.equal(shellResult.planBound, 5);
+    } finally {
+      await Promise.all([client.close(), server.close()]);
+    }
   });
 });
