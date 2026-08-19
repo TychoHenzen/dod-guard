@@ -49,7 +49,8 @@
 
 - [x] 6.1 Update the root `CLAUDE.md`: the five-row package table, the "Monorepo overview" sentence counting five plugins, the spec-group list (six groups, five matching package names), and the "Cross-package concerns" section, which describes evomcp to dod-guard, gitevo to obsidian-rag, and evomcp to gitevo relationships that will not exist.
 <!-- status: completed -->
-- [ ] 6.2 Update `packages/dod-guard/CLAUDE.md`'s skills table for whatever tasks 1.2 and 2.1 removed.
+- [x] 6.2 Update `packages/dod-guard/CLAUDE.md`'s skills table for whatever tasks 1.2 and 2.1 removed.
+<!-- status: completed -->
 - [ ] 6.3 Run `node scripts/ci/validate-plugins.mjs`, `node scripts/ci/check-skill-hygiene.mjs`, `openspec validate --all --strict --no-interactive`, and `npm test` at the root. All four must pass.
 
 ## 7. Retire the npm packages

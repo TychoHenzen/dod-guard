@@ -129,13 +129,11 @@ pattern the root CLAUDE.md's Ratchets table documents for
 
 ## Bundled Skills
 
+The package ships 27 documented skills, one for each `skills/*/SKILL.md` file.
+
 | Skill | Purpose |
 |-------|---------|
-| `interview` | Structured requirements gathering that writes scenarios into an OpenSpec change and marks how each binds to a test |
-| `clean-house` | Hunt down duplicate/obsolete implementations |
-| `step-by-step` | Execute multi-step plans one atomic step at a time. Reads and updates `openspec/changes/<id>/tasks.md`, checking off each task as it completes |
 | `adversarial-workflow` | 4-phase adversarial choreography (spec review, test audit, implementation review, structural gates) |
-| `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |
 | `blind-rewrite` | Delete an implementation, rebuild it from a contract a fresh agent gets without seeing the original, then gate the result against the deleted code. Shape D covers prose with no test harness: the contract carries claims and their strength, and `overlap-scan.mjs --mode=prose` scores sentences and their order. Code contracts (shapes A, B, C) are written as OpenSpec `### Requirement:` and `#### Scenario:` blocks, so a repo with `openspec/` can seed them from an existing spec and write the leftovers back as a delta under `openspec/changes/<id>/` |
 | `tighten` | Autonomous blind-rewrite loop against accidental complexity. One target per invocation, ranked by structural violations times git return-churn, gated on both difference and reduction |
 | `skill-debug` | Debug a skill from the sessions that ran it. `find-runs.mjs` locates every recent run in `~/.claude/projects`, `extract-run.mjs` compacts one into a numbered trace, and the skill aligns that against what the SKILL.md required |
@@ -146,6 +144,22 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `opsx-guide` | Interactive guide to the OpenSpec workflow and the `/opsx:*` skills. Reads the project's real specs and coverage state, routes to the right skill. Never writes code or creates a change |
 | `publish` | Publish or release workflow for the monorepo: run every CI gate locally, commit, push to master, watch CI (including its follow-up autofix commit), then tell the user to run `/plugin update` and `/reload-plugins`. Every plugin, code-only or npm-backed, needs a `plugin.json` version bump for its own content changes so the plugin cache re-copies |
 | `opsx-continue` | Creates a change's missing planning artifacts in the order `openspec status` reports, and plans `tasks.md` in waves - every `## N.` group heading written up front, checkbox items expanded for one group at a time, re-invocable so a later wave is written with what the earlier ones taught. Never edits code and never revises an existing artifact, which is `/opsx-update`'s job |
+| `clean-house` | Hunt down duplicate and obsolete implementations with git archaeology, then delete them once the user approves |
+| `doc-reconcile` | Find documents that contradict each other, date the conflicting claims, and remove the older side when history is decisive |
+| `interview` | Structured requirements gathering that writes scenarios into an OpenSpec change and marks how each binds to a test |
+| `opsx-apply` | Apply an OpenSpec change by routing execution through `step-by-step`, then gate archival on `dod-guard cover` |
+| `opsx-archive` | Archive a completed OpenSpec change after its `dod-guard cover` gate passes |
+| `opsx-dashboard` | Start, stop, open, or report status for the OpenSpec dashboard |
+| `opsx-doctor` | Check OpenSpec project health and translate validation findings into plain language |
+| `opsx-explore` | Explore a change with awareness of existing OpenSpec specs, capability groups, and coverage state |
+| `opsx-init` | Initialize OpenSpec, configure its workflow schema, and register the project with the dashboard |
+| `opsx-propose` | Propose a new OpenSpec change with its proposal, specs, design, and tasks |
+| `opsx-quick` | Create minimal OpenSpec documentation and hand off a lightweight change to `step-by-step` |
+| `opsx-sync` | Sync delta specs from an OpenSpec change into the main specs |
+| `opsx-update` | Revise and revalidate an existing OpenSpec change's planning artifacts |
+| `spec-split` | Split compound requirements into one scenario per uncovered obligation and reassign test bindings |
+| `step-by-step` | Execute multi-step plans one atomic step at a time and update `openspec/changes/<id>/tasks.md` |
+| `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |
 
 ## Lessons
 
