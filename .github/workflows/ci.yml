@@ -247,3 +247,6 @@ jobs:
             node scripts/ci/smoke-bundle.mjs "$pkg" || FAILED="$FAILED $pkg"
           done
           [ -z "$FAILED" ] || { echo "BUNDLE SMOKE FAILED for:$FAILED"; exit 1; }
+
+      - name: Standalone bundle smoke
+        run: node scripts/ci/smoke-bundle-standalone.mjs

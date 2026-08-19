@@ -42,7 +42,8 @@
 <!-- status: completed -->
 - [x] 5.2 Prove the gate is not vacuous. Build a fixture bundle that imports a package it does not bundle, and confirm the check fails on it and passes on a real one. A gate that cannot fail is the failure mode this repo already guards against, and it is exactly what went wrong here: `smoke-bundle.mjs` runs inside the repo, where `node_modules` resolves upward, so it could never have caught an unbundled dependency.
 <!-- status: completed -->
-- [ ] 5.3 Wire it into the `package-integrity` job in `.github/workflows/ci.yml`, next to `Bundle MCP handshake`. That job has no push permission, so it cannot race `static-analysis`.
+- [x] 5.3 Wire it into the `package-integrity` job in `.github/workflows/ci.yml`, next to `Bundle MCP handshake`. That job has no push permission, so it cannot race `static-analysis`.
+<!-- status: completed -->
 
 ## 6. Reconcile the documentation
 
