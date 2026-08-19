@@ -9,8 +9,9 @@
 
 ## 2. Language adapters
 
-- [ ] 2.1 Define the language adapter contract for test declarations and whole-file command construction
+- [x] 2.1 Define the language adapter contract for test declarations and whole-file command construction
 <!-- covers: dod-guard/coverage-runtime :: Test-command resolution is language-aware and portable :: A supported language provides a whole-file command -->
+<!-- status: completed -->
 - [ ] 2.2 Implement adapters for the currently supported language families and preserve unknown-extension skipping
 <!-- covers: dod-guard/coverage-runtime :: Test-command resolution is language-aware and portable :: An unsupported test file does not create a binding -->
 - [ ] 2.3 Add consumer-workspace runner configuration and explicit unresolved-command errors

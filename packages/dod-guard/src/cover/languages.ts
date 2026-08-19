@@ -1,7 +1,26 @@
-interface LanguageSpec {
+/** Inputs a language adapter needs to construct a command from the consumer's workspace. */
+export interface WholeFileCommandContext {
+  workspaceRoot: string;
+  testFile: string;
+  projectConfig: Readonly<Record<string, unknown>>;
+}
+
+/** The command an adapter can construct, or why its registered language has no runnable command. */
+export type WholeFileCommandResolution =
+  | { command: string }
+  | { unresolvedReason: string };
+
+/** One language family's test declarations and whole-file command construction. */
+export interface LanguageAdapter {
+  language: string;
   markerRe: RegExp;
   findTestName: (lines: string[], fromLine: number) => string | null;
   findTestBody?: (lines: string[], fromLine: number) => string | null;
+  resolveWholeFileCommand: (context: WholeFileCommandContext) => WholeFileCommandResolution;
+}
+
+function unresolvedCommand(language: string): LanguageAdapter["resolveWholeFileCommand"] {
+  return () => ({ unresolvedReason: `no runner command is configured for ${language} test files` });
 }
 
 const SEP = String.raw`\s*(?:::|\|\|)\s*`;
@@ -15,7 +34,7 @@ function skipBlanks(lines: string[], from: number): number {
   return i;
 }
 
-function simpleFinder(re: RegExp, group: number): LanguageSpec["findTestName"] {
+function simpleFinder(re: RegExp, group: number): LanguageAdapter["findTestName"] {
   return (lines, from) => {
     const next = skipBlanks(lines, from);
     if (next >= lines.length) return null;
@@ -74,26 +93,33 @@ function extractIndentBody(lines: string[], startLine: number | null): string | 
   return lines.slice(startLine, end).join("\n");
 }
 
-const JS_SPEC: LanguageSpec = {
+const JS_SPEC: LanguageAdapter = {
+  language: "javascript",
   markerRe: SLASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:test|it)\(\s*(['"`])((?:\\.|(?!\1).)*)\1/, 2),
   findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:test|it)\(/)),
+  resolveWholeFileCommand: unresolvedCommand("javascript"),
 };
 
-const PY_SPEC: LanguageSpec = {
+const PY_SPEC: LanguageAdapter = {
+  language: "python",
   markerRe: HASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:async\s+)?def\s+(test_\w+)\s*\(/, 1),
   findTestBody: (lines, from) =>
     extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:async\s+)?def\s+test_\w+\s*\(/)),
+  resolveWholeFileCommand: unresolvedCommand("python"),
 };
 
-const GO_SPEC: LanguageSpec = {
+const GO_SPEC: LanguageAdapter = {
+  language: "go",
   markerRe: SLASH_MARKER,
   findTestName: simpleFinder(/^\s*func\s+(Test\w*)\s*\(/, 1),
   findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*func\s+Test\w*\s*\(/)),
+  resolveWholeFileCommand: unresolvedCommand("go"),
 };
 
-const RS_SPEC: LanguageSpec = {
+const RS_SPEC: LanguageAdapter = {
+  language: "rust",
   markerRe: SLASH_MARKER,
   findTestName: (lines, from) => {
     const attrLine = skipBlanks(lines, from);
@@ -111,9 +137,11 @@ const RS_SPEC: LanguageSpec = {
     const fnLine = findDeclLineSimple(lines, attrLine + 1, /^\s*(?:pub\s+)?(?:async\s+)?fn\s+\w+\s*\(/);
     return extractBraceBody(lines, fnLine);
   },
+  resolveWholeFileCommand: unresolvedCommand("rust"),
 };
 
-const RB_SPEC: LanguageSpec = {
+const RB_SPEC: LanguageAdapter = {
+  language: "ruby",
   markerRe: HASH_MARKER,
   findTestName: (lines, from) => {
     const next = skipBlanks(lines, from);
@@ -125,9 +153,11 @@ const RB_SPEC: LanguageSpec = {
   },
   findTestBody: (lines, from) =>
     extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:def\s+test_\w+\s*\(|it\s*[\s(]+)/)),
+  resolveWholeFileCommand: unresolvedCommand("ruby"),
 };
 
-const JAVA_KT_SPEC: LanguageSpec = {
+const JAVA_KT_SPEC: LanguageAdapter = {
+  language: "java",
   markerRe: SLASH_MARKER,
   findTestName: (lines, from) => {
     const next = skipBlanks(lines, from);
@@ -159,16 +189,25 @@ const JAVA_KT_SPEC: LanguageSpec = {
     }
     return null;
   },
+  resolveWholeFileCommand: unresolvedCommand("java"),
 };
 
-const SH_SPEC: LanguageSpec = {
+const SH_SPEC: LanguageAdapter = {
+  language: "shell",
   markerRe: HASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:function\s+)?(test_\w+)\s*\(\s*\)/, 1),
   findTestBody: (lines, from) =>
     extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:function\s+)?test_\w+\s*\(\s*\)/)),
+  resolveWholeFileCommand: unresolvedCommand("shell"),
 };
 
-export const LANG_TABLE: ReadonlyMap<string, LanguageSpec> = new Map<string, LanguageSpec>([
+const KOTLIN_SPEC: LanguageAdapter = {
+  ...JAVA_KT_SPEC,
+  language: "kotlin",
+  resolveWholeFileCommand: unresolvedCommand("kotlin"),
+};
+
+export const LANG_TABLE: ReadonlyMap<string, LanguageAdapter> = new Map<string, LanguageAdapter>([
   [".ts", JS_SPEC],
   [".js", JS_SPEC],
   [".mjs", JS_SPEC],
@@ -178,7 +217,7 @@ export const LANG_TABLE: ReadonlyMap<string, LanguageSpec> = new Map<string, Lan
   [".rs", RS_SPEC],
   [".rb", RB_SPEC],
   [".java", JAVA_KT_SPEC],
-  [".kt", JAVA_KT_SPEC],
+  [".kt", KOTLIN_SPEC],
   [".sh", SH_SPEC],
   [".bash", SH_SPEC],
 ]);

@@ -1,6 +1,26 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { LANG_TABLE } from "./languages.js";
 import { markersInFile } from "./markers.js";
+
+test("language adapters declare their language and unresolved whole-file command result", () => {
+  const adapter = LANG_TABLE.get(".py");
+  assert.ok(adapter);
+  assert.equal(adapter.language, "python");
+  assert.deepEqual(
+    adapter.resolveWholeFileCommand({
+      workspaceRoot: "/consumer-workspace",
+      testFile: "/consumer-workspace/tests/test_example.py",
+      projectConfig: {},
+    }),
+    { unresolvedReason: "no runner command is configured for python test files" },
+  );
+});
+
+test("Kotlin uses a Kotlin adapter rather than the Java adapter", () => {
+  assert.equal(LANG_TABLE.get(".java")?.language, "java");
+  assert.equal(LANG_TABLE.get(".kt")?.language, "kotlin");
+});
 
 // covers: dod-guard/coverage-gate :: A scenario binds to a test through a marker in the test file :: A Python test file carries a covers marker above def test_
 test("Python: # covers: above def test_ binds the scenario", () => {
