@@ -6,7 +6,7 @@ import type { TestContext } from "node:test";
 import { after, before, describe, it } from "node:test";
 import { captureIo } from "../testing/capture-io.js";
 import { writeChangeSpecDelta, writeChangeTasks, writeUnwiredCoverageGateSpec } from "../testing/spec-fixtures.js";
-import { runCover } from "./run.js";
+import { runCover, runCoverage } from "./run.js";
 
 /** Names the scenario writeChangeSpecDelta creates, so a finished plan reads as annotated. */
 const COVERS = "<!-- covers: dod-guard/coverage-gate :: a new requirement :: a new scenario -->";
@@ -241,6 +241,28 @@ describe("runCover", () => {
     assert.match(out(), new RegExp(`${scenarioId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}: bound before, unwired now`));
     assert.doesNotMatch(out(), /plan incomplete/);
     assert.doesNotMatch(out(), /plan unbound/);
+  });
+
+  it("returns the shared structured result for a regression and both plan checks", async (t) => {
+    const isolated = await isolatedCwd(t);
+    const scenarioId = "dod-guard/coverage-gate::a new requirement||a new scenario";
+    await writeChangeSpecDelta(isolated, "structured-result");
+    await writeChangeTasks(
+      isolated,
+      "structured-result",
+      ["## 1. Setup", "", "- [ ] 1.1 do something", "", "## 2. Unexpanded", ""].join("\n"),
+    );
+    const baselinePath = path.join(isolated, ".github", "quality", "coverage-gate-baseline.json");
+    await fs.mkdir(path.dirname(baselinePath), { recursive: true });
+    await fs.writeFile(baselinePath, JSON.stringify({ scenarios: { [scenarioId]: "bound" } }));
+
+    const result = await runCoverage({ cwd: isolated, changeId: "structured-result", all: false, writeBaseline: false });
+
+    assert.equal(result.reports[0].scenarioId, scenarioId);
+    assert.equal(result.reports[0].outcome, "unwired");
+    assert.deepEqual(result.regressions, [{ scenarioId, before: "bound", now: "unwired" }]);
+    assert.equal(result.planComplete, 4);
+    assert.equal(result.planBound, 5);
   });
 
   // covers: dod-guard/coverage-gate :: cover refuses a change whose task groups are not expanded :: An --all run skips the check

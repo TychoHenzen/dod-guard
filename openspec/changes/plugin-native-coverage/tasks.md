@@ -21,8 +21,9 @@
 
 ## 3. CLI integration
 
-- [ ] 3.1 Route the shell command through the shared structured report while preserving human-readable output and exit codes
+- [x] 3.1 Route the shell command through the shared structured report while preserving human-readable output and exit codes
 <!-- covers: dod-guard/coverage-runtime :: Shell and plugin callers use the same engine :: Shell and plugin callers use the same engine -->
+<!-- status: completed -->
 - [ ] 3.2 Keep unwired scenarios free of verification commands and preserve existing baseline comparison behavior
 <!-- covers: dod-guard/coverage-gate :: cover reports a scenario's state :: No test binds a scenario -->
 

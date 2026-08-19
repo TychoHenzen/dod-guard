@@ -7,7 +7,7 @@ import type { CliIo } from "../cli.js";
 import { compareToBaseline, findOrphans, outcomesFromReport, readBaseline, writeBaseline } from "./baseline.js";
 import { enumerateAllScenarios, enumerateChangeScenarios } from "./enumerate.js";
 import { checkPlanBound, checkPlanComplete } from "./plan-checks.js";
-import { buildReport, type ScenarioReport, summarizeReport } from "./report.js";
+import { buildReport, type CoverageGateResult, type ScenarioReport, summarizeReport } from "./report.js";
 
 interface CoverOptions {
   cwd: string;
@@ -23,6 +23,39 @@ const EXIT_USAGE_ERROR = 3;
 /** The scenario ids in a report, which is what the plan-unbound check compares against. */
 const scenarioIds = (reports: ScenarioReport[]): string[] => reports.map((report) => report.scenarioId);
 
+/**
+ * Run the coverage gate without rendering it. Plugin and shell callers use this
+ * shared result so they make decisions from the same scenario and plan outcomes.
+ */
+export async function runCoverage(opts: CoverOptions): Promise<CoverageGateResult> {
+  const scenarios = opts.all
+    ? await enumerateAllScenarios(opts.cwd)
+    : await enumerateChangeScenarios(opts.cwd, opts.changeId as string);
+
+  if (scenarios.length === 0) {
+    return { reports: [], adopted: [], regressions: [], improved: [], orphaned: [] };
+  }
+
+  const reports = await buildReport(opts.cwd, scenarios);
+
+  if (opts.writeBaseline) {
+    await writeBaseline(opts.cwd, outcomesFromReport(reports));
+    return { reports, adopted: [], regressions: [], improved: [], orphaned: [] };
+  }
+
+  const baseline = await readBaseline(opts.cwd);
+  const { adopted, regressions, improved } = compareToBaseline(reports, baseline);
+  const orphaned = opts.all ? findOrphans(reports, baseline) : [];
+  const silentIo: CliIo = { write: () => {}, writeErr: () => {} };
+  const planComplete = await checkPlanComplete(opts, silentIo);
+  const planBound =
+    regressions.length === 0 && planComplete !== undefined
+      ? undefined
+      : await checkPlanBound(opts, scenarioIds(reports), silentIo);
+  return { reports, adopted, regressions, improved, orphaned, planComplete, planBound };
+}
+
+/** Render the shared coverage result for the command line and return its exit code. */
 export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
   if (!(opts.all || opts.changeId)) {
     io.writeErr("ERROR: dod-guard cover needs a change id or --all.\n");
@@ -35,11 +68,8 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
     return EXIT_USAGE_ERROR;
   }
 
-  const scenarios = opts.all
-    ? await enumerateAllScenarios(opts.cwd)
-    : await enumerateChangeScenarios(opts.cwd, opts.changeId as string);
-
-  if (scenarios.length === 0) {
+  const result = await runCoverage(opts);
+  if (result.reports.length === 0) {
     io.write(
       opts.all
         ? "No scenarios found under openspec/specs. Nothing to cover.\n"
@@ -48,35 +78,33 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
     return EXIT_OK;
   }
 
-  const reports = await buildReport(opts.cwd, scenarios);
-  for (const report of reports) io.write(`  ${report.outcome.padEnd(26)} ${report.scenarioId}\n`);
-
-  const summary = summarizeReport(reports);
-  io.write(`\n${reports.length} scenario(s): ${summary.bound} bound, ${summary.unwired} unwired\n`);
+  for (const report of result.reports) io.write(`  ${report.outcome.padEnd(26)} ${report.scenarioId}\n`);
+  const summary = summarizeReport(result.reports);
+  io.write(`\n${result.reports.length} scenario(s): ${summary.bound} bound, ${summary.unwired} unwired\n`);
 
   if (opts.writeBaseline) {
-    await writeBaseline(opts.cwd, outcomesFromReport(reports));
-    io.write(`\nwrote coverage-gate baseline for ${reports.length} scenario(s)\n`);
+    io.write(`\nwrote coverage-gate baseline for ${result.reports.length} scenario(s)\n`);
     return EXIT_OK;
   }
 
-  const baseline = await readBaseline(opts.cwd);
-  const { adopted, regressions, improved } = compareToBaseline(reports, baseline);
-  const orphaned = opts.all ? findOrphans(reports, baseline) : [];
-  for (const id of adopted) io.write(`  adopted: ${id}\n`);
-  for (const id of improved) io.write(`  improved: ${id}\n`);
-  for (const id of orphaned) io.write(`  orphaned: ${id}\n`);
+  for (const id of result.adopted) io.write(`  adopted: ${id}\n`);
+  for (const id of result.improved) io.write(`  improved: ${id}\n`);
+  for (const id of result.orphaned) io.write(`  orphaned: ${id}\n`);
 
-  if (regressions.length === 0) {
+  if (result.regressions.length === 0) {
     io.write(`\ncover OK - 0 regression(s)\n`);
-    return (await checkPlanComplete(opts, io)) ?? (await checkPlanBound(opts, scenarioIds(reports), io)) ?? EXIT_OK;
+    if (result.planComplete !== undefined) await checkPlanComplete(opts, io);
+    else if (result.planBound !== undefined) await checkPlanBound(opts, scenarioIds(result.reports), io);
+    return result.planComplete ?? result.planBound ?? EXIT_OK;
   }
 
-  io.write(`\ncover FAILED - ${regressions.length} regression(s)\n\n`);
-  for (const r of regressions) io.write(`  ${r.scenarioId}: ${r.before} before, ${r.now} now\n`);
+  io.write(`\ncover FAILED - ${result.regressions.length} regression(s)\n\n`);
+  for (const regression of result.regressions) {
+    io.write(`  ${regression.scenarioId}: ${regression.before} before, ${regression.now} now\n`);
+  }
   // A regression outranks a plan complaint in the exit code: a caller branching on
   // the code must be told about it. Both checks still run so their reports print.
-  await checkPlanComplete(opts, io);
-  await checkPlanBound(opts, scenarioIds(reports), io);
+  if (result.planComplete !== undefined) await checkPlanComplete(opts, io);
+  if (result.planBound !== undefined) await checkPlanBound(opts, scenarioIds(result.reports), io);
   return EXIT_REGRESSION;
 }
