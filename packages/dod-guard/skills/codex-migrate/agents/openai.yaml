@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Migrate"
+  short_description: "Migrate Claude projects for Codex use"
+  default_prompt: "Use $codex-migrate to audit and migrate this project for shared Claude and Codex use."

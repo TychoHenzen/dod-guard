@@ -30,8 +30,10 @@ from the description.
 
 ## Phase 1: Clarify
 
-Ask at most 3 clarifying questions using AskUserQuestion with concrete
-options. Focus on scope boundaries and acceptance criteria, not
+Ask at most 3 clarifying questions with concrete options. Use `AskUserQuestion` in Claude or
+`request_user_input` in Codex. If neither tool is available, end the turn with the questions.
+Wait for the answers.
+Focus on scope boundaries and acceptance criteria, not
 exhaustive requirements. A clear request with one ambiguity gets one
 question. An unclear request gets up to three.
 

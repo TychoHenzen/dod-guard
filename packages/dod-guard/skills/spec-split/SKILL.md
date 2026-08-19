@@ -29,8 +29,9 @@ The user provides a spec file path or a spec id (like
    obligation. Each proposed scenario follows the WHEN/THEN format
    from the existing spec.
 3. Wait for the user to confirm, edit, or reject each proposed
-   scenario before writing anything. Use AskUserQuestion for each
-   proposal.
+   scenario before writing anything. Use `AskUserQuestion` in Claude or `request_user_input` in
+   Codex. If neither tool is available, end the turn with one concise question for the proposal.
+   Wait for the answer.
 4. After the user confirms a set of scenarios for a requirement,
    check whether the original compound scenario had a bound test. If
    so, read the test body, match assertions against the new

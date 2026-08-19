@@ -113,8 +113,9 @@ workers add a fourth:
 - `step-debugger` may return NO-REPRO. Supply the missing detail or
   ask the user.
 
-On AMBIGUOUS: surface the question to the user via AskUserQuestion,
-with the worker's interpretations as options. Re-dispatch with the
+On AMBIGUOUS: use `AskUserQuestion` in Claude or `request_user_input` in Codex. If neither tool is
+available, end the turn with one concise question. Include the worker's interpretations as options.
+Wait for the answer. Re-dispatch with the
 answer added to Context.
 
 ### The user

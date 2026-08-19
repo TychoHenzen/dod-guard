@@ -38,7 +38,9 @@ examples.
 
 ## Step 2: Ask what they want
 
-Use `AskUserQuestion` to find the user's intent. Do not dump a wall of text.
+Use `AskUserQuestion` in Claude or `request_user_input` in Codex to find the user's intent.
+If neither tool is available, end the turn with one concise question. Wait for the answer before continuing.
+Do not dump a wall of text.
 Present options like:
 
 - "I want to build a new feature"
@@ -254,5 +256,6 @@ which `/opsx:apply` drives under the hood.
   the user to `/opsx:propose` or `/opsx:quick` instead.
 - **Don't invent examples** - always pull real spec names, scenario text,
   and coverage outcomes from the orient step rather than making them up.
-- **Don't answer with a wall of text when intent is unclear** - use
-  `AskUserQuestion` to narrow it down first.
+- **Don't answer with a wall of text when intent is unclear** - use `AskUserQuestion` in Claude or
+  `request_user_input` in Codex. If neither tool is available, end the turn with one concise
+  question. Wait for the answer.
