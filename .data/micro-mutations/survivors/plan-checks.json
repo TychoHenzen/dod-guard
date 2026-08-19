@@ -1,0 +1,181 @@
+{
+  "source": "packages/dod-guard/src/cover/plan-checks.ts",
+  "date": "2026-08-19T07:21:44.037Z",
+  "summary": {
+    "total": 73,
+    "killed": 51,
+    "survived": 21,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 17,
+      "dist_col": 56
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "9",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 21,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "12",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 24,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "18",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 28,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "22",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 31,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "23",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 31,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "24",
+      "mutator": "EqualityOperator",
+      "replacement": "unexpanded.length !== 1",
+      "dist_line": 31,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 31,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "28",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 32,
+      "dist_col": 94
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "38",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 57,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "43",
+      "mutator": "Regex",
+      "replacement": "/<!--\\scovers:/",
+      "dist_line": 67,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "46",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 68,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "49",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 70,
+      "dist_col": 55
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "51",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 70,
+      "dist_col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "58",
+      "mutator": "LogicalOperator",
+      "replacement": "content !== \"\" || parseTaskGroups(content).length > 0",
+      "dist_line": 76,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "59",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 76,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "61",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 76,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "62",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 76,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "63",
+      "mutator": "EqualityOperator",
+      "replacement": "parseTaskGroups(content).length >= 0",
+      "dist_line": 76,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "66",
+      "mutator": "MethodExpression",
+      "replacement": "parseTasksMarkdown(content).every(item => item.coversId !== undefined && wanted.has(item.coversId))",
+      "dist_line": 81,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/plan-checks.js",
+      "id": "71",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 81,
+      "dist_col": 55
+    }
+  ]
+}
