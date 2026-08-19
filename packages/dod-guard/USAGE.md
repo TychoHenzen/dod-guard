@@ -10,7 +10,6 @@ codebase with an `openspec/` directory.
 | Understand requirements before coding | `/dod-guard:interview` | Structured questioning, writes scenarios + test bindings into an OpenSpec change |
 | Execute a confirmed multi-step plan correctly | `/dod-guard:step-by-step` | One fresh subagent per step, no batching, no shortcuts |
 | Same as above but cheaper (90%+ cost savings) | `/dod-guard:cheap-step` | DeepSeek workers implement, host model verifies |
-| Solve interdependent sub-problems autonomously | `/dod-guard:ratchet` | Coverage-gate check every loop iteration, evolutionary branching |
 | Maximum quality with adversarial gates | `/dod-guard:adversarial-workflow` | 4-phase gated: Spec->Test->Implement->Cleanup, verdicts in `design.md` |
 | Find and delete duplicate/obsolete code | `/dod-guard:clean-house` | Git archaeology, confused-model detection, aggressive cleanup |
 | Remove accidental complexity in a codebase sweep | `/dod-guard:tighten` | Scanner-ranked targets, blind-rewritten one at a time |
@@ -27,7 +26,7 @@ You have a task
 |
 +- Is it unclear what to build?
 |    YES -> /dod-guard:interview
-|    Then: pass the change id to step-by-step, cheap-step, ratchet,
+|    Then: pass the change id to step-by-step, cheap-step,
 |    or adversarial-workflow
 |
 +- Is it a single straightforward change?
@@ -38,8 +37,8 @@ You have a task
 |    Quality-critical? -> /dod-guard:step-by-step
 |
 +- Does it have interdependent sub-problems?
-|    YES -> /dod-guard:ratchet
-|    (needs a change id from interview first)
+|    YES -> /dod-guard:step-by-step
+|    (or /dod-guard:adversarial-workflow for gated review)
 |
 +- Do you need maximum adversarial quality?
 |    YES -> /dod-guard:adversarial-workflow
@@ -85,7 +84,7 @@ OpenSpec change and marks how each one binds to a test. Never implements.
   JS/TS/Go/Rust/Java/Kotlin, `#` for Python/Ruby/shell)
 
 **Key output:** An OpenSpec change id you can hand to `/step-by-step`,
-`/cheap-step`, `/ratchet`, or `/adversarial-workflow`.
+`/cheap-step`, or `/adversarial-workflow`.
 
 **Budget:** 10-15 min interactive. Worth it for anything non-trivial.
 
@@ -155,42 +154,6 @@ instruction, runs `verify_cmd` itself, and decides the verdict.
 
 **Before you start:** call the evomcp `status` tool. If the proxy is not
 running and no key is configured, run `/dod-guard:step-by-step` instead.
-
----
-
-### `/dod-guard:ratchet` - Autonomous Sub-Problem Execution
-
-**What it does:** Executes an existing OpenSpec change autonomously, one
-sub-problem per loop iteration. Setup (interactive): recall prior attempts,
-read the impact radius, decide sub-problem order, get the user to approve
-it. Then an autonomous loop: one sub-problem per iteration, `dod-guard cover`
-re-run every cycle so earlier work cannot silently break.
-
-**It does not build the plan.** Requirements, the scenarios, and the spec
-review all live in `/dod-guard:interview`. Run that first, then bring the
-change id here.
-
-**When to use:**
-- Problem has 2+ sub-problems with dependencies between them
-- Unknown unknowns - you'd burn tokens guessing
-- Regression risk is real - later changes could break earlier work
-- Cross-session memory would help future similar problems
-
-**When to skip:**
-- Single straightforward change
-- You already have a confirmed change from interview and a linear plan - use
-  `/dod-guard:step-by-step`
-- Trivial config change, typo fix, mechanical rename
-
-**What it composes:**
-- **dod-guard** - the coverage gate every iteration must clear
-- **gitevo** - evolutionary branching. Spawn, learn, abandon, adopt
-- **evomcp** - cascade solver. Cheap model fanout, escalate stuck nodes
-- **obsidian-rag** - cross-session memory. Persist learnings
-- **code-review-graph** - impact analysis. Blast radius before changes
-
-**Minimum viable ratchet:** dod-guard alone. No evomcp, no gitevo, no
-obsidian-rag - but still a ratchet.
 
 ---
 
@@ -393,18 +356,7 @@ Same as Pattern 1 but 90%+ cheaper. Good for routine implementation work.
 Interview handles spec review. Adversarial-workflow takes over from the
 test-audit round. Maximum quality for security/mission-critical features.
 
-### Pattern 4: Interview -> Ratchet (Complex Multi-Problem)
-
-```
-/dod-guard:interview     -> change opened
-/dod-guard:ratchet       -> setup (route + recall + ordering) then autonomous
-                            loop, one sub-problem per iteration
-```
-
-For complex problems with interdependent sub-problems. `dod-guard cover`
-re-runs every cycle to prevent regressions across sub-problem boundaries.
-
-### Pattern 5: Adversarial with Cheap-Step Implementation
+### Pattern 4: Adversarial with Cheap-Step Implementation
 
 ```
 /dod-guard:adversarial-workflow  -> Phase 1 (spec review) GO
@@ -438,10 +390,9 @@ duplicates.
 | Using cheap-step for visual/gameplay work | Cheap workers can't see. They'll substitute "build passes." | Mark visual/gameplay steps as host-only. |
 | Skipping interview for non-trivial features | Wrong requirements = wrong implementation. | Interview always before non-trivial implementation. |
 | Running adversarial-workflow without a change id | Nothing to gate against. | Create the change via interview first. |
-| Using ratchet for a single change | Overkill. Ratchet setup costs 10-15 min. | Use step-by-step or just do it. |
 | "Build passes" for visual changes | Build is not the same as visual output. | Launch the app and visually confirm, or mark as pending manual check. |
 | Same model for test author + implementer | Rubber-stamp review - tests written to pass a known implementation. | Model diversity: different model for test-audit reviewers. |
-| Skipping interview and writing scenarios by hand with no test binding | `dod-guard cover` reports every such scenario `unwired`, which the ratchet then treats as a regression risk the moment the baseline adopts it. | Write the `covers:` marker in the test at the same time you write the test. |
+| Skipping interview and writing scenarios by hand with no test binding | `dod-guard cover` reports every such scenario `unwired`, which the coverage gate preserves in its baseline until a real regression occurs. | Write the `covers:` marker in the test at the same time you write the test. |
 | Putting the `covers:` marker inside the function body | The scanner looks forward from the marker for a test declaration. A marker inside the body finds no declaration and binds nothing. | Place the marker on the line directly above `def test_`, `test(`, `func Test`, etc. |
 | Dispatching adversarial reviewers with the same model as the author | Rubber-stamp - model agrees with itself. | Model diversity or maximally different reviewer prompts. |
 
@@ -481,7 +432,7 @@ flags that step for human confirmation. A passing build is not proof.
 1. **"I don't know exactly what to build"** -> `/dod-guard:interview`
 2. **"Build this plan correctly, no shortcuts"** -> `/dod-guard:step-by-step`
 3. **"Same as #2 but cheaper"** -> `/dod-guard:cheap-step`
-4. **"Interdependent sub-problems, real regression risk"** -> `/dod-guard:ratchet`
+4. **"Interdependent sub-problems, real regression risk"** -> `/dod-guard:step-by-step`
 5. **"Maximum adversarial quality"** -> `/dod-guard:adversarial-workflow`
 6. **"Codebase has old/duplicate implementations"** -> `/dod-guard:clean-house`
 7. **"Sweep accidental complexity, no single named target"** -> `/dod-guard:tighten`

@@ -132,7 +132,6 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | Skill | Purpose |
 |-------|---------|
 | `interview` | Structured requirements gathering that writes scenarios into an OpenSpec change and marks how each binds to a test |
-| `ratchet` | Multi-step problem solving with verification gates |
 | `clean-house` | Hunt down duplicate/obsolete implementations |
 | `step-by-step` | Execute multi-step plans one atomic step at a time. Reads and updates `openspec/changes/<id>/tasks.md`, checking off each task as it completes |
 | `adversarial-workflow` | 4-phase adversarial choreography (spec review, test audit, implementation review, structural gates) |

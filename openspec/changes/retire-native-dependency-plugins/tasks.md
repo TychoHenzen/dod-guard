@@ -7,7 +7,8 @@
 
 ## 2. Rewrite the skills that name the three packages
 
-- [ ] 2.1 Rewrite `packages/dod-guard/skills/ratchet/SKILL.md` per the 1.1 decision, or delete it. If rewritten, it must name no `evo_*` tool, no `memory_*` tool, and neither `gitevo` nor `obsidian-rag`.
+- [x] 2.1 Rewrite `packages/dod-guard/skills/ratchet/SKILL.md` per the 1.1 decision, or delete it. If rewritten, it must name no `evo_*` tool, no `memory_*` tool, and neither `gitevo` nor `obsidian-rag`.
+<!-- status: completed -->
 - [ ] 2.2 Rewrite the five remaining skills that name the three: `adversarial-workflow` (uses `evo_learn`, `memory_save`), `clean-house` (uses `evo_learn`), `interview`, `opsx-explore`, and `opsx-propose`. Each keeps its own job; only the handoffs to deleted tools go.
 - [ ] 2.3 Run `node scripts/ci/check-skill-hygiene.mjs` and `node --test scripts/ci/check-skill-hygiene.test.mjs`. Both must exit 0. A rewritten skill can trip the rule that fails a skill naming a second home for the plan.
 

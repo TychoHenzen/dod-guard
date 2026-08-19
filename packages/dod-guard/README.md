@@ -84,13 +84,12 @@ closing gate. `/step-by-step`'s Finishing phase runs it before calling
 
 ## Skills
 
-The plugin ships eleven skills.
+The plugin ships ten documented skills.
 
 | Skill | Use it for |
 |---|---|
 | [`/interview`](#interview) | Pinning down requirements before any implementation task |
 | [`/step-by-step`](#step-by-step) | Executing a confirmed multi-step plan one atomic step at a time |
-| [`/ratchet`](#ratchet) | Executing an existing OpenSpec change autonomously, one sub-problem per loop iteration |
 | [`/adversarial-workflow`](#adversarial-workflow) | Driving one change through four rounds of hostile review, gated GO/REVISE/STOP |
 | [`/clean-house`](#clean-house) | Hunting duplicate and obsolete implementations with git archaeology |
 | [`/test-integrity-checker`](#test-integrity-checker) | Auditing tests written to match the implementation instead of a spec |
@@ -124,17 +123,6 @@ archive`.
 Triggers: a plan with 5+ steps, a model starting to batch or cut corners, or
 "work through this step by step."
 
-
-### `/ratchet`
-
-Executes an existing OpenSpec change autonomously, one sub-problem per loop
-iteration, re-running the whole change's coverage check every cycle so
-earlier work cannot silently break. Needs a confirmed change id - it does not
-gather requirements or build the plan; that's `/interview`'s job. Captures
-branches with gitevo and persists lessons at the end.
-
-Triggers: interdependent sub-problems, unknown unknowns, real regression
-risk, "solve with ratchet," "ratchet this."
 
 ### `/adversarial-workflow`
 
@@ -236,9 +224,9 @@ dod-guard cover <id> checks binding, ratcheted against the
 openspec archive     run by /step-by-step's Finishing phase
 ```
 
-`/ratchet`, `/adversarial-workflow`, `/blind-rewrite`, and `/tighten` each
-work against a change id and close the same way: a clean `dod-guard cover`
-run followed by `openspec archive`. `/clean-house`,
+`/adversarial-workflow`, `/blind-rewrite`, and `/tighten` each work against a
+change id and close the same way: a clean `dod-guard cover` run followed by
+`openspec archive`. `/clean-house`,
 `/test-integrity-checker`, `/doc-reconcile`, `/skill-debug`, and
 `/skill-migrate` sit outside that loop - they clean up, audit, or repair
 rather than plan or execute a change.
@@ -247,10 +235,9 @@ External dependencies, all optional:
 
 | Skill | Wants | Degrades to |
 |---|---|---|
-| `ratchet` | gitevo, evomcp, obsidian-rag, code-review-graph | Manual branching and no learning persistence |
 | `clean-house` | code-review-graph (dead-symbol scan), jscpd (duplication) | git archaeology and grep only |
 
-All eleven skills ship inside the plugin. No manual installation.
+All ten documented skills ship inside the plugin. No manual installation.
 
 ## Development
 
