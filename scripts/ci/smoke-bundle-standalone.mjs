@@ -111,7 +111,7 @@ async function handshake(bundle, pkgName, expectedVersion) {
   }
 }
 
-async function discoverBundles() {
+export async function discoverBundles() {
   const entries = await readdir(PACKAGES_DIR, { withFileTypes: true });
   const bundles = [];
   for (const entry of entries) {
@@ -140,8 +140,7 @@ function hasNodeModulesAncestor(path) {
   }
 }
 
-async function main() {
-  const bundles = await discoverBundles();
+export async function runBundles(bundles) {
   if (bundles.length === 0) {
     process.stderr.write("no package bundles found\n");
     return 1;
@@ -178,7 +177,12 @@ async function main() {
   return 0;
 }
 
-main()
+async function main() {
+  return runBundles(await discoverBundles());
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main()
   .catch((err) => {
     process.stderr.write(`standalone bundle smoke error: ${err.message}\n`);
     process.exitCode = 1;
@@ -186,3 +190,4 @@ main()
   .then((code) => {
     if (code !== undefined) process.exitCode = code;
   });
+}
