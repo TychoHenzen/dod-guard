@@ -4,15 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Monorepo overview
 
-npm workspaces monorepo with five MCP server plugins for Claude Code, distributed through the git-based marketplace. Each package builds to a single `dist/bundle.js` (esbuild), tracked in git; CI rebuilds and commits it on every push to master. The marketplace ships that bundle alongside each package's skills, agents, and plugin config.
+npm workspaces monorepo with two MCP server plugins for Claude Code, distributed through the git-based marketplace. Each package builds to a single `dist/bundle.js` (esbuild), tracked in git; CI rebuilds and commits it on every push to master. The marketplace ships that bundle alongside each package's skills, agents, and plugin config.
 
 | Package | npm name | Purpose |
 |---------|----------|---------|
 | `dod-guard` | `dod-guard` | Anti-cheat DoD verification with behavioral predicates. Ships `/interview`, `/clean-house`, `/step-by-step`, `/adversarial-workflow`, `/test-integrity-checker`, `/blind-rewrite`, `/tighten`, `/doc-reconcile`, `/skill-debug`, `/skill-migrate`, `/opsx-continue` skills. |
 | `quality-guard` | `quality-guard` | Structural quality gate: MCP tools, a PostToolUse ratchet hook, and the `/quality-refactor` skill with its scanner. |
-| `evomcp` | `evomcp` | Cascade solver: cheap-model fanout (best-of-N + repair chains) + scalar-fitness evolution. Ships `/cascade` skill. |
-| `gitevo` | `gitevo` | Evolutionary git branching for LLM agents. Checkpoint, spawn, learn, abandon, adopt. |
-| `obsidian-rag` | `obsidian-rag` | RAG/memory on Obsidian vaults. Semantic search, note CRUD, memory recall. Ships `/rag-memory` skill. |
 
 **Each package has its own CLAUDE.md** with detailed architecture, file responsibilities, and domain-specific rules. Read it before working in that package.
 
@@ -44,8 +41,7 @@ All commands from the **monorepo root**:
 # Clean build (recommended — removes stale .js from deleted .ts sources)
 npm run clean && npm run build
 
-# Build all packages (tsc). The root script builds gitevo first, because
-# evomcp imports packages/gitevo/dist and `--workspaces` runs alphabetically.
+# Build all packages (tsc).
 
 npm run build -w packages/<name>     # single package
 npm run build                         # all packages
@@ -82,13 +78,13 @@ npx @biomejs/biome check --write packages/*/src/   # auto-fix
 The flow:
 
 1. Push to `master` - that is the whole release instruction.
-2. CI runs every gate; `static-analysis` rebuilds all five `dist/bundle.js` files and commits any drift.
+2. CI runs every gate; `static-analysis` rebuilds both `dist/bundle.js` files and commits any drift.
 3. Wait for CI to go green before updating. A source push and its CI bundle rebuild are two different commits, so an early `/plugin update` installs a checkout whose bundle is one commit stale.
 4. Run `/plugin update` + `/reload-plugins` to pick up the change.
 
 Nothing publishes to npm. A version bump in `package.json` is a changelog entry now, not a release trigger - `validate-plugins.mjs` still enforces that `plugin.json`'s version, when present, matches `package.json`.
 
-**Marketplace**: Update `.claude-plugin/marketplace.json` in each package when adding/removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes all five plugins for the git-based marketplace.
+**Marketplace**: Update `.claude-plugin/marketplace.json` in each package when adding/removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes both plugins for the git-based marketplace.
 
 **CI behavior** (`.github/workflows/ci.yml`):
 - Push to `master` -> every gate below runs.
@@ -142,9 +138,9 @@ cannot see this checkout's own scenarios and markers. That build step lives in
 
 ### OpenSpec spec layout
 
-Every capability spec lives at `openspec/specs/<group>/<capability>/spec.md`, and the spec id is that path. So `openspec/specs/gitevo/memory-bus/spec.md` has the id `gitevo/memory-bus`.
+Every capability spec lives at `openspec/specs/<group>/<capability>/spec.md`, and the spec id is that path. So `openspec/specs/dod-guard/coverage/spec.md` has the id `dod-guard/coverage`.
 
-Six groups exist. Five match a package name: `dod-guard` (17 specs), `quality-guard` (7), `evomcp` (7), `gitevo` (4), `obsidian-rag` (6). The sixth, `openspec-dashboard` (3), names the tool under `tools/openspec-dashboard` instead.
+Three groups exist. Two match a package name: `dod-guard` (27 specs) and `quality-guard` (7). The third, `openspec-dashboard` (5), names the tool under `tools/openspec-dashboard` instead.
 
 A change's delta directory must mirror the `openspec/specs/<group>/<capability>/spec.md` path exactly, at `openspec/changes/<id>/specs/<group>/<capability>/spec.md`. Get the group wrong and `openspec archive` creates a new flat capability instead of merging into the existing one, silently.
 
@@ -193,7 +189,7 @@ Gate scripts live in `scripts/ci/` and all run locally with no arguments (except
 
 ### MCP server guard pattern
 
-All five MCP servers use the same guard so tests can import the server module without starting stdio:
+Both MCP servers use the same guard so tests can import the server module without starting stdio:
 
 ```typescript
 import { realpathSync } from "node:fs";
@@ -253,10 +249,7 @@ There is no `manual` predicate and no draft-leaf concept. A task with no
 
 ## Cross-package concerns
 
-- **evomcp -> dod-guard**: `verify_cmd` and `fitness_cmd` take **shell** commands. A task bound to a scenario via a `// covers:` marker uses that scenario's own whole-file test run command, e.g. `node --experimental-test-module-mocks --test packages/dod-guard/dist/cover/run.test.js` - the same command a bound task resolves as its `verify_cmd` (`buildTestRunCommand` in `cover/run-command.ts`). Confirm any scenario's binding and reachability first with `dod-guard cover <change-id>`, exit `0` no regressions / `1` a regression / `3` usage error / `4` an unexpanded task group / `5` a fully expanded plan that names none of the change's scenarios. A regression outranks both plan codes: when a change-scoped run finds one, it exits `1` even when a plan check would also have fired, though both plan checks still run and still write their reports on that path. Between the plan codes themselves, order holds: when nothing regressed, `4` is reported ahead of `5`. There is no MCP tool equivalent - `cover` is shell-only.
-- **gitevo → obsidian-rag**: `evo_export_lessons` outputs memory_save-compatible JSON for persistence
-- **evomcp → gitevo**: `gitevo-integration.ts` reads gitevo's SQLite memory bus (`.evo/memory.db`) to seed strategy prompts with past failures, elite solutions, and insights
-- **obsidian-rag**: Used by the session-start hook for memory injection across all packages
+- **dod-guard coverage**: `verify_cmd` and `fitness_cmd` take **shell** commands. A task bound to a scenario via a `// covers:` marker uses that scenario's own whole-file test run command, e.g. `node --experimental-test-module-mocks --test packages/dod-guard/dist/cover/run.test.js` - the same command a bound task resolves as its `verify_cmd` (`buildTestRunCommand` in `cover/run-command.ts`). Confirm any scenario's binding and reachability first with `dod-guard cover <change-id>`, exit `0` no regressions / `1` a regression / `3` usage error / `4` an unexpanded task group / `5` a fully expanded plan that names none of the change's scenarios. A regression outranks both plan codes: when a change-scoped run finds one, it exits `1` even when a plan check would also have fired, though both plan checks still run and still write their reports on that path. Between the plan codes themselves, order holds: when nothing regressed, `4` is reported ahead of `5`. There is no MCP tool equivalent - `cover` is shell-only.
 - **code-review-graph**: Used for impact analysis during reviews — graph must be built before review tools work
 
 ## Documentation
