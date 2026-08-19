@@ -1,15 +1,16 @@
-# CI + Publish — triggers on master pushes only.
+# CI - triggers on master pushes only. Nothing in this repo publishes to npm.
 #
-# Releases are driven by package.json, not by tags: a version that is not yet on
-# npm gets published, and CI then pushes <package>-v<version> as a record of what
-# shipped. Bumping the version IS the release instruction — there is nothing to
-# tag by hand and no way for a tag and a version to disagree.
+# The marketplace installs plugins straight from a git checkout of this repo,
+# bundle included. static-analysis rebuilds every package's dist/bundle.js and
+# commits any drift back to master, so the tracked bundle is always what CI,
+# not a developer's working tree, produced. A release is: push to master, wait
+# for this workflow to go green, then run /plugin update.
 #
 # Gates, in the order they can stop a release:
-#   build-test        compile + unit tests + which versions are unpublished
+#   build-test        compile + unit tests
 #   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency, OpenSpec spec validation
-#   static-analysis   Biome plus four ratchets (quality, test presence, advisories, coverage)
-#   package-integrity what npm would publish, and whether that bundle actually speaks MCP
+#   static-analysis   Biome plus four ratchets (quality, test presence, advisories, coverage), then rebuilds and commits the tracked bundles
+#   package-integrity whether the built bundle actually speaks MCP
 #
 # The ratchets compare against baselines in .github/quality/. Existing debt is
 # allowed; anything worse fails. When a ratchet improves, CI rewrites the
@@ -21,19 +22,6 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
-    inputs:
-      package:
-        description: 'Package to publish (dod-guard, evomcp, gitevo, obsidian-rag, quality-guard, or "all")'
-        required: true
-        type: choice
-        default: 'all'
-        options:
-          - dod-guard
-          - evomcp
-          - gitevo
-          - obsidian-rag
-          - quality-guard
-          - all
 
 env:
   # Biome owns line width (120); ratcheting it here would fight the formatter.
@@ -46,9 +34,6 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Which packages hold a version npm has never seen — publish jobs filter on this.
-    outputs:
-      releases: ${{ steps.detect.outputs.releases }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -66,9 +51,6 @@ jobs:
       - run: npm test
         env:
           OPENSPEC_TELEMETRY: 0
-      - name: Detect releases
-        id: detect
-        run: node scripts/ci/detect-releases.mjs
 
   plugin-config:
     needs: build-test
@@ -135,8 +117,10 @@ jobs:
 
       # Builds dod-guard itself, because a released binary can't see this
       # checkout's own scenarios and markers - same reason the retired
-      # check-trace.mjs did this.
-      - run: npm run bundle -w packages/dod-guard
+      # check-trace.mjs did this. Unscoped, this also rebuilds and refreshes
+      # all five tracked dist/bundle.js files, so CI, not a developer's
+      # working tree, is what builds what ships.
+      - run: npm run bundle
 
       # Autofix: apply Biome fixes, commit + push if any changes.
       - name: Biome autofix
@@ -218,7 +202,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add -A
-            git commit -m "chore: apply stricter Biome autofixes [skip ci]"
+            git commit -m "chore: apply Biome autofixes, tightened baselines and rebuilt bundles [skip ci]"
             git push origin master
           fi
 
@@ -255,15 +239,6 @@ jobs:
       - run: npm run build
       - run: npm run bundle
 
-      # What npm would actually ship: every skill, agent and hook target present, no src/ or node_modules.
-      - name: Tarball contents
-        run: |
-          FAILED=""
-          for pkg in dod-guard evomcp gitevo obsidian-rag quality-guard; do
-            node scripts/ci/check-pack.mjs "$pkg" || FAILED="$FAILED $pkg"
-          done
-          [ -z "$FAILED" ] || { echo "PACK CONTENTS FAILED for:$FAILED"; exit 1; }
-
       # The bundle is what users run and nothing else tests it: it must complete an MCP handshake.
       - name: Bundle MCP handshake
         run: |
@@ -272,130 +247,3 @@ jobs:
             node scripts/ci/smoke-bundle.mjs "$pkg" || FAILED="$FAILED $pkg"
           done
           [ -z "$FAILED" ] || { echo "BUNDLE SMOKE FAILED for:$FAILED"; exit 1; }
-  # ── Publish: fires when matching tag points at HEAD AND every gate passed ──
-
-  publish-dod-guard:
-    needs: [build-test, plugin-config, static-analysis, package-integrity]
-    if: (needs.build-test.outputs.releases != '' && contains(fromJSON(needs.build-test.outputs.releases), 'dod-guard')) || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'dod-guard' || github.event.inputs.package == 'all'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      id-token: write
-      contents: write   # pushes the <package>-v<version> tag after publishing
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - run: npm ci
-      - run: npm run bundle -w packages/dod-guard
-      - run: npm publish -w packages/dod-guard
-
-      # The tag records what shipped; it is not what triggered the publish.
-      - name: Tag the release
-        run: |
-          VERSION=$(node -p "require('./packages/dod-guard/package.json').version")
-          git tag "dod-guard-v$VERSION"
-          git push origin "dod-guard-v$VERSION"
-
-  publish-evomcp:
-    needs: [build-test, plugin-config, static-analysis, package-integrity]
-    if: (needs.build-test.outputs.releases != '' && contains(fromJSON(needs.build-test.outputs.releases), 'evomcp')) || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'evomcp' || github.event.inputs.package == 'all'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      id-token: write
-      contents: write   # pushes the <package>-v<version> tag after publishing
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - run: npm ci
-      - run: npm run build -w packages/gitevo  # evomcp imports gitevo operations at bundle time
-      - run: npm run bundle -w packages/evomcp
-      - run: npm publish -w packages/evomcp
-
-      # The tag records what shipped; it is not what triggered the publish.
-      - name: Tag the release
-        run: |
-          VERSION=$(node -p "require('./packages/evomcp/package.json').version")
-          git tag "evomcp-v$VERSION"
-          git push origin "evomcp-v$VERSION"
-
-  publish-gitevo:
-    needs: [build-test, plugin-config, static-analysis, package-integrity]
-    if: (needs.build-test.outputs.releases != '' && contains(fromJSON(needs.build-test.outputs.releases), 'gitevo')) || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'gitevo' || github.event.inputs.package == 'all'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      id-token: write
-      contents: write   # pushes the <package>-v<version> tag after publishing
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - run: npm ci
-      - run: npm run bundle -w packages/gitevo
-      - run: npm publish -w packages/gitevo
-
-      # The tag records what shipped; it is not what triggered the publish.
-      - name: Tag the release
-        run: |
-          VERSION=$(node -p "require('./packages/gitevo/package.json').version")
-          git tag "gitevo-v$VERSION"
-          git push origin "gitevo-v$VERSION"
-
-  publish-obsidian-rag:
-    needs: [build-test, plugin-config, static-analysis, package-integrity]
-    if: (needs.build-test.outputs.releases != '' && contains(fromJSON(needs.build-test.outputs.releases), 'obsidian-rag')) || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'obsidian-rag' || github.event.inputs.package == 'all'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      id-token: write
-      contents: write   # pushes the <package>-v<version> tag after publishing
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - run: npm ci
-      - run: npm run bundle -w packages/obsidian-rag
-      - run: npm publish -w packages/obsidian-rag
-
-      # The tag records what shipped; it is not what triggered the publish.
-      - name: Tag the release
-        run: |
-          VERSION=$(node -p "require('./packages/obsidian-rag/package.json').version")
-          git tag "obsidian-rag-v$VERSION"
-          git push origin "obsidian-rag-v$VERSION"
-
-  publish-quality-guard:
-    needs: [build-test, plugin-config, static-analysis, package-integrity]
-    if: (needs.build-test.outputs.releases != '' && contains(fromJSON(needs.build-test.outputs.releases), 'quality-guard')) || (github.event_name == 'workflow_dispatch' && (github.event.inputs.package == 'quality-guard' || github.event.inputs.package == 'all'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      id-token: write
-      contents: write   # pushes the <package>-v<version> tag after publishing
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - run: npm ci
-      - run: npm run bundle -w packages/quality-guard
-      - run: npm publish -w packages/quality-guard
-
-      # The tag records what shipped; it is not what triggered the publish.
-      - name: Tag the release
-        run: |
-          VERSION=$(node -p "require('./packages/quality-guard/package.json').version")
-          git tag "quality-guard-v$VERSION"
-          git push origin "quality-guard-v$VERSION"

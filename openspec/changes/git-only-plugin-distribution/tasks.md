@@ -22,12 +22,18 @@
 
 ## 3. Rework CI
 
-- [ ] 3.1 In `.github/workflows/npm-publish.yml`, delete the five `publish-*` jobs, the `workflow_dispatch` `package` input, the `releases` output on `build-test`, and the `Detect releases` step.
-- [ ] 3.2 In `static-analysis`, change `npm run bundle -w packages/dod-guard` to `npm run bundle` so all five bundles are rebuilt, and update the comment above it to say it now also refreshes the tracked bundles.
-- [ ] 3.3 Update the `Commit & push autofixes and tightened baselines` step's commit message so it names the rebuilt bundles alongside the Biome autofixes, and confirm `git add -A` picks up `packages/*/dist/bundle.js` now that it is no longer ignored.
-- [ ] 3.4 In `package-integrity`, delete the `Tarball contents` step. Keep `npm run bundle` and the `Bundle MCP handshake` step, which now guards what users actually run.
-- [ ] 3.5 Rewrite the workflow's header comment and the job table it describes, then rename the file to `.github/workflows/ci.yml` with `git mv`. Confirm `static-analysis` is the only job in the final file holding `contents: write` and pushing.
-- [ ] 3.6 Confirm the tracked bundle is invisible to every source-reading gate: `quality-scan` runs with `--exclude=/dist/`, Biome reads only `packages/*/src/` and `scripts/ci/`, and `check-coverage.mjs` matches through source maps. Run `node scripts/ci/check-coverage.mjs` and the quality scan locally and check that neither reports a new file.
+- [x] 3.1 In `.github/workflows/npm-publish.yml`, delete the five `publish-*` jobs, the `workflow_dispatch` `package` input, the `releases` output on `build-test`, and the `Detect releases` step.
+<!-- status: completed -->
+- [x] 3.2 In `static-analysis`, change `npm run bundle -w packages/dod-guard` to `npm run bundle` so all five bundles are rebuilt, and update the comment above it to say it now also refreshes the tracked bundles.
+<!-- status: completed -->
+- [x] 3.3 Update the `Commit & push autofixes and tightened baselines` step's commit message so it names the rebuilt bundles alongside the Biome autofixes, and confirm `git add -A` picks up `packages/*/dist/bundle.js` now that it is no longer ignored.
+<!-- status: completed -->
+- [x] 3.4 In `package-integrity`, delete the `Tarball contents` step. Keep `npm run bundle` and the `Bundle MCP handshake` step, which now guards what users actually run.
+<!-- status: completed -->
+- [x] 3.5 Rewrite the workflow's header comment and the job table it describes, then rename the file to `.github/workflows/ci.yml` with `git mv`. Confirm `static-analysis` is the only job in the final file holding `contents: write` and pushing.
+<!-- status: completed -->
+- [x] 3.6 Confirm the tracked bundle is invisible to every source-reading gate: `quality-scan` runs with `--exclude=/dist/`, Biome reads only `packages/*/src/` and `scripts/ci/`, and `check-coverage.mjs` matches through source maps. Run `node scripts/ci/check-coverage.mjs` and the quality scan locally and check that neither reports a new file.
+<!-- status: completed -->
 
 ## 4. Reconcile the documentation
 
