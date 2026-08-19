@@ -4,6 +4,7 @@
  */
 import type { EnumeratedScenario } from "./enumerate.js";
 import { scanMarkers } from "./markers.js";
+import * as path from "node:path";
 
 export type Outcome = "bound" | "unwired";
 
@@ -45,6 +46,31 @@ export interface CoverageGateResult {
   planBound?: number;
 }
 
+const LANGUAGE_BY_EXTENSION: ReadonlyMap<string, string> = new Map([
+  [".ts", "typescript"],
+  [".js", "javascript"],
+  [".mjs", "javascript"],
+  [".cjs", "javascript"],
+  [".py", "python"],
+  [".go", "go"],
+  [".rs", "rust"],
+  [".rb", "ruby"],
+  [".java", "java"],
+  [".kt", "kotlin"],
+  [".sh", "shell"],
+  [".bash", "shell"],
+]);
+
+function reportBinding(file: string, testName: string): ScenarioBinding {
+  const language = LANGUAGE_BY_EXTENSION.get(path.extname(file).toLowerCase()) ?? "unknown";
+  return {
+    testFile: file,
+    testName,
+    language,
+    unresolvedReason: `no runner command is configured for ${language} test files`,
+  };
+}
+
 /** Build the report for one enumeration's worth of scenarios. Scans each
  * group's markers once, not once per scenario. */
 export async function buildReport(cwd: string, scenarios: EnumeratedScenario[]): Promise<ScenarioReport[]> {
@@ -58,6 +84,7 @@ export async function buildReport(cwd: string, scenarios: EnumeratedScenario[]):
       markersByGroup.set(scenario.group, markers);
     }
     const binding = markers.get(scenario.id);
+    const reportedBinding = binding ? reportBinding(binding.file, binding.testName) : undefined;
     reports.push({
       scenarioId: scenario.id,
       group: scenario.group,
@@ -65,7 +92,10 @@ export async function buildReport(cwd: string, scenarios: EnumeratedScenario[]):
       requirementTitle: scenario.requirementTitle,
       scenarioTitle: scenario.scenarioTitle,
       outcome: binding ? "bound" : "unwired",
-      note: binding ? `bound to ${binding.testName} in ${binding.file}` : "no test binds this scenario",
+      ...(reportedBinding ? { binding: reportedBinding } : {}),
+      note: binding
+        ? `bound to ${binding.testName} in ${binding.file}; ${reportedBinding?.unresolvedReason}`
+        : "no test binds this scenario",
     });
   }
 

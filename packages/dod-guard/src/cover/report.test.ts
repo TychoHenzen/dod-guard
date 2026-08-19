@@ -53,6 +53,7 @@ test("buildReport reports an unbound scenario as unwired", async () => {
     scenario({ id: "dod-guard/coverage-gate::req||unbound-scenario", scenarioTitle: "unbound-scenario" }),
   ]);
   assert.equal(report.outcome, "unwired");
+  assert.equal(report.binding, undefined);
   assert.match(report.note, /no test binds this scenario/);
 });
 
@@ -62,6 +63,14 @@ test("buildReport reports a bound scenario as bound", async () => {
     scenario({ id: "dod-guard/coverage-gate::req||bound-scenario", scenarioTitle: "bound-scenario" }),
   ]);
   assert.equal(report.outcome, "bound");
+  assert.equal(report.binding?.verifyCmd, undefined);
+  assert.deepEqual(report.binding, {
+    testFile: TEST_FILE,
+    testName: "a bound test",
+    language: "javascript",
+    unresolvedReason: "no runner command is configured for javascript test files",
+  });
+  assert.match(report.note, /no runner command is configured for javascript test files/);
   assert.match(report.note, /bound to/);
 });
 

@@ -3,8 +3,9 @@
 - [x] 1.1 Define the structured scenario result and gate result types shared by CLI and plugin callers
 <!-- covers: dod-guard/coverage-runtime :: Plugin coverage results are structured :: A bound scenario returns its test binding and command -->
 <!-- status: completed -->
-- [ ] 1.2 Refactor report construction to retain binding metadata and unresolved-command reasons without changing ratchet outcomes
+- [x] 1.2 Refactor report construction to retain binding metadata and unresolved-command reasons without changing ratchet outcomes
 <!-- covers: dod-guard/coverage-gate :: cover reports a scenario's state :: A bound test has no available runner -->
+<!-- status: completed -->
 
 ## 2. Language adapters
 
