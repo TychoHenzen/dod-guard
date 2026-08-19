@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "obsidian-rag": {
-      "command": "npx",
-      "args": ["obsidian-rag"]
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/bundle.js"]
     }
   }
 }

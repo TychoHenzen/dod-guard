@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "evomcp": {
-      "command": "npx",
-      "args": ["evomcp"]
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/bundle.js"]
     }
   }
 }

@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "dod-guard": {
-      "command": "npx",
-      "args": ["dod-guard"]
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/bundle.js"]
     }
   }
 }

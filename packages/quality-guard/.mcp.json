@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "quality-guard": {
-      "command": "npx",
-      "args": ["quality-guard"]
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/bundle.js"]
     }
   }
 }

@@ -5,8 +5,9 @@ node_modules/
 .idea/
 .vscode/
 
-# TypeScript compiler output (CI publishes bundle.js to npm)
-dist/
+# TypeScript compiler output (bundle.js is tracked; the git checkout is the delivery path)
+dist/*
+!dist/bundle.js
 
 # Logs
 *.log
