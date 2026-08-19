@@ -24,6 +24,22 @@ Resolve `<skill-dir>` before running a bundled script. In Claude, use
 `SKILL.md`. Resolve `<dod-guard-skills-dir>` as the parent of `<skill-dir>`. Confirm each resolved
 script exists. If a path does not resolve, end the turn with the missing path.
 
+## Agent dispatch compatibility
+
+Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
+`${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`
+directory that contains this loaded `SKILL.md`.
+
+For every `dod-guard:<name>` dispatch:
+
+- Claude uses `dod-guard:<name>`.
+- Codex uses `dod_guard_<name>`, with hyphens converted to underscores, when that custom agent is
+  registered.
+- If the Codex custom agent is unavailable, read `<agent-definitions-dir>/<name>.md` completely.
+  Spawn `explorer` when its `tools` omit `Write` and `Edit`. Spawn `worker` otherwise.
+  Include the definition body and task briefing in the spawn message.
+- Preserve every clean-context, model-separation, dispatch-cap, and return-shape rule below.
+
 ## Four gates that reject a migration
 
 Every migrated artifact must clear four automated gates before the report ships. Fix every

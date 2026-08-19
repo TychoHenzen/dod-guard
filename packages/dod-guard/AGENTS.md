@@ -162,6 +162,21 @@ The package ships 28 documented skills, one for each `skills/*/SKILL.md` file.
 | `step-by-step` | Execute multi-step plans one atomic step at a time and update `openspec/changes/<id>/tasks.md` |
 | `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |
 
+## Dual-runtime agents
+
+Claude agent definitions under `agents/` are canonical. Codex uses generated project agents under
+the repository root's `.codex/agents/` directory. Do not edit generated TOML files by hand.
+
+Generate or refresh them from the repository root:
+
+```bash
+node packages/dod-guard/skills/codex-migrate/scripts/convert-claude-agents.mjs \
+  --source=packages/dod-guard/agents --output=.codex/agents
+```
+
+Add `--check` to detect missing, stale, or unexpected generated agents. Skills fall back to
+`explorer` or `worker` with the canonical Markdown briefing when a custom Codex agent is unavailable.
+
 ## Lessons
 
 - [LESSON] Similarity thresholds need calibration against real file pairs before

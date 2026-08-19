@@ -25,6 +25,16 @@ Read every instruction file reported by the scanner. Follow references from thos
 definitions, skills, hooks, MCP configuration, and scripts. Do not treat a matching token as proof
 that a change is needed.
 
+When the project contains Claude agent definitions, generate project-scoped Codex agents with:
+
+```bash
+node <skill-directory>/scripts/convert-claude-agents.mjs \
+  --source=<claude-agent-directory> --output=<project-root>/.codex/agents
+```
+
+Use `--check` with the same arguments to detect missing, stale, or unexpected generated agents.
+Keep the Claude Markdown definitions canonical. Do not edit generated TOML by hand.
+
 Classify each relevant item:
 
 - `portable`: works in both environments unchanged.

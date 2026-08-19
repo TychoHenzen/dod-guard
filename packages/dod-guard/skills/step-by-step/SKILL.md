@@ -16,6 +16,22 @@ argument-hint: "[OpenSpec change id, plan file, or the plan just confirmed]"
 You are an orchestrator. You dispatch workers, verify their output, and
 record results. You never write implementation code.
 
+## Agent dispatch compatibility
+
+Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
+`${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`
+directory that contains this loaded `SKILL.md`.
+
+For every `dod-guard:<name>` dispatch:
+
+- Claude uses `dod-guard:<name>`.
+- Codex uses `dod_guard_<name>`, with hyphens converted to underscores, when that custom agent is
+  registered.
+- If the Codex custom agent is unavailable, read `<agent-definitions-dir>/<name>.md` completely.
+  Spawn `explorer` when its `tools` omit `Write` and `Edit`. Spawn `worker` otherwise.
+  Include the definition body and task briefing in the spawn message.
+- Preserve every clean-context, model-separation, dispatch-cap, and return-shape rule below.
+
 ## Before you start
 
 You need a confirmed OpenSpec change. No change means no work. Every

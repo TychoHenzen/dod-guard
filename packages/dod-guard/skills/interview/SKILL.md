@@ -5,6 +5,22 @@ description: Pin down requirements before any implementation task, feature reque
 
 # Interview
 
+## Agent dispatch compatibility
+
+Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
+`${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`
+directory that contains this loaded `SKILL.md`.
+
+For every `dod-guard:<name>` dispatch:
+
+- Claude uses `dod-guard:<name>`.
+- Codex uses `dod_guard_<name>`, with hyphens converted to underscores, when that custom agent is
+  registered.
+- If the Codex custom agent is unavailable, read `<agent-definitions-dir>/<name>.md` completely.
+  Spawn `explorer` when its `tools` omit `Write` and `Edit`. Spawn `worker` otherwise.
+  Include the definition body and task briefing in the spawn message.
+- Preserve every clean-context, model-separation, dispatch-cap, and return-shape rule below.
+
 ## 1. The gate
 
 Open by telling the user you are gathering requirements and will write no
