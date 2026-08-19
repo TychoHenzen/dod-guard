@@ -25,8 +25,8 @@ There is no other reason to touch a version number. `validate-plugins.mjs` only 
 ## Environment facts (do not re-derive)
 
 - Shell is **Git Bash on Windows**. `/dev/stdin` does NOT work - `cat x.json | node -e "...readFileSync('/dev/stdin')"` fails with `ENOENT: C:\dev\stdin`. To inspect JSON, use the **Read tool** or `node -e "console.log(require('./path/file.json').description)"`.
-- Root `package.json` scripts include `clean`, `build`, `test`, `bundle`, `build:evomcp`, `build:gitevo`.
-- Only `dod-guard` and `obsidian-rag` have `packages/<name>/.claude-plugin/marketplace.json`. `evomcp`, `gitevo` and `quality-guard` have **only** `plugin.json`. Never assume a per-package marketplace.json exists.
+- Root `package.json` scripts include `clean`, `build`, `test`, and `bundle`.
+- Only `dod-guard` has `packages/<name>/.claude-plugin/marketplace.json`. `quality-guard` has **only** `plugin.json`. Never assume a per-package marketplace.json exists.
 - CI runs Biome autofix, the ratchets, and a bundle rebuild on every push to master, and if any of that changed anything, commits and pushes the `[skip ci]` commit described above. So remote master is frequently AHEAD of local after a push. Step 0 exists because of this.
 - Bash tool default timeout is 2 minutes. Any `gh run watch` or long CI wait MUST pass an explicit longer `timeout` (600000).
 
@@ -101,7 +101,7 @@ node scripts/ci/check-coverage-gate.mjs
 node packages/quality-guard/scripts/check-skips.mjs .
 npx @biomejs/biome check packages/*/src/ scripts/ci/ --no-errors-on-unmatched
 node "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs" packages --exclude=/dist/ --exclude=node_modules --rules="file-length,function-length,complexity,param-count,nesting-depth,types-per-file,duplicate-block,else-branch,unnamed-tuple,dead-export,unused-local,test-only-export,commented-out-code,todo-marker,stateless-method,comment-bloat,comment-restates-code,assumption-marker" --baseline=.github/quality/quality-baseline.json --fail-on=regression
-for p in dod-guard evomcp gitevo obsidian-rag quality-guard; do node scripts/ci/smoke-bundle.mjs "$p"; done
+for p in dod-guard quality-guard; do node scripts/ci/smoke-bundle.mjs "$p"; done
 ```
 
 `check-skips.mjs` hard-fails CI on any unacknowledged `.quality-skip` waiver - it appears in no CI job name, so it is easy to forget locally. The quality scan lives under `packages/quality-guard/skills/`, not `scripts/ci/`, for the same reason; copy its invocation from the `Quality ratchet (structure)` step in `.github/workflows/ci.yml` if that command ever changes there.
@@ -113,7 +113,7 @@ If anything fails, fix it before proceeding.
 Commit **inline here**. Do NOT invoke the `/commit` skill - it has its own message conventions and push behavior.
 
 ```bash
-rm -rf .solve-session/ .refactor-session/ .tdd-session/ 2>/dev/null
+rm -rf .refactor-session/ .tdd-session/ 2>/dev/null
 git add -A
 git diff --staged --stat
 ```

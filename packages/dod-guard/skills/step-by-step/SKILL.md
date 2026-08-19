@@ -6,7 +6,7 @@ description: >-
   record it, and flush the detail before the next step. TRIGGER when: a plan
   has 5 or more steps, a model starts batching steps or cutting corners, the
   user says "work through this step by step" or "do not batch", or the plan
-  came out of /interview, /blueprint, or /solve.
+  came out of /interview or /blueprint.
 argument-hint: "[OpenSpec change id, plan file, or the plan just confirmed]"
 
 ---
