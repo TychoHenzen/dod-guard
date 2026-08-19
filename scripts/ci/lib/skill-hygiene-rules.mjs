@@ -9,11 +9,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { toPosix, walkFiles } from "./fs-utils.mjs";
 
-/** The four skills that ran outside OpenSpec before this gate existed. */
-const CHANGE_SCOPED_SKILLS = ["ratchet", "adversarial-workflow", "blind-rewrite", "tighten"];
+/** The skills that run outside OpenSpec and therefore need a change id. */
+const CHANGE_SCOPED_SKILLS = ["adversarial-workflow", "blind-rewrite", "tighten"];
 
-/** Both skills that close a run by archiving the change they proved. */
-const CLOSING_GATE_SKILLS = ["ratchet", "adversarial-workflow"];
+/** The skill that closes a run by archiving the change it proved. */
+const CLOSING_GATE_SKILLS = ["adversarial-workflow"];
 
 const PREDICATE_TYPES = [
   "exit_code",

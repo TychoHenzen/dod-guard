@@ -36,7 +36,7 @@ const SKILL = {
   interview: "packages/dod-guard/skills/interview/SKILL.md",
   stepByStep: "packages/dod-guard/skills/step-by-step/SKILL.md",
   cheapStep: "packages/dod-guard/skills/cheap-step/SKILL.md",
-  ratchet: "packages/dod-guard/skills/ratchet/SKILL.md",
+  adversarial: "packages/dod-guard/skills/adversarial-workflow/SKILL.md",
   tighten: "packages/dod-guard/skills/tighten/SKILL.md",
   refactor: "packages/quality-guard/skills/quality-refactor/SKILL.md",
 };
@@ -95,7 +95,7 @@ const cases = [
     rule: "no-legacy-fallback",
     why: "a skill still falls back to dod_create",
     break: (root) =>
-      write(root, SKILL.ratchet, "Interview calls `dod_create`. Then `dod-guard trace` and `openspec archive`.\n"),
+      write(root, SKILL.adversarial, "Interview calls `dod_create`. Then `dod-guard trace` and `openspec archive`.\n"),
     expect: /still names dod_create/,
   },
   {
@@ -108,7 +108,7 @@ const cases = [
     rule: "no-legacy-fallback",
     why: "a skill claims interview builds a DoD",
     break: (root) =>
-      write(root, SKILL.ratchet, "Take a change id. `/dod-guard:interview` builds a DoD to start from.\n"),
+      write(root, SKILL.adversarial, "Take a change id. `/dod-guard:interview` builds a DoD to start from.\n"),
     expect: /still claims interview builds a DoD/,
   },
   {
@@ -120,7 +120,7 @@ const cases = [
   {
     rule: "closing-gate",
     why: "a skill never covers",
-    break: (root) => write(root, SKILL.ratchet, "Take a change id, then `openspec archive <change-id> --yes`.\n"),
+    break: (root) => write(root, SKILL.adversarial, "Take a change id, then `openspec archive <change-id> --yes`.\n"),
     expect: /never runs dod-guard cover/,
   },
   {
@@ -129,7 +129,7 @@ const cases = [
     break: (root) =>
       write(
         root,
-        SKILL.ratchet,
+        SKILL.adversarial,
         "Take a change id. Run `openspec archive <change-id> --yes`, then `dod-guard cover <change-id>`.\n",
       ),
     expect: /archives before it covers/,
