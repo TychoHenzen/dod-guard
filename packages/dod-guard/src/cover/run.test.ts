@@ -60,6 +60,19 @@ describe("runCover", () => {
     assert.match(out(), /Nothing to cover/);
   });
 
+  // covers: dod-guard/coverage-gate :: cover reports a scenario's state :: no test binds a scenario
+  it("reports an unwired scenario without a verification command and adopts it at its current outcome", async (t) => {
+    const isolated = await isolatedCwd(t);
+    const result = await runCoverage({ cwd: isolated, all: true, writeBaseline: false });
+
+    assert.equal(result.reports[0].outcome, "unwired");
+    assert.equal(result.reports[0].binding, undefined);
+    assert.equal(result.reports[0].note, "no test binds this scenario");
+    assert.deepEqual(result.adopted, [result.reports[0].scenarioId]);
+    assert.deepEqual(result.regressions, []);
+    assert.deepEqual(result.improved, []);
+  });
+
   // covers: dod-guard/coverage-gate :: The coverage-gate ratchet adopts unseen scenarios and blocks on regression :: --write-baseline records the current report as the new baseline
   it("writes a fresh baseline and reports the scenario as unwired", async () => {
     const { io, out } = captureIo();
