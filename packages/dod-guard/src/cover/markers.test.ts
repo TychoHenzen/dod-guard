@@ -49,6 +49,14 @@ test("scanMarkers skips blank lines between the marker and an it() call", async 
   assert.equal(binding.testName, "cover reports a bound scenario as covered");
 });
 
+test("scanMarkers binds a TypeScript marker to its named test", async () => {
+  const bindings = await scanMarkers(cwd, "dod-guard");
+  const binding = bindings.get("dod-guard/coverage-gate::cover reports a scenario's state||unwired");
+  assert.ok(binding);
+  assert.equal(binding.file, path.join(cwd, "packages", "dod-guard", "src", "cover", "report.test.ts"));
+  assert.equal(binding.testName, "cover reports a scenario with no bound test as unwired");
+});
+
 // covers: dod-guard/coverage-gate :: A scenario binds to a test through a marker in the test file :: A marker with no test call after it binds nothing
 test("scanMarkers drops a marker with no test call after it", async () => {
   const bindings = await scanMarkers(cwd, "dod-guard");

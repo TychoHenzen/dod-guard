@@ -88,6 +88,58 @@ test("buildReport resolves a configured language runner from the consumer worksp
   await fs.rm(path.dirname(RUNNER_CONFIG), { recursive: true, force: true });
 });
 
+test("buildReport reports bindings and configured commands for every supported language family", async () => {
+  const cases = [
+    ["typescript", ".ts", "//", "javascript", "node --test", 'test("TypeScript test", () => {});', "TypeScript test"],
+    ["python", ".py", "#", "python", "pytest", "def test_python():\n    assert True", "test_python"],
+    ["go", ".go", "//", "go", "go test", "func TestGo(t *testing.T) {}", "TestGo"],
+    ["rust", ".rs", "//", "rust", "cargo test", "#[test]\nfn test_rust() {}", "test_rust"],
+    ["ruby", ".rb", "#", "ruby", "bundle exec ruby", "def test_ruby()\nend", "test_ruby"],
+    ["java", ".java", "//", "java", "./gradlew test", "@Test\npublic void javaTest() {}", "javaTest"],
+    ["kotlin", ".kt", "//", "kotlin", "./gradlew test", "@Test\nfun kotlinTest() {}", "kotlinTest"],
+    ["shell", ".sh", "#", "shell", "bash", "test_shell() {}", "test_shell"],
+  ] as const;
+  const testGlobs: Record<string, string[]> = {};
+  const runners: Record<string, string> = {};
+  const scenarios: EnumeratedScenario[] = [];
+
+  for (const [group, extension, markerPrefix, language, runner, declaration] of cases) {
+    const testFile = path.join(FIXTURE_DIR, "language-tests", `${group}${extension}`);
+    await fs.mkdir(path.dirname(testFile), { recursive: true });
+    await fs.writeFile(
+      testFile,
+      `${markerPrefix} covers: ${group}/coverage-gate :: configured runner :: ${group} binding\n${declaration}\n`,
+    );
+    testGlobs[group] = [`language-tests/**/*${extension}`];
+    runners[language] = runner;
+    scenarios.push(
+      scenario({
+        id: `${group}/coverage-gate::configured runner||${group} binding`,
+        group,
+        scenarioTitle: `${group} binding`,
+      }),
+    );
+  }
+
+  await fs.mkdir(path.dirname(RUNNER_CONFIG), { recursive: true });
+  await fs.writeFile(path.join(FIXTURE_DIR, "openspec", "test-globs.json"), JSON.stringify(testGlobs));
+  await fs.writeFile(RUNNER_CONFIG, JSON.stringify(runners));
+
+  const reports = await buildReport(FIXTURE_DIR, scenarios);
+  for (const [group, extension, , language, runner, , testName] of cases) {
+    const report = reports.find(({ group: reportGroup }) => reportGroup === group);
+    assert.ok(report);
+    assert.equal(report.outcome, "bound");
+    assert.deepEqual(report.binding, {
+      testFile: path.join(FIXTURE_DIR, "language-tests", `${group}${extension}`),
+      testName,
+      language,
+      verifyCmd: `${runner} "language-tests/${group}${extension}"`,
+    });
+  }
+  await fs.rm(path.join(FIXTURE_DIR, "openspec"), { recursive: true, force: true });
+});
+
 test("buildReport retains a binding when its runner configuration is malformed", async () => {
   await fs.mkdir(path.dirname(RUNNER_CONFIG), { recursive: true });
   await fs.writeFile(RUNNER_CONFIG, "[");

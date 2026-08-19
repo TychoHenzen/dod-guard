@@ -40,17 +40,30 @@ test("Kotlin uses a Kotlin adapter rather than the Java adapter", () => {
   assert.equal(LANG_TABLE.get(".kt")?.language, "kotlin");
 });
 
-test("language adapters append a workspace-relative test file to a configured runner", () => {
-  const adapter = LANG_TABLE.get(".ts");
-  assert.ok(adapter);
-  assert.deepEqual(
-    adapter.resolveWholeFileCommand({
-      workspaceRoot: "/consumer-workspace",
-      testFile: "/consumer-workspace/tests/example.test.ts",
-      projectConfig: { javascript: "node --test" },
-    }),
-    { command: 'node --test "tests/example.test.ts"' },
-  );
+test("language adapters resolve configured runners for every supported language family", () => {
+  const cases = [
+    [".ts", "javascript", "node --test"],
+    [".py", "python", "pytest"],
+    [".go", "go", "go test"],
+    [".rs", "rust", "cargo test"],
+    [".rb", "ruby", "bundle exec ruby"],
+    [".java", "java", "./gradlew test"],
+    [".kt", "kotlin", "./gradlew test"],
+    [".sh", "shell", "bash"],
+  ] as const;
+
+  for (const [extension, language, runner] of cases) {
+    const adapter = LANG_TABLE.get(extension);
+    assert.ok(adapter);
+    assert.deepEqual(
+      adapter.resolveWholeFileCommand({
+        workspaceRoot: "/consumer-workspace",
+        testFile: `/consumer-workspace/tests/example.test${extension}`,
+        projectConfig: { [language]: runner },
+      }),
+      { command: `${runner} "tests/example.test${extension}"` },
+    );
+  }
 });
 
 test("language adapters report malformed runner commands", () => {
