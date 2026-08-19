@@ -22,6 +22,13 @@ Delete the target. Extract a contract that records what it does, not how it read
 
 The author never sees the old text. The original is deleted before the author receives anything. This is the core guarantee. Every phase exists to protect it.
 
+## Runtime path
+
+Resolve `<skill-dir>` before running a bundled script. In Claude, use
+`${CLAUDE_PLUGIN_ROOT}/skills/blind-rewrite`. In Codex, use the directory containing this loaded
+`SKILL.md`. Confirm the resolved script exists. If neither path resolves, end the turn with the
+missing path.
+
 ## Four shapes
 
 Classify the target into exactly one shape before any other work. Classification picks the verification strategy and the phase variants. Accept the caller's decision that the rewrite is worth doing.
@@ -157,7 +164,7 @@ Two failed cycles (write, gate, rewrite) end the run. Stop after the second fail
 ## The overlap gate
 
 ```
-node ${CLAUDE_PLUGIN_ROOT}/skills/blind-rewrite/scripts/overlap-scan.mjs \
+node "<skill-dir>/scripts/overlap-scan.mjs" \
   --original=<paths> --rewrite=<paths> \
   [--mode=code|prose (default: code)] [--whitelist=a,b,c] [--contract-file=<path>]
 ```

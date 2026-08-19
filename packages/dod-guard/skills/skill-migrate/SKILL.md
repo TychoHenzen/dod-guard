@@ -17,6 +17,13 @@ argument-hint: "<path to a SKILL.md, agent definition, CLAUDE.md, memory file, o
 One artifact per invocation. Phases execute in numeric order, 0 through 9. Do not apply every
 result automatically. Show the diff instead and let the caller decide.
 
+## Runtime paths
+
+Resolve `<skill-dir>` before running a bundled script. In Claude, use
+`${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate`. In Codex, use the directory containing this loaded
+`SKILL.md`. Resolve `<dod-guard-skills-dir>` as the parent of `<skill-dir>`. Confirm each resolved
+script exists. If a path does not resolve, end the turn with the missing path.
+
 ## Four gates that reject a migration
 
 Every migrated artifact must clear four automated gates before the report ships. Fix every
@@ -25,7 +32,7 @@ failure before moving on.
 ### Overlap gate (Phase 6)
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/blind-rewrite/scripts/overlap-scan.mjs" \
+node "<dod-guard-skills-dir>/blind-rewrite/scripts/overlap-scan.mjs" \
   --mode=prose \
   --original=.skill-migrate/quarantine/original.md \
   --rewrite=.skill-migrate/migrated.md \
@@ -48,7 +55,7 @@ exemption does not carry over. A memory that loses a fact is worthless.
 ### Regression gate (Phase 8)
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/migration-check.mjs" \
+node "<skill-dir>/scripts/migration-check.mjs" \
   .skill-migrate/migrated.md \
   --before=.skill-migrate/baseline.json
 ```
@@ -124,7 +131,7 @@ Merge the frontmatter with the writer output. Save to `.skill-migrate/migrated.m
 Start by reading the target artifact, then resolve its kind:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/skill-migrate/scripts/migration-check.mjs" \
+node "<skill-dir>/scripts/migration-check.mjs" \
   <path-to-target> \
   --save=.skill-migrate/baseline.json
 ```
@@ -133,7 +140,7 @@ The command prints the resolved kind (skill, agent, claude-md, memory, or instin
 `--kind=<k>` to override. Carry the resolved kind in every agent briefing from here on.
 
 Trace what the kind implies. A skill traces every `subagent_type` reference to its agent
-definition and every `${CLAUDE_PLUGIN_ROOT}` or `node` invocation to its script file. An agent
+definition and every runtime path or `node` invocation to its script file. An agent
 definition traces the skills that dispatch it and the report format its caller parses. A
 CLAUDE.md traces the commands, paths, and gates it names. A memory or instinct file traces
 whether each fact it states still holds.

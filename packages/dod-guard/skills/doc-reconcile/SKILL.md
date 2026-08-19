@@ -35,6 +35,13 @@ Scope: this skill deletes and points, and it stops there. Rewriting a claim into
 prose, editing code, and reconciling anything the scanner did not report all sit
 outside it. Every deletion traces to one agent verdict and one dating result.
 
+## Runtime path
+
+Resolve `<skill-dir>` before running a bundled script. In Claude, use
+`${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile`. In Codex, use the directory containing this loaded
+`SKILL.md`. Confirm the resolved script exists. If neither path resolves, end the turn with the
+missing path.
+
 ## What each outcome buys
 
 | Agent verdict | Dating | Action |
@@ -92,8 +99,8 @@ it and exits 1.
 ## Script reference
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile/scripts/scan-docs.mjs"
-node "${CLAUDE_PLUGIN_ROOT}/skills/doc-reconcile/scripts/claim-age.mjs"
+node "<skill-dir>/scripts/scan-docs.mjs"
+node "<skill-dir>/scripts/claim-age.mjs"
 ```
 
 `scan-docs.mjs` reads every git-tracked Markdown file plus each `description` field

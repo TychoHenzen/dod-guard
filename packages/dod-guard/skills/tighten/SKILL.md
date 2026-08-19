@@ -32,7 +32,17 @@ when the ledger says so - the ledger only decides what gets scanned next.
 the queue drops a target on `openspec archive`, checked at Phase 1 pick time,
 not on `record-result.mjs --status=accepted`.
 
-## Scripts (all under `${CLAUDE_PLUGIN_ROOT}`)
+## Runtime paths
+
+Resolve `<skill-dir>` before running a bundled script. In Claude, use
+`${CLAUDE_PLUGIN_ROOT}/skills/tighten`. In Codex, use the directory containing this loaded
+`SKILL.md`. Resolve `<dod-guard-skills-dir>` as the parent of `<skill-dir>`.
+
+Resolve `<quality-refactor-dir>` from the installed `quality-refactor` skill. Do not assume that
+`quality-guard` and dod-guard occupy sibling directories. Confirm each resolved script exists. If
+the dependency or a path does not resolve, end the turn and identify what is missing.
+
+## Scripts
 
 - `quality-scan.mjs` (ships with quality-guard): emits structural-violation
   units as JSON via `--format=units`. Any scanner emitting the same units
@@ -74,11 +84,11 @@ failure. Never fan out parallel writers; use one author, redispatched once.
 ## Phase 0: seed (once per repository, or again after major drift)
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/../quality-guard/skills/quality-refactor/scripts/quality-scan.mjs" \
+node "<quality-refactor-dir>/scripts/quality-scan.mjs" \
   src --root=. --format=units --test-path=.test. > /tmp/units.json
 ```
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/seed-ledger.mjs" \
+node "<skill-dir>/scripts/seed-ledger.mjs" \
   --units=/tmp/units.json --root=. --since="6 months ago"
 ```
 
@@ -88,7 +98,7 @@ Before anything else, check that `git status` is clean. On a dirty tree, stop
 and tell the user: later phases delete files and roll back with
 `git checkout -- .`, which would destroy uncommitted user work.
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/pick-target.mjs" --root=.
+node "<skill-dir>/scripts/pick-target.mjs" --root=.
 ```
 On exit 4 the queue is empty: stop. Before rewriting, open the target's
 change with `openspec propose` at id `tighten-<slug>` (or resume one already
@@ -161,7 +171,7 @@ as plain text; describe them rather than quoting the old implementation.
 ## Phase 8: gates
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/blind-rewrite/scripts/overlap-scan.mjs" \
+node "<dod-guard-skills-dir>/blind-rewrite/scripts/overlap-scan.mjs" \
   --original=.tighten/quarantine/original<ext> \
   --rewrite=<new paths> \
   --whitelist=<boundary names> \
@@ -171,15 +181,15 @@ Pass `--contract-file` when the target is mostly mandated boundary text
 (tool registrations, route tables, server guard blocks): required repetition
 scores as copying without it. The /blind-rewrite skill documents the format.
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/../quality-guard/skills/quality-refactor/scripts/quality-scan.mjs" \
+node "<quality-refactor-dir>/scripts/quality-scan.mjs" \
   .tighten/quarantine/original<ext> --root=.tighten/quarantine --format=units > /tmp/before.json
 ```
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/../quality-guard/skills/quality-refactor/scripts/quality-scan.mjs" \
+node "<quality-refactor-dir>/scripts/quality-scan.mjs" \
   <new-dir> --root=<new-dir> --format=units > /tmp/after.json
 ```
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/simplicity-gate.mjs" \
+node "<skill-dir>/scripts/simplicity-gate.mjs" \
   --before=/tmp/before.json --after=/tmp/after.json
 ```
 Both gates must pass: different alone or smaller alone is a reject. The
@@ -209,7 +219,7 @@ restore and record pending rather than stopping partway.
 
 Accepted: commit to the branch, then record:
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/record-result.mjs" \
+node "<skill-dir>/scripts/record-result.mjs" \
   --file=<path> --status=accepted --commit=<sha> --after=<tangle score>
 ```
 This records the attempt only. The target itself is not closed yet - that
@@ -221,7 +231,7 @@ Failed, first attempt: restore and record pending. The next invocation
 retries the target with fresh context.
 ```bash
 rtk git checkout -- .
-node "${CLAUDE_PLUGIN_ROOT}/skills/tighten/scripts/record-result.mjs" \
+node "<skill-dir>/scripts/record-result.mjs" \
   --file=<path> --status=pending --reason="<what failed>"
 ```
 Failed, second attempt: restore, record `resistant` with a reason, and the

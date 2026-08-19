@@ -22,6 +22,13 @@ You have shell and file tools. This skill dispatches no subagents.
 
 Scope: one target skill per invocation, and every finding covers that skill alone.
 
+## Runtime path
+
+Resolve `<skill-dir>` before running a bundled script. In Claude, use
+`${CLAUDE_PLUGIN_ROOT}/skills/skill-debug`. In Codex, use the directory containing this loaded
+`SKILL.md`. Confirm the resolved script exists. If neither path resolves, end the turn with the
+missing path.
+
 ## Terms
 
 **run** - one execution of the target skill in one session.
@@ -39,7 +46,7 @@ recount a past run. Pull that run's trace and read it instead.
 Locate runs:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/skill-debug/scripts/find-runs.mjs" \
+node "<skill-dir>/scripts/find-runs.mjs" \
   --skill=<name> --days=30
 ```
 
@@ -53,7 +60,7 @@ it again before you conclude anything. Exit 3 is a usage error.
 Turn one run into a trace:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/skill-debug/scripts/extract-run.mjs" \
+node "<skill-dir>/scripts/extract-run.mjs" \
   --session=<id> --skill=<name> --run=1
 ```
 
