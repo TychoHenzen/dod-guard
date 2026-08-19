@@ -50,10 +50,19 @@ needs no build step:
 
 ## MCP server
 
-The server registers **no tools**. Connecting to it over stdio (no CLI
-arguments) starts a bare MCP session with nothing to call. All of dod-guard's
-functionality - `cover` - is a shell CLI, invoked the same binary by argument
-rather than through MCP tool calls.
+The installed plugin registers the native MCP tool `cover`. It evaluates the
+OpenSpec files in the consumer workspace you name, not the plugin's files.
+
+| Input | Required | Meaning |
+|---|---|---|
+| `cwd` | Yes | Absolute path to the consumer workspace that contains `openspec/`. |
+| `changeId` | With `all` omitted | Scan that change's spec deltas. |
+| `all` | With `changeId` omitted | Set `true` to scan all main OpenSpec specifications. |
+
+Call `cover` with either `{ "cwd": "/workspace/app", "changeId": "add-widget" }`
+or `{ "cwd": "/workspace/app", "all": true }`. Plugin installation provides
+the runtime. The consumer does not need a `dod-guard` executable on `PATH` or a
+path to a dod-guard repository.
 
 ## CLI
 

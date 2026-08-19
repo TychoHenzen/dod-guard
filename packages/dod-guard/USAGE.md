@@ -19,6 +19,30 @@ codebase with an `openspec/` directory.
 | Fix a skill that ignored its own steps | `/dod-guard:skill-debug` | Debugs from real session transcripts, not guesswork |
 | Migrate a skill/agent to a newer model | `/dod-guard:skill-migrate` | Blind-rewrites from an extracted behavioral contract |
 
+## MCP Coverage
+
+After installing the plugin, call its native MCP tool `cover`. It runs against
+the supplied consumer workspace.
+
+| Input | Required | Meaning |
+|---|---|---|
+| `cwd` | Yes | Absolute path to the consumer workspace that contains `openspec/`. |
+| `changeId` | With `all` omitted | Scan one change's spec deltas. |
+| `all` | With `changeId` omitted | Set `true` to scan all main OpenSpec specifications. |
+
+Use one scope at a time:
+
+```json
+{ "cwd": "/workspace/app", "changeId": "add-widget" }
+```
+
+```json
+{ "cwd": "/workspace/app", "all": true }
+```
+
+The installed plugin supplies the runtime. The consumer does not need a
+`dod-guard` command on `PATH` or a path to a dod-guard repository.
+
 ## Decision Flowchart
 
 ```

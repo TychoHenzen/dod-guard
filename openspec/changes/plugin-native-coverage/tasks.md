@@ -53,6 +53,7 @@
 
 ## 6. Verification and documentation
 
-- [ ] 6.1 Update plugin metadata and usage documentation with the installed-runtime coverage interface
+- [x] 6.1 Update plugin metadata and usage documentation with the installed-runtime coverage interface
+<!-- status: completed -->
 - [ ] 6.2 Build the package, run its tests, and run the change-scoped coverage gate
 <!-- covers: dod-guard/coverage-gate :: A marker binds a scenario to a test :: A marker binds a scenario to a test -->
