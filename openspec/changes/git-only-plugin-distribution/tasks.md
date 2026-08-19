@@ -37,10 +37,14 @@
 
 ## 4. Reconcile the documentation
 
-- [ ] 4.1 Rewrite the "Publishing workflow (CRITICAL)" section of the root `CLAUDE.md`. Release is now: push to master, wait for CI green, `/plugin update` plus `/reload-plugins`. Remove the version-bump-is-the-release-instruction rule, the `detect-releases.mjs` description, and the `check-pack` row from the gates table. Add that CI owns the tracked bundle.
-- [ ] 4.2 Rewrite `packages/dod-guard/skills/publish/SKILL.md` for the new flow: no version gate, no npm, no waiting on a publish job. Keep the local gate run it does before pushing.
-- [ ] 4.3 Update every `packages/*/CLAUDE.md`, `packages/dod-guard/README.md`, and `packages/dod-guard/USAGE.md` passage that describes npm installation or the publish pipeline.
-- [ ] 4.4 Run `node scripts/ci/check-skill-hygiene.mjs` and `openspec validate --all --strict --no-interactive`, then `npm test` at the root. All three must pass.
+- [x] 4.1 Rewrite the "Publishing workflow (CRITICAL)" section of the root `CLAUDE.md`. Release is now: push to master, wait for CI green, `/plugin update` plus `/reload-plugins`. Remove the version-bump-is-the-release-instruction rule, the `detect-releases.mjs` description, and the `check-pack` row from the gates table. Add that CI owns the tracked bundle.
+<!-- status: completed -->
+- [x] 4.2 Rewrite `packages/dod-guard/skills/publish/SKILL.md` for the new flow: no version gate, no npm, no waiting on a publish job. Keep the local gate run it does before pushing.
+<!-- status: completed -->
+- [x] 4.3 Update every `packages/*/CLAUDE.md`, `packages/dod-guard/README.md`, and `packages/dod-guard/USAGE.md` passage that describes npm installation or the publish pipeline.
+<!-- status: completed -->
+- [x] 4.4 Run `node scripts/ci/check-skill-hygiene.mjs` and `openspec validate --all --strict --no-interactive`, then `npm test` at the root. All three must pass.
+<!-- status: completed -->
 
 ## 5. Retire the npm packages
 

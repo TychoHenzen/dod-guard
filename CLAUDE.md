@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Monorepo overview
 
-npm workspaces monorepo with five MCP server plugins for Claude Code, distributed via npm. Each package builds to a single `dist/bundle.js` (esbuild). The git-based marketplace ships skills, agents, and plugin config; CI publishes the binary to npm.
+npm workspaces monorepo with five MCP server plugins for Claude Code, distributed through the git-based marketplace. Each package builds to a single `dist/bundle.js` (esbuild), tracked in git; CI rebuilds and commits it on every push to master. The marketplace ships that bundle alongside each package's skills, agents, and plugin config.
 
 | Package | npm name | Purpose |
 |---------|----------|---------|
@@ -18,7 +18,7 @@ npm workspaces monorepo with five MCP server plugins for Claude Code, distribute
 
 ### Plugins that ship no code
 
-`plugins/` holds plugins with no MCP server: a `.claude-plugin/plugin.json` plus content Claude Code loads directly. They are not npm workspaces, so they never publish, and the `packages/` rules about `dist/bundle.js`, `.mcp.json` and `files[]` do not apply. They still need a root marketplace entry, and `validate-plugins.mjs` checks their manifest, their output-style frontmatter, and that git tracks every file.
+`plugins/` holds plugins with no MCP server: a `.claude-plugin/plugin.json` plus content Claude Code loads directly. They are not npm workspaces, and the `packages/` rules about `dist/bundle.js` and `.mcp.json` do not apply. They still need a root marketplace entry, and `validate-plugins.mjs` checks their manifest, their output-style frontmatter, and that git tracks every file.
 
 | Plugin | Ships |
 |--------|-------|
@@ -77,25 +77,24 @@ npx @biomejs/biome check --write packages/*/src/   # auto-fix
 
 ## Publishing workflow (CRITICAL)
 
-**Never deploy by manually copying `dist/bundle.js` into `~/.claude/plugins/cache/`.** That creates desync between the published version and what users get.
+**Never deploy by manually copying `dist/bundle.js` into `~/.claude/plugins/cache/`.** Push to master and let CI rebuild and commit the tracked bundle instead.
 
-The correct flow:
+The flow:
 
-1. Bump `version` in the package's `package.json`
-2. Commit and push to `master` — that is the whole release instruction
-3. CI runs every gate, publishes each package whose version npm does not have, then pushes the `<package>-v<version>` tag itself
-4. User runs `/plugin update` + `/reload-plugins` to get the new version
+1. Push to `master` - that is the whole release instruction.
+2. CI runs every gate; `static-analysis` rebuilds all five `dist/bundle.js` files and commits any drift.
+3. Wait for CI to go green before updating. A source push and its CI bundle rebuild are two different commits, so an early `/plugin update` installs a checkout whose bundle is one commit stale.
+4. Run `/plugin update` + `/reload-plugins` to pick up the change.
 
-**Do not create release tags by hand.** `detect-releases.mjs` compares each `package.json` version against the registry; the tag is written afterwards as a record of what shipped. A version bump that lands on master will publish — there is no opt-out, so keep the bump out of the commit until you mean it.
+Nothing publishes to npm. A version bump in `package.json` is a changelog entry now, not a release trigger - `validate-plugins.mjs` still enforces that `plugin.json`'s version, when present, matches `package.json`.
 
 **Marketplace**: Update `.claude-plugin/marketplace.json` in each package when adding/removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes all five plugins for the git-based marketplace.
 
-**CI behavior** (`.github/workflows/npm-publish.yml`):
-- Push to `master` → every gate below runs
-- A package whose version is not on npm → its publish job fires, but only after all gates pass
-- `workflow_dispatch` fallback for manual publishes (npm rejects a duplicate version, so a needless run is harmless)
+**CI behavior** (`.github/workflows/ci.yml`):
+- Push to `master` -> every gate below runs.
+- `workflow_dispatch` fallback for a manual run.
 
-**Gates** — a publish job needs all of them green:
+**Gates** - all four jobs must go green:
 
 Adding a package is not finished until `npm install` has run at the root.
 `npm ci` refuses a lock file that does not list every workspace, so CI dies at
@@ -104,18 +103,18 @@ updated `package-lock.json` with the new package.
 
 | Job | What it blocks on |
 |-----|-------------------|
-| `build-test` | tsc, `npm test`, and `detect-releases.mjs`, which decides what publishes |
+| `build-test` | tsc and `npm test` |
 | `plugin-config` | `validate-plugins.mjs` (see below), `check-skill-hygiene.mjs` (see below), and `openspec validate --all --strict --no-interactive` |
-| `static-analysis` | Biome (autofix + strict) and four ratchets |
-| `package-integrity` | `check-pack.mjs` (every skill, agent and hook target is in the tarball; no `src/` or `node_modules`) and `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) |
+| `static-analysis` | Biome (autofix + strict), four ratchets, and rebuilding and committing the tracked bundles - no separate drift gate, since a source push necessarily precedes CI's rebuild and rebuild-and-commit leaves nothing to fail on |
+| `package-integrity` | `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) - with no tarball check left, this handshake is the only thing between a bad build and a broken session |
 
 `validate-plugins.mjs` checks, all hard-fail:
 
-- **Manifest agreement** — plugin.json / .mcp.json / package.json / marketplace.json name the same plugin; `main` is `dist/bundle.js`; `repository.directory` is right; plugin.json `version`, if present, matches package.json.
-- **Reachability** — `files[]` ships `dist/bundle.js`, `.mcp.json`, `.claude-plugin/`, plus `skills/` and `agents/` when they exist; hook commands point at files that exist and get shipped; marketplace `source` paths resolve; every plugin appears in the root marketplace.
-- **Skills and agents** — each skill directory has a SKILL.md whose frontmatter `name` matches the directory; each agent file's `name` matches its filename; both carry a description; `subagent_type: "<plugin>:<agent>"` references resolve.
-- **Description honesty** — every `/slug` mentioned resolves to a skill that ships, "Ships N skills" matches the real count, and no mojibake or control characters (this is what shipped the double-encoded em-dash in `b4b2e13`).
-- **Repo-wide content** — every JSON file parses; no `skills/` or `agents/` directory without a `plugin.json` above it; no credentials or `C:\Users\<name>` paths in shipped `.md`/`.json`; every skill, agent and `.claude-plugin` file is tracked by git.
+- **Manifest agreement** - plugin.json / .mcp.json / package.json / marketplace.json name the same plugin; `main` is `dist/bundle.js`; `repository.directory` is right; plugin.json `version`, if present, matches package.json.
+- **Reachability** - `dist/bundle.js` must exist and be git-tracked; `.mcp.json` and `.claude-plugin/` are git-tracked; `skills/` and `agents/` are git-tracked when they exist; hook commands point at files that exist and are git-tracked; marketplace `source` paths resolve; every plugin appears in the root marketplace.
+- **Skills and agents** - each skill directory has a SKILL.md whose frontmatter `name` matches the directory; each agent file's `name` matches its filename; both carry a description; `subagent_type: "<plugin>:<agent>"` references resolve.
+- **Description honesty** - every `/slug` mentioned resolves to a skill that ships, "Ships N skills" matches the real count, and no mojibake or control characters (this is what shipped the double-encoded em-dash in `b4b2e13`).
+- **Repo-wide content** - every JSON file parses; no `skills/` or `agents/` directory without a `plugin.json` above it; no credentials or `C:\Users\<name>` paths in shipped `.md`/`.json`; every skill, agent and `.claude-plugin` file is tracked by git.
 
 `check-skill-hygiene.mjs` keeps a skill from taking back a job it does not own.
 OpenSpec owns a change's artifacts and the rules for authoring them, dod-guard
@@ -139,7 +138,7 @@ The gate builds and bundles `dod-guard` first, because a released binary
 cannot see this checkout's own scenarios and markers. That build step lives in
 `static-analysis` for the same reason the check itself does.
 
-**The marketplace installs from git, not npm.** `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo. `dist/bundle.js` is not tracked in git; CI publishes it to npm. The checkout carries skills, agents, hooks, and plugin config. `files[]` governs what npm includes in the tarball.
+**The marketplace installs from git, not npm.** `~/.claude/plugins/cache/<plugin>/<sha>/` is a checkout of this repo, tracked `dist/bundle.js` included. `static-analysis` owns that bundle: it always reflects what CI built from the pushed source, never what a developer's working tree produced. The checkout carries skills, agents, hooks, and plugin config alongside it.
 
 ### OpenSpec spec layout
 
@@ -188,7 +187,7 @@ measured, the same way the quality baseline adopts a new file. The numbers move
 with the platform, because a `process.platform` branch only runs on one of them.
 So the baseline ships empty and the first CI run fills it in from the runner.
 
-Gate scripts live in `scripts/ci/` and all run locally with no arguments (except `check-pack`/`smoke-bundle`, which take a package name). Run them before pushing a release.
+Gate scripts live in `scripts/ci/` and all run locally with no arguments (except `smoke-bundle`, which takes a package name). Run them before pushing a release.
 
 ## Key architectural rules
 

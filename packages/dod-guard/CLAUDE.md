@@ -10,7 +10,7 @@ tsc --watch            # dev mode with live rebuild
 npm test               # full tsc rebuild + run all tests
 node --experimental-test-module-mocks --test "dist/*.test.js"           # run tests without rebuild
 node --test --test-name-pattern="tdd*" # run tests matching pattern (omit flag if no mock.module)
-npm run bundle         # esbuild bundle for distribution (prepublish)
+npm run bundle         # esbuild bundle -> dist/bundle.js, the tracked artifact users run
 ```
 
 The bundled output is `dist/bundle.js` - this is what ships as the package entry point.
@@ -146,7 +146,7 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `spec-explore` | Discover missing requirements, edge cases, and implicit assumptions in an existing spec by comparing it against the implementation. Produces a delta spec the user can selectively adopt |
 | `spec-test` | Generate tests from spec WHEN/THEN contracts without reading the implementation for expected values. Reports contradictions between spec and code instead of silently adjusting assertions |
 | `opsx-guide` | Interactive guide to the OpenSpec workflow and the `/opsx:*` skills. Reads the project's real specs and coverage state, routes to the right skill. Never writes code or creates a change |
-| `publish` | Publish workflow for the monorepo: npm packages get version bump, gate check, commit, push, CI monitoring. Code-only plugins under `plugins/` need a `plugin.json` version bump too |
+| `publish` | Publish or release workflow for the monorepo: run every CI gate locally, commit, push to master, watch CI (including its follow-up autofix commit), then tell the user to run `/plugin update` and `/reload-plugins`. Every plugin, code-only or npm-backed, needs a `plugin.json` version bump for its own content changes so the plugin cache re-copies |
 | `opsx-continue` | Creates a change's missing planning artifacts in the order `openspec status` reports, and plans `tasks.md` in waves - every `## N.` group heading written up front, checkbox items expanded for one group at a time, re-invocable so a later wave is written with what the earlier ones taught. Never edits code and never revises an existing artifact, which is `/opsx-update`'s job |
 
 ## Lessons

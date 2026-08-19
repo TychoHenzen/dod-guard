@@ -33,24 +33,19 @@ claude plugin install --from github tychohenzen/dod-guard
 
 ### As a standalone MCP server
 
-Add to your `.mcp.json`:
+Point `.mcp.json` at the tracked `dist/bundle.js` in a clone of this repo. It
+needs no build step:
 
 ```json
 {
   "mcpServers": {
     "dod-guard": {
-      "command": "npx",
-      "args": ["-y", "dod-guard"],
+      "command": "node",
+      "args": ["/path/to/dod-guard/packages/dod-guard/dist/bundle.js"],
       "type": "stdio"
     }
   }
 }
-```
-
-### Via npm global install
-
-```bash
-npm install -g dod-guard
 ```
 
 ## MCP server
@@ -281,8 +276,8 @@ npm start        # run the MCP server
 ```
 
 `dist/bundle.js` is both the MCP server and the CLI - `process.argv.slice(2)`
-decides which. Publishing goes through a git tag (`dod-guard-v<version>`),
-never by copying a bundle into the plugin cache.
+decides which. Publishing goes through a push to `master`; CI rebuilds and
+commits the tracked bundle, never by copying a bundle into the plugin cache.
 
 ## License
 

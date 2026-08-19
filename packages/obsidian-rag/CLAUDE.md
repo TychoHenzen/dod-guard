@@ -6,7 +6,7 @@
 cd packages/obsidian-rag
 tsc                    # compile TypeScript to dist/
 npm test               # full tsc rebuild + run all tests
-npm run bundle         # esbuild bundle for distribution (prepublish)
+npm run bundle         # esbuild bundle -> dist/bundle.js, the tracked artifact users run
 ```
 
 ## Architecture
