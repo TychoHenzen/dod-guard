@@ -12,9 +12,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { isCliInvocation, runCli } from "./cli.js";
 import { runCoverage } from "./cover/run.js";
+import { runtimeRoot } from "./runtime-root.js";
 
-const _dirname = path.dirname(fileURLToPath(import.meta.url));
-const _pkgPath = path.join(_dirname, "..", "package.json");
+const _pkgPath = path.join(runtimeRoot, "package.json");
 const _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 
 export function createServer(): McpServer {
