@@ -21158,81 +21158,11 @@ var StdioServerTransport = class {
 import { promises as fs5 } from "node:fs";
 import * as path7 from "node:path";
 
-// src/cover/markers.ts
-import { promises as fs3 } from "node:fs";
-import * as path4 from "node:path";
-
-// src/openspec/glob.ts
-import { promises as fs } from "node:fs";
-import * as path from "node:path";
-function segmentToRegExp(segment) {
-  const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-  return new RegExp(`^${escaped}$`);
-}
-async function listEntries(dir) {
-  try {
-    return await fs.readdir(dir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-}
-async function walkFiles(dir, segment) {
-  const re = segmentToRegExp(segment);
-  const entries = await listEntries(dir);
-  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path.join(dir, e.name));
-}
-async function walkDirs(dir, segment, rest) {
-  const re = segmentToRegExp(segment);
-  const entries = await listEntries(dir);
-  const results = [];
-  for (const e of entries) {
-    if (e.isDirectory() && re.test(e.name)) {
-      results.push(...await resolveSegments(path.join(dir, e.name), rest));
-    }
-  }
-  return results;
-}
-var SKIP_DIRS = /* @__PURE__ */ new Set([
-  "node_modules",
-  ".git",
-  ".hg",
-  "__pycache__",
-  ".tox",
-  ".mypy_cache",
-  ".venv",
-  "venv",
-  ".env",
-  "env"
-]);
-async function walkDoubleStar(dir, rest) {
-  const results = await resolveSegments(dir, rest);
-  const entries = await listEntries(dir);
-  for (const e of entries) {
-    if (e.isDirectory() && !SKIP_DIRS.has(e.name)) {
-      results.push(...await walkDoubleStar(path.join(dir, e.name), rest));
-    }
-  }
-  return results;
-}
-async function resolveSegments(dir, segments) {
-  if (segments.length === 0) return [];
-  const [segment, ...rest] = segments;
-  if (segment === "**") return walkDoubleStar(dir, rest);
-  if (rest.length === 0) return walkFiles(dir, segment);
-  return walkDirs(dir, segment, rest);
-}
-async function resolveGlob(baseDir, pattern) {
-  const segments = pattern.split(/[\\/]/).filter((s) => s.length > 0);
-  return resolveSegments(baseDir, segments);
-}
-
-// src/openspec/scenario-id.ts
-function buildScenarioId(group, capability, requirementTitle, scenarioTitle) {
-  return `${group}/${capability}::${requirementTitle}||${scenarioTitle}`;
-}
+// src/cover/report.ts
+import * as path6 from "node:path";
 
 // src/cover/languages.ts
-import * as path2 from "node:path";
+import * as path from "node:path";
 function quoteCommandArgument(value) {
   return `"${value.replace(/"/g, '\\"')}"`;
 }
@@ -21244,13 +21174,15 @@ function configuredCommand(language) {
       return { unresolvedReason: `no runner command is configured for ${language} test files` };
     }
     if (typeof runner !== "string" || runner.trim().length === 0) {
-      return { unresolvedReason: `runner command for ${language} in openspec/test-runners.json must be a non-empty string` };
+      return {
+        unresolvedReason: `runner command for ${language} in openspec/test-runners.json must be a non-empty string`
+      };
     }
-    const relativeTestFile = path2.relative(workspaceRoot, testFile);
-    if (relativeTestFile.length === 0 || relativeTestFile === ".." || relativeTestFile.startsWith(`..${path2.sep}`)) {
+    const relativeTestFile = path.relative(workspaceRoot, testFile);
+    if (relativeTestFile.length === 0 || relativeTestFile === ".." || relativeTestFile.startsWith(`..${path.sep}`)) {
       return { unresolvedReason: `test file is outside the consumer workspace: ${testFile}` };
     }
-    return { command: `${runner.trim()} ${quoteCommandArgument(relativeTestFile.split(path2.sep).join("/"))}` };
+    return { command: `${runner.trim()} ${quoteCommandArgument(relativeTestFile.split(path.sep).join("/"))}` };
   };
 }
 var SEP = String.raw`\s*(?:::|\|\|)\s*`;
@@ -21423,6 +21355,79 @@ var LANG_TABLE = /* @__PURE__ */ new Map([
   [".bash", SH_SPEC]
 ]);
 
+// src/cover/markers.ts
+import { promises as fs3 } from "node:fs";
+import * as path4 from "node:path";
+
+// src/openspec/glob.ts
+import { promises as fs } from "node:fs";
+import * as path2 from "node:path";
+function segmentToRegExp(segment) {
+  const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+  return new RegExp(`^${escaped}$`);
+}
+async function listEntries(dir) {
+  try {
+    return await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+async function walkFiles(dir, segment) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path2.join(dir, e.name));
+}
+async function walkDirs(dir, segment, rest) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  const results = [];
+  for (const e of entries) {
+    if (e.isDirectory() && re.test(e.name)) {
+      results.push(...await resolveSegments(path2.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+var SKIP_DIRS = /* @__PURE__ */ new Set([
+  "node_modules",
+  ".git",
+  ".hg",
+  "__pycache__",
+  ".tox",
+  ".mypy_cache",
+  ".venv",
+  "venv",
+  ".env",
+  "env"
+]);
+async function walkDoubleStar(dir, rest) {
+  const results = await resolveSegments(dir, rest);
+  const entries = await listEntries(dir);
+  for (const e of entries) {
+    if (e.isDirectory() && !SKIP_DIRS.has(e.name)) {
+      results.push(...await walkDoubleStar(path2.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+async function resolveSegments(dir, segments) {
+  if (segments.length === 0) return [];
+  const [segment, ...rest] = segments;
+  if (segment === "**") return walkDoubleStar(dir, rest);
+  if (rest.length === 0) return walkFiles(dir, segment);
+  return walkDirs(dir, segment, rest);
+}
+async function resolveGlob(baseDir, pattern) {
+  const segments = pattern.split(/[\\/]/).filter((s) => s.length > 0);
+  return resolveSegments(baseDir, segments);
+}
+
+// src/openspec/scenario-id.ts
+function buildScenarioId(group, capability, requirementTitle, scenarioTitle) {
+  return `${group}/${capability}::${requirementTitle}||${scenarioTitle}`;
+}
+
 // src/cover/package-dir.ts
 var DEFAULT_TEST_GLOBS = [
   "**/*.test.ts",
@@ -21559,7 +21564,6 @@ async function loadTestRunnerConfig(workspaceRoot) {
 }
 
 // src/cover/report.ts
-import * as path6 from "node:path";
 function reportBinding(file, testName, workspaceRoot, runnerConfig) {
   const adapter = LANG_TABLE.get(path6.extname(file).toLowerCase());
   const language = adapter?.language ?? "unknown";
