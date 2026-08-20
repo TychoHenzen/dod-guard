@@ -50,8 +50,7 @@ Read the `<!-- plan_artifacts: ... -->` comment near the top of
   status --json` output taken in step 2:** proceed directly to routing.
   `/dod-guard:step-by-step` resolves `verify_cmd`s itself on startup.
 - **Mismatch:** report the staleness (which artifacts changed status)
-  and note that `/dod-guard:step-by-step` will ask the user whether to
-  re-resolve `verify_cmd`s when it starts.
+  and let `/dod-guard:step-by-step` re-resolve `verify_cmd`s when it starts.
 
 ## 4. Route to step-by-step
 
@@ -59,7 +58,8 @@ Invoke `/dod-guard:step-by-step <name>` (via the Skill tool) to execute
 the plan. Step-by-step dispatches typed workers, runs each step's
 `verify_cmd`, and commits per completed step. Do not loop through task
 checkboxes or implement tasks in this skill - step-by-step owns that
-entirely.
+entirely. After plan approval, it runs continuously until completion or a
+real blocker. Do not request another approval between passing steps.
 
 Wait for step-by-step to report completion (all steps done, or paused on
 a blocker) before continuing.

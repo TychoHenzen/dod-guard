@@ -79,6 +79,14 @@ the plan.
 - Treat plan approval as authority to execute every automated step.
   Do not ask for confirmation after a passing verification. Commit it
   and continue immediately.
+- After plan approval, remain in the execution loop in the same invocation.
+  Do not end the turn, return a final response, or ask the user to approve
+  the next task after a step passes. Dispatch the next eligible step
+  immediately.
+- Progress text after a completed step is informational only. It must not
+  contain a request such as `Reply approve`, `Reply yes`, or `Reply to start`.
+  Use a final response only after all steps finish or a real blocker requires
+  the user's input.
 - Treat "approve for me" as delegated judgment within the confirmed
   requirement and file scope. Resolve routine implementation choices
   yourself. Record any choice as an assumption in the final report.
