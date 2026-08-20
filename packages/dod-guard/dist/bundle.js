@@ -2984,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3011,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path8) {
-      let input = path8;
+    function removeDotSegments(path12) {
+      let input = path12;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path8, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path8 && path8 !== "/" ? path8 : void 0;
+        const [path12, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path12 && path12 !== "/" ? path12 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3642,7 +3642,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve(baseURI, relativeURI, options) {
+    function resolve2(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -3653,49 +3653,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative2, options, skipNormalization) {
+    function resolveComponent(base, relative3, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative2 = parse3(serialize(relative2, options), options);
+        relative3 = parse3(serialize(relative3, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative2.scheme) {
-        target.scheme = relative2.scheme;
-        target.userinfo = relative2.userinfo;
-        target.host = relative2.host;
-        target.port = relative2.port;
-        target.path = removeDotSegments(relative2.path || "");
-        target.query = relative2.query;
+      if (!options.tolerant && relative3.scheme) {
+        target.scheme = relative3.scheme;
+        target.userinfo = relative3.userinfo;
+        target.host = relative3.host;
+        target.port = relative3.port;
+        target.path = removeDotSegments(relative3.path || "");
+        target.query = relative3.query;
       } else {
-        if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
-          target.userinfo = relative2.userinfo;
-          target.host = relative2.host;
-          target.port = relative2.port;
-          target.path = removeDotSegments(relative2.path || "");
-          target.query = relative2.query;
+        if (relative3.userinfo !== void 0 || relative3.host !== void 0 || relative3.port !== void 0) {
+          target.userinfo = relative3.userinfo;
+          target.host = relative3.host;
+          target.port = relative3.port;
+          target.path = removeDotSegments(relative3.path || "");
+          target.query = relative3.query;
         } else {
-          if (!relative2.path) {
+          if (!relative3.path) {
             target.path = base.path;
-            if (relative2.query !== void 0) {
-              target.query = relative2.query;
+            if (relative3.query !== void 0) {
+              target.query = relative3.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative2.path[0] === "/") {
-              target.path = removeDotSegments(relative2.path);
+            if (relative3.path[0] === "/") {
+              target.path = removeDotSegments(relative3.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative2.path;
+                target.path = "/" + relative3.path;
               } else if (!base.path) {
-                target.path = relative2.path;
+                target.path = relative3.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative3.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative2.query;
+            target.query = relative3.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3703,7 +3703,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative2.fragment;
+      target.fragment = relative3.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3926,7 +3926,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -6902,12 +6902,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs7, exportName) {
+    function addFormats(ajv, list, fs8, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs7[f]);
+        ajv.addFormat(f, fs8[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -6917,8 +6917,120 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync, realpathSync } from "node:fs";
-import * as path7 from "node:path";
-import { fileURLToPath } from "node:url";
+import * as path11 from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+
+// ../../node_modules/zod/v3/external.js
+var external_exports = {};
+__export(external_exports, {
+  BRAND: () => BRAND,
+  DIRTY: () => DIRTY,
+  EMPTY_PATH: () => EMPTY_PATH,
+  INVALID: () => INVALID,
+  NEVER: () => NEVER,
+  OK: () => OK,
+  ParseStatus: () => ParseStatus,
+  Schema: () => ZodType,
+  ZodAny: () => ZodAny,
+  ZodArray: () => ZodArray,
+  ZodBigInt: () => ZodBigInt,
+  ZodBoolean: () => ZodBoolean,
+  ZodBranded: () => ZodBranded,
+  ZodCatch: () => ZodCatch,
+  ZodDate: () => ZodDate,
+  ZodDefault: () => ZodDefault,
+  ZodDiscriminatedUnion: () => ZodDiscriminatedUnion,
+  ZodEffects: () => ZodEffects,
+  ZodEnum: () => ZodEnum,
+  ZodError: () => ZodError,
+  ZodFirstPartyTypeKind: () => ZodFirstPartyTypeKind,
+  ZodFunction: () => ZodFunction,
+  ZodIntersection: () => ZodIntersection,
+  ZodIssueCode: () => ZodIssueCode,
+  ZodLazy: () => ZodLazy,
+  ZodLiteral: () => ZodLiteral,
+  ZodMap: () => ZodMap,
+  ZodNaN: () => ZodNaN,
+  ZodNativeEnum: () => ZodNativeEnum,
+  ZodNever: () => ZodNever,
+  ZodNull: () => ZodNull,
+  ZodNullable: () => ZodNullable,
+  ZodNumber: () => ZodNumber,
+  ZodObject: () => ZodObject,
+  ZodOptional: () => ZodOptional,
+  ZodParsedType: () => ZodParsedType,
+  ZodPipeline: () => ZodPipeline,
+  ZodPromise: () => ZodPromise,
+  ZodReadonly: () => ZodReadonly,
+  ZodRecord: () => ZodRecord,
+  ZodSchema: () => ZodType,
+  ZodSet: () => ZodSet,
+  ZodString: () => ZodString,
+  ZodSymbol: () => ZodSymbol,
+  ZodTransformer: () => ZodEffects,
+  ZodTuple: () => ZodTuple,
+  ZodType: () => ZodType,
+  ZodUndefined: () => ZodUndefined,
+  ZodUnion: () => ZodUnion,
+  ZodUnknown: () => ZodUnknown,
+  ZodVoid: () => ZodVoid,
+  addIssueToContext: () => addIssueToContext,
+  any: () => anyType,
+  array: () => arrayType,
+  bigint: () => bigIntType,
+  boolean: () => booleanType,
+  coerce: () => coerce,
+  custom: () => custom,
+  date: () => dateType,
+  datetimeRegex: () => datetimeRegex,
+  defaultErrorMap: () => en_default,
+  discriminatedUnion: () => discriminatedUnionType,
+  effect: () => effectsType,
+  enum: () => enumType,
+  function: () => functionType,
+  getErrorMap: () => getErrorMap,
+  getParsedType: () => getParsedType,
+  instanceof: () => instanceOfType,
+  intersection: () => intersectionType,
+  isAborted: () => isAborted,
+  isAsync: () => isAsync,
+  isDirty: () => isDirty,
+  isValid: () => isValid,
+  late: () => late,
+  lazy: () => lazyType,
+  literal: () => literalType,
+  makeIssue: () => makeIssue,
+  map: () => mapType,
+  nan: () => nanType,
+  nativeEnum: () => nativeEnumType,
+  never: () => neverType,
+  null: () => nullType,
+  nullable: () => nullableType,
+  number: () => numberType,
+  object: () => objectType,
+  objectUtil: () => objectUtil,
+  oboolean: () => oboolean,
+  onumber: () => onumber,
+  optional: () => optionalType,
+  ostring: () => ostring,
+  pipeline: () => pipelineType,
+  preprocess: () => preprocessType,
+  promise: () => promiseType,
+  quotelessJson: () => quotelessJson,
+  record: () => recordType,
+  set: () => setType,
+  setErrorMap: () => setErrorMap,
+  strictObject: () => strictObjectType,
+  string: () => stringType,
+  symbol: () => symbolType,
+  transformer: () => effectsType,
+  tuple: () => tupleType,
+  undefined: () => undefinedType,
+  union: () => unionType,
+  unknown: () => unknownType,
+  util: () => util,
+  void: () => voidType
+});
 
 // ../../node_modules/zod/v3/helpers/util.js
 var util;
@@ -7073,6 +7185,10 @@ var ZodIssueCode = util.arrayToEnum([
   "not_multiple_of",
   "not_finite"
 ]);
+var quotelessJson = (obj) => {
+  const json = JSON.stringify(obj, null, 2);
+  return json.replace(/"([^"]+)":/g, "$1:");
+};
 var ZodError = class _ZodError extends Error {
   get errors() {
     return this.issues;
@@ -7273,14 +7389,17 @@ var en_default = errorMap;
 
 // ../../node_modules/zod/v3/errors.js
 var overrideErrorMap = en_default;
+function setErrorMap(map) {
+  overrideErrorMap = map;
+}
 function getErrorMap() {
   return overrideErrorMap;
 }
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path8, errorMaps, issueData } = params;
-  const fullPath = [...path8, ...issueData.path || []];
+  const { data, path: path12, errorMaps, issueData } = params;
+  const fullPath = [...path12, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7303,6 +7422,7 @@ var makeIssue = (params) => {
     message: errorMessage2
   };
 };
+var EMPTY_PATH = [];
 function addIssueToContext(ctx, issueData) {
   const overrideMap = getErrorMap();
   const issue2 = makeIssue({
@@ -7395,11 +7515,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path8, key) {
+  constructor(parent, value, path12, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path8;
+    this._path = path12;
     this._key = key;
   }
   get path() {
@@ -10628,6 +10748,7 @@ ZodNaN.create = (params) => {
     ...processCreateParams(params)
   });
 };
+var BRAND = /* @__PURE__ */ Symbol("zod_brand");
 var ZodBranded = class extends ZodType {
   _parse(input) {
     const { ctx } = this._processInputParams(input);
@@ -10719,6 +10840,33 @@ ZodReadonly.create = (type, params) => {
     ...processCreateParams(params)
   });
 };
+function cleanParams(params, data) {
+  const p = typeof params === "function" ? params(data) : typeof params === "string" ? { message: params } : params;
+  const p2 = typeof p === "string" ? { message: p } : p;
+  return p2;
+}
+function custom(check2, _params = {}, fatal) {
+  if (check2)
+    return ZodAny.create().superRefine((data, ctx) => {
+      const r = check2(data);
+      if (r instanceof Promise) {
+        return r.then((r2) => {
+          if (!r2) {
+            const params = cleanParams(_params, data);
+            const _fatal = params.fatal ?? fatal ?? true;
+            ctx.addIssue({ code: "custom", ...params, fatal: _fatal });
+          }
+        });
+      }
+      if (!r) {
+        const params = cleanParams(_params, data);
+        const _fatal = params.fatal ?? fatal ?? true;
+        ctx.addIssue({ code: "custom", ...params, fatal: _fatal });
+      }
+      return;
+    });
+  return ZodAny.create();
+}
 var late = {
   object: ZodObject.lazycreate
 };
@@ -10761,6 +10909,9 @@ var ZodFirstPartyTypeKind;
   ZodFirstPartyTypeKind2["ZodPipeline"] = "ZodPipeline";
   ZodFirstPartyTypeKind2["ZodReadonly"] = "ZodReadonly";
 })(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
+var instanceOfType = (cls, params = {
+  message: `Input not instance of ${cls.name}`
+}) => custom((data) => data instanceof cls, params);
 var stringType = ZodString.create;
 var numberType = ZodNumber.create;
 var nanType = ZodNaN.create;
@@ -10795,9 +10946,23 @@ var optionalType = ZodOptional.create;
 var nullableType = ZodNullable.create;
 var preprocessType = ZodEffects.createWithPreprocess;
 var pipelineType = ZodPipeline.create;
+var ostring = () => stringType().optional();
+var onumber = () => numberType().optional();
+var oboolean = () => booleanType().optional();
+var coerce = {
+  string: ((arg) => ZodString.create({ ...arg, coerce: true })),
+  number: ((arg) => ZodNumber.create({ ...arg, coerce: true })),
+  boolean: ((arg) => ZodBoolean.create({
+    ...arg,
+    coerce: true
+  })),
+  bigint: ((arg) => ZodBigInt.create({ ...arg, coerce: true })),
+  date: ((arg) => ZodDate.create({ ...arg, coerce: true }))
+};
+var NEVER = INVALID;
 
 // ../../node_modules/zod/v4/core/core.js
-var NEVER = Object.freeze({
+var NEVER2 = Object.freeze({
   status: "aborted"
 });
 // @__NO_SIDE_EFFECTS__
@@ -10991,10 +11156,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path8) {
-  if (!path8)
+function getElementAtPath(obj, path12) {
+  if (!path12)
     return obj;
-  return path8.reduce((acc, key) => acc?.[key], obj);
+  return path12.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11314,11 +11479,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path8, issues) {
+function prefixIssues(path12, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path8);
+    iss.path.unshift(path12);
     return iss;
   });
 }
@@ -14729,11 +14894,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path8) {
-  if (path8.length === 0) {
+function getDotPath(path12) {
+  if (path12.length === 0) {
     return "object root";
   }
-  return path8.reduce((acc, seg, index) => {
+  return path12.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -15467,7 +15632,7 @@ function check(fn) {
   ch._zod.check = fn;
   return ch;
 }
-function custom(fn, _params) {
+function custom2(fn, _params) {
   return _custom(ZodCustom, fn ?? (() => true), _params);
 }
 function refine(fn, _params = {}) {
@@ -15505,7 +15670,7 @@ var LATEST_PROTOCOL_VERSION = "2025-11-25";
 var SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07"];
 var RELATED_TASK_META_KEY = "io.modelcontextprotocol/related-task";
 var JSONRPC_VERSION = "2.0";
-var AssertObjectSchema = custom((v) => v !== null && (typeof v === "object" || typeof v === "function"));
+var AssertObjectSchema = custom2((v) => v !== null && (typeof v === "object" || typeof v === "function"));
 var ProgressTokenSchema = union([string2(), number2().int()]);
 var CursorSchema = string2();
 var TaskCreationParamsSchema = looseObject({
@@ -18862,7 +19027,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -18879,7 +19044,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -18957,7 +19122,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve(parseResult.data);
+            resolve2(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19218,12 +19383,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve, interval);
+      const timeoutId = setTimeout(resolve2, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20314,7 +20479,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -20978,24 +21143,24 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve) => {
+    return new Promise((resolve2) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve();
+        resolve2();
       } else {
-        this._stdout.once("drain", resolve);
+        this._stdout.once("drain", resolve2);
       }
     });
   }
 };
 
 // src/cover/baseline.ts
-import { promises as fs4 } from "node:fs";
-import * as path4 from "node:path";
+import { promises as fs5 } from "node:fs";
+import * as path7 from "node:path";
 
 // src/cover/markers.ts
 import { promises as fs3 } from "node:fs";
-import * as path3 from "node:path";
+import * as path4 from "node:path";
 
 // src/openspec/glob.ts
 import { promises as fs } from "node:fs";
@@ -21067,6 +21232,27 @@ function buildScenarioId(group, capability, requirementTitle, scenarioTitle) {
 }
 
 // src/cover/languages.ts
+import * as path2 from "node:path";
+function quoteCommandArgument(value) {
+  return `"${value.replace(/"/g, '\\"')}"`;
+}
+function configuredCommand(language) {
+  return ({ workspaceRoot, testFile, projectConfig, configError }) => {
+    if (configError) return { unresolvedReason: configError };
+    const runner = projectConfig[language];
+    if (runner === void 0) {
+      return { unresolvedReason: `no runner command is configured for ${language} test files` };
+    }
+    if (typeof runner !== "string" || runner.trim().length === 0) {
+      return { unresolvedReason: `runner command for ${language} in openspec/test-runners.json must be a non-empty string` };
+    }
+    const relativeTestFile = path2.relative(workspaceRoot, testFile);
+    if (relativeTestFile.length === 0 || relativeTestFile === ".." || relativeTestFile.startsWith(`..${path2.sep}`)) {
+      return { unresolvedReason: `test file is outside the consumer workspace: ${testFile}` };
+    }
+    return { command: `${runner.trim()} ${quoteCommandArgument(relativeTestFile.split(path2.sep).join("/"))}` };
+  };
+}
 var SEP = String.raw`\s*(?:::|\|\|)\s*`;
 var GC = String.raw`([^:\s|]+\/[^:\s|]+)`;
 var SLASH_MARKER = new RegExp(String.raw`^\s*\/\/\s*covers:\s*${GC}${SEP}(.+?)${SEP}(.+?)\s*$`);
@@ -21121,21 +21307,28 @@ function extractIndentBody(lines, startLine) {
   return lines.slice(startLine, end).join("\n");
 }
 var JS_SPEC = {
+  language: "javascript",
   markerRe: SLASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:test|it)\(\s*(['"`])((?:\\.|(?!\1).)*)\1/, 2),
-  findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:test|it)\(/))
+  findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:test|it)\(/)),
+  resolveWholeFileCommand: configuredCommand("javascript")
 };
 var PY_SPEC = {
+  language: "python",
   markerRe: HASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:async\s+)?def\s+(test_\w+)\s*\(/, 1),
-  findTestBody: (lines, from) => extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:async\s+)?def\s+test_\w+\s*\(/))
+  findTestBody: (lines, from) => extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:async\s+)?def\s+test_\w+\s*\(/)),
+  resolveWholeFileCommand: configuredCommand("python")
 };
 var GO_SPEC = {
+  language: "go",
   markerRe: SLASH_MARKER,
   findTestName: simpleFinder(/^\s*func\s+(Test\w*)\s*\(/, 1),
-  findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*func\s+Test\w*\s*\(/))
+  findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*func\s+Test\w*\s*\(/)),
+  resolveWholeFileCommand: configuredCommand("go")
 };
 var RS_SPEC = {
+  language: "rust",
   markerRe: SLASH_MARKER,
   findTestName: (lines, from) => {
     const attrLine = skipBlanks(lines, from);
@@ -21152,9 +21345,11 @@ var RS_SPEC = {
     if (!/^\s*#\[test\]/.test(lines[attrLine])) return null;
     const fnLine = findDeclLineSimple(lines, attrLine + 1, /^\s*(?:pub\s+)?(?:async\s+)?fn\s+\w+\s*\(/);
     return extractBraceBody(lines, fnLine);
-  }
+  },
+  resolveWholeFileCommand: configuredCommand("rust")
 };
 var RB_SPEC = {
+  language: "ruby",
   markerRe: HASH_MARKER,
   findTestName: (lines, from) => {
     const next = skipBlanks(lines, from);
@@ -21164,9 +21359,11 @@ var RB_SPEC = {
     const itMatch = lines[next].match(/^\s*it\s*[\s(]+(['"`])((?:\\.|(?!\1).)*)\1/);
     return itMatch ? itMatch[2] : null;
   },
-  findTestBody: (lines, from) => extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:def\s+test_\w+\s*\(|it\s*[\s(]+)/))
+  findTestBody: (lines, from) => extractIndentBody(lines, findDeclLineSimple(lines, from, /^\s*(?:def\s+test_\w+\s*\(|it\s*[\s(]+)/)),
+  resolveWholeFileCommand: configuredCommand("ruby")
 };
 var JAVA_KT_SPEC = {
+  language: "java",
   markerRe: SLASH_MARKER,
   findTestName: (lines, from) => {
     const next = skipBlanks(lines, from);
@@ -21196,12 +21393,20 @@ var JAVA_KT_SPEC = {
       return extractBraceBody(lines, fnLine);
     }
     return null;
-  }
+  },
+  resolveWholeFileCommand: configuredCommand("java")
 };
 var SH_SPEC = {
+  language: "shell",
   markerRe: HASH_MARKER,
   findTestName: simpleFinder(/^\s*(?:function\s+)?(test_\w+)\s*\(\s*\)/, 1),
-  findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:function\s+)?test_\w+\s*\(\s*\)/))
+  findTestBody: (lines, from) => extractBraceBody(lines, findDeclLineSimple(lines, from, /^\s*(?:function\s+)?test_\w+\s*\(\s*\)/)),
+  resolveWholeFileCommand: configuredCommand("shell")
+};
+var KOTLIN_SPEC = {
+  ...JAVA_KT_SPEC,
+  language: "kotlin",
+  resolveWholeFileCommand: configuredCommand("kotlin")
 };
 var LANG_TABLE = /* @__PURE__ */ new Map([
   [".ts", JS_SPEC],
@@ -21213,7 +21418,7 @@ var LANG_TABLE = /* @__PURE__ */ new Map([
   [".rs", RS_SPEC],
   [".rb", RB_SPEC],
   [".java", JAVA_KT_SPEC],
-  [".kt", JAVA_KT_SPEC],
+  [".kt", KOTLIN_SPEC],
   [".sh", SH_SPEC],
   [".bash", SH_SPEC]
 ]);
@@ -21242,7 +21447,7 @@ function testGlobsForGroup(_group) {
 
 // src/cover/test-globs.ts
 import { promises as fs2 } from "node:fs";
-import * as path2 from "node:path";
+import * as path3 from "node:path";
 var TestGlobsError = class extends Error {
   constructor(message) {
     super(message);
@@ -21270,7 +21475,7 @@ function validateTestGlobs(raw) {
   return result;
 }
 async function loadTestGlobs(cwd) {
-  const filePath = path2.join(cwd, "openspec", "test-globs.json");
+  const filePath = path3.join(cwd, "openspec", "test-globs.json");
   let raw;
   try {
     raw = await fs2.readFile(filePath, "utf-8");
@@ -21282,7 +21487,7 @@ async function loadTestGlobs(cwd) {
 
 // src/cover/markers.ts
 function markersInFile(file, content) {
-  const ext = path3.extname(file).toLowerCase();
+  const ext = path4.extname(file).toLowerCase();
   const lang = LANG_TABLE.get(ext);
   if (!lang) return [];
   const lines = content.split("\n");
@@ -21328,10 +21533,53 @@ async function scanMarkers(cwd, group) {
   return bindings;
 }
 
+// src/cover/test-runners.ts
+import { promises as fs4 } from "node:fs";
+import * as path5 from "node:path";
+var CONFIG_PATH = "openspec/test-runners.json";
+async function loadTestRunnerConfig(workspaceRoot) {
+  const configFile = path5.join(workspaceRoot, ...CONFIG_PATH.split("/"));
+  let content;
+  try {
+    content = await fs4.readFile(configFile, "utf-8");
+  } catch (error2) {
+    if (error2.code === "ENOENT") return { config: {} };
+    throw error2;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return { unresolvedReason: `${CONFIG_PATH} contains invalid JSON` };
+  }
+  if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object") {
+    return { unresolvedReason: `${CONFIG_PATH} must contain a JSON object keyed by language` };
+  }
+  return { config: parsed };
+}
+
 // src/cover/report.ts
+import * as path6 from "node:path";
+function reportBinding(file, testName, workspaceRoot, runnerConfig) {
+  const adapter = LANG_TABLE.get(path6.extname(file).toLowerCase());
+  const language = adapter?.language ?? "unknown";
+  const resolution = adapter?.resolveWholeFileCommand({
+    workspaceRoot,
+    testFile: file,
+    projectConfig: "config" in runnerConfig ? runnerConfig.config : {},
+    ..."unresolvedReason" in runnerConfig ? { configError: runnerConfig.unresolvedReason } : {}
+  }) ?? { unresolvedReason: `no runner command is configured for ${language} test files` };
+  return {
+    testFile: file,
+    testName,
+    language,
+    ..."command" in resolution ? { verifyCmd: resolution.command } : { unresolvedReason: resolution.unresolvedReason }
+  };
+}
 async function buildReport(cwd, scenarios) {
   const markersByGroup = /* @__PURE__ */ new Map();
   const reports = [];
+  const runnerConfig = await loadTestRunnerConfig(cwd);
   for (const scenario of scenarios) {
     let markers = markersByGroup.get(scenario.group);
     if (!markers) {
@@ -21339,6 +21587,7 @@ async function buildReport(cwd, scenarios) {
       markersByGroup.set(scenario.group, markers);
     }
     const binding = markers.get(scenario.id);
+    const reportedBinding = binding ? reportBinding(binding.file, binding.testName, cwd, runnerConfig) : void 0;
     reports.push({
       scenarioId: scenario.id,
       group: scenario.group,
@@ -21346,7 +21595,8 @@ async function buildReport(cwd, scenarios) {
       requirementTitle: scenario.requirementTitle,
       scenarioTitle: scenario.scenarioTitle,
       outcome: binding ? "bound" : "unwired",
-      note: binding ? `bound to ${binding.testName} in ${binding.file}` : "no test binds this scenario"
+      ...reportedBinding ? { binding: reportedBinding } : {},
+      note: binding ? `bound to ${binding.testName} in ${binding.file}${reportedBinding?.verifyCmd ? `; verify with ${reportedBinding.verifyCmd}` : `; ${reportedBinding?.unresolvedReason}`}` : "no test binds this scenario"
     });
   }
   return reports;
@@ -21370,11 +21620,11 @@ function summarizeReport(reports) {
 // src/cover/baseline.ts
 var NOTE = "Coverage outcome each scenario holds today. A drop below its own outcome fails the gate.";
 function baselinePath(cwd) {
-  return path4.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
+  return path7.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
 }
 async function readBaseline(cwd) {
   try {
-    const raw = await fs4.readFile(baselinePath(cwd), "utf-8");
+    const raw = await fs5.readFile(baselinePath(cwd), "utf-8");
     const parsed = JSON.parse(raw);
     return parsed.scenarios ?? {};
   } catch {
@@ -21383,8 +21633,8 @@ async function readBaseline(cwd) {
 }
 async function writeBaseline(cwd, current) {
   const sorted = Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b)));
-  await fs4.mkdir(path4.dirname(baselinePath(cwd)), { recursive: true });
-  await fs4.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
+  await fs5.mkdir(path7.dirname(baselinePath(cwd)), { recursive: true });
+  await fs5.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
 `);
 }
 function compareToBaseline(reports, baseline) {
@@ -21416,8 +21666,8 @@ function outcomesFromReport(reports) {
 }
 
 // src/cover/enumerate.ts
-import { promises as fs5 } from "node:fs";
-import * as path5 from "node:path";
+import { promises as fs6 } from "node:fs";
+import * as path8 from "node:path";
 
 // src/openspec/requirements.ts
 var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
@@ -21490,14 +21740,14 @@ function extractRequirementBlocks(content) {
 
 // src/cover/enumerate.ts
 function capabilityFromPath(specsDir, specFile) {
-  const rel = path5.relative(specsDir, specFile).split(path5.sep);
+  const rel = path8.relative(specsDir, specFile).split(path8.sep);
   if (rel.length < 3) return null;
   return { group: rel[0], capability: rel.slice(1, -1).join("/") };
 }
 async function scenariosFromFile(specsDir, specFile) {
   const located = capabilityFromPath(specsDir, specFile);
   if (!located) return [];
-  const content = await fs5.readFile(specFile, "utf-8");
+  const content = await fs6.readFile(specFile, "utf-8");
   const scenarios = [];
   for (const block of extractRequirementBlocks(content)) {
     for (const scenario of block.scenarios) {
@@ -21521,15 +21771,15 @@ async function enumerateUnder(specsDir) {
   return out;
 }
 async function enumerateChangeScenarios(cwd, changeId) {
-  return enumerateUnder(path5.join(cwd, "openspec", "changes", changeId, "specs"));
+  return enumerateUnder(path8.join(cwd, "openspec", "changes", changeId, "specs"));
 }
 async function enumerateAllScenarios(cwd) {
-  return enumerateUnder(path5.join(cwd, "openspec", "specs"));
+  return enumerateUnder(path8.join(cwd, "openspec", "specs"));
 }
 
 // src/cover/plan-checks.ts
-import { promises as fs6 } from "node:fs";
-import * as path6 from "node:path";
+import { promises as fs7 } from "node:fs";
+import * as path9 from "node:path";
 
 // src/openspec/tasks-parser.ts
 var CHECKBOX_RE = /^-\s*\[([ xX])\]\s*(.+?)\s*$/;
@@ -21607,8 +21857,8 @@ function parseTaskGroups(content) {
 
 // src/cover/plan-checks.ts
 function readTasks(cwd, changeId) {
-  const tasksPath = path6.join(cwd, "openspec", "changes", changeId, "tasks.md");
-  return fs6.readFile(tasksPath, "utf-8").catch(() => "");
+  const tasksPath = path9.join(cwd, "openspec", "changes", changeId, "tasks.md");
+  return fs7.readFile(tasksPath, "utf-8").catch(() => "");
 }
 async function checkPlanComplete(opts, io) {
   if (opts.all) return void 0;
@@ -21657,6 +21907,26 @@ var EXIT_OK = 0;
 var EXIT_REGRESSION = 1;
 var EXIT_USAGE_ERROR = 3;
 var scenarioIds = (reports) => reports.map((report) => report.scenarioId);
+async function runCoverage(opts) {
+  const scenarios = opts.all ? await enumerateAllScenarios(opts.cwd) : await enumerateChangeScenarios(opts.cwd, opts.changeId);
+  if (scenarios.length === 0) {
+    return { reports: [], adopted: [], regressions: [], improved: [], orphaned: [] };
+  }
+  const reports = await buildReport(opts.cwd, scenarios);
+  if (opts.writeBaseline) {
+    await writeBaseline(opts.cwd, outcomesFromReport(reports));
+    return { reports, adopted: [], regressions: [], improved: [], orphaned: [] };
+  }
+  const baseline = await readBaseline(opts.cwd);
+  const { adopted, regressions, improved } = compareToBaseline(reports, baseline);
+  const orphaned = opts.all ? findOrphans(reports, baseline) : [];
+  const silentIo = { write: () => {
+  }, writeErr: () => {
+  } };
+  const planComplete = await checkPlanComplete(opts, silentIo);
+  const planBound = regressions.length === 0 && planComplete !== void 0 ? void 0 : await checkPlanBound(opts, scenarioIds(reports), silentIo);
+  return { reports, adopted, regressions, improved, orphaned, planComplete, planBound };
+}
 async function runCover(opts, io) {
   if (!(opts.all || opts.changeId)) {
     io.writeErr("ERROR: dod-guard cover needs a change id or --all.\n");
@@ -21666,51 +21936,50 @@ async function runCover(opts, io) {
     io.writeErr("ERROR: --write-baseline needs --all - a change-scoped run would drop every other scenario.\n");
     return EXIT_USAGE_ERROR;
   }
-  const scenarios = opts.all ? await enumerateAllScenarios(opts.cwd) : await enumerateChangeScenarios(opts.cwd, opts.changeId);
-  if (scenarios.length === 0) {
+  const result = await runCoverage(opts);
+  if (result.reports.length === 0) {
     io.write(
       opts.all ? "No scenarios found under openspec/specs. Nothing to cover.\n" : `No spec deltas found for change "${opts.changeId}". Nothing to cover.
 `
     );
     return EXIT_OK;
   }
-  const reports = await buildReport(opts.cwd, scenarios);
-  for (const report of reports) io.write(`  ${report.outcome.padEnd(26)} ${report.scenarioId}
+  for (const report of result.reports) io.write(`  ${report.outcome.padEnd(26)} ${report.scenarioId}
 `);
-  const summary = summarizeReport(reports);
+  const summary = summarizeReport(result.reports);
   io.write(`
-${reports.length} scenario(s): ${summary.bound} bound, ${summary.unwired} unwired
+${result.reports.length} scenario(s): ${summary.bound} bound, ${summary.unwired} unwired
 `);
   if (opts.writeBaseline) {
-    await writeBaseline(opts.cwd, outcomesFromReport(reports));
     io.write(`
-wrote coverage-gate baseline for ${reports.length} scenario(s)
+wrote coverage-gate baseline for ${result.reports.length} scenario(s)
 `);
     return EXIT_OK;
   }
-  const baseline = await readBaseline(opts.cwd);
-  const { adopted, regressions, improved } = compareToBaseline(reports, baseline);
-  const orphaned = opts.all ? findOrphans(reports, baseline) : [];
-  for (const id of adopted) io.write(`  adopted: ${id}
+  for (const id of result.adopted) io.write(`  adopted: ${id}
 `);
-  for (const id of improved) io.write(`  improved: ${id}
+  for (const id of result.improved) io.write(`  improved: ${id}
 `);
-  for (const id of orphaned) io.write(`  orphaned: ${id}
+  for (const id of result.orphaned) io.write(`  orphaned: ${id}
 `);
-  if (regressions.length === 0) {
+  if (result.regressions.length === 0) {
     io.write(`
 cover OK - 0 regression(s)
 `);
-    return await checkPlanComplete(opts, io) ?? await checkPlanBound(opts, scenarioIds(reports), io) ?? EXIT_OK;
+    if (result.planComplete !== void 0) await checkPlanComplete(opts, io);
+    else if (result.planBound !== void 0) await checkPlanBound(opts, scenarioIds(result.reports), io);
+    return result.planComplete ?? result.planBound ?? EXIT_OK;
   }
   io.write(`
-cover FAILED - ${regressions.length} regression(s)
+cover FAILED - ${result.regressions.length} regression(s)
 
 `);
-  for (const r of regressions) io.write(`  ${r.scenarioId}: ${r.before} before, ${r.now} now
+  for (const regression of result.regressions) {
+    io.write(`  ${regression.scenarioId}: ${regression.before} before, ${regression.now} now
 `);
-  await checkPlanComplete(opts, io);
-  await checkPlanBound(opts, scenarioIds(reports), io);
+  }
+  if (result.planComplete !== void 0) await checkPlanComplete(opts, io);
+  if (result.planBound !== void 0) await checkPlanBound(opts, scenarioIds(result.reports), io);
   return EXIT_REGRESSION;
 }
 
@@ -21804,12 +22073,39 @@ function isCliInvocation(argv) {
   return argv.length > 0;
 }
 
+// src/runtime-root.ts
+import * as path10 from "node:path";
+import { fileURLToPath } from "node:url";
+var runtimeRoot = path10.resolve(fileURLToPath(import.meta.url), "..", "..");
+
 // src/index.ts
-var _dirname = path7.dirname(fileURLToPath(import.meta.url));
-var _pkgPath = path7.join(_dirname, "..", "package.json");
+var _pkgPath = path11.join(runtimeRoot, "package.json");
 var _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
-var server = new McpServer({ name: "dod-guard", version: _pkg.version });
-var _filename = fileURLToPath(import.meta.url);
+function createServer() {
+  const server2 = new McpServer({ name: "dod-guard", version: _pkg.version });
+  server2.registerTool(
+    "cover",
+    {
+      description: "Report OpenSpec scenario coverage for a consumer workspace.",
+      inputSchema: {
+        cwd: external_exports.string().describe("Absolute path to the consumer workspace."),
+        changeId: external_exports.string().optional().describe("OpenSpec change id to scan."),
+        all: external_exports.boolean().optional().default(false).describe("Scan all main OpenSpec specifications.")
+      }
+    },
+    async ({ cwd, changeId, all }) => {
+      const result = await runCoverage({ cwd, changeId, all, writeBaseline: false });
+      const serialized = JSON.stringify(result);
+      return {
+        content: [{ type: "text", text: serialized }],
+        structuredContent: JSON.parse(serialized)
+      };
+    }
+  );
+  return server2;
+}
+var server = createServer();
+var _filename = fileURLToPath2(import.meta.url);
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
@@ -21839,3 +22135,6 @@ if (isMainModule()) {
     });
   }
 }
+export {
+  createServer
+};

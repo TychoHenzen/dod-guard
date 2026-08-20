@@ -2,11 +2,12 @@
  * The coverage report: bound (a marker names this scenario) or unwired (no
  * marker does). `cover` never runs a test - it scans markers by regex.
  */
-import type { EnumeratedScenario } from "./enumerate.js";
-import { scanMarkers } from "./markers.js";
-import { LANG_TABLE } from "./languages.js";
-import { loadTestRunnerConfig, type TestRunnerConfigLoadResult } from "./test-runners.js";
+
 import * as path from "node:path";
+import type { EnumeratedScenario } from "./enumerate.js";
+import { LANG_TABLE } from "./languages.js";
+import { scanMarkers } from "./markers.js";
+import { loadTestRunnerConfig, type TestRunnerConfigLoadResult } from "./test-runners.js";
 
 export type Outcome = "bound" | "unwired";
 
@@ -48,7 +49,12 @@ export interface CoverageGateResult {
   planBound?: number;
 }
 
-function reportBinding(file: string, testName: string, workspaceRoot: string, runnerConfig: TestRunnerConfigLoadResult): ScenarioBinding {
+function reportBinding(
+  file: string,
+  testName: string,
+  workspaceRoot: string,
+  runnerConfig: TestRunnerConfigLoadResult,
+): ScenarioBinding {
   const adapter = LANG_TABLE.get(path.extname(file).toLowerCase());
   const language = adapter?.language ?? "unknown";
   const resolution = adapter?.resolveWholeFileCommand({
@@ -61,7 +67,9 @@ function reportBinding(file: string, testName: string, workspaceRoot: string, ru
     testFile: file,
     testName,
     language,
-    ...("command" in resolution ? { verifyCmd: resolution.command } : { unresolvedReason: resolution.unresolvedReason }),
+    ...("command" in resolution
+      ? { verifyCmd: resolution.command }
+      : { unresolvedReason: resolution.unresolvedReason }),
   };
 }
 

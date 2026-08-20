@@ -9,9 +9,7 @@ export interface WholeFileCommandContext {
 }
 
 /** The command an adapter can construct, or why its registered language has no runnable command. */
-export type WholeFileCommandResolution =
-  | { command: string }
-  | { unresolvedReason: string };
+export type WholeFileCommandResolution = { command: string } | { unresolvedReason: string };
 
 /** One language family's test declarations and whole-file command construction. */
 export interface LanguageAdapter {
@@ -35,7 +33,9 @@ function configuredCommand(language: string): LanguageAdapter["resolveWholeFileC
       return { unresolvedReason: `no runner command is configured for ${language} test files` };
     }
     if (typeof runner !== "string" || runner.trim().length === 0) {
-      return { unresolvedReason: `runner command for ${language} in openspec/test-runners.json must be a non-empty string` };
+      return {
+        unresolvedReason: `runner command for ${language} in openspec/test-runners.json must be a non-empty string`,
+      };
     }
 
     const relativeTestFile = path.relative(workspaceRoot, testFile);

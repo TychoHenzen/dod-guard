@@ -1,9 +1,7 @@
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 
-export type TestRunnerConfigLoadResult =
-  | { config: Readonly<Record<string, unknown>> }
-  | { unresolvedReason: string };
+export type TestRunnerConfigLoadResult = { config: Readonly<Record<string, unknown>> } | { unresolvedReason: string };
 
 const CONFIG_PATH = "openspec/test-runners.json";
 

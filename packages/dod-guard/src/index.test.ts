@@ -5,8 +5,8 @@ import * as path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { build } from "esbuild";
 import { runCoverage } from "./cover/run.js";
 import { createServer } from "./index.js";
@@ -79,7 +79,11 @@ describe("plugin-native cover", () => {
     ]);
 
     const client = new Client({ name: "dod-guard-consumer", version: "1.0.0" });
-    const transport = new StdioClientTransport({ command: process.execPath, args: [installedBundle], cwd: consumerWorkspace });
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: [installedBundle],
+      cwd: consumerWorkspace,
+    });
 
     try {
       await client.connect(transport);
