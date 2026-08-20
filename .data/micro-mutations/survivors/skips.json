@@ -1,0 +1,69 @@
+{
+  "source": "packages/quality-guard/src/skips.ts",
+  "date": "2026-08-20T07:24:13.574Z",
+  "summary": {
+    "total": 41,
+    "killed": 33,
+    "survived": 7,
+    "timeout": 0,
+    "unviable": 1
+  },
+  "survivors": [
+    {
+      "file": "packages/quality-guard/dist/skips.js",
+      "id": "6",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 14,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/skips.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 17,
+      "dist_col": 56
+    },
+    {
+      "file": "packages/quality-guard/dist/skips.js",
+      "id": "26",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 28,
+      "dist_col": 64
+    },
+    {
+      "file": "packages/quality-guard/dist/skips.js",
+      "id": "32",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 31,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/quality-guard/dist/skips.js",
+      "id": "34",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 32,
+      "dist_col": 48
+    },
+    {
+      "file": "packages/quality-guard/dist/skips.js",
+      "id": "38",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 37,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/quality-guard/dist/skips.js",
+      "id": "39",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 37,
+      "dist_col": 20
+    }
+  ]
+}
