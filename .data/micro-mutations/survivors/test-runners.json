@@ -1,0 +1,69 @@
+{
+  "source": "packages/dod-guard/src/cover/test-runners.ts",
+  "date": "2026-08-20T07:24:20.982Z",
+  "summary": {
+    "total": 29,
+    "killed": 4,
+    "survived": 7,
+    "timeout": 0,
+    "unviable": 18
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/test-runners.js",
+      "id": "1",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 5,
+      "dist_col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-runners.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 6,
+      "dist_col": 70
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-runners.js",
+      "id": "3",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 8,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-runners.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 9,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-runners.js",
+      "id": "5",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 11,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-runners.js",
+      "id": "6",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 12,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-runners.js",
+      "id": "10",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 13,
+      "dist_col": 20
+    }
+  ]
+}

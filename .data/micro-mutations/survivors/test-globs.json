@@ -1,0 +1,69 @@
+{
+  "source": "packages/dod-guard/src/cover/test-globs.ts",
+  "date": "2026-08-20T07:24:08.061Z",
+  "summary": {
+    "total": 38,
+    "killed": 29,
+    "survived": 7,
+    "timeout": 0,
+    "unviable": 2
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/test-globs.js",
+      "id": "20",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 20,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-globs.js",
+      "id": "21",
+      "mutator": "LogicalOperator",
+      "replacement": "(typeof parsed !== \"object\" || parsed === null) && Array.isArray(parsed)",
+      "dist_line": 20,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-globs.js",
+      "id": "22",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 20,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-globs.js",
+      "id": "23",
+      "mutator": "LogicalOperator",
+      "replacement": "typeof parsed !== \"object\" && parsed === null",
+      "dist_line": 20,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-globs.js",
+      "id": "24",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 20,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-globs.js",
+      "id": "27",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 20,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/test-globs.js",
+      "id": "36",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 33,
+      "dist_col": 43
+    }
+  ]
+}

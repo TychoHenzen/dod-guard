@@ -11,248 +11,10 @@
         "status": "error",
         "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
       },
-      "lines": 46,
+      "lines": 71,
       "error_count": 9,
-      "recent_commits": 39,
+      "recent_commits": 41,
       "fingerprint": "9a2c95705a747f21b973dda9612648d169d07dbfb0ccde5ea61510b7eeee3524",
-      "dirty": true
-    },
-    "packages/evomcp/src/agent.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 335,
-        "caught": 135,
-        "missed": 130,
-        "timeout": 13,
-        "unviable": 57,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 516,
-      "error_count": 0,
-      "recent_commits": 11,
-      "fingerprint": "86922aedbb839b3d30e8bc8ffbe8425cae925be46ed85747d1c911048eb2b8e9",
-      "dirty": true
-    },
-    "packages/evomcp/src/dedup.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 167,
-        "caught": 77,
-        "missed": 87,
-        "timeout": 3,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 170,
-      "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "6be93a16805490bfe8a55091860efa2743eb29c9310e1382b3c167a2fa1984a1",
-      "dirty": false
-    },
-    "packages/evomcp/src/evolve.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 244,
-        "caught": 94,
-        "missed": 118,
-        "timeout": 2,
-        "unviable": 30,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 524,
-      "error_count": 0,
-      "recent_commits": 14,
-      "fingerprint": "9e02850252ccfbf468bd91c487ad2457d88b9bc7f02fbad178e8561b30b0ddcd",
-      "dirty": true
-    },
-    "packages/evomcp/src/index.ts": {
-      "last_tested": "2026-07-17",
-      "last_result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/evomcp/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigError"
-      },
-      "lines": 258,
-      "error_count": 2,
-      "recent_commits": 22,
-      "fingerprint": "6d047d5428d46161faa359ac25ed744e65b97dee4bd891321b2de2b6a06afd37",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 177,
-        "caught": 48,
-        "missed": 98,
-        "timeout": 1,
-        "unviable": 30,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 82,
-      "error_count": 0,
-      "recent_commits": 15,
-      "fingerprint": "e8b0f022e2e27d53a467bc61b35772f00bbd44362b73d5c85474ba72b7496bed",
-      "dirty": true
-    },
-    "packages/gitevo/src/index.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 124,
-        "caught": 26,
-        "missed": 42,
-        "timeout": 0,
-        "unviable": 56,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 235,
-      "error_count": 1,
-      "recent_commits": 14,
-      "fingerprint": "137f0919203407e74720b94cdaa1a57b13badded990af1b8ec49c4694e7511c9",
-      "dirty": true
-    },
-    "packages/gitevo/src/operations.ts": {
-      "last_tested": "2026-07-17",
-      "last_result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/gitevo/dist/operations.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/gitevo/dist/operations.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      },
-      "lines": 254,
-      "error_count": 2,
-      "recent_commits": 17,
-      "fingerprint": "a38bcd89c9bebf7da13be49d8d48a7f5c61484f1ad6acb22acd618f61d29448e",
-      "dirty": true
-    },
-    "packages/obsidian-rag/src/cli.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 132,
-        "caught": 53,
-        "missed": 64,
-        "timeout": 3,
-        "unviable": 12,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 144,
-      "error_count": 1,
-      "recent_commits": 7,
-      "fingerprint": "5330430a4435d1291f1cc872e0e4914da944634b73f5585b14cce4ed6a725ee2",
-      "dirty": false
-    },
-    "packages/obsidian-rag/src/index.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 162,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 162,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 159,
-      "error_count": 1,
-      "recent_commits": 19,
-      "fingerprint": "d6012124fd0b6a43c1be30679a44d454dfa79d888cd68e5abe2f83ae63bca643",
-      "dirty": true
-    },
-    "packages/obsidian-rag/src/indexer.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 121,
-        "caught": 58,
-        "missed": 60,
-        "timeout": 0,
-        "unviable": 3,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 233,
-      "error_count": 1,
-      "recent_commits": 8,
-      "fingerprint": "e72925cbffe54106b4e553e2a0ea83160fdc5e32b0583b257a01bf51c15d3d01",
-      "dirty": true
-    },
-    "packages/obsidian-rag/src/retriever.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 112,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 112,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 149,
-      "error_count": 0,
-      "recent_commits": 6,
-      "fingerprint": "62e226761a950ee1d12b0bcdde2439f13aaf8dc8745e0df138b66028e7d4ff26",
-      "dirty": true
-    },
-    "packages/obsidian-rag/src/store.ts": {
-      "last_tested": "2026-07-19",
-      "last_result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/store.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/store.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      },
-      "lines": 427,
-      "error_count": 3,
-      "recent_commits": 13,
-      "fingerprint": "f88ef5f1028864002a0e5f41712cf2d4a380999684100d7db8865d09b90f1384",
-      "dirty": true
-    },
-    "packages/obsidian-rag/src/tools.ts": {
-      "last_tested": "2026-07-12",
-      "last_result": {
-        "total": 540,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 540,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 506,
-      "error_count": 1,
-      "recent_commits": 11,
-      "fingerprint": "b7e8e55d02252d2fdac12b47f51741804e571ef9c4a448df62e9978e249a5568",
-      "dirty": true
-    },
-    "packages/obsidian-rag/src/vault.ts": {
-      "last_tested": "2026-07-20",
-      "last_result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/vault.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/vault.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      },
-      "lines": 187,
-      "error_count": 2,
-      "recent_commits": 13,
-      "fingerprint": "c2f04ed6bb692695c2f335c348e8991b4b5b10203697984d4927e848cfdcebc7",
       "dirty": true
     },
     "packages/dod-guard/src/cli.ts": {
@@ -266,494 +28,10 @@
         "status": "ok",
         "error": null
       },
-      "lines": 98,
+      "lines": 101,
       "error_count": 0,
-      "recent_commits": 14,
+      "recent_commits": 15,
       "fingerprint": "e88146881c71807cd553df056bbc38a4e9df11e04b16816bd159882b56d74104",
-      "dirty": true
-    },
-    "packages/evomcp/src/attempt-result.ts": {
-      "last_tested": "2026-08-11",
-      "last_result": {
-        "total": 24,
-        "caught": 23,
-        "missed": 1,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 75,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "ccdb1e87aeaeecc23752f2f8b1bd03df02d52f7c076938d06c58b7fa0a6f1a95",
-      "dirty": false
-    },
-    "packages/evomcp/src/budget.ts": {
-      "last_tested": "2026-08-04",
-      "last_result": {
-        "total": 168,
-        "caught": 131,
-        "missed": 36,
-        "timeout": 0,
-        "unviable": 1,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 238,
-      "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "c5ffec626083074f9edde182b99febb8481dee2d9210719ad38d42b2b97dc321",
-      "dirty": false
-    },
-    "packages/evomcp/src/context.ts": {
-      "last_tested": "2026-08-05",
-      "last_result": {
-        "total": 277,
-        "caught": 145,
-        "missed": 123,
-        "timeout": 2,
-        "unviable": 7,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 331,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "f611a7416253648756759038b508cb807411640324ba62a8871fffbabbe548ae",
-      "dirty": false
-    },
-    "packages/evomcp/src/convergence.ts": {
-      "last_tested": "2026-08-04",
-      "last_result": {
-        "total": 157,
-        "caught": 113,
-        "missed": 38,
-        "timeout": 6,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 244,
-      "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "e8767b021449a679951c8df93f40c3e4065759c70fc72a97e6c3aefbfd67af53",
-      "dirty": false
-    },
-    "packages/evomcp/src/degenerate.ts": {
-      "last_tested": "2026-08-02",
-      "last_result": {
-        "total": 477,
-        "caught": 300,
-        "missed": 160,
-        "timeout": 0,
-        "unviable": 17,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 461,
-      "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "bead6bc11b39f177a5f018ac41b317df619d6e2168b45d1f4e88825afa65881d",
-      "dirty": false
-    },
-    "packages/evomcp/src/escalation.ts": {
-      "last_tested": "2026-08-07",
-      "last_result": {
-        "total": 130,
-        "caught": 111,
-        "missed": 13,
-        "timeout": 0,
-        "unviable": 6,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 217,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "d11d91c058504791d6c2cc12f83806f58d6f2e17e9ddbdd268dd3d187751697a",
-      "dirty": false
-    },
-    "packages/evomcp/src/feedback.ts": {
-      "last_tested": "2026-08-06",
-      "last_result": {
-        "total": 301,
-        "caught": 212,
-        "missed": 87,
-        "timeout": 0,
-        "unviable": 2,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 281,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "78a275b8a1499490df2daa1e8b9b36773cd27481bd860385a750131f6a0a4659",
-      "dirty": false
-    },
-    "packages/evomcp/src/gates.ts": {
-      "last_tested": "2026-08-05",
-      "last_result": {
-        "total": 157,
-        "caught": 108,
-        "missed": 49,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 199,
-      "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "4a398604d5f4f1fc92a8901aec98bc3467c3fac16063188fcc17c7c3cfb0b4f8",
-      "dirty": false
-    },
-    "packages/evomcp/src/git-helpers.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 43,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/gitevo-integration.ts": {
-      "last_tested": "2026-08-03",
-      "last_result": {
-        "total": 31,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 31,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 100,
-      "error_count": 0,
-      "recent_commits": 4,
-      "fingerprint": "831486cbbb804c303fbd26be3b796c7964be1e82d8de93a00f1f45b60cbf3a43",
-      "dirty": false
-    },
-    "packages/evomcp/src/judge.ts": {
-      "last_tested": "2026-08-02",
-      "last_result": {
-        "total": 307,
-        "caught": 136,
-        "missed": 91,
-        "timeout": 2,
-        "unviable": 78,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 301,
-      "error_count": 0,
-      "recent_commits": 3,
-      "fingerprint": "16dc1fa3d9b3f872d2538f0a55934edd61787243c9fb2ea47b08f1c81c46a7dd",
-      "dirty": false
-    },
-    "packages/evomcp/src/orchestrate.ts": {
-      "last_tested": "2026-08-03",
-      "last_result": {
-        "total": 215,
-        "caught": 121,
-        "missed": 85,
-        "timeout": 3,
-        "unviable": 6,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 252,
-      "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "dc63e513621e4ea11afe4da4100d31f867db0f35723c6464f419426e14f34964",
-      "dirty": false
-    },
-    "packages/evomcp/src/orchestrator.ts": {
-      "last_tested": "2026-08-05",
-      "last_result": {
-        "total": 175,
-        "caught": 128,
-        "missed": 35,
-        "timeout": 0,
-        "unviable": 12,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 301,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "71136a77b914804ffcc42ba2c43040e511e50b5841a523040f95d8d1c760ceb1",
-      "dirty": false
-    },
-    "packages/evomcp/src/prompts.ts": {
-      "last_tested": "2026-08-03",
-      "last_result": {
-        "total": 169,
-        "caught": 59,
-        "missed": 105,
-        "timeout": 1,
-        "unviable": 4,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 235,
-      "error_count": 0,
-      "recent_commits": 3,
-      "fingerprint": "c9cefa0301eb849e01ef5d7c6eccc5b3d6c4a4ed1b9cf8eafc9b5dcc17071d39",
-      "dirty": false
-    },
-    "packages/evomcp/src/render.ts": {
-      "last_tested": "2026-08-04",
-      "last_result": {
-        "total": 171,
-        "caught": 130,
-        "missed": 41,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 138,
-      "error_count": 0,
-      "recent_commits": 3,
-      "fingerprint": "00efc047b72d40ae397bf096bb82c2224bd8e16044940d4c1156a3931a254b90",
-      "dirty": false
-    },
-    "packages/evomcp/src/solve-abandon.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 28,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-attempt.ts": {
-      "last_tested": "2026-08-18",
-      "last_result": {
-        "total": 48,
-        "caught": 43,
-        "missed": 3,
-        "timeout": 0,
-        "unviable": 2,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 72,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "5f71f845ae19126b48ba93b1d5f886c72bf88b3f7da35bd45a74d420d345980b",
-      "dirty": false
-    },
-    "packages/evomcp/src/solve-context.ts": {
-      "last_tested": "2026-08-19",
-      "last_result": {
-        "total": 32,
-        "caught": 21,
-        "missed": 11,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 69,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "1c31a188ee491d7e22faf424083f6cbf6c904b7861a62d63c501332f4bc46a48",
-      "dirty": false
-    },
-    "packages/evomcp/src/solve-files.ts": {
-      "last_tested": "2026-08-10",
-      "last_result": {
-        "total": 71,
-        "caught": 56,
-        "missed": 13,
-        "timeout": 0,
-        "unviable": 2,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 80,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "e1d63054c0e68ffcf7eab7de83e67ad2d0f43f2dfa07b32939038bcdf18fa8b8",
-      "dirty": false
-    },
-    "packages/evomcp/src/solve-finish.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 36,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-git.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 35,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-glob.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 51,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-ledger.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 48,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-lineage.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 47,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-loop.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 39,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-plan.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 41,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-repair.ts": {
-      "last_tested": "2026-08-08",
-      "last_result": {
-        "total": 40,
-        "caught": 34,
-        "missed": 2,
-        "timeout": 4,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 70,
-      "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "bf79b03da5640e1288bce9411b262208c762a99bdff0b732a337ebf93a8a8326",
-      "dirty": false
-    },
-    "packages/evomcp/src/solve-report.ts": {
-      "last_tested": "2026-08-11",
-      "last_result": {
-        "total": 58,
-        "caught": 57,
-        "missed": 1,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 75,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "5649b8f81f88a7db1788d140af0050a0edc5d6b182b5792a6a4925206f2ffa89",
-      "dirty": false
-    },
-    "packages/evomcp/src/solve-run.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 49,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-screen.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 27,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-select.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 64,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-session.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 18,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-signals.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 40,
-      "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-verify.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 64,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/evomcp/src/solve-worker.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 29,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/gitevo/src/memory.ts": {
-      "last_tested": "2026-08-02",
-      "last_result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run .data/micro-mutations/stryker.run.json --mutate \"packages/gitevo/dist/memory.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    t"
-      },
-      "lines": 301,
-      "error_count": 1,
-      "recent_commits": 5,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
     "packages/quality-guard/src/index.ts": {
@@ -791,81 +69,20 @@
       "dirty": false
     },
     "packages/quality-guard/src/skips.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 42,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/gitevo/src/evo-config.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 32,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/gitevo/src/evo-error.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 12,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
-    },
-    "packages/gitevo/src/evo-git.ts": {
-      "last_tested": "2026-08-10",
+      "last_tested": "2026-08-20",
       "last_result": {
-        "total": 129,
-        "caught": 99,
-        "missed": 20,
-        "timeout": 0,
-        "unviable": 10,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 92,
-      "error_count": 0,
-      "recent_commits": 1,
-      "fingerprint": "e71494afa0cab6bc5af0820a6730eac629f3c99348bb6a76c4e7671f0649db55",
-      "dirty": false
-    },
-    "packages/gitevo/src/evo-lessons.ts": {
-      "last_tested": "2026-08-10",
-      "last_result": {
-        "total": 39,
-        "caught": 26,
-        "missed": 12,
+        "total": 41,
+        "caught": 33,
+        "missed": 7,
         "timeout": 0,
         "unviable": 1,
         "status": "ok",
         "error": null
       },
-      "lines": 49,
+      "lines": 42,
       "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "fffd876d0901aee8fb1f106fde7b4ca250ccb9407ebce4233c2b3ec3cf2eb485",
-      "dirty": false
-    },
-    "packages/gitevo/src/evo-safety.ts": {
-      "last_tested": "2026-08-06",
-      "last_result": {
-        "total": 176,
-        "caught": 127,
-        "missed": 39,
-        "timeout": 0,
-        "unviable": 10,
-        "status": "ok",
-        "error": null
-      },
-      "lines": 147,
-      "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "6950e6f4e2f8b4a5ff5fc1a741d58f52b8b37361a2cc8295e45f76e881e778a7",
+      "recent_commits": 1,
+      "fingerprint": "345c11b01acdee7c11a84a210fa04bf7c693c1d3ee42a6bff1507a25dc6a8a13",
       "dirty": false
     },
     "packages/dod-guard/src/openspec/dependency.ts": {
@@ -1025,9 +242,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 58,
+      "lines": 114,
       "error_count": 0,
-      "recent_commits": 4,
+      "recent_commits": 8,
       "fingerprint": "d429fb0e51c6e00a228dbdeb63da01907fd165a6871f05f8de77c606fd248767",
       "dirty": true
     },
@@ -1042,9 +259,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 67,
+      "lines": 94,
       "error_count": 0,
-      "recent_commits": 8,
+      "recent_commits": 10,
       "fingerprint": "8e64da760279be60fc52d1c3c84f34f4a773f5927a2a8084b5ffa731d0e76afa",
       "dirty": true
     },
@@ -1128,20 +345,28 @@
         "status": "ok",
         "error": null
       },
-      "lines": 167,
+      "lines": 221,
       "error_count": 0,
-      "recent_commits": 4,
+      "recent_commits": 7,
       "fingerprint": "653ab9bd447b6f89f2f2ea2c0f06e44ba62d4f7b310ceff832ebf4e5b8e9a37b",
       "dirty": true
     },
     "packages/dod-guard/src/cover/test-globs.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-20",
+      "last_result": {
+        "total": 38,
+        "caught": 29,
+        "missed": 7,
+        "timeout": 0,
+        "unviable": 2,
+        "status": "ok",
+        "error": null
+      },
       "lines": 38,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "adf52b96b2f0dc90bf4ad6d8b1d8e4f7ff735fe15b6da47c3aa4917db559c321",
+      "dirty": false
     },
     "packages/dod-guard/src/cover/plan-checks.ts": {
       "last_tested": "2026-08-19",
@@ -1159,61 +384,45 @@
       "recent_commits": 1,
       "fingerprint": "b3bb8534339e06d2fbd62d3681d6c6514eb377481df1696471358714d4db36f8",
       "dirty": false
+    },
+    "packages/dod-guard/src/cover/test-runners.ts": {
+      "last_tested": "2026-08-20",
+      "last_result": {
+        "total": 29,
+        "caught": 4,
+        "missed": 7,
+        "timeout": 0,
+        "unviable": 18,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 25,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "98539ded4a3a8c56b406fa6849c8dfb1ef9fc7dbbfe5ecc79b1771c26cf81e5a",
+      "dirty": false
+    },
+    "packages/dod-guard/src/runtime-root.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 4,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     }
   },
   "cumulative": {
-    "total_mutants": 19799,
-    "caught": 8127,
-    "missed": 6844,
+    "total_mutants": 19907,
+    "caught": 8193,
+    "missed": 6865,
     "timeout": 94,
-    "unviable": 4734,
+    "unviable": 4755,
     "error": 44,
-    "runs": 140,
-    "files_tested": 140
+    "runs": 143,
+    "files_tested": 143
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/evomcp/src/index.ts",
-      "result": {
-        "total": 218,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 218,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/obsidian-rag/src/index.ts",
-      "result": {
-        "total": 162,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 162,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/evaluate-proof.ts",
-      "result": {
-        "total": 740,
-        "caught": 390,
-        "missed": 236,
-        "timeout": 0,
-        "unviable": 114,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "2f117f279d50109efc411771b33d789c9077e92b",
@@ -2568,6 +1777,48 @@
         "missed": 8,
         "timeout": 0,
         "unviable": 1,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-20",
+      "commit": "8b8c3b09930f33af8e1cedcd1212896c2b9178d3",
+      "file": "packages/dod-guard/src/cover/test-globs.ts",
+      "result": {
+        "total": 38,
+        "caught": 29,
+        "missed": 7,
+        "timeout": 0,
+        "unviable": 2,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-20",
+      "commit": "8b8c3b09930f33af8e1cedcd1212896c2b9178d3",
+      "file": "packages/quality-guard/src/skips.ts",
+      "result": {
+        "total": 41,
+        "caught": 33,
+        "missed": 7,
+        "timeout": 0,
+        "unviable": 1,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-20",
+      "commit": "8b8c3b09930f33af8e1cedcd1212896c2b9178d3",
+      "file": "packages/dod-guard/src/cover/test-runners.ts",
+      "result": {
+        "total": 29,
+        "caught": 4,
+        "missed": 7,
+        "timeout": 0,
+        "unviable": 18,
         "status": "ok",
         "error": null
       }
