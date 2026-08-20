@@ -34,10 +34,33 @@ For every `dod-guard:<name>` dispatch:
 
 ## Before you start
 
-You need a confirmed OpenSpec change. No change means no work. Every
-session runs against `openspec/changes/<id>/tasks.md` and needs a
-change id. No `tasks.md` for that change means no work either: route to
-`/dod-guard:interview` or `/opsx:propose`, then come back.
+Resolve the input before reporting that there is no work.
+
+**Input**: Optionally specify an OpenSpec change id, a plan file, or the
+plan just confirmed.
+
+When no change id is provided:
+
+- If exactly one active change exists, use it and announce: `Using change:
+  <name> (only active change)`.
+- If zero or multiple active changes exist, run `openspec list --json`.
+  Show the active changes, excluding `openspec/changes/archive/`, and ask
+  the user to select one. Include each change's name and task progress when
+  available.
+- If no active changes exist, report that plainly and route to
+  `/dod-guard:interview` or `/opsx:propose`.
+
+After selection, always announce `Using change: <name>` and the override
+form `/dod-guard:step-by-step <other>`.
+
+If the input is a plan file or the plan just confirmed, resolve its change
+id from the plan before applying the rules above. If it has no change id,
+ask the user to select an active change rather than silently doing nothing.
+
+You need a confirmed OpenSpec change. Every session runs against
+`openspec/changes/<id>/tasks.md`. No `tasks.md` for the selected change
+means no work either: route to `/dod-guard:interview` or `/opsx:propose`,
+then come back.
 
 Check the `<!-- plan_artifacts: ... -->` comment at the top of
 `tasks.md` for staleness. It is stale when `openspec status --json
