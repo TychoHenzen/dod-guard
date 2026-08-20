@@ -45,6 +45,11 @@ function commandInvocation(record) {
   return { name: match[1].trim(), args: "", form: "command" };
 }
 
+function codexSkillInvocation(record) {
+  const match = textOf(record).match(/(?:\[\$|\/)(?:dod-guard:)?([\w-]+)/i);
+  return match ? { name: match[1], args: "", form: "command" } : null;
+}
+
 function toolInvocation(record) {
   const content = record?.message?.content;
   if (!Array.isArray(content)) {
@@ -62,7 +67,7 @@ function toolInvocation(record) {
 
 function invocationAt(record) {
   if (record?.type === "user") {
-    return commandInvocation(record);
+    return commandInvocation(record) ?? codexSkillInvocation(record);
   }
   if (record?.type === "assistant") {
     return toolInvocation(record);

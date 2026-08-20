@@ -21,7 +21,7 @@ const USAGE = [
   "  --run=<n>         which run in that session, default 1",
   "  --max-steps=<n>   cap on printed steps, default 400",
   "  --sidechains      include subagent steps, marked with ~",
-  "  --projects=<dir>  transcript root, default ~/.claude/projects",
+  "  --projects=<dir>  transcript root, default Claude projects and Codex sessions",
   "",
   "Exit codes: 0 trace printed, 4 no such run, 3 usage error.",
 ].join("\n");

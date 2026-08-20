@@ -20,7 +20,7 @@ const USAGE = [
   "  --skill=<name>    bare or qualified, /tighten or dod-guard:tighten",
   "  --days=<n>        how far back to scan, default 30",
   "  --limit=<n>       how many runs to list, default 8",
-  "  --projects=<dir>  transcript root, default ~/.claude/projects",
+  "  --projects=<dir>  transcript root, default Claude projects and Codex sessions",
   "",
   "Exit codes: 0 runs listed, 4 no run found, 3 usage error.",
 ].join("\n");
