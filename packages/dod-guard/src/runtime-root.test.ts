@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import * as path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import { runtimeRoot } from "./runtime-root.js";
 
 describe("runtimeRoot", () => {

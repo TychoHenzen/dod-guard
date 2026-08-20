@@ -19,7 +19,10 @@ test("language adapters cover each supported extension with an unresolved comman
     [".bash", "shell"],
   ]);
 
-  assert.deepEqual(new Map([...LANG_TABLE].map(([extension, adapter]) => [extension, adapter.language])), expectedLanguages);
+  assert.deepEqual(
+    new Map([...LANG_TABLE].map(([extension, adapter]) => [extension, adapter.language])),
+    expectedLanguages,
+  );
 
   for (const [extension, language] of expectedLanguages) {
     const adapter = LANG_TABLE.get(extension);

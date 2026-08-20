@@ -269,7 +269,12 @@ describe("runCover", () => {
     await fs.mkdir(path.dirname(baselinePath), { recursive: true });
     await fs.writeFile(baselinePath, JSON.stringify({ scenarios: { [scenarioId]: "bound" } }));
 
-    const result = await runCoverage({ cwd: isolated, changeId: "structured-result", all: false, writeBaseline: false });
+    const result = await runCoverage({
+      cwd: isolated,
+      changeId: "structured-result",
+      all: false,
+      writeBaseline: false,
+    });
 
     assert.equal(result.reports[0].scenarioId, scenarioId);
     assert.equal(result.reports[0].outcome, "unwired");

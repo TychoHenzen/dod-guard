@@ -4,13 +4,7 @@ import * as path from "node:path";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import type { EnumeratedScenario } from "./enumerate.js";
-import {
-  buildReport,
-  outcomeRank,
-  type CoverageGateResult,
-  type ScenarioReport,
-  summarizeReport,
-} from "./report.js";
+import { buildReport, type CoverageGateResult, outcomeRank, type ScenarioReport, summarizeReport } from "./report.js";
 
 const REPO_ROOT = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..", "..", "..");
 const FIXTURE_DIR = path.join(REPO_ROOT, "tools", "openspec-dashboard", "__report_test_fixture__");
