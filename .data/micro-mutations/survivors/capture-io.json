@@ -1,0 +1,21 @@
+{
+  "source": "packages/dod-guard/src/testing/capture-io.ts",
+  "date": "2026-08-21T07:24:53.021Z",
+  "summary": {
+    "total": 11,
+    "killed": 10,
+    "survived": 1,
+    "timeout": 0,
+    "unviable": 0
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/testing/capture-io.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 8,
+      "dist_col": 29
+    }
+  ]
+}

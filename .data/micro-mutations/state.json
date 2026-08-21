@@ -155,13 +155,21 @@
       "dirty": false
     },
     "packages/dod-guard/src/openspec/scenario-block.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-21",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 10,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "211f2111e118ef8ca834271e1c9c48ce65f15da5b9448fc8f357071718e15580",
+      "dirty": false
     },
     "packages/dod-guard/src/cover/baseline.ts": {
       "last_tested": "2026-08-15",
@@ -266,13 +274,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/openspec/scenario-id.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-21",
+      "last_result": {
+        "total": 2,
+        "caught": 2,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 16,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "1e991ab0066898a0523d33ad34fd91774158b3c082630aa5db0e00e5f5cd3fde",
+      "dirty": false
     },
     "packages/dod-guard/src/openspec/tasks-parser.ts": {
       "last_tested": "2026-08-15",
@@ -309,13 +325,21 @@
       "dirty": false
     },
     "packages/dod-guard/src/testing/capture-io.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-21",
+      "last_result": {
+        "total": 11,
+        "caught": 10,
+        "missed": 1,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 11,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "1b96b6031ed53c7861c6592a84a52c587eff4a43a826b9e8d47826697d304aef",
+      "dirty": false
     },
     "packages/dod-guard/src/testing/spec-fixtures.ts": {
       "last_tested": "2026-08-18",
@@ -413,58 +437,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 19907,
-    "caught": 8193,
-    "missed": 6865,
+    "total_mutants": 19920,
+    "caught": 8205,
+    "missed": 6866,
     "timeout": 94,
     "unviable": 4755,
     "error": 44,
-    "runs": 143,
-    "files_tested": 143
+    "runs": 146,
+    "files_tested": 146
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/obsidian-rag/src/tools.ts",
-      "result": {
-        "total": 540,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 540,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/gitevo/src/index.ts",
-      "result": {
-        "total": 124,
-        "caught": 26,
-        "missed": 42,
-        "timeout": 0,
-        "unviable": 56,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/checker.ts",
-      "result": {
-        "total": 567,
-        "caught": 252,
-        "missed": 214,
-        "timeout": 0,
-        "unviable": 101,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "2f117f279d50109efc411771b33d789c9077e92b",
@@ -1819,6 +1801,48 @@
         "missed": 7,
         "timeout": 0,
         "unviable": 18,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-21",
+      "commit": "9241465b8d6ae4f8b4911e78e486332fa67906e6",
+      "file": "packages/dod-guard/src/openspec/scenario-id.ts",
+      "result": {
+        "total": 2,
+        "caught": 2,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-21",
+      "commit": "9241465b8d6ae4f8b4911e78e486332fa67906e6",
+      "file": "packages/dod-guard/src/testing/capture-io.ts",
+      "result": {
+        "total": 11,
+        "caught": 10,
+        "missed": 1,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-21",
+      "commit": "9241465b8d6ae4f8b4911e78e486332fa67906e6",
+      "file": "packages/dod-guard/src/openspec/scenario-block.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
         "status": "ok",
         "error": null
       }
