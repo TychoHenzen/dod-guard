@@ -18,6 +18,7 @@ import { spawnSync } from "node:child_process";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { scopeToChangedLines } from "./changed-lines.mjs";
+import { hookTargets } from "./hook-targets.mjs";
 import { runProjectLinter } from "./project-linter.mjs";
 import { newFileVerdict, ratchetVerdict, rebaselineFile } from "./baseline-gate.mjs";
 import { deleteSentinel, readSentinel, recordConsumption } from "./sentinel.mjs";
@@ -187,11 +188,11 @@ export function gate(input, filePath, deps) {
 
 export function shouldGate(input) {
   if (!input || process.env.QUALITY_GUARD === "off") return false;
-  if (!/^(Write|Edit|MultiEdit)$/.test(input.tool_name || "")) return false;
-  const filePath = input.tool_input?.file_path;
-  if (!filePath || !CODE_EXT.has(extname(filePath).toLowerCase())) return false;
-  if (!existsSync(filePath)) return false;
-  return !/quality-guard:\s*off/i.test(readFileSync(filePath, "utf8").slice(0, 500));
+  return hookTargets(input).some(({ filePath }) => {
+    if (!CODE_EXT.has(extname(filePath).toLowerCase())) return false;
+    if (!existsSync(filePath)) return false;
+    return !/quality-guard:\s*off/i.test(readFileSync(filePath, "utf8").slice(0, 500));
+  });
 }
 
 async function main() {
@@ -202,7 +203,15 @@ async function main() {
     return 0;
   }
   if (!shouldGate(input)) return 0;
-  return gate(input, input.tool_input.file_path, await import("./baseline-lib.mjs"));
+  const baselineLib = await import("./baseline-lib.mjs");
+  for (const target of hookTargets(input)) {
+    if (!existsSync(target.filePath)) continue;
+    if (!CODE_EXT.has(extname(target.filePath).toLowerCase())) continue;
+    if (/quality-guard:\s*off/i.test(readFileSync(target.filePath, "utf8").slice(0, 500))) continue;
+    const code = await gate(target.input, target.filePath, baselineLib);
+    if (code !== 0) return code;
+  }
+  return 0;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

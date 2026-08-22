@@ -1,7 +1,6 @@
 ---
 name: clean-house
 description: Hunt duplicate and obsolete implementations with git archaeology, then delete them once the user approves. Use when the user says "clean house", asks you to "dedupe", asks to "clean up old versions", asks to "remove dead implementations", asks to "consolidate duplicates", asks to "debloat", asks you to "find stale code", or asks "what's redundant here". Use it too when you find v1 and v2 or old and new variants of one thing, when a dead-symbol scan flags unreachable code, or when a duplication report comes back high.
-argument-hint: [path or component to sweep]
 ---
 
 # Clean house

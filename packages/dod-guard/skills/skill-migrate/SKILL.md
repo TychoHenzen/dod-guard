@@ -9,7 +9,6 @@ description: >-
   this work on newer models", "fix skill for literal models".
   DO NOT TRIGGER for writing a new skill (that is /skill-creator) or debugging a skill from
   transcripts (that is /skill-debug).
-argument-hint: "<path to a SKILL.md, agent definition, CLAUDE.md, memory file, or instinct file>"
 ---
 
 # Skill Migrate
@@ -25,6 +24,14 @@ Resolve `<skill-dir>` before running a bundled script. In Claude, use
 script exists. If a path does not resolve, end the turn with the missing path.
 
 ## Agent dispatch compatibility
+
+### Codex lifecycle
+
+Before a Codex dispatch, inspect the active agent list. Reuse a related agent when practical.
+
+Limit each parallel wave to the free agent slots. Wait for the wave, record every result, then close completed agents with the runtime's close action when available. If only interruption is available, interrupt agents whose work is no longer needed.
+
+Do not assume a returned result freed a slot. If capacity is full, release unneeded agents and retry once. If closure is unavailable, reuse an existing agent through a follow-up instead of spawning another.
 
 Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
 `${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`

@@ -10,7 +10,6 @@ description: >-
   writing tests (that is /spec-test), auditing existing tests (that is
   /test-integrity-checker), or extracting a spec from scratch (that is
   /spec-extract).
-argument-hint: "<capability-path under openspec/specs/>"
 ---
 
 # Spec Explore

@@ -10,7 +10,6 @@ description: >-
   its own steps", "fix the skill", or reports that a skill misbehaved earlier.
   DO NOT TRIGGER for writing a new skill, which is /skill-creator, or for a bug
   in code that a skill happened to touch.
-argument-hint: "[skill name, and optionally a session id]"
 ---
 
 # Skill debug

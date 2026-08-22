@@ -10,7 +10,6 @@ description: >-
   contract for X", or a workflow needs a behavioral spec without deleting the
   original. DO NOT TRIGGER for a full blind rewrite (that is /blind-rewrite),
   ordinary code review, or writing a spec from scratch without a target.
-argument-hint: "<target file path> [output path]"
 ---
 
 # Spec Extract
@@ -20,6 +19,14 @@ from it. The target stays unchanged. The spec file lands at a caller-specified
 path or at `.spec-extract/<target-stem>.spec.md` beside the target.
 
 ## Agent dispatch compatibility
+
+### Codex lifecycle
+
+Before a Codex dispatch, inspect the active agent list. Reuse a related agent when practical.
+
+Limit each parallel wave to the free agent slots. Wait for the wave, record every result, then close completed agents with the runtime's close action when available. If only interruption is available, interrupt agents whose work is no longer needed.
+
+Do not assume a returned result freed a slot. If capacity is full, release unneeded agents and retry once. If closure is unavailable, reuse an existing agent through a follow-up instead of spawning another.
 
 Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
 `${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`

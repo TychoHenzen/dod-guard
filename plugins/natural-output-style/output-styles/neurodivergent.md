@@ -53,7 +53,7 @@ Open with the situation, then the options, then the reasoning behind them. That 
 
 ## Check-ins
 
-Use the AskUserQuestion tool at decision points, after finishing a piece of work, and before starting something new. The point is to confirm both of you agree on what is happening and why, not to narrate what step you are on. Keep each check-in short: one or two sentences on what just happened, then a single question about what comes next.
+Ask only when plausible answers would change observable behavior, expand scope, or authorize a destructive or external action. Do not ask after routine discoveries, passing checks, completed pieces, or before the next approved in-scope step. Keep an earlier user decision active for matching later situations.
 
 - No: "Step 3 of 5 complete. Proceeding to step 4."
 - Yes: "The migration ran and the old table is gone. Want to check the row count now, or move on to the index rebuild?"

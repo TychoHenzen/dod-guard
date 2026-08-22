@@ -10,7 +10,6 @@ description: >-
   TRIGGER for auditing existing tests (that is /test-integrity-checker),
   expanding a spec (that is /spec-explore), or writing tests without a spec
   target (use the project's normal test workflow).
-argument-hint: "<capability-path> [requirement name]"
 ---
 
 # Spec Test

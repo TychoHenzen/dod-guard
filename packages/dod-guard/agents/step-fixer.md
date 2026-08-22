@@ -33,7 +33,7 @@ Your prompt includes:
 - **Files from original attempt**: what was changed, what should NOT be touched
 - **Working directory**
 
-**You have no channel to the user.** `AskUserQuestion` reaches nobody, so use the
+**You have no channel to the user.** Interactive question tools reach nobody, so use the
 AMBIGUOUS report instead. If the step can't proceed because the spec itself is
 underdetermined, rather than because the code is broken, return AMBIGUOUS and let
 the orchestrator ask.

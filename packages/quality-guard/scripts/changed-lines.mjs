@@ -30,9 +30,25 @@ function rangesForEdit(edit, text) {
   return ranges;
 }
 
+/** Ranges for added text runs extracted from one Codex apply_patch target. */
+function rangesForApplyPatch(input, text) {
+  const runs = input.tool_input?.added_runs;
+  if (!Array.isArray(runs)) return [];
+  return runs.flatMap((run) => rangeForRun(run, text));
+}
+
+function rangeForRun(run, text) {
+  if (typeof run !== 'string' || !run) return [];
+  const at = text.indexOf(run);
+  if (at === -1) return [];
+  const from = countLines(text.slice(0, at)) + 1;
+  return [{ from, to: from + countLines(run) }];
+}
+
 /** Line ranges, 1-based and inclusive, that this tool call wrote. */
-export function changedRanges(input, text) {
+function changedRanges(input, text) {
   const tool = input.tool_name;
+  if (tool === 'apply_patch') return rangesForApplyPatch(input, text);
   if (tool !== 'Edit' && tool !== 'MultiEdit') return WHOLE_FILE;
 
   const edits = tool === 'MultiEdit'

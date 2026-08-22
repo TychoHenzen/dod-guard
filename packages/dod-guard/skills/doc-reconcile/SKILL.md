@@ -19,8 +19,8 @@ up against each other. No other names for those two things.
 
 ## Fixed limits
 
-- Begin with a clean tree. Commit or stash pending work first, because an
-  uncommitted file cannot be dated.
+- Record the initial tree state. Exclude uncommitted files from automatic dating and
+  deletion. Do not commit, stash, reset, or overwrite user work.
 - One agent dispatch per pair, 20 dispatches per run at most. Tighten
   `--threshold`, `--limit` and `--max-per-claim` until the file fits that budget,
   then start dispatching.
@@ -34,6 +34,18 @@ up against each other. No other names for those two things.
 Scope: this skill deletes and points, and it stops there. Rewriting a claim into new
 prose, editing code, and reconciling anything the scanner did not report all sit
 outside it. Every deletion traces to one agent verdict and one dating result.
+
+## Codex agent lifecycle
+
+Before dispatching, inspect the active agent list. Reuse a related agent for later
+pairs when practical. Limit each parallel wave to the free slots.
+
+After recording a verdict, close the completed agent with the runtime's close action
+when available. If only interruption is available, interrupt work that is no longer
+needed. Do not assume a returned result freed a slot.
+
+If capacity is full, release unneeded agents and retry once. If closure is unavailable,
+send the next pair to an existing agent through a follow-up.
 
 ## Runtime path
 

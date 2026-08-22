@@ -1,7 +1,6 @@
 ---
 name: opsx-dashboard
 description: Start, stop, or open the OpenSpec dashboard. Use when the user says "open dashboard", "start dashboard", "show dashboard", "show me the openspec dashboard", "stop dashboard", or "dashboard status". The dashboard is a read-only browser view over every registered OpenSpec project, served by tools/openspec-dashboard/serve.mjs on the loopback interface.
-argument-hint: [stop]
 ---
 
 # OpenSpec dashboard

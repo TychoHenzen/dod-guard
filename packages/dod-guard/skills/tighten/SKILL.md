@@ -11,7 +11,6 @@ description: >-
   tighten loop", "clean up the sprawl", or wires this skill into /loop or a cron
   job. DO NOT TRIGGER for a single named rewrite - that is /blind-rewrite - or
   for ordinary refactoring with a known target.
-argument-hint: "[optional: path to seed the ledger from]"
 ---
 
 # Tighten
@@ -43,6 +42,14 @@ Resolve `<quality-refactor-dir>` from the installed `quality-refactor` skill. Do
 the dependency or a path does not resolve, end the turn and identify what is missing.
 
 ## Agent dispatch compatibility
+
+### Codex lifecycle
+
+Before a Codex dispatch, inspect the active agent list. Reuse a related agent when practical.
+
+Limit each parallel wave to the free agent slots. Wait for the wave, record every result, then close completed agents with the runtime's close action when available. If only interruption is available, interrupt agents whose work is no longer needed.
+
+Do not assume a returned result freed a slot. If capacity is full, release unneeded agents and retry once. If closure is unavailable, reuse an existing agent through a follow-up instead of spawning another.
 
 Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
 `${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`

@@ -1,6 +1,6 @@
 ---
 name: opsx-archive
-description: Archive a completed OpenSpec change, gated on dod-guard's coverage check instead of a confirmation prompt. Use when the user wants to finalize and archive a change after implementation is complete. Runs `dod-guard cover <change-id>` before archiving and refuses to archive on a regression or a coverage error; skips the gate for a skip_specs change. Archives immediately once the gate passes - no separate user confirmation.
+description: Archive a completed OpenSpec change, gated on dod-guard's coverage check instead of a confirmation prompt. Use when the user wants to finalize and archive a change after implementation is complete. Runs dod-guard cover for the change id before archiving and refuses to archive on a regression or coverage error. Skips the gate for a skip_specs change and archives immediately after a passing gate.
 ---
 
 # opsx-archive
@@ -282,4 +282,3 @@ Show archive completion summary including:
   operation guidance
 - Never copy runtime context, operation guidance, or artifact-rule text
   verbatim into output files
-

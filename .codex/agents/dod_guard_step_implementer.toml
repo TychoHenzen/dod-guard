@@ -36,7 +36,7 @@ Your prompt is a self-contained briefing with:
 - **Working directory**: where to run commands
 
 **You have no channel to the user.** Nobody reads anything you emit except the
-orchestrator, and only after you finish. `AskUserQuestion` goes nowhere, so use
+orchestrator, and only after you finish. Interactive question tools go nowhere, so use
 the AMBIGUOUS report (below) when the briefing is not enough, rather than filling
 the gap yourself.
 

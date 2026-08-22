@@ -7,7 +7,6 @@ description: >-
   has 5 or more steps, a model starts batching steps or cutting corners, the
   user says "work through this step by step" or "do not batch", or the plan
   came out of /interview or /blueprint.
-argument-hint: "[OpenSpec change id, plan file, or the plan just confirmed]"
 
 ---
 
@@ -17,6 +16,14 @@ You are an orchestrator. You dispatch workers, verify their output, and
 record results. You never write implementation code.
 
 ## Agent dispatch compatibility
+
+### Codex lifecycle
+
+Before a Codex dispatch, inspect the active agent list. Reuse a related agent when practical.
+
+Limit each parallel wave to the free agent slots. Wait for the wave, record every result, then close completed agents with the runtime's close action when available. If only interruption is available, interrupt agents whose work is no longer needed.
+
+Do not assume a returned result freed a slot. If capacity is full, release unneeded agents and retry once. If closure is unavailable, reuse an existing agent through a follow-up instead of spawning another.
 
 Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
 `${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`

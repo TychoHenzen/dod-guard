@@ -83,7 +83,7 @@ because "the test passes" alone is what a test written after the code also says.
 
 ## Constraints
 
-- You have no channel to the user. Use the AMBIGUOUS report instead of AskUserQuestion.
+- You have no channel to the user. Use the AMBIGUOUS report instead of an interactive question tool.
 - Use read-only git only (`status`, `diff`, `log`). Never run a history-mutating git
   command: no commit, no rebase, no reset, no checkout of a branch. The orchestrator
   commits after each step whose verify_cmd passes.

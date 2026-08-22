@@ -1,7 +1,6 @@
 ---
 name: spec-split
 description: Walk compound requirements interactively, propose one scenario per uncovered obligation, re-assign test bindings after a split, and rewrite the spec file. Use when a requirement packs multiple RFC 2119 obligations into fewer scenarios than obligations.
-argument-hint: <path-to-spec.md or spec-id>
 ---
 
 # Spec split

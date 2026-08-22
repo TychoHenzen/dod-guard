@@ -1,7 +1,6 @@
 ---
 name: adversarial-workflow
 description: Drive one piece of work through a 4-phase review and record a gate at each stage. Use when the user asks for the adversarial workflow, says "gate this", asks for strict quality, asks for a full adversarial pass, asks for an adversarial review or a 4-phase review, or wants gates at each stage of spec, tests, implementation, and cleanup. Use it too when the user raises a quality or security concern about multi-step implementation work. Reviewers run without the author's reasoning and must produce findings. The product is four GO/REVISE/STOP verdicts recorded in the change's design.md, plus the working feature.
-argument-hint: [task description or change id]
 ---
 # Adversarial workflow
 
@@ -12,6 +11,14 @@ judging what comes back. Scope is that single change: another change, or writing
 code yourself, sits outside it.
 
 ## Agent dispatch compatibility
+
+### Codex lifecycle
+
+Before a Codex dispatch, inspect the active agent list. Reuse a related agent when practical.
+
+Limit each parallel wave to the free agent slots. Wait for the wave, record every result, then close completed agents with the runtime's close action when available. If only interruption is available, interrupt agents whose work is no longer needed.
+
+Do not assume a returned result freed a slot. If capacity is full, release unneeded agents and retry once. If closure is unavailable, reuse an existing agent through a follow-up instead of spawning another.
 
 Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
 `${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`

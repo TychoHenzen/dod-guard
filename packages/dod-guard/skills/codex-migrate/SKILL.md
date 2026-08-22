@@ -4,8 +4,8 @@ description: >-
   Audit and migrate a project whose agent setup targets Claude so it also works well with Codex.
   Use when the user asks to adopt Codex, share instructions between CLAUDE.md and AGENTS.md,
   translate Claude-specific tools or workflows, or assess agent configuration portability.
-  Keep the user in the navigating role. Inventory first, request a decision before edits, apply
-  one approved slice, verify it, and stop for the next decision.
+  Inventory first, request a decision before edits, apply every approved slice, and verify each
+  slice. Do not request approval again between slices the user approved together.
 ---
 
 # Codex Migrate
@@ -67,10 +67,11 @@ Separate configuration by responsibility:
 Present the proposed files, unresolved choices, and trade-offs. Ask which migration slice to apply.
 Stop until the user answers.
 
-## 3. Apply one approved slice
+## 3. Apply the approved slices
 
-Change only the files covered by the user's answer. Preserve unrelated edits. Do not broaden the
-slice because another cleanup looks convenient.
+Change only the files covered by the user's answer. Preserve unrelated edits. If the user approves
+several slices together, execute them continuously and verify each one. Do not request approval
+between those slices. Do not broaden the work because another cleanup looks convenient.
 
 For shared check-ins, preserve this contract:
 
@@ -83,7 +84,7 @@ For shared check-ins, preserve this contract:
 - If neither tool is available, end the turn with one concise question.
 
 Never weaken this contract into autonomous implementation unless the user explicitly requests that
-change.
+change. A request to apply all proposed slices is explicit authority to continue through them.
 
 ## 4. Verify the slice
 
@@ -98,8 +99,8 @@ For an instruction migration, verify both paths when their runtimes are availabl
 
 If one runtime is unavailable, state which verification remains unobserved. Do not infer it passed.
 
-Report the changed files, scanner output, checks, and remaining findings. Ask whether to apply the
-next slice. Stop until the user answers.
+Report the changed files, scanner output, checks, and remaining findings. Ask about another slice
+only when an unapproved slice remains.
 
 ## Boundaries
 
