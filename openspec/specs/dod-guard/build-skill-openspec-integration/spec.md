@@ -43,15 +43,21 @@ section.
 - **THEN** the change's `design.md` names that answer under Open Questions,
   and no requirement or scenario is written for it
 
-### Requirement: questions carry a risk label and a per-round cap
+### Requirement: questions carry risk labels and suggested answers
 
-Each clarifying question SHALL carry a risk label of Low, Medium or High,
-and `/interview` SHALL ask at most 3 clarifying questions per round.
+Each clarifying question SHALL carry a risk label of Low, Medium or High.
+`/interview` SHALL present every currently open question in one turn. Each
+question SHALL provide 3 or 4 suggested answers and allow a custom answer.
 
-#### Scenario: Round would otherwise ask more than three questions
-- **WHEN** more than 3 clarifying questions apply in one round
-- **THEN** the skill asks at most 3 of them, each labeled Low, Medium or
-  High, and defers the rest to a later round
+#### Scenario: More than three questions remain open
+- **WHEN** repository research leaves more than 3 clarifying questions open
+- **THEN** the skill presents all of them together rather than deferring some
+  to a later turn
+
+#### Scenario: Question offers suggested answers
+- **WHEN** the skill presents a clarifying question
+- **THEN** the question carries a risk label, provides 3 or 4 suggested
+  answers, and allows a custom answer
 
 ### Requirement: handoff names opsx:apply as an executor
 
@@ -144,4 +150,3 @@ On a green integration check, `/step-by-step`'s Finishing phase SHALL run
 - **WHEN** the final integration check of a session passes
 - **THEN** Finishing runs `dod-guard cover <id>` and, when it reports zero
   regressions against the ratchet baseline, runs `openspec archive <id> --yes`
-

@@ -1,6 +1,6 @@
 ---
 name: interview
-description: Pin down requirements before any implementation task, feature request, bug fix, or refactor, and before writing code or plans. Use when requirements are unclear, when there is a risk of wrong assumptions, or when the user says "build X" without specs. It replaces brainstorming for implementation work. Read the existing code, then question the user one item at a time. Confirm a written requirements summary, then run an adversarial review of that spec. Write the resulting scenarios into an OpenSpec change and mark how each one binds to a test, then hand off to an executor skill. The output is a change id. This skill never implements.
+description: Pin down requirements before any implementation task, feature request, bug fix, or refactor, and before writing code or plans. Use when requirements are unclear, when there is a risk of wrong assumptions, or when the user says "build X" without specs. It replaces brainstorming for implementation work. Read the existing code, then present every open question together with suggested multiple-choice answers. Confirm a written requirements summary, then run an adversarial review of that spec. Write the resulting scenarios into an OpenSpec change and mark how each one binds to a test, then hand off to an executor skill. The output is a change id. This skill never implements.
 ---
 
 # Interview
@@ -50,10 +50,23 @@ real behavior, an algorithm, or a published standard, look it up with
 WebSearch or WebFetch. Tell the user what you found before you ask the
 follow-up.
 
-## 3. Questions, one at a time
+## 3. Present every open question together
 
-Ask one question per message. Wait for the answer. Let the answer pick the
-next question.
+Before asking, identify every decision the current repository evidence leaves
+open. Present all of those questions in one turn. Do not defer a known question
+to a later turn because another answer might affect it. State any dependency in
+the question or its options instead.
+
+Give each question 3 or 4 mutually exclusive suggested answers. Put the
+recommended answer first and mark it `(Recommended)`. Add one short tradeoff or
+effect to every option. Always allow a custom answer, such as `Other: ...`,
+without requiring the user to rewrite a suggested answer. End with a compact
+reply format such as `Reply with 1A, 2C, 3B, plus any custom details.`
+
+Use `AskUserQuestion` or the runtime's equivalent only when it can contain the
+complete question set with 3 or 4 options per question. If the tool limit is
+smaller, put the complete numbered multiple-choice set in the message instead.
+Never split known questions across turns merely to fit a tool limit.
 
 Floors by size of change. Count decision-driving questions, not the options
 inside one question.
@@ -69,22 +82,17 @@ seam for anything at tier 3 or above.
 
 The floor is not a finish line. A requirement is done on four counts: one
 reading, defined behavior on bad input, a set scope boundary, and an agreed
-check. Keep asking until all four hold for every requirement.
+check. Include every unresolved count in the same question set.
 
 Re-read code mid-interview whenever an answer contradicts what you found.
+If an answer creates a new ambiguity that could not have been identified from
+the repository or the original request, send one follow-up set containing every
+new open question. Do not repeat settled questions.
 
 Label every question Low, Medium, or High. The label names what a wrong
 answer costs. Low means the work absorbs a wrong answer cheaply. High means
-a wrong answer wastes the build or ships the wrong behavior. Ask a
-High-risk question before a Low-risk one, because a wrong High answer
-invalidates work already built on it.
-
-Cap clarifying questions at 3 per round, so the interview cannot stall on a
-user who stops answering. A round is one batch of questions put to the user
-at once, used only to unblock when several answers are needed together. The
-floor above sets a minimum for the whole interview. The cap sets a maximum
-per round. Neither overrides the other, so a change with a floor of 5 or 6
-still needs two or more rounds to reach it.
+a wrong answer wastes the build or ships the wrong behavior. Order the complete
+set from High risk to Low risk, because a High-risk answer can change later choices.
 
 ## 4. The summary the user confirms
 

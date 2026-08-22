@@ -35,24 +35,49 @@ The skill SHALL read existing code, specs, and documentation relevant to the req
 - **WHEN** the skill starts researching a change
 - **THEN** it counts lint and format violations with the project's own commands and records both numbers
 
-### Requirement: questions one at a time with a floor
-The skill SHALL ask one question per turn. Four tiers set the floor by change size. At least 2 for one file and one function. At least 3 for one to three files in one layer. At least 5 for four to eight files or two or more layers. At least 6 for nine or more files or three or more layers. A round of up to 3 clarifying questions is allowed when several answers are needed together.
+### Requirement: question floor scales with change size
+Four tiers SHALL set the question floor by change size. The floor is at least 2 for one file and one function. It is at least 3 for one to three files in one layer. It is at least 5 for four to eight files or two or more layers. It is at least 6 for nine or more files or three or more layers.
 
 #### Scenario: small change gets at least 3 questions
 - **WHEN** the user describes a feature touching two files in one component
-- **THEN** the skill asks at least 3 questions across 3 separate turns before presenting a summary
+- **THEN** the skill asks at least 3 questions before presenting a summary
 
 #### Scenario: large cross-layer change gets at least 6 questions
 - **WHEN** the user describes a feature touching 9 or more files across 3 layers
 - **THEN** the skill asks at least 6 questions before presenting a summary
 
-#### Scenario: round caps at 3 clarifying questions
-- **WHEN** several answers are needed together to unblock the interview
-- **THEN** the skill batches at most 3 questions in one round
+### Requirement: every open question is presented together
+The skill SHALL present every question left open by repository research in one turn. It SHALL use a numbered message instead when the runtime's structured question tool cannot contain the complete set.
+
+#### Scenario: more than three questions are open
+- **WHEN** repository research leaves more than 3 questions open
+- **THEN** the skill presents the complete set in one turn
+
+#### Scenario: structured question tool is too small
+- **WHEN** the runtime's structured question tool cannot contain the complete question set
+- **THEN** the skill presents every question in one numbered message instead of splitting the set across turns
+
+### Requirement: questions provide suggested answers
+Each question SHALL provide 3 or 4 mutually exclusive suggested answers. The recommended answer SHALL appear first with a `(Recommended)` marker. Each option SHALL state one short tradeoff or effect. The question SHALL allow a custom answer.
+
+#### Scenario: user receives multiple-choice suggestions
+- **WHEN** the skill presents an open question
+- **THEN** it provides 3 or 4 mutually exclusive suggested answers
+
+#### Scenario: recommendation appears first
+- **WHEN** one suggested answer best fits the repository evidence
+- **THEN** that answer appears first with a `(Recommended)` marker and a short tradeoff or effect
+
+#### Scenario: suggested answers do not exclude custom input
+- **WHEN** none of the suggested answers matches the user's intent
+- **THEN** the question allows a custom answer
+
+### Requirement: question set is ordered by risk
+Each question SHALL carry a risk label of Low, Medium or High. The complete question set SHALL be ordered from High risk to Low risk.
 
 #### Scenario: high-risk question asked first
 - **WHEN** both a High-risk and a Low-risk question are pending
-- **THEN** the skill asks the High-risk question first
+- **THEN** the High-risk question appears first in the complete question set
 
 ### Requirement: spec deltas use OpenSpec format
 The skill SHALL write requirements as `### Requirement:` blocks with `#### Scenario:` sub-blocks using WHEN/THEN format. It SHALL create the change via `/opsx:propose` and validate with `openspec validate <change-id> --strict`. Only confirmed answers become scenarios. Unconfirmed answers go under "Open questions" in the change's `design.md`.
