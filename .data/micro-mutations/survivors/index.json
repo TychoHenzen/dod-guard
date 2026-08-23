@@ -1,292 +1,116 @@
 {
-  "source": "packages/quality-guard/src/index.ts",
-  "date": "2026-08-08T07:31:25.883Z",
+  "source": "packages/dod-guard/src/index.ts",
+  "date": "2026-08-23T07:12:16.911Z",
   "summary": {
-    "total": 70,
-    "killed": 10,
-    "survived": 35,
-    "timeout": 2,
-    "unviable": 23
+    "total": 46,
+    "killed": 13,
+    "survived": 13,
+    "timeout": 3,
+    "unviable": 17
   },
   "survivors": [
     {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "2",
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "1",
       "mutator": "StringLiteral",
       "replacement": "\"\"",
-      "dist_line": 22,
-      "dist_col": 81
+      "dist_line": 17,
+      "dist_col": 48
     },
     {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "3",
-      "mutator": "ObjectLiteral",
-      "replacement": "{}",
-      "dist_line": 23,
-      "dist_col": 30
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
+      "file": "packages/dod-guard/dist/index.js",
       "id": "4",
       "mutator": "StringLiteral",
       "replacement": "\"\"",
-      "dist_line": 24,
-      "dist_col": 11
+      "dist_line": 19,
+      "dist_col": 42
     },
     {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "5",
-      "mutator": "MethodExpression",
-      "replacement": "z.array(z.string()).max(1)",
-      "dist_line": 27,
-      "dist_col": 15
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
+      "file": "packages/dod-guard/dist/index.js",
       "id": "7",
       "mutator": "StringLiteral",
       "replacement": "\"\"",
-      "dist_line": 31,
-      "dist_col": 15
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "6",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 27,
-      "dist_col": 51
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "17",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 36,
-      "dist_col": 32
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "19",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 38,
-      "dist_col": 13
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "20",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 38,
-      "dist_col": 29
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "21",
-      "mutator": "ObjectLiteral",
-      "replacement": "{}",
-      "dist_line": 38,
-      "dist_col": 171
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "22",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 41,
-      "dist_col": 52
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "23",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 42,
-      "dist_col": 55
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "25",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[]",
-      "dist_line": 44,
-      "dist_col": 21
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "24",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 43,
-      "dist_col": 56
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "26",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 44,
+      "dist_line": 21,
       "dist_col": 22
     },
     {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "27",
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "9",
       "mutator": "StringLiteral",
       "replacement": "\"\"",
-      "dist_line": 44,
-      "dist_col": 33
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "32",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 54,
-      "dist_col": 13
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "33",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 54,
-      "dist_col": 29
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "35",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 56,
-      "dist_col": 5
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "34",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 55,
-      "dist_col": 5
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "37",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 58,
-      "dist_col": 35
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "36",
-      "mutator": "ObjectLiteral",
-      "replacement": "{}",
-      "dist_line": 56,
-      "dist_col": 74
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "39",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 63,
-      "dist_col": 21
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "38",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[]",
-      "dist_line": 63,
-      "dist_col": 20
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "41",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 63,
+      "dist_line": 23,
       "dist_col": 38
     },
     {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "40",
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "10",
       "mutator": "StringLiteral",
       "replacement": "\"\"",
-      "dist_line": 63,
-      "dist_col": 29
+      "dist_line": 24,
+      "dist_col": 54
     },
     {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "42",
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "12",
       "mutator": "StringLiteral",
       "replacement": "\"\"",
-      "dist_line": 63,
-      "dist_col": 52
+      "dist_line": 25,
+      "dist_col": 65
     },
     {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "43",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 63,
-      "dist_col": 80
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "56",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 82,
-      "dist_col": 13
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "57",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 82,
-      "dist_col": 30
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "58",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 83,
-      "dist_col": 5
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "59",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 84,
-      "dist_col": 5
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "61",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 85,
-      "dist_col": 31
-    },
-    {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "60",
-      "mutator": "ObjectLiteral",
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "21",
+      "mutator": "BlockStatement",
       "replacement": "{}",
-      "dist_line": 84,
-      "dist_col": 69
+      "dist_line": 43,
+      "dist_col": 25
     },
     {
-      "file": "packages/quality-guard/dist/index.js",
-      "id": "67",
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "22",
+      "mutator": "BooleanLiteral",
+      "replacement": "arg",
+      "dist_line": 45,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "23",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 45,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "24",
       "mutator": "ConditionalExpression",
       "replacement": "false",
-      "dist_line": 99,
+      "dist_line": 45,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "26",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 47,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "28",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 48,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/index.js",
+      "id": "35",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 54,
       "dist_col": 5
     }
   ]

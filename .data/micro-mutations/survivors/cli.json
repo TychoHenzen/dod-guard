@@ -1,157 +1,85 @@
 {
   "source": "packages/dod-guard/src/cli.ts",
-  "date": "2026-08-06T09:25:09.469Z",
+  "date": "2026-08-23T07:12:26.114Z",
   "summary": {
-    "total": 204,
-    "killed": 89,
-    "survived": 18,
+    "total": 75,
+    "killed": 61,
+    "survived": 9,
     "timeout": 0,
-    "unviable": 97
+    "unviable": 5
   },
   "survivors": [
     {
       "file": "packages/dod-guard/dist/cli.js",
-      "id": "0",
+      "id": "27",
       "mutator": "ObjectLiteral",
       "replacement": "{}",
-      "dist_line": 10,
-      "dist_col": 21
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "24",
-      "mutator": "MethodExpression",
-      "replacement": "positional",
-      "dist_line": 73,
-      "dist_col": 63
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "26",
-      "mutator": "ConditionalExpression",
-      "replacement": "true",
-      "dist_line": 77,
-      "dist_col": 12
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "32",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 82,
-      "dist_col": 31
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "42",
-      "mutator": "ConditionalExpression",
-      "replacement": "true",
-      "dist_line": 88,
-      "dist_col": 9
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "73",
-      "mutator": "BooleanLiteral",
-      "replacement": "doc",
-      "dist_line": 115,
-      "dist_col": 9
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "74",
-      "mutator": "ConditionalExpression",
-      "replacement": "true",
-      "dist_line": 115,
-      "dist_col": 9
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "75",
-      "mutator": "ConditionalExpression",
-      "replacement": "false",
-      "dist_line": 115,
-      "dist_col": 9
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "167",
-      "mutator": "ObjectLiteral",
-      "replacement": "{}",
-      "dist_line": 193,
+      "dist_line": 58,
       "dist_col": 19
     },
     {
       "file": "packages/dod-guard/dist/cli.js",
-      "id": "168",
+      "id": "28",
       "mutator": "ArrowFunction",
       "replacement": "() => undefined",
-      "dist_line": 194,
+      "dist_line": 59,
       "dist_col": 12
     },
     {
       "file": "packages/dod-guard/dist/cli.js",
-      "id": "169",
+      "id": "29",
       "mutator": "ArrowFunction",
       "replacement": "() => undefined",
-      "dist_line": 195,
+      "dist_line": 60,
       "dist_col": 15
     },
     {
       "file": "packages/dod-guard/dist/cli.js",
-      "id": "179",
+      "id": "33",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 70,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/dod-guard/dist/cli.js",
+      "id": "41",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 73,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/cli.js",
+      "id": "55",
       "mutator": "ConditionalExpression",
       "replacement": "false",
-      "dist_line": 200,
+      "dist_line": 79,
       "dist_col": 32
     },
     {
       "file": "packages/dod-guard/dist/cli.js",
-      "id": "181",
+      "id": "57",
       "mutator": "BooleanLiteral",
       "replacement": "false",
-      "dist_line": 200,
+      "dist_line": 79,
       "dist_col": 44
     },
     {
       "file": "packages/dod-guard/dist/cli.js",
-      "id": "187",
+      "id": "58",
       "mutator": "ConditionalExpression",
-      "replacement": "case \"check\":",
-      "dist_line": 206,
-      "dist_col": 13
+      "replacement": "false",
+      "dist_line": 79,
+      "dist_col": 52
     },
     {
       "file": "packages/dod-guard/dist/cli.js",
-      "id": "188",
+      "id": "60",
       "mutator": "StringLiteral",
       "replacement": "\"\"",
-      "dist_line": 206,
-      "dist_col": 18
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "190",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 208,
-      "dist_col": 18
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "192",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 210,
-      "dist_col": 18
-    },
-    {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "194",
-      "mutator": "StringLiteral",
-      "replacement": "\"\"",
-      "dist_line": 212,
-      "dist_col": 18
+      "dist_line": 79,
+      "dist_col": 64
     }
   ]
 }

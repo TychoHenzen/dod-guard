@@ -1,38 +1,38 @@
 {
   "files": {
     "packages/dod-guard/src/index.ts": {
-      "last_tested": "2026-07-20",
+      "last_tested": "2026-08-23",
       "last_result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
+        "total": 46,
+        "caught": 13,
+        "missed": 13,
+        "timeout": 3,
+        "unviable": 17,
+        "status": "ok",
+        "error": null
       },
       "lines": 71,
       "error_count": 9,
       "recent_commits": 41,
-      "fingerprint": "9a2c95705a747f21b973dda9612648d169d07dbfb0ccde5ea61510b7eeee3524",
-      "dirty": true
+      "fingerprint": "5a4cea6ff1837db13f2ba24820b9ad47088e6948b32c6849156544a7f1bf4d12",
+      "dirty": false
     },
     "packages/dod-guard/src/cli.ts": {
-      "last_tested": "2026-08-06",
+      "last_tested": "2026-08-23",
       "last_result": {
-        "total": 204,
-        "caught": 89,
-        "missed": 18,
+        "total": 75,
+        "caught": 61,
+        "missed": 9,
         "timeout": 0,
-        "unviable": 97,
+        "unviable": 5,
         "status": "ok",
         "error": null
       },
       "lines": 101,
       "error_count": 0,
       "recent_commits": 15,
-      "fingerprint": "e88146881c71807cd553df056bbc38a4e9df11e04b16816bd159882b56d74104",
-      "dirty": true
+      "fingerprint": "cc4ecf207726ffc62a004da8da09681142e344b6f1b5eed4b599db198a204e2d",
+      "dirty": false
     },
     "packages/quality-guard/src/index.ts": {
       "last_tested": "2026-08-08",
@@ -273,21 +273,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/cover/run.ts": {
-      "last_tested": "2026-08-14",
+      "last_tested": "2026-08-23",
       "last_result": {
-        "total": 43,
-        "caught": 28,
-        "missed": 8,
+        "total": 83,
+        "caught": 56,
+        "missed": 24,
         "timeout": 0,
-        "unviable": 7,
+        "unviable": 3,
         "status": "ok",
         "error": null
       },
       "lines": 94,
       "error_count": 0,
       "recent_commits": 10,
-      "fingerprint": "8e64da760279be60fc52d1c3c84f34f4a773f5927a2a8084b5ffa731d0e76afa",
-      "dirty": true
+      "fingerprint": "7afe20dba8f4da34b9e4efdb1349b304cc30b1d2006253673a31b1d6839bdaec",
+      "dirty": false
     },
     "packages/dod-guard/src/openspec/scenario-id.ts": {
       "last_tested": "2026-08-21",
@@ -461,58 +461,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 19922,
-    "caught": 8207,
-    "missed": 6866,
-    "timeout": 94,
-    "unviable": 4755,
+    "total_mutants": 20126,
+    "caught": 8337,
+    "missed": 6912,
+    "timeout": 97,
+    "unviable": 4780,
     "error": 44,
-    "runs": 149,
-    "files_tested": 149
+    "runs": 152,
+    "files_tested": 152
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/store.ts",
-      "result": {
-        "total": 152,
-        "caught": 83,
-        "missed": 59,
-        "timeout": 0,
-        "unviable": 10,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/author.ts",
-      "result": {
-        "total": 383,
-        "caught": 113,
-        "missed": 196,
-        "timeout": 0,
-        "unviable": 74,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/command-check.ts",
-      "result": {
-        "total": 300,
-        "caught": 146,
-        "missed": 122,
-        "timeout": 9,
-        "unviable": 23,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "2f117f279d50109efc411771b33d789c9077e92b",
@@ -1867,6 +1825,48 @@
         "missed": 0,
         "timeout": 0,
         "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-23",
+      "commit": "fc50137aa55f760c2bb39221342278708c3ce42c",
+      "file": "packages/dod-guard/src/index.ts",
+      "result": {
+        "total": 46,
+        "caught": 13,
+        "missed": 13,
+        "timeout": 3,
+        "unviable": 17,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-23",
+      "commit": "fc50137aa55f760c2bb39221342278708c3ce42c",
+      "file": "packages/dod-guard/src/cli.ts",
+      "result": {
+        "total": 75,
+        "caught": 61,
+        "missed": 9,
+        "timeout": 0,
+        "unviable": 5,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-23",
+      "commit": "fc50137aa55f760c2bb39221342278708c3ce42c",
+      "file": "packages/dod-guard/src/cover/run.ts",
+      "result": {
+        "total": 83,
+        "caught": 56,
+        "missed": 24,
+        "timeout": 0,
+        "unviable": 3,
         "status": "ok",
         "error": null
       }
