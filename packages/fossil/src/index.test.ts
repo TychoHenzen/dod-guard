@@ -49,6 +49,7 @@ test("passes normalized defaults and the current directory to analyze", async ()
   let invocation = 0;
   const dependencies = {
     cwd: () => "C:/repositories/default",
+    stdout: () => undefined,
     analyze: async (repositoryPath: string, options: NormalizedAnalysisOptions) => {
       calls.push({ repositoryPath, options: structuredClone(options) });
       if (invocation === 0) {
@@ -217,4 +218,16 @@ test("returns and serializes the same finalized report through one analysis core
     { repositoryPath: "C:/repositories/parity", options },
     { repositoryPath: "C:/repositories/parity", options },
   ]);
+});
+
+// covers: fossil/cli :: Process outcomes :: No findings is successful
+test("reports zero findings after a completed empty analysis", async () => {
+  const stdout: string[] = [];
+
+  await runFossilCli(["node", "fossil", "analyze"], {
+    analyze: async (_repositoryPath, options) => reportFor(options),
+    stdout: (message) => stdout.push(message),
+  });
+
+  assert.equal(stdout.join(""), "0 findings\n");
 });

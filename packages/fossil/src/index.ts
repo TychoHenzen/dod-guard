@@ -157,6 +157,8 @@ export function createFossilProgram({
     .action(async (repositoryPath: string | undefined, options: RawAnalyzeOptions) => {
       const report = await analyzeRepository(repositoryPath ?? cwd(), normalizeAnalyzeOptions(options), analyze);
       if (report.options.format === "json") stdout(renderFossilReportJson(report));
+      else if (report.statistics.candidateFindingCount === 0 && report.statistics.workspaceDebrisCount === 0)
+        stdout("0 findings\n");
     });
   return program;
 }

@@ -268,8 +268,9 @@
 - [x] 6.9 Export `analyzeRepository()` and prove parity with CLI JSON report data.
 <!-- covers: fossil/cli :: Programmatic API parity :: CLI and API agree -->
 <!-- status: completed -->
-- [ ] 6.10 Exit successfully and report zero when analysis produces no findings.
+- [x] 6.10 Exit successfully and report zero when analysis produces no findings.
 <!-- covers: fossil/cli :: Process outcomes :: No findings is successful -->
+<!-- status: completed -->
 - [ ] 6.11 Convert a non-repository Git failure into stderr diagnostic and exit code 1.
 <!-- covers: fossil/cli :: Process outcomes :: Non-repository is an analysis failure -->
 - [ ] 6.12 Add the 5,000-commit and 1,000-file performance fixture and enforce the 10-second CI bound.
