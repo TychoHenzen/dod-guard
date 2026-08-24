@@ -119,6 +119,18 @@ export function futureCommitWarnings(commits: readonly GitCommit[], analysisTime
     }));
 }
 
+/** Reports the nonfatal absence of Git history needed for burst analysis. */
+export function emptyHistoryWarnings(commits: readonly GitCommit[]): AnalysisWarning[] {
+  return commits.length === 0
+    ? [
+        {
+          code: "empty_repository",
+          message: "Repository has no commits; burst and consolidation history is unavailable.",
+        },
+      ]
+    : [];
+}
+
 /** Parses the NUL-delimited non-merge stream requested by nonMergeGitLogArguments(). */
 export function parseNonMergeGitLog(rawLog: string): GitCommit[] {
   const commits: GitCommit[] = [];
@@ -270,6 +282,7 @@ function splitChangePoints(
 
 /** Splits qualifying close file-set changes in deterministic chronological order. */
 export function splitAtChangePoint(commits: readonly GitCommit[]): GitCommit[][] {
+  if (commits.length === 0) return [];
   return splitChangePoints(commits, 0, commits.length, fileIdentities(commits));
 }
 

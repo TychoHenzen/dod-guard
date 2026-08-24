@@ -73,8 +73,9 @@
 - [x] 2.20 Detect sparse checkout and add a current-tree completeness warning.
 <!-- covers: fossil/burst-analysis :: History completeness reporting :: Sparse checkout is reported -->
 <!-- status: completed -->
-- [ ] 2.21 Return a successful zero-burst report for an empty Git repository.
+- [x] 2.21 Return a successful zero-burst report for an empty Git repository.
 <!-- covers: fossil/burst-analysis :: History completeness reporting :: Empty repository has no bursts -->
+<!-- status: completed -->
 - [ ] 2.22 Make recursive close splits define final burst membership and statistics.
 <!-- covers: fossil/burst-analysis :: File-set change-point detection :: Close split refines temporal clustering -->
 - [ ] 2.23 Prevent the relative survivor rule from selecting files when all later counts are zero.
