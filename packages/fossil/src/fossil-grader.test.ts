@@ -75,6 +75,44 @@ test("gives full isolation when every unique resolved neighbor is a fossil candi
   );
 });
 
+// covers: fossil/scoring :: Cluster isolation score :: Candidate has no resolved neighbors
+test("gives full isolation when self, unresolved, and unrelated references are the only evidence", () => {
+  const graph: ReferenceGraph = {
+    edges: [
+      {
+        sourcePath: "src/candidate.ts",
+        targetPath: "src/candidate.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 0, end: 1, line: 1, column: 1 },
+      },
+      {
+        sourcePath: "src/other-a.ts",
+        targetPath: "src/other-b.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 1, end: 2, line: 1, column: 2 },
+      },
+    ],
+    unresolved: [
+      {
+        sourcePath: "src/candidate.ts",
+        targetCandidates: ["src/missing.ts"],
+        language: "typescript",
+        kind: "import",
+        span: { start: 2, end: 3, line: 1, column: 3 },
+        resolution: "unresolved",
+      },
+    ],
+    complete: false,
+    unavailablePaths: ["src/missing.ts"],
+  };
+
+  assert.equal(clusterIsolationScore("src/candidate.ts", graph, new Set()), 1);
+});
+
 // covers: fossil/scoring :: Reference weakness score :: Only weak or vestigial references remain
 test("gives full weakness when no unique strong live inbound source remains", () => {
   const graph: ReferenceGraph = {

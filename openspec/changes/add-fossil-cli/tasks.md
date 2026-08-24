@@ -166,8 +166,9 @@
 - [x] 4.7 Assign full isolation when every resolved neighbor is a fossil candidate.
 <!-- covers: fossil/scoring :: Cluster isolation score :: Candidate only references fossils -->
 <!-- status: completed -->
-- [ ] 4.8 Assign full isolation when the candidate has no resolved neighbors.
+- [x] 4.8 Assign full isolation when the candidate has no resolved neighbors.
 <!-- covers: fossil/scoring :: Cluster isolation score :: Candidate has no resolved neighbors -->
+<!-- status: completed -->
 - [ ] 4.9 Assign zero isolation when every resolved neighbor is live.
 <!-- covers: fossil/scoring :: Cluster isolation score :: Candidate only references live code -->
 - [ ] 4.10 Combine four available subscores with the fixed fossil weights.
