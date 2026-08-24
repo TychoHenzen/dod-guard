@@ -241,8 +241,9 @@
 
 ## 6. CLI, API, and output contracts
 
-- [ ] 6.1 Implement the analyze command, omitted repository path, and documented defaults.
+- [x] 6.1 Implement the analyze command, omitted repository path, and documented defaults.
 <!-- covers: fossil/cli :: Analyze command :: Defaults are applied -->
+<!-- status: completed -->
 - [ ] 6.2 Normalize and apply every explicit analysis option.
 <!-- covers: fossil/cli :: Analyze command :: Explicit options are applied -->
 - [ ] 6.3 Reject invalid values, unknown options, and extra arguments with usage exit code 2.
