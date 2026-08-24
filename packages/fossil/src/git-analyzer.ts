@@ -146,22 +146,55 @@ function weightedSimilarity(
   return intersectionWeight / unionWeight;
 }
 
-/** Splits at the first qualifying close file-set change. Callers must supply chronological commits. */
-export function splitAtChangePoint(commits: readonly GitCommit[]): GitCommit[][] {
-  const identities = fileIdentities(commits);
-  for (let cut = 5; cut <= commits.length - 5; cut += 1) {
-    const left = commits.slice(0, cut);
-    const right = commits.slice(cut);
-    const gap = commits[cut].committerTimestampMs - commits[cut - 1].committerTimestampMs;
+interface ChangePointCandidate {
+  readonly cut: number;
+  readonly gapMilliseconds: number;
+  readonly similarity: number;
+}
+
+function selectChangePoint(
+  commits: readonly GitCommit[],
+  start: number,
+  end: number,
+  identities: ReadonlyMap<string, string>,
+): ChangePointCandidate | undefined {
+  const candidates: ChangePointCandidate[] = [];
+  for (let cut = start + 5; cut <= end - 5; cut += 1) {
+    const left = commits.slice(start, cut);
+    const right = commits.slice(cut, end);
+    const gapMilliseconds = commits[cut].committerTimestampMs - commits[cut - 1].committerTimestampMs;
     if (
-      gap < MIN_CHANGE_POINT_GAP_MS ||
+      gapMilliseconds < MIN_CHANGE_POINT_GAP_MS ||
       !partitionQualifies(left, identities) ||
       !partitionQualifies(right, identities)
     )
       continue;
-    if (weightedSimilarity(commits, cut, identities) <= MAX_CHANGE_POINT_SIMILARITY) return [left, right];
+    const similarity = weightedSimilarity(commits, cut, identities);
+    if (similarity <= MAX_CHANGE_POINT_SIMILARITY) candidates.push({ cut, gapMilliseconds, similarity });
   }
-  return [[...commits]];
+  return candidates.sort(
+    (left, right) =>
+      left.similarity - right.similarity || right.gapMilliseconds - left.gapMilliseconds || left.cut - right.cut,
+  )[0];
+}
+
+function splitChangePoints(
+  commits: readonly GitCommit[],
+  start: number,
+  end: number,
+  identities: ReadonlyMap<string, string>,
+): GitCommit[][] {
+  const candidate = selectChangePoint(commits, start, end, identities);
+  if (!candidate) return [commits.slice(start, end)];
+  return [
+    ...splitChangePoints(commits, start, candidate.cut, identities),
+    ...splitChangePoints(commits, candidate.cut, end, identities),
+  ];
+}
+
+/** Splits qualifying close file-set changes in deterministic chronological order. */
+export function splitAtChangePoint(commits: readonly GitCommit[]): GitCommit[][] {
+  return splitChangePoints(commits, 0, commits.length, fileIdentities(commits));
 }
 
 interface FileEvent {

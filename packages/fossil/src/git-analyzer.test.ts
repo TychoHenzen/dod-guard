@@ -22,6 +22,18 @@ async function temporaryRepository(): Promise<TemporaryRepository> {
   return repository;
 }
 
+function changePointCommits(fileSets: readonly (readonly string[])[], gapsBefore: ReadonlyMap<number, number>) {
+  let timestamp = 0;
+  return fileSets.map((paths, index) => {
+    if (index > 0) timestamp += gapsBefore.get(index) ?? 60 * 60 * 1_000;
+    return {
+      hash: `point-${index}`,
+      committerTimestampMs: timestamp,
+      changes: paths.map((path) => ({ status: "modified" as const, path })),
+    };
+  });
+}
+
 // covers: fossil/burst-analysis :: History activity model :: Merge commits do not add activity
 test("omits merge-only activity while retaining reachable non-merge commits", async () => {
   const repository = await temporaryRepository();
@@ -218,4 +230,75 @@ test("keeps close low-similarity work together when a side is too small", () => 
 
   assert.deepEqual(splitAtChangePoint(fewerThanFiveCommits), [fewerThanFiveCommits]);
   assert.deepEqual(splitAtChangePoint(fewerThanThreeFiles), [fewerThanThreeFiles]);
+});
+
+// covers: fossil/burst-analysis :: File-set change-point detection :: Deterministic recursive split order
+test("ranks close change points deterministically and recursively splits both sides", () => {
+  const hour = 60 * 60 * 1_000;
+  const uniqueFileSets = Array.from({ length: 11 }, (_, index) => [
+    `file-${index}-a.ts`,
+    `file-${index}-b.ts`,
+    `file-${index}-c.ts`,
+  ]);
+  const lowerSimilarityWins = uniqueFileSets.map((paths) => [...paths]);
+  lowerSimilarityWins[5][0] = "bridge.ts";
+  lowerSimilarityWins[6][0] = "bridge.ts";
+
+  assert.deepEqual(
+    splitAtChangePoint(
+      changePointCommits(
+        lowerSimilarityWins,
+        new Map([
+          [5, 4 * hour],
+          [6, 8 * hour],
+        ]),
+      ),
+    ).map((partition) => partition.length),
+    [5, 6],
+  );
+  assert.deepEqual(
+    splitAtChangePoint(
+      changePointCommits(
+        uniqueFileSets,
+        new Map([
+          [5, 4 * hour],
+          [6, 8 * hour],
+        ]),
+      ),
+    ).map((partition) => partition.length),
+    [6, 5],
+  );
+  assert.deepEqual(
+    splitAtChangePoint(
+      changePointCommits(
+        uniqueFileSets,
+        new Map([
+          [5, 4 * hour],
+          [6, 4 * hour],
+        ]),
+      ),
+    ).map((partition) => partition.length),
+    [5, 6],
+  );
+
+  const recursiveFileSets = Array.from({ length: 6 }, (_, group) =>
+    Array.from({ length: 5 }, () => [`group-${group}-a.ts`, `group-${group}-b.ts`, `group-${group}-c.ts`]),
+  ).flat();
+  const recursivePartitions = splitAtChangePoint(
+    changePointCommits(
+      recursiveFileSets,
+      new Map([
+        [5, 4 * hour],
+        [10, 4 * hour],
+        [15, 8 * hour],
+        [20, 4 * hour],
+        [25, 4 * hour],
+      ]),
+    ),
+  );
+
+  assert.deepEqual(
+    recursivePartitions.map((partition) => partition.map((commit) => commit.hash)),
+    Array.from({ length: 6 }, (_, group) => Array.from({ length: 5 }, (_, offset) => `point-${group * 5 + offset}`)),
+  );
 });

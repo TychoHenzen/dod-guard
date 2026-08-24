@@ -34,8 +34,9 @@
 - [x] 2.7 Reject a close change-point split when either resulting partition is too small.
 <!-- covers: fossil/burst-analysis :: File-set change-point detection :: Small partition prevents a close split -->
 <!-- status: completed -->
-- [ ] 2.8 Implement deterministic change-point tie-breaking and recursive partitioning.
+- [x] 2.8 Implement deterministic change-point tie-breaking and recursive partitioning.
 <!-- covers: fossil/burst-analysis :: File-set change-point detection :: Deterministic recursive split order -->
+<!-- status: completed -->
 - [ ] 2.9 Drop closed clusters below the minimum commit or distinct-file count.
 <!-- covers: fossil/burst-analysis :: Burst qualification :: Ordinary small cluster is dropped -->
 - [ ] 2.10 Suppress survivor and candidate output for a temporal cluster that is not yet closed.
