@@ -4,7 +4,7 @@
 Executes a confirmed multi-step plan in ordered task chunks. Each fresh worker receives about 50,000 to 100,000 estimated execution tokens of work. The orchestrator preserves task-level scope and verification, then persists progress directly in `tasks.md` so interrupted sessions can resume.
 ## Requirements
 ### Requirement: token-sized sequential worker chunks
-The skill SHALL estimate each pending task's execution cost and group contiguous tasks into worker chunks targeting 50,000 to 100,000 tokens. It SHALL aim near 75,000 tokens when several valid splits exist. It SHALL NOT dispatch a fresh worker for every small task. Chunks and tasks within each chunk SHALL execute in dependency order as defined in `tasks.md`.
+The skill SHALL estimate each pending task's execution cost and group contiguous tasks into worker chunks targeting 50,000 to 100,000 tokens. It SHALL aim near 75,000 tokens when several valid splits exist. It SHALL NOT dispatch a fresh worker for every small task. Each chunk SHALL use a fresh worker that has not handled an earlier chunk. The skill SHALL stop every agent used for the resolved chunk before dispatching the next chunk. Chunks and tasks within each chunk SHALL execute in dependency order as defined in `tasks.md`.
 
 #### Scenario: dependent step waits
 - **WHEN** a later step depends on an earlier step that is not yet completed
@@ -21,6 +21,14 @@ The skill SHALL estimate each pending task's execution cost and group contiguous
 #### Scenario: many tiny tasks share one worker
 - **WHEN** contiguous small tasks have a combined estimate between 50,000 and 100,000 tokens
 - **THEN** the skill dispatches them together to one fresh worker
+
+#### Scenario: resolved chunk releases its agents
+- **WHEN** a chunk and any same-chunk repair work are resolved
+- **THEN** the skill stops every agent used for that chunk before dispatching another chunk
+
+#### Scenario: next chunk gets clean context
+- **WHEN** another chunk is ready after the current chunk is resolved
+- **THEN** the skill spawns a fresh agent and does not send the chunk to an earlier agent through a follow-up
 
 #### Scenario: task type changes inside a chunk
 - **WHEN** an ordinary task is followed by a TDD or debugging task and their combined estimate remains within the target

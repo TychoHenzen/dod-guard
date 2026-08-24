@@ -20,11 +20,18 @@ implementation code.
 
 ### Codex lifecycle
 
-Before a Codex dispatch, inspect the active agent list. Reuse a related agent when practical. One fresh agent owns one chunk, not one task.
+Before a Codex dispatch, inspect the active agent list. Spawn one fresh agent for the
+current chunk. Never assign a later chunk to an agent that handled an earlier chunk.
 
-Limit each parallel wave to the free agent slots. Wait for the wave, record every result, then close completed agents with the runtime's close action when available. If only interruption is available, interrupt agents whose work is no longer needed.
+Limit each parallel wave to the free agent slots. Same-chunk clarification and repair may
+reuse that chunk's agent. After the chunk is resolved and recorded, close every agent used
+for it with the runtime's close action. If only interruption is available, interrupt them.
+Finish this cleanup before dispatching the next chunk.
 
-Do not assume a returned result freed a slot. If capacity is full, release unneeded agents and retry once. If closure is unavailable, reuse an existing agent through a follow-up instead of spawning another.
+Do not assume a returned result freed a slot. If capacity is full, release unneeded agents
+and retry once. If the runtime cannot stop the prior chunk's agents or provide a slot for a
+fresh agent, stop execution and report a lifecycle blocker. Never send a new chunk through
+a follow-up to an existing agent.
 
 Resolve `<agent-definitions-dir>` before dispatching a dod-guard agent. In Claude, use
 `${CLAUDE_PLUGIN_ROOT}/agents`. In Codex, use the `agents` directory beside the parent `skills`
@@ -203,9 +210,9 @@ each task. They stop before later tasks when one task is AMBIGUOUS, BLOCKED,
 ALREADY-GREEN, or NO-REPRO.
 
 Workers own their scope rules, report format, git practices, and ambiguity handling
-separately. When a stopped chunk can continue after clarification or repair, resume
-or follow up with the same worker when the runtime supports it. Do not pay for a new
-agent context solely to continue the remaining tasks in that chunk.
+separately. While the current chunk remains unresolved, clarification or repair may resume
+or follow up with the same worker when the runtime supports it. This exception ends when
+the chunk is resolved. Stop that worker before dispatching the next chunk.
 
 Workers return one of three universal responses: DONE, AMBIGUOUS,
 BLOCKED. On BLOCKED, check whether the blocker is inside the plan. If

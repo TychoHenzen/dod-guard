@@ -123,8 +123,9 @@ before writing code or plans.
 
 Executes a confirmed multi-step plan by grouping contiguous tasks into worker
 chunks estimated at 50,000 to 100,000 execution tokens. One fresh subagent owns
-each chunk. Each task keeps its own requirement, file scope, and verification
-command. The orchestrator verifies every task, then commits the chunk. Reads and writes
+each chunk. The orchestrator stops that subagent before spawning the next chunk's
+subagent. Each task keeps its own requirement, file scope, and verification command.
+The orchestrator verifies every task, then commits the chunk. Reads and writes
 `openspec/changes/<id>/tasks.md` - an OpenSpec change id is required. Its
 Finishing phase runs `dod-guard cover` and, on a clean result, `openspec
 archive`.

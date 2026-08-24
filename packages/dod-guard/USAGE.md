@@ -118,9 +118,10 @@ OpenSpec change and marks how each one binds to a test. Never implements.
 
 **What it does:** Reads `openspec/changes/<id>/tasks.md`, estimates each task's
 execution cost, and groups contiguous tasks into 50,000 to 100,000 token chunks.
-It dispatches one fresh subagent per chunk. Each task keeps its own requirement,
-file scope, and verification command. The orchestrator independently verifies each
-task, then records and commits the chunk. The Finishing phase runs
+It dispatches one fresh subagent per chunk and stops that subagent before spawning
+the next one. Each task keeps its own requirement, file scope, and verification
+command. The orchestrator independently verifies each task, then records and commits
+the chunk. The Finishing phase runs
 `dod-guard cover <id>` and, on a clean result, `openspec archive`.
 
 **When to use:**
