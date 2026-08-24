@@ -49,6 +49,19 @@ export interface ReferenceAnalysisResult {
   readonly warnings: readonly AnalysisWarning[];
 }
 
+/** Directory entry metadata supplied by the source inventory boundary. */
+export interface ReferenceInventoryEntry {
+  readonly name: string;
+  readonly kind: "file" | "directory" | "directory-symlink" | "junction";
+}
+
+/** Injected filesystem boundary for deterministic, containment-aware source inventory. */
+export interface ReferenceInventoryBoundary {
+  readonly repositoryRoot: string;
+  readonly canonicalize: (path: string) => string;
+  readonly enumerate: (directoryPath: string) => readonly ReferenceInventoryEntry[];
+}
+
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
@@ -77,6 +90,11 @@ function normalizedPath(path: string): string {
   return posix.normalize(path.replaceAll("\\", "/"));
 }
 
+function canonicalPathKey(path: string): string {
+  const normalized = normalizedPath(path);
+  return /^[A-Za-z]:\//.test(normalized) ? normalized.toLowerCase() : normalized;
+}
+
 function pathIsWithin(root: string, candidate: string): boolean {
   const normalizedRoot = normalizedPath(root).replace(/\/$/, "");
   const normalizedCandidate = normalizedPath(candidate);
@@ -100,6 +118,41 @@ function outsideBoundaryWarning(sourcePath: string): AnalysisWarning {
     message: "Relative reference target is outside the repository boundary.",
     path: sourcePath,
   };
+}
+
+function repositoryRelativePath(root: string, candidate: string): string {
+  const normalizedRoot = normalizedPath(root).replace(/\/$/, "");
+  const normalizedCandidate = normalizedPath(candidate);
+  return normalizedCandidate.slice(normalizedRoot.length).replace(/^\/+/, "");
+}
+
+/** Enumerates ordinary repository directories without traversing links or duplicate canonical directories. */
+export function inventoryReferenceSourcePaths(boundary: ReferenceInventoryBoundary): readonly string[] {
+  const canonicalRoot = boundary.canonicalize(boundary.repositoryRoot);
+  const visitedDirectories = new Set<string>();
+  const paths = new Set<string>();
+  const walk = (directoryPath: string, canonicalDirectory = boundary.canonicalize(directoryPath)) => {
+    if (
+      !pathIsWithin(canonicalRoot, canonicalDirectory) ||
+      visitedDirectories.has(canonicalPathKey(canonicalDirectory))
+    )
+      return;
+    visitedDirectories.add(canonicalPathKey(canonicalDirectory));
+    const entries = [...boundary.enumerate(directoryPath)].sort((left, right) => compareText(left.name, right.name));
+    for (const entry of entries) {
+      const entryPath = posix.join(directoryPath.replaceAll("\\", "/"), entry.name);
+      if (entry.kind === "directory-symlink" || entry.kind === "junction") continue;
+      if (entry.kind === "directory") {
+        walk(entryPath);
+        continue;
+      }
+      const canonicalFile = boundary.canonicalize(entryPath);
+      if (pathIsWithin(canonicalRoot, canonicalFile))
+        paths.add(repositoryRelativePath(boundary.repositoryRoot, entryPath));
+    }
+  };
+  walk(boundary.repositoryRoot, canonicalRoot);
+  return [...paths].sort(compareText);
 }
 
 function parsedModuleReferences(source: ReferenceSourceContent): ParsedReference[] {

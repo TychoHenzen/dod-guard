@@ -4,12 +4,54 @@ import {
   analyzeJavaScriptReferences,
   analyzeJavaScriptReferencesWithinBoundary,
   analyzeReferences,
+  inventoryReferenceSourcePaths,
   markUnresolvedCandidateEvidence,
   type ReferenceCandidate,
   readReferenceSources,
   regradeVestigialEdges,
   unsupportedCandidateReferenceGraph,
 } from "./ref-analyzer.js";
+
+// covers: fossil/reference-analysis :: Repository-contained source reads :: Directory symlink is not traversed
+test("inventories ordinary directories without traversing links or duplicate canonical directories", () => {
+  const canonicalized: string[] = [];
+  const enumerated: string[] = [];
+  const entries = new Map([
+    [
+      "C:/repo",
+      [
+        { name: "junction", kind: "junction" as const },
+        { name: "linked", kind: "directory-symlink" as const },
+        { name: "src", kind: "directory" as const },
+        { name: "zsecond", kind: "directory" as const },
+        { name: "root.ts", kind: "file" as const },
+      ],
+    ],
+    ["C:/repo/src", [{ name: "nested.ts", kind: "file" as const }]],
+    ["C:/repo/zsecond", [{ name: "duplicate.ts", kind: "file" as const }]],
+  ]);
+  const paths = inventoryReferenceSourcePaths({
+    repositoryRoot: "C:/repo",
+    canonicalize: (path) => {
+      canonicalized.push(path);
+      return path === "C:/repo/zsecond" ? "C:/repo/src" : path;
+    },
+    enumerate: (path) => {
+      enumerated.push(path);
+      return entries.get(path) ?? [];
+    },
+  });
+
+  assert.deepEqual(paths, ["root.ts", "src/nested.ts"]);
+  assert.deepEqual(enumerated, ["C:/repo", "C:/repo/src"]);
+  assert.deepEqual(canonicalized, [
+    "C:/repo",
+    "C:/repo/root.ts",
+    "C:/repo/src",
+    "C:/repo/src/nested.ts",
+    "C:/repo/zsecond",
+  ]);
+});
 
 // covers: fossil/reference-analysis :: Repository-contained source reads :: Relative import cannot escape the repository
 test("rejects lexical and canonical relative-import escapes without exposing external paths", () => {

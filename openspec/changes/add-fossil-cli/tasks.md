@@ -127,8 +127,9 @@
 - [x] 3.14 Reject relative import targets that escape canonical repository containment.
 <!-- covers: fossil/reference-analysis :: Repository-contained source reads :: Relative import cannot escape the repository -->
 <!-- status: completed -->
-- [ ] 3.15 Prevent traversal of directory symlinks during source inventory.
+- [x] 3.15 Prevent traversal of directory symlinks during source inventory.
 <!-- covers: fossil/reference-analysis :: Repository-contained source reads :: Directory symlink is not traversed -->
+<!-- status: completed -->
 - [ ] 3.16 Skip oversized source with a warning and unavailable affected reference evidence.
 <!-- covers: fossil/reference-analysis :: Bounded source scanning :: Oversized source degrades reference evidence -->
 - [ ] 3.17 Stop further reads at the total content budget and preserve incomplete evidence.
