@@ -1,4 +1,4 @@
-import { strictEqual } from "node:assert";
+import { deepStrictEqual, strictEqual } from "node:assert";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,7 +13,13 @@ after(() => {
 
 describe("smoke-bundle-standalone", () => {
   it("passes real bundles and fails an unbundled dependency fixture", async () => {
-    const realCode = await runBundles(await discoverBundles());
+    const bundles = await discoverBundles();
+    deepStrictEqual(
+      bundles.map((bundle) => bundle.name),
+      ["dod-guard", "quality-guard"],
+      "only plugin-manifest workspaces receive the MCP standalone smoke",
+    );
+    const realCode = await runBundles(bundles);
     strictEqual(realCode, 0, "real packaged bundles must pass the standalone gate");
 
     const fixtureRoot = mkdtempSync(join(tmpdir(), "standalone-fixture-"));

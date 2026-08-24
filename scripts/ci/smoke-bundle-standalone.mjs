@@ -6,6 +6,7 @@
 // installation or plugin cache.
 
 import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { cp, mkdir, mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -58,6 +59,10 @@ async function handshake(bundle, pkgName, expectedVersion) {
     stdio: ["pipe", "pipe", "pipe"],
   });
   const state = { waiters: new Map(), junk: [] };
+  let exited = false;
+  child.on("close", () => {
+    exited = true;
+  });
   let stderr = "";
   child.stderr.on("data", (chunk) => {
     stderr += chunk.toString();
@@ -108,7 +113,10 @@ async function handshake(bundle, pkgName, expectedVersion) {
     }
     if (state.junk.length > 0) throw new Error(`non-JSON output on stdout corrupts the MCP stream: ${state.junk[0]}`);
   } finally {
-    child.kill();
+    if (!exited) {
+      child.kill();
+      await once(child, "close");
+    }
   }
 }
 
@@ -118,9 +126,10 @@ export async function discoverBundles() {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const packageDir = join(PACKAGES_DIR, entry.name);
+    const pluginManifest = join(packageDir, ".claude-plugin", "plugin.json");
     const bundle = join(packageDir, "dist", "bundle.js");
     try {
-      await stat(bundle);
+      await Promise.all([stat(bundle), stat(pluginManifest)]);
     } catch (err) {
       if (err.code === "ENOENT") continue;
       throw err;

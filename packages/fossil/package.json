@@ -1,5 +1,5 @@
 {
-  "name": "fossil",
+  "name": "@dod-guard/fossil",
   "version": "0.1.0",
   "description": "CLI for grading commit history and git hygiene.",
   "type": "module",
