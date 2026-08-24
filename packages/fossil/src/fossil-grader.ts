@@ -6,3 +6,9 @@ export function normalizedBurstChurn(candidate: BurstFileActivity, burstFiles: r
   if (maximumBurstCommits === 0) return 0;
   return Math.max(0, candidate.burstCommits) / maximumBurstCommits;
 }
+
+/** Scores the absence of post-burst commits for one candidate. */
+export function abandonmentScore(candidate: BurstFileActivity): number {
+  if (candidate.burstCommits <= 0) return 0;
+  return Math.max(0, 1 - candidate.postBurstCommits / candidate.burstCommits);
+}

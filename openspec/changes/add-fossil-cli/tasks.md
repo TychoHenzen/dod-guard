@@ -148,8 +148,9 @@
 - [x] 4.1 Normalize a candidate's burst commits against the burst maximum.
 <!-- covers: fossil/scoring :: Churn score :: Churn is normalized within a burst -->
 <!-- status: completed -->
-- [ ] 4.2 Assign full abandonment when a candidate has no later commits.
+- [x] 4.2 Assign full abandonment when a candidate has no later commits.
 <!-- covers: fossil/scoring :: Abandonment score :: Complete abandonment scores one -->
+<!-- status: completed -->
 - [ ] 4.3 Scale abandonment linearly against burst activity and clamp it at zero.
 <!-- covers: fossil/scoring :: Abandonment score :: Continued activity lowers abandonment linearly -->
 - [ ] 4.4 Assign full reference weakness when no strong live inbound reference exists.
