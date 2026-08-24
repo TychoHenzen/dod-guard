@@ -130,8 +130,9 @@
 - [x] 3.15 Prevent traversal of directory symlinks during source inventory.
 <!-- covers: fossil/reference-analysis :: Repository-contained source reads :: Directory symlink is not traversed -->
 <!-- status: completed -->
-- [ ] 3.16 Skip oversized source with a warning and unavailable affected reference evidence.
+- [x] 3.16 Skip oversized source with a warning and unavailable affected reference evidence.
 <!-- covers: fossil/reference-analysis :: Bounded source scanning :: Oversized source degrades reference evidence -->
+<!-- status: completed -->
 - [ ] 3.17 Stop further reads at the total content budget and preserve incomplete evidence.
 <!-- covers: fossil/reference-analysis :: Bounded source scanning :: Total scan budget stops further content reads -->
 - [ ] 3.18 Detect and omit binary files before regex parsing.

@@ -7,10 +7,55 @@ import {
   inventoryReferenceSourcePaths,
   markUnresolvedCandidateEvidence,
   type ReferenceCandidate,
+  readBoundedReferenceSources,
   readReferenceSources,
   regradeVestigialEdges,
   unsupportedCandidateReferenceGraph,
 } from "./ref-analyzer.js";
+
+// covers: fossil/reference-analysis :: Bounded source scanning :: Oversized source degrades reference evidence
+test("skips oversized sources before reading content and retains later bounded sources", () => {
+  const maximumBytes = 1_048_576;
+  const contentReads: string[] = [];
+  const sources = [
+    { path: "src/exact.ts", language: "typescript" as const },
+    { path: "src/oversized.ts", language: "typescript" as const },
+    { path: "src/later.ts", language: "typescript" as const },
+  ];
+  const sizes = new Map([
+    ["src/exact.ts", maximumBytes],
+    ["src/oversized.ts", maximumBytes + 1],
+    ["src/later.ts", 7],
+  ]);
+  const result = readBoundedReferenceSources(
+    sources,
+    (source) => ({ byteLength: sizes.get(source.path) ?? 0 }),
+    (source) => {
+      contentReads.push(source.path);
+      return `// ${source.path}\n`;
+    },
+  );
+
+  assert.deepEqual(contentReads, ["src/exact.ts", "src/later.ts"]);
+  assert.deepEqual(
+    result.sources.map((source) => source.path),
+    ["src/exact.ts", "src/later.ts"],
+  );
+  assert.deepEqual(result.graph, {
+    edges: [],
+    unresolved: [],
+    complete: false,
+    unavailablePaths: ["src/oversized.ts"],
+  });
+  assert.deepEqual(result.warnings, [
+    {
+      code: "reference_content_limit",
+      message: "Reference source exceeds the per-file content limit.",
+      path: "src/oversized.ts",
+    },
+  ]);
+  assert.equal(result.acceptedBytes, maximumBytes + 7);
+});
 
 // covers: fossil/reference-analysis :: Repository-contained source reads :: Directory symlink is not traversed
 test("inventories ordinary directories without traversing links or duplicate canonical directories", () => {

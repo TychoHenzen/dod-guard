@@ -16,6 +16,9 @@ const CSHARP_USING = /^\s*using\s+(?!static\b)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\
 const RUST_MODULE = /^\s*mod\s+([A-Za-z_]\w*)\s*;\s*$/gm;
 const RUST_CRATE_USE = /^\s*use\s+crate::([A-Za-z_]\w*(?:::[A-Za-z_]\w*)*)\s*;\s*$/gm;
 
+/** Default hard cap for one source retained by reference analysis. */
+export const DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES = 1_048_576;
+
 /** Candidate metadata supplied to a language-specific reference backend. */
 export interface ReferenceCandidate {
   readonly path: string;
@@ -24,6 +27,9 @@ export interface ReferenceCandidate {
 
 /** The injected synchronous read boundary for eligible current source files. */
 export type ReferenceSourceReader = (source: ReferenceCandidate) => string;
+
+/** Exact source metadata that allows a size decision before content is read. */
+export type ReferenceSourceMetadataReader = (source: ReferenceCandidate) => { readonly byteLength: number };
 
 /** Source content retained for a later language-specific parser. */
 export interface ReferenceSourceContent extends ReferenceCandidate {
@@ -35,6 +41,11 @@ export interface ReferenceReadResult {
   readonly graph: ReferenceGraph;
   readonly sources: readonly ReferenceSourceContent[];
   readonly warnings: readonly AnalysisWarning[];
+}
+
+/** Bounded source-read evidence including bytes accepted for later parsing. */
+export interface BoundedReferenceReadResult extends ReferenceReadResult {
+  readonly acceptedBytes: number;
 }
 
 /** Canonical path boundary used to keep resolved relative imports inside the repository. */
@@ -774,5 +785,54 @@ export function readReferenceSources(
     },
     sources: readableSources,
     warnings,
+  };
+}
+
+/** Reads sources below a per-file byte limit while preserving unavailable reference evidence for skipped files. */
+export function readBoundedReferenceSources(
+  sources: readonly ReferenceCandidate[],
+  readMetadata: ReferenceSourceMetadataReader,
+  readSource: ReferenceSourceReader,
+  maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
+): BoundedReferenceReadResult {
+  const readableSources: ReferenceSourceContent[] = [];
+  const unavailablePaths: string[] = [];
+  const warnings: AnalysisWarning[] = [];
+  let acceptedBytes = 0;
+  for (const source of sources) {
+    try {
+      const { byteLength } = readMetadata(source);
+      if (byteLength > maximumFileBytes) {
+        unavailablePaths.push(source.path);
+        warnings.push({
+          code: "reference_content_limit",
+          message: "Reference source exceeds the per-file content limit.",
+          path: source.path,
+        });
+        continue;
+      }
+      readableSources.push({ ...source, content: readSource(source) });
+      acceptedBytes += byteLength;
+    } catch {
+      unavailablePaths.push(source.path);
+      warnings.push({
+        code: "reference_unreadable",
+        message: "Reference source could not be read.",
+        path: source.path,
+      });
+    }
+  }
+  unavailablePaths.sort(compareText);
+  warnings.sort((left, right) => compareText(left.path ?? "", right.path ?? ""));
+  return {
+    graph: {
+      edges: [],
+      unresolved: [],
+      complete: unavailablePaths.length === 0,
+      unavailablePaths,
+    },
+    sources: readableSources,
+    warnings,
+    acceptedBytes,
   };
 }
