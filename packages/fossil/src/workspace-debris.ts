@@ -223,7 +223,8 @@ export function workspaceDebrisFinding(
     kind: candidate.kind,
     modifiedTimestampMs: candidate.modifiedTimestampMs,
     ageSource: "mtime",
-    ageUncertainty: "Creation time is unavailable or unreliable; age uses modification time.",
+    ageUncertainty:
+      "Modification time is filesystem metadata. Copying, restoring, extracting, or rebuilding can change it.",
     ignore: "ignore" in candidate ? candidate.ignore : undefined,
     detectedReferenceEvidence: [],
     analysisBoundary,

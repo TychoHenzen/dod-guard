@@ -160,12 +160,32 @@ test("reports an unreferenced old candidate as separate workspace debris", () =>
     kind: "untracked",
     modifiedTimestampMs: 0,
     ageSource: "mtime",
-    ageUncertainty: "Creation time is unavailable or unreliable; age uses modification time.",
+    ageUncertainty:
+      "Modification time is filesystem metadata. Copying, restoring, extracting, or rebuilding can change it.",
     ignore: undefined,
     detectedReferenceEvidence: [],
     analysisBoundary: "C:/repo",
     unobservedReferenceMechanisms: ["dynamic runtime loading"],
   });
+});
+
+// covers: fossil/workspace-debris :: Review-only reporting :: Finding preserves uncertainty
+test("labels a high-confidence-looking debris candidate for review with mtime uncertainty", () => {
+  const finding = workspaceDebrisFinding(
+    { path: "scratch/very-old.ts", kind: "untracked", modifiedTimestampMs: 0 },
+    [],
+    ["scratch/very-old.ts"],
+    "C:/repo",
+    ["runtime reflection"],
+  );
+
+  assert.ok(finding);
+  assert.equal(finding.classification, "advisory");
+  assert.equal(finding.review, "possible workspace debris");
+  assert.equal(finding.ageSource, "mtime");
+  assert.equal(finding.ageUncertainty.includes("Copying, restoring, extracting, or rebuilding can change it."), true);
+  assert.deepEqual(finding.unobservedReferenceMechanisms, ["runtime reflection"]);
+  assert.equal(JSON.stringify(finding).toLowerCase().includes("delete"), false);
 });
 
 // covers: fossil/workspace-debris :: Safe workspace boundaries :: Dependency store is excluded

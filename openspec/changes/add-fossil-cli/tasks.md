@@ -220,8 +220,9 @@
 - [x] 5.9 Exclude symlinks whose resolved targets leave the repository.
 <!-- covers: fossil/workspace-debris :: Safe workspace boundaries :: External symlink is excluded -->
 <!-- status: completed -->
-- [ ] 5.10 Label debris findings for review without making deletion claims.
+- [x] 5.10 Label debris findings for review without making deletion claims.
 <!-- covers: fossil/workspace-debris :: Review-only reporting :: Finding preserves uncertainty -->
+<!-- status: completed -->
 - [ ] 5.11 Summarize large ignored trees in normal table output while retaining detailed data elsewhere.
 <!-- covers: fossil/workspace-debris :: Review-only reporting :: Large ignored tree is summarized -->
 - [ ] 5.12 Include workspace files exactly on the modification-age cutoff.
