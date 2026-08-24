@@ -75,6 +75,51 @@ test("gives full weakness when no unique strong live inbound source remains", ()
   assert.equal(referenceWeaknessScore("src/candidate.ts", graph, new Set(["src/other-candidate.ts"])), 1);
 });
 
+// covers: fossil/scoring :: Reference weakness score :: One strong live reference remains
+test("counts duplicate strong inbound edges from one live source only once", () => {
+  const graph: ReferenceGraph = {
+    edges: [
+      {
+        sourcePath: "src/live.ts",
+        targetPath: "src/candidate.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 0, end: 1, line: 1, column: 1 },
+      },
+      {
+        sourcePath: "src/live.ts",
+        targetPath: "src/candidate.ts",
+        language: "typescript",
+        kind: "require",
+        strength: "strong",
+        span: { start: 2, end: 3, line: 1, column: 3 },
+      },
+      {
+        sourcePath: "src/weak.ts",
+        targetPath: "src/candidate.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "weak",
+        span: { start: 4, end: 5, line: 1, column: 5 },
+      },
+      {
+        sourcePath: "src/candidate.ts",
+        targetPath: "src/outbound.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 6, end: 7, line: 1, column: 7 },
+      },
+    ],
+    unresolved: [],
+    complete: true,
+    unavailablePaths: [],
+  };
+
+  assert.equal(referenceWeaknessScore("src/candidate.ts", graph, new Set()), 0.5);
+});
+
 // covers: fossil/scoring :: Abandonment score :: Complete abandonment scores one
 test("scores a positive burst with no later commits as complete abandonment", () => {
   const candidate = activity("src/abandoned.ts", 4);
