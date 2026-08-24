@@ -187,8 +187,9 @@
 - [x] 4.14 Make both reference subscores unavailable together for incomplete candidate reference analysis.
 <!-- covers: fossil/scoring :: Combined fossil score :: Reference subscores are available as a pair -->
 <!-- status: completed -->
-- [ ] 4.15 Mark every fossil finding advisory even at the maximum score.
+- [x] 4.15 Mark every fossil finding advisory even at the maximum score.
 <!-- covers: fossil/scoring :: Advisory-only findings :: High score is not deletion authority -->
+<!-- status: completed -->
 
 ## 5. Workspace-debris review category
 

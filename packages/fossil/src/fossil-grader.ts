@@ -1,4 +1,4 @@
-import type { BurstFileActivity, FossilSubscores, ReferenceGraph, ScoreBasis } from "./types.js";
+import type { BurstFileActivity, FossilFinding, FossilSubscores, ReferenceGraph, ScoreBasis } from "./types.js";
 
 /** Numeric fossil score with the evidence basis used to compute it. */
 export interface FossilScore {
@@ -12,6 +12,9 @@ export interface BurstCandidateEvidence {
   readonly activity: BurstFileActivity;
   readonly score: FossilScore;
 }
+
+/** Required fossil-finding evidence excluding its fixed advisory classification. */
+export type AdvisoryFossilFindingInput = Omit<FossilFinding, "classification">;
 
 /** Both reference subscores are available together, or neither is available. */
 export type CandidateReferenceSubscores =
@@ -119,4 +122,9 @@ export function qualifyingBurstCandidates(
   threshold: number,
 ): readonly BurstCandidateEvidence[] {
   return candidates.filter((candidate) => meetsFossilThreshold(candidate.score.score, threshold));
+}
+
+/** Builds a fossil finding that remains advisory regardless of its score. */
+export function createAdvisoryFossilFinding(input: AdvisoryFossilFindingInput): FossilFinding {
+  return { ...input, classification: "advisory" };
 }

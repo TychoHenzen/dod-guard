@@ -4,6 +4,7 @@ import {
   abandonmentScore,
   candidateReferenceSubscores,
   clusterIsolationScore,
+  createAdvisoryFossilFinding,
   meetsFossilThreshold,
   normalizedBurstChurn,
   qualifyingBurstCandidates,
@@ -109,6 +110,25 @@ test("omits both reference subscores together when candidate reference evidence 
     ),
     { available: true, referenceWeakness: 0.5, clusterIsolation: 0.5 },
   );
+});
+
+// covers: fossil/scoring :: Advisory-only findings :: High score is not deletion authority
+test("keeps a maximum-score fossil finding advisory", () => {
+  const finding = createAdvisoryFossilFinding({
+    burstId: "burst-1",
+    path: "src/candidate.ts",
+    activity: activity("src/candidate.ts", 5),
+    score: 1,
+    scoreBasis: "full",
+    subscores: { churn: 1, abandonment: 1, referenceWeakness: 1, clusterIsolation: 1 },
+    referenceAvailability: "complete",
+    strongInboundReferences: 0,
+    candidateNeighbors: [],
+    liveNeighbors: [],
+  });
+
+  assert.equal(finding.score, 1);
+  assert.equal(finding.classification, "advisory");
 });
 
 // covers: fossil/scoring :: Cluster isolation score :: Candidate only references fossils
