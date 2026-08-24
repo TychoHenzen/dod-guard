@@ -12,15 +12,54 @@ test("passes a metacharacter-containing repository path as one non-shell Git arg
     return new EventEmitter() as never;
   };
 
-  discoverGitRepository(repositoryPath, runGit);
+  discoverGitRepository(repositoryPath, runGit, {});
 
   assert.deepEqual(calls, [
     {
       command: "git",
-      arguments_: ["-C", repositoryPath, "rev-parse", "--show-toplevel"],
-      options: { shell: false, windowsHide: true },
+      arguments_: ["--no-pager", "-C", repositoryPath, "rev-parse", "--show-toplevel"],
+      options: { shell: false, windowsHide: true, env: { GIT_TERMINAL_PROMPT: "0", GIT_PAGER: "cat" } },
     },
   ]);
-  assert.equal(calls[0].arguments_[1], repositoryPath);
+  assert.equal(calls[0].arguments_[2], repositoryPath);
   assert.equal(calls[0].arguments_.filter((argument) => argument === repositoryPath).length, 1);
+});
+
+// covers: fossil/cli :: Safe Git execution :: Git cannot open an interactive process
+test("overrides hostile pager and prompt settings while preserving unrelated environment values", () => {
+  const calls: Array<{ arguments_: readonly string[]; options: { readonly env: NodeJS.ProcessEnv } }> = [];
+  const environment = {
+    PATH: "C:/Git/bin",
+    FOSSIL_TEST_VALUE: "preserved",
+    GIT_PAGER: "hostile-pager",
+    GIT_TERMINAL_PROMPT: "1",
+  };
+  const runGit: GitSpawn = (_command, arguments_, options) => {
+    calls.push({ arguments_, options });
+    return new EventEmitter() as never;
+  };
+
+  discoverGitRepository("C:/repositories/example", runGit, environment);
+
+  assert.deepEqual(calls, [
+    {
+      arguments_: ["--no-pager", "-C", "C:/repositories/example", "rev-parse", "--show-toplevel"],
+      options: {
+        shell: false,
+        windowsHide: true,
+        env: {
+          PATH: "C:/Git/bin",
+          FOSSIL_TEST_VALUE: "preserved",
+          GIT_PAGER: "cat",
+          GIT_TERMINAL_PROMPT: "0",
+        },
+      },
+    },
+  ]);
+  assert.deepEqual(environment, {
+    PATH: "C:/Git/bin",
+    FOSSIL_TEST_VALUE: "preserved",
+    GIT_PAGER: "hostile-pager",
+    GIT_TERMINAL_PROMPT: "1",
+  });
 });

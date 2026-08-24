@@ -292,8 +292,9 @@
 - [x] 6.17 Preserve unusual Git filenames through NUL-delimited parsing.
 <!-- covers: fossil/cli :: Safe Git execution :: Unusual filename remains one structured path -->
 <!-- status: completed -->
-- [ ] 6.18 Disable Git pagers and interactive prompts for every subprocess.
+- [x] 6.18 Disable Git pagers and interactive prompts for every subprocess.
 <!-- covers: fossil/cli :: Safe Git execution :: Git cannot open an interactive process -->
+<!-- status: completed -->
 - [ ] 6.19 Fail explicitly when included commit records exceed the resource limit.
 <!-- covers: fossil/cli :: Analysis resource bounds :: Commit limit fails explicitly -->
 - [ ] 6.20 Fail explicitly when current inventory exceeds the resource limit.
