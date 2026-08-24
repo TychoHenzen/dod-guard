@@ -8,6 +8,8 @@ import {
   retainClosedTemporalClusters,
   retainQualifiedClosedClusters,
   selectAbsoluteSurvivors,
+  selectRelativeSurvivors,
+  selectSurvivors,
   splitAtChangePoint,
   splitTemporalClusters,
 } from "./git-analyzer.js";
@@ -384,4 +386,45 @@ test("selects only files with at least three post-burst commits", () => {
 
   assert.deepEqual(selectAbsoluteSurvivors(files), [files[0]]);
   assert.equal(files[1].postBurstCommits, 2);
+});
+
+// covers: fossil/burst-analysis :: Consolidation classification :: Relative survivor threshold
+test("selects positive relative survivors inclusively with absolute survivors", () => {
+  const files = [
+    {
+      identity: "absolute",
+      path: "absolute.ts",
+      burstCommits: 1,
+      postBurstCommits: 3,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "at-threshold",
+      path: "at-threshold.ts",
+      burstCommits: 1,
+      postBurstCommits: 20,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "below-threshold",
+      path: "below-threshold.ts",
+      burstCommits: 1,
+      postBurstCommits: 2,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "maximum",
+      path: "maximum.ts",
+      burstCommits: 1,
+      postBurstCommits: 100,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+  ];
+
+  assert.deepEqual(selectRelativeSurvivors(files), [files[1], files[3]]);
+  assert.deepEqual(selectSurvivors(files), [files[0], files[1], files[3]]);
 });

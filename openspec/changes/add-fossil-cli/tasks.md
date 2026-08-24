@@ -46,8 +46,9 @@
 - [x] 2.11 Classify files with at least three later commits as survivors.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Absolute survivor threshold -->
 <!-- status: completed -->
-- [ ] 2.12 Classify files reaching the positive relative activity threshold as survivors.
+- [x] 2.12 Classify files reaching the positive relative activity threshold as survivors.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Relative survivor threshold -->
+<!-- status: completed -->
 - [ ] 2.13 Classify an existing non-survivor as a burst-specific fossil candidate.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Quiet current file becomes a candidate -->
 - [ ] 2.14 Record deleted non-survivors without reporting them as fossils.
