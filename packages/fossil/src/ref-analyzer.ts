@@ -402,13 +402,78 @@ function localImportBindings(declaration: string): string[] {
   return [...bindings];
 }
 
+function declarationRange(content: string, position: number): readonly [number, number] {
+  const start = content.lastIndexOf("\n", position) + 1;
+  const nextNewline = content.indexOf("\n", position);
+  return [start, nextNewline === -1 ? content.length : nextNewline];
+}
+
+function csharpGuardRanges(view: SyntaxView): readonly [number, number][] {
+  const ranges: [number, number][] = [];
+  const starts: number[] = [];
+  const directives = /^\s*#(if|endif)\b.*$/gm;
+  for (let match = directives.exec(view.code); match; match = directives.exec(view.code)) {
+    if (match[1] === "if") starts.push(match.index ?? 0);
+    else {
+      const start = starts.pop();
+      if (start !== undefined) ranges.push([start, (match.index ?? 0) + match[0].length]);
+    }
+  }
+  return ranges;
+}
+
+function rustGuardRanges(view: SyntaxView): readonly [number, number][] {
+  const ranges: [number, number][] = [];
+  const attributes = /#\s*\[\s*cfg\s*\(/g;
+  for (let match = attributes.exec(view.code); match; match = attributes.exec(view.code)) {
+    const attributeStart = match.index ?? 0;
+    const conditionOpen = view.code.indexOf("(", attributeStart);
+    const conditionClose = balancedClose(view.code, conditionOpen, "(", ")");
+    if (conditionClose === undefined) continue;
+    const attributeEnd = nextNonWhitespace(view.code, conditionClose + 1);
+    if (view.code[attributeEnd] !== "]") continue;
+    const itemStart = nextNonWhitespace(view.code, attributeEnd + 1);
+    let delimiter = itemStart;
+    while (delimiter < view.code.length && view.code[delimiter] !== "{" && view.code[delimiter] !== ";") delimiter += 1;
+    if (view.code[delimiter] === "{") {
+      const itemEnd = balancedClose(view.code, delimiter, "{", "}");
+      if (itemEnd !== undefined) ranges.push([itemStart, itemEnd]);
+    } else if (view.code[delimiter] === ";") ranges.push([itemStart, delimiter]);
+  }
+  return ranges;
+}
+
+function guardSymbol(reference: ParsedReference, source: ReferenceSourceContent): string {
+  const declared = source.content.slice(reference.span.start, reference.span.end);
+  const separator = reference.kind === "csharp-using" ? "." : "::";
+  return (
+    declared.split(separator).at(-1) ??
+    (reference.targetPath ?? reference.targetCandidates[0] ?? "").split(/[/.]/).at(-2) ??
+    ""
+  );
+}
+
 function strengthForReference(
   reference: ParsedReference,
   sources: readonly ReferenceSourceContent[],
 ): "strong" | "weak" {
-  if (reference.kind !== "import") return "strong";
   const source = sources.find((candidate) => candidate.path === reference.sourcePath);
   if (!source) return "strong";
+  if (reference.kind === "csharp-using" || reference.kind === "rust-mod" || reference.kind === "rust-use") {
+    const symbol = guardSymbol(reference, source);
+    const view = syntaxView(source.content);
+    const [declarationStart, declarationEnd] = declarationRange(source.content, reference.span.start);
+    const uses = [...source.content.matchAll(new RegExp(`\\b${symbol}\\b`, "g"))]
+      .map((match) => match.index ?? -1)
+      .filter(
+        (index) => (index < declarationStart || index >= declarationEnd) && view.code[index] === source.content[index],
+      );
+    const guards = reference.kind === "csharp-using" ? csharpGuardRanges(view) : rustGuardRanges(view);
+    return uses.length > 0 && uses.every((index) => guards.some(([start, end]) => index > start && index < end))
+      ? "weak"
+      : "strong";
+  }
+  if (reference.kind !== "import") return "strong";
   const declarationStart = source.content.lastIndexOf("import", reference.span.start);
   const semicolon = source.content.indexOf(";", reference.span.end);
   const newline = source.content.indexOf("\n", reference.span.end);

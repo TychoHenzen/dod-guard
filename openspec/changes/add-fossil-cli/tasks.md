@@ -112,8 +112,9 @@
 - [x] 3.9 Grade imports used only in fallback conditionals or default expressions as weak.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Conditional fallback use is weak -->
 <!-- status: completed -->
-- [ ] 3.10 Grade imports used only behind C# preprocessor or Rust cfg guards as weak.
+- [x] 3.10 Grade imports used only behind C# preprocessor or Rust cfg guards as weak.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Guarded use is weak -->
+<!-- status: completed -->
 - [ ] 3.11 Regrade candidate-to-candidate graph edges as vestigial before scoring.
 <!-- covers: fossil/reference-analysis :: Vestigial references :: Fossils do not keep each other alive -->
 - [ ] 3.12 Mark candidate reference evidence unavailable when a potentially matching reference remains unresolved.
