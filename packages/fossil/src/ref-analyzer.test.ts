@@ -335,3 +335,47 @@ test("marks imports used only in balanced try or catch bodies as weak", () => {
     ["weak", "weak", "weak", "weak", "weak"],
   );
 });
+
+// covers: fossil/reference-analysis :: Reference strength :: Conditional fallback use is weak
+test("marks fallback conditional and default-expression uses as weak", () => {
+  const graph = analyzeJavaScriptReferences([
+    {
+      path: "src/if.ts",
+      language: "typescript",
+      content: 'import { candidate } from "./candidate";\nif (fallback) {\n  if (true) { candidate(); }\n}\n',
+    },
+    {
+      path: "src/else.ts",
+      language: "typescript",
+      content:
+        'import { candidate } from "./candidate";\nif (live) { live(); }\n// legacy default path\nelse {\n  candidate();\n}\n',
+    },
+    {
+      path: "src/or.ts",
+      language: "typescript",
+      content: 'import { candidate } from "./candidate";\nconst x = live || (\n  candidate()\n);\n',
+    },
+    {
+      path: "src/nullish.ts",
+      language: "typescript",
+      content: 'import { candidate } from "./candidate";\nconst x = live ?? candidate;\n',
+    },
+    {
+      path: "src/object.ts",
+      language: "typescript",
+      content:
+        'import { candidate } from "./candidate";\nconst x = live ?? {\n  first: 1,\n  selected: candidate,\n};\n',
+    },
+    {
+      path: "src/ordinary.ts",
+      language: "typescript",
+      content:
+        'import { candidate } from "./candidate";\nconst label = "fallback if { candidate";\n// legacy if { candidate }\nconst unrelated = true;\nif (ordinaryMode) { candidate(); }\n',
+    },
+    { path: "src/candidate.ts", language: "typescript", content: "" },
+  ]);
+  assert.deepEqual(
+    graph.edges.map((edge) => edge.strength),
+    ["weak", "weak", "weak", "weak", "weak", "strong"],
+  );
+});

@@ -109,8 +109,9 @@
 - [x] 3.8 Grade imports used only inside try or catch regions as weak.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Try or catch use is weak -->
 <!-- status: completed -->
-- [ ] 3.9 Grade imports used only in fallback conditionals or default expressions as weak.
+- [x] 3.9 Grade imports used only in fallback conditionals or default expressions as weak.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Conditional fallback use is weak -->
+<!-- status: completed -->
 - [ ] 3.10 Grade imports used only behind C# preprocessor or Rust cfg guards as weak.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Guarded use is weak -->
 - [ ] 3.11 Regrade candidate-to-candidate graph edges as vestigial before scoring.

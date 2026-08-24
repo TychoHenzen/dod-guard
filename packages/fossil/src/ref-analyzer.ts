@@ -255,6 +255,134 @@ function tryCatchRanges(content: string): readonly [number, number][] {
   return ranges;
 }
 
+interface SyntaxView {
+  readonly code: string;
+  readonly comments: readonly { start: number; end: number; text: string }[];
+}
+
+function syntaxView(content: string): SyntaxView {
+  const characters = content.split("");
+  const comments: { start: number; end: number; text: string }[] = [];
+  let quote = "";
+  for (let index = 0; index < content.length; index += 1) {
+    const character = content[index];
+    const next = content[index + 1];
+    if (quote) {
+      characters[index] = " ";
+      if (character === "\\") {
+        characters[index + 1] = " ";
+        index += 1;
+      } else if (character === quote) quote = "";
+      continue;
+    }
+    if (character === '"' || character === "'" || character === "`") {
+      quote = character;
+      characters[index] = " ";
+      continue;
+    }
+    if (character !== "/" || !(next === "/" || next === "*")) continue;
+    const start = index;
+    const lineComment = next === "/";
+    index += 2;
+    while (
+      index < content.length &&
+      (lineComment ? content[index] !== "\n" : !(content[index] === "*" && content[index + 1] === "/"))
+    ) {
+      index += 1;
+    }
+    const end = lineComment ? index : Math.min(content.length, index + 2);
+    comments.push({ start, end, text: content.slice(start, end) });
+    for (let offset = start; offset < end; offset += 1) {
+      if (characters[offset] !== "\n") characters[offset] = " ";
+    }
+    index = end - 1;
+  }
+  return { code: characters.join(""), comments };
+}
+
+function hasFallbackToken(text: string): boolean {
+  return /\b(?:fallback|legacy|old|default)\b/i.test(text);
+}
+
+function balancedClose(code: string, open: number, opening: string, closing: string): number | undefined {
+  let depth = 0;
+  for (let index = open; index < code.length; index += 1) {
+    if (code[index] === opening) depth += 1;
+    if (code[index] === closing && --depth === 0) return index;
+  }
+  return undefined;
+}
+
+function nextNonWhitespace(code: string, start: number): number {
+  let index = start;
+  while (/\s/.test(code[index] ?? "")) index += 1;
+  return index;
+}
+
+function hasLeadingFallbackComment(view: SyntaxView, position: number): boolean {
+  return view.comments.some(
+    (comment) =>
+      comment.end <= position && /^\s*$/.test(view.code.slice(comment.end, position)) && hasFallbackToken(comment.text),
+  );
+}
+
+function conditionalFallbackRanges(view: SyntaxView): readonly [number, number][] {
+  const ranges: [number, number][] = [];
+  const matcher = /\bif\b/g;
+  for (let match = matcher.exec(view.code); match; match = matcher.exec(view.code)) {
+    const conditionOpen = nextNonWhitespace(view.code, (match.index ?? 0) + match[0].length);
+    if (view.code[conditionOpen] !== "(") continue;
+    const conditionClose = balancedClose(view.code, conditionOpen, "(", ")");
+    if (conditionClose === undefined) continue;
+    const bodyOpen = nextNonWhitespace(view.code, conditionClose + 1);
+    if (view.code[bodyOpen] !== "{") continue;
+    const bodyClose = balancedClose(view.code, bodyOpen, "{", "}");
+    if (bodyClose === undefined) continue;
+    const fallbackIf =
+      hasFallbackToken(view.code.slice(conditionOpen + 1, conditionClose)) ||
+      hasLeadingFallbackComment(view, match.index ?? 0);
+    if (fallbackIf) ranges.push([bodyOpen, bodyClose]);
+    const elseStart = nextNonWhitespace(view.code, bodyClose + 1);
+    if (view.code.slice(elseStart, elseStart + 4) !== "else") continue;
+    const elseBodyOpen = nextNonWhitespace(view.code, elseStart + 4);
+    if (view.code[elseBodyOpen] !== "{") continue;
+    const elseBodyClose = balancedClose(view.code, elseBodyOpen, "{", "}");
+    if (elseBodyClose !== undefined && (fallbackIf || hasLeadingFallbackComment(view, elseStart)))
+      ranges.push([elseBodyOpen, elseBodyClose]);
+  }
+  return ranges;
+}
+
+function fallbackOperandRanges(code: string): readonly [number, number][] {
+  const ranges: [number, number][] = [];
+  const matcher = /\|\||\?\?/g;
+  for (let match = matcher.exec(code); match; match = matcher.exec(code)) {
+    const start = nextNonWhitespace(code, (match.index ?? 0) + match[0].length);
+    let parentheses = 0;
+    let brackets = 0;
+    let braces = 0;
+    let end = start;
+    for (; end < code.length; end += 1) {
+      const character = code[end];
+      if (character === "(") parentheses += 1;
+      else if (character === ")" && parentheses-- === 0) break;
+      else if (character === "[") brackets += 1;
+      else if (character === "]" && brackets-- === 0) break;
+      else if (character === "{") braces += 1;
+      else if (character === "}" && braces-- === 0) break;
+      else if (
+        parentheses === 0 &&
+        brackets === 0 &&
+        braces === 0 &&
+        (character === ";" || character === "," || character === "\n")
+      )
+        break;
+    }
+    if (end > start) ranges.push([start - 1, end]);
+  }
+  return ranges;
+}
+
 function localImportBindings(declaration: string): string[] {
   const bindings = new Set<string>();
   const add = (binding: string | undefined) => {
@@ -288,6 +416,7 @@ function strengthForReference(
   const declaration = source.content.slice(declarationStart, declarationEnd + 1);
   const bindings = localImportBindings(declaration);
   if (bindings.length === 0) return "strong";
+  const view = syntaxView(source.content);
   const uses = bindings.flatMap((binding) =>
     [
       ...source.content.matchAll(
@@ -295,9 +424,15 @@ function strengthForReference(
       ),
     ]
       .map((match) => (match.index ?? -1) + (match[1]?.length ?? 0))
-      .filter((index) => index < declarationStart || index > declarationEnd),
+      .filter(
+        (index) => (index < declarationStart || index > declarationEnd) && view.code[index] === source.content[index],
+      ),
   );
-  const regions = tryCatchRanges(source.content);
+  const regions = [
+    ...tryCatchRanges(source.content),
+    ...conditionalFallbackRanges(view),
+    ...fallbackOperandRanges(view.code),
+  ];
   return uses.length > 0 && uses.every((index) => regions.some(([start, end]) => index > start && index < end))
     ? "weak"
     : "strong";
