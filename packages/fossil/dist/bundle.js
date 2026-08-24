@@ -5128,13 +5128,17 @@ var REPORT_SCHEMA_VERSION = 1;
 
 // src/fossil-cli-core.ts
 var _filename = fileURLToPath(import.meta.url);
+var DEFAULT_DAYS = 90;
+var DEFAULT_GAP_HOURS = 48;
+var DEFAULT_THRESHOLD = 0.4;
+var DEFAULT_UNTRACKED_AGE_DAYS = 90;
 var DEFAULT_NORMALIZED_ANALYSIS_OPTIONS = {
-  days: 90,
-  gapHours: 48,
-  threshold: 0.4,
+  days: DEFAULT_DAYS,
+  gapHours: DEFAULT_GAP_HOURS,
+  threshold: DEFAULT_THRESHOLD,
   format: "table",
   extensions: [],
-  untrackedAgeDays: 90,
+  untrackedAgeDays: DEFAULT_UNTRACKED_AGE_DAYS,
   exclude: [],
   verbose: false
 };

@@ -13,14 +13,18 @@ import { analyzeRepositoryCore } from "./repository-analysis.js";
 export { FossilAnalysisError } from "./analysis-error.js";
 export * from "./types.js";
 const _filename = fileURLToPath(import.meta.url);
+const DEFAULT_DAYS = 90;
+const DEFAULT_GAP_HOURS = 48;
+const DEFAULT_THRESHOLD = 0.4;
+const DEFAULT_UNTRACKED_AGE_DAYS = 90;
 /** Default analysis options. An empty extension list includes every extension. */
 export const DEFAULT_NORMALIZED_ANALYSIS_OPTIONS = {
-    days: 90,
-    gapHours: 48,
-    threshold: 0.4,
+    days: DEFAULT_DAYS,
+    gapHours: DEFAULT_GAP_HOURS,
+    threshold: DEFAULT_THRESHOLD,
     format: "table",
     extensions: [],
-    untrackedAgeDays: 90,
+    untrackedAgeDays: DEFAULT_UNTRACKED_AGE_DAYS,
     exclude: [],
     verbose: false,
 };
