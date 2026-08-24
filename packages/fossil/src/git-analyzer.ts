@@ -203,6 +203,21 @@ export function retainQualifiedClosedClusters(clusters: readonly (readonly GitCo
   return clusters.filter((cluster) => partitionQualifies(cluster, identities)).map((cluster) => [...cluster]);
 }
 
+/** Retains temporal clusters that have remained inactive for the full configured gap. */
+export function retainClosedTemporalClusters(
+  clusters: readonly (readonly GitCommit[])[],
+  analysisTimestampMs: number,
+  gapMilliseconds: number,
+): GitCommit[][] {
+  if (gapMilliseconds < 0) throw new RangeError("gapMilliseconds must be nonnegative");
+  return clusters
+    .filter((cluster) => {
+      const newest = cluster.at(-1);
+      return newest !== undefined && analysisTimestampMs - newest.committerTimestampMs >= gapMilliseconds;
+    })
+    .map((cluster) => [...cluster]);
+}
+
 interface FileEvent {
   readonly change: GitFileChange;
   readonly commit: GitCommit;

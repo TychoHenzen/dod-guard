@@ -40,8 +40,9 @@
 - [x] 2.9 Drop closed clusters below the minimum commit or distinct-file count.
 <!-- covers: fossil/burst-analysis :: Burst qualification :: Ordinary small cluster is dropped -->
 <!-- status: completed -->
-- [ ] 2.10 Suppress survivor and candidate output for a temporal cluster that is not yet closed.
+- [x] 2.10 Suppress survivor and candidate output for a temporal cluster that is not yet closed.
 <!-- covers: fossil/burst-analysis :: Burst qualification :: Recent temporal cluster remains unfinished -->
+<!-- status: completed -->
 - [ ] 2.11 Classify files with at least three later commits as survivors.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Absolute survivor threshold -->
 - [ ] 2.12 Classify files reaching the positive relative activity threshold as survivors.

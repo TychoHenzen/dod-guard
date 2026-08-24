@@ -5,6 +5,7 @@ import {
   nonMergeGitLogArguments,
   parseNonMergeGitLog,
   resolveRenameActivities,
+  retainClosedTemporalClusters,
   retainQualifiedClosedClusters,
   splitAtChangePoint,
   splitTemporalClusters,
@@ -338,4 +339,23 @@ test("drops closed clusters below either qualification minimum", () => {
   assert.deepEqual(retainQualifiedClosedClusters([fewerThanFiveCommits, fewerThanThreeLogicalFiles, exactMinimum]), [
     exactMinimum,
   ]);
+});
+
+// covers: fossil/burst-analysis :: Burst qualification :: Recent temporal cluster remains unfinished
+test("excludes recent qualifying clusters before closed-cluster qualification", () => {
+  const analysisTimestampMs = 10_000;
+  const gapMilliseconds = 1_000;
+  const clusterEndingAt = (prefix: string, endTimestampMs: number) =>
+    Array.from({ length: 5 }, (_, index) => ({
+      hash: `${prefix}-${index}`,
+      committerTimestampMs: endTimestampMs - 4 + index,
+      changes: [{ status: "modified" as const, path: `${prefix}-${index % 3}.ts` }],
+    }));
+  const recent = clusterEndingAt("recent", analysisTimestampMs - gapMilliseconds + 1);
+  const closed = clusterEndingAt("closed", analysisTimestampMs - gapMilliseconds);
+
+  const inactiveClusters = retainClosedTemporalClusters([recent, closed], analysisTimestampMs, gapMilliseconds);
+
+  assert.deepEqual(inactiveClusters, [closed]);
+  assert.deepEqual(retainQualifiedClosedClusters(inactiveClusters), [closed]);
 });
