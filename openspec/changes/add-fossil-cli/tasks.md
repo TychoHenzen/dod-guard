@@ -283,8 +283,9 @@
 - [x] 6.14 Preserve nonfatal warnings as successful sorted JSON data.
 <!-- covers: fossil/cli :: Versioned JSON output :: Nonfatal warnings remain successful data -->
 <!-- status: completed -->
-- [ ] 6.15 Map typed API failures to CLI exit codes without partial success output.
+- [x] 6.15 Map typed API failures to CLI exit codes without partial success output.
 <!-- covers: fossil/cli :: Programmatic API parity :: Typed API failure maps to CLI status -->
+<!-- status: completed -->
 - [ ] 6.16 Pass metacharacter-containing repository paths to Git as one non-shell argument.
 <!-- covers: fossil/cli :: Safe Git execution :: Repository path is data, not a command -->
 - [ ] 6.17 Preserve unusual Git filenames through NUL-delimited parsing.

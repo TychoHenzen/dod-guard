@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   analyzeRepository,
+  FossilAnalysisError,
   FossilUsageError,
   NotRepositoryAnalysisError,
   runFossilCli,
   runFossilCliProcess,
 } from "./index.js";
-import type { FossilReport, NormalizedAnalysisOptions } from "./types.js";
+import type { AnalysisErrorCode, FossilReport, NormalizedAnalysisOptions } from "./types.js";
 
 function reportFor(options: NormalizedAnalysisOptions): FossilReport {
   return {
@@ -276,6 +277,39 @@ test("retains sorted nonfatal warnings in successful API and CLI JSON reports", 
   assert.deepEqual(apiReport.warnings, expectedWarnings);
   assert.deepEqual(JSON.parse(stdout.join("")).warnings, expectedWarnings);
   assert.deepEqual(report.warnings, warnings);
+});
+
+// covers: fossil/cli :: Programmatic API parity :: Typed API failure maps to CLI status
+test("maps typed analysis failures to exit codes without success output", async () => {
+  const cases: ReadonlyArray<readonly [AnalysisErrorCode, number]> = [
+    ["invalid_options", 2],
+    ["not_repository", 1],
+    ["git_capability", 1],
+    ["git_failure", 1],
+    ["containment_failure", 1],
+    ["resource_limit", 1],
+  ];
+
+  for (const [code, expectedExitCode] of cases) {
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const exitCode = await runFossilCliProcess(
+      ["node", "fossil", "analyze", "C:/repositories/failing", "--format", "json"],
+      {
+        analyze: async () => {
+          throw new FossilAnalysisError({ code, message: `${code}: \u001b[31mfailed` });
+        },
+        stdout: (message) => stdout.push(message),
+        stderr: (message) => stderr.push(message),
+      },
+    );
+
+    assert.equal(exitCode, expectedExitCode);
+    assert.equal(stdout.join(""), "");
+    assert.equal(stderr.length, 1);
+    assert.equal(stderr[0].includes(`fossil: ${code}: \\x1b[31mfailed\n`), true);
+    assert.equal(Buffer.byteLength(stderr[0]) <= 4_096, true);
+  }
 });
 
 // covers: fossil/cli :: Process outcomes :: Non-repository is an analysis failure

@@ -8,7 +8,12 @@ import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { finalizeFossilReport, renderFossilReportJson } from "./output.js";
-import type { AnalyzeRepositoryResult, NormalizedAnalysisOptions } from "./types.js";
+import type {
+  AnalysisErrorCode,
+  AnalysisErrorDetails,
+  AnalyzeRepositoryResult,
+  NormalizedAnalysisOptions,
+} from "./types.js";
 
 export * from "./types.js";
 
@@ -44,9 +49,21 @@ export class FossilUsageError extends Error {
   }
 }
 
-/** A repository-analysis failure caused by a path outside a Git worktree. */
-export class NotRepositoryAnalysisError extends Error {
-  readonly code = "not_repository" as const;
+/** A typed fatal result from repository analysis that callers can handle without parsing text. */
+export class FossilAnalysisError extends Error {
+  readonly code: AnalysisErrorCode;
+
+  constructor({ code, message }: AnalysisErrorDetails) {
+    super(message);
+    this.code = code;
+  }
+}
+
+/** A compatibility wrapper for the dedicated non-repository analysis failure. */
+export class NotRepositoryAnalysisError extends FossilAnalysisError {
+  constructor(message = "not a Git repository") {
+    super({ code: "not_repository", message });
+  }
 }
 
 export interface FossilCliDependencies {
@@ -183,12 +200,12 @@ export async function runFossilCli(argv: readonly string[], dependencies: Fossil
   }
 }
 
-function boundedNotRepositoryDiagnostic(error: NotRepositoryAnalysisError): string {
+function boundedAnalysisDiagnostic(error: FossilAnalysisError): string {
   const prefix = "fossil: ";
   const suffix = "\n";
   const maximumMessageBytes = 4_096 - Buffer.byteLength(prefix) - Buffer.byteLength(suffix);
   let message = "";
-  for (const character of error.message || "not a Git repository") {
+  for (const character of error.message || `analysis failed (${error.code})`) {
     const codePoint = character.codePointAt(0) ?? 0;
     const visible =
       character === "\n"
@@ -216,9 +233,9 @@ export async function runFossilCliProcess(
     return 0;
   } catch (error) {
     if (error instanceof FossilUsageError) return error.exitCode;
-    if (error instanceof NotRepositoryAnalysisError) {
-      (dependencies.stderr ?? process.stderr.write.bind(process.stderr))(boundedNotRepositoryDiagnostic(error));
-      return 1;
+    if (error instanceof FossilAnalysisError) {
+      (dependencies.stderr ?? process.stderr.write.bind(process.stderr))(boundedAnalysisDiagnostic(error));
+      return error.code === "invalid_options" ? 2 : 1;
     }
     throw error;
   }
