@@ -94,8 +94,9 @@
 - [x] 3.3 Resolve static imports, `require()`, and dynamic `import()` across current TypeScript and JavaScript files.
 <!-- covers: fossil/reference-analysis :: TypeScript and JavaScript references :: JavaScript module forms create graph edges -->
 <!-- status: completed -->
-- [ ] 3.4 Resolve an unambiguous namespace-level C# `using` through path and namespace conventions.
+- [x] 3.4 Resolve an unambiguous namespace-level C# `using` through path and namespace conventions.
 <!-- covers: fossil/reference-analysis :: C# references :: Unambiguous C# namespace resolves -->
+<!-- status: completed -->
 - [ ] 3.5 Preserve an ambiguous C# namespace as unresolved rather than inventing an edge.
 <!-- covers: fossil/reference-analysis :: C# references :: Ambiguous C# namespace is not invented -->
 - [ ] 3.6 Resolve Rust `use crate::...` and `mod ...;` references to current module files.

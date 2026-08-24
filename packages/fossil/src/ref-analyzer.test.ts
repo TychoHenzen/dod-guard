@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   analyzeJavaScriptReferences,
+  analyzeReferences,
   type ReferenceCandidate,
   readReferenceSources,
   unsupportedCandidateReferenceGraph,
@@ -136,4 +137,39 @@ test("resolves static, require, and dynamic relative module forms against curren
     ],
   );
   assert.deepEqual(graph.unavailablePaths, []);
+});
+
+// covers: fossil/reference-analysis :: C# references :: Unambiguous C# namespace resolves
+test("resolves one namespace-level C# using to its unique current path suffix", () => {
+  const graph = analyzeReferences([
+    {
+      path: "src/App/Program.cs",
+      language: "csharp",
+      content:
+        "using Company.Tools.Widget;\nusing Alias = Company.Tools.Alias;\nusing static Company.Tools.Static;\nclass Program {\n  void Run() {\n    using Company.Block.Local;\n  }\n}\n",
+    },
+    { path: "src/Company/Tools/Widget.cs", language: "csharp", content: "" },
+  ]);
+
+  assert.deepEqual(
+    graph.edges.map(({ sourcePath, targetPath, language, kind, strength, span }) => ({
+      sourcePath,
+      targetPath,
+      language,
+      kind,
+      strength,
+      span: [span.line, span.column, span.end - span.start],
+    })),
+    [
+      {
+        sourcePath: "src/App/Program.cs",
+        targetPath: "src/Company/Tools/Widget.cs",
+        language: "csharp",
+        kind: "csharp-using",
+        strength: "strong",
+        span: [1, 7, "Company.Tools.Widget".length],
+      },
+    ],
+  );
+  assert.deepEqual(graph.unresolved, []);
 });

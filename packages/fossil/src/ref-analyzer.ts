@@ -12,6 +12,7 @@ const MODULE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"] as cons
 const STATIC_IMPORT = /\bimport\s+(?:[^"'`;\r\n]*?\s+from\s+)?(["'])([^"'\r\n]+)\1/g;
 const REQUIRE_CALL = /\brequire\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
 const DYNAMIC_IMPORT = /\bimport\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
+const CSHARP_USING = /^\s*using\s+(?!static\b)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*;\s*$/gm;
 
 /** Candidate metadata supplied to a language-specific reference backend. */
 export interface ReferenceCandidate {
@@ -93,23 +94,67 @@ function parsedModuleReferences(source: ReferenceSourceContent): ParsedReference
   );
 }
 
-/** Parses and resolves supported TypeScript and JavaScript module references from current source inventory. */
-export function analyzeJavaScriptReferences(sources: readonly ReferenceSourceContent[]): ReferenceGraph {
+function braceDepthBefore(content: string, end: number): number {
+  let depth = 0;
+  for (const character of content.slice(0, end)) {
+    if (character === "{") depth += 1;
+    if (character === "}") depth -= 1;
+  }
+  return depth;
+}
+
+function parsedCsharpReferences(
+  source: ReferenceSourceContent,
+  currentSources: readonly ReferenceSourceContent[],
+): ParsedReference[] {
+  if (source.language !== "csharp") return [];
+  const references: ParsedReference[] = [];
+  CSHARP_USING.lastIndex = 0;
+  for (let match = CSHARP_USING.exec(source.content); match; match = CSHARP_USING.exec(source.content)) {
+    const namespace = match[1];
+    if (!(namespace && match.index !== undefined) || braceDepthBefore(source.content, match.index) > 1) continue;
+    const suffix = `${namespace.replaceAll(".", "/")}.cs`;
+    const matches = currentSources
+      .filter((candidate) => candidate.language === "csharp" && candidate.path.endsWith(suffix))
+      .map((candidate) => candidate.path)
+      .sort(compareText);
+    const start = match.index + match[0].indexOf(namespace);
+    references.push({
+      sourcePath: source.path,
+      targetCandidates: matches.length === 0 ? [suffix] : matches,
+      targetPath: matches.length === 1 ? matches[0] : undefined,
+      span: sourceSpan(source.content, start, start + namespace.length),
+      language: "csharp",
+      kind: "csharp-using",
+      resolution: matches.length === 1 ? "resolved" : "unresolved",
+      strength: "strong",
+    });
+  }
+  return references;
+}
+
+function referenceGraph(
+  parsed: readonly ParsedReference[],
+  sources: readonly ReferenceSourceContent[],
+): ReferenceGraph {
   const paths = new Set(sources.map((source) => source.path));
-  const parsed = sources.flatMap(parsedModuleReferences);
-  const edges = parsed
-    .filter((reference) => reference.targetCandidates.find((candidate) => paths.has(candidate)) !== undefined)
-    .map((reference) => ({
+  const resolved = parsed.map((reference) => ({
+    reference,
+    targetPath: reference.targetPath ?? reference.targetCandidates.find((candidate) => paths.has(candidate)),
+  }));
+  const edges = resolved
+    .filter((entry) => entry.targetPath !== undefined)
+    .map(({ reference, targetPath }) => ({
       sourcePath: reference.sourcePath,
-      targetPath: reference.targetCandidates.find((candidate) => paths.has(candidate)) ?? "",
+      targetPath: targetPath ?? "",
       language: reference.language,
       kind: reference.kind,
       strength: reference.strength,
       span: reference.span,
     }));
-  const unresolved = parsed
-    .filter((reference) => !reference.targetCandidates.some((candidate) => paths.has(candidate)))
-    .map(({ sourcePath, targetCandidates: candidates, language, kind, span, resolution }) => ({
+  const unresolved = resolved
+    .filter((entry) => entry.targetPath === undefined)
+    .map(({ reference: { sourcePath, targetCandidates: candidates, language, kind, span, resolution } }) => ({
       sourcePath,
       targetCandidates: candidates,
       language,
@@ -118,6 +163,19 @@ export function analyzeJavaScriptReferences(sources: readonly ReferenceSourceCon
       resolution: resolution === "external" ? ("external" as const) : ("unresolved" as const),
     }));
   return { edges, unresolved, complete: true, unavailablePaths: [] };
+}
+
+/** Parses and resolves supported TypeScript and JavaScript module references from current source inventory. */
+export function analyzeJavaScriptReferences(sources: readonly ReferenceSourceContent[]): ReferenceGraph {
+  return referenceGraph(sources.flatMap(parsedModuleReferences), sources);
+}
+
+/** Parses and resolves the currently supported TypeScript, JavaScript, and C# reference forms. */
+export function analyzeReferences(sources: readonly ReferenceSourceContent[]): ReferenceGraph {
+  return referenceGraph(
+    sources.flatMap((source) => [...parsedModuleReferences(source), ...parsedCsharpReferences(source, sources)]),
+    sources,
+  );
 }
 
 /** Produces normalized unavailable evidence for candidates with no reference backend. */
