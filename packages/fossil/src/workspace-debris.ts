@@ -17,6 +17,10 @@ const SENSITIVE_EXTENSIONS = [".pem", ".key", ".p12", ".pfx", ".crt", ".cer", ".
 export interface WorkspaceFileMetadata {
   readonly path: string;
   readonly isRegularFile: boolean;
+  /** No-follow metadata indicates this path is a symbolic link. */
+  readonly isSymbolicLink?: boolean;
+  /** No-follow metadata indicates this path is a Windows junction. */
+  readonly isJunction?: boolean;
   readonly modifiedTimestampMs: number;
 }
 
@@ -84,6 +88,7 @@ export function inspectWorkspaceFileMetadata(
     const normalizedPath = normalizePath(path);
     if (isDependencyStorePath(normalizedPath) || isSensitiveWorkspacePath(normalizedPath)) continue;
     const file = readMetadata(normalizedPath);
+    if (file.isSymbolicLink || file.isJunction) continue;
     metadata.push({ ...file, path: normalizedPath });
   }
   return metadata;

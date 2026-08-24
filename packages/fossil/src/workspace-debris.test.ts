@@ -212,3 +212,32 @@ test("excludes mixed-case sensitive files, extensions, prefixes, and directories
   assert.deepEqual(metadataReads, ["scratch/allowed.ts"]);
   assert.deepEqual(metadata, [{ path: "scratch/allowed.ts", isRegularFile: true, modifiedTimestampMs: 0 }]);
 });
+
+// covers: fossil/workspace-debris :: Safe workspace boundaries :: External symlink is excluded
+test("drops no-follow symbolic-link and junction metadata without inspecting resolved targets", () => {
+  const metadataReads: string[] = [];
+  const metadata = inspectWorkspaceFileMetadata(
+    ["scratch/external-link", "scratch/junction", "scratch/regular.ts"],
+    (path) => {
+      metadataReads.push(path);
+      return {
+        path,
+        isRegularFile: path === "scratch/regular.ts",
+        isSymbolicLink: path === "scratch/external-link",
+        isJunction: path === "scratch/junction",
+        modifiedTimestampMs: 0,
+      };
+    },
+  );
+
+  assert.deepEqual(metadataReads, ["scratch/external-link", "scratch/junction", "scratch/regular.ts"]);
+  assert.deepEqual(metadata, [
+    {
+      path: "scratch/regular.ts",
+      isRegularFile: true,
+      isSymbolicLink: false,
+      isJunction: false,
+      modifiedTimestampMs: 0,
+    },
+  ]);
+});

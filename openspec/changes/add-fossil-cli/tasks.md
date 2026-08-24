@@ -217,8 +217,9 @@
 - [x] 5.8 Exclude sensitive environment-file paths and content from findings.
 <!-- covers: fossil/workspace-debris :: Safe workspace boundaries :: Sensitive file is excluded -->
 <!-- status: completed -->
-- [ ] 5.9 Exclude symlinks whose resolved targets leave the repository.
+- [x] 5.9 Exclude symlinks whose resolved targets leave the repository.
 <!-- covers: fossil/workspace-debris :: Safe workspace boundaries :: External symlink is excluded -->
+<!-- status: completed -->
 - [ ] 5.10 Label debris findings for review without making deletion claims.
 <!-- covers: fossil/workspace-debris :: Review-only reporting :: Finding preserves uncertainty -->
 - [ ] 5.11 Summarize large ignored trees in normal table output while retaining detailed data elsewhere.
