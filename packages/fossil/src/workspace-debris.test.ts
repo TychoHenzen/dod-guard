@@ -136,6 +136,26 @@ test("includes untracked and ignored files exactly on the modification-age cutof
   );
 });
 
+// covers: fossil/workspace-debris :: Portable age evidence :: One captured time controls age boundaries
+test("uses one captured time for immediately adjacent modification-age boundaries", () => {
+  const analysisTimestampMs = 10 * 24 * 60 * 60 * 1_000;
+  const cutoff = analysisTimestampMs - 7 * 24 * 60 * 60 * 1_000;
+  const candidates = oldUntrackedWorkspaceCandidates(
+    [
+      { path: "scratch/before.ts", isRegularFile: true, modifiedTimestampMs: cutoff - 1 },
+      { path: "scratch/at.ts", isRegularFile: true, modifiedTimestampMs: cutoff },
+      { path: "scratch/after.ts", isRegularFile: true, modifiedTimestampMs: cutoff + 1 },
+    ],
+    analysisTimestampMs,
+    7,
+  );
+
+  assert.deepEqual(candidates, [
+    { path: "scratch/before.ts", kind: "untracked", modifiedTimestampMs: cutoff - 1 },
+    { path: "scratch/at.ts", kind: "untracked", modifiedTimestampMs: cutoff },
+  ]);
+});
+
 // covers: fossil/workspace-debris :: Usage evidence search :: Referenced old file is omitted
 test("omits old candidates with resolved imports, exact paths, or a unique basename", () => {
   const candidate = { path: "scratch/old.ts", kind: "untracked" as const, modifiedTimestampMs: 0 };

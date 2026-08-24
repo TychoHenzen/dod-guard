@@ -232,8 +232,9 @@
 - [x] 5.13 Distinguish Git-discovered unreadable workspace paths from debris findings.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Unreadable discovered path is distinguished -->
 <!-- status: completed -->
-- [ ] 5.14 Test debris age immediately before, at, and after one captured cutoff.
+- [x] 5.14 Test debris age immediately before, at, and after one captured cutoff.
 <!-- covers: fossil/workspace-debris :: Portable age evidence :: One captured time controls age boundaries -->
+<!-- status: completed -->
 - [ ] 5.15 Apply caller exclusion globs before metadata access and output.
 <!-- covers: fossil/workspace-debris :: Safe workspace boundaries :: Caller exclusion hides a path completely -->
 
