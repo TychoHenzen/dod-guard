@@ -154,8 +154,9 @@
 - [x] 4.3 Scale abandonment linearly against burst activity and clamp it at zero.
 <!-- covers: fossil/scoring :: Abandonment score :: Continued activity lowers abandonment linearly -->
 <!-- status: completed -->
-- [ ] 4.4 Assign full reference weakness when no strong live inbound reference exists.
+- [x] 4.4 Assign full reference weakness when no strong live inbound reference exists.
 <!-- covers: fossil/scoring :: Reference weakness score :: Only weak or vestigial references remain -->
+<!-- status: completed -->
 - [ ] 4.5 Assign half reference weakness for exactly one strong live inbound reference.
 <!-- covers: fossil/scoring :: Reference weakness score :: One strong live reference remains -->
 - [ ] 4.6 Assign zero reference weakness for two or more strong live inbound references.

@@ -1,4 +1,4 @@
-import type { BurstFileActivity } from "./types.js";
+import type { BurstFileActivity, ReferenceGraph } from "./types.js";
 
 /** Normalizes one candidate's positive burst churn against the positive burst maximum. */
 export function normalizedBurstChurn(candidate: BurstFileActivity, burstFiles: readonly BurstFileActivity[]): number {
@@ -11,4 +11,25 @@ export function normalizedBurstChurn(candidate: BurstFileActivity, burstFiles: r
 export function abandonmentScore(candidate: BurstFileActivity): number {
   if (candidate.burstCommits <= 0) return 0;
   return Math.max(0, 1 - candidate.postBurstCommits / candidate.burstCommits);
+}
+
+/** Scores how little strong inbound evidence a candidate receives from live source paths. */
+export function referenceWeaknessScore(
+  candidatePath: string,
+  graph: ReferenceGraph,
+  candidatePaths: ReadonlySet<string>,
+): number {
+  const liveInboundSources = new Set(
+    graph.edges
+      .filter(
+        (edge) =>
+          edge.targetPath === candidatePath &&
+          edge.sourcePath !== candidatePath &&
+          edge.strength === "strong" &&
+          !candidatePaths.has(edge.sourcePath),
+      )
+      .map((edge) => edge.sourcePath),
+  );
+  if (liveInboundSources.size === 0) return 1;
+  return liveInboundSources.size === 1 ? 0.5 : 0;
 }
