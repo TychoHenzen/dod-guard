@@ -262,8 +262,9 @@
 - [x] 6.7 Serialize one schema-version-1 JSON document without table prose.
 <!-- covers: fossil/cli :: Versioned JSON output :: JSON output is machine-readable -->
 <!-- status: completed -->
-- [ ] 6.8 Report both burst-path finding totals and unique candidate path totals in JSON.
+- [x] 6.8 Report both burst-path finding totals and unique candidate path totals in JSON.
 <!-- covers: fossil/cli :: Versioned JSON output :: JSON distinguishes row and path totals -->
+<!-- status: completed -->
 - [ ] 6.9 Export `analyzeRepository()` and prove parity with CLI JSON report data.
 <!-- covers: fossil/cli :: Programmatic API parity :: CLI and API agree -->
 - [ ] 6.10 Exit successfully and report zero when analysis produces no findings.

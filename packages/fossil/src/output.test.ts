@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { burstTableRows, renderBurstTableRows, renderFossilReportJson, workspaceDebrisTableRows } from "./output.js";
-import type { BurstReport, FossilReport, WorkspaceDebrisFinding } from "./types.js";
+import type { BurstReport, FossilFinding, FossilReport, WorkspaceDebrisFinding } from "./types.js";
 
 function finding(path: string, kind: "untracked" | "ignored"): WorkspaceDebrisFinding {
   return {
@@ -322,4 +322,102 @@ test("serializes one complete schema-versioned JSON report without table prose",
   assert.equal(output.includes("\u001b["), false);
   assert.equal(output.includes("Burst "), false);
   assert.equal(output.includes("survivor "), false);
+});
+
+// covers: fossil/cli :: Versioned JSON output :: JSON distinguishes row and path totals
+test("derives burst-path and unique normalized candidate totals in JSON", () => {
+  const candidate = (path: string, burstId: string): FossilFinding => ({
+    classification: "advisory",
+    burstId,
+    path,
+    activity: {
+      identity: `${burstId}:${path}`,
+      path,
+      burstCommits: 1,
+      postBurstCommits: 0,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    score: 0.8,
+    scoreBasis: "full",
+    subscores: { churn: 1, abandonment: 1, referenceWeakness: 1, clusterIsolation: 1 },
+    referenceAvailability: "complete",
+    strongInboundReferences: 0,
+    candidateNeighbors: [],
+    liveNeighbors: [],
+  });
+  const bursts: readonly BurstReport[] = [
+    {
+      id: "first",
+      startTimestampMs: 0,
+      endTimestampMs: 1,
+      commitCount: 1,
+      fileCount: 1,
+      survivors: [],
+      findings: [candidate("src\\shared.ts", "first")],
+      deletedPaths: [],
+    },
+    {
+      id: "second",
+      startTimestampMs: 2,
+      endTimestampMs: 3,
+      commitCount: 2,
+      fileCount: 2,
+      survivors: [],
+      findings: [candidate("src/shared.ts", "second"), candidate("src/other.ts", "second")],
+      deletedPaths: [],
+    },
+  ];
+  const report: FossilReport = {
+    schemaVersion: 1,
+    options: {
+      days: 90,
+      gapHours: 48,
+      threshold: 0.4,
+      format: "json",
+      extensions: [],
+      untrackedAgeDays: 90,
+      exclude: [],
+      verbose: false,
+    },
+    analysisTimestampMs: 0,
+    gitVersion: "2.47.0",
+    boundary: { repositoryRoot: "C:/repo", canonicalRepositoryRoot: "C:/repo", unobservedMechanisms: [] },
+    limits: {
+      maximumCommits: 0,
+      maximumFileStatusRecords: 0,
+      maximumInventoriedFiles: 0,
+      maximumGitStdoutBytes: 0,
+      maximumGitStderrBytes: 0,
+      maximumReferenceFileBytes: 0,
+      maximumReferenceTotalBytes: 0,
+    },
+    usage: {
+      commitRecords: 0,
+      fileStatusRecords: 0,
+      inventoriedFiles: 0,
+      gitStdoutBytes: 0,
+      gitStderrBytes: 0,
+      referenceBytes: 0,
+      omittedReferencePaths: 0,
+    },
+    completeness: { historyComplete: true, referenceAnalysisComplete: true, workspaceDebrisComplete: true },
+    statistics: {
+      includedCommitCount: 2,
+      logicalFileCount: 2,
+      burstCount: 2,
+      candidateFindingCount: 99,
+      uniqueCandidatePathCount: 99,
+      workspaceDebrisCount: 0,
+    },
+    warnings: [],
+    bursts,
+    workspaceDebris: [],
+  };
+  const before = structuredClone(report);
+
+  const parsed = JSON.parse(renderFossilReportJson(report));
+
+  assert.deepEqual(parsed.statistics, { ...report.statistics, candidateFindingCount: 3, uniqueCandidatePathCount: 2 });
+  assert.deepEqual(report, before);
 });
