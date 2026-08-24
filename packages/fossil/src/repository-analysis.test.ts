@@ -23,6 +23,17 @@ function git(directory: string, ...arguments_: string[]): void {
   execFileSync("git", arguments_, { cwd: directory, stdio: "ignore" });
 }
 
+function gitOutput(stdout = "") {
+  return {
+    exitCode: 0,
+    stdout,
+    stderr: "",
+    stdoutBytes: Buffer.byteLength(stdout),
+    stderrBytes: 0,
+    statusRecordCount: 0,
+  };
+}
+
 function createFixture(): { readonly directory: string; readonly referenceBytes: number } {
   const directory = mkdtempSync(join(tmpdir(), "fossil-repository-analysis-"));
   mkdirSync(join(directory, "src"));
@@ -67,27 +78,45 @@ test("rejects over-limit included history before producing a report", async () =
   const directory = mkdtempSync(join(tmpdir(), "fossil-history-limit-"));
   const record = `\u001ehash\0${Math.floor(Date.now() / 1_000)}\0A\0file.ts\0`;
   const history = record.repeat(100_001);
-  const output = (stdout = "") => ({
-    exitCode: 0,
-    stdout,
-    stderr: "",
-    stdoutBytes: Buffer.byteLength(stdout),
-    stderrBytes: 0,
-    statusRecordCount: 0,
-  });
   const runGit = async (arguments_: readonly string[]) => {
-    if (arguments_[0] === "--version") return output("git version 2.30.0\n");
-    if (arguments_.includes("--show-toplevel")) return output(`${directory}\n`);
-    if (arguments_.includes("--show-prefix")) return output();
-    if (arguments_.includes("--verify")) return output("hash\n");
-    if (arguments_[0] === "log") return output(history);
-    if (arguments_.includes("--is-shallow-repository")) return output("false\n");
-    return output();
+    if (arguments_[0] === "--version") return gitOutput("git version 2.30.0\n");
+    if (arguments_.includes("--show-toplevel")) return gitOutput(`${directory}\n`);
+    if (arguments_.includes("--show-prefix")) return gitOutput();
+    if (arguments_.includes("--verify")) return gitOutput("hash\n");
+    if (arguments_[0] === "log") return gitOutput(history);
+    if (arguments_.includes("--is-shallow-repository")) return gitOutput("false\n");
+    return gitOutput();
   };
   try {
     await assert.rejects(
       analyzeRepositoryCore(directory, options, runGit),
       (error: unknown) => error instanceof FossilAnalysisError && error.code === "resource_limit",
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+// covers: fossil/cli :: Analysis resource bounds :: File inventory limit fails explicitly
+test("rejects an over-limit Git inventory before source reads", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "fossil-inventory-limit-"));
+  const tracked = `${Array.from({ length: 100_001 }, (_, index) => `src/file-${index}.ts`).join("\0")}\0`;
+  const runGit = async (arguments_: readonly string[]) => {
+    if (arguments_[0] === "--version") return gitOutput("git version 2.30.0\n");
+    if (arguments_.includes("--show-toplevel")) return gitOutput(`${directory}\n`);
+    if (arguments_.includes("--show-prefix")) return gitOutput();
+    if (arguments_.includes("--verify")) return { ...gitOutput(), exitCode: 1 };
+    if (arguments_.includes("--is-shallow-repository")) return gitOutput("false\n");
+    if (arguments_[0] === "ls-files" && arguments_.includes("-z") && arguments_.length === 2) return gitOutput(tracked);
+    return gitOutput();
+  };
+  try {
+    await assert.rejects(
+      analyzeRepositoryCore(directory, options, runGit),
+      (error: unknown) =>
+        error instanceof FossilAnalysisError &&
+        error.code === "resource_limit" &&
+        error.message === "File inventory limit exceeded.",
     );
   } finally {
     rmSync(directory, { recursive: true, force: true });
