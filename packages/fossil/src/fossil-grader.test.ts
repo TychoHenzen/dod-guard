@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { abandonmentScore, normalizedBurstChurn, referenceWeaknessScore } from "./fossil-grader.js";
+import {
+  abandonmentScore,
+  clusterIsolationScore,
+  normalizedBurstChurn,
+  referenceWeaknessScore,
+} from "./fossil-grader.js";
 import type { BurstFileActivity, ReferenceGraph } from "./types.js";
 
 function activity(path: string, burstCommits: number, postBurstCommits = 0): BurstFileActivity {
@@ -13,6 +18,62 @@ function activity(path: string, burstCommits: number, postBurstCommits = 0): Bur
     existsAtHead: true,
   };
 }
+
+// covers: fossil/scoring :: Cluster isolation score :: Candidate only references fossils
+test("gives full isolation when every unique resolved neighbor is a fossil candidate", () => {
+  const graph: ReferenceGraph = {
+    edges: [
+      {
+        sourcePath: "src/fossil-inbound.ts",
+        targetPath: "src/candidate.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 0, end: 1, line: 1, column: 1 },
+      },
+      {
+        sourcePath: "src/candidate.ts",
+        targetPath: "src/fossil-outbound.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 1, end: 2, line: 1, column: 2 },
+      },
+      {
+        sourcePath: "src/fossil-outbound.ts",
+        targetPath: "src/candidate.ts",
+        language: "typescript",
+        kind: "require",
+        strength: "strong",
+        span: { start: 2, end: 3, line: 1, column: 3 },
+      },
+      {
+        sourcePath: "src/candidate.ts",
+        targetPath: "src/candidate.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 3, end: 4, line: 1, column: 4 },
+      },
+      {
+        sourcePath: "src/live-a.ts",
+        targetPath: "src/live-b.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 4, end: 5, line: 1, column: 5 },
+      },
+    ],
+    unresolved: [],
+    complete: true,
+    unavailablePaths: [],
+  };
+
+  assert.equal(
+    clusterIsolationScore("src/candidate.ts", graph, new Set(["src/fossil-inbound.ts", "src/fossil-outbound.ts"])),
+    1,
+  );
+});
 
 // covers: fossil/scoring :: Reference weakness score :: Only weak or vestigial references remain
 test("gives full weakness when no unique strong live inbound source remains", () => {

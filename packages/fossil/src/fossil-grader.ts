@@ -33,3 +33,18 @@ export function referenceWeaknessScore(
   if (liveInboundSources.size === 0) return 1;
   return liveInboundSources.size === 1 ? 0.5 : 0;
 }
+
+/** Scores the fraction of a candidate's unique resolved neighbors that are fossil candidates. */
+export function clusterIsolationScore(
+  candidatePath: string,
+  graph: ReferenceGraph,
+  candidatePaths: ReadonlySet<string>,
+): number {
+  const neighbors = new Set<string>();
+  for (const edge of graph.edges) {
+    if (edge.sourcePath === candidatePath && edge.targetPath !== candidatePath) neighbors.add(edge.targetPath);
+    if (edge.targetPath === candidatePath && edge.sourcePath !== candidatePath) neighbors.add(edge.sourcePath);
+  }
+  if (neighbors.size === 0) return 1;
+  return [...neighbors].filter((neighbor) => candidatePaths.has(neighbor)).length / neighbors.size;
+}
