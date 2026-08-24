@@ -193,8 +193,9 @@
 
 ## 5. Workspace-debris review category
 
-- [ ] 5.1 Evaluate old untracked non-ignored files for workspace-debris evidence.
+- [x] 5.1 Evaluate old untracked non-ignored files for workspace-debris evidence.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Old untracked file is eligible -->
+<!-- status: completed -->
 - [ ] 5.2 Evaluate old ignored files and retain their matching ignore rule.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Old ignored file is eligible -->
 - [ ] 5.3 Omit workspace files newer than the configured age threshold.
