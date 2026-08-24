@@ -235,8 +235,9 @@
 - [x] 5.14 Test debris age immediately before, at, and after one captured cutoff.
 <!-- covers: fossil/workspace-debris :: Portable age evidence :: One captured time controls age boundaries -->
 <!-- status: completed -->
-- [ ] 5.15 Apply caller exclusion globs before metadata access and output.
+- [x] 5.15 Apply caller exclusion globs before metadata access and output.
 <!-- covers: fossil/workspace-debris :: Safe workspace boundaries :: Caller exclusion hides a path completely -->
+<!-- status: completed -->
 
 ## 6. CLI, API, and output contracts
 
