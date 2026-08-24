@@ -229,8 +229,9 @@
 - [x] 5.12 Include workspace files exactly on the modification-age cutoff.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Age threshold is inclusive -->
 <!-- status: completed -->
-- [ ] 5.13 Distinguish Git-discovered unreadable workspace paths from debris findings.
+- [x] 5.13 Distinguish Git-discovered unreadable workspace paths from debris findings.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Unreadable discovered path is distinguished -->
+<!-- status: completed -->
 - [ ] 5.14 Test debris age immediately before, at, and after one captured cutoff.
 <!-- covers: fossil/workspace-debris :: Portable age evidence :: One captured time controls age boundaries -->
 - [ ] 5.15 Apply caller exclusion globs before metadata access and output.

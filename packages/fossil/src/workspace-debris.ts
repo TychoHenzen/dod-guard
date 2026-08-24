@@ -1,6 +1,6 @@
 import { posix } from "node:path";
 import { analyzeReferences, type ReferenceSourceContent } from "./ref-analyzer.js";
-import type { IgnoreSource, WorkspaceDebrisFinding } from "./types.js";
+import type { AnalysisWarning, IgnoreSource, WorkspaceDebrisFinding } from "./types.js";
 
 /** Exact Git arguments for non-ignored, NUL-delimited untracked paths. */
 export const UNTRACKED_DISCOVERY_ARGUMENTS = ["ls-files", "-z", "--others", "--exclude-standard"] as const;
@@ -26,6 +26,12 @@ export interface WorkspaceFileMetadata {
 
 /** Injected metadata reader for workspace paths that pass pre-inspection boundaries. */
 export type WorkspaceFileMetadataReader = (path: string) => WorkspaceFileMetadata;
+
+/** Metadata collected from allowed workspace paths with nonfatal inspection warnings. */
+export interface WorkspaceMetadataInspectionResult {
+  readonly metadata: readonly WorkspaceFileMetadata[];
+  readonly warnings: readonly AnalysisWarning[];
+}
 
 /** An old untracked regular file eligible for later workspace-debris evidence checks. */
 export interface UntrackedWorkspaceCandidate {
@@ -83,15 +89,37 @@ export function inspectWorkspaceFileMetadata(
   paths: readonly string[],
   readMetadata: WorkspaceFileMetadataReader,
 ): readonly WorkspaceFileMetadata[] {
+  return inspectWorkspaceFileMetadataWithWarnings(paths, readMetadata).metadata;
+}
+
+/** Reads no-follow metadata, reporting unreadable discovered paths without exposing reader errors. */
+export function inspectWorkspaceFileMetadataWithWarnings(
+  paths: readonly string[],
+  readMetadata: WorkspaceFileMetadataReader,
+): WorkspaceMetadataInspectionResult {
   const metadata: WorkspaceFileMetadata[] = [];
+  const warnings: AnalysisWarning[] = [];
   for (const path of paths) {
     const normalizedPath = normalizePath(path);
     if (isDependencyStorePath(normalizedPath) || isSensitiveWorkspacePath(normalizedPath)) continue;
-    const file = readMetadata(normalizedPath);
-    if (file.isSymbolicLink || file.isJunction) continue;
-    metadata.push({ ...file, path: normalizedPath });
+    try {
+      const file = readMetadata(normalizedPath);
+      if (file.isSymbolicLink || file.isJunction) continue;
+      metadata.push({ ...file, path: normalizedPath });
+    } catch {
+      warnings.push({
+        code: "workspace_unreadable",
+        message: "Workspace path could not be inspected.",
+        path: normalizedPath,
+      });
+    }
   }
-  return metadata;
+  warnings.sort((left, right) => {
+    const leftPath = left.path ?? "";
+    const rightPath = right.path ?? "";
+    return leftPath < rightPath ? -1 : leftPath > rightPath ? 1 : 0;
+  });
+  return { metadata, warnings };
 }
 
 function classifyIgnoreSource(sourcePath: string, globalExcludePath: string | undefined): IgnoreSource {

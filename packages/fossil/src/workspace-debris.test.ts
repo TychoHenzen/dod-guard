@@ -5,6 +5,7 @@ import {
   hasInboundWorkspaceUsage,
   IGNORED_DISCOVERY_ARGUMENTS,
   inspectWorkspaceFileMetadata,
+  inspectWorkspaceFileMetadataWithWarnings,
   oldIgnoredWorkspaceCandidates,
   oldUntrackedWorkspaceCandidates,
   omitUsedWorkspaceCandidates,
@@ -290,5 +291,29 @@ test("drops no-follow symbolic-link and junction metadata without inspecting res
       isJunction: false,
       modifiedTimestampMs: 0,
     },
+  ]);
+});
+
+// covers: fossil/workspace-debris :: Workspace file discovery :: Unreadable discovered path is distinguished
+test("warns for an unreadable discovered path and continues without creating candidate metadata", () => {
+  const metadataReads: string[] = [];
+  const result = inspectWorkspaceFileMetadataWithWarnings(["scratch/unreadable.ts", "scratch/later.ts"], (path) => {
+    metadataReads.push(path);
+    if (path === "scratch/unreadable.ts") throw new Error("sensitive filesystem failure");
+    return { path, isRegularFile: true, modifiedTimestampMs: 0 };
+  });
+
+  assert.deepEqual(metadataReads, ["scratch/unreadable.ts", "scratch/later.ts"]);
+  assert.deepEqual(result.metadata, [{ path: "scratch/later.ts", isRegularFile: true, modifiedTimestampMs: 0 }]);
+  assert.deepEqual(result.warnings, [
+    {
+      code: "workspace_unreadable",
+      message: "Workspace path could not be inspected.",
+      path: "scratch/unreadable.ts",
+    },
+  ]);
+  assert.equal(JSON.stringify(result.warnings).includes("sensitive filesystem failure"), false);
+  assert.deepEqual(oldUntrackedWorkspaceCandidates(result.metadata, 10 * 24 * 60 * 60 * 1_000, 7), [
+    { path: "scratch/later.ts", kind: "untracked", modifiedTimestampMs: 0 },
   ]);
 });
