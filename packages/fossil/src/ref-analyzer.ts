@@ -556,6 +556,18 @@ export function analyzeReferences(sources: readonly ReferenceSourceContent[]): R
   );
 }
 
+/** Regrades current edges between two fossil candidates before scoring. */
+export function regradeVestigialEdges(graph: ReferenceGraph, candidatePaths: ReadonlySet<string>): ReferenceGraph {
+  return {
+    ...graph,
+    edges: graph.edges.map((edge) =>
+      candidatePaths.has(edge.sourcePath) && candidatePaths.has(edge.targetPath)
+        ? { ...edge, strength: "vestigial" }
+        : { ...edge },
+    ),
+  };
+}
+
 /** Produces normalized unavailable evidence for candidates with no reference backend. */
 export function unsupportedCandidateReferenceGraph(candidates: readonly ReferenceCandidate[]): ReferenceGraph {
   const unavailablePaths = [

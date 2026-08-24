@@ -5,6 +5,7 @@ import {
   analyzeReferences,
   type ReferenceCandidate,
   readReferenceSources,
+  regradeVestigialEdges,
   unsupportedCandidateReferenceGraph,
 } from "./ref-analyzer.js";
 
@@ -408,4 +409,45 @@ test("marks C# and Rust uses confined to guards as weak", () => {
     graph.edges.map((edge) => edge.strength),
     ["weak", "strong", "weak", "strong", "strong"],
   );
+});
+
+// covers: fossil/reference-analysis :: Vestigial references :: Fossils do not keep each other alive
+test("regrades only candidate-to-candidate edges without mutating the graph", () => {
+  const graph = {
+    edges: [
+      {
+        sourcePath: "a.ts",
+        targetPath: "b.ts",
+        language: "typescript" as const,
+        kind: "import" as const,
+        strength: "strong" as const,
+        span: { start: 0, end: 1, line: 1, column: 1 },
+      },
+      {
+        sourcePath: "live.ts",
+        targetPath: "a.ts",
+        language: "typescript" as const,
+        kind: "import" as const,
+        strength: "weak" as const,
+        span: { start: 2, end: 3, line: 1, column: 3 },
+      },
+      {
+        sourcePath: "a.ts",
+        targetPath: "live.ts",
+        language: "typescript" as const,
+        kind: "import" as const,
+        strength: "strong" as const,
+        span: { start: 4, end: 5, line: 1, column: 5 },
+      },
+    ],
+    unresolved: [],
+    complete: true,
+    unavailablePaths: [],
+  };
+  const result = regradeVestigialEdges(graph, new Set(["a.ts", "b.ts"]));
+  assert.deepEqual(
+    result.edges.map((edge) => edge.strength),
+    ["vestigial", "weak", "strong"],
+  );
+  assert.equal(graph.edges[0].strength, "strong");
 });

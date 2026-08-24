@@ -115,8 +115,9 @@
 - [x] 3.10 Grade imports used only behind C# preprocessor or Rust cfg guards as weak.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Guarded use is weak -->
 <!-- status: completed -->
-- [ ] 3.11 Regrade candidate-to-candidate graph edges as vestigial before scoring.
+- [x] 3.11 Regrade candidate-to-candidate graph edges as vestigial before scoring.
 <!-- covers: fossil/reference-analysis :: Vestigial references :: Fossils do not keep each other alive -->
+<!-- status: completed -->
 - [ ] 3.12 Mark candidate reference evidence unavailable when a potentially matching reference remains unresolved.
 <!-- covers: fossil/reference-analysis :: Replaceable reference backend :: Potentially relevant unresolved reference is incomplete evidence -->
 - [ ] 3.13 Grade mixed fallback and normal usage as strong.
