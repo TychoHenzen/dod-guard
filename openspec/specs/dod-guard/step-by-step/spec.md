@@ -1,33 +1,53 @@
 # dod-guard/step-by-step Specification
 
 ## Purpose
-Executes a confirmed multi-step plan one atomic step at a time. Dispatches each step to a specialized worker agent, verifies the result, and persists progress directly in `tasks.md` so interrupted sessions can resume.
+Executes a confirmed multi-step plan in ordered task chunks. Each fresh worker receives about 50,000 to 100,000 estimated execution tokens of work. The orchestrator preserves task-level scope and verification, then persists progress directly in `tasks.md` so interrupted sessions can resume.
 ## Requirements
-### Requirement: one step at a time, no parallel execution
-The skill SHALL execute exactly one step per cycle. It SHALL NOT start a new step until the current step's verification passes or its repair budget is exhausted. Steps SHALL execute in dependency order as defined in `tasks.md`.
+### Requirement: token-sized sequential worker chunks
+The skill SHALL estimate each pending task's execution cost and group contiguous tasks into worker chunks targeting 50,000 to 100,000 tokens. It SHALL aim near 75,000 tokens when several valid splits exist. It SHALL NOT dispatch a fresh worker for every small task. Chunks and tasks within each chunk SHALL execute in dependency order as defined in `tasks.md`.
 
 #### Scenario: dependent step waits
 - **WHEN** a later step depends on an earlier step that is not yet completed
-- **THEN** the skill does not start the later step
+- **THEN** the skill places them in dependency order and does not execute the later step first
 
 #### Scenario: all dependencies satisfied
 - **WHEN** every step in a step's `deps` array shows `completed`
-- **THEN** the skill starts that step without waiting
+- **THEN** the skill may include that step in the next eligible chunk
 
 #### Scenario: independent steps follow array order
 - **WHEN** two steps have no dependency on each other
-- **THEN** the skill executes them in the order they appear in the steps array
+- **THEN** the skill keeps their source order within or across chunks
 
-### Requirement: worker dispatch by step type
-The skill SHALL dispatch each step to the worker agent that matches its type. Plain implementation goes to `step-implementer`. TDD steps go to `step-tdd-implementer`. Steps that name a symptom go to `step-debugger`. Compile, type, or import errors go to `step-build-fixer`. The orchestrator SHALL NOT implement steps itself.
+#### Scenario: many tiny tasks share one worker
+- **WHEN** contiguous small tasks have a combined estimate between 50,000 and 100,000 tokens
+- **THEN** the skill dispatches them together to one fresh worker
 
-#### Scenario: TDD step dispatches to TDD implementer
-- **WHEN** a step carries a `tdd` predicate or a red-first requirement
-- **THEN** the skill dispatches it to `step-tdd-implementer`
+#### Scenario: task type changes inside a chunk
+- **WHEN** an ordinary task is followed by a TDD or debugging task and their combined estimate remains within the target
+- **THEN** the skill keeps them in one mixed chunk rather than paying for another fresh worker
 
-#### Scenario: ordinary change dispatches to step-implementer
-- **WHEN** a step describes a plain implementation change with no special predicate
-- **THEN** the skill dispatches it to `step-implementer` at sonnet tier
+#### Scenario: final tail is below target
+- **WHEN** the remaining compatible tasks total less than 50,000 tokens and cannot join the preceding chunk without exceeding 100,000 tokens
+- **THEN** the skill dispatches one smaller final chunk
+
+#### Scenario: one task exceeds the target
+- **WHEN** one task alone is estimated above 100,000 tokens
+- **THEN** the skill dispatches that task alone rather than combining it with more work
+
+### Requirement: worker dispatch by chunk type
+The skill SHALL send ordinary or mixed chunks to `step-implementer`, with a per-task mode selecting ordinary, TDD, or debugging behavior. Homogeneous TDD chunks go to `step-tdd-implementer`. Homogeneous symptom chunks go to `step-debugger`. Compile, type, or import repairs go to `step-build-fixer`. The orchestrator SHALL NOT implement tasks itself.
+
+#### Scenario: TDD tasks dispatch to TDD implementer
+- **WHEN** contiguous tasks carry a `tdd` predicate or a red-first requirement
+- **THEN** the skill groups them within the token target and dispatches the chunk to `step-tdd-implementer`
+
+#### Scenario: ordinary changes dispatch to step-implementer
+- **WHEN** contiguous tasks describe plain implementation changes with no special predicate
+- **THEN** the skill groups them within the token target and dispatches the chunk to `step-implementer` at sonnet tier
+
+#### Scenario: mixed changes dispatch to step-implementer
+- **WHEN** a token-sized chunk contains more than one task type
+- **THEN** the skill dispatches the chunk to `step-implementer` with each task's execution mode instead of splitting the chunk
 
 #### Scenario: compile error dispatches to build-fixer
 - **WHEN** a step describes a compiler, type, or import failure
@@ -35,25 +55,29 @@ The skill SHALL dispatch each step to the worker agent that matches its type. Pl
 
 #### Scenario: worker returns AMBIGUOUS
 - **WHEN** a worker returns AMBIGUOUS with multiple interpretations
-- **THEN** the skill surfaces the question to the user and re-dispatches with the answer
+- **THEN** the skill resolves in-scope ambiguity or surfaces the question, then resumes the same chunk worker when the runtime supports it
 
 ### Requirement: verification after every step
-Each step with a resolved `verify_cmd` SHALL have that command run by the orchestrator after the worker returns. A verified step passes when its `verify_cmd` exits 0. A step without a resolved command is unverified, not manual. The orchestrator verifies independently rather than trusting the worker's claim when a command exists.
+After a chunk worker returns, each task with a resolved `verify_cmd` SHALL have that command run by the orchestrator in source order. A verified task passes when its `verify_cmd` exits 0. A task without a resolved command is unverified, not manual. The orchestrator verifies independently rather than trusting the worker's claim when a command exists.
 
 #### Scenario: worker claims success but verify_cmd fails
 - **WHEN** the worker reports success but the step's verify_cmd exits non-zero
 - **THEN** the skill marks the step as failed and enters the repair cycle
 
-#### Scenario: verify_cmd passes and step gets committed
-- **WHEN** the verify_cmd exits 0 after the worker finishes
-- **THEN** the skill commits the step's changes as the rollback point
+#### Scenario: every task gate passes and chunk gets committed
+- **WHEN** every resolved `verify_cmd` in a chunk exits 0 and every unverified task reports DONE
+- **THEN** the skill marks those tasks completed and commits the chunk's changes as one rollback point
+
+#### Scenario: one task gate fails
+- **WHEN** any task's independent `verify_cmd` fails after the chunk worker returns
+- **THEN** the skill repairs that task within its repair budget and does not commit or complete the chunk until every task gate passes
 
 #### Scenario: structural surface requires diff reading
 - **WHEN** a step's verify_surface is `structural`
 - **THEN** the skill reads the diff to confirm changes stayed within the step's files list
 
 ### Requirement: bounded repair budget
-Each step SHALL have a repair budget of two attempts. When both fail, the skill SHALL pivot once by rewriting the step description to name the failed approach. Two more attempts run under the new description. When the second pair also fails, the skill SHALL mark the step blocked and stop. No third pivot is allowed.
+Each failed task SHALL have a repair budget of two attempts. When both fail, the skill SHALL pivot once by rewriting the task description to name the failed approach. Two more attempts run under the new description. When the second pair also fails, the skill SHALL mark the task blocked, leave its chunk uncommitted, and stop. No third pivot is allowed.
 
 #### Scenario: repair budget exhausted
 - **WHEN** a step fails verification twice under its original description and twice more after a pivot

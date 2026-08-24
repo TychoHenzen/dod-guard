@@ -98,7 +98,7 @@ The plugin ships ten documented skills.
 | Skill | Use it for |
 |---|---|
 | [`/interview`](#interview) | Pinning down requirements before any implementation task |
-| [`/step-by-step`](#step-by-step) | Executing a confirmed multi-step plan one atomic step at a time |
+| [`/step-by-step`](#step-by-step) | Executing a confirmed plan in ordered, token-sized task chunks |
 | [`/adversarial-workflow`](#adversarial-workflow) | Driving one change through four rounds of hostile review, gated GO/REVISE/STOP |
 | [`/clean-house`](#clean-house) | Hunting duplicate and obsolete implementations with git archaeology |
 | [`/test-integrity-checker`](#test-integrity-checker) | Auditing tests written to match the implementation instead of a spec |
@@ -121,16 +121,16 @@ before writing code or plans.
 
 ### `/step-by-step`
 
-Executes a confirmed multi-step plan by dispatching one fresh subagent per
-atomic step. The orchestrator holds only the current step plus a compact
-result of the last one. That removes the pressure that makes models batch
-steps, skip verification, or wrap up early. Reads and writes
+Executes a confirmed multi-step plan by grouping contiguous tasks into worker
+chunks estimated at 50,000 to 100,000 execution tokens. One fresh subagent owns
+each chunk. Each task keeps its own requirement, file scope, and verification
+command. The orchestrator verifies every task, then commits the chunk. Reads and writes
 `openspec/changes/<id>/tasks.md` - an OpenSpec change id is required. Its
 Finishing phase runs `dod-guard cover` and, on a clean result, `openspec
 archive`.
 
-Triggers: a plan with 5+ steps, a model starting to batch or cut corners, or
-"work through this step by step."
+Triggers: a plan with 5+ steps, a model skipping task boundaries or verification,
+or "work through this step by step."
 
 
 ### `/adversarial-workflow`

@@ -69,7 +69,7 @@ List every file you touched and the error each change cleared. Keep it short.
 - You have no channel to the user. Use the BLOCKED report instead of an interactive question tool.
 - Use read-only git only (`status`, `diff`, `log`). Never run a history-mutating git
   command: no commit, no rebase, no reset, no checkout of a branch. The orchestrator
-  commits after each step whose verify_cmd passes.
+  commits after every task in the current chunk passes.
 - Work only on this step. Anything you notice outside it goes in Concerns.
 - Run the exact command from the briefing's Verification section.
 - Quote real compiler output. Report only output you actually observed.

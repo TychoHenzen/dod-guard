@@ -104,7 +104,7 @@ Report:
    AMBIGUOUS and let the user decide.
 9. **NO GIT MUTATIONS.** Use read-only git only (`status`, `diff`, `log`). Never
    run `git commit`, `git push`, `git checkout`, `git reset`, or `git stash`.
-   The orchestrator commits after each step whose verify_cmd passes.
+   The orchestrator commits after every task in the current chunk passes.
 
 ## Report Format
 

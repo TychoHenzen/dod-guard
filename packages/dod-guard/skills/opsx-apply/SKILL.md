@@ -55,8 +55,8 @@ Read the `<!-- plan_artifacts: ... -->` comment near the top of
 ## 4. Route to step-by-step
 
 Invoke `/dod-guard:step-by-step <name>` (via the Skill tool) to execute
-the plan. Step-by-step dispatches typed workers, runs each step's
-`verify_cmd`, and commits per completed step. Do not loop through task
+the plan. Step-by-step dispatches token-sized worker chunks, runs each task's
+`verify_cmd`, and commits per completed chunk. Do not loop through task
 checkboxes or implement tasks in this skill - step-by-step owns that
 entirely. After plan approval, it runs continuously until completion or a
 real blocker. Do not request another approval between passing steps.

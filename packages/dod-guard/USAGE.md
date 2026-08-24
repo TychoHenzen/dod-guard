@@ -8,7 +8,7 @@ codebase with an `openspec/` directory.
 | You want to... | Use | Why |
 |----------------|-----|-----|
 | Understand requirements before coding | `/dod-guard:interview` | Structured questioning, writes scenarios + test bindings into an OpenSpec change |
-| Execute a confirmed multi-step plan correctly | `/dod-guard:step-by-step` | One fresh subagent per step, no batching, no shortcuts |
+| Execute a confirmed multi-step plan correctly | `/dod-guard:step-by-step` | One fresh subagent per 50,000 to 100,000 token task chunk |
 | Same as above but cheaper (90%+ cost savings) | `/dod-guard:cheap-step` | DeepSeek workers implement, host model verifies |
 | Maximum quality with adversarial gates | `/dod-guard:adversarial-workflow` | 4-phase gated: Spec->Test->Implement->Cleanup, verdicts in `design.md` |
 | Find and delete duplicate/obsolete code | `/dod-guard:clean-house` | Git archaeology, confused-model detection, aggressive cleanup |
@@ -116,22 +116,23 @@ OpenSpec change and marks how each one binds to a test. Never implements.
 
 ### `/dod-guard:step-by-step` - Sequential Multi-Step Execution
 
-**What it does:** Reads `openspec/changes/<id>/tasks.md`, dispatches ONE
-fresh subagent per atomic step, verifies the result, records it, and moves
-on. Orchestrator context stays lean - no batching, no shortcuts, no "I'll
-combine steps 3 and 4." The Finishing phase runs `dod-guard cover <id>` and,
-on a clean result, `openspec archive`.
+**What it does:** Reads `openspec/changes/<id>/tasks.md`, estimates each task's
+execution cost, and groups contiguous tasks into 50,000 to 100,000 token chunks.
+It dispatches one fresh subagent per chunk. Each task keeps its own requirement,
+file scope, and verification command. The orchestrator independently verifies each
+task, then records and commits the chunk. The Finishing phase runs
+`dod-guard cover <id>` and, on a clean result, `openspec archive`.
 
 **When to use:**
 - Plan has 5+ steps
-- LLM is trying to batch, skip, or combine steps
-- Complex task where each step requires focused attention
-- Quality matters more than token cost
+- LLM is skipping task boundaries or verification
+- A plan contains many tiny tasks that would waste fresh-agent startup tokens
+- Task-level checks matter, but one agent per checkbox costs too much
 
 **When to skip:**
 - 1-3 trivial steps - just do them
 - Single file, single change
-- Budget-sensitive (use cheap-step instead)
+- Work needs a cheaper model backend (use cheap-step instead)
 
 **Verification by step type:**
 
@@ -353,12 +354,12 @@ audit - must clear before the migration ships.
 
 ```
 /dod-guard:interview     -> change opened, scenarios + test bindings written
-/dod-guard:step-by-step  -> execute the plan, one atomic step at a time,
+/dod-guard:step-by-step  -> execute ordered 50k-100k token task chunks,
                             close on dod-guard cover + openspec archive
 ```
 
-Most common pattern. Interview locks requirements. Step-by-step implements
-them without batching.
+Most common pattern. Interview locks requirements. Step-by-step keeps task-level
+checks while amortizing agent startup across related tasks.
 
 ### Pattern 2: Interview -> Cheap-Step (Budget)
 

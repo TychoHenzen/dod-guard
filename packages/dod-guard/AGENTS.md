@@ -159,7 +159,7 @@ The package ships 28 documented skills, one for each `skills/*/SKILL.md` file.
 | `opsx-sync` | Sync delta specs from an OpenSpec change into the main specs |
 | `opsx-update` | Revise and revalidate an existing OpenSpec change's planning artifacts |
 | `spec-split` | Split compound requirements into one scenario per uncovered obligation and reassign test bindings |
-| `step-by-step` | Execute multi-step plans one atomic step at a time and update `openspec/changes/<id>/tasks.md` |
+| `step-by-step` | Execute multi-step plans in ordered 50,000 to 100,000 token task chunks and update `openspec/changes/<id>/tasks.md` |
 | `test-integrity-checker` | Audit tests for LLM-written patterns where tests bless production bugs instead of catching them |
 
 ## Dual-runtime agents

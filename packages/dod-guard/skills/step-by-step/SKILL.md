@@ -1,25 +1,26 @@
 ---
 name: step-by-step
 description: >-
-  Execute a confirmed multi-step plan one atomic step at a time. Dispatch a
-  single worker per step, run the verification yourself, gate on the result,
-  record it, and flush the detail before the next step. TRIGGER when: a plan
-  has 5 or more steps, a model starts batching steps or cutting corners, the
-  user says "work through this step by step" or "do not batch", or the plan
-  came out of /interview or /blueprint.
+  Execute a confirmed multi-step plan in ordered worker chunks sized for about
+  50,000 to 100,000 execution tokens. Keep each task's scope and verification
+  separate while amortizing fresh-agent startup cost across related tasks.
+  TRIGGER when: a plan has 5 or more steps, a model starts skipping task
+  boundaries or verification, the user says "work through this step by step",
+  or the plan came out of /interview or /blueprint.
 
 ---
 
 # Step-by-step
 
-You are an orchestrator. You dispatch workers, verify their output, and
-record results. You never write implementation code.
+You are an orchestrator. You form ordered task chunks, dispatch workers,
+verify their output task by task, and record results. You never write
+implementation code.
 
 ## Agent dispatch compatibility
 
 ### Codex lifecycle
 
-Before a Codex dispatch, inspect the active agent list. Reuse a related agent when practical.
+Before a Codex dispatch, inspect the active agent list. Reuse a related agent when practical. One fresh agent owns one chunk, not one task.
 
 Limit each parallel wave to the free agent slots. Wait for the wave, record every result, then close completed agents with the runtime's close action when available. If only interruption is available, interrupt agents whose work is no longer needed.
 
@@ -97,23 +98,45 @@ the plan.
   they live in memory only, resolved fresh at the start of each
   session.
 
+Then estimate each pending task's worker token cost. This is a planning estimate,
+not a quota or a promise:
+
+- about 10,000 tokens for a mechanical file, config, documentation, or narrow test change
+- about 25,000 tokens for a localized implementation with tests
+- about 50,000 tokens for a multi-file change, TDD cycle, or bounded investigation
+- about 100,000 tokens for an open-ended debugging or architecture task
+
+Build contiguous chunks in `tasks.md` order. Target 50,000 to 100,000 estimated
+tokens per chunk and aim near 75,000 when several valid splits exist. Keep adding
+small tasks until the target is reached. Rebalance a final tail into the preceding
+chunk when both can remain at or below 100,000 tokens.
+
+Start a smaller chunk only when the remaining tail is smaller or adding the next
+task would exceed 100,000 tokens. A change from ordinary to TDD or debugging work
+does not force a new chunk. A single task estimated above 100,000 tokens forms a
+chunk by itself. Never create a fresh worker for a tiny task merely because it has
+its own checkbox or worker type.
+
+Keep estimates and chunk membership in session memory. Do not write them into
+`tasks.md`. Recompute chunks from the remaining pending tasks when a session resumes.
+
 ## Three actors, three boundaries
 
 ### You (the orchestrator)
 
 - Present the plan for approval before executing anything. Show: goal
-  (from the change's proposal), step count, each title with its
-  `verify_cmd`, a breakdown of `verify_surface` types, and a count of
-  the steps that will be unverified. This is the only planned
-  interruption.
-- Treat plan approval as authority to execute every automated step.
+  (from the change's proposal), task count, chunk count, each chunk's task ids
+  and token estimate, each title with its `verify_cmd`, a breakdown of
+  `verify_surface` types, and a count of the tasks that will be unverified.
+  This is the only planned interruption.
+- Treat plan approval as authority to execute every automated task.
   Do not ask for confirmation after a passing verification. Commit it
   and continue immediately.
 - After plan approval, remain in the execution loop in the same invocation.
   Do not end the turn, return a final response, or ask the user to approve
-  the next task after a step passes. Dispatch the next eligible step
+  the next chunk after a chunk passes. Dispatch the next eligible chunk
   immediately.
-- Progress text after a completed step is informational only. It must not
+- Progress text after a completed chunk is informational only. It must not
   contain a request such as `Reply approve`, `Reply yes`, or `Reply to start`.
   Use a final response only after all steps finish or a real blocker requires
   the user's input.
@@ -122,53 +145,67 @@ the plan.
   yourself. Record any choice as an assumption in the final report.
 - Keep each user answer active for the rest of the run. Apply it to
   matching later decisions without asking again.
-- Pick the right worker for each step (see dispatch table below).
-- Run `verify_cmd` yourself after every worker finishes. A worker's
-  self-report informs your judgment. It does not replace the command.
-- Execute every step after plan approval, including steps marked
-  `manual_required: true` or steps with an empty `verify_cmd`. When the
-  worker returns `DONE`, commit the step and record that it completed without
-  automated verification.
-- Respect the task order `tasks.md` lays out. A step starts only
+- Pick the right worker for each chunk (see dispatch table below).
+- Run every task's `verify_cmd` yourself, in source order, after the chunk
+  worker finishes. A worker's self-report informs your judgment. It does not
+  replace the command.
+- Execute every task after plan approval, including tasks marked
+  `manual_required: true` or tasks with an empty `verify_cmd`. When the
+  worker reports that task `DONE`, record it as completed without automated
+  verification after the rest of its chunk passes.
+- Respect the task order `tasks.md` lays out. A task starts only
   after every earlier task in the file is resolved: `completed`, or
   `skipped`/`blocked` with the user told.
-- After each verdict: update `tasks.md`, keep Concerns and file lists
-  for the final report, then drop everything else about that step.
-  Carry forward only id, title, and verdict (see Persistence).
-- When `verify_cmd` passes, commit the step's changes yourself. That
-  commit is the rollback point. A failed or blocked step earns no
-  commit. You commit. You never push. Pushing stays a human decision.
+- After every task in a chunk passes or is recorded as unverified: update all
+  of those tasks in `tasks.md`, keep Concerns and file lists for the final
+  report, then drop the chunk's implementation detail.
+- Commit the chunk's changes yourself after its task-level gates pass. That
+  commit is the rollback point. A failed or blocked chunk earns no commit or
+  completed task statuses. You commit. You never push. Pushing stays a human
+  decision.
 
 ### Workers
 
-Each worker gets a briefing with seven fields and nothing else. The
+Each worker gets one chunk briefing. Every task keeps its own seven-field block. The
 `Requirement` field carries the most weight. Test-first instructions that
 never name what correct means left regressions at 9.94 percent. Naming it
 cut them by about 70 percent.
 
 ```
-Task: {step description, verbatim from tasks.md}
-Context: {what earlier steps produced}
-Requirement: {the scenario this step satisfies, its WHEN and THEN lines verbatim}
-Verification: {surface type}. Run exactly: {verify_cmd}, or report
-`unverified` when no command is resolved.
-Files:
-- Read before starting: {paths}
-- May modify: {paths}
-- Leave alone: {paths}
-Expected output: {concrete testable criteria}
+Chunk: {chunk number}; tasks {first id} through {last id}; estimated {tokens} tokens
+Tasks, in execution order:
+1. Task: {task description, verbatim from tasks.md}
+   Mode: {ordinary, tdd, or debug}
+   Context: {what earlier tasks produced}
+   Requirement: {the scenario this task satisfies, its WHEN and THEN lines verbatim}
+   Verification: {surface type}. Run exactly: {verify_cmd}, or report
+   `unverified` when no command is resolved.
+   Files:
+   - Read before starting: {paths}
+   - May modify: {paths}
+   - Leave alone: {paths}
+   Expected output: {concrete testable criteria}
+2. {repeat the seven fields for each later task}
 Working directory: {cwd, the current session's working directory}
 ```
 
-No scenario behind the step (plan-file and quality-refactor sessions have
+No scenario behind the task (plan-file and quality-refactor sessions have
 none): write `Requirement: none - see Task`.
 
 Code that implements the `Requirement` needs no tag. The scenario already
 states it. Code the worker writes that depends on behavior no scenario
 states earns an `ASSUMPTION: <what and why>` comment at that line.
 
-Workers own their scope rules, report format, git practices, and
-ambiguity handling separately.
+Workers execute the chunk in source order and keep task boundaries intact. They
+must not collapse several task requirements into one vague change. They report a
+separate outcome, changed-file list, verification result, and Concerns section for
+each task. They stop before later tasks when one task is AMBIGUOUS, BLOCKED,
+ALREADY-GREEN, or NO-REPRO.
+
+Workers own their scope rules, report format, git practices, and ambiguity handling
+separately. When a stopped chunk can continue after clarification or repair, resume
+or follow up with the same worker when the runtime supports it. Do not pay for a new
+agent context solely to continue the remaining tasks in that chunk.
 
 Workers return one of three universal responses: DONE, AMBIGUOUS,
 BLOCKED. On BLOCKED, check whether the blocker is inside the plan. If
@@ -186,7 +223,8 @@ interpretation. Record it as an assumption. Re-dispatch without asking the
 user. Ask only when the interpretations change observable requirements,
 cross the listed file scope, destroy data, push, or need protected tool
 approval. Include the interpretations as options. Re-dispatch with the
-answer added to Context. Do not ask again about that decision later.
+answer added to Context. Resume the same chunk worker when possible. Do not ask
+again about that decision later.
 
 ### The user
 
@@ -194,13 +232,20 @@ Only the user may skip a step. You cannot skip on their behalf.
 
 ## Choosing a worker
 
-Match the step to its agent:
+Assign a chunk by its task mix:
 
-- **Ordinary change** - `dod-guard:step-implementer` at sonnet
-- **Test-first or tdd predicate** - `dod-guard:step-tdd-implementer` at sonnet
-- **Symptom with unknown root cause** - `dod-guard:step-debugger` at sonnet
+- **Ordinary or mixed task types** - `dod-guard:step-implementer` at sonnet. The
+  per-task Mode field selects ordinary, TDD, or debugging behavior.
+- **Only test-first or tdd tasks** - `dod-guard:step-tdd-implementer` at sonnet
+- **Only symptoms with unknown root causes** - `dod-guard:step-debugger` at sonnet
 - **Compiler, type, or import failure** - `dod-guard:step-build-fixer` at haiku
 - **Repairing a failed check** - `dod-guard:step-fixer` at the tier that failed or one above. Include the failure output and your diagnosis in the briefing
+
+Worker type is not a chunk boundary. Prefer the specialized worker for a homogeneous
+chunk. Use `step-implementer` for a mixed chunk instead of splitting a small chunk to
+preserve specialized dispatch. Build fixers and repair fixers remain task-scoped
+responses to an observed failure. They do not cause the remaining chunk to be
+repartitioned.
 
 `model` and `subagent_type` go in separate parameters. Passing a model
 name where the agent type belongs fails silently. Keep model tier flat or
@@ -208,11 +253,11 @@ higher on repairs. Build errors are the exception (haiku suffices).
 
 ## Repair budget
 
-Two attempts per step. Both fail? First check whether the step even
-targets the right requirement. Then pivot: rewrite the step description,
+Two repair attempts per failed task. Both fail? First check whether the task even
+targets the right requirement. Then pivot: rewrite the task description,
 naming the failed approach. Two more attempts under the new description.
-Still failing? Mark `blocked`, stop the session, and report what was
-tried and what remains broken. No third pivot.
+Still failing? Mark the task `blocked`, leave the chunk uncommitted, stop the
+session, and report what was tried and what remains broken. No third pivot.
 
 ## Verification surfaces
 
@@ -276,7 +321,7 @@ clean" and stop. Do not review further.
 
 ## Finishing
 
-After the last step, run the full build and test suite as an
+After the last chunk, run the full build and test suite as an
 integration check.
 
 A green integration check earns two more commands, run in this order.
@@ -306,4 +351,5 @@ Deliver a report containing:
 - Visual or gameplay steps recorded as unverified
 - All changed files
 - All worker Concerns, grouped by step
-- The commits made along the way, one per passed step
+- Each chunk's task ids and estimated token size
+- The commits made along the way, one per passed chunk

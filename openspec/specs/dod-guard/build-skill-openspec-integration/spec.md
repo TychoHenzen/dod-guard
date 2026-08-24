@@ -70,20 +70,19 @@ The handoff table `/interview` prints at the end of a session SHALL list
 
 ### Requirement: briefing carries the Requirement field
 
-Each step briefing `/step-by-step` and `/cheap-step` produce SHALL include a
-`Requirement` field carrying the scenario's `WHEN` and `THEN` lines
-verbatim.
+Each task block in a `/step-by-step` chunk briefing, and each `/cheap-step`
+briefing, SHALL include a `Requirement` field carrying the scenario's `WHEN`
+and `THEN` lines verbatim.
 
-#### Scenario: Worker receives a step briefing
-- **WHEN** a step's briefing is generated for a worker
+#### Scenario: Worker receives a task briefing
+- **WHEN** a task's briefing block is generated for a worker
 - **THEN** the briefing contains a `Requirement` field with the source
   scenario's `WHEN` and `THEN` text unchanged
 
 ### Requirement: briefing states the assumption rule
 
-Each step briefing SHALL instruct the worker that code depending on behavior
-its scenario does not state gets an `ASSUMPTION: <what and why>` comment at
-that line.
+Each task briefing SHALL instruct the worker that code depending on behavior its
+scenario does not state gets an `ASSUMPTION: <what and why>` comment at that line.
 
 #### Scenario: Worker writes code beyond what the scenario states
 - **WHEN** a worker's briefing is generated
@@ -110,20 +109,21 @@ for a change-sourced plan, instead of comparing `plan_source` file mtimes.
   source
 - **THEN** the skill recognizes it as a valid plan producer without error
 
-### Requirement: commit lands after each verified step
+### Requirement: commit lands after each verified chunk
 
-`/step-by-step` and its `step-*` agents SHALL commit after each step passes
-verification, not only write a commit message and stop.
+`/step-by-step` SHALL commit after every task in a token-sized worker chunk passes
+verification. Its `step-*` agents SHALL not commit.
 
-#### Scenario: A step's verify_cmd passes
-- **WHEN** a dispatched step's verification command exits zero
-- **THEN** the orchestrator commits that step's changes before dispatching
-  the next step
+#### Scenario: A chunk's task gates pass
+- **WHEN** every dispatched task's verification command in a chunk exits zero
+- **THEN** the orchestrator commits the chunk's changes before dispatching
+  the next chunk
 
 ### Requirement: cheap-step mirrors step-by-step
 
 Every requirement above that describes `/step-by-step` SHALL also hold for
-`/cheap-step`, which SHALL keep its own `mode` field alongside these changes.
+`/cheap-step`, except host-agent chunk sizing and chunk commits. `/cheap-step`
+SHALL keep one solve dispatch and one commit per task, plus its own `mode` field.
 
 #### Scenario: cheap-step session runs to Finishing
 - **WHEN** a `/cheap-step` session reaches Finishing under the same

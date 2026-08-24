@@ -68,7 +68,7 @@ Create the seam first. This step is sighted and includes tests for the boundary.
 
 ### C. Dependency swap
 
-Replace a dependency across every call site. The old dependency is gone, so no oracle exists. Every call site must be migrated for the swap to count as complete. Dispatch `dod-guard:step-by-step` with one site per dispatch. All migration steps are sighted. A bulk migration in one dispatch spreads effort across too many sites.
+Replace a dependency across every call site. The old dependency is gone, so no oracle exists. Every call site must be migrated for the swap to count as complete. Give `dod-guard:step-by-step` one site per task. Let it group contiguous site tasks into its token-sized worker chunks. All migration tasks are sighted, and every site keeps its own scope and verification boundary.
 
 ### D. Prose, no harness
 

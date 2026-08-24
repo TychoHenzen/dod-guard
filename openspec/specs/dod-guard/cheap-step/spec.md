@@ -4,7 +4,7 @@
 Skill that executes a confirmed multi-step plan like `/step-by-step`, substituting each eligible step's implementation with the evomcp `solve` tool running cheap DeepSeek workers instead of host agents.
 ## Requirements
 ### Requirement: inherits step-by-step base discipline
-The skill SHALL follow the same splitting, approval, `tasks.md` persistence, staleness checks, dependency ordering, four statuses, verdict gate, repair cap, record-and-flush, closing integration, and final report as `/step-by-step`. The only substitution is the implementation dispatch mechanism.
+The skill SHALL follow the same approval, `tasks.md` persistence, staleness checks, dependency ordering, four statuses, verdict gate, repair cap, record-and-flush, closing integration, and final report as `/step-by-step`. It SHALL keep one solve dispatch and one commit per task rather than inheriting host-agent chunk sizing. The implementation dispatch mechanism remains its other substitution.
 
 #### Scenario: step ordering matches step-by-step
 - **WHEN** tasks.md defines sequential tasks
@@ -96,4 +96,3 @@ The skill SHALL retry a failed `solve` dispatch at most twice with a more specif
 #### Scenario: backend down switches to base
 - **WHEN** two failures never reach a verify result and status shows the proxy is down
 - **THEN** the skill tells the user and switches all remaining steps to host dispatch
-
