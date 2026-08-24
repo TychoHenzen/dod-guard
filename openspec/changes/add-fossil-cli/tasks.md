@@ -97,8 +97,9 @@
 - [x] 3.4 Resolve an unambiguous namespace-level C# `using` through path and namespace conventions.
 <!-- covers: fossil/reference-analysis :: C# references :: Unambiguous C# namespace resolves -->
 <!-- status: completed -->
-- [ ] 3.5 Preserve an ambiguous C# namespace as unresolved rather than inventing an edge.
+- [x] 3.5 Preserve an ambiguous C# namespace as unresolved rather than inventing an edge.
 <!-- covers: fossil/reference-analysis :: C# references :: Ambiguous C# namespace is not invented -->
+<!-- status: completed -->
 - [ ] 3.6 Resolve Rust `use crate::...` and `mod ...;` references to current module files.
 <!-- covers: fossil/reference-analysis :: Rust references :: Rust module statement creates graph edge -->
 - [ ] 3.7 Grade a candidate usage outside fallback regions as a strong inbound reference.

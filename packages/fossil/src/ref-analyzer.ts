@@ -140,7 +140,11 @@ function referenceGraph(
   const paths = new Set(sources.map((source) => source.path));
   const resolved = parsed.map((reference) => ({
     reference,
-    targetPath: reference.targetPath ?? reference.targetCandidates.find((candidate) => paths.has(candidate)),
+    targetPath:
+      reference.targetPath ??
+      (reference.language === "csharp"
+        ? undefined
+        : reference.targetCandidates.find((candidate) => paths.has(candidate))),
   }));
   const edges = resolved
     .filter((entry) => entry.targetPath !== undefined)

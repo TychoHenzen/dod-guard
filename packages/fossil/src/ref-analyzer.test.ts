@@ -173,3 +173,38 @@ test("resolves one namespace-level C# using to its unique current path suffix", 
   );
   assert.deepEqual(graph.unresolved, []);
 });
+
+// covers: fossil/reference-analysis :: C# references :: Ambiguous C# namespace is not invented
+test("retains all sorted C# namespace matches as unresolved evidence", () => {
+  const graph = analyzeReferences([
+    {
+      path: "src/App/Program.cs",
+      language: "csharp",
+      content: "using Company.Tools.Widget;\n",
+    },
+    { path: "zeta/Company/Tools/Widget.cs", language: "csharp", content: "" },
+    { path: "alpha/Company/Tools/Widget.cs", language: "csharp", content: "" },
+  ]);
+
+  assert.deepEqual(graph.edges, []);
+  assert.deepEqual(
+    graph.unresolved.map(({ sourcePath, targetCandidates, language, kind, resolution, span }) => ({
+      sourcePath,
+      targetCandidates,
+      language,
+      kind,
+      resolution,
+      span: [span.line, span.column, span.end - span.start],
+    })),
+    [
+      {
+        sourcePath: "src/App/Program.cs",
+        targetCandidates: ["alpha/Company/Tools/Widget.cs", "zeta/Company/Tools/Widget.cs"],
+        language: "csharp",
+        kind: "csharp-using",
+        resolution: "unresolved",
+        span: [1, 7, "Company.Tools.Widget".length],
+      },
+    ],
+  );
+});
