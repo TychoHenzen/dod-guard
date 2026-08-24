@@ -284,3 +284,20 @@ test("resolves sibling, module-directory, and nearest-Cargo-root Rust modules", 
     ],
   );
 });
+
+// covers: fossil/reference-analysis :: Reference strength :: Normal direct use is strong
+test("keeps an ordinary imported candidate use as a strong inbound reference", () => {
+  const graph = analyzeJavaScriptReferences([
+    {
+      path: "src/live.ts",
+      language: "typescript",
+      content: 'import { candidate } from "./candidate";\nexport const result = candidate();\n',
+    },
+    { path: "src/candidate.ts", language: "typescript", content: "export const candidate = () => true;\n" },
+  ]);
+
+  assert.deepEqual(
+    graph.edges.map(({ sourcePath, targetPath, strength }) => ({ sourcePath, targetPath, strength })),
+    [{ sourcePath: "src/live.ts", targetPath: "src/candidate.ts", strength: "strong" }],
+  );
+});

@@ -103,8 +103,9 @@
 - [x] 3.6 Resolve Rust `use crate::...` and `mod ...;` references to current module files.
 <!-- covers: fossil/reference-analysis :: Rust references :: Rust module statement creates graph edge -->
 <!-- status: completed -->
-- [ ] 3.7 Grade a candidate usage outside fallback regions as a strong inbound reference.
+- [x] 3.7 Grade a candidate usage outside fallback regions as a strong inbound reference.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Normal direct use is strong -->
+<!-- status: completed -->
 - [ ] 3.8 Grade imports used only inside try or catch regions as weak.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Try or catch use is weak -->
 - [ ] 3.9 Grade imports used only in fallback conditionals or default expressions as weak.
