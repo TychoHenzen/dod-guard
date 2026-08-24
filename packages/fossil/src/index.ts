@@ -32,6 +32,17 @@ export interface FossilCliDependencies {
   readonly cwd?: () => string;
 }
 
+interface RawAnalyzeOptions {
+  readonly days?: string;
+  readonly gapHours?: string;
+  readonly threshold?: string;
+  readonly format?: string;
+  readonly extensions?: string;
+  readonly untrackedAge?: string;
+  readonly exclude?: string;
+  readonly verbose?: boolean;
+}
+
 function isMainModule(): boolean {
   const arg = process.argv[1];
   if (!arg) return false;
@@ -42,13 +53,49 @@ function isMainModule(): boolean {
   }
 }
 
+function commaSeparatedValues(value: string | undefined): string[] {
+  return value === undefined
+    ? []
+    : value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+function finiteNumber(value: string | undefined, fallback: number): number {
+  if (value === undefined) return fallback;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : Number.NaN;
+}
+
+function normalizeAnalyzeOptions(options: RawAnalyzeOptions): NormalizedAnalysisOptions {
+  return {
+    days: finiteNumber(options.days, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.days),
+    gapHours: finiteNumber(options.gapHours, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.gapHours),
+    threshold: finiteNumber(options.threshold, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.threshold),
+    format: (options.format ?? DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.format) as NormalizedAnalysisOptions["format"],
+    extensions: commaSeparatedValues(options.extensions),
+    untrackedAgeDays: finiteNumber(options.untrackedAge, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.untrackedAgeDays),
+    exclude: commaSeparatedValues(options.exclude),
+    verbose: options.verbose ?? DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.verbose,
+  };
+}
+
 /** Creates the command boundary so analysis can be injected and tested without Git access. */
 export function createFossilProgram({ analyze, cwd = process.cwd }: FossilCliDependencies): Command {
   const program = new Command().name("fossil");
   program
     .command("analyze [repo-path]")
-    .action(async (repositoryPath: string | undefined) =>
-      analyze(repositoryPath ?? cwd(), DEFAULT_NORMALIZED_ANALYSIS_OPTIONS),
+    .option("--days <days>")
+    .option("--gap-hours <hours>")
+    .option("--threshold <threshold>")
+    .option("--format <format>")
+    .option("--extensions <extensions>")
+    .option("--untracked-age <days>")
+    .option("--exclude <patterns>")
+    .option("--verbose")
+    .action(async (repositoryPath: string | undefined, options: RawAnalyzeOptions) =>
+      analyze(repositoryPath ?? cwd(), normalizeAnalyzeOptions(options)),
     );
   return program;
 }
