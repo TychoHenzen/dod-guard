@@ -307,8 +307,9 @@
 - [x] 6.22 Disable repository-configured filesystem monitors and external diff helpers.
 <!-- covers: fossil/cli :: Safe Git execution :: Repository Git helper is disabled -->
 <!-- status: completed -->
-- [ ] 6.23 Reject unsupported Git versions before history analysis.
+- [x] 6.23 Reject unsupported Git versions before history analysis.
 <!-- covers: fossil/cli :: Safe Git execution :: Unsupported Git version fails capability check -->
+<!-- status: completed -->
 - [ ] 6.24 Stream and terminate Git ingestion at byte or status-record limits.
 <!-- covers: fossil/cli :: Analysis resource bounds :: Git byte or status limit terminates ingestion -->
 
