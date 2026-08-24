@@ -26,6 +26,19 @@ test("scores a positive burst with no later commits as complete abandonment", ()
   assert.deepEqual({ candidate, invalid }, before);
 });
 
+// covers: fossil/scoring :: Abandonment score :: Continued activity lowers abandonment linearly
+test("lowers abandonment linearly and floors it at zero after continued activity", () => {
+  const partial = activity("src/partial.ts", 4, 2);
+  const equal = activity("src/equal.ts", 4, 4);
+  const greater = activity("src/greater.ts", 4, 5);
+  const before = structuredClone({ partial, equal, greater });
+
+  assert.equal(abandonmentScore(partial), 0.5);
+  assert.equal(abandonmentScore(equal), 0);
+  assert.equal(abandonmentScore(greater), 0);
+  assert.deepEqual({ partial, equal, greater }, before);
+});
+
 // covers: fossil/scoring :: Churn score :: Churn is normalized within a burst
 test("normalizes positive churn within one burst without mutating activity input", () => {
   const candidate = activity("src/candidate.ts", 12);
