@@ -139,8 +139,9 @@
 - [x] 3.18 Detect and omit binary files before regex parsing.
 <!-- covers: fossil/reference-analysis :: Bounded source scanning :: Binary file is not regex parsed -->
 <!-- status: completed -->
-- [ ] 3.19 Detect file replacement or disappearance between inventory and content read.
+- [x] 3.19 Detect file replacement or disappearance between inventory and content read.
 <!-- covers: fossil/reference-analysis :: Repository-contained source reads :: File changes during scanning -->
+<!-- status: completed -->
 
 ## 4. Fossil scoring and burst assembly
 

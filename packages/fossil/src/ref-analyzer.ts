@@ -50,6 +50,20 @@ export interface BoundedReferenceReadResult extends ReferenceReadResult {
   readonly acceptedBytes: number;
 }
 
+/** Stable file metadata captured before and immediately before a source-content read. */
+export interface ReferenceSourceSnapshot {
+  readonly identity: string;
+  readonly isRegularFile: boolean;
+  readonly byteLength: number;
+  readonly canonicalPath: string;
+}
+
+/** Injected stable-read boundary for detecting changes between inventory and content read. */
+export interface StableReferenceSourceBoundary {
+  readonly inspect: (source: ReferenceCandidate) => ReferenceSourceSnapshot | undefined;
+  readonly read: ReferenceSourceReader;
+}
+
 /** Canonical path boundary used to keep resolved relative imports inside the repository. */
 export interface ReferenceContainmentBoundary {
   readonly canonicalRepositoryRoot: string;
@@ -853,6 +867,94 @@ export function readBoundedReferenceSources(
         message: "Reference source could not be read.",
         path: source.path,
       });
+    }
+  }
+  unavailablePaths.sort(compareText);
+  warnings.sort((left, right) => compareText(left.path ?? "", right.path ?? ""));
+  return {
+    graph: {
+      edges: [],
+      unresolved: [],
+      complete: unavailablePaths.length === 0,
+      unavailablePaths,
+    },
+    sources: readableSources,
+    warnings,
+    acceptedBytes,
+  };
+}
+
+/** Reads stable regular files after re-checking their identity, type, and canonical path. */
+export function readStableReferenceSources(
+  sources: readonly ReferenceCandidate[],
+  boundary: StableReferenceSourceBoundary,
+  maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
+  maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES,
+): BoundedReferenceReadResult {
+  const readableSources: ReferenceSourceContent[] = [];
+  const unavailablePaths: string[] = [];
+  const warnings: AnalysisWarning[] = [];
+  let acceptedBytes = 0;
+  let totalLimitReached = false;
+  const addWarning = (source: ReferenceCandidate, code: AnalysisWarning["code"], message: string) => {
+    unavailablePaths.push(source.path);
+    warnings.push({ code, message, path: source.path });
+  };
+  for (const source of sources) {
+    if (totalLimitReached || acceptedBytes >= maximumTotalBytes) {
+      addWarning(source, "reference_content_limit", "Reference source exceeds the total content limit.");
+      continue;
+    }
+    let initial: ReferenceSourceSnapshot | undefined;
+    try {
+      initial = boundary.inspect(source);
+    } catch {
+      addWarning(source, "reference_unreadable", "Reference source could not be read.");
+      continue;
+    }
+    if (!initial?.isRegularFile) {
+      addWarning(source, "reference_unreadable", "Reference source could not be read.");
+      continue;
+    }
+    if (initial.byteLength > maximumFileBytes) {
+      addWarning(source, "reference_content_limit", "Reference source exceeds the per-file content limit.");
+      continue;
+    }
+    if (acceptedBytes + initial.byteLength > maximumTotalBytes) {
+      addWarning(source, "reference_content_limit", "Reference source exceeds the total content limit.");
+      totalLimitReached = true;
+      continue;
+    }
+    let current: ReferenceSourceSnapshot | undefined;
+    try {
+      current = boundary.inspect(source);
+    } catch {
+      addWarning(source, "reference_unreadable", "Reference source could not be read.");
+      continue;
+    }
+    if (!current) {
+      addWarning(source, "reference_unreadable", "Reference source could not be read.");
+      continue;
+    }
+    if (
+      current.identity !== initial.identity ||
+      current.isRegularFile !== initial.isRegularFile ||
+      current.byteLength !== initial.byteLength ||
+      current.canonicalPath !== initial.canonicalPath
+    ) {
+      addWarning(source, "reference_path_changed", "Reference source changed during scanning.");
+      continue;
+    }
+    try {
+      const content = boundary.read(source);
+      if (content.includes("\0")) {
+        addWarning(source, "reference_binary", "Reference source is binary.");
+        continue;
+      }
+      readableSources.push({ ...source, content });
+      acceptedBytes += initial.byteLength;
+    } catch {
+      addWarning(source, "reference_unreadable", "Reference source could not be read.");
     }
   }
   unavailablePaths.sort(compareText);
