@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
-import { nonMergeGitLogArguments, parseNonMergeGitLog } from "./git-analyzer.js";
+import { nonMergeGitLogArguments, parseNonMergeGitLog, resolveRenameActivities } from "./git-analyzer.js";
 import { createTemporaryRepository, type TemporaryRepository } from "./testing/fixtures.js";
 
 const repositories: TemporaryRepository[] = [];
@@ -40,4 +40,30 @@ test("omits merge-only activity while retaining reachable non-merge commits", as
   assert.equal(commits.length, 3);
   assert.deepEqual(activePaths.sort(), ["src/base.ts", "src/feature.ts", "src/main.ts"]);
   assert.ok(!activePaths.includes("src/merge-only.ts"));
+});
+
+// covers: fossil/burst-analysis :: History activity model :: Rename preserves logical identity
+test("collapses successive Git renames into one logical file at its final path", async () => {
+  const repository = await temporaryRepository();
+  await repository.writeSourceFile("src/first.ts", "export const value = 1;\n");
+  await repository.recordCommit("create", new Date("2025-01-01T00:00:00.000Z"));
+  await repository.git(["mv", "src/first.ts", "src/middle.ts"]);
+  await repository.recordCommit("first rename", new Date("2025-01-02T00:00:00.000Z"));
+  await repository.git(["mv", "src/middle.ts", "src/final.ts"]);
+  await repository.recordCommit("second rename", new Date("2025-01-03T00:00:00.000Z"));
+
+  const activities = resolveRenameActivities(parseNonMergeGitLog(await repository.git(nonMergeGitLogArguments())));
+
+  assert.equal(activities.length, 1);
+  assert.deepEqual(activities[0], {
+    identity: "src/first.ts",
+    currentPath: "src/final.ts",
+    paths: ["src/first.ts", "src/middle.ts", "src/final.ts"],
+    firstCommitTimestampMs: Date.parse("2025-01-01T00:00:00.000Z"),
+    lastCommitTimestampMs: Date.parse("2025-01-03T00:00:00.000Z"),
+    commitCount: 3,
+    created: true,
+    deleted: false,
+    existsAtHead: true,
+  });
 });

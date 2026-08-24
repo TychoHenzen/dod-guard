@@ -1,10 +1,10 @@
-import type { GitCommit, GitFileChange } from "./types.js";
+import type { GitCommit, GitFileChange, LogicalFileActivity } from "./types.js";
 
 const RECORD_SEPARATOR = "\u001e";
 
 /** Arguments for the raw history stream consumed by parseNonMergeGitLog(). */
 export function nonMergeGitLogArguments(): readonly string[] {
-  return ["log", "HEAD", "--no-merges", "--format=%x1e%H%x00%ct%x00", "--name-status", "-z"];
+  return ["log", "HEAD", "--no-merges", "--find-renames=50%", "--format=%x1e%H%x00%ct%x00", "--name-status", "-z"];
 }
 
 function statusFor(rawStatus: string): GitFileChange["status"] {
@@ -68,4 +68,87 @@ export function parseNonMergeGitLog(rawLog: string): GitCommit[] {
     });
   }
   return commits;
+}
+
+interface FileEvent {
+  readonly change: GitFileChange;
+  readonly commit: GitCommit;
+}
+
+function pathHistory(events: readonly FileEvent[]): string[] {
+  const nextByPath = new Map<string, string>();
+  const renamedTo = new Set<string>();
+  const paths = new Set<string>();
+  for (const { change } of events) {
+    paths.add(change.path);
+    if (change.status !== "renamed" || !change.previousPath) continue;
+    paths.add(change.previousPath);
+    nextByPath.set(change.previousPath, change.path);
+    renamedTo.add(change.path);
+  }
+  const ordered: string[] = [];
+  for (const start of [...nextByPath.keys()].filter((path) => !renamedTo.has(path)).sort()) {
+    let current: string | undefined = start;
+    while (current && !ordered.includes(current)) {
+      ordered.push(current);
+      current = nextByPath.get(current);
+    }
+  }
+  return [...ordered, ...[...paths].filter((path) => !ordered.includes(path)).sort()];
+}
+
+function createRootResolver(commits: readonly GitCommit[]) {
+  const parent = new Map<string, string>();
+  const rootFor = (path: string): string => {
+    const knownParent = parent.get(path);
+    if (!knownParent) {
+      parent.set(path, path);
+      return path;
+    }
+    if (knownParent === path) return path;
+    const root = rootFor(knownParent);
+    parent.set(path, root);
+    return root;
+  };
+  for (const commit of commits) {
+    for (const change of commit.changes) {
+      rootFor(change.path);
+      if (change.status === "renamed" && change.previousPath)
+        parent.set(rootFor(change.path), rootFor(change.previousPath));
+    }
+  }
+  return rootFor;
+}
+
+/** Collapses Git-reported rename chains while keeping copies and unrelated paths distinct. */
+export function resolveRenameActivities(commits: readonly GitCommit[]): LogicalFileActivity[] {
+  const rootFor = createRootResolver(commits);
+  const eventsByIdentity = new Map<string, FileEvent[]>();
+  for (const commit of commits) {
+    for (const change of commit.changes) {
+      const identity = rootFor(change.path);
+      const events = eventsByIdentity.get(identity) ?? [];
+      events.push({ change, commit });
+      eventsByIdentity.set(identity, events);
+    }
+  }
+  return [...eventsByIdentity.entries()].map(([identity, events]) => {
+    const paths = pathHistory(events);
+    const timestamps = events.map(({ commit }) => commit.committerTimestampMs);
+    const latest = events.reduce((current, event) =>
+      event.commit.committerTimestampMs > current.commit.committerTimestampMs ? event : current,
+    );
+    const deleted = latest.change.status === "deleted";
+    return {
+      identity,
+      currentPath: deleted ? undefined : paths.at(-1),
+      paths,
+      firstCommitTimestampMs: Math.min(...timestamps),
+      lastCommitTimestampMs: Math.max(...timestamps),
+      commitCount: new Set(events.map(({ commit }) => commit.hash)).size,
+      created: events.some(({ change }) => change.status === "added"),
+      deleted,
+      existsAtHead: !deleted,
+    };
+  });
 }
