@@ -100,8 +100,9 @@
 - [x] 3.5 Preserve an ambiguous C# namespace as unresolved rather than inventing an edge.
 <!-- covers: fossil/reference-analysis :: C# references :: Ambiguous C# namespace is not invented -->
 <!-- status: completed -->
-- [ ] 3.6 Resolve Rust `use crate::...` and `mod ...;` references to current module files.
+- [x] 3.6 Resolve Rust `use crate::...` and `mod ...;` references to current module files.
 <!-- covers: fossil/reference-analysis :: Rust references :: Rust module statement creates graph edge -->
+<!-- status: completed -->
 - [ ] 3.7 Grade a candidate usage outside fallback regions as a strong inbound reference.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Normal direct use is strong -->
 - [ ] 3.8 Grade imports used only inside try or catch regions as weak.
