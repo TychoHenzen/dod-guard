@@ -289,8 +289,9 @@
 - [x] 6.16 Pass metacharacter-containing repository paths to Git as one non-shell argument.
 <!-- covers: fossil/cli :: Safe Git execution :: Repository path is data, not a command -->
 <!-- status: completed -->
-- [ ] 6.17 Preserve unusual Git filenames through NUL-delimited parsing.
+- [x] 6.17 Preserve unusual Git filenames through NUL-delimited parsing.
 <!-- covers: fossil/cli :: Safe Git execution :: Unusual filename remains one structured path -->
+<!-- status: completed -->
 - [ ] 6.18 Disable Git pagers and interactive prompts for every subprocess.
 <!-- covers: fossil/cli :: Safe Git execution :: Git cannot open an interactive process -->
 - [ ] 6.19 Fail explicitly when included commit records exceed the resource limit.

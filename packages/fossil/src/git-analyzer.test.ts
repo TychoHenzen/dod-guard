@@ -102,6 +102,23 @@ test("orders parsed commits by UTC epoch then ordinal hash without mutating sort
   );
 });
 
+// covers: fossil/cli :: Safe Git execution :: Unusual filename remains one structured path
+test("preserves whitespace, newline, quote, and control-byte filenames as individual Git changes", () => {
+  const paths = ["src/white space.ts", "src/line\nbreak.ts", 'src/"quoted".ts', "src/control-\u0001.ts"];
+  const commits = parseNonMergeGitLog(
+    `\u001eunusual-files\0${17_000_000_000}\0A\0${paths[0]}\0M\0${paths[1]}\0D\0${paths[2]}\0T\0${paths[3]}\0`,
+  );
+
+  assert.equal(commits.length, 1);
+  assert.equal(commits[0].changes.length, paths.length);
+  assert.deepEqual(commits[0].changes, [
+    { status: "added", path: paths[0] },
+    { status: "modified", path: paths[1] },
+    { status: "deleted", path: paths[2] },
+    { status: "type-changed", path: paths[3] },
+  ]);
+});
+
 // covers: fossil/burst-analysis :: History activity model :: Future commit time is incomplete evidence
 test("reports future commits and leaves their temporal cluster unfinished", () => {
   const analysisTimestampMs = 10_000;
