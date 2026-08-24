@@ -2,6 +2,7 @@ import type { BurstReport, WorkspaceDebrisFinding } from "./types.js";
 
 /** Presentation modes that control workspace-debris table detail. */
 export type WorkspaceDebrisTableMode = "normal" | "verbose";
+export type BurstTableMode = "normal" | "verbose";
 
 /** A table row either keeps one finding or summarizes a large ignored directory. */
 export type WorkspaceDebrisTableRow =
@@ -24,6 +25,16 @@ export type BurstTableRow =
       readonly path: string;
       readonly score: number;
       readonly scoreBasis: "full" | "git-only";
+    }
+  | {
+      readonly kind: "finding-explanation";
+      readonly createdInBurst: boolean;
+      readonly burstCommits: number;
+      readonly postBurstCommits: number;
+      readonly referenceAvailability: "complete" | "unavailable";
+      readonly strongInboundReferences: number;
+      readonly candidateNeighbors: readonly string[];
+      readonly liveNeighbors: readonly string[];
     };
 
 function topLevelDirectory(path: string): string | undefined {
@@ -44,8 +55,39 @@ function utcDate(timestampMs: number): string {
   return new Date(timestampMs).toISOString().slice(0, 10);
 }
 
+function findingTableRows(burst: BurstReport, mode: BurstTableMode): BurstTableRow[] {
+  return burst.findings
+    .map((finding) => ({ ...finding, normalizedPath: normalizedPath(finding.path) }))
+    .sort((left, right) => right.score - left.score || comparePaths(left.normalizedPath, right.normalizedPath))
+    .flatMap((finding) => {
+      const row: BurstTableRow = {
+        kind: "finding",
+        path: finding.normalizedPath,
+        score: finding.score,
+        scoreBasis: finding.scoreBasis,
+      };
+      if (mode === "normal") return [row];
+      return [
+        row,
+        {
+          kind: "finding-explanation",
+          createdInBurst: finding.activity.createdInBurst,
+          burstCommits: finding.activity.burstCommits,
+          postBurstCommits: finding.activity.postBurstCommits,
+          referenceAvailability: finding.referenceAvailability,
+          strongInboundReferences: finding.strongInboundReferences,
+          candidateNeighbors: finding.candidateNeighbors.map(normalizedPath).sort(comparePaths),
+          liveNeighbors: finding.liveNeighbors.map(normalizedPath).sort(comparePaths),
+        },
+      ];
+    });
+}
+
 /** Produces deterministic burst, survivor, and candidate rows in their required table order. */
-export function burstTableRows(bursts: readonly BurstReport[]): readonly BurstTableRow[] {
+export function burstTableRows(
+  bursts: readonly BurstReport[],
+  mode: BurstTableMode = "normal",
+): readonly BurstTableRow[] {
   return [...bursts]
     .sort(
       (left, right) =>
@@ -66,10 +108,7 @@ export function burstTableRows(bursts: readonly BurstReport[]): readonly BurstTa
         .map((survivor) => normalizedPath(survivor.path))
         .sort(comparePaths)
         .map((path) => ({ kind: "survivor" as const, path })),
-      ...burst.findings
-        .map((finding) => ({ ...finding, normalizedPath: normalizedPath(finding.path) }))
-        .sort((left, right) => right.score - left.score || comparePaths(left.normalizedPath, right.normalizedPath))
-        .map(({ normalizedPath: path, score, scoreBasis }) => ({ kind: "finding" as const, path, score, scoreBasis })),
+      ...findingTableRows(burst, mode),
     ]);
 }
 

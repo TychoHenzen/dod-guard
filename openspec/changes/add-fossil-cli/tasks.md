@@ -253,8 +253,9 @@
 - [x] 6.4 Render each burst with its statistics and survivors before candidate score rows.
 <!-- covers: fossil/cli :: Table output :: Burst table keeps context together -->
 <!-- status: completed -->
-- [ ] 6.5 Add one evidence explanation line per verbose candidate.
+- [x] 6.5 Add one evidence explanation line per verbose candidate.
 <!-- covers: fossil/cli :: Table output :: Verbose table explains a candidate -->
+<!-- status: completed -->
 - [ ] 6.6 Suppress ANSI escapes whenever table output is redirected.
 <!-- covers: fossil/cli :: Table output :: Redirected table contains no ANSI escapes -->
 - [ ] 6.7 Serialize one schema-version-1 JSON document without table prose.
