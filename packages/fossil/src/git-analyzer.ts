@@ -100,13 +100,16 @@ function pathExtension(path: string): string {
 /** Keeps whole candidate identities for later burst and score calculations. */
 export function filterHistoryByExtensions(commits: readonly GitCommit[], extensions: ReadonlySet<string>): GitCommit[] {
   if (extensions.size === 0) return [...commits];
-  const selectedPaths = new Set(
-    resolveRenameActivities(commits)
+  const resolution = resolveLogicalActivities(commits);
+  const selectedIdentities = new Set(
+    resolution.activities
       .filter((activity) => extensions.has(pathExtension(activity.currentPath ?? activity.paths.at(-1) ?? "")))
-      .flatMap((activity) => activity.paths),
+      .map((activity) => activity.identity),
   );
   return commits.flatMap((commit) => {
-    const changes = commit.changes.filter((change) => selectedPaths.has(change.path));
+    const changes = commit.changes.filter((change) =>
+      selectedIdentities.has(resolution.identitiesByChange.get(change) ?? ""),
+    );
     return changes.length === 0 ? [] : [{ ...commit, changes }];
   });
 }
@@ -127,26 +130,27 @@ export function splitTemporalClusters(commits: readonly GitCommit[], gapMillisec
   return clusters;
 }
 
-function fileIdentities(commits: readonly GitCommit[]): Map<string, string> {
-  const identities = new Map<string, string>();
-  for (const activity of resolveRenameActivities(commits)) {
-    for (const path of activity.paths) identities.set(path, activity.identity);
-  }
-  return identities;
+interface LogicalIdentityResolution {
+  readonly activities: readonly LogicalFileActivity[];
+  readonly identitiesByChange: ReadonlyMap<GitFileChange, string>;
 }
 
-function commitFiles(commit: GitCommit, identities: ReadonlyMap<string, string>): Set<string> {
-  return new Set(commit.changes.map((change) => identities.get(change.path) ?? change.path));
+function fileIdentities(commits: readonly GitCommit[]): ReadonlyMap<GitFileChange, string> {
+  return resolveLogicalActivities(commits).identitiesByChange;
 }
 
-function partitionQualifies(commits: readonly GitCommit[], identities: ReadonlyMap<string, string>): boolean {
+function commitFiles(commit: GitCommit, identities: ReadonlyMap<GitFileChange, string>): Set<string> {
+  return new Set(commit.changes.map((change) => identities.get(change) ?? change.path));
+}
+
+function partitionQualifies(commits: readonly GitCommit[], identities: ReadonlyMap<GitFileChange, string>): boolean {
   return commits.length >= 5 && new Set(commits.flatMap((commit) => [...commitFiles(commit, identities)])).size >= 3;
 }
 
 function weightedSimilarity(
   commits: readonly GitCommit[],
   cut: number,
-  identities: ReadonlyMap<string, string>,
+  identities: ReadonlyMap<GitFileChange, string>,
 ): number {
   const touchedByCommit = commits.map((commit) => commitFiles(commit, identities));
   const touches = new Map<string, number>();
@@ -175,7 +179,7 @@ function selectChangePoint(
   commits: readonly GitCommit[],
   start: number,
   end: number,
-  identities: ReadonlyMap<string, string>,
+  identities: ReadonlyMap<GitFileChange, string>,
 ): ChangePointCandidate | undefined {
   const candidates: ChangePointCandidate[] = [];
   for (let cut = start + 5; cut <= end - 5; cut += 1) {
@@ -201,7 +205,7 @@ function splitChangePoints(
   commits: readonly GitCommit[],
   start: number,
   end: number,
-  identities: ReadonlyMap<string, string>,
+  identities: ReadonlyMap<GitFileChange, string>,
 ): GitCommit[][] {
   const candidate = selectChangePoint(commits, start, end, identities);
   if (!candidate) return [commits.slice(start, end)];
@@ -279,80 +283,88 @@ interface FileEvent {
   readonly commit: GitCommit;
 }
 
-function pathHistory(events: readonly FileEvent[]): string[] {
-  const nextByPath = new Map<string, string>();
-  const renamedTo = new Set<string>();
-  const paths = new Set<string>();
-  for (const { change } of events) {
-    paths.add(change.path);
-    if (change.status !== "renamed" || !change.previousPath) continue;
-    paths.add(change.previousPath);
-    nextByPath.set(change.previousPath, change.path);
-    renamedTo.add(change.path);
-  }
-  const ordered: string[] = [];
-  for (const start of [...nextByPath.keys()].filter((path) => !renamedTo.has(path)).sort()) {
-    let current: string | undefined = start;
-    while (current && !ordered.includes(current)) {
-      ordered.push(current);
-      current = nextByPath.get(current);
-    }
-  }
-  return [...ordered, ...[...paths].filter((path) => !ordered.includes(path)).sort()];
+interface LogicalIdentityState {
+  readonly identity: string;
+  readonly paths: string[];
+  readonly events: FileEvent[];
+  currentPath?: string;
 }
 
-function createRootResolver(commits: readonly GitCommit[]) {
-  const parent = new Map<string, string>();
-  const rootFor = (path: string): string => {
-    const knownParent = parent.get(path);
-    if (!knownParent) {
-      parent.set(path, path);
-      return path;
-    }
-    if (knownParent === path) return path;
-    const root = rootFor(knownParent);
-    parent.set(path, root);
-    return root;
+function resolveLogicalActivities(commits: readonly GitCommit[]): LogicalIdentityResolution {
+  const activeByPath = new Map<string, string>();
+  const generationsByPath = new Map<string, number>();
+  const identitiesByChange = new Map<GitFileChange, string>();
+  const states = new Map<string, LogicalIdentityState>();
+  const createIdentity = (path: string): string => {
+    const generation = (generationsByPath.get(path) ?? 0) + 1;
+    generationsByPath.set(path, generation);
+    const identity = generation === 1 ? path : `${path}#${generation}`;
+    states.set(identity, { identity, paths: [path], events: [], currentPath: path });
+    activeByPath.set(path, identity);
+    return identity;
   };
-  for (const commit of commits) {
+  const activeIdentity = (path: string): string => activeByPath.get(path) ?? createIdentity(path);
+  const record = (identity: string, change: GitFileChange, commit: GitCommit): void => {
+    const state = states.get(identity);
+    if (!state) throw new Error(`Missing logical identity: ${identity}`);
+    state.events.push({ change, commit });
+    identitiesByChange.set(change, identity);
+    if (change.status === "renamed" && change.previousPath && state.paths.at(-1) !== change.previousPath)
+      state.paths.push(change.previousPath);
+    if (state.paths.at(-1) !== change.path) state.paths.push(change.path);
+  };
+
+  for (const commit of sortCommitsChronologically(commits)) {
     for (const change of commit.changes) {
-      rootFor(change.path);
-      if (change.status === "renamed" && change.previousPath)
-        parent.set(rootFor(change.path), rootFor(change.previousPath));
+      if (change.status === "renamed") {
+        const sourcePath = change.previousPath ?? change.path;
+        const identity = activeIdentity(sourcePath);
+        activeByPath.delete(sourcePath);
+        activeByPath.set(change.path, identity);
+        const state = states.get(identity);
+        if (state) state.currentPath = change.path;
+        record(identity, change, commit);
+        continue;
+      }
+      if (change.status === "copied") {
+        const identity = createIdentity(change.path);
+        record(identity, change, commit);
+        continue;
+      }
+      if (change.status === "added") {
+        const identity = createIdentity(change.path);
+        record(identity, change, commit);
+        continue;
+      }
+      const identity = activeIdentity(change.path);
+      record(identity, change, commit);
+      if (change.status === "deleted") {
+        activeByPath.delete(change.path);
+        const state = states.get(identity);
+        if (state) state.currentPath = undefined;
+      }
     }
   }
-  return rootFor;
+  return {
+    identitiesByChange,
+    activities: [...states.values()].map((state) => {
+      const timestamps = state.events.map(({ commit }) => commit.committerTimestampMs);
+      return {
+        identity: state.identity,
+        currentPath: state.currentPath,
+        paths: state.paths,
+        firstCommitTimestampMs: Math.min(...timestamps),
+        lastCommitTimestampMs: Math.max(...timestamps),
+        commitCount: new Set(state.events.map(({ commit }) => commit.hash)).size,
+        created: state.events.some(({ change }) => change.status === "added" || change.status === "copied"),
+        deleted: state.currentPath === undefined,
+        existsAtHead: state.currentPath !== undefined,
+      };
+    }),
+  };
 }
 
-/** Collapses Git-reported rename chains while keeping copies and unrelated paths distinct. */
+/** Collapses rename chains while keeping copies and path recreations as distinct identities. */
 export function resolveRenameActivities(commits: readonly GitCommit[]): LogicalFileActivity[] {
-  const rootFor = createRootResolver(commits);
-  const eventsByIdentity = new Map<string, FileEvent[]>();
-  for (const commit of commits) {
-    for (const change of commit.changes) {
-      const identity = rootFor(change.path);
-      const events = eventsByIdentity.get(identity) ?? [];
-      events.push({ change, commit });
-      eventsByIdentity.set(identity, events);
-    }
-  }
-  return [...eventsByIdentity.entries()].map(([identity, events]) => {
-    const paths = pathHistory(events);
-    const timestamps = events.map(({ commit }) => commit.committerTimestampMs);
-    const latest = events.reduce((current, event) =>
-      event.commit.committerTimestampMs > current.commit.committerTimestampMs ? event : current,
-    );
-    const deleted = latest.change.status === "deleted";
-    return {
-      identity,
-      currentPath: deleted ? undefined : paths.at(-1),
-      paths,
-      firstCommitTimestampMs: Math.min(...timestamps),
-      lastCommitTimestampMs: Math.max(...timestamps),
-      commitCount: new Set(events.map(({ commit }) => commit.hash)).size,
-      created: events.some(({ change }) => change.status === "added"),
-      deleted,
-      existsAtHead: !deleted,
-    };
-  });
+  return [...resolveLogicalActivities(commits).activities];
 }
