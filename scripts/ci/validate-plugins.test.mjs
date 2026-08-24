@@ -6,9 +6,12 @@
 
 import { deepStrictEqual, match, strictEqual } from "node:assert";
 import { rmSync } from "node:fs";
+import { join } from "node:path";
 import { after, describe, it } from "node:test";
+import { cliWorkspaceTree, invalidPluginWorkspaceTree } from "./fixtures/cli-workspace.mjs";
 import { buildPkg, goodTree } from "./fixtures/plugin-tracked.mjs";
 import { createPluginChecks } from "./lib/plugin-checks.mjs";
+import { discoverPluginWorkspaces } from "./lib/workspace-discovery.mjs";
 
 const temps = [];
 after(() => {
@@ -17,6 +20,12 @@ after(() => {
 
 function tree() {
   const root = goodTree();
+  temps.push(root);
+  return root;
+}
+
+function fixture(factory) {
+  const root = factory();
   temps.push(root);
   return root;
 }
@@ -62,5 +71,21 @@ describe("validate-plugins: git-tracked rules", () => {
     const violations = collect(pkg, isTracked);
     strictEqual(violations.length, 1, JSON.stringify(violations));
     match(violations[0].message, /hook command targets untracked file/);
+  });
+});
+
+describe("validate-plugins: workspace discovery", () => {
+  it("skips a CLI-only workspace that has no plugin manifest", () => {
+    const root = fixture(cliWorkspaceTree);
+    deepStrictEqual(discoverPluginWorkspaces(join(root, "packages")), []);
+  });
+
+  it("includes a workspace that declares a plugin manifest and validates it", () => {
+    const root = fixture(invalidPluginWorkspaceTree);
+    const packages = discoverPluginWorkspaces(join(root, "packages"));
+    strictEqual(packages.length, 1);
+    const violations = collect(packages[0], alwaysTracked);
+    match(violations.map((violation) => violation.message).join("\n"), /Claude Code cannot start the MCP server/);
+    match(violations.map((violation) => violation.message).join("\n"), /dist\/bundle\.js missing/);
   });
 });

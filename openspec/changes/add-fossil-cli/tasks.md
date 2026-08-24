@@ -6,7 +6,8 @@
 <!-- status: completed -->
 - [x] 1.3 Add reusable temporary-repository, recorded-history, source-tree, output-capture, and deterministic-clock test fixtures.
 <!-- status: completed -->
-- [ ] 1.4 Change plugin validation to identify plugin workspaces by manifest, add passing and failing CLI-workspace fixtures, and keep repo-wide shipped-content checks active.
+- [x] 1.4 Change plugin validation to identify plugin workspaces by manifest, add passing and failing CLI-workspace fixtures, and keep repo-wide shipped-content checks active.
+<!-- status: completed -->
 - [ ] 1.5 Add fossil to the root lockfile, workspace build and bundle flow, coverage ratchet, test-presence gate, Biome scope, structural scan, and a CLI-specific package-integrity smoke check.
 
 ## 2. Git activity and burst analysis

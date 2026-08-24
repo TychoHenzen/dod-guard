@@ -12,8 +12,7 @@
 //   1  violations found
 //   3  usage error
 
-import { existsSync, statSync } from "node:fs";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   checkGitTracked,
@@ -22,9 +21,9 @@ import {
   checkShippedContent,
   createTrackedPredicate,
 } from "./lib/content-checks.mjs";
-import { listDir } from "./lib/fs-utils.mjs";
 import { createPluginChecks } from "./lib/plugin-checks.mjs";
 import { checkStandalonePlugins, loadStandalonePlugins } from "./lib/standalone-checks.mjs";
+import { discoverPluginWorkspaces } from "./lib/workspace-discovery.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PACKAGES_DIR = join(ROOT, "packages");
@@ -33,20 +32,6 @@ const violations = [];
 
 function report(file, message) {
   violations.push({ file: relative(ROOT, file).replace(/\\/g, "/") || ".", message });
-}
-
-function loadPackages() {
-  return listDir(PACKAGES_DIR, (p) => statSync(p).isDirectory())
-    .map((name) => {
-      const dir = join(PACKAGES_DIR, name);
-      return {
-        name,
-        dir,
-        skills: listDir(join(dir, "skills"), (p) => statSync(p).isDirectory()),
-        agents: listDir(join(dir, "agents"), (p) => p.endsWith(".md")).map((f) => basename(f, ".md")),
-      };
-    })
-    .filter((pkg) => existsSync(join(pkg.dir, "package.json")));
 }
 
 function summarize(packages, standalone, counts) {
@@ -68,10 +53,10 @@ function emitResult(scanned) {
 }
 
 function main() {
-  const packages = loadPackages();
+  const packages = discoverPluginWorkspaces(PACKAGES_DIR);
   const standalone = loadStandalonePlugins(ROOT);
   if (packages.length === 0) {
-    process.stderr.write("no packages found under packages/\n");
+    process.stderr.write("no plugin packages found under packages/\n");
     return 3;
   }
 
