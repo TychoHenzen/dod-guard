@@ -205,8 +205,9 @@
 - [x] 5.4 Use modification time when creation time is unavailable or unreliable.
 <!-- covers: fossil/workspace-debris :: Portable age evidence :: Unavailable creation time does not block analysis -->
 <!-- status: completed -->
-- [ ] 5.5 Omit an old workspace file when inbound usage evidence is discovered.
+- [x] 5.5 Omit an old workspace file when inbound usage evidence is discovered.
 <!-- covers: fossil/workspace-debris :: Usage evidence search :: Referenced old file is omitted -->
+<!-- status: completed -->
 - [ ] 5.6 Report an old workspace file with no discovered inbound usage evidence.
 <!-- covers: fossil/workspace-debris :: Usage evidence search :: Unreferenced old file is reported -->
 - [ ] 5.7 Exclude dependency-store contents from workspace inspection and findings.
