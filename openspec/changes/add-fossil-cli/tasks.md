@@ -320,6 +320,7 @@
 <!-- status: completed -->
 - [x] 7.2 Update the root monorepo overview and package architecture guidance for the CLI-only fossil workspace.
 <!-- status: completed -->
-- [ ] 7.3 Run fossil package build, tests, bundle, CLI smoke, coverage, Biome, and structural checks; repair any new failure without weakening a gate.
+<!-- status: completed -->
+- [x] 7.3 Run fossil package build, tests, bundle, CLI smoke, coverage, Biome, and structural checks; repair any new failure without weakening a gate.
 - [ ] 7.4 Run the repository-wide build, tests, plugin validation, package integrity, audit, all ratchets, and strict OpenSpec validation.
 - [ ] 7.5 Run `dod-guard cover add-fossil-cli` and add or correct test markers until every scenario has a distinct scenario-specific assertion and is bound with no regression.

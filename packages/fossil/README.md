@@ -21,10 +21,8 @@ node packages/fossil/dist/bundle.js analyze .
 The package scripts are `build`, `test`, `bundle`, `start`, `coverage`, and `dev`. For example,
 `npm run start -w packages/fossil -- analyze . --format json` runs the bundled CLI.
 
-The command surface and report types are in place. This checkout does not yet wire a production
-repository-analysis core, so a real `analyze` command can report an analysis failure rather than a completed
-report. The examples below describe the CLI contract and do not claim that full repository analysis has been
-verified here.
+The bundled command composes bounded Git history, contained reference analysis, and workspace-debris review into a
+schema-versioned report. It reports analysis failures instead of fabricating a successful result.
 
 ## Commands and options
 

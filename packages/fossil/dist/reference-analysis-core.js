@@ -1,0 +1,811 @@
+import { posix } from "node:path";
+const MODULE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+const STATIC_IMPORT = /\bimport\s+(?:[^"'`;\r\n]*?\s+from\s+)?(["'])([^"'\r\n]+)\1/g;
+const REQUIRE_CALL = /\brequire\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
+const DYNAMIC_IMPORT = /\bimport\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
+const CSHARP_USING = /^\s*using\s+(?!static\b)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*;\s*$/gm;
+const RUST_MODULE = /^\s*mod\s+([A-Za-z_]\w*)\s*;\s*$/gm;
+const RUST_CRATE_USE = /^\s*use\s+crate::([A-Za-z_]\w*(?:::[A-Za-z_]\w*)*)\s*;\s*$/gm;
+/** Default hard cap for one source retained by reference analysis. */
+export const DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES = 1_048_576;
+/** Default hard cap for all source content retained by one reference analysis. */
+export const DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES = 268_435_456;
+function compareText(left, right) {
+    return left < right ? -1 : left > right ? 1 : 0;
+}
+function sourceSpan(content, start, end) {
+    const lineStart = content.lastIndexOf("\n", start - 1) + 1;
+    return {
+        start,
+        end,
+        line: content.slice(0, start).split("\n").length,
+        column: start - lineStart + 1,
+    };
+}
+function targetCandidates(sourcePath, specifier) {
+    if (!(specifier.startsWith("./") || specifier.startsWith("../")))
+        return [specifier];
+    const literal = posix.normalize(posix.join(posix.dirname(sourcePath), specifier));
+    return [
+        literal,
+        ...MODULE_EXTENSIONS.map((extension) => `${literal}${extension}`),
+        ...MODULE_EXTENSIONS.map((extension) => `${literal}/index${extension}`),
+    ];
+}
+function normalizedPath(path) {
+    return posix.normalize(path.replaceAll("\\", "/"));
+}
+function pathIsWithin(root, candidate) {
+    const normalizedRoot = normalizedPath(root).replace(/\/$/, "");
+    const normalizedCandidate = normalizedPath(candidate);
+    const compareRoot = /^[A-Za-z]:\//.test(normalizedRoot) ? normalizedRoot.toLowerCase() : normalizedRoot;
+    const compareCandidate = /^[A-Za-z]:\//.test(normalizedCandidate)
+        ? normalizedCandidate.toLowerCase()
+        : normalizedCandidate;
+    return compareCandidate === compareRoot || compareCandidate.startsWith(`${compareRoot}/`);
+}
+function isOutsideRepositoryPath(path) {
+    const normalized = normalizedPath(path);
+    return (normalized === ".." || normalized.startsWith("../") || normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized));
+}
+function outsideBoundaryWarning(sourcePath) {
+    return {
+        code: "reference_outside_boundary",
+        message: "Relative reference target is outside the repository boundary.",
+        path: sourcePath,
+    };
+}
+function parsedModuleReferences(source) {
+    if (!(source.language === "typescript" || source.language === "javascript"))
+        return [];
+    const patterns = [
+        ["import", STATIC_IMPORT],
+        ["require", REQUIRE_CALL],
+        ["dynamic-import", DYNAMIC_IMPORT],
+    ];
+    const references = [];
+    for (const [kind, pattern] of patterns) {
+        pattern.lastIndex = 0;
+        for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
+            const quote = match[1];
+            const specifier = match[2];
+            if (!(quote && specifier && match.index !== undefined))
+                continue;
+            const start = match.index + match[0].lastIndexOf(`${quote}${specifier}${quote}`) + 1;
+            const candidates = targetCandidates(source.path, specifier);
+            references.push({
+                sourcePath: source.path,
+                targetCandidates: candidates,
+                span: sourceSpan(source.content, start, start + specifier.length),
+                language: source.language,
+                kind,
+                resolution: specifier.startsWith(".") ? "unresolved" : "external",
+                strength: "strong",
+            });
+        }
+    }
+    return references.sort((left, right) => compareText(left.sourcePath, right.sourcePath) ||
+        left.span.start - right.span.start ||
+        compareText(left.kind, right.kind));
+}
+function braceDepthBefore(content, end) {
+    let depth = 0;
+    for (const character of content.slice(0, end)) {
+        if (character === "{")
+            depth += 1;
+        if (character === "}")
+            depth -= 1;
+    }
+    return depth;
+}
+function parsedCsharpReferences(source, currentSources) {
+    if (source.language !== "csharp")
+        return [];
+    const references = [];
+    CSHARP_USING.lastIndex = 0;
+    for (let match = CSHARP_USING.exec(source.content); match; match = CSHARP_USING.exec(source.content)) {
+        const namespace = match[1];
+        if (!(namespace && match.index !== undefined) || braceDepthBefore(source.content, match.index) > 1)
+            continue;
+        const suffix = `${namespace.replaceAll(".", "/")}.cs`;
+        const matches = currentSources
+            .filter((candidate) => candidate.language === "csharp" && candidate.path.endsWith(suffix))
+            .map((candidate) => candidate.path)
+            .sort(compareText);
+        const start = match.index + match[0].indexOf(namespace);
+        references.push({
+            sourcePath: source.path,
+            targetCandidates: matches.length === 0 ? [suffix] : matches,
+            targetPath: matches.length === 1 ? matches[0] : undefined,
+            span: sourceSpan(source.content, start, start + namespace.length),
+            language: "csharp",
+            kind: "csharp-using",
+            resolution: matches.length === 1 ? "resolved" : "unresolved",
+            strength: "strong",
+        });
+    }
+    return references;
+}
+function nearestCargoSourceRoot(path) {
+    if (path.startsWith("src/"))
+        return "src";
+    const rootStart = path.lastIndexOf("/src/");
+    return rootStart === -1 ? undefined : path.slice(0, rootStart + 4);
+}
+function parsedRustReferences(source) {
+    if (source.language !== "rust")
+        return [];
+    const patterns = [
+        [
+            "rust-mod",
+            RUST_MODULE,
+            (name) => {
+                const sibling = posix.join(posix.dirname(source.path), name);
+                return [`${sibling}.rs`, `${sibling}/mod.rs`];
+            },
+        ],
+        [
+            "rust-use",
+            RUST_CRATE_USE,
+            (name) => {
+                const root = nearestCargoSourceRoot(source.path);
+                const module = name.replaceAll("::", "/");
+                return root ? [`${root}/${module}.rs`, `${root}/${module}/mod.rs`] : [];
+            },
+        ],
+    ];
+    const references = [];
+    for (const [kind, pattern, candidatesFor] of patterns) {
+        pattern.lastIndex = 0;
+        for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
+            const name = match[1];
+            if (!(name && match.index !== undefined))
+                continue;
+            const start = match.index + match[0].indexOf(name);
+            references.push({
+                sourcePath: source.path,
+                targetCandidates: candidatesFor(name),
+                span: sourceSpan(source.content, start, start + name.length),
+                language: "rust",
+                kind,
+                resolution: "unresolved",
+                strength: "strong",
+            });
+        }
+    }
+    return references.sort((left, right) => left.span.start - right.span.start || compareText(left.kind, right.kind));
+}
+function tryCatchRanges(content) {
+    const ranges = [];
+    const stack = [];
+    let pendingBody;
+    let catchParameterDepth = 0;
+    let quote = "";
+    let lineComment = false;
+    let blockComment = false;
+    for (let index = 0; index < content.length; index += 1) {
+        const character = content[index];
+        const next = content[index + 1];
+        if (lineComment) {
+            if (character === "\n")
+                lineComment = false;
+            continue;
+        }
+        if (blockComment) {
+            if (character === "*" && next === "/") {
+                blockComment = false;
+                index += 1;
+            }
+            continue;
+        }
+        if (quote) {
+            if (character === "\\")
+                index += 1;
+            else if (character === quote)
+                quote = "";
+            continue;
+        }
+        if (character === "/" && next === "/") {
+            lineComment = true;
+            index += 1;
+            continue;
+        }
+        if (character === "/" && next === "*") {
+            blockComment = true;
+            index += 1;
+            continue;
+        }
+        if (character === '"' || character === "'" || character === "`") {
+            quote = character;
+            continue;
+        }
+        if (/[A-Za-z_$]/.test(character)) {
+            let end = index + 1;
+            while (/[\w$]/.test(content[end] ?? ""))
+                end += 1;
+            const word = content.slice(index, end);
+            if (word === "try" || word === "catch") {
+                pendingBody = word;
+                catchParameterDepth = 0;
+            }
+            index = end - 1;
+            continue;
+        }
+        if (pendingBody === "catch" && character === "(") {
+            catchParameterDepth += 1;
+            continue;
+        }
+        if (pendingBody === "catch" && character === ")" && catchParameterDepth > 0) {
+            catchParameterDepth -= 1;
+            continue;
+        }
+        if (character === "{") {
+            const kind = pendingBody === "try" || (pendingBody === "catch" && catchParameterDepth === 0);
+            stack.push({ kind, start: index });
+            if (kind)
+                pendingBody = undefined;
+        }
+        else if (character === "}") {
+            const opened = stack.pop();
+            if (opened?.kind)
+                ranges.push([opened.start, index]);
+        }
+    }
+    return ranges;
+}
+function syntaxView(content) {
+    const characters = content.split("");
+    const comments = [];
+    let quote = "";
+    for (let index = 0; index < content.length; index += 1) {
+        const character = content[index];
+        const next = content[index + 1];
+        if (quote) {
+            characters[index] = " ";
+            if (character === "\\") {
+                characters[index + 1] = " ";
+                index += 1;
+            }
+            else if (character === quote)
+                quote = "";
+            continue;
+        }
+        if (character === '"' || character === "'" || character === "`") {
+            quote = character;
+            characters[index] = " ";
+            continue;
+        }
+        if (character !== "/" || !(next === "/" || next === "*"))
+            continue;
+        const start = index;
+        const lineComment = next === "/";
+        index += 2;
+        while (index < content.length &&
+            (lineComment ? content[index] !== "\n" : !(content[index] === "*" && content[index + 1] === "/"))) {
+            index += 1;
+        }
+        const end = lineComment ? index : Math.min(content.length, index + 2);
+        comments.push({ start, end, text: content.slice(start, end) });
+        for (let offset = start; offset < end; offset += 1) {
+            if (characters[offset] !== "\n")
+                characters[offset] = " ";
+        }
+        index = end - 1;
+    }
+    return { code: characters.join(""), comments };
+}
+function hasFallbackToken(text) {
+    return /\b(?:fallback|legacy|old|default)\b/i.test(text);
+}
+function balancedClose(code, open, opening, closing) {
+    let depth = 0;
+    for (let index = open; index < code.length; index += 1) {
+        if (code[index] === opening)
+            depth += 1;
+        if (code[index] === closing && --depth === 0)
+            return index;
+    }
+    return undefined;
+}
+function nextNonWhitespace(code, start) {
+    let index = start;
+    while (/\s/.test(code[index] ?? ""))
+        index += 1;
+    return index;
+}
+function hasLeadingFallbackComment(view, position) {
+    return view.comments.some((comment) => comment.end <= position && /^\s*$/.test(view.code.slice(comment.end, position)) && hasFallbackToken(comment.text));
+}
+function conditionalFallbackRanges(view) {
+    const ranges = [];
+    const matcher = /\bif\b/g;
+    for (let match = matcher.exec(view.code); match; match = matcher.exec(view.code)) {
+        const conditionOpen = nextNonWhitespace(view.code, (match.index ?? 0) + match[0].length);
+        if (view.code[conditionOpen] !== "(")
+            continue;
+        const conditionClose = balancedClose(view.code, conditionOpen, "(", ")");
+        if (conditionClose === undefined)
+            continue;
+        const bodyOpen = nextNonWhitespace(view.code, conditionClose + 1);
+        if (view.code[bodyOpen] !== "{")
+            continue;
+        const bodyClose = balancedClose(view.code, bodyOpen, "{", "}");
+        if (bodyClose === undefined)
+            continue;
+        const fallbackIf = hasFallbackToken(view.code.slice(conditionOpen + 1, conditionClose)) ||
+            hasLeadingFallbackComment(view, match.index ?? 0);
+        if (fallbackIf)
+            ranges.push([bodyOpen, bodyClose]);
+        const elseStart = nextNonWhitespace(view.code, bodyClose + 1);
+        if (view.code.slice(elseStart, elseStart + 4) !== "else")
+            continue;
+        const elseBodyOpen = nextNonWhitespace(view.code, elseStart + 4);
+        if (view.code[elseBodyOpen] !== "{")
+            continue;
+        const elseBodyClose = balancedClose(view.code, elseBodyOpen, "{", "}");
+        if (elseBodyClose !== undefined && (fallbackIf || hasLeadingFallbackComment(view, elseStart)))
+            ranges.push([elseBodyOpen, elseBodyClose]);
+    }
+    return ranges;
+}
+function fallbackOperandRanges(code) {
+    const ranges = [];
+    const matcher = /\|\||\?\?/g;
+    for (let match = matcher.exec(code); match; match = matcher.exec(code)) {
+        const start = nextNonWhitespace(code, (match.index ?? 0) + match[0].length);
+        let parentheses = 0;
+        let brackets = 0;
+        let braces = 0;
+        let end = start;
+        for (; end < code.length; end += 1) {
+            const character = code[end];
+            if (character === "(")
+                parentheses += 1;
+            else if (character === ")" && parentheses-- === 0)
+                break;
+            else if (character === "[")
+                brackets += 1;
+            else if (character === "]" && brackets-- === 0)
+                break;
+            else if (character === "{")
+                braces += 1;
+            else if (character === "}" && braces-- === 0)
+                break;
+            else if (parentheses === 0 &&
+                brackets === 0 &&
+                braces === 0 &&
+                (character === ";" || character === "," || character === "\n"))
+                break;
+        }
+        if (end > start)
+            ranges.push([start - 1, end]);
+    }
+    return ranges;
+}
+function localImportBindings(declaration) {
+    const bindings = new Set();
+    const add = (binding) => {
+        if (binding && /^[A-Za-z_$][\w$]*$/.test(binding))
+            bindings.add(binding);
+    };
+    const defaultBinding = /^\s*import\s+([A-Za-z_$][\w$]*)\s*(?:,|from\b)/.exec(declaration)?.[1];
+    add(defaultBinding);
+    add(/\*\s+as\s+([A-Za-z_$][\w$]*)/.exec(declaration)?.[1]);
+    const namedBindings = /\{([^}]*)\}/.exec(declaration)?.[1];
+    for (const namedBinding of namedBindings?.split(",") ?? []) {
+        const [imported, local] = namedBinding
+            .trim()
+            .replace(/^type\s+/, "")
+            .split(/\s+as\s+/);
+        add(local ?? imported);
+    }
+    return [...bindings];
+}
+function declarationRange(content, position) {
+    const start = content.lastIndexOf("\n", position) + 1;
+    const nextNewline = content.indexOf("\n", position);
+    return [start, nextNewline === -1 ? content.length : nextNewline];
+}
+function csharpGuardRanges(view) {
+    const ranges = [];
+    const starts = [];
+    const directives = /^\s*#(if|endif)\b.*$/gm;
+    for (let match = directives.exec(view.code); match; match = directives.exec(view.code)) {
+        if (match[1] === "if")
+            starts.push(match.index ?? 0);
+        else {
+            const start = starts.pop();
+            if (start !== undefined)
+                ranges.push([start, (match.index ?? 0) + match[0].length]);
+        }
+    }
+    return ranges;
+}
+function rustGuardRanges(view) {
+    const ranges = [];
+    const attributes = /#\s*\[\s*cfg\s*\(/g;
+    for (let match = attributes.exec(view.code); match; match = attributes.exec(view.code)) {
+        const attributeStart = match.index ?? 0;
+        const conditionOpen = view.code.indexOf("(", attributeStart);
+        const conditionClose = balancedClose(view.code, conditionOpen, "(", ")");
+        if (conditionClose === undefined)
+            continue;
+        const attributeEnd = nextNonWhitespace(view.code, conditionClose + 1);
+        if (view.code[attributeEnd] !== "]")
+            continue;
+        const itemStart = nextNonWhitespace(view.code, attributeEnd + 1);
+        let delimiter = itemStart;
+        while (delimiter < view.code.length && view.code[delimiter] !== "{" && view.code[delimiter] !== ";")
+            delimiter += 1;
+        if (view.code[delimiter] === "{") {
+            const itemEnd = balancedClose(view.code, delimiter, "{", "}");
+            if (itemEnd !== undefined)
+                ranges.push([itemStart, itemEnd]);
+        }
+        else if (view.code[delimiter] === ";")
+            ranges.push([itemStart, delimiter]);
+    }
+    return ranges;
+}
+function guardSymbol(reference, source) {
+    const declared = source.content.slice(reference.span.start, reference.span.end);
+    const separator = reference.kind === "csharp-using" ? "." : "::";
+    return (declared.split(separator).at(-1) ??
+        (reference.targetPath ?? reference.targetCandidates[0] ?? "").split(/[/.]/).at(-2) ??
+        "");
+}
+function strengthForReference(reference, sources) {
+    const source = sources.find((candidate) => candidate.path === reference.sourcePath);
+    if (!source)
+        return "strong";
+    if (reference.kind === "csharp-using" || reference.kind === "rust-mod" || reference.kind === "rust-use") {
+        const symbol = guardSymbol(reference, source);
+        const view = syntaxView(source.content);
+        const [declarationStart, declarationEnd] = declarationRange(source.content, reference.span.start);
+        const uses = [...source.content.matchAll(new RegExp(`\\b${symbol}\\b`, "g"))]
+            .map((match) => match.index ?? -1)
+            .filter((index) => (index < declarationStart || index >= declarationEnd) && view.code[index] === source.content[index]);
+        const guards = reference.kind === "csharp-using" ? csharpGuardRanges(view) : rustGuardRanges(view);
+        return uses.length > 0 && uses.every((index) => guards.some(([start, end]) => index > start && index < end))
+            ? "weak"
+            : "strong";
+    }
+    if (reference.kind !== "import")
+        return "strong";
+    const declarationStart = source.content.lastIndexOf("import", reference.span.start);
+    const semicolon = source.content.indexOf(";", reference.span.end);
+    const newline = source.content.indexOf("\n", reference.span.end);
+    const declarationEnd = semicolon === -1 ? newline : newline === -1 ? semicolon : Math.min(semicolon, newline);
+    const declaration = source.content.slice(declarationStart, declarationEnd + 1);
+    const bindings = localImportBindings(declaration);
+    if (bindings.length === 0)
+        return "strong";
+    const view = syntaxView(source.content);
+    const uses = bindings.flatMap((binding) => [
+        ...source.content.matchAll(new RegExp(`(^|[^A-Za-z0-9_$])(${binding.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})(?![A-Za-z0-9_$])`, "g")),
+    ]
+        .map((match) => (match.index ?? -1) + (match[1]?.length ?? 0))
+        .filter((index) => (index < declarationStart || index > declarationEnd) && view.code[index] === source.content[index]));
+    const regions = [
+        ...tryCatchRanges(source.content),
+        ...conditionalFallbackRanges(view),
+        ...fallbackOperandRanges(view.code),
+    ];
+    return uses.length > 0 && uses.every((index) => regions.some(([start, end]) => index > start && index < end))
+        ? "weak"
+        : "strong";
+}
+function referenceGraph(parsed, sources) {
+    const paths = new Set(sources.map((source) => source.path));
+    const resolved = parsed.map((reference) => ({
+        reference,
+        targetPath: reference.targetPath ??
+            (reference.language === "csharp"
+                ? undefined
+                : reference.targetCandidates.find((candidate) => paths.has(candidate))),
+    }));
+    const edges = resolved
+        .filter((entry) => entry.targetPath !== undefined)
+        .map(({ reference, targetPath }) => ({
+        sourcePath: reference.sourcePath,
+        targetPath: targetPath ?? "",
+        language: reference.language,
+        kind: reference.kind,
+        strength: strengthForReference(reference, sources),
+        span: reference.span,
+    }));
+    const unresolved = resolved
+        .filter((entry) => entry.targetPath === undefined)
+        .map(({ reference: { sourcePath, targetCandidates: candidates, language, kind, span, resolution } }) => ({
+        sourcePath,
+        targetCandidates: candidates,
+        language,
+        kind,
+        span,
+        resolution: resolution === "external" ? "external" : "unresolved",
+    }));
+    return { edges, unresolved, complete: true, unavailablePaths: [] };
+}
+/** Parses and resolves supported TypeScript and JavaScript module references from current source inventory. */
+export function analyzeJavaScriptReferences(sources) {
+    return referenceGraph(sources.flatMap(parsedModuleReferences), sources);
+}
+/** Parses JavaScript references while rejecting relative targets outside the canonical repository boundary. */
+export function analyzeJavaScriptReferencesWithinBoundary(sources, boundary) {
+    const inventory = new Set(sources.map((source) => source.path));
+    const warnings = new Map();
+    const safeReferences = sources.flatMap(parsedModuleReferences).filter((reference) => {
+        if (reference.resolution !== "unresolved" || !reference.targetCandidates[0])
+            return true;
+        const literalTarget = reference.targetCandidates[0];
+        if (isOutsideRepositoryPath(literalTarget)) {
+            warnings.set(reference.sourcePath, outsideBoundaryWarning(reference.sourcePath));
+            return false;
+        }
+        const resolvedTarget = reference.targetCandidates.find((candidate) => inventory.has(candidate));
+        if (!resolvedTarget)
+            return true;
+        const canonicalTarget = boundary.canonicalize(posix.join(boundary.canonicalRepositoryRoot, resolvedTarget));
+        if (pathIsWithin(boundary.canonicalRepositoryRoot, canonicalTarget))
+            return true;
+        warnings.set(reference.sourcePath, outsideBoundaryWarning(reference.sourcePath));
+        return false;
+    });
+    return {
+        graph: referenceGraph(safeReferences, sources),
+        warnings: [...warnings.values()].sort((left, right) => compareText(left.path ?? "", right.path ?? "")),
+    };
+}
+/** Parses and resolves the currently supported TypeScript, JavaScript, C#, and Rust reference forms. */
+export function analyzeReferences(sources) {
+    return referenceGraph(sources.flatMap((source) => [
+        ...parsedModuleReferences(source),
+        ...parsedCsharpReferences(source, sources),
+        ...parsedRustReferences(source),
+    ]), sources);
+}
+/** Regrades current edges between two fossil candidates before scoring. */
+export function regradeVestigialEdges(graph, candidatePaths) {
+    return {
+        ...graph,
+        edges: graph.edges.map((edge) => candidatePaths.has(edge.sourcePath) && candidatePaths.has(edge.targetPath)
+            ? { ...edge, strength: "vestigial" }
+            : { ...edge }),
+    };
+}
+/** Marks candidate reference evidence unavailable when unresolved paths could target it. */
+export function markUnresolvedCandidateEvidence(graph, candidatePaths) {
+    const normalize = (path) => path
+        .replaceAll("\\", "/")
+        .replace(/\/(?:index)(?:\.[^/]+)?$/, "")
+        .replace(/\.[^/]+$/, "");
+    const candidates = [...candidatePaths];
+    const basenameCounts = new Map();
+    for (const path of candidates) {
+        const basename = normalize(path).split("/").at(-1) ?? "";
+        basenameCounts.set(basename, (basenameCounts.get(basename) ?? 0) + 1);
+    }
+    const unavailable = new Set(graph.unavailablePaths);
+    for (const unresolved of graph.unresolved) {
+        if (unresolved.resolution !== "unresolved")
+            continue;
+        for (const target of unresolved.targetCandidates) {
+            const normalizedTarget = normalize(target);
+            if (!normalizedTarget)
+                continue;
+            const basename = normalizedTarget.split("/").at(-1) ?? "";
+            for (const candidate of candidates) {
+                const normalizedCandidate = normalize(candidate);
+                const relevant = normalizedTarget.includes("/")
+                    ? normalizedCandidate === normalizedTarget || normalizedCandidate.endsWith(`/${normalizedTarget}`)
+                    : normalizedCandidate === normalizedTarget ||
+                        (basenameCounts.get(basename) === 1 && normalizedCandidate.endsWith(`/${basename}`));
+                if (relevant)
+                    unavailable.add(candidate);
+            }
+        }
+    }
+    const unavailablePaths = [...unavailable].sort(compareText);
+    return { ...graph, complete: graph.complete && unavailablePaths.length === 0, unavailablePaths };
+}
+/** Produces normalized unavailable evidence for candidates with no reference backend. */
+export function unsupportedCandidateReferenceGraph(candidates) {
+    const unavailablePaths = [
+        ...new Set(candidates.filter((candidate) => candidate.language === "unsupported").map((candidate) => candidate.path)),
+    ].sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+    return {
+        edges: [],
+        unresolved: [],
+        complete: unavailablePaths.length === 0,
+        unavailablePaths,
+    };
+}
+/** Reads eligible sources without letting one unreadable file stop later parsing work. */
+export function readReferenceSources(sources, readSource) {
+    const readableSources = [];
+    const unavailablePaths = [];
+    const warnings = [];
+    for (const source of sources) {
+        try {
+            readableSources.push({ ...source, content: readSource(source) });
+        }
+        catch {
+            unavailablePaths.push(source.path);
+            warnings.push({
+                code: "reference_unreadable",
+                message: "Reference source could not be read.",
+                path: source.path,
+            });
+        }
+    }
+    unavailablePaths.sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+    warnings.sort((left, right) => (left.path ?? "") < (right.path ?? "") ? -1 : (left.path ?? "") > (right.path ?? "") ? 1 : 0);
+    return {
+        graph: {
+            edges: [],
+            unresolved: [],
+            complete: unavailablePaths.length === 0,
+            unavailablePaths,
+        },
+        sources: readableSources,
+        warnings,
+    };
+}
+/** Reads sources below a per-file byte limit while preserving unavailable reference evidence for skipped files. */
+export function readBoundedReferenceSources(sources, readMetadata, readSource, maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES, maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES) {
+    const readableSources = [];
+    const unavailablePaths = [];
+    const warnings = [];
+    let acceptedBytes = 0;
+    let totalLimitReached = false;
+    for (const source of sources) {
+        if (totalLimitReached || acceptedBytes >= maximumTotalBytes) {
+            unavailablePaths.push(source.path);
+            warnings.push({
+                code: "reference_content_limit",
+                message: "Reference source exceeds the total content limit.",
+                path: source.path,
+            });
+            continue;
+        }
+        try {
+            const { byteLength } = readMetadata(source);
+            if (byteLength > maximumFileBytes) {
+                unavailablePaths.push(source.path);
+                warnings.push({
+                    code: "reference_content_limit",
+                    message: "Reference source exceeds the per-file content limit.",
+                    path: source.path,
+                });
+                continue;
+            }
+            if (acceptedBytes + byteLength > maximumTotalBytes) {
+                unavailablePaths.push(source.path);
+                warnings.push({
+                    code: "reference_content_limit",
+                    message: "Reference source exceeds the total content limit.",
+                    path: source.path,
+                });
+                totalLimitReached = true;
+                continue;
+            }
+            const content = readSource(source);
+            if (content.includes("\0")) {
+                unavailablePaths.push(source.path);
+                warnings.push({
+                    code: "reference_binary",
+                    message: "Reference source is binary.",
+                    path: source.path,
+                });
+                continue;
+            }
+            readableSources.push({ ...source, content });
+            acceptedBytes += byteLength;
+        }
+        catch {
+            unavailablePaths.push(source.path);
+            warnings.push({
+                code: "reference_unreadable",
+                message: "Reference source could not be read.",
+                path: source.path,
+            });
+        }
+    }
+    unavailablePaths.sort(compareText);
+    warnings.sort((left, right) => compareText(left.path ?? "", right.path ?? ""));
+    return {
+        graph: {
+            edges: [],
+            unresolved: [],
+            complete: unavailablePaths.length === 0,
+            unavailablePaths,
+        },
+        sources: readableSources,
+        warnings,
+        acceptedBytes,
+    };
+}
+/** Reads stable regular files after re-checking their identity, type, and canonical path. */
+export function readStableReferenceSources(sources, boundary, maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES, maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES) {
+    const readableSources = [];
+    const unavailablePaths = [];
+    const warnings = [];
+    let acceptedBytes = 0;
+    let totalLimitReached = false;
+    const addWarning = (source, code, message) => {
+        unavailablePaths.push(source.path);
+        warnings.push({ code, message, path: source.path });
+    };
+    for (const source of sources) {
+        if (totalLimitReached || acceptedBytes >= maximumTotalBytes) {
+            addWarning(source, "reference_content_limit", "Reference source exceeds the total content limit.");
+            continue;
+        }
+        let initial;
+        try {
+            initial = boundary.inspect(source);
+        }
+        catch {
+            addWarning(source, "reference_unreadable", "Reference source could not be read.");
+            continue;
+        }
+        if (!initial?.isRegularFile) {
+            addWarning(source, "reference_unreadable", "Reference source could not be read.");
+            continue;
+        }
+        if (initial.byteLength > maximumFileBytes) {
+            addWarning(source, "reference_content_limit", "Reference source exceeds the per-file content limit.");
+            continue;
+        }
+        if (acceptedBytes + initial.byteLength > maximumTotalBytes) {
+            addWarning(source, "reference_content_limit", "Reference source exceeds the total content limit.");
+            totalLimitReached = true;
+            continue;
+        }
+        let current;
+        try {
+            current = boundary.inspect(source);
+        }
+        catch {
+            addWarning(source, "reference_unreadable", "Reference source could not be read.");
+            continue;
+        }
+        if (!current) {
+            addWarning(source, "reference_unreadable", "Reference source could not be read.");
+            continue;
+        }
+        if (current.identity !== initial.identity ||
+            current.isRegularFile !== initial.isRegularFile ||
+            current.byteLength !== initial.byteLength ||
+            current.canonicalPath !== initial.canonicalPath) {
+            addWarning(source, "reference_path_changed", "Reference source changed during scanning.");
+            continue;
+        }
+        try {
+            const content = boundary.read(source);
+            if (content.includes("\0")) {
+                addWarning(source, "reference_binary", "Reference source is binary.");
+                continue;
+            }
+            readableSources.push({ ...source, content });
+            acceptedBytes += initial.byteLength;
+        }
+        catch {
+            addWarning(source, "reference_unreadable", "Reference source could not be read.");
+        }
+    }
+    unavailablePaths.sort(compareText);
+    warnings.sort((left, right) => compareText(left.path ?? "", right.path ?? ""));
+    return {
+        graph: {
+            edges: [],
+            unresolved: [],
+            complete: unavailablePaths.length === 0,
+            unavailablePaths,
+        },
+        sources: readableSources,
+        warnings,
+        acceptedBytes,
+    };
+}
+//# sourceMappingURL=reference-analysis-core.js.map

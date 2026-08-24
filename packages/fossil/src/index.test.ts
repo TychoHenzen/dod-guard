@@ -10,6 +10,25 @@ import {
 } from "./index.js";
 import type { AnalysisErrorCode, FossilReport, NormalizedAnalysisOptions } from "./types.js";
 
+const validDirectOptions: NormalizedAnalysisOptions = JSON.parse(
+  '{"days":90,"gapHours":48,"threshold":0.4,"format":"json","extensions":[],"untrackedAgeDays":90,"exclude":[],"verbose":false}',
+);
+
+const invalidDirectOptionShapes = [
+  { days: 0 },
+  { gapHours: 8_761 },
+  { threshold: Number.NaN },
+  { untrackedAgeDays: 3_651 },
+  { format: "yaml" },
+  { extensions: Array.from({ length: 65 }, () => "ts") },
+  { extensions: [""] },
+  { extensions: [42] },
+  { extensions: "ts" },
+  { exclude: [42] },
+  { exclude: "generated/**" },
+  { verbose: "true" },
+];
+
 function reportFor(options: NormalizedAnalysisOptions): FossilReport {
   return {
     schemaVersion: 1,
@@ -225,6 +244,24 @@ test("returns and serializes the same finalized report through one analysis core
     { repositoryPath: "C:/repositories/parity", options },
     { repositoryPath: "C:/repositories/parity", options },
   ]);
+});
+
+test("rejects malformed direct API option shapes before calling the analysis core", async () => {
+  for (const invalid of invalidDirectOptionShapes) {
+    let coreCalls = 0;
+    await assert.rejects(
+      analyzeRepository(
+        "C:/repositories/invalid",
+        { ...validDirectOptions, ...invalid },
+        async (_repositoryPath, coreOptions) => {
+          coreCalls += 1;
+          return reportFor(coreOptions);
+        },
+      ),
+      (error: unknown) => error instanceof FossilAnalysisError && error.code === "invalid_options",
+    );
+    assert.equal(coreCalls, 0);
+  }
 });
 
 // covers: fossil/cli :: Process outcomes :: No findings is successful

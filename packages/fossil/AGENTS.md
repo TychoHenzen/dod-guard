@@ -29,8 +29,8 @@ The CLI normalizes options, then calls the shared repository-analysis boundary. 
 history, contained reference evidence, and safe workspace metadata. The grader produces burst-specific advisory
 findings. The output layer finalizes report statistics and renders table or JSON data.
 
-The default production analysis core is intentionally not wired yet. Do not fabricate a successful report to bridge
-that gap.
+`src/repository-analysis.ts` is the production composition root. It must return a truthful report or a typed failure.
+Do not fabricate a successful report when an analysis boundary fails.
 
 ## Safety and resource rules
 

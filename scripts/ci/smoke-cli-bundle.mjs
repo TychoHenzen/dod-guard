@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // smoke-cli-bundle — verify the CLI-only fossil workspace without the MCP protocol.
 
-import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { execFileSync, spawn } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,6 +28,20 @@ export function runCli(bundle, args = []) {
   });
 }
 
+function createGitFixture() {
+  const directory = mkdtempSync(join(tmpdir(), "fossil-cli-smoke-"));
+  execFileSync("git", ["init", "--quiet"], { cwd: directory });
+  execFileSync("git", ["config", "user.name", "Fossil Smoke"], { cwd: directory });
+  execFileSync("git", ["config", "user.email", "fossil-smoke@example.invalid"], { cwd: directory });
+  writeFileSync(join(directory, "example.ts"), "export const example = true;\n");
+  execFileSync("git", ["-c", "core.autocrlf=false", "add", "example.ts"], { cwd: directory });
+  execFileSync("git", ["commit", "--quiet", "-m", "fixture"], {
+    cwd: directory,
+    env: { ...process.env, GIT_AUTHOR_DATE: "2020-01-01T00:00:00Z", GIT_COMMITTER_DATE: "2020-01-01T00:00:00Z" },
+  });
+  return directory;
+}
+
 function requiredEntrypoint(manifest, field) {
   const entrypoint = field === "main" ? manifest.main : manifest.bin?.fossil;
   if (typeof entrypoint !== "string") throw new Error(`package.json is missing ${field} entrypoint`);
@@ -40,7 +55,7 @@ function assertCliOnlyPackage(packageDirectory) {
 }
 
 /** Validates fossil package entrypoints and its non-MCP command-line help contract. */
-export async function smokeCliBundle(packageDirectory) {
+export async function smokeCliBundle(packageDirectory, { verifyAnalysis = false } = {}) {
   assertCliOnlyPackage(packageDirectory);
   const manifest = JSON.parse(readFileSync(join(packageDirectory, "package.json"), "utf8"));
   const mainEntrypoint = requiredEntrypoint(manifest, "main");
@@ -57,6 +72,19 @@ export async function smokeCliBundle(packageDirectory) {
     throw new Error(`CLI help exited with code ${result.code}: ${result.stderr.trim() || "(empty stderr)"}`);
   if (result.stderr) throw new Error(`CLI help wrote to stderr: ${result.stderr.trim()}`);
   if (!/Usage: fossil\b/.test(result.stdout)) throw new Error("CLI help did not include fossil usage");
+  if (verifyAnalysis) {
+    const fixture = createGitFixture();
+    try {
+      const analysis = await runCli(bundle, ["analyze", fixture, "--format", "json"]);
+      if (analysis.code !== 0)
+        throw new Error(`CLI analysis exited with code ${analysis.code}: ${analysis.stderr.trim()}`);
+      if (analysis.stderr) throw new Error(`CLI analysis wrote to stderr: ${analysis.stderr.trim()}`);
+      const report = JSON.parse(analysis.stdout);
+      if (report.schemaVersion !== 1) throw new Error("CLI analysis did not return schema version 1 JSON");
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
+  }
   return { manifest, result };
 }
 
@@ -68,7 +96,14 @@ async function main(argv) {
   }
   const packageDirectory = join(ROOT, "packages", packageDirectoryName);
   try {
-    const { manifest } = await smokeCliBundle(packageDirectory);
+    const { manifest } = await smokeCliBundle(packageDirectory, { verifyAnalysis: true });
+    if (packageDirectoryName === "fossil") {
+      const benchmark = execFileSync(process.execPath, [join(ROOT, "scripts", "ci", "benchmark-fossil.mjs")], {
+        cwd: ROOT,
+        encoding: "utf8",
+      }).trim();
+      process.stdout.write(`Fossil benchmark ${benchmark}\n`);
+    }
     process.stdout.write(`CLI integrity OK - ${manifest.name} v${manifest.version}\n`);
     return 0;
   } catch (error) {

@@ -12,7 +12,7 @@
     "test": "tsc && node --test \"dist/**/*.test.js\"",
     "bundle": "node esbuild.config.mjs",
     "start": "node dist/bundle.js",
-    "coverage": "c8 --include=\"src/*.ts\" --exclude=\"src/*.test.ts\" --reporter=text --reporter=html node --test \"dist/*.test.js\"",
+    "coverage": "c8 --include=\"dist/*.js\" --exclude=\"dist/*.test.js\" --reporter=text --reporter=html node --test \"dist/*.test.js\"",
     "dev": "tsc --watch"
   },
   "keywords": [

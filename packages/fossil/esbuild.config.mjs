@@ -1,3 +1,3 @@
 import { bundlePackage } from "../../scripts/build/bundle.mjs";
 
-await bundlePackage();
+await bundlePackage({ requireShim: true });

@@ -1,0 +1,1 @@
+{"version":3,"file":"analysis-error.js","sourceRoot":"","sources":["../src/analysis-error.ts"],"names":[],"mappings":"AAEA,kGAAkG;AAClG,MAAM,OAAO,mBAAoB,SAAQ,KAAK;IACnC,IAAI,CAAoB;IAEjC,YAAY,EAAE,IAAI,EAAE,OAAO,EAAwB;QACjD,KAAK,CAAC,OAAO,CAAC,CAAC;QACf,IAAI,CAAC,IAAI,GAAG,IAAI,CAAC;IACnB,CAAC;CACF"}

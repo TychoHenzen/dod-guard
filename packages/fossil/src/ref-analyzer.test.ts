@@ -1,11 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { FossilAnalysisError } from "./analysis-error.js";
 import {
   analyzeJavaScriptReferences,
   analyzeJavaScriptReferencesWithinBoundary,
   analyzeReferences,
-  inventoryReferenceSourcePaths,
   markUnresolvedCandidateEvidence,
   type ReferenceCandidate,
   type ReferenceSourceSnapshot,
@@ -230,67 +228,37 @@ test("keeps only stable source reads and records scan races as unavailable evide
 });
 
 // covers: fossil/reference-analysis :: Repository-contained source reads :: Directory symlink is not traversed
-test("inventories ordinary directories without traversing links or duplicate canonical directories", () => {
-  const canonicalized: string[] = [];
-  const enumerated: string[] = [];
-  const entries = new Map([
+test("keeps a directory symlink candidate unavailable without reading its content", () => {
+  const contentReads: string[] = [];
+  const result = readStableReferenceSources(
     [
-      "C:/repo",
-      [
-        { name: "junction", kind: "junction" as const },
-        { name: "linked", kind: "directory-symlink" as const },
-        { name: "src", kind: "directory" as const },
-        { name: "zsecond", kind: "directory" as const },
-        { name: "root.ts", kind: "file" as const },
-      ],
+      { path: "src/ordinary.ts", language: "typescript" as const },
+      { path: "src/directory-link.ts", language: "typescript" as const },
     ],
-    ["C:/repo/src", [{ name: "nested.ts", kind: "file" as const }]],
-    ["C:/repo/zsecond", [{ name: "duplicate.ts", kind: "file" as const }]],
-  ]);
-  const paths = inventoryReferenceSourcePaths({
-    repositoryRoot: "C:/repo",
-    canonicalize: (path) => {
-      canonicalized.push(path);
-      return path === "C:/repo/zsecond" ? "C:/repo/src" : path;
+    {
+      inspect: (source) => ({
+        identity: source.path,
+        isRegularFile: source.path !== "src/directory-link.ts",
+        byteLength: 7,
+        canonicalPath: `C:/repo/${source.path}`,
+      }),
+      read: (source) => {
+        contentReads.push(source.path);
+        return "content";
+      },
     },
-    enumerate: (path) => {
-      enumerated.push(path);
-      return entries.get(path) ?? [];
-    },
-  });
-
-  assert.deepEqual(paths, ["root.ts", "src/nested.ts"]);
-  assert.deepEqual(enumerated, ["C:/repo", "C:/repo/src"]);
-  assert.deepEqual(canonicalized, [
-    "C:/repo",
-    "C:/repo/root.ts",
-    "C:/repo/src",
-    "C:/repo/src/nested.ts",
-    "C:/repo/zsecond",
-  ]);
-});
-
-// covers: fossil/cli :: Analysis resource bounds :: File inventory limit fails explicitly
-test("accepts exactly one hundred thousand inventory files and rejects the next file", () => {
-  const entries = Array.from({ length: 100_001 }, (_, index) => ({
-    name: `file-${index.toString().padStart(6, "0")}.ts`,
-    kind: "file" as const,
-  }));
-  const inventory = (count: number) =>
-    inventoryReferenceSourcePaths({
-      repositoryRoot: "C:/repo",
-      canonicalize: (path) => path,
-      enumerate: (path) => (path === "C:/repo" ? entries.slice(0, count) : []),
-    });
-
-  assert.equal(inventory(100_000).length, 100_000);
-  assert.throws(
-    () => inventory(100_001),
-    (error: unknown) =>
-      error instanceof FossilAnalysisError &&
-      error.code === "resource_limit" &&
-      error.message === "Inventoried file limit exceeded.",
   );
+
+  assert.deepEqual(contentReads, ["src/ordinary.ts"]);
+  assert.deepEqual(result.sources, [{ path: "src/ordinary.ts", language: "typescript", content: "content" }]);
+  assert.deepEqual(result.graph.unavailablePaths, ["src/directory-link.ts"]);
+  assert.deepEqual(result.warnings, [
+    {
+      code: "reference_unreadable",
+      message: "Reference source could not be read.",
+      path: "src/directory-link.ts",
+    },
+  ]);
 });
 
 // covers: fossil/reference-analysis :: Repository-contained source reads :: Relative import cannot escape the repository

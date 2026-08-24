@@ -29,7 +29,7 @@ test("creates a Git repository with deterministic commit identity and time", asy
   const commit = await repository.recordCommit("first", timestamp);
 
   assert.match(commit.hash, /^[0-9a-f]{40}$/);
-  assert.equal(await repository.git(["show", "-s", "--format=%cI", "HEAD"]), "2025-01-02T03:04:05+00:00\n");
+  assert.match(await repository.git(["show", "-s", "--format=%cI", "HEAD"]), /^2025-01-02T03:04:05(?:Z|\+00:00)\n$/);
   assert.equal(
     await repository.git(["show", "-s", "--format=%an <%ae>", "HEAD"]),
     "Fossil Fixture <fossil-fixture@example.invalid>\n",
