@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { burstTableRows, workspaceDebrisTableRows } from "./output.js";
+import { burstTableRows, renderBurstTableRows, workspaceDebrisTableRows } from "./output.js";
 import type { BurstReport, WorkspaceDebrisFinding } from "./types.js";
 
 function finding(path: string, kind: "untracked" | "ignored"): WorkspaceDebrisFinding {
@@ -220,4 +220,40 @@ test("adds exactly one verbose explanation immediately after each candidate", ()
       liveNeighbors: ["src/live.ts"],
     },
   ]);
+});
+
+// covers: fossil/cli :: Table output :: Redirected table contains no ANSI escapes
+test("renders ANSI styling only when the caller marks table output as a TTY", () => {
+  const rows = [
+    {
+      kind: "burst" as const,
+      id: "burst-1",
+      startDate: "2025-01-01",
+      endDate: "2025-01-02",
+      commitCount: 2,
+      fileCount: 1,
+    },
+    { kind: "survivor" as const, path: "src/survivor.ts" },
+    { kind: "finding" as const, path: "src/finding.ts", score: 0.8, scoreBasis: "full" as const },
+    {
+      kind: "finding-explanation" as const,
+      createdInBurst: true,
+      burstCommits: 2,
+      postBurstCommits: 0,
+      referenceAvailability: "complete" as const,
+      strongInboundReferences: 1,
+      candidateNeighbors: ["src/candidate.ts"],
+      liveNeighbors: ["src/live.ts"],
+    },
+  ];
+
+  const redirected = renderBurstTableRows(rows, { isTty: false });
+  const tty = renderBurstTableRows(rows, { isTty: true });
+
+  assert.equal(redirected.includes("\u001b["), false);
+  assert.match(redirected, /Burst burst-1/);
+  assert.match(redirected, /survivor src\/survivor.ts/);
+  assert.match(redirected, /finding src\/finding.ts: score 0.8 \(full\)/);
+  assert.match(redirected, /created in burst; 2 burst commits, 0 post-burst commits/);
+  assert.equal(tty.startsWith("\u001b[1mBurst burst-1"), true);
 });

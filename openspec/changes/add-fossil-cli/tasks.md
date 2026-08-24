@@ -256,8 +256,9 @@
 - [x] 6.5 Add one evidence explanation line per verbose candidate.
 <!-- covers: fossil/cli :: Table output :: Verbose table explains a candidate -->
 <!-- status: completed -->
-- [ ] 6.6 Suppress ANSI escapes whenever table output is redirected.
+- [x] 6.6 Suppress ANSI escapes whenever table output is redirected.
 <!-- covers: fossil/cli :: Table output :: Redirected table contains no ANSI escapes -->
+<!-- status: completed -->
 - [ ] 6.7 Serialize one schema-version-1 JSON document without table prose.
 <!-- covers: fossil/cli :: Versioned JSON output :: JSON output is machine-readable -->
 - [ ] 6.8 Report both burst-path finding totals and unique candidate path totals in JSON.

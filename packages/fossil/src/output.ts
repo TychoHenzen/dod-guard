@@ -37,6 +37,13 @@ export type BurstTableRow =
       readonly liveNeighbors: readonly string[];
     };
 
+export interface BurstTableRenderOptions {
+  readonly isTty: boolean;
+}
+
+const BOLD = "\u001b[1m";
+const RESET = "\u001b[0m";
+
 function topLevelDirectory(path: string): string | undefined {
   const normalized = normalizedPath(path);
   const separator = normalized.indexOf("/");
@@ -110,6 +117,36 @@ export function burstTableRows(
         .map((path) => ({ kind: "survivor" as const, path })),
       ...findingTableRows(burst, mode),
     ]);
+}
+
+function styleBurstHeader(value: string, isTty: boolean): string {
+  return isTty ? `${BOLD}${value}${RESET}` : value;
+}
+
+function burstTableLine(row: BurstTableRow, isTty: boolean): string {
+  switch (row.kind) {
+    case "burst":
+      return styleBurstHeader(
+        `Burst ${row.id}: ${row.startDate} to ${row.endDate}, ${row.commitCount} commits, ${row.fileCount} files`,
+        isTty,
+      );
+    case "survivor":
+      return `  survivor ${row.path}`;
+    case "finding":
+      return `  finding ${row.path}: score ${row.score} (${row.scoreBasis})`;
+    case "finding-explanation": {
+      const reference =
+        row.referenceAvailability === "unavailable"
+          ? "reference evidence unavailable"
+          : `references: ${row.strongInboundReferences} strong inbound, ${row.candidateNeighbors.length} candidate neighbors, ${row.liveNeighbors.length} live neighbors`;
+      return `    ${row.createdInBurst ? "created in burst" : "existed before burst"}; ${row.burstCommits} burst commits, ${row.postBurstCommits} post-burst commits; ${reference}`;
+    }
+  }
+}
+
+/** Renders current burst table rows with explicit caller-owned TTY styling control. */
+export function renderBurstTableRows(rows: readonly BurstTableRow[], { isTty }: BurstTableRenderOptions): string {
+  return rows.map((row) => burstTableLine(row, isTty)).join("\n");
 }
 
 /** Produces normal or verbose table rows without changing the underlying debris findings. */
