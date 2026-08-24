@@ -1,4 +1,10 @@
-import type { BurstFileActivity, ReferenceGraph } from "./types.js";
+import type { BurstFileActivity, FossilSubscores, ReferenceGraph, ScoreBasis } from "./types.js";
+
+/** Numeric fossil score with the evidence basis used to compute it. */
+export interface FossilScore {
+  readonly score: number;
+  readonly basis: ScoreBasis;
+}
 
 /** Normalizes one candidate's positive burst churn against the positive burst maximum. */
 export function normalizedBurstChurn(candidate: BurstFileActivity, burstFiles: readonly BurstFileActivity[]): number {
@@ -47,4 +53,17 @@ export function clusterIsolationScore(
   }
   if (neighbors.size === 0) return 1;
   return [...neighbors].filter((neighbor) => candidatePaths.has(neighbor)).length / neighbors.size;
+}
+
+/** Combines all four available fossil subscores using the fixed full-evidence weights. */
+export function scoreFossilSubscores(subscores: FossilSubscores): FossilScore | undefined {
+  if (subscores.referenceWeakness === undefined || subscores.clusterIsolation === undefined) return undefined;
+  return {
+    score:
+      0.3 * subscores.churn +
+      0.35 * subscores.abandonment +
+      0.2 * subscores.referenceWeakness +
+      0.15 * subscores.clusterIsolation,
+    basis: "full",
+  };
 }

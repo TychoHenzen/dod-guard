@@ -5,8 +5,9 @@ import {
   clusterIsolationScore,
   normalizedBurstChurn,
   referenceWeaknessScore,
+  scoreFossilSubscores,
 } from "./fossil-grader.js";
-import type { BurstFileActivity, ReferenceGraph } from "./types.js";
+import type { BurstFileActivity, FossilSubscores, ReferenceGraph } from "./types.js";
 
 function activity(path: string, burstCommits: number, postBurstCommits = 0): BurstFileActivity {
   return {
@@ -18,6 +19,18 @@ function activity(path: string, burstCommits: number, postBurstCommits = 0): Bur
     existsAtHead: true,
   };
 }
+
+// covers: fossil/scoring :: Combined fossil score :: Complete scoring uses fixed weights
+test("combines all available subscores with the fixed full-evidence weights", () => {
+  const subscores: FossilSubscores = {
+    churn: 0.4,
+    abandonment: 0.6,
+    referenceWeakness: 0.7,
+    clusterIsolation: 0.8,
+  };
+
+  assert.deepEqual(scoreFossilSubscores(subscores), { score: 0.59, basis: "full" });
+});
 
 // covers: fossil/scoring :: Cluster isolation score :: Candidate only references fossils
 test("gives full isolation when every unique resolved neighbor is a fossil candidate", () => {
