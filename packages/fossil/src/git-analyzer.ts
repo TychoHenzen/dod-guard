@@ -1,6 +1,8 @@
 import type { GitCommit, GitFileChange, LogicalFileActivity } from "./types.js";
 
 const RECORD_SEPARATOR = "\u001e";
+const MIN_CHANGE_POINT_GAP_MS = 4 * 60 * 60 * 1_000;
+const MAX_CHANGE_POINT_SIMILARITY = 0.1;
 
 /** Arguments for the raw history stream consumed by parseNonMergeGitLog(). */
 export function nonMergeGitLogArguments(): readonly string[] {
@@ -104,6 +106,62 @@ export function splitTemporalClusters(commits: readonly GitCommit[], gapMillisec
     current.push(commit);
   }
   return clusters;
+}
+
+function fileIdentities(commits: readonly GitCommit[]): Map<string, string> {
+  const identities = new Map<string, string>();
+  for (const activity of resolveRenameActivities(commits)) {
+    for (const path of activity.paths) identities.set(path, activity.identity);
+  }
+  return identities;
+}
+
+function commitFiles(commit: GitCommit, identities: ReadonlyMap<string, string>): Set<string> {
+  return new Set(commit.changes.map((change) => identities.get(change.path) ?? change.path));
+}
+
+function partitionQualifies(commits: readonly GitCommit[], identities: ReadonlyMap<string, string>): boolean {
+  return commits.length >= 5 && new Set(commits.flatMap((commit) => [...commitFiles(commit, identities)])).size >= 3;
+}
+
+function weightedSimilarity(
+  commits: readonly GitCommit[],
+  cut: number,
+  identities: ReadonlyMap<string, string>,
+): number {
+  const touchedByCommit = commits.map((commit) => commitFiles(commit, identities));
+  const touches = new Map<string, number>();
+  for (const files of touchedByCommit) {
+    for (const file of files) touches.set(file, (touches.get(file) ?? 0) + 1);
+  }
+  const left = new Set(touchedByCommit.slice(cut - 5, cut).flatMap((files) => [...files]));
+  const right = new Set(touchedByCommit.slice(cut, cut + 5).flatMap((files) => [...files]));
+  const union = new Set([...left, ...right]);
+  if (union.size === 0) return 1;
+  const weightFor = (file: string) => Math.log((1 + commits.length) / (1 + (touches.get(file) ?? 0))) + 1;
+  const intersectionWeight = [...left]
+    .filter((file) => right.has(file))
+    .reduce((total, file) => total + weightFor(file), 0);
+  const unionWeight = [...union].reduce((total, file) => total + weightFor(file), 0);
+  return intersectionWeight / unionWeight;
+}
+
+/** Splits at the first qualifying close file-set change. Callers must supply chronological commits. */
+export function splitAtChangePoint(commits: readonly GitCommit[]): GitCommit[][] {
+  const identities = fileIdentities(commits);
+  for (let cut = 5; cut <= commits.length - 5; cut += 1) {
+    const left = commits.slice(0, cut);
+    const right = commits.slice(cut);
+    const gap = commits[cut].committerTimestampMs - commits[cut - 1].committerTimestampMs;
+    if (
+      gap < MIN_CHANGE_POINT_GAP_MS ||
+      !partitionQualifies(left, identities) ||
+      !partitionQualifies(right, identities)
+    )
+      continue;
+    if (weightedSimilarity(commits, cut, identities) <= MAX_CHANGE_POINT_SIMILARITY) return [left, right];
+  }
+  return [[...commits]];
 }
 
 interface FileEvent {
