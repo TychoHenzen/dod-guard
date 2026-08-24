@@ -4,6 +4,7 @@ import {
   filterHistoryByExtensions,
   futureCommitWarnings,
   nonMergeGitLogArguments,
+  normalizeExtensions,
   parseNonMergeGitLog,
   resolveRenameActivities,
   retainClosedTemporalClusters,
@@ -256,6 +257,26 @@ test("filters whole rename identities without discarding cross-extension source 
     ["src/candidate.ts", "docs/candidate.md", "src/live.js"],
   );
   assert.deepEqual(filterHistoryByExtensions(fullHistory, new Set()), fullHistory);
+});
+
+// covers: fossil/burst-analysis :: History activity model :: Extension values are normalized
+test("normalizes extension dots and case before case-insensitive path matching", () => {
+  const extensions = normalizeExtensions(["ts", ".TS", "Js", ".js"]);
+  const history = [
+    {
+      hash: "typescript",
+      committerTimestampMs: 1_000,
+      changes: [{ status: "added" as const, path: "src/Feature.Ts" }],
+    },
+    {
+      hash: "markdown",
+      committerTimestampMs: 2_000,
+      changes: [{ status: "added" as const, path: "docs/README.MD" }],
+    },
+  ];
+
+  assert.deepEqual(extensions, [".ts", ".js"]);
+  assert.deepEqual(filterHistoryByExtensions(history, new Set(extensions)), [history[0]]);
 });
 
 // covers: fossil/burst-analysis :: Temporal burst detection :: Gap above threshold splits commits

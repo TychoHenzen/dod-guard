@@ -64,8 +64,9 @@
 - [x] 2.17 Keep copies and delete-recreate sequences as separate logical identities.
 <!-- covers: fossil/burst-analysis :: History activity model :: Copy or delete-recreate starts another identity -->
 <!-- status: completed -->
-- [ ] 2.18 Normalize extension option dots and letter case.
+- [x] 2.18 Normalize extension option dots and letter case.
 <!-- covers: fossil/burst-analysis :: History activity model :: Extension values are normalized -->
+<!-- status: completed -->
 - [ ] 2.19 Detect shallow history and add a completeness warning.
 <!-- covers: fossil/burst-analysis :: History completeness reporting :: Shallow history is reported -->
 - [ ] 2.20 Detect sparse checkout and add a current-tree completeness warning.

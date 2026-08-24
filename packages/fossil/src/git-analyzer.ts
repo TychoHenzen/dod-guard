@@ -94,7 +94,14 @@ export function parseNonMergeGitLog(rawLog: string): GitCommit[] {
 function pathExtension(path: string): string {
   const filename = path.slice(path.lastIndexOf("/") + 1);
   const dot = filename.lastIndexOf(".");
-  return dot === -1 ? "" : filename.slice(dot);
+  return dot === -1 ? "" : filename.slice(dot).toLowerCase();
+}
+
+/** Normalizes extension options while preserving deterministic first-occurrence order. */
+export function normalizeExtensions(values: readonly string[]): string[] {
+  const normalized = new Set<string>();
+  for (const value of values) normalized.add(`.${value.replace(/^\./, "").toLowerCase()}`);
+  return [...normalized];
 }
 
 /** Keeps whole candidate identities for later burst and score calculations. */
