@@ -25,8 +25,9 @@
 - [x] 2.4 Split consecutive commits when their time gap exceeds the configured threshold.
 <!-- covers: fossil/burst-analysis :: Temporal burst detection :: Gap above threshold splits commits -->
 <!-- status: completed -->
-- [ ] 2.5 Keep consecutive commits together when their gap equals the configured threshold.
+- [x] 2.5 Keep consecutive commits together when their gap equals the configured threshold.
 <!-- covers: fossil/burst-analysis :: Temporal burst detection :: Gap at threshold keeps commits together -->
+<!-- status: completed -->
 - [ ] 2.6 Implement weighted five-commit change-point detection for close disjoint work.
 <!-- covers: fossil/burst-analysis :: File-set change-point detection :: Disjoint close work becomes separate bursts -->
 - [ ] 2.7 Reject a close change-point split when either resulting partition is too small.

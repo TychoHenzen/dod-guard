@@ -132,3 +132,19 @@ test("splits chronological commits when an adjacent gap is one millisecond above
     [["first", "second"], ["third"]],
   );
 });
+
+// covers: fossil/burst-analysis :: Temporal burst detection :: Gap at threshold keeps commits together
+test("keeps chronological commits together when their adjacent gap equals the threshold", () => {
+  const clusters = splitTemporalClusters(
+    [
+      { hash: "first", committerTimestampMs: 1_000, changes: [] },
+      { hash: "second", committerTimestampMs: 1_500, changes: [] },
+    ],
+    500,
+  );
+
+  assert.deepEqual(
+    clusters.map((cluster) => cluster.map((commit) => commit.hash)),
+    [["first", "second"]],
+  );
+});
