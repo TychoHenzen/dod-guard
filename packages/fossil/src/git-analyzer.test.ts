@@ -707,6 +707,31 @@ test("selects positive relative survivors inclusively with absolute survivors", 
   assert.deepEqual(selectSurvivors(files), [files[0], files[1], files[3]]);
 });
 
+// covers: fossil/burst-analysis :: Consolidation classification :: Zero post-burst maximum creates no relative survivor
+test("does not select relative survivors when every post-burst count is zero", () => {
+  const files = [
+    {
+      identity: "first",
+      path: "first.ts",
+      burstCommits: 2,
+      postBurstCommits: 0,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "second",
+      path: "second.ts",
+      burstCommits: 1,
+      postBurstCommits: 0,
+      createdInBurst: false,
+      existsAtHead: true,
+    },
+  ];
+
+  assert.deepEqual(selectRelativeSurvivors(files), []);
+  assert.deepEqual(selectSurvivors(files), []);
+});
+
 // covers: fossil/burst-analysis :: Consolidation classification :: Quiet current file becomes a candidate
 test("selects only current files that meet neither survivor rule", () => {
   const files = [

@@ -79,8 +79,9 @@
 - [x] 2.22 Make recursive close splits define final burst membership and statistics.
 <!-- covers: fossil/burst-analysis :: File-set change-point detection :: Close split refines temporal clustering -->
 <!-- status: completed -->
-- [ ] 2.23 Prevent the relative survivor rule from selecting files when all later counts are zero.
+- [x] 2.23 Prevent the relative survivor rule from selecting files when all later counts are zero.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Zero post-burst maximum creates no relative survivor -->
+<!-- status: completed -->
 
 ## 3. Reference graph and strength grading
 
