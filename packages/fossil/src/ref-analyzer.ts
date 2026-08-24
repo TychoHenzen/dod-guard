@@ -18,6 +18,8 @@ const RUST_CRATE_USE = /^\s*use\s+crate::([A-Za-z_]\w*(?:::[A-Za-z_]\w*)*)\s*;\s
 
 /** Default hard cap for one source retained by reference analysis. */
 export const DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES = 1_048_576;
+/** Default hard cap for all source content retained by one reference analysis. */
+export const DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES = 268_435_456;
 
 /** Candidate metadata supplied to a language-specific reference backend. */
 export interface ReferenceCandidate {
@@ -794,12 +796,23 @@ export function readBoundedReferenceSources(
   readMetadata: ReferenceSourceMetadataReader,
   readSource: ReferenceSourceReader,
   maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
+  maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES,
 ): BoundedReferenceReadResult {
   const readableSources: ReferenceSourceContent[] = [];
   const unavailablePaths: string[] = [];
   const warnings: AnalysisWarning[] = [];
   let acceptedBytes = 0;
+  let totalLimitReached = false;
   for (const source of sources) {
+    if (totalLimitReached || acceptedBytes >= maximumTotalBytes) {
+      unavailablePaths.push(source.path);
+      warnings.push({
+        code: "reference_content_limit",
+        message: "Reference source exceeds the total content limit.",
+        path: source.path,
+      });
+      continue;
+    }
     try {
       const { byteLength } = readMetadata(source);
       if (byteLength > maximumFileBytes) {
@@ -809,6 +822,16 @@ export function readBoundedReferenceSources(
           message: "Reference source exceeds the per-file content limit.",
           path: source.path,
         });
+        continue;
+      }
+      if (acceptedBytes + byteLength > maximumTotalBytes) {
+        unavailablePaths.push(source.path);
+        warnings.push({
+          code: "reference_content_limit",
+          message: "Reference source exceeds the total content limit.",
+          path: source.path,
+        });
+        totalLimitReached = true;
         continue;
       }
       readableSources.push({ ...source, content: readSource(source) });

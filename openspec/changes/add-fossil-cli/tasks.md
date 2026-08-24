@@ -133,8 +133,9 @@
 - [x] 3.16 Skip oversized source with a warning and unavailable affected reference evidence.
 <!-- covers: fossil/reference-analysis :: Bounded source scanning :: Oversized source degrades reference evidence -->
 <!-- status: completed -->
-- [ ] 3.17 Stop further reads at the total content budget and preserve incomplete evidence.
+- [x] 3.17 Stop further reads at the total content budget and preserve incomplete evidence.
 <!-- covers: fossil/reference-analysis :: Bounded source scanning :: Total scan budget stops further content reads -->
+<!-- status: completed -->
 - [ ] 3.18 Detect and omit binary files before regex parsing.
 <!-- covers: fossil/reference-analysis :: Bounded source scanning :: Binary file is not regex parsed -->
 - [ ] 3.19 Detect file replacement or disappearance between inventory and content read.
