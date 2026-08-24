@@ -1,4 +1,4 @@
-import type { BurstFileActivity, GitCommit, GitFileChange, LogicalFileActivity } from "./types.js";
+import type { AnalysisWarning, BurstFileActivity, GitCommit, GitFileChange, LogicalFileActivity } from "./types.js";
 
 const RECORD_SEPARATOR = "\u001e";
 const MIN_CHANGE_POINT_GAP_MS = 4 * 60 * 60 * 1_000;
@@ -61,6 +61,16 @@ export function sortCommitsChronologically(commits: readonly GitCommit[]): GitCo
       left.committerTimestampMs - right.committerTimestampMs ||
       (left.hash < right.hash ? -1 : left.hash > right.hash ? 1 : 0),
   );
+}
+
+/** Reports future-dated commits as incomplete history evidence in deterministic order. */
+export function futureCommitWarnings(commits: readonly GitCommit[], analysisTimestampMs: number): AnalysisWarning[] {
+  return sortCommitsChronologically(commits)
+    .filter((commit) => commit.committerTimestampMs > analysisTimestampMs)
+    .map((commit) => ({
+      code: "future_commit",
+      message: `Commit ${commit.hash} has a committer timestamp after analysis time.`,
+    }));
 }
 
 /** Parses the NUL-delimited non-merge stream requested by nonMergeGitLogArguments(). */
@@ -222,7 +232,11 @@ export function retainClosedTemporalClusters(
   return clusters
     .filter((cluster) => {
       const newest = cluster.at(-1);
-      return newest !== undefined && analysisTimestampMs - newest.committerTimestampMs >= gapMilliseconds;
+      return (
+        newest !== undefined &&
+        !cluster.some((commit) => commit.committerTimestampMs > analysisTimestampMs) &&
+        analysisTimestampMs - newest.committerTimestampMs >= gapMilliseconds
+      );
     })
     .map((cluster) => [...cluster]);
 }

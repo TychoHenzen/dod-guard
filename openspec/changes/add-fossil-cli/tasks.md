@@ -58,8 +58,9 @@
 - [x] 2.15 Normalize committer epoch timestamps and stabilize equal-time ordering.
 <!-- covers: fossil/burst-analysis :: History activity model :: Commit time is deterministic -->
 <!-- status: completed -->
-- [ ] 2.16 Warn on future-dated commits and leave their cluster unfinished.
+- [x] 2.16 Warn on future-dated commits and leave their cluster unfinished.
 <!-- covers: fossil/burst-analysis :: History activity model :: Future commit time is incomplete evidence -->
+<!-- status: completed -->
 - [ ] 2.17 Keep copies and delete-recreate sequences as separate logical identities.
 <!-- covers: fossil/burst-analysis :: History activity model :: Copy or delete-recreate starts another identity -->
 - [ ] 2.18 Normalize extension option dots and letter case.
