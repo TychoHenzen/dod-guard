@@ -54,6 +54,15 @@ function parseChanges(tokens: readonly string[]): GitFileChange[] {
   return changes;
 }
 
+/** Returns a chronological copy ordered by UTC epoch and ordinal commit hash. */
+export function sortCommitsChronologically(commits: readonly GitCommit[]): GitCommit[] {
+  return [...commits].sort(
+    (left, right) =>
+      left.committerTimestampMs - right.committerTimestampMs ||
+      (left.hash < right.hash ? -1 : left.hash > right.hash ? 1 : 0),
+  );
+}
+
 /** Parses the NUL-delimited non-merge stream requested by nonMergeGitLogArguments(). */
 export function parseNonMergeGitLog(rawLog: string): GitCommit[] {
   const commits: GitCommit[] = [];
@@ -69,7 +78,7 @@ export function parseNonMergeGitLog(rawLog: string): GitCommit[] {
       changes: parseChanges(tokens.slice(2)),
     });
   }
-  return commits;
+  return sortCommitsChronologically(commits);
 }
 
 function pathExtension(path: string): string {

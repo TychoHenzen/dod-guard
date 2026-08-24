@@ -12,6 +12,7 @@ import {
   selectFossilCandidates,
   selectRelativeSurvivors,
   selectSurvivors,
+  sortCommitsChronologically,
   splitAtChangePoint,
   splitTemporalClusters,
 } from "./git-analyzer.js";
@@ -66,6 +67,31 @@ test("omits merge-only activity while retaining reachable non-merge commits", as
   assert.equal(commits.length, 3);
   assert.deepEqual(activePaths.sort(), ["src/base.ts", "src/feature.ts", "src/main.ts"]);
   assert.ok(!activePaths.includes("src/merge-only.ts"));
+});
+
+// covers: fossil/burst-analysis :: History activity model :: Commit time is deterministic
+test("orders parsed commits by UTC epoch then ordinal hash without mutating sort input", () => {
+  const commits = parseNonMergeGitLog(
+    "\u001ez\u00001700000001\u0000M\u0000later.ts\u0000\u001eb\u00001700000000\u0000A\u0000second.ts\u0000\u001ea\u00001700000000\u0000A\u0000first.ts\u0000",
+  );
+  const unordered = [commits[2], commits[1], commits[0]];
+
+  assert.deepEqual(
+    commits.map((commit) => [commit.hash, commit.committerTimestampMs, commit.changes[0].path]),
+    [
+      ["a", 1_700_000_000_000, "first.ts"],
+      ["b", 1_700_000_000_000, "second.ts"],
+      ["z", 1_700_000_001_000, "later.ts"],
+    ],
+  );
+  assert.deepEqual(
+    sortCommitsChronologically(unordered).map((commit) => commit.hash),
+    ["a", "b", "z"],
+  );
+  assert.deepEqual(
+    unordered.map((commit) => commit.hash),
+    ["z", "b", "a"],
+  );
 });
 
 // covers: fossil/burst-analysis :: History activity model :: Rename preserves logical identity
