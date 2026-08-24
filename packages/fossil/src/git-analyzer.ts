@@ -239,6 +239,12 @@ export function selectSurvivors(files: readonly BurstFileActivity[]): BurstFileA
   return files.filter((file) => file.postBurstCommits >= 3 || (maximum > 0 && file.postBurstCommits >= 0.2 * maximum));
 }
 
+/** Selects current burst files that meet neither survivor rule. */
+export function selectFossilCandidates(files: readonly BurstFileActivity[]): BurstFileActivity[] {
+  const survivors = new Set(selectSurvivors(files));
+  return files.filter((file) => file.existsAtHead && !survivors.has(file));
+}
+
 interface FileEvent {
   readonly change: GitFileChange;
   readonly commit: GitCommit;

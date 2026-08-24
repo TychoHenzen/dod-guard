@@ -49,8 +49,9 @@
 - [x] 2.12 Classify files reaching the positive relative activity threshold as survivors.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Relative survivor threshold -->
 <!-- status: completed -->
-- [ ] 2.13 Classify an existing non-survivor as a burst-specific fossil candidate.
+- [x] 2.13 Classify an existing non-survivor as a burst-specific fossil candidate.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Quiet current file becomes a candidate -->
+<!-- status: completed -->
 - [ ] 2.14 Record deleted non-survivors without reporting them as fossils.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Deleted file is not fossilized -->
 - [ ] 2.15 Normalize committer epoch timestamps and stabilize equal-time ordering.

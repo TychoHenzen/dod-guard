@@ -8,6 +8,7 @@ import {
   retainClosedTemporalClusters,
   retainQualifiedClosedClusters,
   selectAbsoluteSurvivors,
+  selectFossilCandidates,
   selectRelativeSurvivors,
   selectSurvivors,
   splitAtChangePoint,
@@ -427,4 +428,52 @@ test("selects positive relative survivors inclusively with absolute survivors", 
 
   assert.deepEqual(selectRelativeSurvivors(files), [files[1], files[3]]);
   assert.deepEqual(selectSurvivors(files), [files[0], files[1], files[3]]);
+});
+
+// covers: fossil/burst-analysis :: Consolidation classification :: Quiet current file becomes a candidate
+test("selects only current files that meet neither survivor rule", () => {
+  const files = [
+    {
+      identity: "quiet",
+      path: "quiet.ts",
+      burstCommits: 1,
+      postBurstCommits: 1,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "absolute-survivor",
+      path: "absolute-survivor.ts",
+      burstCommits: 1,
+      postBurstCommits: 3,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "relative-survivor",
+      path: "relative-survivor.ts",
+      burstCommits: 1,
+      postBurstCommits: 20,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "maximum",
+      path: "maximum.ts",
+      burstCommits: 1,
+      postBurstCommits: 100,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "deleted",
+      path: "deleted.ts",
+      burstCommits: 1,
+      postBurstCommits: 1,
+      createdInBurst: true,
+      existsAtHead: false,
+    },
+  ];
+
+  assert.deepEqual(selectFossilCandidates(files), [files[0]]);
 });
