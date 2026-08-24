@@ -4,6 +4,7 @@ import {
   CHECK_IGNORE_ARGUMENTS,
   hasInboundWorkspaceUsage,
   IGNORED_DISCOVERY_ARGUMENTS,
+  inspectWorkspaceFileMetadata,
   oldIgnoredWorkspaceCandidates,
   oldUntrackedWorkspaceCandidates,
   omitUsedWorkspaceCandidates,
@@ -165,4 +166,34 @@ test("reports an unreferenced old candidate as separate workspace debris", () =>
     analysisBoundary: "C:/repo",
     unobservedReferenceMechanisms: ["dynamic runtime loading"],
   });
+});
+
+// covers: fossil/workspace-debris :: Safe workspace boundaries :: Dependency store is excluded
+test("excludes dependency-store paths before metadata reads and ignored candidate evaluation", () => {
+  const metadataReads: string[] = [];
+  const metadata = inspectWorkspaceFileMetadata(["node_modules/old.cache", "scratch\\old.cache"], (path) => {
+    metadataReads.push(path);
+    return { path, isRegularFile: true, modifiedTimestampMs: 0 };
+  });
+
+  assert.deepEqual(metadataReads, ["scratch/old.cache"]);
+  assert.deepEqual(
+    oldIgnoredWorkspaceCandidates(
+      metadata,
+      [
+        { path: "node_modules/old.cache", rule: "*.cache", source: "repository" },
+        { path: "scratch/old.cache", rule: "*.cache", source: "repository" },
+      ],
+      10 * 24 * 60 * 60 * 1_000,
+      7,
+    ),
+    [
+      {
+        path: "scratch/old.cache",
+        kind: "ignored",
+        modifiedTimestampMs: 0,
+        ignore: { rule: "*.cache", source: "repository" },
+      },
+    ],
+  );
 });

@@ -8,6 +8,7 @@ export const UNTRACKED_DISCOVERY_ARGUMENTS = ["ls-files", "-z", "--others", "--e
 export const IGNORED_DISCOVERY_ARGUMENTS = ["ls-files", "-z", "--others", "--ignored", "--exclude-standard"] as const;
 /** Exact Git arguments for NUL-delimited verbose ignore provenance. */
 export const CHECK_IGNORE_ARGUMENTS = ["check-ignore", "-z", "-v", "--stdin"] as const;
+const DEPENDENCY_STORE_SEGMENTS = new Set(["node_modules", "vendor", ".pnpm-store", ".yarn", ".cargo"]);
 
 /** Regular-file metadata captured after workspace discovery. */
 export interface WorkspaceFileMetadata {
@@ -15,6 +16,9 @@ export interface WorkspaceFileMetadata {
   readonly isRegularFile: boolean;
   readonly modifiedTimestampMs: number;
 }
+
+/** Injected metadata reader for workspace paths that pass pre-inspection boundaries. */
+export type WorkspaceFileMetadataReader = (path: string) => WorkspaceFileMetadata;
 
 /** An old untracked regular file eligible for later workspace-debris evidence checks. */
 export interface UntrackedWorkspaceCandidate {
@@ -45,6 +49,27 @@ export function parseNulDelimitedPaths(output: string): readonly string[] {
 
 function normalizePath(path: string): string {
   return path.replaceAll("\\", "/");
+}
+
+function isDependencyStorePath(path: string): boolean {
+  return normalizePath(path)
+    .split("/")
+    .some((segment) => DEPENDENCY_STORE_SEGMENTS.has(segment));
+}
+
+/** Reads metadata only for discovered paths outside known dependency-store segments. */
+export function inspectWorkspaceFileMetadata(
+  paths: readonly string[],
+  readMetadata: WorkspaceFileMetadataReader,
+): readonly WorkspaceFileMetadata[] {
+  const metadata: WorkspaceFileMetadata[] = [];
+  for (const path of paths) {
+    const normalizedPath = normalizePath(path);
+    if (isDependencyStorePath(normalizedPath)) continue;
+    const file = readMetadata(normalizedPath);
+    metadata.push({ ...file, path: normalizedPath });
+  }
+  return metadata;
 }
 
 function classifyIgnoreSource(sourcePath: string, globalExcludePath: string | undefined): IgnoreSource {
