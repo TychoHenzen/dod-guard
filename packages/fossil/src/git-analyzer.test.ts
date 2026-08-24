@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
-import { nonMergeGitLogArguments, parseNonMergeGitLog, resolveRenameActivities } from "./git-analyzer.js";
+import {
+  filterHistoryByExtensions,
+  nonMergeGitLogArguments,
+  parseNonMergeGitLog,
+  resolveRenameActivities,
+} from "./git-analyzer.js";
 import { createTemporaryRepository, type TemporaryRepository } from "./testing/fixtures.js";
 
 const repositories: TemporaryRepository[] = [];
@@ -66,4 +71,47 @@ test("collapses successive Git renames into one logical file at its final path",
     deleted: false,
     existsAtHead: true,
   });
+});
+
+// covers: fossil/burst-analysis :: History activity model :: Extension filter limits history
+test("filters whole rename identities without discarding cross-extension source history", () => {
+  const fullHistory = [
+    {
+      hash: "one",
+      committerTimestampMs: 1_000,
+      changes: [{ status: "added" as const, path: "src/candidate.ts" }],
+    },
+    {
+      hash: "two",
+      committerTimestampMs: 2_000,
+      changes: [{ status: "renamed" as const, previousPath: "src/candidate.ts", path: "docs/candidate.md" }],
+    },
+    {
+      hash: "three",
+      committerTimestampMs: 3_000,
+      changes: [{ status: "added" as const, path: "src/live.js" }],
+    },
+  ];
+
+  const typescriptHistory = filterHistoryByExtensions(fullHistory, new Set([".ts"]));
+  const markdownHistory = filterHistoryByExtensions(fullHistory, new Set([".md"]));
+
+  assert.deepEqual(typescriptHistory, []);
+  assert.deepEqual(markdownHistory, [
+    {
+      hash: "one",
+      committerTimestampMs: 1_000,
+      changes: [{ status: "added", path: "src/candidate.ts" }],
+    },
+    {
+      hash: "two",
+      committerTimestampMs: 2_000,
+      changes: [{ status: "renamed", previousPath: "src/candidate.ts", path: "docs/candidate.md" }],
+    },
+  ]);
+  assert.deepEqual(
+    fullHistory.flatMap((commit) => commit.changes.map((change) => change.path)),
+    ["src/candidate.ts", "docs/candidate.md", "src/live.js"],
+  );
+  assert.deepEqual(filterHistoryByExtensions(fullHistory, new Set()), fullHistory);
 });

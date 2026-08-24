@@ -19,8 +19,9 @@
 - [x] 2.2 Resolve rename chains into one logical file and report its current path.
 <!-- covers: fossil/burst-analysis :: History activity model :: Rename preserves logical identity -->
 <!-- status: completed -->
-- [ ] 2.3 Apply normalized extension filters before burst and file activity calculations.
+- [x] 2.3 Apply normalized extension filters before burst and file activity calculations.
 <!-- covers: fossil/burst-analysis :: History activity model :: Extension filter limits history -->
+<!-- status: completed -->
 - [ ] 2.4 Split consecutive commits when their time gap exceeds the configured threshold.
 <!-- covers: fossil/burst-analysis :: Temporal burst detection :: Gap above threshold splits commits -->
 - [ ] 2.5 Keep consecutive commits together when their gap equals the configured threshold.

@@ -70,6 +70,26 @@ export function parseNonMergeGitLog(rawLog: string): GitCommit[] {
   return commits;
 }
 
+function pathExtension(path: string): string {
+  const filename = path.slice(path.lastIndexOf("/") + 1);
+  const dot = filename.lastIndexOf(".");
+  return dot === -1 ? "" : filename.slice(dot);
+}
+
+/** Keeps whole candidate identities for later burst and score calculations. */
+export function filterHistoryByExtensions(commits: readonly GitCommit[], extensions: ReadonlySet<string>): GitCommit[] {
+  if (extensions.size === 0) return [...commits];
+  const selectedPaths = new Set(
+    resolveRenameActivities(commits)
+      .filter((activity) => extensions.has(pathExtension(activity.currentPath ?? activity.paths.at(-1) ?? "")))
+      .flatMap((activity) => activity.paths),
+  );
+  return commits.flatMap((commit) => {
+    const changes = commit.changes.filter((change) => selectedPaths.has(change.path));
+    return changes.length === 0 ? [] : [{ ...commit, changes }];
+  });
+}
+
 interface FileEvent {
   readonly change: GitFileChange;
   readonly commit: GitCommit;
