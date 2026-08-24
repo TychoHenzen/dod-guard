@@ -259,8 +259,9 @@
 - [x] 6.6 Suppress ANSI escapes whenever table output is redirected.
 <!-- covers: fossil/cli :: Table output :: Redirected table contains no ANSI escapes -->
 <!-- status: completed -->
-- [ ] 6.7 Serialize one schema-version-1 JSON document without table prose.
+- [x] 6.7 Serialize one schema-version-1 JSON document without table prose.
 <!-- covers: fossil/cli :: Versioned JSON output :: JSON output is machine-readable -->
+<!-- status: completed -->
 - [ ] 6.8 Report both burst-path finding totals and unique candidate path totals in JSON.
 <!-- covers: fossil/cli :: Versioned JSON output :: JSON distinguishes row and path totals -->
 - [ ] 6.9 Export `analyzeRepository()` and prove parity with CLI JSON report data.

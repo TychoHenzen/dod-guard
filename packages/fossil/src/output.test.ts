@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { burstTableRows, renderBurstTableRows, workspaceDebrisTableRows } from "./output.js";
-import type { BurstReport, WorkspaceDebrisFinding } from "./types.js";
+import { burstTableRows, renderBurstTableRows, renderFossilReportJson, workspaceDebrisTableRows } from "./output.js";
+import type { BurstReport, FossilReport, WorkspaceDebrisFinding } from "./types.js";
 
 function finding(path: string, kind: "untracked" | "ignored"): WorkspaceDebrisFinding {
   return {
@@ -256,4 +256,70 @@ test("renders ANSI styling only when the caller marks table output as a TTY", ()
   assert.match(redirected, /finding src\/finding.ts: score 0.8 \(full\)/);
   assert.match(redirected, /created in burst; 2 burst commits, 0 post-burst commits/);
   assert.equal(tty.startsWith("\u001b[1mBurst burst-1"), true);
+});
+
+// covers: fossil/cli :: Versioned JSON output :: JSON output is machine-readable
+test("serializes one complete schema-versioned JSON report without table prose", () => {
+  const report: FossilReport = {
+    schemaVersion: 1,
+    options: {
+      days: 90,
+      gapHours: 48,
+      threshold: 0.4,
+      format: "json",
+      extensions: [],
+      untrackedAgeDays: 90,
+      exclude: [],
+      verbose: false,
+    },
+    analysisTimestampMs: 1_735_689_600_000,
+    gitVersion: "2.47.0",
+    boundary: {
+      repositoryRoot: "C:/repo",
+      canonicalRepositoryRoot: "C:/repo",
+      unobservedMechanisms: [],
+    },
+    limits: {
+      maximumCommits: 10,
+      maximumFileStatusRecords: 10,
+      maximumInventoriedFiles: 10,
+      maximumGitStdoutBytes: 10,
+      maximumGitStderrBytes: 10,
+      maximumReferenceFileBytes: 10,
+      maximumReferenceTotalBytes: 10,
+    },
+    usage: {
+      commitRecords: 0,
+      fileStatusRecords: 0,
+      inventoriedFiles: 0,
+      gitStdoutBytes: 0,
+      gitStderrBytes: 0,
+      referenceBytes: 0,
+      omittedReferencePaths: 0,
+    },
+    completeness: {
+      historyComplete: true,
+      referenceAnalysisComplete: true,
+      workspaceDebrisComplete: true,
+    },
+    statistics: {
+      includedCommitCount: 0,
+      logicalFileCount: 0,
+      burstCount: 0,
+      candidateFindingCount: 0,
+      uniqueCandidatePathCount: 0,
+      workspaceDebrisCount: 0,
+    },
+    warnings: [],
+    bursts: [],
+    workspaceDebris: [],
+  };
+
+  const output = renderFossilReportJson(report);
+
+  assert.deepEqual(JSON.parse(output), report);
+  assert.equal(JSON.parse(output).schemaVersion, 1);
+  assert.equal(output.includes("\u001b["), false);
+  assert.equal(output.includes("Burst "), false);
+  assert.equal(output.includes("survivor "), false);
 });

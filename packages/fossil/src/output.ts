@@ -1,4 +1,4 @@
-import type { BurstReport, WorkspaceDebrisFinding } from "./types.js";
+import type { BurstReport, FossilReport, WorkspaceDebrisFinding } from "./types.js";
 
 /** Presentation modes that control workspace-debris table detail. */
 export type WorkspaceDebrisTableMode = "normal" | "verbose";
@@ -147,6 +147,11 @@ function burstTableLine(row: BurstTableRow, isTty: boolean): string {
 /** Renders current burst table rows with explicit caller-owned TTY styling control. */
 export function renderBurstTableRows(rows: readonly BurstTableRow[], { isTty }: BurstTableRenderOptions): string {
   return rows.map((row) => burstTableLine(row, isTty)).join("\n");
+}
+
+/** Serializes the versioned report as one machine-readable JSON document. */
+export function renderFossilReportJson(report: FossilReport): string {
+  return JSON.stringify(report);
 }
 
 /** Produces normal or verbose table rows without changing the underlying debris findings. */
