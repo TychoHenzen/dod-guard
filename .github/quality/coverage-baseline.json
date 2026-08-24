@@ -12,6 +12,12 @@
       "branches": 84.09,
       "functions": 88.88,
       "lines": 84.67
+    },
+    "fossil": {
+      "statements": 96.03,
+      "branches": 84.86,
+      "functions": 99.47,
+      "lines": 96.03
     }
   }
 }
