@@ -179,7 +179,16 @@ export function candidateFindingCounts(bursts: readonly BurstReport[]): Candidat
 
 /** Applies the report statistics derived from its burst-path finding records. */
 export function finalizeFossilReport(report: FossilReport): FossilReport {
-  return { ...report, statistics: { ...report.statistics, ...candidateFindingCounts(report.bursts) } };
+  return {
+    ...report,
+    statistics: { ...report.statistics, ...candidateFindingCounts(report.bursts) },
+    warnings: [...report.warnings].sort(
+      (left, right) =>
+        comparePaths(left.code, right.code) ||
+        comparePaths(normalizedPath(left.path ?? ""), normalizedPath(right.path ?? "")) ||
+        comparePaths(left.message, right.message),
+    ),
+  };
 }
 
 /** Produces normal or verbose table rows without changing the underlying debris findings. */

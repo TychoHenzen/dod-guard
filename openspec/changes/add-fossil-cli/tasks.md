@@ -280,8 +280,9 @@
 - [x] 6.13 Escape repository-derived terminal control characters in table output.
 <!-- covers: fossil/cli :: Table output :: Repository text cannot control the terminal -->
 <!-- status: completed -->
-- [ ] 6.14 Preserve nonfatal warnings as successful sorted JSON data.
+- [x] 6.14 Preserve nonfatal warnings as successful sorted JSON data.
 <!-- covers: fossil/cli :: Versioned JSON output :: Nonfatal warnings remain successful data -->
+<!-- status: completed -->
 - [ ] 6.15 Map typed API failures to CLI exit codes without partial success output.
 <!-- covers: fossil/cli :: Programmatic API parity :: Typed API failure maps to CLI status -->
 - [ ] 6.16 Pass metacharacter-containing repository paths to Git as one non-shell argument.
