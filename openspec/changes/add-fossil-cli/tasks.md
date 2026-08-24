@@ -265,8 +265,9 @@
 - [x] 6.8 Report both burst-path finding totals and unique candidate path totals in JSON.
 <!-- covers: fossil/cli :: Versioned JSON output :: JSON distinguishes row and path totals -->
 <!-- status: completed -->
-- [ ] 6.9 Export `analyzeRepository()` and prove parity with CLI JSON report data.
+- [x] 6.9 Export `analyzeRepository()` and prove parity with CLI JSON report data.
 <!-- covers: fossil/cli :: Programmatic API parity :: CLI and API agree -->
+<!-- status: completed -->
 - [ ] 6.10 Exit successfully and report zero when analysis produces no findings.
 <!-- covers: fossil/cli :: Process outcomes :: No findings is successful -->
 - [ ] 6.11 Convert a non-repository Git failure into stderr diagnostic and exit code 1.

@@ -1,7 +1,47 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { FossilUsageError, runFossilCli } from "./index.js";
-import type { NormalizedAnalysisOptions } from "./types.js";
+import { analyzeRepository, FossilUsageError, runFossilCli } from "./index.js";
+import type { FossilReport, NormalizedAnalysisOptions } from "./types.js";
+
+function reportFor(options: NormalizedAnalysisOptions): FossilReport {
+  return {
+    schemaVersion: 1,
+    options,
+    analysisTimestampMs: 0,
+    gitVersion: "2.47.0",
+    boundary: { repositoryRoot: "C:/repo", canonicalRepositoryRoot: "C:/repo", unobservedMechanisms: [] },
+    limits: {
+      maximumCommits: 0,
+      maximumFileStatusRecords: 0,
+      maximumInventoriedFiles: 0,
+      maximumGitStdoutBytes: 0,
+      maximumGitStderrBytes: 0,
+      maximumReferenceFileBytes: 0,
+      maximumReferenceTotalBytes: 0,
+    },
+    usage: {
+      commitRecords: 0,
+      fileStatusRecords: 0,
+      inventoriedFiles: 0,
+      gitStdoutBytes: 0,
+      gitStderrBytes: 0,
+      referenceBytes: 0,
+      omittedReferencePaths: 0,
+    },
+    completeness: { historyComplete: true, referenceAnalysisComplete: true, workspaceDebrisComplete: true },
+    statistics: {
+      includedCommitCount: 0,
+      logicalFileCount: 0,
+      burstCount: 0,
+      candidateFindingCount: 0,
+      uniqueCandidatePathCount: 0,
+      workspaceDebrisCount: 0,
+    },
+    warnings: [],
+    bursts: [],
+    workspaceDebris: [],
+  };
+}
 
 // covers: fossil/cli :: Analyze command :: Defaults are applied
 test("passes normalized defaults and the current directory to analyze", async () => {
@@ -16,6 +56,7 @@ test("passes normalized defaults and the current directory to analyze", async ()
         (options.exclude as string[]).push("mutated");
       }
       invocation += 1;
+      return reportFor(options);
     },
   };
 
@@ -81,7 +122,9 @@ test("normalizes every explicit analyze option", async () => {
     {
       analyze: async (repositoryPath: string, options: NormalizedAnalysisOptions) => {
         calls.push({ repositoryPath, options });
+        return reportFor(options);
       },
+      stdout: () => undefined,
     },
   );
 
@@ -123,6 +166,16 @@ test("rejects invalid argument forms with usage diagnostics before analysis", as
       runFossilCli(["node", "fossil", "analyze", ...argumentsForCase], {
         analyze: async () => {
           analyzeCalls += 1;
+          return reportFor({
+            days: 90,
+            gapHours: 48,
+            threshold: 0.4,
+            format: "table",
+            extensions: [],
+            untrackedAgeDays: 90,
+            exclude: [],
+            verbose: false,
+          });
         },
         stderr: (message) => stderr.push(message),
       }),
@@ -132,4 +185,36 @@ test("rejects invalid argument forms with usage diagnostics before analysis", as
     assert.match(stderr.join(""), /(?:error:|Usage: fossil analyze)/);
     assert.match(stderr.join(""), /Usage: fossil analyze/);
   }
+});
+
+// covers: fossil/cli :: Programmatic API parity :: CLI and API agree
+test("returns and serializes the same finalized report through one analysis core", async () => {
+  const options: NormalizedAnalysisOptions = {
+    days: 90,
+    gapHours: 48,
+    threshold: 0.4,
+    format: "json",
+    extensions: [],
+    untrackedAgeDays: 90,
+    exclude: [],
+    verbose: false,
+  };
+  const calls: Array<{ repositoryPath: string; options: NormalizedAnalysisOptions }> = [];
+  const core = async (repositoryPath: string, coreOptions: NormalizedAnalysisOptions): Promise<FossilReport> => {
+    calls.push({ repositoryPath, options: coreOptions });
+    return reportFor(coreOptions);
+  };
+  const apiReport = await analyzeRepository("C:/repositories/parity", options, core);
+  const stdout: string[] = [];
+
+  await runFossilCli(["node", "fossil", "analyze", "C:/repositories/parity", "--format", "json"], {
+    analyze: core,
+    stdout: (message) => stdout.push(message),
+  });
+
+  assert.deepEqual(JSON.parse(stdout.join("")), apiReport);
+  assert.deepEqual(calls, [
+    { repositoryPath: "C:/repositories/parity", options },
+    { repositoryPath: "C:/repositories/parity", options },
+  ]);
 });

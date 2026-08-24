@@ -7,7 +7,8 @@
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
-import type { NormalizedAnalysisOptions } from "./types.js";
+import { finalizeFossilReport, renderFossilReportJson } from "./output.js";
+import type { AnalyzeRepositoryResult, NormalizedAnalysisOptions } from "./types.js";
 
 export * from "./types.js";
 
@@ -25,7 +26,11 @@ export const DEFAULT_NORMALIZED_ANALYSIS_OPTIONS: NormalizedAnalysisOptions = {
   verbose: false,
 };
 
-export type AnalyzeCommandHandler = (repositoryPath: string, options: NormalizedAnalysisOptions) => Promise<void>;
+export type RepositoryAnalysisCore = (
+  repositoryPath: string,
+  options: NormalizedAnalysisOptions,
+) => Promise<AnalyzeRepositoryResult>;
+export type AnalyzeCommandHandler = RepositoryAnalysisCore;
 
 /** A command-line usage failure that callers map to the standard usage exit code. */
 export class FossilUsageError extends Error {
@@ -43,6 +48,20 @@ export interface FossilCliDependencies {
   readonly analyze: AnalyzeCommandHandler;
   readonly cwd?: () => string;
   readonly stderr?: (message: string) => void;
+  readonly stdout?: (message: string) => void;
+}
+
+async function unavailableRepositoryAnalysisCore(): Promise<AnalyzeRepositoryResult> {
+  throw new Error("Repository analysis is not configured.");
+}
+
+/** Runs the injected repository-analysis core and finalizes report-level statistics. */
+export async function analyzeRepository(
+  repositoryPath: string,
+  options: NormalizedAnalysisOptions,
+  core: RepositoryAnalysisCore = unavailableRepositoryAnalysisCore,
+): Promise<AnalyzeRepositoryResult> {
+  return finalizeFossilReport(await core(repositoryPath, options));
 }
 
 interface RawAnalyzeOptions {
@@ -116,6 +135,7 @@ export function createFossilProgram({
   analyze,
   cwd = process.cwd,
   stderr = process.stderr.write.bind(process.stderr),
+  stdout = process.stdout.write.bind(process.stdout),
 }: FossilCliDependencies): Command {
   const program = new Command()
     .name("fossil")
@@ -134,9 +154,10 @@ export function createFossilProgram({
     .option("--untracked-age <days>")
     .option("--exclude <patterns>")
     .option("--verbose")
-    .action(async (repositoryPath: string | undefined, options: RawAnalyzeOptions) =>
-      analyze(repositoryPath ?? cwd(), normalizeAnalyzeOptions(options)),
-    );
+    .action(async (repositoryPath: string | undefined, options: RawAnalyzeOptions) => {
+      const report = await analyzeRepository(repositoryPath ?? cwd(), normalizeAnalyzeOptions(options), analyze);
+      if (report.options.format === "json") stdout(renderFossilReportJson(report));
+    });
   return program;
 }
 
@@ -156,7 +177,7 @@ export async function runFossilCli(argv: readonly string[], dependencies: Fossil
 }
 
 async function main(): Promise<void> {
-  await runFossilCli(process.argv, { analyze: async () => undefined });
+  await runFossilCli(process.argv, { analyze: unavailableRepositoryAnalysisCore });
 }
 
 if (isMainModule()) {

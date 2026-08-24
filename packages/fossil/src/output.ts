@@ -156,14 +156,18 @@ export function renderBurstTableRows(rows: readonly BurstTableRow[], { isTty }: 
 
 /** Serializes the versioned report as one machine-readable JSON document. */
 export function renderFossilReportJson(report: FossilReport): string {
-  const candidateCounts = candidateFindingCounts(report.bursts);
-  return JSON.stringify({ ...report, statistics: { ...report.statistics, ...candidateCounts } });
+  return JSON.stringify(finalizeFossilReport(report));
 }
 
 /** Counts burst-path finding records and their unique normalized candidate paths. */
 export function candidateFindingCounts(bursts: readonly BurstReport[]): CandidateFindingCounts {
   const paths = bursts.flatMap((burst) => burst.findings.map((finding) => normalizedPath(finding.path)));
   return { candidateFindingCount: paths.length, uniqueCandidatePathCount: new Set(paths).size };
+}
+
+/** Applies the report statistics derived from its burst-path finding records. */
+export function finalizeFossilReport(report: FossilReport): FossilReport {
+  return { ...report, statistics: { ...report.statistics, ...candidateFindingCounts(report.bursts) } };
 }
 
 /** Produces normal or verbose table rows without changing the underlying debris findings. */
