@@ -5,6 +5,7 @@ import {
   nonMergeGitLogArguments,
   parseNonMergeGitLog,
   resolveRenameActivities,
+  splitTemporalClusters,
 } from "./git-analyzer.js";
 import { createTemporaryRepository, type TemporaryRepository } from "./testing/fixtures.js";
 
@@ -114,4 +115,20 @@ test("filters whole rename identities without discarding cross-extension source 
     ["src/candidate.ts", "docs/candidate.md", "src/live.js"],
   );
   assert.deepEqual(filterHistoryByExtensions(fullHistory, new Set()), fullHistory);
+});
+
+// covers: fossil/burst-analysis :: Temporal burst detection :: Gap above threshold splits commits
+test("splits chronological commits when an adjacent gap is one millisecond above the threshold", () => {
+  const commits = [
+    { hash: "first", committerTimestampMs: 1_000, changes: [] },
+    { hash: "second", committerTimestampMs: 1_500, changes: [] },
+    { hash: "third", committerTimestampMs: 2_001, changes: [] },
+  ];
+
+  const clusters = splitTemporalClusters(commits, 500);
+
+  assert.deepEqual(
+    clusters.map((cluster) => cluster.map((commit) => commit.hash)),
+    [["first", "second"], ["third"]],
+  );
 });

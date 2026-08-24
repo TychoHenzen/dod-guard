@@ -22,8 +22,9 @@
 - [x] 2.3 Apply normalized extension filters before burst and file activity calculations.
 <!-- covers: fossil/burst-analysis :: History activity model :: Extension filter limits history -->
 <!-- status: completed -->
-- [ ] 2.4 Split consecutive commits when their time gap exceeds the configured threshold.
+- [x] 2.4 Split consecutive commits when their time gap exceeds the configured threshold.
 <!-- covers: fossil/burst-analysis :: Temporal burst detection :: Gap above threshold splits commits -->
+<!-- status: completed -->
 - [ ] 2.5 Keep consecutive commits together when their gap equals the configured threshold.
 <!-- covers: fossil/burst-analysis :: Temporal burst detection :: Gap at threshold keeps commits together -->
 - [ ] 2.6 Implement weighted five-commit change-point detection for close disjoint work.
