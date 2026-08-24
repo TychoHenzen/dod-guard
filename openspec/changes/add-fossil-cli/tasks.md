@@ -277,8 +277,9 @@
 - [x] 6.12 Add the 5,000-commit and 1,000-file performance fixture and enforce the 10-second CI bound.
 <!-- covers: fossil/cli :: Analysis performance :: Target-size fixture meets runtime bound -->
 <!-- status: completed -->
-- [ ] 6.13 Escape repository-derived terminal control characters in table output.
+- [x] 6.13 Escape repository-derived terminal control characters in table output.
 <!-- covers: fossil/cli :: Table output :: Repository text cannot control the terminal -->
+<!-- status: completed -->
 - [ ] 6.14 Preserve nonfatal warnings as successful sorted JSON data.
 <!-- covers: fossil/cli :: Versioned JSON output :: Nonfatal warnings remain successful data -->
 - [ ] 6.15 Map typed API failures to CLI exit codes without partial success output.

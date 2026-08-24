@@ -49,6 +49,18 @@ export interface CandidateFindingCounts {
 const BOLD = "\u001b[1m";
 const RESET = "\u001b[0m";
 
+function terminalSafeText(value: string): string {
+  return [...value]
+    .map((character) => {
+      const codePoint = character.codePointAt(0);
+      if (codePoint === undefined || (codePoint > 0x1f && (codePoint < 0x7f || codePoint > 0x9f))) {
+        return character;
+      }
+      return `\\u${codePoint.toString(16).padStart(4, "0")}`;
+    })
+    .join("");
+}
+
 function topLevelDirectory(path: string): string | undefined {
   const normalized = normalizedPath(path);
   const separator = normalized.indexOf("/");
@@ -132,13 +144,13 @@ function burstTableLine(row: BurstTableRow, isTty: boolean): string {
   switch (row.kind) {
     case "burst":
       return styleBurstHeader(
-        `Burst ${row.id}: ${row.startDate} to ${row.endDate}, ${row.commitCount} commits, ${row.fileCount} files`,
+        `Burst ${terminalSafeText(row.id)}: ${row.startDate} to ${row.endDate}, ${row.commitCount} commits, ${row.fileCount} files`,
         isTty,
       );
     case "survivor":
-      return `  survivor ${row.path}`;
+      return `  survivor ${terminalSafeText(row.path)}`;
     case "finding":
-      return `  finding ${row.path}: score ${row.score} (${row.scoreBasis})`;
+      return `  finding ${terminalSafeText(row.path)}: score ${row.score} (${row.scoreBasis})`;
     case "finding-explanation": {
       const reference =
         row.referenceAvailability === "unavailable"

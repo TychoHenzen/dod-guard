@@ -258,6 +258,47 @@ test("renders ANSI styling only when the caller marks table output as a TTY", ()
   assert.equal(tty.startsWith("\u001b[1mBurst burst-1"), true);
 });
 
+// covers: fossil/cli :: Table output :: Repository text cannot control the terminal
+test("escapes control characters from repository-derived table text", () => {
+  const rows = [
+    {
+      kind: "burst" as const,
+      id: "burst\u001b[31m\u000a\u0085",
+      startDate: "2025-01-01",
+      endDate: "2025-01-02",
+      commitCount: 2,
+      fileCount: 1,
+    },
+    { kind: "survivor" as const, path: "src/\u0007survivor.ts" },
+    { kind: "finding" as const, path: "src/\u001b[2Jfinding.ts", score: 0.8, scoreBasis: "full" as const },
+    {
+      kind: "finding-explanation" as const,
+      createdInBurst: true,
+      burstCommits: 2,
+      postBurstCommits: 0,
+      referenceAvailability: "complete" as const,
+      strongInboundReferences: 1,
+      candidateNeighbors: ["src/candidate\u001b.ts"],
+      liveNeighbors: ["src/live\u0085.ts"],
+    },
+  ];
+
+  const redirected = renderBurstTableRows(rows, { isTty: false });
+  const tty = renderBurstTableRows(rows, { isTty: true });
+  const hasTerminalControl = (value: string) =>
+    [...value].some((character) => {
+      const codePoint = character.codePointAt(0) ?? -1;
+      return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
+    });
+
+  assert.equal(redirected.split("\n").some(hasTerminalControl), false);
+  assert.equal(redirected.includes("burst\\u001b[31m\\u000a\\u0085"), true);
+  assert.equal(redirected.includes("src/\\u0007survivor.ts"), true);
+  assert.equal(redirected.includes("src/\\u001b[2Jfinding.ts"), true);
+  assert.equal(tty.replaceAll("\u001b[1m", "").replaceAll("\u001b[0m", "").split("\n").some(hasTerminalControl), false);
+  assert.equal(tty.startsWith("\u001b[1mBurst burst\\u001b[31m\\u000a\\u0085"), true);
+});
+
 // covers: fossil/cli :: Versioned JSON output :: JSON output is machine-readable
 test("serializes one complete schema-versioned JSON report without table prose", () => {
   const report: FossilReport = {
