@@ -13,6 +13,19 @@ export interface BurstCandidateEvidence {
   readonly score: FossilScore;
 }
 
+/** Both reference subscores are available together, or neither is available. */
+export type CandidateReferenceSubscores =
+  | {
+      readonly available: true;
+      readonly referenceWeakness: number;
+      readonly clusterIsolation: number;
+    }
+  | {
+      readonly available: false;
+      readonly referenceWeakness?: never;
+      readonly clusterIsolation?: never;
+    };
+
 /** Normalizes one candidate's positive burst churn against the positive burst maximum. */
 export function normalizedBurstChurn(candidate: BurstFileActivity, burstFiles: readonly BurstFileActivity[]): number {
   const maximumBurstCommits = Math.max(0, ...burstFiles.map((activity) => activity.burstCommits));
@@ -60,6 +73,20 @@ export function clusterIsolationScore(
   }
   if (neighbors.size === 0) return 1;
   return [...neighbors].filter((neighbor) => candidatePaths.has(neighbor)).length / neighbors.size;
+}
+
+/** Derives both reference subscores together, omitting both when candidate evidence is incomplete. */
+export function candidateReferenceSubscores(
+  candidatePath: string,
+  graph: ReferenceGraph,
+  candidatePaths: ReadonlySet<string>,
+): CandidateReferenceSubscores {
+  if (graph.unavailablePaths.includes(candidatePath)) return { available: false };
+  return {
+    available: true,
+    referenceWeakness: referenceWeaknessScore(candidatePath, graph, candidatePaths),
+    clusterIsolation: clusterIsolationScore(candidatePath, graph, candidatePaths),
+  };
 }
 
 /** Combines all four available fossil subscores using the fixed full-evidence weights. */

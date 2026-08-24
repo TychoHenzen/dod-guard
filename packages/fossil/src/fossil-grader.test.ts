@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   abandonmentScore,
+  candidateReferenceSubscores,
   clusterIsolationScore,
   meetsFossilThreshold,
   normalizedBurstChurn,
@@ -69,6 +70,45 @@ test("retains independently qualifying evidence for one path in multiple bursts"
   assert.notEqual(qualified[0]?.activity, qualified[1]?.activity);
   assert.equal(qualified[0]?.activity.burstCommits, 3);
   assert.equal(qualified[1]?.activity.burstCommits, 8);
+});
+
+// covers: fossil/scoring :: Combined fossil score :: Reference subscores are available as a pair
+test("omits both reference subscores together when candidate reference evidence is incomplete", () => {
+  const graph: ReferenceGraph = {
+    edges: [
+      {
+        sourcePath: "src/live.ts",
+        targetPath: "src/candidate.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 0, end: 1, line: 1, column: 1 },
+      },
+      {
+        sourcePath: "src/candidate.ts",
+        targetPath: "src/fossil.ts",
+        language: "typescript",
+        kind: "import",
+        strength: "strong",
+        span: { start: 1, end: 2, line: 1, column: 2 },
+      },
+    ],
+    unresolved: [],
+    complete: false,
+    unavailablePaths: ["src/candidate.ts"],
+  };
+
+  assert.deepEqual(candidateReferenceSubscores("src/candidate.ts", graph, new Set(["src/fossil.ts"])), {
+    available: false,
+  });
+  assert.deepEqual(
+    candidateReferenceSubscores(
+      "src/candidate.ts",
+      { ...graph, complete: true, unavailablePaths: [] },
+      new Set(["src/fossil.ts"]),
+    ),
+    { available: true, referenceWeakness: 0.5, clusterIsolation: 0.5 },
+  );
 });
 
 // covers: fossil/scoring :: Cluster isolation score :: Candidate only references fossils

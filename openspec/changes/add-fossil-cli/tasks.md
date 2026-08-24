@@ -184,8 +184,9 @@
 - [x] 4.13 Preserve independent evidence when one path qualifies in more than one burst.
 <!-- covers: fossil/scoring :: Threshold and burst assembly :: Same path can carry burst-specific evidence -->
 <!-- status: completed -->
-- [ ] 4.14 Make both reference subscores unavailable together for incomplete candidate reference analysis.
+- [x] 4.14 Make both reference subscores unavailable together for incomplete candidate reference analysis.
 <!-- covers: fossil/scoring :: Combined fossil score :: Reference subscores are available as a pair -->
+<!-- status: completed -->
 - [ ] 4.15 Mark every fossil finding advisory even at the maximum score.
 <!-- covers: fossil/scoring :: Advisory-only findings :: High score is not deletion authority -->
 
