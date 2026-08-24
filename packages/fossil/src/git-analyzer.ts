@@ -197,6 +197,12 @@ export function splitAtChangePoint(commits: readonly GitCommit[]): GitCommit[][]
   return splitChangePoints(commits, 0, commits.length, fileIdentities(commits));
 }
 
+/** Retains only clusters whose closed state was established by the caller. */
+export function retainQualifiedClosedClusters(clusters: readonly (readonly GitCommit[])[]): GitCommit[][] {
+  const identities = fileIdentities(clusters.flat());
+  return clusters.filter((cluster) => partitionQualifies(cluster, identities)).map((cluster) => [...cluster]);
+}
+
 interface FileEvent {
   readonly change: GitFileChange;
   readonly commit: GitCommit;

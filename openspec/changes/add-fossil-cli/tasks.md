@@ -37,8 +37,9 @@
 - [x] 2.8 Implement deterministic change-point tie-breaking and recursive partitioning.
 <!-- covers: fossil/burst-analysis :: File-set change-point detection :: Deterministic recursive split order -->
 <!-- status: completed -->
-- [ ] 2.9 Drop closed clusters below the minimum commit or distinct-file count.
+- [x] 2.9 Drop closed clusters below the minimum commit or distinct-file count.
 <!-- covers: fossil/burst-analysis :: Burst qualification :: Ordinary small cluster is dropped -->
+<!-- status: completed -->
 - [ ] 2.10 Suppress survivor and candidate output for a temporal cluster that is not yet closed.
 <!-- covers: fossil/burst-analysis :: Burst qualification :: Recent temporal cluster remains unfinished -->
 - [ ] 2.11 Classify files with at least three later commits as survivors.
