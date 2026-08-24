@@ -175,8 +175,9 @@
 - [x] 4.10 Combine four available subscores with the fixed fossil weights.
 <!-- covers: fossil/scoring :: Combined fossil score :: Complete scoring uses fixed weights -->
 <!-- status: completed -->
-- [ ] 4.11 Renormalize churn and abandonment weights when reference signals are unavailable.
+- [x] 4.11 Renormalize churn and abandonment weights when reference signals are unavailable.
 <!-- covers: fossil/scoring :: Combined fossil score :: Missing reference analysis renormalizes Git signals -->
+<!-- status: completed -->
 - [ ] 4.12 Include candidates whose score exactly equals the configured threshold.
 <!-- covers: fossil/scoring :: Threshold and burst assembly :: Threshold is inclusive -->
 - [ ] 4.13 Preserve independent evidence when one path qualifies in more than one burst.

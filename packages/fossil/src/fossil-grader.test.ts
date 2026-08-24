@@ -32,6 +32,16 @@ test("combines all available subscores with the fixed full-evidence weights", ()
   assert.deepEqual(scoreFossilSubscores(subscores), { score: 0.59, basis: "full" });
 });
 
+// covers: fossil/scoring :: Combined fossil score :: Missing reference analysis renormalizes Git signals
+test("renormalizes Git subscores when both reference signals are unavailable", () => {
+  const subscores: FossilSubscores = { churn: 0.4, abandonment: 0.6 };
+
+  assert.deepEqual(scoreFossilSubscores(subscores), {
+    score: (0.3 / 0.65) * 0.4 + (0.35 / 0.65) * 0.6,
+    basis: "git-only",
+  });
+});
+
 // covers: fossil/scoring :: Cluster isolation score :: Candidate only references fossils
 test("gives full isolation when every unique resolved neighbor is a fossil candidate", () => {
   const graph: ReferenceGraph = {
