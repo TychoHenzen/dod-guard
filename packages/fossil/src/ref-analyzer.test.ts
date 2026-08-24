@@ -57,6 +57,37 @@ test("skips oversized sources before reading content and retains later bounded s
   assert.equal(result.acceptedBytes, maximumBytes + 7);
 });
 
+// covers: fossil/reference-analysis :: Bounded source scanning :: Binary file is not regex parsed
+test("omits binary content from bounded reference sources and continues with later text", () => {
+  const sourceContents = new Map([
+    ["src/binary.ts", "text\0not-source"],
+    ["src/later.ts", "export const later = true;\n"],
+  ]);
+  const result = readBoundedReferenceSources(
+    [
+      { path: "src/binary.ts", language: "typescript" as const },
+      { path: "src/later.ts", language: "typescript" as const },
+    ],
+    () => ({ byteLength: 12 }),
+    (source) => sourceContents.get(source.path) ?? "",
+  );
+
+  assert.deepEqual(result.sources, [
+    { path: "src/later.ts", language: "typescript", content: "export const later = true;\n" },
+  ]);
+  assert.deepEqual(result.graph, {
+    edges: [],
+    unresolved: [],
+    complete: false,
+    unavailablePaths: ["src/binary.ts"],
+  });
+  assert.deepEqual(result.warnings, [
+    { code: "reference_binary", message: "Reference source is binary.", path: "src/binary.ts" },
+  ]);
+  assert.equal(result.acceptedBytes, 12);
+  assert.equal(JSON.stringify(result.sources).includes("text\0not-source"), false);
+});
+
 // covers: fossil/reference-analysis :: Bounded source scanning :: Total scan budget stops further content reads
 test("stops all later source reads when the total content budget is reached or exceeded", () => {
   const exactMetadataReads: string[] = [];

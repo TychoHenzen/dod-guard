@@ -834,7 +834,17 @@ export function readBoundedReferenceSources(
         totalLimitReached = true;
         continue;
       }
-      readableSources.push({ ...source, content: readSource(source) });
+      const content = readSource(source);
+      if (content.includes("\0")) {
+        unavailablePaths.push(source.path);
+        warnings.push({
+          code: "reference_binary",
+          message: "Reference source is binary.",
+          path: source.path,
+        });
+        continue;
+      }
+      readableSources.push({ ...source, content });
       acceptedBytes += byteLength;
     } catch {
       unavailablePaths.push(source.path);
