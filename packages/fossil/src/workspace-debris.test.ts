@@ -197,3 +197,18 @@ test("excludes dependency-store paths before metadata reads and ignored candidat
     ],
   );
 });
+
+// covers: fossil/workspace-debris :: Safe workspace boundaries :: Sensitive file is excluded
+test("excludes mixed-case sensitive files, extensions, prefixes, and directories before metadata reads", () => {
+  const metadataReads: string[] = [];
+  const metadata = inspectWorkspaceFileMetadata(
+    ["config/.ENV.Production", "certs/Client.PEM", "secrets/CredentialsBackup", ".AwS\\config", "scratch/allowed.ts"],
+    (path) => {
+      metadataReads.push(path);
+      return { path, isRegularFile: true, modifiedTimestampMs: 0 };
+    },
+  );
+
+  assert.deepEqual(metadataReads, ["scratch/allowed.ts"]);
+  assert.deepEqual(metadata, [{ path: "scratch/allowed.ts", isRegularFile: true, modifiedTimestampMs: 0 }]);
+});

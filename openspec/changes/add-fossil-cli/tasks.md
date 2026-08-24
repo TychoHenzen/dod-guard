@@ -214,8 +214,9 @@
 - [x] 5.7 Exclude dependency-store contents from workspace inspection and findings.
 <!-- covers: fossil/workspace-debris :: Safe workspace boundaries :: Dependency store is excluded -->
 <!-- status: completed -->
-- [ ] 5.8 Exclude sensitive environment-file paths and content from findings.
+- [x] 5.8 Exclude sensitive environment-file paths and content from findings.
 <!-- covers: fossil/workspace-debris :: Safe workspace boundaries :: Sensitive file is excluded -->
+<!-- status: completed -->
 - [ ] 5.9 Exclude symlinks whose resolved targets leave the repository.
 <!-- covers: fossil/workspace-debris :: Safe workspace boundaries :: External symlink is excluded -->
 - [ ] 5.10 Label debris findings for review without making deletion claims.
