@@ -35,21 +35,21 @@
       "dirty": false
     },
     "packages/quality-guard/src/index.ts": {
-      "last_tested": "2026-08-08",
+      "last_tested": "2026-08-24",
       "last_result": {
-        "total": 70,
+        "total": 82,
         "caught": 10,
-        "missed": 35,
-        "timeout": 2,
-        "unviable": 23,
+        "missed": 41,
+        "timeout": 3,
+        "unviable": 28,
         "status": "ok",
         "error": null
       },
       "lines": 125,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "1307d99aa942412d7ed15b63f25c1bd24f329778a9ab1c8813b5cebd49cce6a4",
-      "dirty": true
+      "fingerprint": "90106dc85efd93c50aa9662e93c960904573796a9a201e82f087614e549c3191",
+      "dirty": false
     },
     "packages/quality-guard/src/scanner.ts": {
       "last_tested": "2026-08-19",
@@ -256,21 +256,21 @@
       "dirty": false
     },
     "packages/dod-guard/src/cover/report.ts": {
-      "last_tested": "2026-08-14",
+      "last_tested": "2026-08-24",
       "last_result": {
-        "total": 27,
-        "caught": 27,
-        "missed": 0,
+        "total": 43,
+        "caught": 35,
+        "missed": 5,
         "timeout": 0,
-        "unviable": 0,
+        "unviable": 3,
         "status": "ok",
         "error": null
       },
       "lines": 114,
       "error_count": 0,
       "recent_commits": 8,
-      "fingerprint": "d429fb0e51c6e00a228dbdeb63da01907fd165a6871f05f8de77c606fd248767",
-      "dirty": true
+      "fingerprint": "d0c6ac12287f7bf3d4d4ebbdef14e5f98f32c88b627a41fe614388d3c424c1cf",
+      "dirty": false
     },
     "packages/dod-guard/src/cover/run.ts": {
       "last_tested": "2026-08-23",
@@ -375,21 +375,21 @@
       "dirty": false
     },
     "packages/dod-guard/src/cover/languages.ts": {
-      "last_tested": "2026-08-16",
+      "last_tested": "2026-08-24",
       "last_result": {
-        "total": 206,
-        "caught": 115,
-        "missed": 90,
-        "timeout": 0,
-        "unviable": 1,
+        "total": 467,
+        "caught": 290,
+        "missed": 172,
+        "timeout": 1,
+        "unviable": 4,
         "status": "ok",
         "error": null
       },
       "lines": 221,
       "error_count": 0,
       "recent_commits": 7,
-      "fingerprint": "653ab9bd447b6f89f2f2ea2c0f06e44ba62d4f7b310ceff832ebf4e5b8e9a37b",
-      "dirty": true
+      "fingerprint": "7d93c0e14cc7723c5053f8c392253b494fd10d44c03242e9ff57a05e248c4ffa",
+      "dirty": false
     },
     "packages/dod-guard/src/cover/test-globs.ts": {
       "last_tested": "2026-08-20",
@@ -461,58 +461,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 20126,
-    "caught": 8337,
-    "missed": 6912,
-    "timeout": 97,
-    "unviable": 4780,
+    "total_mutants": 20718,
+    "caught": 8672,
+    "missed": 7130,
+    "timeout": 101,
+    "unviable": 4815,
     "error": 44,
-    "runs": 152,
-    "files_tested": 152
+    "runs": 155,
+    "files_tested": 155
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/brevity.ts",
-      "result": {
-        "total": 366,
-        "caught": 153,
-        "missed": 143,
-        "timeout": 0,
-        "unviable": 70,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/obsidian-rag/src/indexer.ts",
-      "result": {
-        "total": 121,
-        "caught": 58,
-        "missed": 60,
-        "timeout": 0,
-        "unviable": 3,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/baseline.ts",
-      "result": {
-        "total": 126,
-        "caught": 68,
-        "missed": 58,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "2f117f279d50109efc411771b33d789c9077e92b",
@@ -1867,6 +1825,48 @@
         "missed": 24,
         "timeout": 0,
         "unviable": 3,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-24",
+      "commit": "5eb764e896d7b562bfd0692f947f99b66d4f5ca5",
+      "file": "packages/dod-guard/src/cover/report.ts",
+      "result": {
+        "total": 43,
+        "caught": 35,
+        "missed": 5,
+        "timeout": 0,
+        "unviable": 3,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-24",
+      "commit": "5eb764e896d7b562bfd0692f947f99b66d4f5ca5",
+      "file": "packages/dod-guard/src/cover/languages.ts",
+      "result": {
+        "total": 467,
+        "caught": 290,
+        "missed": 172,
+        "timeout": 1,
+        "unviable": 4,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-24",
+      "commit": "5eb764e896d7b562bfd0692f947f99b66d4f5ca5",
+      "file": "packages/quality-guard/src/index.ts",
+      "result": {
+        "total": 82,
+        "caught": 10,
+        "missed": 41,
+        "timeout": 3,
+        "unviable": 28,
         "status": "ok",
         "error": null
       }

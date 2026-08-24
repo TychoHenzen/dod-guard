@@ -1,58 +1,61 @@
 # Micro-Mutation Report
 
-**Generated**: 2026-08-23 | **Commit**: `fc50137`
+**Generated**: 2026-08-24 | **Commit**: `5eb764e`
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
-| Total mutants | 20126 |
-| Killed | 8337 |
-| Missed | 6912 |
-| Timeout | 97 |
-| No coverage | 4780 |
-| Catch rate | 41.4% |
-| Runs | 152 |
-| Files tested | 152 |
+| Total mutants | 20718 |
+| Killed | 8672 |
+| Missed | 7130 |
+| Timeout | 101 |
+| No coverage | 4815 |
+| Catch rate | 41.9% |
+| Runs | 155 |
+| Files tested | 155 |
 
-**Last run**: 2026-08-23 — `packages/dod-guard/src/cover/run.ts` → ok
+**Last run**: 2026-08-24 — `packages/quality-guard/src/index.ts` → ok
 
 ## File Inventory
 
 | Prio | File | Lines | Churn | Stale | Dirty | Last Tested | Result | Status |
 |------|------|-------|-------|-------|-------|-------------|--------|--------|
-| 55% | packages/dod-guard/src/cover/report.ts | 114 | 8 | 9d | 🟡 | 2026-08-14 | 27/27 killed | ✅ |
-| 54% | packages/dod-guard/src/cover/languages.ts | 221 | 7 | 7d | 🟡 | 2026-08-16 | 115/206 killed | ⚠️ |
-| 46% | packages/quality-guard/src/index.ts | 125 | 2 | 15d | 🟡 | 2026-08-08 | 10/70 killed | ⚠️ |
-| 46% | packages/dod-guard/src/openspec/tasks-parser.ts | 120 | 4 | 8d | 🟡 | 2026-08-15 | 129/184 killed | ⚠️ |
-| 43% | packages/dod-guard/src/cover/markers.ts | 67 | 4 | 7d | 🟡 | 2026-08-16 | 31/37 killed | ⚠️ |
-| 38% | packages/dod-guard/src/cli.ts | 101 | 15 | 0d | — | 2026-08-23 | 61/75 killed | ⚠️ |
-| 38% | packages/dod-guard/src/cover/run.ts | 94 | 10 | 0d | — | 2026-08-23 | 56/83 killed | ⚠️ |
-| 37% | packages/dod-guard/src/index.ts | 71 | 41 | 0d | — | 2026-08-23 | 13/46 killed | ⚠️ |
-| 29% | packages/dod-guard/src/openspec/requirements.ts | 90 | 3 | 9d | — | 2026-08-14 | 45/94 killed | ⚠️ |
-| 27% | packages/dod-guard/src/cover/baseline.ts | 65 | 3 | 8d | — | 2026-08-15 | 39/46 killed | ⚠️ |
-| 27% | packages/dod-guard/src/openspec/glob.ts | 70 | 3 | 7d | — | 2026-08-16 | 42/63 killed | ⚠️ |
-| 25% | packages/dod-guard/src/openspec/fetch-instructions.ts | 50 | 3 | 6d | — | 2026-08-17 | 11/15 killed | ⚠️ |
-| 23% | packages/dod-guard/src/cover/enumerate.ts | 63 | 2 | 5d | — | 2026-08-18 | 26/29 killed | ⚠️ |
-| 23% | packages/dod-guard/src/shell.ts | 51 | 2 | 6d | — | 2026-08-17 | 13/36 killed | ⚠️ |
-| 22% | packages/dod-guard/src/cover/package-dir.ts | 27 | 3 | 6d | — | 2026-08-17 | 7/17 killed | ⚠️ |
-| 22% | packages/dod-guard/src/testing/spec-fixtures.ts | 46 | 2 | 5d | — | 2026-08-18 | 11/43 killed | ⚠️ |
-| 22% | packages/dod-guard/src/cover/plan-checks.ts | 84 | 1 | 4d | — | 2026-08-19 | 51/73 killed | ⚠️ |
-| 21% | packages/quality-guard/src/scanner.ts | 68 | 1 | 4d | — | 2026-08-19 | 47/56 killed | ⚠️ |
-| 20% | packages/dod-guard/src/cover/test-globs.ts | 38 | 2 | 3d | — | 2026-08-20 | 29/38 killed | ⚠️ |
-| 18% | packages/quality-guard/src/skips.ts | 42 | 1 | 3d | — | 2026-08-20 | 33/41 killed | ⚠️ |
-| 18% | packages/dod-guard/src/cover/test-runners.ts | 25 | 2 | 3d | — | 2026-08-20 | 4/29 killed | ⚠️ |
-| 14% | packages/dod-guard/src/openspec/scenario-id.ts | 16 | 1 | 2d | — | 2026-08-21 | 2/2 killed | ✅ |
-| 13% | packages/dod-guard/src/testing/capture-io.ts | 11 | 1 | 2d | — | 2026-08-21 | 10/11 killed | ⚠️ |
-| 12% | packages/dod-guard/src/openspec/scenario-block.ts | 10 | 1 | 2d | — | 2026-08-21 | 0/0 killed | ⚠️ |
-| 11% | packages/dod-guard/src/openspec/dependency.ts | 9 | 1 | 1d | — | 2026-08-22 | 0/0 killed | ⚠️ |
-| 11% | packages/dod-guard/src/openspec/requirement-block.ts | 9 | 1 | 1d | — | 2026-08-22 | 0/0 killed | ⚠️ |
-| 8% | packages/dod-guard/src/runtime-root.ts | 4 | 1 | 1d | — | 2026-08-22 | 2/2 killed | ✅ |
+| 47% | packages/dod-guard/src/openspec/tasks-parser.ts | 120 | 4 | 9d | 🟡 | 2026-08-15 | 129/184 killed | ⚠️ |
+| 44% | packages/dod-guard/src/cover/markers.ts | 67 | 4 | 8d | 🟡 | 2026-08-16 | 31/37 killed | ⚠️ |
+| 39% | packages/dod-guard/src/cli.ts | 101 | 15 | 1d | — | 2026-08-23 | 61/75 killed | ⚠️ |
+| 38% | packages/dod-guard/src/cover/run.ts | 94 | 10 | 1d | — | 2026-08-23 | 56/83 killed | ⚠️ |
+| 37% | packages/dod-guard/src/index.ts | 71 | 41 | 1d | — | 2026-08-23 | 13/46 killed | ⚠️ |
+| 35% | packages/dod-guard/src/cover/languages.ts | 221 | 7 | 0d | — | 2026-08-24 | 290/467 killed | ⚠️ |
+| 35% | packages/dod-guard/src/cover/report.ts | 114 | 8 | 0d | — | 2026-08-24 | 35/43 killed | ⚠️ |
+| 29% | packages/dod-guard/src/openspec/requirements.ts | 90 | 3 | 10d | — | 2026-08-14 | 45/94 killed | ⚠️ |
+| 27% | packages/dod-guard/src/cover/baseline.ts | 65 | 3 | 9d | — | 2026-08-15 | 39/46 killed | ⚠️ |
+| 27% | packages/dod-guard/src/openspec/glob.ts | 70 | 3 | 8d | — | 2026-08-16 | 42/63 killed | ⚠️ |
+| 25% | packages/dod-guard/src/openspec/fetch-instructions.ts | 50 | 3 | 7d | — | 2026-08-17 | 11/15 killed | ⚠️ |
+| 24% | packages/dod-guard/src/cover/enumerate.ts | 63 | 2 | 6d | — | 2026-08-18 | 26/29 killed | ⚠️ |
+| 23% | packages/dod-guard/src/shell.ts | 51 | 2 | 7d | — | 2026-08-17 | 13/36 killed | ⚠️ |
+| 23% | packages/quality-guard/src/index.ts | 125 | 2 | 0d | — | 2026-08-24 | 10/82 killed | ⚠️ |
+| 23% | packages/dod-guard/src/cover/package-dir.ts | 27 | 3 | 7d | — | 2026-08-17 | 7/17 killed | ⚠️ |
+| 22% | packages/dod-guard/src/testing/spec-fixtures.ts | 46 | 2 | 6d | — | 2026-08-18 | 11/43 killed | ⚠️ |
+| 22% | packages/dod-guard/src/cover/plan-checks.ts | 84 | 1 | 5d | — | 2026-08-19 | 51/73 killed | ⚠️ |
+| 21% | packages/quality-guard/src/scanner.ts | 68 | 1 | 5d | — | 2026-08-19 | 47/56 killed | ⚠️ |
+| 21% | packages/dod-guard/src/cover/test-globs.ts | 38 | 2 | 4d | — | 2026-08-20 | 29/38 killed | ⚠️ |
+| 19% | packages/quality-guard/src/skips.ts | 42 | 1 | 4d | — | 2026-08-20 | 33/41 killed | ⚠️ |
+| 19% | packages/dod-guard/src/cover/test-runners.ts | 25 | 2 | 4d | — | 2026-08-20 | 4/29 killed | ⚠️ |
+| 15% | packages/dod-guard/src/openspec/scenario-id.ts | 16 | 1 | 3d | — | 2026-08-21 | 2/2 killed | ✅ |
+| 13% | packages/dod-guard/src/testing/capture-io.ts | 11 | 1 | 3d | — | 2026-08-21 | 10/11 killed | ⚠️ |
+| 13% | packages/dod-guard/src/openspec/scenario-block.ts | 10 | 1 | 3d | — | 2026-08-21 | 0/0 killed | ⚠️ |
+| 12% | packages/dod-guard/src/openspec/dependency.ts | 9 | 1 | 2d | — | 2026-08-22 | 0/0 killed | ⚠️ |
+| 12% | packages/dod-guard/src/openspec/requirement-block.ts | 9 | 1 | 2d | — | 2026-08-22 | 0/0 killed | ⚠️ |
+| 9% | packages/dod-guard/src/runtime-root.ts | 4 | 1 | 2d | — | 2026-08-22 | 2/2 killed | ✅ |
 
 ## Recent Runs
 
 | Date | Commit | File | Mutants | Killed | Missed | Status |
 |------|--------|------|---------|--------|--------|--------|
+| 2026-08-24 | `5eb764e` | packages/quality-guard/src/index.ts | 82 | 10 | 41 | ok |
+| 2026-08-24 | `5eb764e` | packages/dod-guard/src/cover/languages.ts | 467 | 290 | 172 | ok |
+| 2026-08-24 | `5eb764e` | packages/dod-guard/src/cover/report.ts | 43 | 35 | 5 | ok |
 | 2026-08-23 | `fc50137` | packages/dod-guard/src/cover/run.ts | 83 | 56 | 24 | ok |
 | 2026-08-23 | `fc50137` | packages/dod-guard/src/cli.ts | 75 | 61 | 9 | ok |
 | 2026-08-23 | `fc50137` | packages/dod-guard/src/index.ts | 46 | 13 | 13 | ok |
@@ -80,9 +83,6 @@
 | 2026-08-15 | `dbfb616` | packages/dod-guard/src/openspec/tasks-parser.ts | 184 | 129 | 47 | ok |
 | 2026-08-15 | `dbfb616` | packages/dod-guard/src/cover/baseline.ts | 46 | 39 | 7 | ok |
 | 2026-08-15 | `dbfb616` | packages/dod-guard/src/cover/reachability.ts | 91 | 64 | 12 | ok |
-| 2026-08-14 | `1111979` | packages/dod-guard/src/cover/report.ts | 27 | 27 | 0 | ok |
-| 2026-08-14 | `1111979` | packages/dod-guard/src/openspec/requirements.ts | 94 | 45 | 43 | ok |
-| 2026-08-14 | `1111979` | packages/dod-guard/src/cover/run.ts | 43 | 28 | 8 | ok |
 
 ## Survivor Reports
 
@@ -124,10 +124,10 @@ Use these to identify weak tests and add targeted assertions.
 | [gates.json](.data/micro-mutations/survivors/gates.json) | 49 | packages/evomcp/src/gates.ts |
 | [glob.json](.data/micro-mutations/survivors/glob.json) | 20 | packages/dod-guard/src/openspec/glob.ts |
 | [import-dod.json](.data/micro-mutations/survivors/import-dod.json) | 16 | packages/dod-guard/src/openspec/import-dod.ts |
-| [index.json](.data/micro-mutations/survivors/index.json) | 13 | packages/dod-guard/src/index.ts |
+| [index.json](.data/micro-mutations/survivors/index.json) | 41 | packages/quality-guard/src/index.ts |
 | [indexer.json](.data/micro-mutations/survivors/indexer.json) | 60 | packages/obsidian-rag/src/indexer.ts |
 | [judge.json](.data/micro-mutations/survivors/judge.json) | 91 | packages/evomcp/src/judge.ts |
-| [languages.json](.data/micro-mutations/survivors/languages.json) | 90 | packages/dod-guard/src/cover/languages.ts |
+| [languages.json](.data/micro-mutations/survivors/languages.json) | 172 | packages/dod-guard/src/cover/languages.ts |
 | [manual.json](.data/micro-mutations/survivors/manual.json) | 12 | packages/dod-guard/src/manual.ts |
 | [markers.json](.data/micro-mutations/survivors/markers.json) | 5 | packages/dod-guard/src/cover/markers.ts |
 | [notify.json](.data/micro-mutations/survivors/notify.json) | 8 | packages/dod-guard/src/notify.ts |
@@ -143,6 +143,7 @@ Use these to identify weak tests and add targeted assertions.
 | [regenerate-dod.json](.data/micro-mutations/survivors/regenerate-dod.json) | 40 | packages/dod-guard/src/openspec/regenerate-dod.ts |
 | [regression.json](.data/micro-mutations/survivors/regression.json) | 4 | packages/dod-guard/src/regression.ts |
 | [render.json](.data/micro-mutations/survivors/render.json) | 41 | packages/evomcp/src/render.ts |
+| [report.json](.data/micro-mutations/survivors/report.json) | 5 | packages/dod-guard/src/cover/report.ts |
 | [requirements.json](.data/micro-mutations/survivors/requirements.json) | 43 | packages/dod-guard/src/openspec/requirements.ts |
 | [run.json](.data/micro-mutations/survivors/run.json) | 24 | packages/dod-guard/src/cover/run.ts |
 | [scanner.json](.data/micro-mutations/survivors/scanner.json) | 8 | packages/quality-guard/src/scanner.ts |

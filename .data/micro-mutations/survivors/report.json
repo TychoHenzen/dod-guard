@@ -1,0 +1,53 @@
+{
+  "source": "packages/dod-guard/src/cover/report.ts",
+  "date": "2026-08-24T07:39:35.278Z",
+  "summary": {
+    "total": 43,
+    "killed": 35,
+    "survived": 5,
+    "timeout": 0,
+    "unviable": 3
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/cover/report.js",
+      "id": "3",
+      "mutator": "OptionalChaining",
+      "replacement": "adapter.language",
+      "dist_line": 11,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/report.js",
+      "id": "6",
+      "mutator": "OptionalChaining",
+      "replacement": "adapter.resolveWholeFileCommand",
+      "dist_line": 12,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/report.js",
+      "id": "21",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 35,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/report.js",
+      "id": "29",
+      "mutator": "OptionalChaining",
+      "replacement": "reportedBinding.verifyCmd",
+      "dist_line": 50,
+      "dist_col": 69
+    },
+    {
+      "file": "packages/dod-guard/dist/cover/report.js",
+      "id": "32",
+      "mutator": "OptionalChaining",
+      "replacement": "reportedBinding.unresolvedReason",
+      "dist_line": 50,
+      "dist_col": 150
+    }
+  ]
+}
