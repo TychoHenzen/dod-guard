@@ -196,8 +196,9 @@
 - [x] 5.1 Evaluate old untracked non-ignored files for workspace-debris evidence.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Old untracked file is eligible -->
 <!-- status: completed -->
-- [ ] 5.2 Evaluate old ignored files and retain their matching ignore rule.
+- [x] 5.2 Evaluate old ignored files and retain their matching ignore rule.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Old ignored file is eligible -->
+<!-- status: completed -->
 - [ ] 5.3 Omit workspace files newer than the configured age threshold.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Recent workspace file is omitted -->
 - [ ] 5.4 Use modification time when creation time is unavailable or unreliable.

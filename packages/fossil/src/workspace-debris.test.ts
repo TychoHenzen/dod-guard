@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  CHECK_IGNORE_ARGUMENTS,
+  IGNORED_DISCOVERY_ARGUMENTS,
+  oldIgnoredWorkspaceCandidates,
   oldUntrackedWorkspaceCandidates,
   parseNulDelimitedPaths,
+  parseVerboseCheckIgnore,
   UNTRACKED_DISCOVERY_ARGUMENTS,
 } from "./workspace-debris.js";
 
@@ -22,4 +26,40 @@ test("parses NUL-delimited untracked paths and selects an old regular file", () 
   );
 
   assert.deepEqual(candidates, [{ path: "scratch/old.ts", kind: "untracked", modifiedTimestampMs: 0 }]);
+});
+
+// covers: fossil/workspace-debris :: Workspace file discovery :: Old ignored file is eligible
+test("retains NUL-delimited ignore rule provenance for an old ignored regular file", () => {
+  assert.deepEqual(IGNORED_DISCOVERY_ARGUMENTS, ["ls-files", "-z", "--others", "--ignored", "--exclude-standard"]);
+  assert.deepEqual(CHECK_IGNORE_ARGUMENTS, ["check-ignore", "-z", "-v", "--stdin"]);
+  const provenance = parseVerboseCheckIgnore(
+    ".gitignore\0" +
+      "4\0" +
+      "*.cache\0" +
+      "scratch/old.cache\0" +
+      "C:/global/excludes\0" +
+      "1\0" +
+      "*.tmp\0" +
+      "scratch/global.tmp\0",
+    "C:/global/excludes",
+  );
+  assert.deepEqual(provenance, [
+    { path: "scratch/old.cache", rule: "*.cache", source: "repository" },
+    { path: "scratch/global.tmp", rule: "*.tmp", source: "global-exclude" },
+  ]);
+
+  const candidates = oldIgnoredWorkspaceCandidates(
+    [{ path: "scratch/old.cache", isRegularFile: true, modifiedTimestampMs: 0 }],
+    provenance,
+    10 * 24 * 60 * 60 * 1_000,
+    7,
+  );
+  assert.deepEqual(candidates, [
+    {
+      path: "scratch/old.cache",
+      kind: "ignored",
+      modifiedTimestampMs: 0,
+      ignore: { rule: "*.cache", source: "repository" },
+    },
+  ]);
 });
