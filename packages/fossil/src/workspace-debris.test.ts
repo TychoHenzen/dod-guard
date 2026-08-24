@@ -63,3 +63,27 @@ test("retains NUL-delimited ignore rule provenance for an old ignored regular fi
     },
   ]);
 });
+
+// covers: fossil/workspace-debris :: Workspace file discovery :: Recent workspace file is omitted
+test("omits recent untracked and ignored workspace files", () => {
+  const now = 10 * 24 * 60 * 60 * 1_000;
+  const recentTimestampMs = now - 24 * 60 * 60 * 1_000;
+
+  assert.deepEqual(
+    oldUntrackedWorkspaceCandidates(
+      [{ path: "scratch/recent.ts", isRegularFile: true, modifiedTimestampMs: recentTimestampMs }],
+      now,
+      7,
+    ),
+    [],
+  );
+  assert.deepEqual(
+    oldIgnoredWorkspaceCandidates(
+      [{ path: "scratch/recent.cache", isRegularFile: true, modifiedTimestampMs: recentTimestampMs }],
+      [{ path: "scratch/recent.cache", rule: "*.cache", source: "repository" }],
+      now,
+      7,
+    ),
+    [],
+  );
+});
