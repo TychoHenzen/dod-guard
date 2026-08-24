@@ -14,6 +14,8 @@ import {
   selectFossilCandidates,
   selectRelativeSurvivors,
   selectSurvivors,
+  shallowHistoryWarnings,
+  shallowRepositoryArguments,
   sortCommitsChronologically,
   splitAtChangePoint,
   splitTemporalClusters,
@@ -120,6 +122,19 @@ test("reports future commits and leaves their temporal cluster unfinished", () =
     { code: "future_commit", message: "Commit z-future has a committer timestamp after analysis time." },
   ]);
   assert.deepEqual(retainClosedTemporalClusters([cluster], analysisTimestampMs, 1_000), []);
+});
+
+// covers: fossil/burst-analysis :: History completeness reporting :: Shallow history is reported
+test("reports shallow history without treating malformed Git output as complete", () => {
+  assert.deepEqual(shallowRepositoryArguments(), ["rev-parse", "--is-shallow-repository"]);
+  assert.deepEqual(shallowHistoryWarnings("true\n"), [
+    {
+      code: "shallow_history",
+      message: "Repository is shallow; burst and consolidation history may be incomplete.",
+    },
+  ]);
+  assert.deepEqual(shallowHistoryWarnings("false\r\n"), []);
+  assert.throws(() => shallowHistoryWarnings("unknown\n"), /Unexpected Git shallow-repository response/);
 });
 
 // covers: fossil/burst-analysis :: History activity model :: Rename preserves logical identity

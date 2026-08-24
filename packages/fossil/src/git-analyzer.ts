@@ -9,6 +9,29 @@ export function nonMergeGitLogArguments(): readonly string[] {
   return ["log", "HEAD", "--no-merges", "--find-renames=50%", "--format=%x1e%H%x00%ct%x00", "--name-status", "-z"];
 }
 
+/** Arguments for checking whether Git marks the repository as shallow. */
+export function shallowRepositoryArguments(): readonly string[] {
+  return ["rev-parse", "--is-shallow-repository"];
+}
+
+/** Turns Git's strict shallow-repository response into completeness evidence. */
+export function shallowHistoryWarnings(result: string): AnalysisWarning[] {
+  if (result === "true" || result === "true\n" || result === "true\r\n") {
+    return [
+      {
+        code: "shallow_history",
+        message: "Repository is shallow; burst and consolidation history may be incomplete.",
+      },
+    ];
+  }
+
+  if (result === "false" || result === "false\n" || result === "false\r\n") {
+    return [];
+  }
+
+  throw new Error("Unexpected Git shallow-repository response");
+}
+
 function statusFor(rawStatus: string): GitFileChange["status"] {
   switch (rawStatus[0]) {
     case "A":

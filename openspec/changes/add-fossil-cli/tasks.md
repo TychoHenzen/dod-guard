@@ -67,8 +67,9 @@
 - [x] 2.18 Normalize extension option dots and letter case.
 <!-- covers: fossil/burst-analysis :: History activity model :: Extension values are normalized -->
 <!-- status: completed -->
-- [ ] 2.19 Detect shallow history and add a completeness warning.
+- [x] 2.19 Detect shallow history and add a completeness warning.
 <!-- covers: fossil/burst-analysis :: History completeness reporting :: Shallow history is reported -->
+<!-- status: completed -->
 - [ ] 2.20 Detect sparse checkout and add a current-tree completeness warning.
 <!-- covers: fossil/burst-analysis :: History completeness reporting :: Sparse checkout is reported -->
 - [ ] 2.21 Return a successful zero-burst report for an empty Git repository.
