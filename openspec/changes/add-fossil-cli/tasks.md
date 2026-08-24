@@ -13,8 +13,9 @@
 
 ## 2. Git activity and burst analysis
 
-- [ ] 2.1 Parse non-merge NUL-delimited Git history without counting merge file activity.
+- [x] 2.1 Parse non-merge NUL-delimited Git history without counting merge file activity.
 <!-- covers: fossil/burst-analysis :: History activity model :: Merge commits do not add activity -->
+<!-- status: completed -->
 - [ ] 2.2 Resolve rename chains into one logical file and report its current path.
 <!-- covers: fossil/burst-analysis :: History activity model :: Rename preserves logical identity -->
 - [ ] 2.3 Apply normalized extension filters before burst and file activity calculations.
