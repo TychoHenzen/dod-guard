@@ -17,6 +17,8 @@ import {
   shallowHistoryWarnings,
   shallowRepositoryArguments,
   sortCommitsChronologically,
+  sparseCheckoutArguments,
+  sparseCheckoutWarnings,
   splitAtChangePoint,
   splitTemporalClusters,
 } from "./git-analyzer.js";
@@ -135,6 +137,20 @@ test("reports shallow history without treating malformed Git output as complete"
   ]);
   assert.deepEqual(shallowHistoryWarnings("false\r\n"), []);
   assert.throws(() => shallowHistoryWarnings("unknown\n"), /Unexpected Git shallow-repository response/);
+});
+
+// covers: fossil/burst-analysis :: History completeness reporting :: Sparse checkout is reported
+test("reports sparse checkout without treating malformed Git output as complete", () => {
+  assert.deepEqual(sparseCheckoutArguments(), ["config", "--bool", "--get", "core.sparseCheckout"]);
+  assert.deepEqual(sparseCheckoutWarnings("true\n"), [
+    {
+      code: "sparse_checkout",
+      message: "Sparse checkout is enabled; current-file existence and references may be incomplete.",
+    },
+  ]);
+  assert.deepEqual(sparseCheckoutWarnings("false\r\n"), []);
+  assert.deepEqual(sparseCheckoutWarnings(""), []);
+  assert.throws(() => sparseCheckoutWarnings("enabled\n"), /Unexpected Git sparse-checkout response/);
 });
 
 // covers: fossil/burst-analysis :: History activity model :: Rename preserves logical identity

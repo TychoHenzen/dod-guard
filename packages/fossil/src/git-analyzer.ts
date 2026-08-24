@@ -32,6 +32,29 @@ export function shallowHistoryWarnings(result: string): AnalysisWarning[] {
   throw new Error("Unexpected Git shallow-repository response");
 }
 
+/** Arguments for reading the sparse-checkout setting for the target worktree. */
+export function sparseCheckoutArguments(): readonly string[] {
+  return ["config", "--bool", "--get", "core.sparseCheckout"];
+}
+
+/** Turns Git's strict sparse-checkout response into current-tree completeness evidence. */
+export function sparseCheckoutWarnings(result: string): AnalysisWarning[] {
+  if (result === "true" || result === "true\n" || result === "true\r\n") {
+    return [
+      {
+        code: "sparse_checkout",
+        message: "Sparse checkout is enabled; current-file existence and references may be incomplete.",
+      },
+    ];
+  }
+
+  if (result === "" || result === "false" || result === "false\n" || result === "false\r\n") {
+    return [];
+  }
+
+  throw new Error("Unexpected Git sparse-checkout response");
+}
+
 function statusFor(rawStatus: string): GitFileChange["status"] {
   switch (rawStatus[0]) {
     case "A":

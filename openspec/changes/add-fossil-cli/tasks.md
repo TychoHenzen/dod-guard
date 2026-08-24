@@ -70,8 +70,9 @@
 - [x] 2.19 Detect shallow history and add a completeness warning.
 <!-- covers: fossil/burst-analysis :: History completeness reporting :: Shallow history is reported -->
 <!-- status: completed -->
-- [ ] 2.20 Detect sparse checkout and add a current-tree completeness warning.
+- [x] 2.20 Detect sparse checkout and add a current-tree completeness warning.
 <!-- covers: fossil/burst-analysis :: History completeness reporting :: Sparse checkout is reported -->
+<!-- status: completed -->
 - [ ] 2.21 Return a successful zero-burst report for an empty Git repository.
 <!-- covers: fossil/burst-analysis :: History completeness reporting :: Empty repository has no bursts -->
 - [ ] 2.22 Make recursive close splits define final burst membership and statistics.
