@@ -286,8 +286,9 @@
 - [x] 6.15 Map typed API failures to CLI exit codes without partial success output.
 <!-- covers: fossil/cli :: Programmatic API parity :: Typed API failure maps to CLI status -->
 <!-- status: completed -->
-- [ ] 6.16 Pass metacharacter-containing repository paths to Git as one non-shell argument.
+- [x] 6.16 Pass metacharacter-containing repository paths to Git as one non-shell argument.
 <!-- covers: fossil/cli :: Safe Git execution :: Repository path is data, not a command -->
+<!-- status: completed -->
 - [ ] 6.17 Preserve unusual Git filenames through NUL-delimited parsing.
 <!-- covers: fossil/cli :: Safe Git execution :: Unusual filename remains one structured path -->
 - [ ] 6.18 Disable Git pagers and interactive prompts for every subprocess.
