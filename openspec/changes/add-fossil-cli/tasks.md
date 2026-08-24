@@ -160,8 +160,9 @@
 - [x] 4.5 Assign half reference weakness for exactly one strong live inbound reference.
 <!-- covers: fossil/scoring :: Reference weakness score :: One strong live reference remains -->
 <!-- status: completed -->
-- [ ] 4.6 Assign zero reference weakness for two or more strong live inbound references.
+- [x] 4.6 Assign zero reference weakness for two or more strong live inbound references.
 <!-- covers: fossil/scoring :: Reference weakness score :: Multiple strong live references remain -->
+<!-- status: completed -->
 - [ ] 4.7 Assign full isolation when every resolved neighbor is a fossil candidate.
 <!-- covers: fossil/scoring :: Cluster isolation score :: Candidate only references fossils -->
 - [ ] 4.8 Assign full isolation when the candidate has no resolved neighbors.
