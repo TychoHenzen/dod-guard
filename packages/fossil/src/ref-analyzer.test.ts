@@ -486,3 +486,20 @@ test("marks only tail or uniquely named unresolved candidate paths unavailable",
   assert.equal(result.complete, false);
   assert.deepEqual(graph.unavailablePaths, ["existing.ts"]);
 });
+
+// covers: fossil/reference-analysis :: Reference strength :: Mixed normal and fallback use is strong
+test("keeps a mixed fallback and ordinary import use strong", () => {
+  const graph = analyzeJavaScriptReferences([
+    {
+      path: "src/live.ts",
+      language: "typescript",
+      content:
+        'import { candidate } from "./candidate";\nif (fallbackMode) {\n  if (enabled) { candidate(); }\n}\nexport const ordinary = candidate();\n',
+    },
+    { path: "src/candidate.ts", language: "typescript", content: "" },
+  ]);
+  assert.deepEqual(
+    graph.edges.map((edge) => edge.strength),
+    ["strong"],
+  );
+});

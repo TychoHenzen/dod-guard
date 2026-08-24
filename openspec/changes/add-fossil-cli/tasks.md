@@ -121,8 +121,9 @@
 - [x] 3.12 Mark candidate reference evidence unavailable when a potentially matching reference remains unresolved.
 <!-- covers: fossil/reference-analysis :: Replaceable reference backend :: Potentially relevant unresolved reference is incomplete evidence -->
 <!-- status: completed -->
-- [ ] 3.13 Grade mixed fallback and normal usage as strong.
+- [x] 3.13 Grade mixed fallback and normal usage as strong.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Mixed normal and fallback use is strong -->
+<!-- status: completed -->
 - [ ] 3.14 Reject relative import targets that escape canonical repository containment.
 <!-- covers: fossil/reference-analysis :: Repository-contained source reads :: Relative import cannot escape the repository -->
 - [ ] 3.15 Prevent traversal of directory symlinks during source inventory.
