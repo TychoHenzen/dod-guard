@@ -8,6 +8,7 @@ import {
   retainClosedTemporalClusters,
   retainQualifiedClosedClusters,
   selectAbsoluteSurvivors,
+  selectDeletedNonSurvivorPaths,
   selectFossilCandidates,
   selectRelativeSurvivors,
   selectSurvivors,
@@ -476,4 +477,37 @@ test("selects only current files that meet neither survivor rule", () => {
   ];
 
   assert.deepEqual(selectFossilCandidates(files), [files[0]]);
+});
+
+// covers: fossil/burst-analysis :: Consolidation classification :: Deleted file is not fossilized
+test("records deleted non-survivors separately from current candidates", () => {
+  const files = [
+    {
+      identity: "deleted-quiet",
+      path: "deleted-quiet.ts",
+      burstCommits: 1,
+      postBurstCommits: 1,
+      createdInBurst: true,
+      existsAtHead: false,
+    },
+    {
+      identity: "current-quiet",
+      path: "current-quiet.ts",
+      burstCommits: 1,
+      postBurstCommits: 1,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "deleted-survivor",
+      path: "deleted-survivor.ts",
+      burstCommits: 1,
+      postBurstCommits: 100,
+      createdInBurst: true,
+      existsAtHead: false,
+    },
+  ];
+
+  assert.deepEqual(selectFossilCandidates(files), [files[1]]);
+  assert.deepEqual(selectDeletedNonSurvivorPaths(files), ["deleted-quiet.ts"]);
 });

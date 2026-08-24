@@ -52,8 +52,9 @@
 - [x] 2.13 Classify an existing non-survivor as a burst-specific fossil candidate.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Quiet current file becomes a candidate -->
 <!-- status: completed -->
-- [ ] 2.14 Record deleted non-survivors without reporting them as fossils.
+- [x] 2.14 Record deleted non-survivors without reporting them as fossils.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Deleted file is not fossilized -->
+<!-- status: completed -->
 - [ ] 2.15 Normalize committer epoch timestamps and stabilize equal-time ordering.
 <!-- covers: fossil/burst-analysis :: History activity model :: Commit time is deterministic -->
 - [ ] 2.16 Warn on future-dated commits and leave their cluster unfinished.

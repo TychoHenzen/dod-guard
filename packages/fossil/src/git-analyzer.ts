@@ -245,6 +245,12 @@ export function selectFossilCandidates(files: readonly BurstFileActivity[]): Bur
   return files.filter((file) => file.existsAtHead && !survivors.has(file));
 }
 
+/** Selects deleted burst paths that meet neither survivor rule. */
+export function selectDeletedNonSurvivorPaths(files: readonly BurstFileActivity[]): string[] {
+  const survivors = new Set(selectSurvivors(files));
+  return files.filter((file) => !(file.existsAtHead || survivors.has(file))).map((file) => file.path);
+}
+
 interface FileEvent {
   readonly change: GitFileChange;
   readonly commit: GitCommit;
