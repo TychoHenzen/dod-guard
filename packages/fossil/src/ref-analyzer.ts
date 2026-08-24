@@ -37,6 +37,18 @@ export interface ReferenceReadResult {
   readonly warnings: readonly AnalysisWarning[];
 }
 
+/** Canonical path boundary used to keep resolved relative imports inside the repository. */
+export interface ReferenceContainmentBoundary {
+  readonly canonicalRepositoryRoot: string;
+  readonly canonicalize: (path: string) => string;
+}
+
+/** Reference graph plus nonfatal containment evidence. */
+export interface ReferenceAnalysisResult {
+  readonly graph: ReferenceGraph;
+  readonly warnings: readonly AnalysisWarning[];
+}
+
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
@@ -59,6 +71,35 @@ function targetCandidates(sourcePath: string, specifier: string): string[] {
     ...MODULE_EXTENSIONS.map((extension) => `${literal}${extension}`),
     ...MODULE_EXTENSIONS.map((extension) => `${literal}/index${extension}`),
   ];
+}
+
+function normalizedPath(path: string): string {
+  return posix.normalize(path.replaceAll("\\", "/"));
+}
+
+function pathIsWithin(root: string, candidate: string): boolean {
+  const normalizedRoot = normalizedPath(root).replace(/\/$/, "");
+  const normalizedCandidate = normalizedPath(candidate);
+  const compareRoot = /^[A-Za-z]:\//.test(normalizedRoot) ? normalizedRoot.toLowerCase() : normalizedRoot;
+  const compareCandidate = /^[A-Za-z]:\//.test(normalizedCandidate)
+    ? normalizedCandidate.toLowerCase()
+    : normalizedCandidate;
+  return compareCandidate === compareRoot || compareCandidate.startsWith(`${compareRoot}/`);
+}
+
+function isOutsideRepositoryPath(path: string): boolean {
+  const normalized = normalizedPath(path);
+  return (
+    normalized === ".." || normalized.startsWith("../") || normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)
+  );
+}
+
+function outsideBoundaryWarning(sourcePath: string): AnalysisWarning {
+  return {
+    code: "reference_outside_boundary",
+    message: "Relative reference target is outside the repository boundary.",
+    path: sourcePath,
+  };
 }
 
 function parsedModuleReferences(source: ReferenceSourceContent): ParsedReference[] {
@@ -542,6 +583,33 @@ function referenceGraph(
 /** Parses and resolves supported TypeScript and JavaScript module references from current source inventory. */
 export function analyzeJavaScriptReferences(sources: readonly ReferenceSourceContent[]): ReferenceGraph {
   return referenceGraph(sources.flatMap(parsedModuleReferences), sources);
+}
+
+/** Parses JavaScript references while rejecting relative targets outside the canonical repository boundary. */
+export function analyzeJavaScriptReferencesWithinBoundary(
+  sources: readonly ReferenceSourceContent[],
+  boundary: ReferenceContainmentBoundary,
+): ReferenceAnalysisResult {
+  const inventory = new Set(sources.map((source) => source.path));
+  const warnings = new Map<string, AnalysisWarning>();
+  const safeReferences = sources.flatMap(parsedModuleReferences).filter((reference) => {
+    if (reference.resolution !== "unresolved" || !reference.targetCandidates[0]) return true;
+    const literalTarget = reference.targetCandidates[0];
+    if (isOutsideRepositoryPath(literalTarget)) {
+      warnings.set(reference.sourcePath, outsideBoundaryWarning(reference.sourcePath));
+      return false;
+    }
+    const resolvedTarget = reference.targetCandidates.find((candidate) => inventory.has(candidate));
+    if (!resolvedTarget) return true;
+    const canonicalTarget = boundary.canonicalize(posix.join(boundary.canonicalRepositoryRoot, resolvedTarget));
+    if (pathIsWithin(boundary.canonicalRepositoryRoot, canonicalTarget)) return true;
+    warnings.set(reference.sourcePath, outsideBoundaryWarning(reference.sourcePath));
+    return false;
+  });
+  return {
+    graph: referenceGraph(safeReferences, sources),
+    warnings: [...warnings.values()].sort((left, right) => compareText(left.path ?? "", right.path ?? "")),
+  };
 }
 
 /** Parses and resolves the currently supported TypeScript, JavaScript, C#, and Rust reference forms. */

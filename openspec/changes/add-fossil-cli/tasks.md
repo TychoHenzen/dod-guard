@@ -124,8 +124,9 @@
 - [x] 3.13 Grade mixed fallback and normal usage as strong.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Mixed normal and fallback use is strong -->
 <!-- status: completed -->
-- [ ] 3.14 Reject relative import targets that escape canonical repository containment.
+- [x] 3.14 Reject relative import targets that escape canonical repository containment.
 <!-- covers: fossil/reference-analysis :: Repository-contained source reads :: Relative import cannot escape the repository -->
+<!-- status: completed -->
 - [ ] 3.15 Prevent traversal of directory symlinks during source inventory.
 <!-- covers: fossil/reference-analysis :: Repository-contained source reads :: Directory symlink is not traversed -->
 - [ ] 3.16 Skip oversized source with a warning and unavailable affected reference evidence.
