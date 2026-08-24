@@ -73,3 +73,8 @@ export function scoreFossilSubscores(subscores: FossilSubscores): FossilScore | 
     basis: "full",
   };
 }
+
+/** Returns whether a score meets the inclusive fossil finding threshold. */
+export function meetsFossilThreshold(score: number, threshold: number): boolean {
+  return score >= threshold;
+}

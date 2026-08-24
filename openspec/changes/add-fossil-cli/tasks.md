@@ -178,8 +178,9 @@
 - [x] 4.11 Renormalize churn and abandonment weights when reference signals are unavailable.
 <!-- covers: fossil/scoring :: Combined fossil score :: Missing reference analysis renormalizes Git signals -->
 <!-- status: completed -->
-- [ ] 4.12 Include candidates whose score exactly equals the configured threshold.
+- [x] 4.12 Include candidates whose score exactly equals the configured threshold.
 <!-- covers: fossil/scoring :: Threshold and burst assembly :: Threshold is inclusive -->
+<!-- status: completed -->
 - [ ] 4.13 Preserve independent evidence when one path qualifies in more than one burst.
 <!-- covers: fossil/scoring :: Threshold and burst assembly :: Same path can carry burst-specific evidence -->
 - [ ] 4.14 Make both reference subscores unavailable together for incomplete candidate reference analysis.

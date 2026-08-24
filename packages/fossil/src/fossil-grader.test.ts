@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   abandonmentScore,
   clusterIsolationScore,
+  meetsFossilThreshold,
   normalizedBurstChurn,
   referenceWeaknessScore,
   scoreFossilSubscores,
@@ -40,6 +41,12 @@ test("renormalizes Git subscores when both reference signals are unavailable", (
     score: (0.3 / 0.65) * 0.4 + (0.35 / 0.65) * 0.6,
     basis: "git-only",
   });
+});
+
+// covers: fossil/scoring :: Threshold and burst assembly :: Threshold is inclusive
+test("includes scores exactly at the configured finding threshold", () => {
+  assert.equal(meetsFossilThreshold(0.7, 0.7), true);
+  assert.equal(meetsFossilThreshold(0.699_999, 0.7), false);
 });
 
 // covers: fossil/scoring :: Cluster isolation score :: Candidate only references fossils
