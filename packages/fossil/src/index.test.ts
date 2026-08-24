@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { runFossilCli } from "./index.js";
+import { FossilUsageError, runFossilCli } from "./index.js";
 import type { NormalizedAnalysisOptions } from "./types.js";
 
 // covers: fossil/cli :: Analyze command :: Defaults are applied
@@ -100,4 +100,36 @@ test("normalizes every explicit analyze option", async () => {
       },
     },
   ]);
+});
+
+// covers: fossil/cli :: Argument validation :: Invalid arguments use the usage exit
+test("rejects invalid argument forms with usage diagnostics before analysis", async () => {
+  const invalidArguments = [
+    ["--days", "0"],
+    ["--untracked-age", "3651"],
+    ["--gap-hours", "8761"],
+    ["--threshold", "-0.1"],
+    ["--threshold", "NaN"],
+    ["--format", "yaml"],
+    ["--extensions", Array.from({ length: 65 }, (_, index) => `extension-${index}`).join(",")],
+    ["--unknown"],
+    ["first", "second"],
+  ];
+
+  for (const argumentsForCase of invalidArguments) {
+    const stderr: string[] = [];
+    let analyzeCalls = 0;
+    await assert.rejects(
+      runFossilCli(["node", "fossil", "analyze", ...argumentsForCase], {
+        analyze: async () => {
+          analyzeCalls += 1;
+        },
+        stderr: (message) => stderr.push(message),
+      }),
+      (error: unknown) => error instanceof FossilUsageError && error.exitCode === 2,
+    );
+    assert.equal(analyzeCalls, 0);
+    assert.match(stderr.join(""), /(?:error:|Usage: fossil analyze)/);
+    assert.match(stderr.join(""), /Usage: fossil analyze/);
+  }
 });

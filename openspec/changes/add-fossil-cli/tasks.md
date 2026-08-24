@@ -247,8 +247,9 @@
 - [x] 6.2 Normalize and apply every explicit analysis option.
 <!-- covers: fossil/cli :: Analyze command :: Explicit options are applied -->
 <!-- status: completed -->
-- [ ] 6.3 Reject invalid values, unknown options, and extra arguments with usage exit code 2.
+- [x] 6.3 Reject invalid values, unknown options, and extra arguments with usage exit code 2.
 <!-- covers: fossil/cli :: Argument validation :: Invalid arguments use the usage exit -->
+<!-- status: completed -->
 - [ ] 6.4 Render each burst with its statistics and survivors before candidate score rows.
 <!-- covers: fossil/cli :: Table output :: Burst table keeps context together -->
 - [ ] 6.5 Add one evidence explanation line per verbose candidate.

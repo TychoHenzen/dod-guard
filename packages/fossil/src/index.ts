@@ -27,9 +27,22 @@ export const DEFAULT_NORMALIZED_ANALYSIS_OPTIONS: NormalizedAnalysisOptions = {
 
 export type AnalyzeCommandHandler = (repositoryPath: string, options: NormalizedAnalysisOptions) => Promise<void>;
 
+/** A command-line usage failure that callers map to the standard usage exit code. */
+export class FossilUsageError extends Error {
+  readonly exitCode = 2;
+
+  constructor(
+    message: string,
+    readonly reported = false,
+  ) {
+    super(message);
+  }
+}
+
 export interface FossilCliDependencies {
   readonly analyze: AnalyzeCommandHandler;
   readonly cwd?: () => string;
+  readonly stderr?: (message: string) => void;
 }
 
 interface RawAnalyzeOptions {
@@ -62,28 +75,55 @@ function commaSeparatedValues(value: string | undefined): string[] {
         .filter(Boolean);
 }
 
-function finiteNumber(value: string | undefined, fallback: number): number {
+function finiteNumber(
+  value: string | undefined,
+  fallback: number,
+  option: string,
+  minimum: number,
+  maximum: number,
+): number {
   if (value === undefined) return fallback;
   const number = Number(value);
-  return Number.isFinite(number) ? number : Number.NaN;
+  if (value.trim() !== "" && Number.isFinite(number) && number >= minimum && number <= maximum) return number;
+  throw new FossilUsageError(`${option} must be a finite number from ${minimum} through ${maximum}.`);
 }
 
 function normalizeAnalyzeOptions(options: RawAnalyzeOptions): NormalizedAnalysisOptions {
+  const extensions = commaSeparatedValues(options.extensions);
+  const format = options.format ?? DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.format;
+  if (format !== "table" && format !== "json") throw new FossilUsageError("--format must be table or json.");
+  if (extensions.length > 64) throw new FossilUsageError("--extensions accepts at most 64 nonempty values.");
   return {
-    days: finiteNumber(options.days, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.days),
-    gapHours: finiteNumber(options.gapHours, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.gapHours),
-    threshold: finiteNumber(options.threshold, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.threshold),
-    format: (options.format ?? DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.format) as NormalizedAnalysisOptions["format"],
-    extensions: commaSeparatedValues(options.extensions),
-    untrackedAgeDays: finiteNumber(options.untrackedAge, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.untrackedAgeDays),
+    days: finiteNumber(options.days, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.days, "--days", 1, 3650),
+    gapHours: finiteNumber(options.gapHours, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.gapHours, "--gap-hours", 1, 8760),
+    threshold: finiteNumber(options.threshold, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.threshold, "--threshold", 0, 1),
+    format,
+    extensions,
+    untrackedAgeDays: finiteNumber(
+      options.untrackedAge,
+      DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.untrackedAgeDays,
+      "--untracked-age",
+      1,
+      3650,
+    ),
     exclude: commaSeparatedValues(options.exclude),
     verbose: options.verbose ?? DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.verbose,
   };
 }
 
 /** Creates the command boundary so analysis can be injected and tested without Git access. */
-export function createFossilProgram({ analyze, cwd = process.cwd }: FossilCliDependencies): Command {
-  const program = new Command().name("fossil");
+export function createFossilProgram({
+  analyze,
+  cwd = process.cwd,
+  stderr = process.stderr.write.bind(process.stderr),
+}: FossilCliDependencies): Command {
+  const program = new Command()
+    .name("fossil")
+    .configureOutput({ writeErr: stderr })
+    .showHelpAfterError()
+    .exitOverride((error) => {
+      throw new FossilUsageError(error.message, true);
+    });
   program
     .command("analyze [repo-path]")
     .option("--days <days>")
@@ -102,7 +142,17 @@ export function createFossilProgram({ analyze, cwd = process.cwd }: FossilCliDep
 
 /** Parses a CLI argument vector through the injected analysis command boundary. */
 export async function runFossilCli(argv: readonly string[], dependencies: FossilCliDependencies): Promise<void> {
-  await createFossilProgram(dependencies).parseAsync([...argv], { from: "node" });
+  const stderr = dependencies.stderr ?? process.stderr.write.bind(process.stderr);
+  const program = createFossilProgram({ ...dependencies, stderr });
+  try {
+    await program.parseAsync([...argv], { from: "node" });
+  } catch (error) {
+    if (!(error instanceof FossilUsageError)) throw error;
+    const analyzeCommand = program.commands.find((command) => command.name() === "analyze");
+    if (!error.reported)
+      stderr(`error: ${error.message}\n${analyzeCommand?.helpInformation() ?? program.helpInformation()}`);
+    throw error;
+  }
 }
 
 async function main(): Promise<void> {
@@ -111,6 +161,10 @@ async function main(): Promise<void> {
 
 if (isMainModule()) {
   main().catch((err) => {
+    if (err instanceof FossilUsageError) {
+      process.exitCode = err.exitCode;
+      return;
+    }
     process.stderr.write(`fossil CLI failed: ${err}\n`);
     process.exit(1);
   });
