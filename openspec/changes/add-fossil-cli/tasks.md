@@ -43,8 +43,9 @@
 - [x] 2.10 Suppress survivor and candidate output for a temporal cluster that is not yet closed.
 <!-- covers: fossil/burst-analysis :: Burst qualification :: Recent temporal cluster remains unfinished -->
 <!-- status: completed -->
-- [ ] 2.11 Classify files with at least three later commits as survivors.
+- [x] 2.11 Classify files with at least three later commits as survivors.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Absolute survivor threshold -->
+<!-- status: completed -->
 - [ ] 2.12 Classify files reaching the positive relative activity threshold as survivors.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Relative survivor threshold -->
 - [ ] 2.13 Classify an existing non-survivor as a burst-specific fossil candidate.

@@ -1,4 +1,4 @@
-import type { GitCommit, GitFileChange, LogicalFileActivity } from "./types.js";
+import type { BurstFileActivity, GitCommit, GitFileChange, LogicalFileActivity } from "./types.js";
 
 const RECORD_SEPARATOR = "\u001e";
 const MIN_CHANGE_POINT_GAP_MS = 4 * 60 * 60 * 1_000;
@@ -216,6 +216,11 @@ export function retainClosedTemporalClusters(
       return newest !== undefined && analysisTimestampMs - newest.committerTimestampMs >= gapMilliseconds;
     })
     .map((cluster) => [...cluster]);
+}
+
+/** Selects files that meet the absolute post-burst survivor threshold. */
+export function selectAbsoluteSurvivors(files: readonly BurstFileActivity[]): BurstFileActivity[] {
+  return files.filter((file) => file.postBurstCommits >= 3);
 }
 
 interface FileEvent {

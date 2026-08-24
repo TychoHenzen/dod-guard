@@ -7,6 +7,7 @@ import {
   resolveRenameActivities,
   retainClosedTemporalClusters,
   retainQualifiedClosedClusters,
+  selectAbsoluteSurvivors,
   splitAtChangePoint,
   splitTemporalClusters,
 } from "./git-analyzer.js";
@@ -358,4 +359,29 @@ test("excludes recent qualifying clusters before closed-cluster qualification", 
 
   assert.deepEqual(inactiveClusters, [closed]);
   assert.deepEqual(retainQualifiedClosedClusters(inactiveClusters), [closed]);
+});
+
+// covers: fossil/burst-analysis :: Consolidation classification :: Absolute survivor threshold
+test("selects only files with at least three post-burst commits", () => {
+  const files = [
+    {
+      identity: "survives",
+      path: "survives.ts",
+      burstCommits: 2,
+      postBurstCommits: 3,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+    {
+      identity: "quiet",
+      path: "quiet.ts",
+      burstCommits: 2,
+      postBurstCommits: 2,
+      createdInBurst: true,
+      existsAtHead: true,
+    },
+  ];
+
+  assert.deepEqual(selectAbsoluteSurvivors(files), [files[0]]);
+  assert.equal(files[1].postBurstCommits, 2);
 });
