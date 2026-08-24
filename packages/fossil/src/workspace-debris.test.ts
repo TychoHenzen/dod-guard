@@ -10,6 +10,7 @@ import {
   parseNulDelimitedPaths,
   parseVerboseCheckIgnore,
   UNTRACKED_DISCOVERY_ARGUMENTS,
+  workspaceDebrisFinding,
 } from "./workspace-debris.js";
 
 // covers: fossil/workspace-debris :: Workspace file discovery :: Old untracked file is eligible
@@ -138,4 +139,30 @@ test("omits old candidates with resolved imports, exact paths, or a unique basen
     true,
   );
   assert.deepEqual(omitUsedWorkspaceCandidates([candidate], sources, inventory), []);
+  assert.equal(workspaceDebrisFinding(candidate, sources, inventory, "C:/repo", []), undefined);
+});
+
+// covers: fossil/workspace-debris :: Usage evidence search :: Unreferenced old file is reported
+test("reports an unreferenced old candidate as separate workspace debris", () => {
+  const finding = workspaceDebrisFinding(
+    { path: "scratch/old.ts", kind: "untracked", modifiedTimestampMs: 0 },
+    [{ path: "src/live.ts", language: "typescript", content: "export const live = true;\n" }],
+    ["src/live.ts", "scratch/old.ts"],
+    "C:/repo",
+    ["dynamic runtime loading"],
+  );
+
+  assert.deepEqual(finding, {
+    classification: "advisory",
+    review: "possible workspace debris",
+    path: "scratch/old.ts",
+    kind: "untracked",
+    modifiedTimestampMs: 0,
+    ageSource: "mtime",
+    ageUncertainty: "Creation time is unavailable or unreliable; age uses modification time.",
+    ignore: undefined,
+    detectedReferenceEvidence: [],
+    analysisBoundary: "C:/repo",
+    unobservedReferenceMechanisms: ["dynamic runtime loading"],
+  });
 });

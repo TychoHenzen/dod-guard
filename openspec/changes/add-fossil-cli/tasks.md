@@ -208,8 +208,9 @@
 - [x] 5.5 Omit an old workspace file when inbound usage evidence is discovered.
 <!-- covers: fossil/workspace-debris :: Usage evidence search :: Referenced old file is omitted -->
 <!-- status: completed -->
-- [ ] 5.6 Report an old workspace file with no discovered inbound usage evidence.
+- [x] 5.6 Report an old workspace file with no discovered inbound usage evidence.
 <!-- covers: fossil/workspace-debris :: Usage evidence search :: Unreferenced old file is reported -->
+<!-- status: completed -->
 - [ ] 5.7 Exclude dependency-store contents from workspace inspection and findings.
 <!-- covers: fossil/workspace-debris :: Safe workspace boundaries :: Dependency store is excluded -->
 - [ ] 5.8 Exclude sensitive environment-file paths and content from findings.

@@ -1,6 +1,6 @@
 import { posix } from "node:path";
 import { analyzeReferences, type ReferenceSourceContent } from "./ref-analyzer.js";
-import type { IgnoreSource } from "./types.js";
+import type { IgnoreSource, WorkspaceDebrisFinding } from "./types.js";
 
 /** Exact Git arguments for non-ignored, NUL-delimited untracked paths. */
 export const UNTRACKED_DISCOVERY_ARGUMENTS = ["ls-files", "-z", "--others", "--exclude-standard"] as const;
@@ -158,4 +158,28 @@ export function omitUsedWorkspaceCandidates<T extends { readonly path: string }>
   inventoryPaths: readonly string[],
 ): readonly T[] {
   return candidates.filter((candidate) => !hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths));
+}
+
+/** Creates a separate advisory workspace-debris finding when no inbound usage evidence is discovered. */
+export function workspaceDebrisFinding(
+  candidate: UntrackedWorkspaceCandidate | IgnoredWorkspaceCandidate,
+  sources: readonly ReferenceSourceContent[],
+  inventoryPaths: readonly string[],
+  analysisBoundary: string,
+  unobservedMechanisms: readonly string[],
+): WorkspaceDebrisFinding | undefined {
+  if (hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths)) return undefined;
+  return {
+    classification: "advisory",
+    review: "possible workspace debris",
+    path: candidate.path,
+    kind: candidate.kind,
+    modifiedTimestampMs: candidate.modifiedTimestampMs,
+    ageSource: "mtime",
+    ageUncertainty: "Creation time is unavailable or unreliable; age uses modification time.",
+    ignore: "ignore" in candidate ? candidate.ignore : undefined,
+    detectedReferenceEvidence: [],
+    analysisBoundary,
+    unobservedReferenceMechanisms: unobservedMechanisms,
+  };
 }
