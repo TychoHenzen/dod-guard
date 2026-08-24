@@ -310,8 +310,9 @@
 - [x] 6.23 Reject unsupported Git versions before history analysis.
 <!-- covers: fossil/cli :: Safe Git execution :: Unsupported Git version fails capability check -->
 <!-- status: completed -->
-- [ ] 6.24 Stream and terminate Git ingestion at byte or status-record limits.
+- [x] 6.24 Stream and terminate Git ingestion at byte or status-record limits.
 <!-- covers: fossil/cli :: Analysis resource bounds :: Git byte or status limit terminates ingestion -->
+<!-- status: completed -->
 
 ## 7. Documentation and final verification
 

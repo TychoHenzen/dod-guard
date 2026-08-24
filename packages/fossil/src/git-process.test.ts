@@ -4,11 +4,46 @@ import { test } from "node:test";
 import { FossilAnalysisError } from "./analysis-error.js";
 import {
   assertSupportedGitVersion,
+  collectBoundedGitOutput,
   discoverGitRepository,
+  type GitPipedChild,
   type GitSpawn,
   parseGitVersion,
   readHistoryWithSupportedGit,
 } from "./git-process.js";
+
+function pipedChild() {
+  const events = new EventEmitter();
+  const stdout = new EventEmitter();
+  const stderr = new EventEmitter();
+  let killCalls = 0;
+  const child: GitPipedChild = {
+    stdout: stdout as never,
+    stderr: stderr as never,
+    once: events.once.bind(events),
+    kill: () => {
+      killCalls += 1;
+      return true;
+    },
+  };
+  return {
+    child,
+    emitStdout: (text: string) => stdout.emit("data", Buffer.from(text)),
+    emitStderr: (text: string) => stderr.emit("data", Buffer.from(text)),
+    close: (code: number | null) => events.emit("close", code),
+    get killCalls() {
+      return killCalls;
+    },
+  };
+}
+
+async function assertResourceLimit(result: Promise<unknown>, message: string): Promise<void> {
+  await assert.rejects(
+    result,
+    (error: unknown) =>
+      error instanceof FossilAnalysisError && error.code === "resource_limit" && error.message === message,
+  );
+}
 
 // covers: fossil/cli :: Safe Git execution :: Repository path is data, not a command
 test("passes a metacharacter-containing repository path as one non-shell Git argument", () => {
@@ -140,4 +175,78 @@ test("rejects unsupported Git capability evidence before calling the history rea
     ),
     "history",
   );
+});
+
+// covers: fossil/cli :: Analysis resource bounds :: Git byte or status limit terminates ingestion
+test("terminates Git ingestion when stdout exceeds its limit without resolving partial output", async () => {
+  const exact = pipedChild();
+  const exactResult = collectBoundedGitOutput(exact.child, { limits: { maximumStdoutBytes: 3 } });
+  exact.emitStdout("abc");
+  exact.close(0);
+  assert.equal((await exactResult).stdout, "abc");
+  assert.equal(exact.killCalls, 0);
+
+  const process = pipedChild();
+  const result = collectBoundedGitOutput(process.child, { limits: { maximumStdoutBytes: 3 } });
+  let resolved = false;
+  result.then(
+    () => {
+      resolved = true;
+    },
+    () => undefined,
+  );
+
+  process.emitStdout("ab");
+  process.emitStdout("cd");
+  process.close(0);
+
+  await assertResourceLimit(result, "Git stdout limit exceeded.");
+  assert.equal(process.killCalls, 1);
+  assert.equal(resolved, false);
+});
+
+test("terminates Git ingestion when stderr exceeds its limit", async () => {
+  const process = pipedChild();
+  const result = collectBoundedGitOutput(process.child, { limits: { maximumStderrBytes: 2 } });
+
+  process.emitStderr("ab");
+  process.emitStderr("c");
+
+  await assertResourceLimit(result, "Git stderr limit exceeded.");
+  assert.equal(process.killCalls, 1);
+});
+
+test("counts uncommon NUL-delimited history statuses across chunks and terminates at the next record", async () => {
+  const firstChunk = `\u001ehash\0${1_700_000_000}\0B`;
+  const secondChunk = "\0first.ts\0M\0second.ts\0";
+  const historyOutput = `${firstChunk}${secondChunk}`;
+  const exact = pipedChild();
+  const exactResult = collectBoundedGitOutput(exact.child, {
+    historyMode: true,
+    limits: { maximumStatusRecords: 2 },
+  });
+  exact.emitStdout(firstChunk);
+  exact.emitStdout(secondChunk);
+  exact.close(0);
+
+  assert.deepEqual(await exactResult, {
+    exitCode: 0,
+    stdout: historyOutput,
+    stderr: "",
+    stdoutBytes: Buffer.byteLength(historyOutput),
+    stderrBytes: 0,
+    statusRecordCount: 2,
+  });
+  assert.equal(exact.killCalls, 0);
+
+  const exceeded = pipedChild();
+  const exceededResult = collectBoundedGitOutput(exceeded.child, {
+    historyMode: true,
+    limits: { maximumStatusRecords: 1 },
+  });
+  exceeded.emitStdout(firstChunk);
+  exceeded.emitStdout(secondChunk);
+
+  await assertResourceLimit(exceededResult, "Git status record limit exceeded.");
+  assert.equal(exceeded.killCalls, 1);
 });
