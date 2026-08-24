@@ -2,7 +2,7 @@
   "name": "mcp-servers",
   "version": "1.0.0",
   "private": true,
-  "description": "Monorepo for MCP server plugins (dod-guard, quality-guard)",
+  "description": "Monorepo for MCP server plugins and the fossil CLI workspace",
   "workspaces": [
     "packages/*"
   ],

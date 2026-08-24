@@ -4,12 +4,13 @@ This file provides shared guidance to coding agents working in this repository.
 
 ## Monorepo overview
 
-npm workspaces monorepo with two MCP server plugins for Claude Code, distributed through the git-based marketplace. Each package builds to a single `dist/bundle.js` (esbuild), tracked in git; CI rebuilds and commits it on every push to master. The marketplace ships that bundle alongside each package's skills, agents, and plugin config.
+npm workspaces monorepo with two MCP server plugins for Claude Code and one CLI-only workspace. Each package builds to a tracked esbuild `dist/bundle.js`; CI rebuilds and commits bundle drift on every push to `master`. Marketplace packages ship their bundle with plugin configuration. Fossil ships its executable CLI bundle without an MCP or marketplace contract.
 
 | Package | npm name | Purpose |
 |---------|----------|---------|
 | `dod-guard` | `dod-guard` | Anti-cheat DoD verification with behavioral predicates. Ships `/interview`, `/clean-house`, `/step-by-step`, `/adversarial-workflow`, `/test-integrity-checker`, `/blind-rewrite`, `/tighten`, `/doc-reconcile`, `/skill-debug`, `/skill-migrate`, `/opsx-continue` skills. |
 | `quality-guard` | `quality-guard` | Structural quality gate: MCP tools, a PostToolUse ratchet hook, and the `/quality-refactor` skill with its scanner. |
+| `fossil` | `@dod-guard/fossil` | CLI-only Git-history and workspace-debris review. Its findings are advisory and never mutate a repository. |
 
 **Each package has its own AGENTS.md** with detailed architecture, file responsibilities, and domain-specific rules. Read it before working in that package.
 
@@ -73,18 +74,18 @@ npx @biomejs/biome check --write packages/*/src/   # auto-fix
 
 ## Publishing workflow (CRITICAL)
 
-Never deploy by manually copying `dist/bundle.js` into a runtime cache. Push to master and let CI rebuild and commit the tracked bundle instead.
+Never deploy by manually copying `dist/bundle.js` into a runtime cache. Push to `master` and let CI rebuild and commit the tracked bundle instead.
 
 The flow:
 
 1. Push to `master` - that is the whole release instruction.
-2. CI runs every gate; `static-analysis` rebuilds both `dist/bundle.js` files and commits any drift.
+2. CI runs every gate; `static-analysis` rebuilds every workspace `dist/bundle.js` and commits any drift.
 3. Wait for CI to go green before updating. A source push and its CI bundle rebuild can be two different commits.
-4. Follow the consuming runtime's adapter instructions to refresh its plugin cache.
+4. For marketplace plugins, follow the consuming runtime's adapter instructions to refresh its plugin cache. Fossil is a CLI-only workspace and has no MCP or plugin-cache handshake.
 
 Nothing publishes to npm. A version bump in `package.json` is a changelog entry now, not a release trigger - `validate-plugins.mjs` still enforces that `plugin.json`'s version, when present, matches `package.json`.
 
-**Marketplace**: Update `.claude-plugin/marketplace.json` in each package when adding/removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes both plugins for the git-based marketplace.
+**Marketplace**: Update `.claude-plugin/marketplace.json` in each plugin package when adding or removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes marketplace plugins only. Fossil must not be added to that marketplace contract.
 
 **CI behavior** (`.github/workflows/ci.yml`):
 - Push to `master` -> every gate below runs.
@@ -102,7 +103,7 @@ updated `package-lock.json` with the new package.
 | `build-test` | tsc and `npm test` |
 | `plugin-config` | `validate-plugins.mjs` (see below), `check-skill-hygiene.mjs` (see below), and `openspec validate --all --strict --no-interactive` |
 | `static-analysis` | Biome (autofix + strict), four ratchets, and rebuilding and committing the tracked bundles - no separate drift gate, since a source push necessarily precedes CI's rebuild and rebuild-and-commit leaves nothing to fail on |
-| `package-integrity` | `smoke-bundle.mjs` (the bundle completes an MCP initialize + tools/list, and reports the same version as package.json) - with no tarball check left, this handshake is the only thing between a bad build and a broken session |
+| `package-integrity` | MCP bundles complete an initialize plus tools/list handshake through `smoke-bundle.mjs`. The CLI-only Fossil bundle uses `smoke-cli-bundle.mjs` and does not perform an MCP handshake. |
 
 `validate-plugins.mjs` checks, all hard-fail:
 
@@ -140,7 +141,7 @@ cannot see this checkout's own scenarios and markers. That build step lives in
 
 Every capability spec lives at `openspec/specs/<group>/<capability>/spec.md`, and the spec id is that path. So `openspec/specs/dod-guard/coverage/spec.md` has the id `dod-guard/coverage`.
 
-Three groups exist. Two match a package name: `dod-guard` (27 specs) and `quality-guard` (7). The third, `openspec-dashboard` (5), names the tool under `tools/openspec-dashboard` instead.
+Package-aligned groups are `dod-guard`, `quality-guard`, and `fossil`. The `fossil` group is added when the `add-fossil-cli` change is archived. The `openspec-dashboard` group names the tool under `tools/openspec-dashboard` instead.
 
 A change's delta directory must mirror the `openspec/specs/<group>/<capability>/spec.md` path exactly, at `openspec/changes/<id>/specs/<group>/<capability>/spec.md`. Get the group wrong and `openspec archive` creates a new flat capability instead of merging into the existing one, silently.
 
