@@ -4,7 +4,8 @@
 <!-- status: completed -->
 - [x] 1.2 Define the normalized option, Git activity, reference graph, score, burst report, warning, JSON report, and workspace-debris types in `src/types.ts`.
 <!-- status: completed -->
-- [ ] 1.3 Add reusable temporary-repository, recorded-history, source-tree, output-capture, and deterministic-clock test fixtures.
+- [x] 1.3 Add reusable temporary-repository, recorded-history, source-tree, output-capture, and deterministic-clock test fixtures.
+<!-- status: completed -->
 - [ ] 1.4 Change plugin validation to identify plugin workspaces by manifest, add passing and failing CLI-workspace fixtures, and keep repo-wide shipped-content checks active.
 - [ ] 1.5 Add fossil to the root lockfile, workspace build and bundle flow, coverage ratchet, test-presence gate, Biome scope, structural scan, and a CLI-specific package-integrity smoke check.
 
