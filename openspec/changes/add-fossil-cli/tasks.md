@@ -304,8 +304,9 @@
 - [x] 6.21 Add the CLI-only workspace integrity check without an MCP handshake.
 <!-- covers: fossil/cli :: CLI-only package contract :: Fossil package passes CLI integrity checks -->
 <!-- status: completed -->
-- [ ] 6.22 Disable repository-configured filesystem monitors and external diff helpers.
+- [x] 6.22 Disable repository-configured filesystem monitors and external diff helpers.
 <!-- covers: fossil/cli :: Safe Git execution :: Repository Git helper is disabled -->
+<!-- status: completed -->
 - [ ] 6.23 Reject unsupported Git versions before history analysis.
 <!-- covers: fossil/cli :: Safe Git execution :: Unsupported Git version fails capability check -->
 - [ ] 6.24 Stream and terminate Git ingestion at byte or status-record limits.

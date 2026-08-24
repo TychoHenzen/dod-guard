@@ -74,6 +74,10 @@ test("accepts exactly one hundred thousand included commits and rejects the next
   );
 });
 
+test("disables external diff helpers for non-merge history output", () => {
+  assert.equal(nonMergeGitLogArguments().includes("--no-ext-diff"), true);
+});
+
 // covers: fossil/burst-analysis :: History activity model :: Merge commits do not add activity
 test("omits merge-only activity while retaining reachable non-merge commits", async () => {
   const repository = await temporaryRepository();

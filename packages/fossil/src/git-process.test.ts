@@ -17,11 +17,21 @@ test("passes a metacharacter-containing repository path as one non-shell Git arg
   assert.deepEqual(calls, [
     {
       command: "git",
-      arguments_: ["--no-pager", "-C", repositoryPath, "rev-parse", "--show-toplevel"],
+      arguments_: [
+        "--no-pager",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "diff.external=",
+        "-C",
+        repositoryPath,
+        "rev-parse",
+        "--show-toplevel",
+      ],
       options: { shell: false, windowsHide: true, env: { GIT_TERMINAL_PROMPT: "0", GIT_PAGER: "cat" } },
     },
   ]);
-  assert.equal(calls[0].arguments_[2], repositoryPath);
+  assert.equal(calls[0].arguments_[6], repositoryPath);
   assert.equal(calls[0].arguments_.filter((argument) => argument === repositoryPath).length, 1);
 });
 
@@ -43,7 +53,17 @@ test("overrides hostile pager and prompt settings while preserving unrelated env
 
   assert.deepEqual(calls, [
     {
-      arguments_: ["--no-pager", "-C", "C:/repositories/example", "rev-parse", "--show-toplevel"],
+      arguments_: [
+        "--no-pager",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "diff.external=",
+        "-C",
+        "C:/repositories/example",
+        "rev-parse",
+        "--show-toplevel",
+      ],
       options: {
         shell: false,
         windowsHide: true,
@@ -62,4 +82,23 @@ test("overrides hostile pager and prompt settings while preserving unrelated env
     GIT_PAGER: "hostile-pager",
     GIT_TERMINAL_PROMPT: "1",
   });
+});
+
+// covers: fossil/cli :: Safe Git execution :: Repository Git helper is disabled
+test("adds config overrides that disable repository filesystem monitors and external diff helpers", () => {
+  const calls: Array<{ arguments_: readonly string[] }> = [];
+  const runGit: GitSpawn = (_command, arguments_) => {
+    calls.push({ arguments_ });
+    return new EventEmitter() as never;
+  };
+
+  discoverGitRepository("C:/repositories/hostile-config", runGit, {});
+
+  assert.deepEqual(calls[0].arguments_.slice(0, 5), [
+    "--no-pager",
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    "diff.external=",
+  ]);
 });

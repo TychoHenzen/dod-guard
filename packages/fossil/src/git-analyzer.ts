@@ -29,7 +29,16 @@ export function assertIncludedCommitLimit(
 
 /** Arguments for the raw history stream consumed by parseNonMergeGitLog(). */
 export function nonMergeGitLogArguments(): readonly string[] {
-  return ["log", "HEAD", "--no-merges", "--find-renames=50%", "--format=%x1e%H%x00%ct%x00", "--name-status", "-z"];
+  return [
+    "log",
+    "--no-ext-diff",
+    "HEAD",
+    "--no-merges",
+    "--find-renames=50%",
+    "--format=%x1e%H%x00%ct%x00",
+    "--name-status",
+    "-z",
+  ];
 }
 
 /** Arguments for checking whether Git marks the repository as shallow. */
