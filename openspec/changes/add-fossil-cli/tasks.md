@@ -226,8 +226,9 @@
 - [x] 5.11 Summarize large ignored trees in normal table output while retaining detailed data elsewhere.
 <!-- covers: fossil/workspace-debris :: Review-only reporting :: Large ignored tree is summarized -->
 <!-- status: completed -->
-- [ ] 5.12 Include workspace files exactly on the modification-age cutoff.
+- [x] 5.12 Include workspace files exactly on the modification-age cutoff.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Age threshold is inclusive -->
+<!-- status: completed -->
 - [ ] 5.13 Distinguish Git-discovered unreadable workspace paths from debris findings.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Unreadable discovered path is distinguished -->
 - [ ] 5.14 Test debris age immediately before, at, and after one captured cutoff.

@@ -104,6 +104,37 @@ test("uses old modification time when creation metadata is unavailable", () => {
   assert.deepEqual(candidates, [{ path: "scratch/old-without-birth.ts", kind: "untracked", modifiedTimestampMs: 0 }]);
 });
 
+// covers: fossil/workspace-debris :: Workspace file discovery :: Age threshold is inclusive
+test("includes untracked and ignored files exactly on the modification-age cutoff", () => {
+  const now = 10 * 24 * 60 * 60 * 1_000;
+  const cutoff = now - 7 * 24 * 60 * 60 * 1_000;
+
+  assert.deepEqual(
+    oldUntrackedWorkspaceCandidates(
+      [{ path: "scratch/cutoff.ts", isRegularFile: true, modifiedTimestampMs: cutoff }],
+      now,
+      7,
+    ),
+    [{ path: "scratch/cutoff.ts", kind: "untracked", modifiedTimestampMs: cutoff }],
+  );
+  assert.deepEqual(
+    oldIgnoredWorkspaceCandidates(
+      [{ path: "scratch/cutoff.cache", isRegularFile: true, modifiedTimestampMs: cutoff }],
+      [{ path: "scratch/cutoff.cache", rule: "*.cache", source: "repository" }],
+      now,
+      7,
+    ),
+    [
+      {
+        path: "scratch/cutoff.cache",
+        kind: "ignored",
+        modifiedTimestampMs: cutoff,
+        ignore: { rule: "*.cache", source: "repository" },
+      },
+    ],
+  );
+});
+
 // covers: fossil/workspace-debris :: Usage evidence search :: Referenced old file is omitted
 test("omits old candidates with resolved imports, exact paths, or a unique basename", () => {
   const candidate = { path: "scratch/old.ts", kind: "untracked" as const, modifiedTimestampMs: 0 };
