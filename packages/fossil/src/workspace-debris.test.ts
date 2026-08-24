@@ -87,3 +87,15 @@ test("omits recent untracked and ignored workspace files", () => {
     [],
   );
 });
+
+// covers: fossil/workspace-debris :: Portable age evidence :: Unavailable creation time does not block analysis
+test("uses old modification time when creation metadata is unavailable", () => {
+  const now = 10 * 24 * 60 * 60 * 1_000;
+  const candidates = oldUntrackedWorkspaceCandidates(
+    [{ path: "scratch/old-without-birth.ts", isRegularFile: true, modifiedTimestampMs: 0 }],
+    now,
+    7,
+  );
+
+  assert.deepEqual(candidates, [{ path: "scratch/old-without-birth.ts", kind: "untracked", modifiedTimestampMs: 0 }]);
+});

@@ -202,8 +202,9 @@
 - [x] 5.3 Omit workspace files newer than the configured age threshold.
 <!-- covers: fossil/workspace-debris :: Workspace file discovery :: Recent workspace file is omitted -->
 <!-- status: completed -->
-- [ ] 5.4 Use modification time when creation time is unavailable or unreliable.
+- [x] 5.4 Use modification time when creation time is unavailable or unreliable.
 <!-- covers: fossil/workspace-debris :: Portable age evidence :: Unavailable creation time does not block analysis -->
+<!-- status: completed -->
 - [ ] 5.5 Omit an old workspace file when inbound usage evidence is discovered.
 <!-- covers: fossil/workspace-debris :: Usage evidence search :: Referenced old file is omitted -->
 - [ ] 5.6 Report an old workspace file with no discovered inbound usage evidence.
