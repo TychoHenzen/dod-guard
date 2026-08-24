@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   analyzeJavaScriptReferences,
   analyzeReferences,
+  markUnresolvedCandidateEvidence,
   type ReferenceCandidate,
   readReferenceSources,
   regradeVestigialEdges,
@@ -450,4 +451,38 @@ test("regrades only candidate-to-candidate edges without mutating the graph", ()
     ["vestigial", "weak", "strong"],
   );
   assert.equal(graph.edges[0].strength, "strong");
+});
+
+// covers: fossil/reference-analysis :: Replaceable reference backend :: Potentially relevant unresolved reference is incomplete evidence
+test("marks only tail or uniquely named unresolved candidate paths unavailable", () => {
+  const graph = {
+    edges: [],
+    unresolved: [
+      {
+        sourcePath: "live.ts",
+        targetCandidates: ["lib/tail", "unique", "shared", "tail", ""],
+        language: "typescript" as const,
+        kind: "import" as const,
+        span: { start: 0, end: 1, line: 1, column: 1 },
+        resolution: "unresolved" as const,
+      },
+      {
+        sourcePath: "live.ts",
+        targetCandidates: ["package"],
+        language: "typescript" as const,
+        kind: "import" as const,
+        span: { start: 2, end: 3, line: 1, column: 3 },
+        resolution: "external" as const,
+      },
+    ],
+    complete: false,
+    unavailablePaths: ["existing.ts"],
+  };
+  const result = markUnresolvedCandidateEvidence(
+    graph,
+    new Set(["src/lib/tail.ts", "src/unique.ts", "a/shared.ts", "b/shared.ts", "src/retail.ts", "src/package.ts"]),
+  );
+  assert.deepEqual(result.unavailablePaths, ["existing.ts", "src/lib/tail.ts", "src/unique.ts"]);
+  assert.equal(result.complete, false);
+  assert.deepEqual(graph.unavailablePaths, ["existing.ts"]);
 });

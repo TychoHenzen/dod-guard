@@ -118,8 +118,9 @@
 - [x] 3.11 Regrade candidate-to-candidate graph edges as vestigial before scoring.
 <!-- covers: fossil/reference-analysis :: Vestigial references :: Fossils do not keep each other alive -->
 <!-- status: completed -->
-- [ ] 3.12 Mark candidate reference evidence unavailable when a potentially matching reference remains unresolved.
+- [x] 3.12 Mark candidate reference evidence unavailable when a potentially matching reference remains unresolved.
 <!-- covers: fossil/reference-analysis :: Replaceable reference backend :: Potentially relevant unresolved reference is incomplete evidence -->
+<!-- status: completed -->
 - [ ] 3.13 Grade mixed fallback and normal usage as strong.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Mixed normal and fallback use is strong -->
 - [ ] 3.14 Reject relative import targets that escape canonical repository containment.
