@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { FossilAnalysisError } from "./analysis-error.js";
 import {
   analyzeJavaScriptReferences,
   analyzeJavaScriptReferencesWithinBoundary,
@@ -267,6 +268,29 @@ test("inventories ordinary directories without traversing links or duplicate can
     "C:/repo/src/nested.ts",
     "C:/repo/zsecond",
   ]);
+});
+
+// covers: fossil/cli :: Analysis resource bounds :: File inventory limit fails explicitly
+test("accepts exactly one hundred thousand inventory files and rejects the next file", () => {
+  const entries = Array.from({ length: 100_001 }, (_, index) => ({
+    name: `file-${index.toString().padStart(6, "0")}.ts`,
+    kind: "file" as const,
+  }));
+  const inventory = (count: number) =>
+    inventoryReferenceSourcePaths({
+      repositoryRoot: "C:/repo",
+      canonicalize: (path) => path,
+      enumerate: (path) => (path === "C:/repo" ? entries.slice(0, count) : []),
+    });
+
+  assert.equal(inventory(100_000).length, 100_000);
+  assert.throws(
+    () => inventory(100_001),
+    (error: unknown) =>
+      error instanceof FossilAnalysisError &&
+      error.code === "resource_limit" &&
+      error.message === "Inventoried file limit exceeded.",
+  );
 });
 
 // covers: fossil/reference-analysis :: Repository-contained source reads :: Relative import cannot escape the repository

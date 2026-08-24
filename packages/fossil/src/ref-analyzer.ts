@@ -1,4 +1,5 @@
 import { posix } from "node:path";
+import { FossilAnalysisError } from "./analysis-error.js";
 import type {
   AnalysisWarning,
   ParsedReference,
@@ -20,6 +21,8 @@ const RUST_CRATE_USE = /^\s*use\s+crate::([A-Za-z_]\w*(?:::[A-Za-z_]\w*)*)\s*;\s
 export const DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES = 1_048_576;
 /** Default hard cap for all source content retained by one reference analysis. */
 export const DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES = 268_435_456;
+/** Default maximum number of current files inventoried for reference analysis. */
+export const DEFAULT_MAXIMUM_INVENTORIED_FILES = 100_000;
 
 /** Candidate metadata supplied to a language-specific reference backend. */
 export interface ReferenceCandidate {
@@ -158,6 +161,7 @@ export function inventoryReferenceSourcePaths(boundary: ReferenceInventoryBounda
   const canonicalRoot = boundary.canonicalize(boundary.repositoryRoot);
   const visitedDirectories = new Set<string>();
   const paths = new Set<string>();
+  let inventoriedFileCount = 0;
   const walk = (directoryPath: string, canonicalDirectory = boundary.canonicalize(directoryPath)) => {
     if (
       !pathIsWithin(canonicalRoot, canonicalDirectory) ||
@@ -174,8 +178,15 @@ export function inventoryReferenceSourcePaths(boundary: ReferenceInventoryBounda
         continue;
       }
       const canonicalFile = boundary.canonicalize(entryPath);
-      if (pathIsWithin(canonicalRoot, canonicalFile))
+      if (pathIsWithin(canonicalRoot, canonicalFile)) {
+        inventoriedFileCount += 1;
+        if (inventoriedFileCount > DEFAULT_MAXIMUM_INVENTORIED_FILES)
+          throw new FossilAnalysisError({
+            code: "resource_limit",
+            message: "Inventoried file limit exceeded.",
+          });
         paths.add(repositoryRelativePath(boundary.repositoryRoot, entryPath));
+      }
     }
   };
   walk(boundary.repositoryRoot, canonicalRoot);

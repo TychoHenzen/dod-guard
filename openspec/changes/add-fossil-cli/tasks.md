@@ -298,8 +298,9 @@
 - [x] 6.19 Fail explicitly when included commit records exceed the resource limit.
 <!-- covers: fossil/cli :: Analysis resource bounds :: Commit limit fails explicitly -->
 <!-- status: completed -->
-- [ ] 6.20 Fail explicitly when current inventory exceeds the resource limit.
+- [x] 6.20 Fail explicitly when current inventory exceeds the resource limit.
 <!-- covers: fossil/cli :: Analysis resource bounds :: File inventory limit fails explicitly -->
+<!-- status: completed -->
 - [ ] 6.21 Add the CLI-only workspace integrity check without an MCP handshake.
 <!-- covers: fossil/cli :: CLI-only package contract :: Fossil package passes CLI integrity checks -->
 - [ ] 6.22 Disable repository-configured filesystem monitors and external diff helpers.
