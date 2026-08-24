@@ -1,3 +1,4 @@
+import { FossilAnalysisError } from "./analysis-error.js";
 import type {
   AnalysisWarning,
   Burst,
@@ -10,6 +11,21 @@ import type {
 const RECORD_SEPARATOR = "\u001e";
 const MIN_CHANGE_POINT_GAP_MS = 4 * 60 * 60 * 1_000;
 const MAX_CHANGE_POINT_SIMILARITY = 0.1;
+
+/** Default maximum number of included non-merge commit records. */
+export const DEFAULT_MAXIMUM_INCLUDED_COMMITS = 100_000;
+
+/** Rejects included history that cannot be analyzed within the commit resource budget. */
+export function assertIncludedCommitLimit(
+  includedCommitCount: number,
+  maximumIncludedCommits = DEFAULT_MAXIMUM_INCLUDED_COMMITS,
+): void {
+  if (includedCommitCount > maximumIncludedCommits)
+    throw new FossilAnalysisError({
+      code: "resource_limit",
+      message: "Included commit limit exceeded.",
+    });
+}
 
 /** Arguments for the raw history stream consumed by parseNonMergeGitLog(). */
 export function nonMergeGitLogArguments(): readonly string[] {
@@ -171,19 +187,25 @@ export function normalizeExtensions(values: readonly string[]): string[] {
 
 /** Keeps whole candidate identities for later burst and score calculations. */
 export function filterHistoryByExtensions(commits: readonly GitCommit[], extensions: ReadonlySet<string>): GitCommit[] {
-  if (extensions.size === 0) return [...commits];
+  if (extensions.size === 0) {
+    const included = [...commits];
+    assertIncludedCommitLimit(included.length);
+    return included;
+  }
   const resolution = resolveLogicalActivities(commits);
   const selectedIdentities = new Set(
     resolution.activities
       .filter((activity) => extensions.has(pathExtension(activity.currentPath ?? activity.paths.at(-1) ?? "")))
       .map((activity) => activity.identity),
   );
-  return commits.flatMap((commit) => {
+  const included = commits.flatMap((commit) => {
     const changes = commit.changes.filter((change) =>
       selectedIdentities.has(resolution.identitiesByChange.get(change) ?? ""),
     );
     return changes.length === 0 ? [] : [{ ...commit, changes }];
   });
+  assertIncludedCommitLimit(included.length);
+  return included;
 }
 
 /** Splits chronological included commits where the adjacent timestamp gap exceeds the supplied milliseconds. */

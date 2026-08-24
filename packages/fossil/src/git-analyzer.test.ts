@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
+import { FossilAnalysisError } from "./analysis-error.js";
 import {
   assembleClosedBursts,
   emptyHistoryWarnings,
@@ -49,6 +50,29 @@ function changePointCommits(fileSets: readonly (readonly string[])[], gapsBefore
     };
   });
 }
+
+// covers: fossil/cli :: Analysis resource bounds :: Commit limit fails explicitly
+test("accepts exactly one hundred thousand included commits and rejects the next one", () => {
+  const commit = { hash: "included", committerTimestampMs: 0, changes: [] };
+  assert.equal(
+    filterHistoryByExtensions(
+      Array.from({ length: 100_000 }, () => commit),
+      new Set(),
+    ).length,
+    100_000,
+  );
+  assert.throws(
+    () =>
+      filterHistoryByExtensions(
+        Array.from({ length: 100_001 }, () => commit),
+        new Set(),
+      ),
+    (error: unknown) =>
+      error instanceof FossilAnalysisError &&
+      error.code === "resource_limit" &&
+      error.message === "Included commit limit exceeded.",
+  );
+});
 
 // covers: fossil/burst-analysis :: History activity model :: Merge commits do not add activity
 test("omits merge-only activity while retaining reachable non-merge commits", async () => {

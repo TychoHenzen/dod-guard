@@ -7,14 +7,11 @@
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
+import { FossilAnalysisError } from "./analysis-error.js";
 import { finalizeFossilReport, renderFossilReportJson } from "./output.js";
-import type {
-  AnalysisErrorCode,
-  AnalysisErrorDetails,
-  AnalyzeRepositoryResult,
-  NormalizedAnalysisOptions,
-} from "./types.js";
+import type { AnalyzeRepositoryResult, NormalizedAnalysisOptions } from "./types.js";
 
+export { FossilAnalysisError } from "./analysis-error.js";
 export * from "./types.js";
 
 const _filename = fileURLToPath(import.meta.url);
@@ -46,16 +43,6 @@ export class FossilUsageError extends Error {
     readonly reported = false,
   ) {
     super(message);
-  }
-}
-
-/** A typed fatal result from repository analysis that callers can handle without parsing text. */
-export class FossilAnalysisError extends Error {
-  readonly code: AnalysisErrorCode;
-
-  constructor({ code, message }: AnalysisErrorDetails) {
-    super(message);
-    this.code = code;
   }
 }
 
