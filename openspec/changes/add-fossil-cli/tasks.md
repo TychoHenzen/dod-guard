@@ -91,8 +91,9 @@
 - [x] 3.2 Convert an unreadable eligible source file into a report warning and continue analysis.
 <!-- covers: fossil/reference-analysis :: Replaceable reference backend :: Unreadable source does not stop analysis -->
 <!-- status: completed -->
-- [ ] 3.3 Resolve static imports, `require()`, and dynamic `import()` across current TypeScript and JavaScript files.
+- [x] 3.3 Resolve static imports, `require()`, and dynamic `import()` across current TypeScript and JavaScript files.
 <!-- covers: fossil/reference-analysis :: TypeScript and JavaScript references :: JavaScript module forms create graph edges -->
+<!-- status: completed -->
 - [ ] 3.4 Resolve an unambiguous namespace-level C# `using` through path and namespace conventions.
 <!-- covers: fossil/reference-analysis :: C# references :: Unambiguous C# namespace resolves -->
 - [ ] 3.5 Preserve an ambiguous C# namespace as unresolved rather than inventing an edge.
