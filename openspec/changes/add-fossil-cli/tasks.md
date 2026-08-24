@@ -76,8 +76,9 @@
 - [x] 2.21 Return a successful zero-burst report for an empty Git repository.
 <!-- covers: fossil/burst-analysis :: History completeness reporting :: Empty repository has no bursts -->
 <!-- status: completed -->
-- [ ] 2.22 Make recursive close splits define final burst membership and statistics.
+- [x] 2.22 Make recursive close splits define final burst membership and statistics.
 <!-- covers: fossil/burst-analysis :: File-set change-point detection :: Close split refines temporal clustering -->
+<!-- status: completed -->
 - [ ] 2.23 Prevent the relative survivor rule from selecting files when all later counts are zero.
 <!-- covers: fossil/burst-analysis :: Consolidation classification :: Zero post-burst maximum creates no relative survivor -->
 
