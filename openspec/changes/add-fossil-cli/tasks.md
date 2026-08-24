@@ -169,8 +169,9 @@
 - [x] 4.8 Assign full isolation when the candidate has no resolved neighbors.
 <!-- covers: fossil/scoring :: Cluster isolation score :: Candidate has no resolved neighbors -->
 <!-- status: completed -->
-- [ ] 4.9 Assign zero isolation when every resolved neighbor is live.
+- [x] 4.9 Assign zero isolation when every resolved neighbor is live.
 <!-- covers: fossil/scoring :: Cluster isolation score :: Candidate only references live code -->
+<!-- status: completed -->
 - [ ] 4.10 Combine four available subscores with the fixed fossil weights.
 <!-- covers: fossil/scoring :: Combined fossil score :: Complete scoring uses fixed weights -->
 - [ ] 4.11 Renormalize churn and abandonment weights when reference signals are unavailable.
