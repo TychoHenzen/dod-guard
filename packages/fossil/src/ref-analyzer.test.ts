@@ -301,3 +301,37 @@ test("keeps an ordinary imported candidate use as a strong inbound reference", (
     [{ sourcePath: "src/live.ts", targetPath: "src/candidate.ts", strength: "strong" }],
   );
 });
+
+// covers: fossil/reference-analysis :: Reference strength :: Try or catch use is weak
+test("marks imports used only in balanced try or catch bodies as weak", () => {
+  const graph = analyzeJavaScriptReferences([
+    {
+      path: "src/try-only.ts",
+      language: "typescript",
+      content: 'import { candidate } from "./candidate";\ntry {\n  if (true) { candidate("}"); } // }\n}\n',
+    },
+    {
+      path: "src/catch-only.ts",
+      language: "typescript",
+      content:
+        'import { candidate } from "./candidate";\ntry { throw Error(); } catch (error /* a deliberately long comment before the body opens */) {\n  candidate(error);\n}\n',
+    },
+    {
+      path: "src/multiple-bindings.ts",
+      language: "typescript",
+      content:
+        'import defaultCandidate, * as candidates from "./candidate";\nimport { candidate as aliasedCandidate, anotherCandidate } from "./candidate";\ntry {\n  defaultCandidate();\n  candidates.run();\n} catch (error /* a deliberately long comment before the body opens */) {\n  aliasedCandidate(error);\n  anotherCandidate(error);\n}\n',
+    },
+    {
+      path: "src/dollar-binding.ts",
+      language: "typescript",
+      content: 'import { candidate as $candidate } from "./candidate";\ntry { $candidate(); } catch {}\n',
+    },
+    { path: "src/candidate.ts", language: "typescript", content: "" },
+  ]);
+
+  assert.deepEqual(
+    graph.edges.map((edge) => edge.strength),
+    ["weak", "weak", "weak", "weak", "weak"],
+  );
+});

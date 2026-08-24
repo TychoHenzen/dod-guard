@@ -183,6 +183,126 @@ function parsedRustReferences(source: ReferenceSourceContent): ParsedReference[]
   return references.sort((left, right) => left.span.start - right.span.start || compareText(left.kind, right.kind));
 }
 
+function tryCatchRanges(content: string): readonly [number, number][] {
+  const ranges: [number, number][] = [];
+  const stack: { kind: boolean; start: number }[] = [];
+  let pendingBody: "try" | "catch" | undefined;
+  let catchParameterDepth = 0;
+  let quote = "";
+  let lineComment = false;
+  let blockComment = false;
+  for (let index = 0; index < content.length; index += 1) {
+    const character = content[index];
+    const next = content[index + 1];
+    if (lineComment) {
+      if (character === "\n") lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (character === "*" && next === "/") {
+        blockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (character === "\\") index += 1;
+      else if (character === quote) quote = "";
+      continue;
+    }
+    if (character === "/" && next === "/") {
+      lineComment = true;
+      index += 1;
+      continue;
+    }
+    if (character === "/" && next === "*") {
+      blockComment = true;
+      index += 1;
+      continue;
+    }
+    if (character === '"' || character === "'" || character === "`") {
+      quote = character;
+      continue;
+    }
+    if (/[A-Za-z_$]/.test(character)) {
+      let end = index + 1;
+      while (/[\w$]/.test(content[end] ?? "")) end += 1;
+      const word = content.slice(index, end);
+      if (word === "try" || word === "catch") {
+        pendingBody = word;
+        catchParameterDepth = 0;
+      }
+      index = end - 1;
+      continue;
+    }
+    if (pendingBody === "catch" && character === "(") {
+      catchParameterDepth += 1;
+      continue;
+    }
+    if (pendingBody === "catch" && character === ")" && catchParameterDepth > 0) {
+      catchParameterDepth -= 1;
+      continue;
+    }
+    if (character === "{") {
+      const kind = pendingBody === "try" || (pendingBody === "catch" && catchParameterDepth === 0);
+      stack.push({ kind, start: index });
+      if (kind) pendingBody = undefined;
+    } else if (character === "}") {
+      const opened = stack.pop();
+      if (opened?.kind) ranges.push([opened.start, index]);
+    }
+  }
+  return ranges;
+}
+
+function localImportBindings(declaration: string): string[] {
+  const bindings = new Set<string>();
+  const add = (binding: string | undefined) => {
+    if (binding && /^[A-Za-z_$][\w$]*$/.test(binding)) bindings.add(binding);
+  };
+  const defaultBinding = /^\s*import\s+([A-Za-z_$][\w$]*)\s*(?:,|from\b)/.exec(declaration)?.[1];
+  add(defaultBinding);
+  add(/\*\s+as\s+([A-Za-z_$][\w$]*)/.exec(declaration)?.[1]);
+  const namedBindings = /\{([^}]*)\}/.exec(declaration)?.[1];
+  for (const namedBinding of namedBindings?.split(",") ?? []) {
+    const [imported, local] = namedBinding
+      .trim()
+      .replace(/^type\s+/, "")
+      .split(/\s+as\s+/);
+    add(local ?? imported);
+  }
+  return [...bindings];
+}
+
+function strengthForReference(
+  reference: ParsedReference,
+  sources: readonly ReferenceSourceContent[],
+): "strong" | "weak" {
+  if (reference.kind !== "import") return "strong";
+  const source = sources.find((candidate) => candidate.path === reference.sourcePath);
+  if (!source) return "strong";
+  const declarationStart = source.content.lastIndexOf("import", reference.span.start);
+  const semicolon = source.content.indexOf(";", reference.span.end);
+  const newline = source.content.indexOf("\n", reference.span.end);
+  const declarationEnd = semicolon === -1 ? newline : newline === -1 ? semicolon : Math.min(semicolon, newline);
+  const declaration = source.content.slice(declarationStart, declarationEnd + 1);
+  const bindings = localImportBindings(declaration);
+  if (bindings.length === 0) return "strong";
+  const uses = bindings.flatMap((binding) =>
+    [
+      ...source.content.matchAll(
+        new RegExp(`(^|[^A-Za-z0-9_$])(${binding.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})(?![A-Za-z0-9_$])`, "g"),
+      ),
+    ]
+      .map((match) => (match.index ?? -1) + (match[1]?.length ?? 0))
+      .filter((index) => index < declarationStart || index > declarationEnd),
+  );
+  const regions = tryCatchRanges(source.content);
+  return uses.length > 0 && uses.every((index) => regions.some(([start, end]) => index > start && index < end))
+    ? "weak"
+    : "strong";
+}
+
 function referenceGraph(
   parsed: readonly ParsedReference[],
   sources: readonly ReferenceSourceContent[],
@@ -203,7 +323,7 @@ function referenceGraph(
       targetPath: targetPath ?? "",
       language: reference.language,
       kind: reference.kind,
-      strength: reference.strength,
+      strength: strengthForReference(reference, sources),
       span: reference.span,
     }));
   const unresolved = resolved

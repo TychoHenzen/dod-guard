@@ -106,8 +106,9 @@
 - [x] 3.7 Grade a candidate usage outside fallback regions as a strong inbound reference.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Normal direct use is strong -->
 <!-- status: completed -->
-- [ ] 3.8 Grade imports used only inside try or catch regions as weak.
+- [x] 3.8 Grade imports used only inside try or catch regions as weak.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Try or catch use is weak -->
+<!-- status: completed -->
 - [ ] 3.9 Grade imports used only in fallback conditionals or default expressions as weak.
 <!-- covers: fossil/reference-analysis :: Reference strength :: Conditional fallback use is weak -->
 - [ ] 3.10 Grade imports used only behind C# preprocessor or Rust cfg guards as weak.
