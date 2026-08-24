@@ -44,6 +44,11 @@ export class FossilUsageError extends Error {
   }
 }
 
+/** A repository-analysis failure caused by a path outside a Git worktree. */
+export class NotRepositoryAnalysisError extends Error {
+  readonly code = "not_repository" as const;
+}
+
 export interface FossilCliDependencies {
   readonly analyze: AnalyzeCommandHandler;
   readonly cwd?: () => string;
@@ -178,16 +183,53 @@ export async function runFossilCli(argv: readonly string[], dependencies: Fossil
   }
 }
 
+function boundedNotRepositoryDiagnostic(error: NotRepositoryAnalysisError): string {
+  const prefix = "fossil: ";
+  const suffix = "\n";
+  const maximumMessageBytes = 4_096 - Buffer.byteLength(prefix) - Buffer.byteLength(suffix);
+  let message = "";
+  for (const character of error.message || "not a Git repository") {
+    const codePoint = character.codePointAt(0) ?? 0;
+    const visible =
+      character === "\n"
+        ? "\\n"
+        : character === "\r"
+          ? "\\r"
+          : character === "\t"
+            ? "\\t"
+            : codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f)
+              ? `\\x${codePoint.toString(16).padStart(2, "0")}`
+              : character;
+    if (Buffer.byteLength(message) + Buffer.byteLength(visible) > maximumMessageBytes) break;
+    message += visible;
+  }
+  return `${prefix}${message}${suffix}`;
+}
+
+/** Maps known process outcomes without changing the lower-level CLI boundary. */
+export async function runFossilCliProcess(
+  argv: readonly string[],
+  dependencies: FossilCliDependencies,
+): Promise<number> {
+  try {
+    await runFossilCli(argv, dependencies);
+    return 0;
+  } catch (error) {
+    if (error instanceof FossilUsageError) return error.exitCode;
+    if (error instanceof NotRepositoryAnalysisError) {
+      (dependencies.stderr ?? process.stderr.write.bind(process.stderr))(boundedNotRepositoryDiagnostic(error));
+      return 1;
+    }
+    throw error;
+  }
+}
+
 async function main(): Promise<void> {
-  await runFossilCli(process.argv, { analyze: unavailableRepositoryAnalysisCore });
+  process.exitCode = await runFossilCliProcess(process.argv, { analyze: unavailableRepositoryAnalysisCore });
 }
 
 if (isMainModule()) {
   main().catch((err) => {
-    if (err instanceof FossilUsageError) {
-      process.exitCode = err.exitCode;
-      return;
-    }
     process.stderr.write(`fossil CLI failed: ${err}\n`);
     process.exit(1);
   });
