@@ -5,6 +5,7 @@ import {
   clusterIsolationScore,
   meetsFossilThreshold,
   normalizedBurstChurn,
+  qualifyingBurstCandidates,
   referenceWeaknessScore,
   scoreFossilSubscores,
 } from "./fossil-grader.js";
@@ -47,6 +48,27 @@ test("renormalizes Git subscores when both reference signals are unavailable", (
 test("includes scores exactly at the configured finding threshold", () => {
   assert.equal(meetsFossilThreshold(0.7, 0.7), true);
   assert.equal(meetsFossilThreshold(0.699_999, 0.7), false);
+});
+
+// covers: fossil/scoring :: Threshold and burst assembly :: Same path can carry burst-specific evidence
+test("retains independently qualifying evidence for one path in multiple bursts", () => {
+  const first = {
+    burstId: "burst-1",
+    activity: activity("src/reused.ts", 3, 0),
+    score: { score: 0.7, basis: "full" as const },
+  };
+  const second = {
+    burstId: "burst-2",
+    activity: activity("src/reused.ts", 8, 2),
+    score: { score: 0.8, basis: "git-only" as const },
+  };
+
+  const qualified = qualifyingBurstCandidates([first, second], 0.7);
+
+  assert.deepEqual(qualified, [first, second]);
+  assert.notEqual(qualified[0]?.activity, qualified[1]?.activity);
+  assert.equal(qualified[0]?.activity.burstCommits, 3);
+  assert.equal(qualified[1]?.activity.burstCommits, 8);
 });
 
 // covers: fossil/scoring :: Cluster isolation score :: Candidate only references fossils

@@ -181,8 +181,9 @@
 - [x] 4.12 Include candidates whose score exactly equals the configured threshold.
 <!-- covers: fossil/scoring :: Threshold and burst assembly :: Threshold is inclusive -->
 <!-- status: completed -->
-- [ ] 4.13 Preserve independent evidence when one path qualifies in more than one burst.
+- [x] 4.13 Preserve independent evidence when one path qualifies in more than one burst.
 <!-- covers: fossil/scoring :: Threshold and burst assembly :: Same path can carry burst-specific evidence -->
+<!-- status: completed -->
 - [ ] 4.14 Make both reference subscores unavailable together for incomplete candidate reference analysis.
 <!-- covers: fossil/scoring :: Combined fossil score :: Reference subscores are available as a pair -->
 - [ ] 4.15 Mark every fossil finding advisory even at the maximum score.

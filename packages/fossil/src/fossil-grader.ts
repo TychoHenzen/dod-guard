@@ -6,6 +6,13 @@ export interface FossilScore {
   readonly basis: ScoreBasis;
 }
 
+/** One scored candidate activity retained with its burst-specific evidence. */
+export interface BurstCandidateEvidence {
+  readonly burstId: string;
+  readonly activity: BurstFileActivity;
+  readonly score: FossilScore;
+}
+
 /** Normalizes one candidate's positive burst churn against the positive burst maximum. */
 export function normalizedBurstChurn(candidate: BurstFileActivity, burstFiles: readonly BurstFileActivity[]): number {
   const maximumBurstCommits = Math.max(0, ...burstFiles.map((activity) => activity.burstCommits));
@@ -77,4 +84,12 @@ export function scoreFossilSubscores(subscores: FossilSubscores): FossilScore | 
 /** Returns whether a score meets the inclusive fossil finding threshold. */
 export function meetsFossilThreshold(score: number, threshold: number): boolean {
   return score >= threshold;
+}
+
+/** Retains every qualifying burst-specific candidate without deduplicating matching paths. */
+export function qualifyingBurstCandidates(
+  candidates: readonly BurstCandidateEvidence[],
+  threshold: number,
+): readonly BurstCandidateEvidence[] {
+  return candidates.filter((candidate) => meetsFossilThreshold(candidate.score.score, threshold));
 }
