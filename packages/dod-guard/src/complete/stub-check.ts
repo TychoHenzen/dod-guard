@@ -4,7 +4,7 @@
  * missing assertions, or explicit not-implemented throws.
  */
 
-export interface StubCheckResult {
+interface StubCheckResult {
   pass: boolean;
   reasons: string[];
 }

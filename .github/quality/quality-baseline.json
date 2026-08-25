@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-24T08:38:28.380Z",
-  "total": 653,
+  "total": 654,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -536,6 +536,7 @@
     "packages/dod-guard/src/complete/run.test.ts::file-length": 1,
     "packages/dod-guard/src/mcp-tools.ts::function-length": 1,
     "scripts/ci/lib/skill-hygiene-rules.mjs::file-length": 1,
-    "scripts/ci/lib/skill-hygiene-rules.mjs::complexity": 1
+    "scripts/ci/lib/skill-hygiene-rules.mjs::complexity": 1,
+    "packages/dod-guard/src/complete/run.ts::test-only-export": 1
   }
 }

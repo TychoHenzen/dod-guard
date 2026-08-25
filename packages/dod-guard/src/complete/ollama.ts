@@ -8,18 +8,18 @@
  */
 import { request } from "node:http";
 
-export interface OllamaResult {
+interface OllamaResult {
   available: true;
   aligned: boolean;
   raw: string;
 }
 
-export interface OllamaUnavailable {
+interface OllamaUnavailable {
   available: false;
   reason: string;
 }
 
-export type OllamaCheckResult = OllamaResult | OllamaUnavailable;
+type OllamaCheckResult = OllamaResult | OllamaUnavailable;
 
 const THINK_RE = /<think>[\s\S]*?<\/think>/g;
 
@@ -85,7 +85,7 @@ function ollamaGenerate(model: string, prompt: string, host: string, port: numbe
   });
 }
 
-export interface OllamaConfig {
+interface OllamaConfig {
   model: string;
   host?: string;
   port?: number;

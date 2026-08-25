@@ -21,7 +21,7 @@ export const EXIT_OK = 0;
 export const EXIT_REJECTED = 1;
 export const EXIT_USAGE = 3;
 
-export interface CompleteOpts {
+interface CompleteOpts {
   cwd: string;
   changeId: string;
   taskId: string;
