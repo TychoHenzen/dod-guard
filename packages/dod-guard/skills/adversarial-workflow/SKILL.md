@@ -75,7 +75,7 @@ each, and file the gate at `phase: 2`.
 **Phase 3, implementation.** Delegate the build to `/dod-guard:step-by-step`, which
 halts at steps done, tests green, and build clean, since the judging falls to you.
 Send the saboteur, the new hire, and the spec auditor across the diff, run
-`dod-guard cover <change-id>` over the change's spec deltas, and file the gate at
+the dod-guard `cover` tool (with `cwd` and `changeId`) over the change's spec deltas, and file the gate at
 `phase: 3`. If a critical finding should survive this run, record it in the
 change's `design.md` summary and in the final report. Do not create a separate
 project-local rules file.
@@ -173,10 +173,11 @@ the only check there is.
 
 ## Finishing
 
-After phase 4 closes at `GO`, run `dod-guard cover <change-id>`. It checks each scenario
-in the change's spec deltas against the coverage baseline. Exit 0 means every scenario
-matches or improves on the baseline. Exit 1 means one regressed. Exit 3 means usage
-error. On exit 1 or exit 3, stop here: report the regression and do not archive.
+After phase 4 closes at `GO`, call the dod-guard `cover` tool with `cwd`
+set to the workspace root and `changeId` set to the change id. It checks
+each scenario in the change's spec deltas against the coverage baseline.
+No regressions means every scenario matches or improves. A regression or
+error means stop here: report it and do not archive.
 
 On exit 0, run `openspec archive <change-id> --yes`. It merges the change's spec deltas
 into `openspec/specs/` and moves the change under `changes/archive/`. Run archive

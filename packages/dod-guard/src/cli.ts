@@ -4,9 +4,10 @@
  * openspec/changes/route-skills-through-openspec. `cover` is the
  * replacement surface.
  */
+import { runComplete } from "./complete/run.js";
 import { runCover } from "./cover/run.js";
 
-const USAGE = `dod-guard - OpenSpec scenario coverage
+const USAGE = `dod-guard - OpenSpec scenario coverage and completion gate
 
 USAGE
   dod-guard <command> [options]
@@ -21,9 +22,16 @@ COMMANDS
                                       only sees its own scenarios.
                                       --cwd=<dir> overrides the working directory.
 
+  complete <change-id> <task-id>     Mark a task complete after passing the
+                                      completion gate. Runs verify_cmd, checks
+                                      for stub tests, and (when DOD_GUARD_EVAL_MODEL
+                                      is set) asks an ollama model whether the
+                                      test aligns with its claimed scenario.
+                                      --cwd=<dir> overrides the working directory.
+
 EXIT CODES
-  0   no regressions
-  1   a coverage regression
+  0   no regressions / task marked complete
+  1   a coverage regression / gate rejected the completion
   3   usage error
   4   the change's tasks.md has an unexpanded group
   5   the change's plan is fully expanded but names none of its scenarios
@@ -91,6 +99,20 @@ const COMMANDS: Record<string, Command> = {
       },
       io,
     ),
+  complete: (positional, flags, io) => {
+    if (positional.length < 2) {
+      io.writeErr("ERROR: complete requires <change-id> <task-id>\n");
+      return Promise.resolve(EXIT_USAGE_ERROR);
+    }
+    return runComplete(
+      {
+        cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(),
+        changeId: positional[0],
+        taskId: positional[1],
+      },
+      io,
+    );
+  },
 };
 
 /** Run the CLI. Returns the process exit code. Never calls process.exit itself. */

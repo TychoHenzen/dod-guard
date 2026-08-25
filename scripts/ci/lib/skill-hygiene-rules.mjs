@@ -130,7 +130,9 @@ export const RULES = {
   "closing-gate": (root) =>
     CLOSING_GATE_SKILLS.flatMap((name) =>
       requireOneSkill(root, name, (skill) => {
-        const cover = skill.text.indexOf("dod-guard cover");
+        const coverCli = skill.text.indexOf("dod-guard cover");
+        const coverMcp = skill.text.indexOf("dod-guard `cover`");
+        const cover = coverCli !== -1 ? coverCli : coverMcp;
         const archive = skill.text.indexOf("openspec archive");
         const bad = [];
         if (cover === -1) bad.push(`${skill.path} never runs dod-guard cover`);

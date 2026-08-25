@@ -175,17 +175,17 @@ again.
 
 Skipped entirely when the skip_specs check found `skip_specs: true`.
 
-Run `dod-guard cover <name>` (with the same selected-root `--cwd`/store
-context the rest of this workflow uses) and read its exit code:
+Call the dod-guard `cover` tool with `cwd` set to the workspace root
+(the same root the rest of this workflow uses) and `changeId` set to the
+change name. Read the result:
 
-- **Exit 0 (no regressions):** the gate passes. This is the archive
-  approval - do not additionally ask the user to confirm. Proceed to the
-  archive.
-- **Exit 1 (a regression):** report which scenarios regressed (their id and
-  the outcome change, e.g. `bound -> unwired`), and refuse
-  to archive. Stop here.
-- **Exit 3 (usage error):** report the error `dod-guard cover` printed, and
-  refuse to archive. Stop here.
+- **No regressions:** the gate passes. This is the archive approval -
+  do not additionally ask the user to confirm. Proceed to the archive.
+- **A regression:** report which scenarios regressed (their id and the
+  outcome change, e.g. `bound -> unwired`), and refuse to archive.
+  Stop here.
+- **Error:** report the error from the result, and refuse to archive.
+  Stop here.
 
 ### 7. Code review gate
 

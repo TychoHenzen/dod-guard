@@ -23,8 +23,10 @@ are grounded rather than generic:
 ```bash
 openspec list --json
 openspec list --specs --json
-dod-guard cover --all
 ```
+
+Then call the dod-guard `cover` tool with `cwd` set to the workspace root
+and `all` set to `true`.
 
 If `openspec list --json` fails or the project has no `openspec/` directory,
 do not run the other two. Tell the user OpenSpec is not set up here and

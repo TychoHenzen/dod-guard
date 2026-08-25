@@ -29,8 +29,9 @@ binds each `tasks.md` task's `verify_cmd` through `cover` where a
 
 | Invocation | Behavior |
 |------------|----------|
-| `dod-guard` (no args) | Starts the MCP stdio server (registers no tools - see `index.ts`) |
+| `dod-guard` (no args) | Starts the MCP stdio server with `cover` and `complete` tools |
 | `dod-guard cover [<change-id>] [--all] [--write-baseline] [--cwd=<dir>]` | Reports each scenario as `bound` or `unwired` against `.github/quality/coverage-gate-baseline.json`. One of `<change-id>` or `--all` is required; `--write-baseline` needs `--all`. Exits `0` no regressions / `1` a regression / `3` usage error / `4` an unexpanded task group / `5` a fully expanded plan naming none of the change's scenarios |
+| `dod-guard complete <change-id> <task-id> [--cwd=<dir>]` | Gate for marking a task complete. Runs `verify_cmd`, checks for stub tests, and optionally asks an eval model whether the test aligns with the claimed scenario. Writes the status change only when every check passes. Exits `0` task marked complete / `1` gate rejected / `3` usage error. `manual_required` tasks bypass automated checks. Ollama config: `DOD_GUARD_EVAL_MODEL`, `DOD_GUARD_EVAL_HOST`, `DOD_GUARD_EVAL_PORT`, `DOD_GUARD_EVAL_TIMEOUT` env vars |
 
 A regression outranks both plan codes: when a change-scoped run finds one, it exits `1` even when a plan check would also have fired, though both plan checks still run and still write their reports on that path. Between the plan codes themselves, order holds: when nothing regressed, `4` is reported ahead of `5`.
 
@@ -105,8 +106,9 @@ pattern the root CLAUDE.md's Ratchets table documents for
 
 | File | Role |
 |------|------|
-| `index.ts` | MCP server: registers no tools, starts stdio transport or delegates to the CLI |
-| `cli.ts` | Shell CLI: `dod-guard cover`, argument parsing, `USAGE` string, exit codes |
+| `index.ts` | MCP server entry point: creates the server, registers tools via `mcp-tools.ts`, starts stdio transport or delegates to the CLI |
+| `mcp-tools.ts` | Registers `cover` and `complete` as MCP tools on the server. Skills prefer these over the shell CLI |
+| `cli.ts` | Shell CLI: `dod-guard cover`, `dod-guard complete`, argument parsing, `USAGE` string, exit codes |
 | `shell.ts` | `buildShellInvocation()` - the one place that knows how to reach a host shell (Windows quirks documented inline) |
 | `cover/run.ts` | `cover` top-level orchestration: enumerate scenarios, build the report, write or check against the ratchet baseline |
 | `cover/report.ts` | The two-outcome report: `buildReport()`, `Outcome` (`bound`/`unwired`), `outcomeRank()`, `summarizeReport()` |
@@ -117,6 +119,10 @@ pattern the root CLAUDE.md's Ratchets table documents for
 | `cover/baseline.ts` | The coverage-gate ratchet: read/write/compare `.github/quality/coverage-gate-baseline.json` |
 | `cover/plan-checks.ts` | The two plan checks a change-scoped run adds on top of coverage: `checkPlanComplete` (a numbered group with no checkbox) and `checkPlanBound` (a finished plan whose items name no scenario) |
 | `cover/package-dir.ts` | Maps a spec group to its package/tool directory and test file globs |
+| `complete/run.ts` | `complete` gate orchestrator: reads task, runs verify_cmd, stub check, optional ollama alignment, writes status on pass |
+| `complete/stub-check.ts` | Mechanical stub/placeholder detection on test bodies (empty body, TODO/FIXME, missing assertions, not-implemented throws) |
+| `complete/ollama.ts` | Ollama API client for claim-to-test alignment: prompt construction, `<think>` tag stripping, YES/NO parsing, graceful degradation |
+| `complete/scenario-text.ts` | Extracts the full scenario markdown block (heading + WHEN/THEN/AND bullets) from a spec file |
 | `openspec/tasks-parser.ts` | Parses `tasks.md` checkbox items and their `<!-- covers: -->` annotations |
 | `openspec/requirements.ts` | Parses `### Requirement:` / `#### Scenario:` blocks out of a spec delta's markdown |
 | `openspec/requirement-block.ts` | Type: one `### Requirement:` heading plus its scenarios |

@@ -62,9 +62,8 @@ whether the change should be split along that boundary.
 
 When the user asks how well a capability is tested, run:
 
-```bash
-dod-guard cover --all
-```
+Call the dod-guard `cover` tool with `cwd` set to the workspace root and
+`all` set to `true`.
 
 Report the outcome (`bound` or `unwired`) for the scenarios relevant to what
 they asked about, not the entire report.

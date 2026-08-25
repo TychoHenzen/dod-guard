@@ -68,20 +68,16 @@ a blocker) before continuing.
 
 Once step-by-step reports every step complete, run:
 
-```bash
-dod-guard cover <name>
-```
+Call the dod-guard `cover` tool with `cwd` set to the workspace root and
+`changeId` set to the change name. Handle by result:
 
-Handle by exit code:
-
-- **`0` (no regressions):** run `openspec archive <name> --yes` and report
+- **No regressions:** run `openspec archive <name> --yes` and report
   the archive result.
 - **`1` (a scenario regressed):** report which scenarios regressed (from
   the command's output) and do not archive. Wait for the user's guidance
   before retrying.
-- **`3` (usage error):** report the error and do not archive. This
-  usually means the change id or `--cwd` was wrong - check the invocation
-  before retrying.
+- **Error:** report the error and do not archive. This usually means
+  the change id or `cwd` was wrong - check the parameters before retrying.
 
 If step-by-step paused instead of completing, do not run the coverage
 gate or archive. Report the pause and wait for guidance.

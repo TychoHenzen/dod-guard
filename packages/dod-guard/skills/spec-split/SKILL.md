@@ -55,8 +55,8 @@ The user provides a spec file path or a spec id (like
 
 When a compound scenario bound to a test splits:
 
-1. Run `dod-guard cover --all` to find the test file and function
-   bound to the original scenario.
+1. Call the dod-guard `cover` tool with `cwd` and `all: true` to find
+   the test file and function bound to the original scenario.
 2. Read the test function body.
 3. For each new sub-scenario, score keyword overlap between the
    sub-scenario's THEN clause and the test's assertions.

@@ -1,17 +1,14 @@
 /**
- * dod-guard MCP server. The 13 tool adapters that authored, refined,
- * generated, or checked a DoD proof tree are gone - see
- * openspec/changes/route-skills-through-openspec. This server currently
- * registers no tools; `cover` lands in a later step of that change.
+ * dod-guard MCP server. Registers `cover` and `complete` tools
+ * alongside the CLI entry point in the same binary.
  */
 import { readFileSync, realpathSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
 import { isCliInvocation, runCli } from "./cli.js";
-import { runCoverage } from "./cover/run.js";
+import { registerTools } from "./mcp-tools.js";
 import { runtimeRoot } from "./runtime-root.js";
 
 const _pkgPath = path.join(runtimeRoot, "package.json");
@@ -19,27 +16,7 @@ const _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 
 export function createServer(): McpServer {
   const server = new McpServer({ name: "dod-guard", version: _pkg.version });
-
-  server.registerTool(
-    "cover",
-    {
-      description: "Report OpenSpec scenario coverage for a consumer workspace.",
-      inputSchema: {
-        cwd: z.string().describe("Absolute path to the consumer workspace."),
-        changeId: z.string().optional().describe("OpenSpec change id to scan."),
-        all: z.boolean().optional().default(false).describe("Scan all main OpenSpec specifications."),
-      },
-    },
-    async ({ cwd, changeId, all }) => {
-      const result = await runCoverage({ cwd, changeId, all, writeBaseline: false });
-      const serialized = JSON.stringify(result);
-      return {
-        content: [{ type: "text", text: serialized }],
-        structuredContent: JSON.parse(serialized),
-      };
-    },
-  );
-
+  registerTools(server);
   return server;
 }
 

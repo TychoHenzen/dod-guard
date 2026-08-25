@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path12) {
-      let input = path12;
+    function removeDotSegments(path13) {
+      let input = path13;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path12, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path12 && path12 !== "/" ? path12 : void 0;
+        const [path13, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path13 && path13 !== "/" ? path13 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -6902,12 +6902,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs8, exportName) {
+    function addFormats(ajv, list, fs9, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs8[f]);
+        ajv.addFormat(f, fs9[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -6917,7 +6917,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync, realpathSync } from "node:fs";
-import * as path11 from "node:path";
+import * as path12 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
@@ -7398,8 +7398,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path12, errorMaps, issueData } = params;
-  const fullPath = [...path12, ...issueData.path || []];
+  const { data, path: path13, errorMaps, issueData } = params;
+  const fullPath = [...path13, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7515,11 +7515,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path12, key) {
+  constructor(parent, value, path13, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path12;
+    this._path = path13;
     this._key = key;
   }
   get path() {
@@ -11156,10 +11156,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path12) {
-  if (!path12)
+function getElementAtPath(obj, path13) {
+  if (!path13)
     return obj;
-  return path12.reduce((acc, key) => acc?.[key], obj);
+  return path13.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11479,11 +11479,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path12, issues) {
+function prefixIssues(path13, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path12);
+    iss.path.unshift(path13);
     return iss;
   });
 }
@@ -14894,11 +14894,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path12) {
-  if (path12.length === 0) {
+function getDotPath(path13) {
+  if (path13.length === 0) {
     return "object root";
   }
-  return path12.reduce((acc, seg, index) => {
+  return path13.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -17039,17 +17039,17 @@ var CompleteRequestSchema = RequestSchema.extend({
   method: literal("completion/complete"),
   params: CompleteRequestParamsSchema
 });
-function assertCompleteRequestPrompt(request) {
-  if (request.params.ref.type !== "ref/prompt") {
-    throw new TypeError(`Expected CompleteRequestPrompt, but got ${request.params.ref.type}`);
+function assertCompleteRequestPrompt(request2) {
+  if (request2.params.ref.type !== "ref/prompt") {
+    throw new TypeError(`Expected CompleteRequestPrompt, but got ${request2.params.ref.type}`);
   }
-  void request;
+  void request2;
 }
-function assertCompleteRequestResourceTemplate(request) {
-  if (request.params.ref.type !== "ref/resource") {
-    throw new TypeError(`Expected CompleteRequestResourceTemplate, but got ${request.params.ref.type}`);
+function assertCompleteRequestResourceTemplate(request2) {
+  if (request2.params.ref.type !== "ref/resource") {
+    throw new TypeError(`Expected CompleteRequestResourceTemplate, but got ${request2.params.ref.type}`);
   }
-  void request;
+  void request2;
 }
 var CompleteResultSchema = ResultSchema.extend({
   completion: looseObject({
@@ -18556,8 +18556,8 @@ var Protocol = class {
     this._taskStore = _options?.taskStore;
     this._taskMessageQueue = _options?.taskMessageQueue;
     if (this._taskStore) {
-      this.setRequestHandler(GetTaskRequestSchema, async (request, extra) => {
-        const task = await this._taskStore.getTask(request.params.taskId, extra.sessionId);
+      this.setRequestHandler(GetTaskRequestSchema, async (request2, extra) => {
+        const task = await this._taskStore.getTask(request2.params.taskId, extra.sessionId);
         if (!task) {
           throw new McpError(ErrorCode.InvalidParams, "Failed to retrieve task: Task not found");
         }
@@ -18565,9 +18565,9 @@ var Protocol = class {
           ...task
         };
       });
-      this.setRequestHandler(GetTaskPayloadRequestSchema, async (request, extra) => {
+      this.setRequestHandler(GetTaskPayloadRequestSchema, async (request2, extra) => {
         const handleTaskResult = async () => {
-          const taskId = request.params.taskId;
+          const taskId = request2.params.taskId;
           if (this._taskMessageQueue) {
             let queuedMessage;
             while (queuedMessage = await this._taskMessageQueue.dequeue(taskId, extra.sessionId)) {
@@ -18618,9 +18618,9 @@ var Protocol = class {
         };
         return await handleTaskResult();
       });
-      this.setRequestHandler(ListTasksRequestSchema, async (request, extra) => {
+      this.setRequestHandler(ListTasksRequestSchema, async (request2, extra) => {
         try {
-          const { tasks, nextCursor } = await this._taskStore.listTasks(request.params?.cursor, extra.sessionId);
+          const { tasks, nextCursor } = await this._taskStore.listTasks(request2.params?.cursor, extra.sessionId);
           return {
             tasks,
             nextCursor,
@@ -18630,20 +18630,20 @@ var Protocol = class {
           throw new McpError(ErrorCode.InvalidParams, `Failed to list tasks: ${error2 instanceof Error ? error2.message : String(error2)}`);
         }
       });
-      this.setRequestHandler(CancelTaskRequestSchema, async (request, extra) => {
+      this.setRequestHandler(CancelTaskRequestSchema, async (request2, extra) => {
         try {
-          const task = await this._taskStore.getTask(request.params.taskId, extra.sessionId);
+          const task = await this._taskStore.getTask(request2.params.taskId, extra.sessionId);
           if (!task) {
-            throw new McpError(ErrorCode.InvalidParams, `Task not found: ${request.params.taskId}`);
+            throw new McpError(ErrorCode.InvalidParams, `Task not found: ${request2.params.taskId}`);
           }
           if (isTerminal(task.status)) {
             throw new McpError(ErrorCode.InvalidParams, `Cannot cancel task in terminal status: ${task.status}`);
           }
-          await this._taskStore.updateTaskStatus(request.params.taskId, "cancelled", "Client cancelled task execution.", extra.sessionId);
-          this._clearTaskQueue(request.params.taskId);
-          const cancelledTask = await this._taskStore.getTask(request.params.taskId, extra.sessionId);
+          await this._taskStore.updateTaskStatus(request2.params.taskId, "cancelled", "Client cancelled task execution.", extra.sessionId);
+          this._clearTaskQueue(request2.params.taskId);
+          const cancelledTask = await this._taskStore.getTask(request2.params.taskId, extra.sessionId);
           if (!cancelledTask) {
-            throw new McpError(ErrorCode.InvalidParams, `Task not found after cancellation: ${request.params.taskId}`);
+            throw new McpError(ErrorCode.InvalidParams, `Task not found after cancellation: ${request2.params.taskId}`);
           }
           return {
             _meta: {},
@@ -18764,14 +18764,14 @@ var Protocol = class {
     }
     Promise.resolve().then(() => handler(notification)).catch((error2) => this._onerror(new Error(`Uncaught error in notification handler: ${error2}`)));
   }
-  _onrequest(request, extra) {
-    const handler = this._requestHandlers.get(request.method) ?? this.fallbackRequestHandler;
+  _onrequest(request2, extra) {
+    const handler = this._requestHandlers.get(request2.method) ?? this.fallbackRequestHandler;
     const capturedTransport = this._transport;
-    const relatedTaskId = request.params?._meta?.[RELATED_TASK_META_KEY]?.taskId;
+    const relatedTaskId = request2.params?._meta?.[RELATED_TASK_META_KEY]?.taskId;
     if (handler === void 0) {
       const errorResponse = {
         jsonrpc: "2.0",
-        id: request.id,
+        id: request2.id,
         error: {
           code: ErrorCode.MethodNotFound,
           message: "Method not found"
@@ -18789,17 +18789,17 @@ var Protocol = class {
       return;
     }
     const abortController = new AbortController();
-    this._requestHandlerAbortControllers.set(request.id, abortController);
-    const taskCreationParams = isTaskAugmentedRequestParams(request.params) ? request.params.task : void 0;
-    const taskStore = this._taskStore ? this.requestTaskStore(request, capturedTransport?.sessionId) : void 0;
+    this._requestHandlerAbortControllers.set(request2.id, abortController);
+    const taskCreationParams = isTaskAugmentedRequestParams(request2.params) ? request2.params.task : void 0;
+    const taskStore = this._taskStore ? this.requestTaskStore(request2, capturedTransport?.sessionId) : void 0;
     const fullExtra = {
       signal: abortController.signal,
       sessionId: capturedTransport?.sessionId,
-      _meta: request.params?._meta,
+      _meta: request2.params?._meta,
       sendNotification: async (notification) => {
         if (abortController.signal.aborted)
           return;
-        const notificationOptions = { relatedRequestId: request.id };
+        const notificationOptions = { relatedRequestId: request2.id };
         if (relatedTaskId) {
           notificationOptions.relatedTask = { taskId: relatedTaskId };
         }
@@ -18809,7 +18809,7 @@ var Protocol = class {
         if (abortController.signal.aborted) {
           throw new McpError(ErrorCode.ConnectionClosed, "Request was cancelled");
         }
-        const requestOptions = { ...options, relatedRequestId: request.id };
+        const requestOptions = { ...options, relatedRequestId: request2.id };
         if (relatedTaskId && !requestOptions.relatedTask) {
           requestOptions.relatedTask = { taskId: relatedTaskId };
         }
@@ -18820,7 +18820,7 @@ var Protocol = class {
         return await this.request(r, resultSchema, requestOptions);
       },
       authInfo: extra?.authInfo,
-      requestId: request.id,
+      requestId: request2.id,
       requestInfo: extra?.requestInfo,
       taskId: relatedTaskId,
       taskStore,
@@ -18830,16 +18830,16 @@ var Protocol = class {
     };
     Promise.resolve().then(() => {
       if (taskCreationParams) {
-        this.assertTaskHandlerCapability(request.method);
+        this.assertTaskHandlerCapability(request2.method);
       }
-    }).then(() => handler(request, fullExtra)).then(async (result) => {
+    }).then(() => handler(request2, fullExtra)).then(async (result) => {
       if (abortController.signal.aborted) {
         return;
       }
       const response = {
         result,
         jsonrpc: "2.0",
-        id: request.id
+        id: request2.id
       };
       if (relatedTaskId && this._taskMessageQueue) {
         await this._enqueueTaskMessage(relatedTaskId, {
@@ -18856,7 +18856,7 @@ var Protocol = class {
       }
       const errorResponse = {
         jsonrpc: "2.0",
-        id: request.id,
+        id: request2.id,
         error: {
           code: Number.isSafeInteger(error2["code"]) ? error2["code"] : ErrorCode.InternalError,
           message: error2.message ?? "Internal error",
@@ -18873,8 +18873,8 @@ var Protocol = class {
         await capturedTransport?.send(errorResponse);
       }
     }).catch((error2) => this._onerror(new Error(`Failed to send response: ${error2}`))).finally(() => {
-      if (this._requestHandlerAbortControllers.get(request.id) === abortController) {
-        this._requestHandlerAbortControllers.delete(request.id);
+      if (this._requestHandlerAbortControllers.get(request2.id) === abortController) {
+        this._requestHandlerAbortControllers.delete(request2.id);
       }
     });
   }
@@ -18978,11 +18978,11 @@ var Protocol = class {
    *
    * @experimental Use `client.experimental.tasks.requestStream()` to access this method.
    */
-  async *requestStream(request, resultSchema, options) {
+  async *requestStream(request2, resultSchema, options) {
     const { task } = options ?? {};
     if (!task) {
       try {
-        const result = await this.request(request, resultSchema, options);
+        const result = await this.request(request2, resultSchema, options);
         yield { type: "result", result };
       } catch (error2) {
         yield {
@@ -18994,7 +18994,7 @@ var Protocol = class {
     }
     let taskId;
     try {
-      const createResult = await this.request(request, CreateTaskResultSchema, options);
+      const createResult = await this.request(request2, CreateTaskResultSchema, options);
       if (createResult.task) {
         taskId = createResult.task.taskId;
         yield { type: "taskCreated", task: createResult.task };
@@ -19042,7 +19042,7 @@ var Protocol = class {
    *
    * Do not use this method to emit notifications! Use notification() instead.
    */
-  request(request, resultSchema, options) {
+  request(request2, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
     return new Promise((resolve2, reject) => {
       const earlyReject = (error2) => {
@@ -19054,9 +19054,9 @@ var Protocol = class {
       }
       if (this._options?.enforceStrictCapabilities === true) {
         try {
-          this.assertCapabilityForMethod(request.method);
+          this.assertCapabilityForMethod(request2.method);
           if (task) {
-            this.assertTaskCapability(request.method);
+            this.assertTaskCapability(request2.method);
           }
         } catch (e) {
           earlyReject(e);
@@ -19066,16 +19066,16 @@ var Protocol = class {
       options?.signal?.throwIfAborted();
       const messageId = this._requestMessageId++;
       const jsonrpcRequest = {
-        ...request,
+        ...request2,
         jsonrpc: "2.0",
         id: messageId
       };
       if (options?.onprogress) {
         this._progressHandlers.set(messageId, options.onprogress);
         jsonrpcRequest.params = {
-          ...request.params,
+          ...request2.params,
           _meta: {
-            ...request.params?._meta || {},
+            ...request2.params?._meta || {},
             progressToken: messageId
           }
         };
@@ -19279,8 +19279,8 @@ var Protocol = class {
   setRequestHandler(requestSchema, handler) {
     const method = getMethodLiteral(requestSchema);
     this.assertRequestHandlerCapability(method);
-    this._requestHandlers.set(method, (request, extra) => {
-      const parsed = parseWithCompat(requestSchema, request);
+    this._requestHandlers.set(method, (request2, extra) => {
+      const parsed = parseWithCompat(requestSchema, request2);
       return Promise.resolve(handler(parsed, extra));
     });
   }
@@ -19395,19 +19395,19 @@ var Protocol = class {
       }, { once: true });
     });
   }
-  requestTaskStore(request, sessionId) {
+  requestTaskStore(request2, sessionId) {
     const taskStore = this._taskStore;
     if (!taskStore) {
       throw new Error("No task store configured");
     }
     return {
       createTask: async (taskParams) => {
-        if (!request) {
+        if (!request2) {
           throw new Error("No request provided");
         }
-        return await taskStore.createTask(taskParams, request.id, {
-          method: request.method,
-          params: request.params
+        return await taskStore.createTask(taskParams, request2.id, {
+          method: request2.method,
+          params: request2.params
         }, sessionId);
       },
       getTask: async (taskId) => {
@@ -19568,8 +19568,8 @@ var ExperimentalServerTasks = class {
    *
    * @experimental
    */
-  requestStream(request, resultSchema, options) {
-    return this._server.requestStream(request, resultSchema, options);
+  requestStream(request2, resultSchema, options) {
+    return this._server.requestStream(request2, resultSchema, options);
   }
   /**
    * Sends a sampling request and returns an AsyncGenerator that yields response messages.
@@ -19814,12 +19814,12 @@ var Server = class extends Protocol {
     this._capabilities = options?.capabilities ?? {};
     this._instructions = options?.instructions;
     this._jsonSchemaValidator = options?.jsonSchemaValidator ?? new AjvJsonSchemaValidator();
-    this.setRequestHandler(InitializeRequestSchema, (request) => this._oninitialize(request));
+    this.setRequestHandler(InitializeRequestSchema, (request2) => this._oninitialize(request2));
     this.setNotificationHandler(InitializedNotificationSchema, () => this.oninitialized?.());
     if (this._capabilities.logging) {
-      this.setRequestHandler(SetLevelRequestSchema, async (request, extra) => {
+      this.setRequestHandler(SetLevelRequestSchema, async (request2, extra) => {
         const transportSessionId = extra.sessionId || extra.requestInfo?.headers["mcp-session-id"] || void 0;
-        const { level } = request.params;
+        const { level } = request2.params;
         const parseResult = LoggingLevelSchema.safeParse(level);
         if (parseResult.success) {
           this._loggingLevels.set(transportSessionId, parseResult.data);
@@ -19869,14 +19869,14 @@ var Server = class extends Protocol {
     }
     const method = methodValue;
     if (method === "tools/call") {
-      const wrappedHandler = async (request, extra) => {
-        const validatedRequest = safeParse2(CallToolRequestSchema, request);
+      const wrappedHandler = async (request2, extra) => {
+        const validatedRequest = safeParse2(CallToolRequestSchema, request2);
         if (!validatedRequest.success) {
           const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
           throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage2}`);
         }
         const { params } = validatedRequest.data;
-        const result = await Promise.resolve(handler(request, extra));
+        const result = await Promise.resolve(handler(request2, extra));
         if (params.task) {
           const taskValidationResult = safeParse2(CreateTaskResultSchema, result);
           if (!taskValidationResult.success) {
@@ -20007,10 +20007,10 @@ var Server = class extends Protocol {
     }
     assertToolsCallTaskCapability(this._capabilities.tasks?.requests, method, "Server");
   }
-  async _oninitialize(request) {
-    const requestedVersion = request.params.protocolVersion;
-    this._clientCapabilities = request.params.capabilities;
-    this._clientVersion = request.params.clientInfo;
+  async _oninitialize(request2) {
+    const requestedVersion = request2.params.protocolVersion;
+    this._clientCapabilities = request2.params.capabilities;
+    this._clientVersion = request2.params.clientInfo;
     const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion) ? requestedVersion : LATEST_PROTOCOL_VERSION;
     return {
       protocolVersion,
@@ -20337,33 +20337,33 @@ var McpServer = class {
         return toolDefinition;
       })
     }));
-    this.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (request2, extra) => {
       try {
-        const tool = this._registeredTools[request.params.name];
+        const tool = this._registeredTools[request2.params.name];
         if (!tool) {
-          throw new McpError(ErrorCode.InvalidParams, `Tool ${request.params.name} not found`);
+          throw new McpError(ErrorCode.InvalidParams, `Tool ${request2.params.name} not found`);
         }
         if (!tool.enabled) {
-          throw new McpError(ErrorCode.InvalidParams, `Tool ${request.params.name} disabled`);
+          throw new McpError(ErrorCode.InvalidParams, `Tool ${request2.params.name} disabled`);
         }
-        const isTaskRequest = !!request.params.task;
+        const isTaskRequest = !!request2.params.task;
         const taskSupport = tool.execution?.taskSupport;
         const isTaskHandler = "createTask" in tool.handler;
         if ((taskSupport === "required" || taskSupport === "optional") && !isTaskHandler) {
-          throw new McpError(ErrorCode.InternalError, `Tool ${request.params.name} has taskSupport '${taskSupport}' but was not registered with registerToolTask`);
+          throw new McpError(ErrorCode.InternalError, `Tool ${request2.params.name} has taskSupport '${taskSupport}' but was not registered with registerToolTask`);
         }
         if (taskSupport === "required" && !isTaskRequest) {
-          throw new McpError(ErrorCode.MethodNotFound, `Tool ${request.params.name} requires task augmentation (taskSupport: 'required')`);
+          throw new McpError(ErrorCode.MethodNotFound, `Tool ${request2.params.name} requires task augmentation (taskSupport: 'required')`);
         }
         if (taskSupport === "optional" && !isTaskRequest && isTaskHandler) {
-          return await this.handleAutomaticTaskPolling(tool, request, extra);
+          return await this.handleAutomaticTaskPolling(tool, request2, extra);
         }
-        const args = await this.validateToolInput(tool, request.params.arguments, request.params.name);
+        const args = await this.validateToolInput(tool, request2.params.arguments, request2.params.name);
         const result = await this.executeToolHandler(tool, args, extra);
         if (isTaskRequest) {
           return result;
         }
-        await this.validateToolOutput(tool, result, request.params.name);
+        await this.validateToolOutput(tool, result, request2.params.name);
         return result;
       } catch (error2) {
         if (error2 instanceof McpError) {
@@ -20464,11 +20464,11 @@ var McpServer = class {
   /**
    * Handles automatic task polling for tools with taskSupport 'optional'.
    */
-  async handleAutomaticTaskPolling(tool, request, extra) {
+  async handleAutomaticTaskPolling(tool, request2, extra) {
     if (!extra.taskStore) {
       throw new Error("No task store provided for task-capable tool.");
     }
-    const args = await this.validateToolInput(tool, request.params.arguments, request.params.name);
+    const args = await this.validateToolInput(tool, request2.params.arguments, request2.params.name);
     const handler = tool.handler;
     const taskExtra = { ...extra, taskStore: extra.taskStore };
     const createTaskResult = args ? await Promise.resolve(handler.createTask(args, taskExtra)) : (
@@ -20496,21 +20496,21 @@ var McpServer = class {
     this.server.registerCapabilities({
       completions: {}
     });
-    this.server.setRequestHandler(CompleteRequestSchema, async (request) => {
-      switch (request.params.ref.type) {
+    this.server.setRequestHandler(CompleteRequestSchema, async (request2) => {
+      switch (request2.params.ref.type) {
         case "ref/prompt":
-          assertCompleteRequestPrompt(request);
-          return this.handlePromptCompletion(request, request.params.ref);
+          assertCompleteRequestPrompt(request2);
+          return this.handlePromptCompletion(request2, request2.params.ref);
         case "ref/resource":
-          assertCompleteRequestResourceTemplate(request);
-          return this.handleResourceCompletion(request, request.params.ref);
+          assertCompleteRequestResourceTemplate(request2);
+          return this.handleResourceCompletion(request2, request2.params.ref);
         default:
-          throw new McpError(ErrorCode.InvalidParams, `Invalid completion reference: ${request.params.ref}`);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid completion reference: ${request2.params.ref}`);
       }
     });
     this._completionHandlerInitialized = true;
   }
-  async handlePromptCompletion(request, ref) {
+  async handlePromptCompletion(request2, ref) {
     const prompt = this._registeredPrompts[ref.name];
     if (!prompt) {
       throw new McpError(ErrorCode.InvalidParams, `Prompt ${ref.name} not found`);
@@ -20522,7 +20522,7 @@ var McpServer = class {
       return EMPTY_COMPLETION_RESULT;
     }
     const promptShape = getObjectShape(prompt.argsSchema);
-    const field = promptShape?.[request.params.argument.name];
+    const field = promptShape?.[request2.params.argument.name];
     if (!isCompletable(field)) {
       return EMPTY_COMPLETION_RESULT;
     }
@@ -20530,22 +20530,22 @@ var McpServer = class {
     if (!completer) {
       return EMPTY_COMPLETION_RESULT;
     }
-    const suggestions = await completer(request.params.argument.value, request.params.context);
+    const suggestions = await completer(request2.params.argument.value, request2.params.context);
     return createCompletionResult(suggestions);
   }
-  async handleResourceCompletion(request, ref) {
+  async handleResourceCompletion(request2, ref) {
     const template = Object.values(this._registeredResourceTemplates).find((t) => t.resourceTemplate.uriTemplate.toString() === ref.uri);
     if (!template) {
       if (this._registeredResources[ref.uri]) {
         return EMPTY_COMPLETION_RESULT;
       }
-      throw new McpError(ErrorCode.InvalidParams, `Resource template ${request.params.ref.uri} not found`);
+      throw new McpError(ErrorCode.InvalidParams, `Resource template ${request2.params.ref.uri} not found`);
     }
-    const completer = template.resourceTemplate.completeCallback(request.params.argument.name);
+    const completer = template.resourceTemplate.completeCallback(request2.params.argument.name);
     if (!completer) {
       return EMPTY_COMPLETION_RESULT;
     }
-    const suggestions = await completer(request.params.argument.value, request.params.context);
+    const suggestions = await completer(request2.params.argument.value, request2.params.context);
     return createCompletionResult(suggestions);
   }
   setResourceRequestHandlers() {
@@ -20560,7 +20560,7 @@ var McpServer = class {
         listChanged: true
       }
     });
-    this.server.setRequestHandler(ListResourcesRequestSchema, async (request, extra) => {
+    this.server.setRequestHandler(ListResourcesRequestSchema, async (request2, extra) => {
       const resources = Object.entries(this._registeredResources).filter(([_, resource]) => resource.enabled).map(([uri, resource]) => ({
         uri,
         name: resource.name,
@@ -20590,8 +20590,8 @@ var McpServer = class {
       }));
       return { resourceTemplates };
     });
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request, extra) => {
-      const uri = new URL(request.params.uri);
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request2, extra) => {
+      const uri = new URL(request2.params.uri);
       const resource = this._registeredResources[uri.toString()];
       if (resource) {
         if (!resource.enabled) {
@@ -20630,21 +20630,21 @@ var McpServer = class {
         };
       })
     }));
-    this.server.setRequestHandler(GetPromptRequestSchema, async (request, extra) => {
-      const prompt = this._registeredPrompts[request.params.name];
+    this.server.setRequestHandler(GetPromptRequestSchema, async (request2, extra) => {
+      const prompt = this._registeredPrompts[request2.params.name];
       if (!prompt) {
-        throw new McpError(ErrorCode.InvalidParams, `Prompt ${request.params.name} not found`);
+        throw new McpError(ErrorCode.InvalidParams, `Prompt ${request2.params.name} not found`);
       }
       if (!prompt.enabled) {
-        throw new McpError(ErrorCode.InvalidParams, `Prompt ${request.params.name} disabled`);
+        throw new McpError(ErrorCode.InvalidParams, `Prompt ${request2.params.name} disabled`);
       }
       if (prompt.argsSchema) {
         const argsObj = normalizeObjectSchema(prompt.argsSchema);
-        const parseResult = await safeParseAsync2(argsObj, request.params.arguments);
+        const parseResult = await safeParseAsync2(argsObj, request2.params.arguments);
         if (!parseResult.success) {
           const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
           const errorMessage2 = getParseErrorMessage(error2);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage2}`);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request2.params.name}: ${errorMessage2}`);
         }
         const args = parseResult.data;
         const cb = prompt.callback;
@@ -21154,15 +21154,197 @@ var StdioServerTransport = class {
   }
 };
 
-// src/cover/baseline.ts
+// src/complete/run.ts
 import { promises as fs5 } from "node:fs";
-import * as path7 from "node:path";
-
-// src/cover/report.ts
 import * as path6 from "node:path";
 
-// src/cover/languages.ts
+// src/cover/enumerate.ts
+import { promises as fs2 } from "node:fs";
+import * as path2 from "node:path";
+
+// src/openspec/glob.ts
+import { promises as fs } from "node:fs";
 import * as path from "node:path";
+function segmentToRegExp(segment) {
+  const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+  return new RegExp(`^${escaped}$`);
+}
+async function listEntries(dir) {
+  try {
+    return await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+async function walkFiles(dir, segment) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path.join(dir, e.name));
+}
+async function walkDirs(dir, segment, rest) {
+  const re = segmentToRegExp(segment);
+  const entries = await listEntries(dir);
+  const results = [];
+  for (const e of entries) {
+    if (e.isDirectory() && re.test(e.name)) {
+      results.push(...await resolveSegments(path.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+var SKIP_DIRS = /* @__PURE__ */ new Set([
+  "node_modules",
+  ".git",
+  ".hg",
+  "__pycache__",
+  ".tox",
+  ".mypy_cache",
+  ".venv",
+  "venv",
+  ".env",
+  "env"
+]);
+async function walkDoubleStar(dir, rest) {
+  const results = await resolveSegments(dir, rest);
+  const entries = await listEntries(dir);
+  for (const e of entries) {
+    if (e.isDirectory() && !SKIP_DIRS.has(e.name)) {
+      results.push(...await walkDoubleStar(path.join(dir, e.name), rest));
+    }
+  }
+  return results;
+}
+async function resolveSegments(dir, segments) {
+  if (segments.length === 0) return [];
+  const [segment, ...rest] = segments;
+  if (segment === "**") return walkDoubleStar(dir, rest);
+  if (rest.length === 0) return walkFiles(dir, segment);
+  return walkDirs(dir, segment, rest);
+}
+async function resolveGlob(baseDir, pattern) {
+  const segments = pattern.split(/[\\/]/).filter((s) => s.length > 0);
+  return resolveSegments(baseDir, segments);
+}
+
+// src/openspec/requirements.ts
+var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
+var SCENARIO_HEADING = /^#### Scenario:\s*(.+?)\s*$/;
+var SECTION_HEADING = /^##\s+(.+?)\s*$/;
+var REMOVED_SECTION = /^REMOVED\b/i;
+var THEN_LINE = /^-\s*\*\*THEN\*\*\s*(.*)$/;
+var OTHER_BULLET = /^-\s*\*\*[A-Z]+\*\*/;
+function finalizeScenario(state) {
+  if (state.currentScenario && state.currentReq) {
+    state.currentScenario.intent = state.thenParts.join(" ");
+    state.currentReq.scenarios.push(state.currentScenario);
+  }
+  state.currentScenario = null;
+  state.thenParts = [];
+  state.inThen = false;
+}
+function startRequirement(state, title) {
+  state.currentReq = state.inRemoved ? null : { title, scenarios: [] };
+  if (state.currentReq) state.blocks.push(state.currentReq);
+}
+function consumeHeading(state, line) {
+  const section = line.match(SECTION_HEADING);
+  if (section) {
+    finalizeScenario(state);
+    state.currentReq = null;
+    state.inRemoved = REMOVED_SECTION.test(section[1]);
+    return true;
+  }
+  const requirement = line.match(REQUIREMENT_HEADING);
+  if (requirement) {
+    finalizeScenario(state);
+    startRequirement(state, requirement[1]);
+    return true;
+  }
+  const scenario = line.match(SCENARIO_HEADING);
+  if (scenario) {
+    finalizeScenario(state);
+    state.currentScenario = { title: scenario[1], intent: "" };
+    return true;
+  }
+  return false;
+}
+function consumeLine(state, line) {
+  if (consumeHeading(state, line)) return;
+  const thenMatch = line.match(THEN_LINE);
+  if (thenMatch) {
+    state.thenParts.push(thenMatch[1].trim());
+    state.inThen = true;
+    return;
+  }
+  if (OTHER_BULLET.test(line)) {
+    state.inThen = false;
+    return;
+  }
+  if (state.inThen && line.trim().length > 0) {
+    const lastIndex = state.thenParts.length - 1;
+    state.thenParts[lastIndex] = `${state.thenParts[lastIndex]} ${line.trim()}`;
+  }
+}
+function newState() {
+  return { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false, inRemoved: false };
+}
+function extractRequirementBlocks(content) {
+  const state = newState();
+  for (const line of content.split("\n")) consumeLine(state, line);
+  finalizeScenario(state);
+  return state.blocks;
+}
+
+// src/openspec/scenario-id.ts
+function buildScenarioId(group, capability, requirementTitle, scenarioTitle) {
+  return `${group}/${capability}::${requirementTitle}||${scenarioTitle}`;
+}
+
+// src/cover/enumerate.ts
+function capabilityFromPath(specsDir, specFile) {
+  const rel = path2.relative(specsDir, specFile).split(path2.sep);
+  if (rel.length < 3) return null;
+  return { group: rel[0], capability: rel.slice(1, -1).join("/") };
+}
+async function scenariosFromFile(specsDir, specFile) {
+  const located = capabilityFromPath(specsDir, specFile);
+  if (!located) return [];
+  const content = await fs2.readFile(specFile, "utf-8");
+  const scenarios = [];
+  for (const block of extractRequirementBlocks(content)) {
+    for (const scenario of block.scenarios) {
+      scenarios.push({
+        id: buildScenarioId(located.group, located.capability, block.title, scenario.title),
+        group: located.group,
+        capability: located.capability,
+        requirementTitle: block.title,
+        scenarioTitle: scenario.title,
+        intent: scenario.intent,
+        specPath: specFile
+      });
+    }
+  }
+  return scenarios;
+}
+async function enumerateUnder(specsDir) {
+  const files = await resolveGlob(specsDir, "**/spec.md");
+  const out = [];
+  for (const file of files) out.push(...await scenariosFromFile(specsDir, file));
+  return out;
+}
+async function enumerateChangeScenarios(cwd, changeId) {
+  return enumerateUnder(path2.join(cwd, "openspec", "changes", changeId, "specs"));
+}
+async function enumerateAllScenarios(cwd) {
+  return enumerateUnder(path2.join(cwd, "openspec", "specs"));
+}
+
+// src/cover/markers.ts
+import { promises as fs4 } from "node:fs";
+import * as path5 from "node:path";
+
+// src/cover/languages.ts
+import * as path3 from "node:path";
 function quoteCommandArgument(value) {
   return `"${value.replace(/"/g, '\\"')}"`;
 }
@@ -21178,11 +21360,11 @@ function configuredCommand(language) {
         unresolvedReason: `runner command for ${language} in openspec/test-runners.json must be a non-empty string`
       };
     }
-    const relativeTestFile = path.relative(workspaceRoot, testFile);
-    if (relativeTestFile.length === 0 || relativeTestFile === ".." || relativeTestFile.startsWith(`..${path.sep}`)) {
+    const relativeTestFile = path3.relative(workspaceRoot, testFile);
+    if (relativeTestFile.length === 0 || relativeTestFile === ".." || relativeTestFile.startsWith(`..${path3.sep}`)) {
       return { unresolvedReason: `test file is outside the consumer workspace: ${testFile}` };
     }
-    return { command: `${runner.trim()} ${quoteCommandArgument(relativeTestFile.split(path.sep).join("/"))}` };
+    return { command: `${runner.trim()} ${quoteCommandArgument(relativeTestFile.split(path3.sep).join("/"))}` };
   };
 }
 var SEP = String.raw`\s*(?:::|\|\|)\s*`;
@@ -21355,79 +21537,6 @@ var LANG_TABLE = /* @__PURE__ */ new Map([
   [".bash", SH_SPEC]
 ]);
 
-// src/cover/markers.ts
-import { promises as fs3 } from "node:fs";
-import * as path4 from "node:path";
-
-// src/openspec/glob.ts
-import { promises as fs } from "node:fs";
-import * as path2 from "node:path";
-function segmentToRegExp(segment) {
-  const escaped = segment.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-  return new RegExp(`^${escaped}$`);
-}
-async function listEntries(dir) {
-  try {
-    return await fs.readdir(dir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-}
-async function walkFiles(dir, segment) {
-  const re = segmentToRegExp(segment);
-  const entries = await listEntries(dir);
-  return entries.filter((e) => e.isFile() && re.test(e.name)).map((e) => path2.join(dir, e.name));
-}
-async function walkDirs(dir, segment, rest) {
-  const re = segmentToRegExp(segment);
-  const entries = await listEntries(dir);
-  const results = [];
-  for (const e of entries) {
-    if (e.isDirectory() && re.test(e.name)) {
-      results.push(...await resolveSegments(path2.join(dir, e.name), rest));
-    }
-  }
-  return results;
-}
-var SKIP_DIRS = /* @__PURE__ */ new Set([
-  "node_modules",
-  ".git",
-  ".hg",
-  "__pycache__",
-  ".tox",
-  ".mypy_cache",
-  ".venv",
-  "venv",
-  ".env",
-  "env"
-]);
-async function walkDoubleStar(dir, rest) {
-  const results = await resolveSegments(dir, rest);
-  const entries = await listEntries(dir);
-  for (const e of entries) {
-    if (e.isDirectory() && !SKIP_DIRS.has(e.name)) {
-      results.push(...await walkDoubleStar(path2.join(dir, e.name), rest));
-    }
-  }
-  return results;
-}
-async function resolveSegments(dir, segments) {
-  if (segments.length === 0) return [];
-  const [segment, ...rest] = segments;
-  if (segment === "**") return walkDoubleStar(dir, rest);
-  if (rest.length === 0) return walkFiles(dir, segment);
-  return walkDirs(dir, segment, rest);
-}
-async function resolveGlob(baseDir, pattern) {
-  const segments = pattern.split(/[\\/]/).filter((s) => s.length > 0);
-  return resolveSegments(baseDir, segments);
-}
-
-// src/openspec/scenario-id.ts
-function buildScenarioId(group, capability, requirementTitle, scenarioTitle) {
-  return `${group}/${capability}::${requirementTitle}||${scenarioTitle}`;
-}
-
 // src/cover/package-dir.ts
 var DEFAULT_TEST_GLOBS = [
   "**/*.test.ts",
@@ -21451,8 +21560,8 @@ function testGlobsForGroup(_group) {
 }
 
 // src/cover/test-globs.ts
-import { promises as fs2 } from "node:fs";
-import * as path3 from "node:path";
+import { promises as fs3 } from "node:fs";
+import * as path4 from "node:path";
 var TestGlobsError = class extends Error {
   constructor(message) {
     super(message);
@@ -21480,10 +21589,10 @@ function validateTestGlobs(raw) {
   return result;
 }
 async function loadTestGlobs(cwd) {
-  const filePath = path3.join(cwd, "openspec", "test-globs.json");
+  const filePath = path4.join(cwd, "openspec", "test-globs.json");
   let raw;
   try {
-    raw = await fs2.readFile(filePath, "utf-8");
+    raw = await fs3.readFile(filePath, "utf-8");
   } catch {
     return {};
   }
@@ -21492,7 +21601,7 @@ async function loadTestGlobs(cwd) {
 
 // src/cover/markers.ts
 function markersInFile(file, content) {
-  const ext = path4.extname(file).toLowerCase();
+  const ext = path5.extname(file).toLowerCase();
   const lang = LANG_TABLE.get(ext);
   if (!lang) return [];
   const lines = content.split("\n");
@@ -21529,7 +21638,7 @@ async function scanMarkers(cwd, group) {
   const bindings = /* @__PURE__ */ new Map();
   for (const pattern of resolvePatterns(group, testGlobs)) {
     for (const file of await resolveGlob(cwd, pattern)) {
-      const content = await fs3.readFile(file, "utf-8");
+      const content = await fs4.readFile(file, "utf-8");
       for (const binding of markersInFile(file, content)) {
         bindings.set(binding.scenarioId, binding);
       }
@@ -21538,258 +21647,12 @@ async function scanMarkers(cwd, group) {
   return bindings;
 }
 
-// src/cover/test-runners.ts
-import { promises as fs4 } from "node:fs";
-import * as path5 from "node:path";
-var CONFIG_PATH = "openspec/test-runners.json";
-async function loadTestRunnerConfig(workspaceRoot) {
-  const configFile = path5.join(workspaceRoot, ...CONFIG_PATH.split("/"));
-  let content;
-  try {
-    content = await fs4.readFile(configFile, "utf-8");
-  } catch (error2) {
-    if (error2.code === "ENOENT") return { config: {} };
-    throw error2;
-  }
-  let parsed;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    return { unresolvedReason: `${CONFIG_PATH} contains invalid JSON` };
-  }
-  if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object") {
-    return { unresolvedReason: `${CONFIG_PATH} must contain a JSON object keyed by language` };
-  }
-  return { config: parsed };
-}
-
-// src/cover/report.ts
-function reportBinding(file, testName, workspaceRoot, runnerConfig) {
-  const adapter = LANG_TABLE.get(path6.extname(file).toLowerCase());
-  const language = adapter?.language ?? "unknown";
-  const resolution = adapter?.resolveWholeFileCommand({
-    workspaceRoot,
-    testFile: file,
-    projectConfig: "config" in runnerConfig ? runnerConfig.config : {},
-    ..."unresolvedReason" in runnerConfig ? { configError: runnerConfig.unresolvedReason } : {}
-  }) ?? { unresolvedReason: `no runner command is configured for ${language} test files` };
-  return {
-    testFile: file,
-    testName,
-    language,
-    ..."command" in resolution ? { verifyCmd: resolution.command } : { unresolvedReason: resolution.unresolvedReason }
-  };
-}
-async function buildReport(cwd, scenarios) {
-  const markersByGroup = /* @__PURE__ */ new Map();
-  const reports = [];
-  const runnerConfig = await loadTestRunnerConfig(cwd);
-  for (const scenario of scenarios) {
-    let markers = markersByGroup.get(scenario.group);
-    if (!markers) {
-      markers = await scanMarkers(cwd, scenario.group);
-      markersByGroup.set(scenario.group, markers);
-    }
-    const binding = markers.get(scenario.id);
-    const reportedBinding = binding ? reportBinding(binding.file, binding.testName, cwd, runnerConfig) : void 0;
-    reports.push({
-      scenarioId: scenario.id,
-      group: scenario.group,
-      capability: scenario.capability,
-      requirementTitle: scenario.requirementTitle,
-      scenarioTitle: scenario.scenarioTitle,
-      outcome: binding ? "bound" : "unwired",
-      ...reportedBinding ? { binding: reportedBinding } : {},
-      note: binding ? `bound to ${binding.testName} in ${binding.file}${reportedBinding?.verifyCmd ? `; verify with ${reportedBinding.verifyCmd}` : `; ${reportedBinding?.unresolvedReason}`}` : "no test binds this scenario"
-    });
-  }
-  return reports;
-}
-function outcomeRank(outcome) {
-  switch (outcome) {
-    case "bound":
-    case "covered-and-integrated":
-    case "covered-but-not-integrated":
-      return 1;
-    default:
-      return 0;
-  }
-}
-function summarizeReport(reports) {
-  const summary = { bound: 0, unwired: 0 };
-  for (const report of reports) summary[report.outcome]++;
-  return summary;
-}
-
-// src/cover/baseline.ts
-var NOTE = "Coverage outcome each scenario holds today. A drop below its own outcome fails the gate.";
-function baselinePath(cwd) {
-  return path7.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
-}
-async function readBaseline(cwd) {
-  try {
-    const raw = await fs5.readFile(baselinePath(cwd), "utf-8");
-    const parsed = JSON.parse(raw);
-    return parsed.scenarios ?? {};
-  } catch {
-    return {};
-  }
-}
-async function writeBaseline(cwd, current) {
-  const sorted = Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b)));
-  await fs5.mkdir(path7.dirname(baselinePath(cwd)), { recursive: true });
-  await fs5.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
-`);
-}
-function compareToBaseline(reports, baseline) {
-  const adopted = [];
-  const regressions = [];
-  const improved = [];
-  for (const report of reports) {
-    const before = baseline[report.scenarioId];
-    if (before === void 0) {
-      adopted.push(report.scenarioId);
-      continue;
-    }
-    if (outcomeRank(report.outcome) < outcomeRank(before)) {
-      regressions.push({ scenarioId: report.scenarioId, before, now: report.outcome });
-      continue;
-    }
-    if (outcomeRank(report.outcome) > outcomeRank(before)) {
-      improved.push(report.scenarioId);
-    }
-  }
-  return { adopted, regressions, improved };
-}
-function findOrphans(reports, baseline) {
-  const currentIds = new Set(reports.map((r) => r.scenarioId));
-  return Object.keys(baseline).filter((id) => !currentIds.has(id));
-}
-function outcomesFromReport(reports) {
-  return Object.fromEntries(reports.map((r) => [r.scenarioId, r.outcome]));
-}
-
-// src/cover/enumerate.ts
-import { promises as fs6 } from "node:fs";
-import * as path8 from "node:path";
-
-// src/openspec/requirements.ts
-var REQUIREMENT_HEADING = /^### Requirement:\s*(.+?)\s*$/;
-var SCENARIO_HEADING = /^#### Scenario:\s*(.+?)\s*$/;
-var SECTION_HEADING = /^##\s+(.+?)\s*$/;
-var REMOVED_SECTION = /^REMOVED\b/i;
-var THEN_LINE = /^-\s*\*\*THEN\*\*\s*(.*)$/;
-var OTHER_BULLET = /^-\s*\*\*[A-Z]+\*\*/;
-function finalizeScenario(state) {
-  if (state.currentScenario && state.currentReq) {
-    state.currentScenario.intent = state.thenParts.join(" ");
-    state.currentReq.scenarios.push(state.currentScenario);
-  }
-  state.currentScenario = null;
-  state.thenParts = [];
-  state.inThen = false;
-}
-function startRequirement(state, title) {
-  state.currentReq = state.inRemoved ? null : { title, scenarios: [] };
-  if (state.currentReq) state.blocks.push(state.currentReq);
-}
-function consumeHeading(state, line) {
-  const section = line.match(SECTION_HEADING);
-  if (section) {
-    finalizeScenario(state);
-    state.currentReq = null;
-    state.inRemoved = REMOVED_SECTION.test(section[1]);
-    return true;
-  }
-  const requirement = line.match(REQUIREMENT_HEADING);
-  if (requirement) {
-    finalizeScenario(state);
-    startRequirement(state, requirement[1]);
-    return true;
-  }
-  const scenario = line.match(SCENARIO_HEADING);
-  if (scenario) {
-    finalizeScenario(state);
-    state.currentScenario = { title: scenario[1], intent: "" };
-    return true;
-  }
-  return false;
-}
-function consumeLine(state, line) {
-  if (consumeHeading(state, line)) return;
-  const thenMatch = line.match(THEN_LINE);
-  if (thenMatch) {
-    state.thenParts.push(thenMatch[1].trim());
-    state.inThen = true;
-    return;
-  }
-  if (OTHER_BULLET.test(line)) {
-    state.inThen = false;
-    return;
-  }
-  if (state.inThen && line.trim().length > 0) {
-    const lastIndex = state.thenParts.length - 1;
-    state.thenParts[lastIndex] = `${state.thenParts[lastIndex]} ${line.trim()}`;
-  }
-}
-function newState() {
-  return { blocks: [], currentReq: null, currentScenario: null, thenParts: [], inThen: false, inRemoved: false };
-}
-function extractRequirementBlocks(content) {
-  const state = newState();
-  for (const line of content.split("\n")) consumeLine(state, line);
-  finalizeScenario(state);
-  return state.blocks;
-}
-
-// src/cover/enumerate.ts
-function capabilityFromPath(specsDir, specFile) {
-  const rel = path8.relative(specsDir, specFile).split(path8.sep);
-  if (rel.length < 3) return null;
-  return { group: rel[0], capability: rel.slice(1, -1).join("/") };
-}
-async function scenariosFromFile(specsDir, specFile) {
-  const located = capabilityFromPath(specsDir, specFile);
-  if (!located) return [];
-  const content = await fs6.readFile(specFile, "utf-8");
-  const scenarios = [];
-  for (const block of extractRequirementBlocks(content)) {
-    for (const scenario of block.scenarios) {
-      scenarios.push({
-        id: buildScenarioId(located.group, located.capability, block.title, scenario.title),
-        group: located.group,
-        capability: located.capability,
-        requirementTitle: block.title,
-        scenarioTitle: scenario.title,
-        intent: scenario.intent,
-        specPath: specFile
-      });
-    }
-  }
-  return scenarios;
-}
-async function enumerateUnder(specsDir) {
-  const files = await resolveGlob(specsDir, "**/spec.md");
-  const out = [];
-  for (const file of files) out.push(...await scenariosFromFile(specsDir, file));
-  return out;
-}
-async function enumerateChangeScenarios(cwd, changeId) {
-  return enumerateUnder(path8.join(cwd, "openspec", "changes", changeId, "specs"));
-}
-async function enumerateAllScenarios(cwd) {
-  return enumerateUnder(path8.join(cwd, "openspec", "specs"));
-}
-
-// src/cover/plan-checks.ts
-import { promises as fs7 } from "node:fs";
-import * as path9 from "node:path";
-
 // src/openspec/tasks-parser.ts
 var CHECKBOX_RE = /^-\s*\[([ xX])\]\s*(.+?)\s*$/;
 var ID_RE = /^(\d+(?:\.\d+)*)\s+(.*)$/;
 var COVERS_RE = /^\s*<!--\s*covers:\s*(\S+\/\S+)\s*::\s*(.+?)\s*::\s*(.+?)\s*-->\s*$/;
 var METADATA_RE = /^\s*<!--\s*(status|verify_cmd|verify_surface|manual_required):\s*(.+?)\s*-->\s*$/;
+var STATUS_RE = /^\s*<!--\s*status:/;
 var HEADING_RE = /^#{1,6}\s/;
 var GROUP_HEADING_RE = /^##\s+(\d+)\./;
 var METADATA_SETTERS = {
@@ -21858,11 +21721,488 @@ function parseTaskGroups(content) {
   }
   return groups;
 }
+function findTaskLine(lines, taskId) {
+  let fallbackIndex = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const checkbox = lines[i].match(CHECKBOX_RE);
+    if (!checkbox) continue;
+    fallbackIndex++;
+    if (deriveId(checkbox[2], fallbackIndex).id === taskId) return i;
+  }
+  return -1;
+}
+function writeStatusComment(lines, checkboxIndex, status) {
+  let next = checkboxIndex + 1;
+  while (next < lines.length && isContinuation(lines[next])) {
+    if (STATUS_RE.test(lines[next])) {
+      lines[next] = `<!-- status: ${status} -->`;
+      return;
+    }
+    next++;
+  }
+  lines.splice(checkboxIndex + 1, 0, `<!-- status: ${status} -->`);
+}
+function writeTaskStatus(content, taskId, updates) {
+  const lines = content.split("\n");
+  const index = findTaskLine(lines, taskId);
+  if (index === -1) return content;
+  if (updates.checked !== void 0) {
+    lines[index] = lines[index].replace(CHECKBOX_RE, `- [${updates.checked ? "x" : " "}] $2`);
+  }
+  if (updates.status !== void 0) writeStatusComment(lines, index, updates.status);
+  return lines.join("\n");
+}
+
+// src/shell.ts
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+var execFileP = promisify(execFile);
+function buildShellInvocation(command) {
+  if (process.platform === "win32") {
+    return { shell: "cmd.exe", args: ["/d", "/s", "/c", `"${command}"`], verbatim: true };
+  }
+  return { shell: "/bin/sh", args: ["-c", command], verbatim: false };
+}
+async function runShellCommand(command, cwd, timeoutMs = 12e4) {
+  const { shell, args, verbatim } = buildShellInvocation(command);
+  try {
+    const { stdout, stderr } = await execFileP(shell, args, {
+      cwd,
+      timeout: timeoutMs,
+      maxBuffer: 10 * 1024 * 1024,
+      // 10 MB
+      windowsHide: true,
+      windowsVerbatimArguments: verbatim
+    });
+    return { stdout, stderr, code: 0 };
+  } catch (err) {
+    return {
+      stdout: err.stdout ?? "",
+      stderr: err.stderr ?? "",
+      code: err.code ?? (err.signal !== void 0 ? 128 : 1)
+    };
+  }
+}
+
+// src/complete/ollama.ts
+import { request } from "node:http";
+var THINK_RE = /<think>[\s\S]*?<\/think>/g;
+function buildPrompt(testCode, scenarioText) {
+  return `Does this test code verify this scenario?
+
+## Test code
+\`\`\`
+${testCode}
+\`\`\`
+
+## Scenario
+${scenarioText}
+
+Answer YES if the test exercises the behavior the scenario describes.
+Answer NO if the test is a stub, tests something unrelated, or does not cover the scenario's conditions.
+One word answer: YES or NO.`;
+}
+function parseResponse(raw) {
+  const cleaned = raw.replace(THINK_RE, "").trim();
+  const yesNo = cleaned.match(/\b(YES|NO)\b/gi);
+  if (!yesNo) return false;
+  return yesNo[yesNo.length - 1].toUpperCase() === "YES";
+}
+function ollamaGenerate(model, prompt, host, port, timeoutMs) {
+  return new Promise((resolve2, reject) => {
+    const body = JSON.stringify({ model, prompt, stream: false });
+    const req = request(
+      {
+        hostname: host,
+        port,
+        path: "/api/generate",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        timeout: timeoutMs
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          try {
+            const parsed = JSON.parse(Buffer.concat(chunks).toString("utf-8"));
+            resolve2(parsed.response ?? "");
+          } catch {
+            reject(new Error("ollama returned invalid JSON"));
+          }
+        });
+      }
+    );
+    req.on("error", (err) => reject(err));
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("ollama request timed out"));
+    });
+    req.write(body);
+    req.end();
+  });
+}
+function getOllamaConfig() {
+  const model = process.env.DOD_GUARD_EVAL_MODEL;
+  if (!model) return void 0;
+  const host = process.env.DOD_GUARD_EVAL_HOST ?? "127.0.0.1";
+  const port = Number.parseInt(process.env.DOD_GUARD_EVAL_PORT ?? "11434", 10);
+  const timeoutMs = Number.parseInt(process.env.DOD_GUARD_EVAL_TIMEOUT ?? "120000", 10);
+  return { model, host, port, timeoutMs };
+}
+async function checkClaimAlignment(testCode, scenarioText, config2) {
+  const { model, host = "127.0.0.1", port = 11434, timeoutMs = 12e4 } = config2;
+  const prompt = buildPrompt(testCode, scenarioText);
+  try {
+    const raw = await ollamaGenerate(model, prompt, host, port, timeoutMs);
+    return { available: true, aligned: parseResponse(raw), raw };
+  } catch (err) {
+    const message = err?.message ?? String(err);
+    if (message.includes("ECONNREFUSED") || message.includes("timed out")) {
+      return { available: false, reason: `ollama unreachable: ${message}` };
+    }
+    return { available: false, reason: `ollama error: ${message}` };
+  }
+}
+
+// src/complete/scenario-text.ts
+var SCENARIO_HEADING_RE = /^####\s+Scenario:\s*(.+?)\s*$/;
+var ANY_HEADING_RE = /^#{1,6}\s/;
+function extractFullScenarioText(specContent, scenarioTitle) {
+  const lines = specContent.split("\n");
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(SCENARIO_HEADING_RE);
+    if (m && m[1] === scenarioTitle) {
+      start = i;
+      break;
+    }
+  }
+  if (start === -1) return void 0;
+  let end = start + 1;
+  while (end < lines.length && !ANY_HEADING_RE.test(lines[end])) {
+    end++;
+  }
+  while (end > start + 1 && lines[end - 1].trim() === "") end--;
+  return lines.slice(start, end).join("\n");
+}
+
+// src/complete/stub-check.ts
+var PLACEHOLDER_RE = /\b(TODO|FIXME|NOT\s+IMPLEMENTED|PLACEHOLDER)\b/i;
+var NOT_IMPLEMENTED_RE = /throw\s+new\s+Error\s*\(\s*["']not\s+implemented["']\s*\)|raise\s+NotImplementedError/i;
+var ASSERTION_TOKENS = [
+  "assert",
+  "expect(",
+  "expect.",
+  ".should",
+  ".toBe",
+  ".toEqual",
+  ".toMatch",
+  ".toThrow",
+  ".toStrictEqual",
+  ".toContain",
+  ".toHaveLength",
+  ".toHaveProperty",
+  ".toHaveBeenCalled",
+  ".rejects",
+  ".resolves",
+  "raises(",
+  "throws(",
+  "deepStrictEqual",
+  "strictEqual",
+  "notStrictEqual",
+  "deepEqual",
+  "notDeepEqual",
+  "ok(",
+  "fail(",
+  "match(",
+  "doesNotMatch(",
+  "doesNotThrow(",
+  "ifError("
+];
+function isEmptyBody(body) {
+  const stripped = body.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/#.*$/gm, "").trim();
+  return stripped === "" || stripped === "{}" || stripped === "pass" || stripped === "return" || stripped === "return;";
+}
+function hasAssertions(body) {
+  const lower = body.toLowerCase();
+  return ASSERTION_TOKENS.some((token) => lower.includes(token.toLowerCase()));
+}
+function checkStub(testBody) {
+  const reasons = [];
+  if (isEmptyBody(testBody)) {
+    reasons.push("test body is empty or contains only a bare return");
+  }
+  if (PLACEHOLDER_RE.test(testBody)) {
+    reasons.push("test body contains a placeholder marker (TODO/FIXME/NOT IMPLEMENTED)");
+  }
+  if (NOT_IMPLEMENTED_RE.test(testBody)) {
+    reasons.push("test body throws a not-implemented error");
+  }
+  if (!(isEmptyBody(testBody) || hasAssertions(testBody))) {
+    reasons.push("test body contains no assertions");
+  }
+  return { pass: reasons.length === 0, reasons };
+}
+
+// src/complete/run.ts
+var EXIT_OK = 0;
+var EXIT_REJECTED = 1;
+var EXIT_USAGE = 3;
+async function runComplete(opts, io) {
+  const { cwd, changeId, taskId } = opts;
+  const tasksPath = path6.join(cwd, "openspec", "changes", changeId, "tasks.md");
+  let content;
+  try {
+    content = await fs5.readFile(tasksPath, "utf-8");
+  } catch {
+    io.writeErr(`ERROR: cannot read ${tasksPath}
+`);
+    return EXIT_USAGE;
+  }
+  const tasks = parseTasksMarkdown(content);
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task) {
+    io.writeErr(`ERROR: task "${taskId}" not found in ${tasksPath}
+`);
+    return EXIT_USAGE;
+  }
+  if (task.checked && task.status === "completed") {
+    io.write(`task ${taskId}: already completed
+`);
+    return EXIT_OK;
+  }
+  if (task.manualRequired) {
+    return writeAndReport(tasksPath, content, taskId, io);
+  }
+  if (task.verifyCmd) {
+    const result = await runShellCommand(task.verifyCmd, cwd);
+    if (result.code !== 0) {
+      io.writeErr(`REJECTED: verify_cmd failed (exit ${result.code})
+`);
+      if (result.stderr) io.writeErr(result.stderr);
+      return EXIT_REJECTED;
+    }
+  }
+  if (task.coversId) {
+    const stubAndClaim = await checkCoveredTask(cwd, changeId, task.coversId, io);
+    if (stubAndClaim !== EXIT_OK) return stubAndClaim;
+  }
+  return writeAndReport(tasksPath, content, taskId, io);
+}
+async function checkCoveredTask(cwd, changeId, scenarioId, io) {
+  const colonPos = scenarioId.indexOf("::");
+  if (colonPos === -1) return EXIT_OK;
+  const groupCapability = scenarioId.slice(0, colonPos);
+  const slashPos = groupCapability.indexOf("/");
+  if (slashPos === -1) return EXIT_OK;
+  const group = groupCapability.slice(0, slashPos);
+  const markers = await scanMarkers(cwd, group);
+  const binding = markers.get(scenarioId);
+  if (!binding) {
+    io.write(`task covers ${scenarioId} but no test marker binds it - skipping stub/eval checks
+`);
+    return EXIT_OK;
+  }
+  if (binding.testBody) {
+    const stubResult = checkStub(binding.testBody);
+    if (!stubResult.pass) {
+      io.writeErr(`REJECTED: stub check failed for test "${binding.testName}" in ${binding.file}
+`);
+      for (const reason of stubResult.reasons) {
+        io.writeErr(`  - ${reason}
+`);
+      }
+      return EXIT_REJECTED;
+    }
+  }
+  const ollamaConfig = getOllamaConfig();
+  if (ollamaConfig && binding.testBody) {
+    const scenarioText = await resolveScenarioText(cwd, changeId, scenarioId);
+    if (scenarioText) {
+      const result = await checkClaimAlignment(binding.testBody, scenarioText, ollamaConfig);
+      if (!result.available) {
+        io.write(`ollama unavailable (${result.reason}) - falling back to stub check only
+`);
+      } else if (!result.aligned) {
+        io.writeErr(`REJECTED: ollama says the test does not align with the scenario
+`);
+        io.writeErr(`scenario: ${scenarioId}
+`);
+        io.writeErr(`test: ${binding.testName} in ${binding.file}
+`);
+        return EXIT_REJECTED;
+      } else {
+        io.write(`ollama: test aligns with scenario
+`);
+      }
+    }
+  }
+  return EXIT_OK;
+}
+async function resolveScenarioText(cwd, changeId, scenarioId) {
+  const changeScenarios = await enumerateChangeScenarios(cwd, changeId);
+  let scenario = changeScenarios.find((s) => s.id === scenarioId);
+  if (!scenario) {
+    const allScenarios = await enumerateAllScenarios(cwd);
+    scenario = allScenarios.find((s) => s.id === scenarioId);
+  }
+  if (!scenario) return void 0;
+  const specContent = await fs5.readFile(scenario.specPath, "utf-8");
+  return extractFullScenarioText(specContent, scenario.scenarioTitle);
+}
+async function writeAndReport(tasksPath, content, taskId, io) {
+  const updated = writeTaskStatus(content, taskId, { checked: true, status: "completed" });
+  await fs5.writeFile(tasksPath, updated, "utf-8");
+  io.write(`task ${taskId}: marked complete
+`);
+  return EXIT_OK;
+}
+
+// src/cover/baseline.ts
+import { promises as fs7 } from "node:fs";
+import * as path9 from "node:path";
+
+// src/cover/report.ts
+import * as path8 from "node:path";
+
+// src/cover/test-runners.ts
+import { promises as fs6 } from "node:fs";
+import * as path7 from "node:path";
+var CONFIG_PATH = "openspec/test-runners.json";
+async function loadTestRunnerConfig(workspaceRoot) {
+  const configFile = path7.join(workspaceRoot, ...CONFIG_PATH.split("/"));
+  let content;
+  try {
+    content = await fs6.readFile(configFile, "utf-8");
+  } catch (error2) {
+    if (error2.code === "ENOENT") return { config: {} };
+    throw error2;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return { unresolvedReason: `${CONFIG_PATH} contains invalid JSON` };
+  }
+  if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object") {
+    return { unresolvedReason: `${CONFIG_PATH} must contain a JSON object keyed by language` };
+  }
+  return { config: parsed };
+}
+
+// src/cover/report.ts
+function reportBinding(file, testName, workspaceRoot, runnerConfig) {
+  const adapter = LANG_TABLE.get(path8.extname(file).toLowerCase());
+  const language = adapter?.language ?? "unknown";
+  const resolution = adapter?.resolveWholeFileCommand({
+    workspaceRoot,
+    testFile: file,
+    projectConfig: "config" in runnerConfig ? runnerConfig.config : {},
+    ..."unresolvedReason" in runnerConfig ? { configError: runnerConfig.unresolvedReason } : {}
+  }) ?? { unresolvedReason: `no runner command is configured for ${language} test files` };
+  return {
+    testFile: file,
+    testName,
+    language,
+    ..."command" in resolution ? { verifyCmd: resolution.command } : { unresolvedReason: resolution.unresolvedReason }
+  };
+}
+async function buildReport(cwd, scenarios) {
+  const markersByGroup = /* @__PURE__ */ new Map();
+  const reports = [];
+  const runnerConfig = await loadTestRunnerConfig(cwd);
+  for (const scenario of scenarios) {
+    let markers = markersByGroup.get(scenario.group);
+    if (!markers) {
+      markers = await scanMarkers(cwd, scenario.group);
+      markersByGroup.set(scenario.group, markers);
+    }
+    const binding = markers.get(scenario.id);
+    const reportedBinding = binding ? reportBinding(binding.file, binding.testName, cwd, runnerConfig) : void 0;
+    reports.push({
+      scenarioId: scenario.id,
+      group: scenario.group,
+      capability: scenario.capability,
+      requirementTitle: scenario.requirementTitle,
+      scenarioTitle: scenario.scenarioTitle,
+      outcome: binding ? "bound" : "unwired",
+      ...reportedBinding ? { binding: reportedBinding } : {},
+      note: binding ? `bound to ${binding.testName} in ${binding.file}${reportedBinding?.verifyCmd ? `; verify with ${reportedBinding.verifyCmd}` : `; ${reportedBinding?.unresolvedReason}`}` : "no test binds this scenario"
+    });
+  }
+  return reports;
+}
+function outcomeRank(outcome) {
+  switch (outcome) {
+    case "bound":
+    case "covered-and-integrated":
+    case "covered-but-not-integrated":
+      return 1;
+    default:
+      return 0;
+  }
+}
+function summarizeReport(reports) {
+  const summary = { bound: 0, unwired: 0 };
+  for (const report of reports) summary[report.outcome]++;
+  return summary;
+}
+
+// src/cover/baseline.ts
+var NOTE = "Coverage outcome each scenario holds today. A drop below its own outcome fails the gate.";
+function baselinePath(cwd) {
+  return path9.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
+}
+async function readBaseline(cwd) {
+  try {
+    const raw = await fs7.readFile(baselinePath(cwd), "utf-8");
+    const parsed = JSON.parse(raw);
+    return parsed.scenarios ?? {};
+  } catch {
+    return {};
+  }
+}
+async function writeBaseline(cwd, current) {
+  const sorted = Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b)));
+  await fs7.mkdir(path9.dirname(baselinePath(cwd)), { recursive: true });
+  await fs7.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
+`);
+}
+function compareToBaseline(reports, baseline) {
+  const adopted = [];
+  const regressions = [];
+  const improved = [];
+  for (const report of reports) {
+    const before = baseline[report.scenarioId];
+    if (before === void 0) {
+      adopted.push(report.scenarioId);
+      continue;
+    }
+    if (outcomeRank(report.outcome) < outcomeRank(before)) {
+      regressions.push({ scenarioId: report.scenarioId, before, now: report.outcome });
+      continue;
+    }
+    if (outcomeRank(report.outcome) > outcomeRank(before)) {
+      improved.push(report.scenarioId);
+    }
+  }
+  return { adopted, regressions, improved };
+}
+function findOrphans(reports, baseline) {
+  const currentIds = new Set(reports.map((r) => r.scenarioId));
+  return Object.keys(baseline).filter((id) => !currentIds.has(id));
+}
+function outcomesFromReport(reports) {
+  return Object.fromEntries(reports.map((r) => [r.scenarioId, r.outcome]));
+}
 
 // src/cover/plan-checks.ts
+import { promises as fs8 } from "node:fs";
+import * as path10 from "node:path";
 function readTasks(cwd, changeId) {
-  const tasksPath = path9.join(cwd, "openspec", "changes", changeId, "tasks.md");
-  return fs7.readFile(tasksPath, "utf-8").catch(() => "");
+  const tasksPath = path10.join(cwd, "openspec", "changes", changeId, "tasks.md");
+  return fs8.readFile(tasksPath, "utf-8").catch(() => "");
 }
 async function checkPlanComplete(opts, io) {
   if (opts.all) return void 0;
@@ -21907,7 +22247,7 @@ function namesAnyScenario(content, scenarioIds2) {
 }
 
 // src/cover/run.ts
-var EXIT_OK = 0;
+var EXIT_OK2 = 0;
 var EXIT_REGRESSION = 1;
 var EXIT_USAGE_ERROR = 3;
 var scenarioIds = (reports) => reports.map((report) => report.scenarioId);
@@ -21946,7 +22286,7 @@ async function runCover(opts, io) {
       opts.all ? "No scenarios found under openspec/specs. Nothing to cover.\n" : `No spec deltas found for change "${opts.changeId}". Nothing to cover.
 `
     );
-    return EXIT_OK;
+    return EXIT_OK2;
   }
   for (const report of result.reports) io.write(`  ${report.outcome.padEnd(26)} ${report.scenarioId}
 `);
@@ -21958,7 +22298,7 @@ ${result.reports.length} scenario(s): ${summary.bound} bound, ${summary.unwired}
     io.write(`
 wrote coverage-gate baseline for ${result.reports.length} scenario(s)
 `);
-    return EXIT_OK;
+    return EXIT_OK2;
   }
   for (const id of result.adopted) io.write(`  adopted: ${id}
 `);
@@ -21972,7 +22312,7 @@ cover OK - 0 regression(s)
 `);
     if (result.planComplete !== void 0) await checkPlanComplete(opts, io);
     else if (result.planBound !== void 0) await checkPlanBound(opts, scenarioIds(result.reports), io);
-    return result.planComplete ?? result.planBound ?? EXIT_OK;
+    return result.planComplete ?? result.planBound ?? EXIT_OK2;
   }
   io.write(`
 cover FAILED - ${result.regressions.length} regression(s)
@@ -21988,7 +22328,7 @@ cover FAILED - ${result.regressions.length} regression(s)
 }
 
 // src/cli.ts
-var USAGE = `dod-guard - OpenSpec scenario coverage
+var USAGE = `dod-guard - OpenSpec scenario coverage and completion gate
 
 USAGE
   dod-guard <command> [options]
@@ -22003,9 +22343,16 @@ COMMANDS
                                       only sees its own scenarios.
                                       --cwd=<dir> overrides the working directory.
 
+  complete <change-id> <task-id>     Mark a task complete after passing the
+                                      completion gate. Runs verify_cmd, checks
+                                      for stub tests, and (when DOD_GUARD_EVAL_MODEL
+                                      is set) asks an ollama model whether the
+                                      test aligns with its claimed scenario.
+                                      --cwd=<dir> overrides the working directory.
+
 EXIT CODES
-  0   no regressions
-  1   a coverage regression
+  0   no regressions / task marked complete
+  1   a coverage regression / gate rejected the completion
   3   usage error
   4   the change's tasks.md has an unexpanded group
   5   the change's plan is fully expanded but names none of its scenarios
@@ -22049,7 +22396,21 @@ var COMMANDS = {
       writeBaseline: flags["write-baseline"] === true
     },
     io
-  )
+  ),
+  complete: (positional, flags, io) => {
+    if (positional.length < 2) {
+      io.writeErr("ERROR: complete requires <change-id> <task-id>\n");
+      return Promise.resolve(EXIT_USAGE_ERROR2);
+    }
+    return runComplete(
+      {
+        cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(),
+        changeId: positional[0],
+        taskId: positional[1]
+      },
+      io
+    );
+  }
 };
 async function runCli(argv, io = defaultIo) {
   const { command, flags, positional } = parseArgs(argv);
@@ -22077,16 +22438,8 @@ function isCliInvocation(argv) {
   return argv.length > 0;
 }
 
-// src/runtime-root.ts
-import * as path10 from "node:path";
-import { fileURLToPath } from "node:url";
-var runtimeRoot = path10.resolve(fileURLToPath(import.meta.url), "..", "..");
-
-// src/index.ts
-var _pkgPath = path11.join(runtimeRoot, "package.json");
-var _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
-function createServer() {
-  const server2 = new McpServer({ name: "dod-guard", version: _pkg.version });
+// src/mcp-tools.ts
+function registerTools(server2) {
   server2.registerTool(
     "cover",
     {
@@ -22106,6 +22459,51 @@ function createServer() {
       };
     }
   );
+  server2.registerTool(
+    "complete",
+    {
+      description: "Mark a task complete after passing the completion gate. Runs verify_cmd, checks for stub tests, and optionally asks an eval model whether the test aligns with its claimed scenario.",
+      inputSchema: {
+        cwd: external_exports.string().describe("Absolute path to the consumer workspace."),
+        changeId: external_exports.string().describe("OpenSpec change id."),
+        taskId: external_exports.string().describe("Task id from the change's tasks.md.")
+      }
+    },
+    async ({ cwd, changeId, taskId }) => {
+      const output = [];
+      const errors = [];
+      const io = {
+        write: (s) => output.push(s),
+        writeErr: (s) => errors.push(s)
+      };
+      const code = await runComplete({ cwd, changeId, taskId }, io);
+      const result = {
+        passed: code === EXIT_OK,
+        rejected: code === EXIT_REJECTED,
+        exitCode: code,
+        output: output.join(""),
+        errors: errors.join("")
+      };
+      const serialized = JSON.stringify(result);
+      return {
+        content: [{ type: "text", text: serialized }],
+        structuredContent: JSON.parse(serialized)
+      };
+    }
+  );
+}
+
+// src/runtime-root.ts
+import * as path11 from "node:path";
+import { fileURLToPath } from "node:url";
+var runtimeRoot = path11.resolve(fileURLToPath(import.meta.url), "..", "..");
+
+// src/index.ts
+var _pkgPath = path12.join(runtimeRoot, "package.json");
+var _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
+function createServer() {
+  const server2 = new McpServer({ name: "dod-guard", version: _pkg.version });
+  registerTools(server2);
   return server2;
 }
 var server = createServer();

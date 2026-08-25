@@ -91,8 +91,9 @@ the plan.
 
 - Parse `tasks.md` into task items, each with its `<!-- covers: -->`
   annotation if present.
-- For each task carrying a `covers` annotation, run `dod-guard cover
-  <change-id>` and look up that scenario's outcome. A covered outcome
+- For each task carrying a `covers` annotation, call the dod-guard
+  `cover` tool with the workspace root as `cwd` and the change id as
+  `changeId`, and look up that scenario's outcome. A covered outcome
   gives its bound test's whole-file run command as the task's
   `verify_cmd`, and `verify_surface` of `code` unless the task's own
   `<!-- verify_surface: -->` annotation says otherwise.
@@ -158,14 +159,16 @@ Keep estimates and chunk membership in session memory. Do not write them into
   replace the command.
 - Execute every task after plan approval, including tasks marked
   `manual_required: true` or tasks with an empty `verify_cmd`. When the
-  worker reports that task `DONE`, record it as completed without automated
-  verification after the rest of its chunk passes.
+  worker reports that task `DONE`, call the dod-guard `complete` tool
+  with `cwd`, `changeId`, and `taskId` after the rest of its chunk
+  passes. The tool skips automated checks for manual tasks.
 - Respect the task order `tasks.md` lays out. A task starts only
   after every earlier task in the file is resolved: `completed`, or
   `skipped`/`blocked` with the user told.
-- After every task in a chunk passes or is recorded as unverified: update all
-  of those tasks in `tasks.md`, keep Concerns and file lists for the final
-  report, then drop the chunk's implementation detail.
+- After every task in a chunk passes or is recorded as unverified: call
+  the dod-guard `complete` tool for each completed task, keep
+  Concerns and file lists for the final report, then drop the chunk's
+  implementation detail.
 - Commit the chunk's changes yourself after its task-level gates pass. That
   commit is the rollback point. A failed or blocked chunk earns no commit or
   completed task statuses. You commit. You never push. Pushing stays a human
@@ -306,10 +309,23 @@ the `<!-- status: -->` comment, never by the checkbox alone.
 
 The task's own id, title, and verdict carry forward in your working
 memory for the final report (see Finishing) - `tasks.md` has no slot
-for verdict evidence, so do not write it there. Flip the checkbox to
-`- [x]` in the same update where you set `status: completed`. That way
-`openspec status` never disagrees with your own record. A `skipped` or
-`blocked` task keeps its checkbox at `- [ ]`.
+for verdict evidence, so do not write it there.
+
+To mark a task complete, call the dod-guard `complete` tool with the
+workspace root as `cwd`, the change id as `changeId`, and the task id as
+`taskId`. The tool runs verify_cmd, checks for stub tests, and (when
+DOD_GUARD_EVAL_MODEL is set) asks an eval model whether the test aligns
+with the claimed scenario. It writes the status change to disk only when
+every check passes. A `passed: true` response means the task is now
+complete; `rejected: true` means the gate rejected, and `errors` says
+why.
+
+Never edit checkbox markers (`- [ ]` / `- [x]`) or `<!-- status: completed -->`
+comments in `tasks.md` directly. The `complete` command is the only path
+to marking a task done.
+
+A `skipped` or `blocked` status change stays as a direct edit to
+`tasks.md` - those do not claim work was done.
 
 The `<!-- plan_artifacts: ... -->` comment near the top of `tasks.md`
 stores the staleness snapshot: the `artifacts` array from `openspec
@@ -333,11 +349,12 @@ integration check.
 
 A green integration check earns two more commands, run in this order.
 
-Run `dod-guard cover <change-id>`. It checks each scenario in the
-change's spec deltas against a ratcheted baseline. Exit 0 means every
-scenario matches or improves on the baseline. Exit 1 means one
-regressed. Exit 3 means usage error. On exit 1 or exit 3, stop here:
-report the regression and do not archive.
+Call the dod-guard `cover` tool with the workspace root as `cwd` and
+the change id as `changeId`. It checks each scenario in the change's
+spec deltas against a ratcheted baseline. No regressions in the result
+means every scenario matches or improves. A regression means one got
+worse. On a regression or error, stop here: report it and do not
+archive.
 
 On exit 0, run `openspec archive <change-id> --yes`. It merges the
 change's spec deltas into openspec/specs/ and moves the change under

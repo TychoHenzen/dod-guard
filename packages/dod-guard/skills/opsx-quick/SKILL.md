@@ -118,11 +118,12 @@ Wait for it to complete before continuing.
 
 ### Change had specs
 
-Run `dod-guard cover <name>`. Handle by exit code:
+Call the dod-guard `cover` tool with the workspace root as `cwd` and the
+change name as `changeId`. Handle by result:
 
-- **0**: Run `openspec archive <name> --yes` and report the result.
-- **1**: Report the regression and stop.
-- **3**: Report the usage error and stop.
+- **No regressions**: Run `openspec archive <name> --yes` and report the result.
+- **Regression**: Report the regression and stop.
+- **Error**: Report the error and stop.
 
 ### Change skipped specs
 
@@ -131,7 +132,7 @@ behavior that warrants retroactive spec deltas:
 
 - **Yes**: Create spec deltas under
   `openspec/changes/<name>/specs/<group>/<capability>/spec.md`,
-  re-run `dod-guard cover <name>`, and archive on exit 0.
+  re-run the dod-guard `cover` tool, and archive when it shows no regressions.
 - **No**: Run `openspec archive <name> --yes --skip-specs` and report.
 
 ## Output
@@ -147,9 +148,9 @@ After the full cycle, report:
 
 ## Guardrails
 
-- Never skip the coverage gate. A change archives only after
-  `dod-guard cover` exits 0 (or the change set `skip_specs: true` and
-  the user declined retroactive specs).
+- Never skip the coverage gate. A change archives only after the
+  dod-guard `cover` tool shows no regressions (or the change set
+  `skip_specs: true` and the user declined retroactive specs).
 - Do not implement tasks yourself. Implementation goes through
   `/dod-guard:step-by-step` and its workers.
 - Read dependency artifacts from disk before writing each new one.
