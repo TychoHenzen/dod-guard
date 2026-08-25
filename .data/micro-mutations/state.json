@@ -458,61 +458,196 @@
       "recent_commits": 1,
       "fingerprint": "e9c03ed3faedbcfaf6ab7a3949d718199eb0dc88e0ec1afef894889199533bc0",
       "dirty": false
+    },
+    "packages/fossil/src/analysis-error.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 9,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/fossil-cli-core.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 268,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/fossil-grader.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 2,
+      "error_count": 0,
+      "recent_commits": 12,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/fossil-output-core.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 201,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/fossil-report-table.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 41,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/fossil-scoring-core.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 117,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/git-analyzer.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 2,
+      "error_count": 0,
+      "recent_commits": 24,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/git-history-core.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 492,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/git-process.ts": {
+      "last_tested": "2026-08-25",
+      "last_result": {
+        "total": 235,
+        "caught": 148,
+        "missed": 48,
+        "timeout": 5,
+        "unviable": 34,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 221,
+      "error_count": 0,
+      "recent_commits": 6,
+      "fingerprint": "fc7786c38f57840af0f2430ac6821b336ab3e2cca586cc28d4549abe8e580334",
+      "dirty": false
+    },
+    "packages/fossil/src/index.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 2,
+      "error_count": 0,
+      "recent_commits": 10,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/output.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 3,
+      "error_count": 0,
+      "recent_commits": 11,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/ref-analyzer.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 2,
+      "error_count": 0,
+      "recent_commits": 20,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/reference-analysis-core.ts": {
+      "last_tested": "2026-08-25",
+      "last_result": {
+        "total": 1462,
+        "caught": 10,
+        "missed": 92,
+        "timeout": 0,
+        "unviable": 1360,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 871,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "72969e145e3a1cfaf0b03616f755eae2d5fbe26125231da2163e01def1994dfb",
+      "dirty": false
+    },
+    "packages/fossil/src/repository-analysis.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 332,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/testing/fixtures.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 122,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/testing/performance.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 126,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/fossil/src/workspace-debris.ts": {
+      "last_tested": "2026-08-25",
+      "last_result": {
+        "total": 419,
+        "caught": 278,
+        "missed": 105,
+        "timeout": 4,
+        "unviable": 32,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 294,
+      "error_count": 0,
+      "recent_commits": 10,
+      "fingerprint": "1c7f24aba5861464eaa0181be9709ff73de2a6d52e0a47f49ce5fae5329cf399",
+      "dirty": false
     }
   },
   "cumulative": {
-    "total_mutants": 20718,
-    "caught": 8672,
-    "missed": 7130,
-    "timeout": 101,
-    "unviable": 4815,
+    "total_mutants": 22834,
+    "caught": 9108,
+    "missed": 7375,
+    "timeout": 110,
+    "unviable": 6241,
     "error": 44,
-    "runs": 155,
-    "files_tested": 155
+    "runs": 158,
+    "files_tested": 158
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/assertions.ts",
-      "result": {
-        "total": 319,
-        "caught": 89,
-        "missed": 215,
-        "timeout": 0,
-        "unviable": 15,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/obsidian-rag/src/retriever.ts",
-      "result": {
-        "total": 112,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 112,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/manual.ts",
-      "result": {
-        "total": 44,
-        "caught": 28,
-        "missed": 12,
-        "timeout": 0,
-        "unviable": 4,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "2f117f279d50109efc411771b33d789c9077e92b",
@@ -1867,6 +2002,48 @@
         "missed": 41,
         "timeout": 3,
         "unviable": 28,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-25",
+      "commit": "1ca07c7ca24c7ef711101cd88ae7c220e4e4e311",
+      "file": "packages/fossil/src/workspace-debris.ts",
+      "result": {
+        "total": 419,
+        "caught": 278,
+        "missed": 105,
+        "timeout": 4,
+        "unviable": 32,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-25",
+      "commit": "1ca07c7ca24c7ef711101cd88ae7c220e4e4e311",
+      "file": "packages/fossil/src/git-process.ts",
+      "result": {
+        "total": 235,
+        "caught": 148,
+        "missed": 48,
+        "timeout": 5,
+        "unviable": 34,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-25",
+      "commit": "1ca07c7ca24c7ef711101cd88ae7c220e4e4e311",
+      "file": "packages/fossil/src/reference-analysis-core.ts",
+      "result": {
+        "total": 1462,
+        "caught": 10,
+        "missed": 92,
+        "timeout": 0,
+        "unviable": 1360,
         "status": "ok",
         "error": null
       }

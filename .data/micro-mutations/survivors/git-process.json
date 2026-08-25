@@ -1,0 +1,397 @@
+{
+  "source": "packages/fossil/src/git-process.ts",
+  "date": "2026-08-25T07:26:45.242Z",
+  "summary": {
+    "total": 235,
+    "killed": 148,
+    "survived": 48,
+    "timeout": 5,
+    "unviable": 34
+  },
+  "survivors": [
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "1",
+      "mutator": "ArithmeticOperator",
+      "replacement": "256 * 1_024 / 1_024",
+      "dist_line": 5,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "0",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 4,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "2",
+      "mutator": "ArithmeticOperator",
+      "replacement": "256 / 1_024",
+      "dist_line": 5,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "3",
+      "mutator": "ArithmeticOperator",
+      "replacement": "1_024 / 1_024",
+      "dist_line": 6,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 20,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "49",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 47,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "54",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 51,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "57",
+      "mutator": "Regex",
+      "replacement": "/\\r?\\n/",
+      "dist_line": 53,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "59",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 53,
+      "dist_col": 48
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "58",
+      "mutator": "Regex",
+      "replacement": "/^\\r\\n/",
+      "dist_line": 53,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "60",
+      "mutator": "BooleanLiteral",
+      "replacement": "/^[A-Z]\\d*$/.test(status)",
+      "dist_line": 54,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "62",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 54,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "63",
+      "mutator": "Regex",
+      "replacement": "/[A-Z]\\d*$/",
+      "dist_line": 54,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "64",
+      "mutator": "Regex",
+      "replacement": "/^[A-Z]\\d*/",
+      "dist_line": 54,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "67",
+      "mutator": "Regex",
+      "replacement": "/^[A-Z]\\D*$/",
+      "dist_line": 54,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "70",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 57,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "71",
+      "mutator": "LogicalOperator",
+      "replacement": "status[0] === \"R\" && status[0] === \"C\"",
+      "dist_line": 57,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "72",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 57,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "75",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 57,
+      "dist_col": 53
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "74",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 57,
+      "dist_col": 46
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "77",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 57,
+      "dist_col": 67
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "79",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 62,
+      "dist_col": 64
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "84",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "85",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 66,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "87",
+      "mutator": "LogicalOperator",
+      "replacement": "stdout || stderr",
+      "dist_line": 66,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "96",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 80,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "95",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 78,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "104",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 89,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "122",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 102,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "124",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 105,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "126",
+      "mutator": "EqualityOperator",
+      "replacement": "stderrBytes >= limits.maximumStderrBytes",
+      "dist_line": 105,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "127",
+      "mutator": "EqualityOperator",
+      "replacement": "stderrBytes <= limits.maximumStderrBytes",
+      "dist_line": 105,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "130",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 111,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "138",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 118,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "140",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 124,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "147",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 128,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "150",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 132,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "152",
+      "mutator": "Regex",
+      "replacement": "/git version (\\d+)\\.(\\d+)(?:\\.\\d+)?(?:[^\\s]*)?\\s*$/",
+      "dist_line": 142,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "153",
+      "mutator": "Regex",
+      "replacement": "/^git version (\\d+)\\.(\\d+)(?:\\.\\d+)?(?:[^\\s]*)?\\s*/",
+      "dist_line": 142,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "154",
+      "mutator": "Regex",
+      "replacement": "/^git version (\\d)\\.(\\d+)(?:\\.\\d+)?(?:[^\\s]*)?\\s*$/",
+      "dist_line": 142,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "158",
+      "mutator": "Regex",
+      "replacement": "/^git version (\\d+)\\.(\\d+)(?:\\.\\d+)(?:[^\\s]*)?\\s*$/",
+      "dist_line": 142,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "159",
+      "mutator": "Regex",
+      "replacement": "/^git version (\\d+)\\.(\\d+)(?:\\.\\d)?(?:[^\\s]*)?\\s*$/",
+      "dist_line": 142,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "160",
+      "mutator": "Regex",
+      "replacement": "/^git version (\\d+)\\.(\\d+)(?:\\.\\D+)?(?:[^\\s]*)?\\s*$/",
+      "dist_line": 142,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "161",
+      "mutator": "Regex",
+      "replacement": "/^git version (\\d+)\\.(\\d+)(?:\\.\\d+)?(?:[^\\s]*)\\s*$/",
+      "dist_line": 142,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "165",
+      "mutator": "Regex",
+      "replacement": "/^git version (\\d+)\\.(\\d+)(?:\\.\\d+)?(?:[^\\s]*)?\\s$/",
+      "dist_line": 142,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "174",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 147,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "176",
+      "mutator": "LogicalOperator",
+      "replacement": "Number.isSafeInteger(major) || Number.isSafeInteger(minor)",
+      "dist_line": 147,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/fossil/dist/git-process.js",
+      "id": "192",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 152,
+      "dist_col": 45
+    }
+  ]
+}

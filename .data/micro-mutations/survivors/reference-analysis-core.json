@@ -1,0 +1,749 @@
+{
+  "source": "packages/fossil/src/reference-analysis-core.ts",
+  "date": "2026-08-25T07:26:51.374Z",
+  "summary": {
+    "total": 1462,
+    "killed": 10,
+    "survived": 92,
+    "timeout": 0,
+    "unviable": 1360
+  },
+  "survivors": [
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "0",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 2,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "7",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s(?:[^\"'`;\\r\\n]*?\\s+from\\s+)?([\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 66
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "9",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[^\"'`;\\r\\n]*?\\s+from\\s+)([\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "8",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\S+(?:[^\"'`;\\r\\n]*?\\s+from\\s+)?([\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "11",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[\"'`;\\r\\n]*?\\s+from\\s+)?([\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "10",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[^\"'`;\\r\\n]\\s+from\\s+)?([\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "12",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[^\"'`;\\r\\n]*?\\sfrom\\s+)?([\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "13",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[^\"'`;\\r\\n]*?\\S+from\\s+)?([\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "15",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[^\"'`;\\r\\n]*?\\s+from\\S+)?([\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "14",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[^\"'`;\\r\\n]*?\\s+from\\s)?([\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "16",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[^\"'`;\\r\\n]*?\\s+from\\s+)?([^\"'])([^\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "17",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[^\"'`;\\r\\n]*?\\s+from\\s+)?([\"'])([^\"'\\r\\n])\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "18",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s+(?:[^\"'`;\\r\\n]*?\\s+from\\s+)?([\"'])([\"'\\r\\n]+)\\1/g",
+      "dist_line": 3,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "19",
+      "mutator": "Regex",
+      "replacement": "/\\brequire\\s\\(\\s*([\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 4,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "20",
+      "mutator": "Regex",
+      "replacement": "/\\brequire\\S*\\(\\s*([\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 4,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "21",
+      "mutator": "Regex",
+      "replacement": "/\\brequire\\s*\\(\\s([\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 4,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "22",
+      "mutator": "Regex",
+      "replacement": "/\\brequire\\s*\\(\\S*([\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 4,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "23",
+      "mutator": "Regex",
+      "replacement": "/\\brequire\\s*\\(\\s*([^\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 4,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "24",
+      "mutator": "Regex",
+      "replacement": "/\\brequire\\s*\\(\\s*([\"'])([^\"'\\r\\n])\\1\\s*\\)/g",
+      "dist_line": 4,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "25",
+      "mutator": "Regex",
+      "replacement": "/\\brequire\\s*\\(\\s*([\"'])([\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 4,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "27",
+      "mutator": "Regex",
+      "replacement": "/\\brequire\\s*\\(\\s*([\"'])([^\"'\\r\\n]+)\\1\\S*\\)/g",
+      "dist_line": 4,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "26",
+      "mutator": "Regex",
+      "replacement": "/\\brequire\\s*\\(\\s*([\"'])([^\"'\\r\\n]+)\\1\\s\\)/g",
+      "dist_line": 4,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "29",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\S*\\(\\s*([\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 5,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "28",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s\\(\\s*([\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 5,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "31",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s*\\(\\S*([\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 5,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "30",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s*\\(\\s([\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 5,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "32",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s*\\(\\s*([^\"'])([^\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 5,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "33",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s*\\(\\s*([\"'])([^\"'\\r\\n])\\1\\s*\\)/g",
+      "dist_line": 5,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "35",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s*\\(\\s*([\"'])([^\"'\\r\\n]+)\\1\\s\\)/g",
+      "dist_line": 5,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "34",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s*\\(\\s*([\"'])([\"'\\r\\n]+)\\1\\s*\\)/g",
+      "dist_line": 5,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "37",
+      "mutator": "Regex",
+      "replacement": "/\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "36",
+      "mutator": "Regex",
+      "replacement": "/\\bimport\\s*\\(\\s*([\"'])([^\"'\\r\\n]+)\\1\\S*\\)/g",
+      "dist_line": 5,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "38",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "39",
+      "mutator": "Regex",
+      "replacement": "/^\\susing\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "41",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "40",
+      "mutator": "Regex",
+      "replacement": "/^\\S*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "43",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?=static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "42",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\S+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "44",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([^A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "45",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "47",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*))\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "46",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\W*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "48",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[^A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "49",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "51",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "50",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\W*)*)\\s*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "52",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\S*;\\s*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "53",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\s$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "54",
+      "mutator": "Regex",
+      "replacement": "/^\\s*using\\s+(?!static\\b)([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)\\s*;\\S*$/gm",
+      "dist_line": 6,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "55",
+      "mutator": "Regex",
+      "replacement": "/\\s*mod\\s+([A-Za-z_]\\w*)\\s*;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "56",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\s+([A-Za-z_]\\w*)\\s*;\\s*/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "57",
+      "mutator": "Regex",
+      "replacement": "/^\\smod\\s+([A-Za-z_]\\w*)\\s*;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "58",
+      "mutator": "Regex",
+      "replacement": "/^\\S*mod\\s+([A-Za-z_]\\w*)\\s*;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "59",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\s([A-Za-z_]\\w*)\\s*;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "60",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\S+([A-Za-z_]\\w*)\\s*;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "61",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\s+([^A-Za-z_]\\w*)\\s*;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "62",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\s+([A-Za-z_]\\w)\\s*;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "63",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\s+([A-Za-z_]\\W*)\\s*;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "65",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\s+([A-Za-z_]\\w*)\\S*;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "64",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\s+([A-Za-z_]\\w*)\\s;\\s*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "67",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\s+([A-Za-z_]\\w*)\\s*;\\S*$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "66",
+      "mutator": "Regex",
+      "replacement": "/^\\s*mod\\s+([A-Za-z_]\\w*)\\s*;\\s$/gm",
+      "dist_line": 7,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "69",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s*;\\s*/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "68",
+      "mutator": "Regex",
+      "replacement": "/\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "70",
+      "mutator": "Regex",
+      "replacement": "/^\\suse\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "71",
+      "mutator": "Regex",
+      "replacement": "/^\\S*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "72",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\scrate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "73",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\S+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "74",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([^A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "75",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w(?:::[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "77",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*))\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "76",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\W*(?:::[A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "79",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "78",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[^A-Za-z_]\\w*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "80",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\W*)*)\\s*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "81",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "82",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\S*;\\s*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "83",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s*;\\s$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "84",
+      "mutator": "Regex",
+      "replacement": "/^\\s*use\\s+crate::([A-Za-z_]\\w*(?:::[A-Za-z_]\\w*)*)\\s*;\\S*$/gm",
+      "dist_line": 8,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "1229",
+      "mutator": "MethodExpression",
+      "replacement": "[...new Set(candidates.filter(candidate => candidate.language === \"unsupported\").map(candidate => candidate.path))]",
+      "dist_line": 613,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "1231",
+      "mutator": "MethodExpression",
+      "replacement": "candidates",
+      "dist_line": 614,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "1233",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 614,
+      "dist_col": 53
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "1238",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 615,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "1249",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 617,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "1250",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 618,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/reference-analysis-core.js",
+      "id": "1252",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 619,
+      "dist_col": 19
+    }
+  ]
+}
