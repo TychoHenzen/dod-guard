@@ -29,7 +29,8 @@ Your prompt is a self-contained briefing with:
 
 - **Chunk**: chunk id, ordered task ids, and estimated token size
 - **Tasks**: one block per task, each containing its exact description, Mode,
-  Context, Requirement, Verification, Files, and Expected output
+  Context, Requirement, Verification, Test binding (when present), Files,
+  and Expected output
 - **Working directory**: where to run commands
 
 **You have no channel to the user.** Nobody reads anything you emit except the
@@ -87,6 +88,12 @@ Write or update tests for your changes.
 - Match existing test patterns in the codebase.
 - Run the exact command from your briefing's Verification section rather than your
   own guess at the project's test command.
+
+### Step 4b: Bind tests to scenarios
+When the briefing includes a `Test binding` line, place that exact comment on the
+line directly above each test declaration that verifies the scenario. The marker
+goes outside the test body, not inside it. Without this marker, the scenario stays
+unwired and the task cannot pass the coverage gate.
 
 ### Step 5: Verify
 Baseline: the briefing's verify command passes, build clean, output matches the

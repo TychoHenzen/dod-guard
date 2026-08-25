@@ -97,14 +97,22 @@ the plan.
   gives its bound test's whole-file run command as the task's
   `verify_cmd`, and `verify_surface` of `code` unless the task's own
   `<!-- verify_surface: -->` annotation says otherwise.
-- A task whose scenario is unwired or failed has no resolved
-  `verify_cmd`. Do not attempt to invent one.
-- `manual_required: true` records that automated verification is unavailable.
-  It does not request permission or pause execution after plan approval.
+- A task whose scenario is unwired has no resolved `verify_cmd` yet.
+  Do not attempt to invent one. But do not mark it `manual_required`
+  either - the test does not exist yet, and the worker will create it.
+  Build the covers marker text from the annotation so the briefing can
+  tell the worker exactly what `// covers:` comment to place. The
+  annotation's scenario id already has the right shape:
+  `<group>/<capability> :: <requirement title> :: <scenario title>`.
+- `manual_required: true` applies only to tasks with no `covers`
+  annotation, or tasks whose `tasks.md` annotation says
+  `<!-- manual_required: true -->` explicitly. It records that no
+  automated verification path exists. It does not request permission
+  or pause execution after plan approval.
 - Cache the resolved `verify_cmd`/`verify_surface`/`manual_required`
-  values for the session. Do not write them back into `tasks.md` -
-  they live in memory only, resolved fresh at the start of each
-  session.
+  and covers marker text for the session. Do not write them back into
+  `tasks.md` - they live in memory only, resolved fresh at the start
+  of each session.
 
 Then estimate each pending task's worker token cost. This is a planning estimate,
 not a quota or a promise:
@@ -135,8 +143,10 @@ Keep estimates and chunk membership in session memory. Do not write them into
 - Present the plan for approval before executing anything. Show: goal
   (from the change's proposal), task count, chunk count, each chunk's task ids
   and token estimate, each title with its `verify_cmd`, a breakdown of
-  `verify_surface` types, and a count of the tasks that will be unverified.
-  This is the only planned interruption.
+  `verify_surface` types, and a three-bucket count: tasks with a resolved
+  `verify_cmd`, tasks whose test will be created (covers annotation,
+  scenario currently unwired), and genuinely manual tasks (no covers
+  annotation). This is the only planned interruption.
 - Treat plan approval as authority to execute every automated task.
   Do not ask for confirmation after a passing verification. Commit it
   and continue immediately.
@@ -157,15 +167,26 @@ Keep estimates and chunk membership in session memory. Do not write them into
 - Run every task's `verify_cmd` yourself, in source order, after the chunk
   worker finishes. A worker's self-report informs your judgment. It does not
   replace the command.
+- **Re-resolve after the chunk.** For each task in the chunk that had no
+  `verify_cmd` at startup but has a `covers` annotation: re-call the
+  dod-guard `cover` tool with the change id. If the scenario is now
+  `bound`, use the resolved test run command as the task's `verify_cmd`
+  and run it. If still unwired and the scenario id appears in the report,
+  the worker failed to add the marker. Re-dispatch to `step-fixer` with:
+  "Test for scenario {id} is missing the covers marker. Add
+  `{marker text}` on the line directly above the test declaration."
+  If the scenario id does not appear in the report at all, the covers
+  annotation references a scenario that does not exist. Surface this to
+  the user as a plan error rather than dispatching a fixer.
 - Execute every task after plan approval, including tasks marked
-  `manual_required: true` or tasks with an empty `verify_cmd`. When the
-  worker reports that task `DONE`, call the dod-guard `complete` tool
-  with `cwd`, `changeId`, and `taskId` after the rest of its chunk
-  passes. The tool skips automated checks for manual tasks.
+  `manual_required: true`. When the worker reports that task `DONE`,
+  call the dod-guard `complete` tool with `cwd`, `changeId`, and
+  `taskId` after the rest of its chunk passes. The tool skips automated
+  checks for manual tasks.
 - Respect the task order `tasks.md` lays out. A task starts only
   after every earlier task in the file is resolved: `completed`, or
   `skipped`/`blocked` with the user told.
-- After every task in a chunk passes or is recorded as unverified: call
+- After every task in a chunk passes or is recorded as manually verified: call
   the dod-guard `complete` tool for each completed task, keep
   Concerns and file lists for the final report, then drop the chunk's
   implementation detail.
@@ -176,7 +197,7 @@ Keep estimates and chunk membership in session memory. Do not write them into
 
 ### Workers
 
-Each worker gets one chunk briefing. Every task keeps its own seven-field block. The
+Each worker gets one chunk briefing. Every task keeps its own briefing block. The
 `Requirement` field carries the most weight. Test-first instructions that
 never name what correct means left regressions at 9.94 percent. Naming it
 cut them by about 70 percent.
@@ -188,16 +209,39 @@ Tasks, in execution order:
    Mode: {ordinary, tdd, or debug}
    Context: {what earlier tasks produced}
    Requirement: {the scenario this task satisfies, its WHEN and THEN lines verbatim}
-   Verification: {surface type}. Run exactly: {verify_cmd}, or report
-   `unverified` when no command is resolved.
+   Verification: {one of the three forms below}
+   Test binding: {only when the task has a covers annotation - see below}
    Files:
    - Read before starting: {paths}
    - May modify: {paths}
    - Leave alone: {paths}
    Expected output: {concrete testable criteria}
-2. {repeat the seven fields for each later task}
+2. {repeat the fields for each later task}
 Working directory: {cwd, the current session's working directory}
 ```
+
+**Verification** has three forms depending on the task's state:
+
+- **verify_cmd resolved**: `{surface type}. Run exactly: {verify_cmd}`
+- **verify_cmd not resolved, task has covers annotation**: `{surface type}.
+  No verify_cmd yet (test does not exist). Write tests for the
+  Requirement, bind them with the Test binding marker, and run the test
+  file you created.`
+- **manual_required**: `Manual verification. Report what you observed.`
+
+**Test binding** appears only when the task has a `covers` annotation.
+Include the exact comment the worker must place above each test
+declaration for the scenario. Example:
+
+```
+   Test binding: // covers: dod-guard/coverage :: cover reports :: unwired
+   Place this comment on the line directly above each test declaration
+   that verifies this scenario. The marker must be outside the test body.
+```
+
+The marker text comes from the task's `<!-- covers: -->` annotation
+prefixed with the language's comment syntax (`//` for `.ts`/`.js`,
+`#` for `.py`, etc.). The worker places it verbatim.
 
 No scenario behind the task (plan-file and quality-refactor sessions have
 none): write `Requirement: none - see Task`.
@@ -372,7 +416,7 @@ Deliver a report containing:
 - Integration check result
 - Cover and archive outcome
 - Reasons for any blocked or skipped steps
-- Visual or gameplay steps recorded as unverified
+- Visual or gameplay steps recorded as manually verified
 - All changed files
 - All worker Concerns, grouped by step
 - Each chunk's task ids and estimated token size

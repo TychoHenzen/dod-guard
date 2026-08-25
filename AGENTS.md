@@ -240,10 +240,16 @@ understand, silently mangling `findstr /C:"x" file` and `node -e "..."` into
 no-ops that exit 0. Never hand-roll shell escaping elsewhere.
 
 There is no `manual` predicate and no draft-leaf concept. A task with no
-`covers` annotation, or one naming an unwired/failed scenario, becomes
-`manual_required` with no `verify_cmd` - `/step-by-step` executes it after plan
-approval and records it as completed without automated verification. It does not
-request another approval. Do not describe the task as verified.
+`covers` annotation becomes `manual_required` with no `verify_cmd` -
+`/step-by-step` executes it after plan approval and records it as completed
+without automated verification. It does not request another approval. Do not
+describe the task as verified.
+
+A task with a `covers` annotation whose scenario is currently unwired is not
+manual. Its test does not exist yet, and the worker will create it. The
+step-by-step orchestrator re-resolves `verify_cmd` after the worker runs by
+re-calling `dod-guard cover`. See the step-by-step SKILL.md Startup and
+post-chunk re-resolution sections for the full flow.
 
 ### Biome config note
 

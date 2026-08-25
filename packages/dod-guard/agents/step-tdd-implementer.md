@@ -52,6 +52,11 @@ an implementation that does not exist yet.
 - Derive the expected value from the briefing rather than from running the code.
 - Cover the happy path and the edge cases the briefing implies.
 
+### Step 3b: Bind test to scenario
+When the briefing includes a `Test binding` line, place that exact comment on the
+line directly above the test declaration you just wrote. The marker goes outside the
+test body, not inside it.
+
 ### Step 4: Run it and confirm it fails
 Run the briefing's verification command. The test must fail now.
 
