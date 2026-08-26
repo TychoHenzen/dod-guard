@@ -11,11 +11,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 71,
+      "lines": 50,
       "error_count": 9,
-      "recent_commits": 41,
+      "recent_commits": 42,
       "fingerprint": "5a4cea6ff1837db13f2ba24820b9ad47088e6948b32c6849156544a7f1bf4d12",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/cli.ts": {
       "last_tested": "2026-08-23",
@@ -28,11 +28,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 101,
+      "lines": 122,
       "error_count": 0,
-      "recent_commits": 15,
+      "recent_commits": 16,
       "fingerprint": "cc4ecf207726ffc62a004da8da09681142e344b6f1b5eed4b599db198a204e2d",
-      "dirty": false
+      "dirty": true
     },
     "packages/quality-guard/src/index.ts": {
       "last_tested": "2026-08-24",
@@ -469,13 +469,21 @@
       "dirty": true
     },
     "packages/fossil/src/fossil-cli-core.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-26",
+      "last_result": {
+        "total": 294,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 294,
+        "status": "ok",
+        "error": null
+      },
       "lines": 268,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "6a7abb9912261a8d7dd5eb88acfdcc765734ffc0c6042d23f364fa9ad37a2989",
+      "dirty": false
     },
     "packages/fossil/src/fossil-grader.ts": {
       "last_tested": null,
@@ -523,13 +531,21 @@
       "dirty": true
     },
     "packages/fossil/src/git-history-core.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-26",
+      "last_result": {
+        "total": 645,
+        "caught": 5,
+        "missed": 5,
+        "timeout": 0,
+        "unviable": 635,
+        "status": "ok",
+        "error": null
+      },
       "lines": 492,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "20cca0c338e3578b601553382a5e6ee6b5b29eabf1fe3737e2a475fb0981ab8d",
+      "dirty": false
     },
     "packages/fossil/src/git-process.ts": {
       "last_tested": "2026-08-25",
@@ -593,13 +609,21 @@
       "dirty": false
     },
     "packages/fossil/src/repository-analysis.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-26",
+      "last_result": {
+        "total": 270,
+        "caught": 72,
+        "missed": 100,
+        "timeout": 0,
+        "unviable": 98,
+        "status": "ok",
+        "error": null
+      },
       "lines": 332,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "c17444bc752d983b41e72120e6aedd4074c7cec15605e8db6fbca400f602b920",
+      "dirty": false
     },
     "packages/fossil/src/testing/fixtures.ts": {
       "last_tested": null,
@@ -635,61 +659,64 @@
       "recent_commits": 10,
       "fingerprint": "1c7f24aba5861464eaa0181be9709ff73de2a6d52e0a47f49ce5fae5329cf399",
       "dirty": false
+    },
+    "packages/dod-guard/src/complete/ollama.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 105,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/complete/run.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 133,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/complete/scenario-text.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 27,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/complete/stub-check.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 69,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/mcp-tools.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 60,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     }
   },
   "cumulative": {
-    "total_mutants": 22834,
-    "caught": 9108,
-    "missed": 7375,
+    "total_mutants": 24043,
+    "caught": 9185,
+    "missed": 7480,
     "timeout": 110,
-    "unviable": 6241,
+    "unviable": 7268,
     "error": 44,
-    "runs": 158,
-    "files_tested": 158
+    "runs": 161,
+    "files_tested": 161
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/tools/dod-refine.ts",
-      "result": {
-        "total": 143,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 143,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/tools/dod-add-node.ts",
-      "result": {
-        "total": 124,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 124,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/notify.ts",
-      "result": {
-        "total": 29,
-        "caught": 0,
-        "missed": 8,
-        "timeout": 0,
-        "unviable": 21,
-        "status": "ok",
-        "error": null
-      }
-    },
     {
       "date": "2026-07-12",
       "commit": "2f117f279d50109efc411771b33d789c9077e92b",
@@ -2044,6 +2071,48 @@
         "missed": 92,
         "timeout": 0,
         "unviable": 1360,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-26",
+      "commit": "d9cea9a05ccb9817d0e378e389bd191cba6ab1e4",
+      "file": "packages/fossil/src/git-history-core.ts",
+      "result": {
+        "total": 645,
+        "caught": 5,
+        "missed": 5,
+        "timeout": 0,
+        "unviable": 635,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-26",
+      "commit": "d9cea9a05ccb9817d0e378e389bd191cba6ab1e4",
+      "file": "packages/fossil/src/fossil-cli-core.ts",
+      "result": {
+        "total": 294,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 294,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-26",
+      "commit": "d9cea9a05ccb9817d0e378e389bd191cba6ab1e4",
+      "file": "packages/fossil/src/repository-analysis.ts",
+      "result": {
+        "total": 270,
+        "caught": 72,
+        "missed": 100,
+        "timeout": 0,
+        "unviable": 98,
         "status": "ok",
         "error": null
       }

@@ -1,75 +1,83 @@
 # Micro-Mutation Report
 
-**Generated**: 2026-08-25 | **Commit**: `1ca07c7`
+**Generated**: 2026-08-26 | **Commit**: `d9cea9a`
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
-| Total mutants | 22834 |
-| Killed | 9108 |
-| Missed | 7375 |
+| Total mutants | 24043 |
+| Killed | 9185 |
+| Missed | 7480 |
 | Timeout | 110 |
-| No coverage | 6241 |
-| Catch rate | 39.9% |
-| Runs | 158 |
-| Files tested | 158 |
+| No coverage | 7268 |
+| Catch rate | 38.2% |
+| Runs | 161 |
+| Files tested | 161 |
 
-**Last run**: 2026-08-25 — `packages/fossil/src/reference-analysis-core.ts` → ok
+**Last run**: 2026-08-26 — `packages/fossil/src/repository-analysis.ts` → ok
 
 ## File Inventory
 
 | Prio | File | Lines | Churn | Stale | Dirty | Last Tested | Result | Status |
 |------|------|-------|-------|-------|-------|-------------|--------|--------|
-| 91% | packages/fossil/src/git-history-core.ts | 492 | 1 | 90d | 🟡 | — | — | ⬜ |
-| 91% | packages/fossil/src/fossil-cli-core.ts | 268 | 2 | 90d | 🟡 | — | — | ⬜ |
-| 90% | packages/fossil/src/repository-analysis.ts | 332 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 89% | packages/fossil/src/output.ts | 3 | 11 | 90d | 🟡 | — | — | ⬜ |
+| 88% | packages/dod-guard/src/complete/run.ts | 133 | 2 | 90d | 🟡 | — | — | ⬜ |
 | 88% | packages/fossil/src/fossil-output-core.ts | 201 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 88% | packages/fossil/src/fossil-grader.ts | 2 | 12 | 90d | 🟡 | — | — | ⬜ |
 | 88% | packages/fossil/src/git-analyzer.ts | 2 | 24 | 90d | 🟡 | — | — | ⬜ |
 | 88% | packages/fossil/src/index.ts | 2 | 10 | 90d | 🟡 | — | — | ⬜ |
 | 88% | packages/fossil/src/ref-analyzer.ts | 2 | 20 | 90d | 🟡 | — | — | ⬜ |
+| 87% | packages/dod-guard/src/complete/ollama.ts | 105 | 2 | 90d | 🟡 | — | — | ⬜ |
 | 86% | packages/fossil/src/testing/performance.ts | 126 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 86% | packages/fossil/src/testing/fixtures.ts | 122 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 86% | packages/fossil/src/fossil-scoring-core.ts | 117 | 1 | 90d | 🟡 | — | — | ⬜ |
+| 86% | packages/dod-guard/src/complete/stub-check.ts | 69 | 2 | 90d | 🟡 | — | — | ⬜ |
+| 83% | packages/dod-guard/src/mcp-tools.ts | 60 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 82% | packages/fossil/src/fossil-report-table.ts | 41 | 1 | 90d | 🟡 | — | — | ⬜ |
+| 80% | packages/dod-guard/src/complete/scenario-text.ts | 27 | 1 | 90d | 🟡 | — | — | ⬜ |
 | 76% | packages/fossil/src/analysis-error.ts | 9 | 1 | 90d | 🟡 | — | — | ⬜ |
-| 47% | packages/dod-guard/src/openspec/tasks-parser.ts | 120 | 4 | 10d | 🟡 | 2026-08-15 | 129/184 killed | ⚠️ |
-| 45% | packages/dod-guard/src/cover/markers.ts | 67 | 4 | 9d | 🟡 | 2026-08-16 | 31/37 killed | ⚠️ |
-| 42% | packages/fossil/src/workspace-debris.ts | 294 | 10 | 0d | — | 2026-08-25 | 278/419 killed | ⚠️ |
-| 39% | packages/dod-guard/src/cli.ts | 101 | 15 | 2d | — | 2026-08-23 | 61/75 killed | ⚠️ |
-| 39% | packages/dod-guard/src/cover/run.ts | 94 | 10 | 2d | — | 2026-08-23 | 56/83 killed | ⚠️ |
-| 38% | packages/dod-guard/src/index.ts | 71 | 41 | 2d | — | 2026-08-23 | 13/46 killed | ⚠️ |
-| 36% | packages/dod-guard/src/cover/languages.ts | 221 | 7 | 1d | — | 2026-08-24 | 290/467 killed | ⚠️ |
-| 35% | packages/dod-guard/src/cover/report.ts | 114 | 8 | 1d | — | 2026-08-24 | 35/43 killed | ⚠️ |
-| 33% | packages/fossil/src/git-process.ts | 221 | 6 | 0d | — | 2026-08-25 | 148/235 killed | ⚠️ |
-| 30% | packages/dod-guard/src/openspec/requirements.ts | 90 | 3 | 11d | — | 2026-08-14 | 45/94 killed | ⚠️ |
-| 29% | packages/fossil/src/reference-analysis-core.ts | 871 | 1 | 0d | — | 2026-08-25 | 10/1462 killed | ⚠️ |
-| 28% | packages/dod-guard/src/cover/baseline.ts | 65 | 3 | 10d | — | 2026-08-15 | 39/46 killed | ⚠️ |
-| 28% | packages/dod-guard/src/openspec/glob.ts | 70 | 3 | 9d | — | 2026-08-16 | 42/63 killed | ⚠️ |
-| 26% | packages/dod-guard/src/openspec/fetch-instructions.ts | 50 | 3 | 8d | — | 2026-08-17 | 11/15 killed | ⚠️ |
-| 24% | packages/dod-guard/src/cover/enumerate.ts | 63 | 2 | 7d | — | 2026-08-18 | 26/29 killed | ⚠️ |
-| 24% | packages/dod-guard/src/shell.ts | 51 | 2 | 8d | — | 2026-08-17 | 13/36 killed | ⚠️ |
-| 24% | packages/quality-guard/src/index.ts | 125 | 2 | 1d | — | 2026-08-24 | 10/82 killed | ⚠️ |
-| 23% | packages/dod-guard/src/cover/package-dir.ts | 27 | 3 | 8d | — | 2026-08-17 | 7/17 killed | ⚠️ |
-| 23% | packages/dod-guard/src/testing/spec-fixtures.ts | 46 | 2 | 7d | — | 2026-08-18 | 11/43 killed | ⚠️ |
-| 23% | packages/dod-guard/src/cover/plan-checks.ts | 84 | 1 | 6d | — | 2026-08-19 | 51/73 killed | ⚠️ |
-| 22% | packages/quality-guard/src/scanner.ts | 68 | 1 | 6d | — | 2026-08-19 | 47/56 killed | ⚠️ |
-| 21% | packages/dod-guard/src/cover/test-globs.ts | 38 | 2 | 5d | — | 2026-08-20 | 29/38 killed | ⚠️ |
-| 19% | packages/quality-guard/src/skips.ts | 42 | 1 | 5d | — | 2026-08-20 | 33/41 killed | ⚠️ |
-| 19% | packages/dod-guard/src/cover/test-runners.ts | 25 | 2 | 5d | — | 2026-08-20 | 4/29 killed | ⚠️ |
-| 15% | packages/dod-guard/src/openspec/scenario-id.ts | 16 | 1 | 4d | — | 2026-08-21 | 2/2 killed | ✅ |
-| 14% | packages/dod-guard/src/testing/capture-io.ts | 11 | 1 | 4d | — | 2026-08-21 | 10/11 killed | ⚠️ |
-| 13% | packages/dod-guard/src/openspec/scenario-block.ts | 10 | 1 | 4d | — | 2026-08-21 | 0/0 killed | ⚠️ |
-| 12% | packages/dod-guard/src/openspec/dependency.ts | 9 | 1 | 3d | — | 2026-08-22 | 0/0 killed | ⚠️ |
-| 12% | packages/dod-guard/src/openspec/requirement-block.ts | 9 | 1 | 3d | — | 2026-08-22 | 0/0 killed | ⚠️ |
-| 9% | packages/dod-guard/src/runtime-root.ts | 4 | 1 | 3d | — | 2026-08-22 | 2/2 killed | ✅ |
+| 56% | packages/dod-guard/src/cli.ts | 122 | 16 | 3d | 🟡 | 2026-08-23 | 61/75 killed | ⚠️ |
+| 52% | packages/dod-guard/src/index.ts | 50 | 42 | 3d | 🟡 | 2026-08-23 | 13/46 killed | ⚠️ |
+| 48% | packages/dod-guard/src/openspec/tasks-parser.ts | 120 | 4 | 11d | 🟡 | 2026-08-15 | 129/184 killed | ⚠️ |
+| 45% | packages/dod-guard/src/cover/markers.ts | 67 | 4 | 10d | 🟡 | 2026-08-16 | 31/37 killed | ⚠️ |
+| 43% | packages/fossil/src/workspace-debris.ts | 294 | 10 | 1d | — | 2026-08-25 | 278/419 killed | ⚠️ |
+| 40% | packages/dod-guard/src/cover/run.ts | 94 | 10 | 3d | — | 2026-08-23 | 56/83 killed | ⚠️ |
+| 36% | packages/dod-guard/src/cover/languages.ts | 221 | 7 | 2d | — | 2026-08-24 | 290/467 killed | ⚠️ |
+| 36% | packages/dod-guard/src/cover/report.ts | 114 | 8 | 2d | — | 2026-08-24 | 35/43 killed | ⚠️ |
+| 34% | packages/fossil/src/git-process.ts | 221 | 6 | 1d | — | 2026-08-25 | 148/235 killed | ⚠️ |
+| 30% | packages/dod-guard/src/openspec/requirements.ts | 90 | 3 | 12d | — | 2026-08-14 | 45/94 killed | ⚠️ |
+| 29% | packages/fossil/src/reference-analysis-core.ts | 871 | 1 | 1d | — | 2026-08-25 | 10/1462 killed | ⚠️ |
+| 29% | packages/dod-guard/src/cover/baseline.ts | 65 | 3 | 11d | — | 2026-08-15 | 39/46 killed | ⚠️ |
+| 28% | packages/dod-guard/src/openspec/glob.ts | 70 | 3 | 10d | — | 2026-08-16 | 42/63 killed | ⚠️ |
+| 26% | packages/dod-guard/src/openspec/fetch-instructions.ts | 50 | 3 | 9d | — | 2026-08-17 | 11/15 killed | ⚠️ |
+| 26% | packages/fossil/src/git-history-core.ts | 492 | 1 | 0d | — | 2026-08-26 | 5/645 killed | ⚠️ |
+| 26% | packages/fossil/src/fossil-cli-core.ts | 268 | 2 | 0d | — | 2026-08-26 | 0/294 killed | ⚠️ |
+| 25% | packages/fossil/src/repository-analysis.ts | 332 | 1 | 0d | — | 2026-08-26 | 72/270 killed | ⚠️ |
+| 25% | packages/dod-guard/src/cover/enumerate.ts | 63 | 2 | 8d | — | 2026-08-18 | 26/29 killed | ⚠️ |
+| 24% | packages/dod-guard/src/shell.ts | 51 | 2 | 9d | — | 2026-08-17 | 13/36 killed | ⚠️ |
+| 24% | packages/quality-guard/src/index.ts | 125 | 2 | 2d | — | 2026-08-24 | 10/82 killed | ⚠️ |
+| 24% | packages/dod-guard/src/cover/package-dir.ts | 27 | 3 | 9d | — | 2026-08-17 | 7/17 killed | ⚠️ |
+| 24% | packages/dod-guard/src/testing/spec-fixtures.ts | 46 | 2 | 8d | — | 2026-08-18 | 11/43 killed | ⚠️ |
+| 23% | packages/dod-guard/src/cover/plan-checks.ts | 84 | 1 | 7d | — | 2026-08-19 | 51/73 killed | ⚠️ |
+| 22% | packages/quality-guard/src/scanner.ts | 68 | 1 | 7d | — | 2026-08-19 | 47/56 killed | ⚠️ |
+| 22% | packages/dod-guard/src/cover/test-globs.ts | 38 | 2 | 6d | — | 2026-08-20 | 29/38 killed | ⚠️ |
+| 20% | packages/quality-guard/src/skips.ts | 42 | 1 | 6d | — | 2026-08-20 | 33/41 killed | ⚠️ |
+| 20% | packages/dod-guard/src/cover/test-runners.ts | 25 | 2 | 6d | — | 2026-08-20 | 4/29 killed | ⚠️ |
+| 16% | packages/dod-guard/src/openspec/scenario-id.ts | 16 | 1 | 5d | — | 2026-08-21 | 2/2 killed | ✅ |
+| 14% | packages/dod-guard/src/testing/capture-io.ts | 11 | 1 | 5d | — | 2026-08-21 | 10/11 killed | ⚠️ |
+| 14% | packages/dod-guard/src/openspec/scenario-block.ts | 10 | 1 | 5d | — | 2026-08-21 | 0/0 killed | ⚠️ |
+| 13% | packages/dod-guard/src/openspec/dependency.ts | 9 | 1 | 4d | — | 2026-08-22 | 0/0 killed | ⚠️ |
+| 13% | packages/dod-guard/src/openspec/requirement-block.ts | 9 | 1 | 4d | — | 2026-08-22 | 0/0 killed | ⚠️ |
+| 10% | packages/dod-guard/src/runtime-root.ts | 4 | 1 | 4d | — | 2026-08-22 | 2/2 killed | ✅ |
 
 ## Recent Runs
 
 | Date | Commit | File | Mutants | Killed | Missed | Status |
 |------|--------|------|---------|--------|--------|--------|
+| 2026-08-26 | `d9cea9a` | packages/fossil/src/repository-analysis.ts | 270 | 72 | 100 | ok |
+| 2026-08-26 | `d9cea9a` | packages/fossil/src/fossil-cli-core.ts | 294 | 0 | 0 | ok |
+| 2026-08-26 | `d9cea9a` | packages/fossil/src/git-history-core.ts | 645 | 5 | 5 | ok |
 | 2026-08-25 | `1ca07c7` | packages/fossil/src/reference-analysis-core.ts | 1462 | 10 | 92 | ok |
 | 2026-08-25 | `1ca07c7` | packages/fossil/src/git-process.ts | 235 | 148 | 48 | ok |
 | 2026-08-25 | `1ca07c7` | packages/fossil/src/workspace-debris.ts | 419 | 278 | 105 | ok |
@@ -97,9 +105,6 @@
 | 2026-08-17 | `ac9b0fd` | packages/dod-guard/src/cover/package-dir.ts | 17 | 7 | 10 | ok |
 | 2026-08-17 | `ac9b0fd` | packages/dod-guard/src/shell.ts | 36 | 13 | 8 | ok |
 | 2026-08-17 | `ac9b0fd` | packages/dod-guard/src/openspec/fetch-instructions.ts | 15 | 11 | 4 | ok |
-| 2026-08-16 | `323eeeb` | packages/dod-guard/src/cover/languages.ts | 206 | 115 | 90 | ok |
-| 2026-08-16 | `323eeeb` | packages/dod-guard/src/cover/markers.ts | 37 | 31 | 5 | ok |
-| 2026-08-16 | `323eeeb` | packages/dod-guard/src/openspec/glob.ts | 63 | 42 | 20 | ok |
 
 ## Survivor Reports
 
@@ -139,6 +144,7 @@ Use these to identify weak tests and add targeted assertions.
 | [fingerprint.json](.data/micro-mutations/survivors/fingerprint.json) | 19 | packages/dod-guard/src/fingerprint.ts |
 | [format-result.json](.data/micro-mutations/survivors/format-result.json) | 44 | packages/dod-guard/src/format-result.ts |
 | [gates.json](.data/micro-mutations/survivors/gates.json) | 49 | packages/evomcp/src/gates.ts |
+| [git-history-core.json](.data/micro-mutations/survivors/git-history-core.json) | 5 | packages/fossil/src/git-history-core.ts |
 | [git-process.json](.data/micro-mutations/survivors/git-process.json) | 48 | packages/fossil/src/git-process.ts |
 | [glob.json](.data/micro-mutations/survivors/glob.json) | 20 | packages/dod-guard/src/openspec/glob.ts |
 | [import-dod.json](.data/micro-mutations/survivors/import-dod.json) | 16 | packages/dod-guard/src/openspec/import-dod.ts |
@@ -163,6 +169,7 @@ Use these to identify weak tests and add targeted assertions.
 | [regression.json](.data/micro-mutations/survivors/regression.json) | 4 | packages/dod-guard/src/regression.ts |
 | [render.json](.data/micro-mutations/survivors/render.json) | 41 | packages/evomcp/src/render.ts |
 | [report.json](.data/micro-mutations/survivors/report.json) | 5 | packages/dod-guard/src/cover/report.ts |
+| [repository-analysis.json](.data/micro-mutations/survivors/repository-analysis.json) | 100 | packages/fossil/src/repository-analysis.ts |
 | [requirements.json](.data/micro-mutations/survivors/requirements.json) | 43 | packages/dod-guard/src/openspec/requirements.ts |
 | [run.json](.data/micro-mutations/survivors/run.json) | 24 | packages/dod-guard/src/cover/run.ts |
 | [scanner.json](.data/micro-mutations/survivors/scanner.json) | 8 | packages/quality-guard/src/scanner.ts |

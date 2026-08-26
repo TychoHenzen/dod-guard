@@ -1,0 +1,53 @@
+{
+  "source": "packages/fossil/src/git-history-core.ts",
+  "date": "2026-08-26T07:26:55.708Z",
+  "summary": {
+    "total": 645,
+    "killed": 5,
+    "survived": 5,
+    "timeout": 0,
+    "unviable": 635
+  },
+  "survivors": [
+    {
+      "file": "packages/fossil/dist/git-history-core.js",
+      "id": "1",
+      "mutator": "ArithmeticOperator",
+      "replacement": "4 * 60 * 60 / 1_000",
+      "dist_line": 3,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/fossil/dist/git-history-core.js",
+      "id": "0",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/fossil/dist/git-history-core.js",
+      "id": "2",
+      "mutator": "ArithmeticOperator",
+      "replacement": "4 * 60 / 60",
+      "dist_line": 3,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/fossil/dist/git-history-core.js",
+      "id": "3",
+      "mutator": "ArithmeticOperator",
+      "replacement": "4 / 60",
+      "dist_line": 3,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/fossil/dist/git-history-core.js",
+      "id": "240",
+      "mutator": "Regex",
+      "replacement": "/\\./",
+      "dist_line": 164,
+      "dist_col": 42
+    }
+  ]
+}

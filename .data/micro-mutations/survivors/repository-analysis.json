@@ -1,0 +1,813 @@
+{
+  "source": "packages/fossil/src/repository-analysis.ts",
+  "date": "2026-08-26T07:27:14.085Z",
+  "summary": {
+    "total": 270,
+    "killed": 72,
+    "survived": 100,
+    "timeout": 0,
+    "unviable": 98
+  },
+  "survivors": [
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "0",
+      "mutator": "ArithmeticOperator",
+      "replacement": "1_024 / 1_024",
+      "dist_line": 10,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "5",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 13,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 13,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "11",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 15,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 16,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "31",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 24,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "32",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 24,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "37",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 29,
+      "dist_col": 87
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "42",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 37,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "45",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 39,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "49",
+      "mutator": "MethodExpression",
+      "replacement": "candidates",
+      "dist_line": 43,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "51",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 43,
+      "dist_col": 56
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "54",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 43,
+      "dist_col": 79
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "58",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 49,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "63",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 67,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "64",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 67,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "65",
+      "mutator": "LogicalOperator",
+      "replacement": "reads.graph.complete || unsupported.complete",
+      "dist_line": 67,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "66",
+      "mutator": "MethodExpression",
+      "replacement": "[...new Set([...reads.graph.unavailablePaths, ...unsupported.unavailablePaths])]",
+      "dist_line": 68,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "67",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 68,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "68",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 68,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "76",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 78,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "86",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 83,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "87",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 85,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "89",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 87,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "90",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 87,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "91",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 87,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "92",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 87,
+      "dist_col": 57
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "93",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 88,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "94",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 88,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "95",
+      "mutator": "EqualityOperator",
+      "replacement": "head.exitCode !== 0",
+      "dist_line": 88,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "96",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 89,
+      "dist_col": 91
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "97",
+      "mutator": "ArithmeticOperator",
+      "replacement": "analysisTimestampMs + options.days * 24 * 60 * 60 * 1_000",
+      "dist_line": 92,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "98",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.days * 24 * 60 * 60 / 1_000",
+      "dist_line": 92,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "99",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.days * 24 * 60 / 60",
+      "dist_line": 92,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "100",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.days * 24 / 60",
+      "dist_line": 92,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "101",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.days / 24",
+      "dist_line": 92,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "102",
+      "mutator": "MethodExpression",
+      "replacement": "parsedHistory",
+      "dist_line": 93,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "103",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 93,
+      "dist_col": 84
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "104",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 93,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "105",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 93,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "106",
+      "mutator": "EqualityOperator",
+      "replacement": "commit.committerTimestampMs > minimumTimestamp",
+      "dist_line": 93,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "107",
+      "mutator": "EqualityOperator",
+      "replacement": "commit.committerTimestampMs < minimumTimestamp",
+      "dist_line": 93,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "109",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 96,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "118",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 106,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "117",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 101,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "119",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 106,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "120",
+      "mutator": "EqualityOperator",
+      "replacement": "submodules.stdout.trim() !== \"\"",
+      "dist_line": 106,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "122",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 106,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "121",
+      "mutator": "MethodExpression",
+      "replacement": "submodules.stdout",
+      "dist_line": 106,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "128",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.gapHours * 60 * 60 / 1_000",
+      "dist_line": 110,
+      "dist_col": 188
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "123",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 107,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "129",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.gapHours * 60 / 60",
+      "dist_line": 110,
+      "dist_col": 188
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "130",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.gapHours / 60",
+      "dist_line": 110,
+      "dist_col": 188
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "131",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.gapHours * 60 * 60 / 1_000",
+      "dist_line": 110,
+      "dist_col": 246
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "132",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.gapHours * 60 / 60",
+      "dist_line": 110,
+      "dist_col": 246
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "133",
+      "mutator": "ArithmeticOperator",
+      "replacement": "options.gapHours / 60",
+      "dist_line": 110,
+      "dist_col": 246
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "139",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 129,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "146",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 132,
+      "dist_col": 79
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "148",
+      "mutator": "MethodExpression",
+      "replacement": "[...new Set([...parseNulDelimitedPaths(trackedOutput.stdout), ...workspaceCandidates.map(({\n  path\n}) => path)])]",
+      "dist_line": 137,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "154",
+      "mutator": "EqualityOperator",
+      "replacement": "inventory.length >= 100_000",
+      "dist_line": 140,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "153",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 140,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "215",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 200,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "216",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 201,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "217",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 202,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "218",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 203,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "219",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 204,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "223",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 208,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "224",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 221,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "226",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 221,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "229",
+      "mutator": "MethodExpression",
+      "replacement": "version.stdout",
+      "dist_line": 226,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "231",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 230,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "230",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 227,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "232",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 230,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "233",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 230,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "235",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 230,
+      "dist_col": 99
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "234",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 230,
+      "dist_col": 77
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "237",
+      "mutator": "ArithmeticOperator",
+      "replacement": "256 / MEBIBYTE",
+      "dist_line": 236,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "236",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 232,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "238",
+      "mutator": "ArithmeticOperator",
+      "replacement": "256 / MEBIBYTE",
+      "dist_line": 239,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "240",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 245,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "241",
+      "mutator": "ArithmeticOperator",
+      "replacement": "total - output.stdoutBytes",
+      "dist_line": 245,
+      "dist_col": 66
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "243",
+      "mutator": "ArithmeticOperator",
+      "replacement": "total - output.stderrBytes",
+      "dist_line": 246,
+      "dist_col": 66
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "242",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 246,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "245",
+      "mutator": "BooleanLiteral",
+      "replacement": "warnings.some(warning => [\"empty_repository\", \"future_commit\", \"shallow_history\"].includes(warning.code))",
+      "dist_line": 251,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "244",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 250,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "246",
+      "mutator": "MethodExpression",
+      "replacement": "warnings.every(warning => [\"empty_repository\", \"future_commit\", \"shallow_history\"].includes(warning.code))",
+      "dist_line": 251,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "247",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 251,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "253",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 252,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "252",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 252,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "254",
+      "mutator": "LogicalOperator",
+      "replacement": "references.graph.complete || !warnings.some(warning => warning.code === \"sparse_checkout\")",
+      "dist_line": 252,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "255",
+      "mutator": "BooleanLiteral",
+      "replacement": "warnings.some(warning => warning.code === \"sparse_checkout\")",
+      "dist_line": 252,
+      "dist_col": 69
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "257",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 252,
+      "dist_col": 84
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "256",
+      "mutator": "MethodExpression",
+      "replacement": "warnings.every(warning => warning.code === \"sparse_checkout\")",
+      "dist_line": 252,
+      "dist_col": 70
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "262",
+      "mutator": "BooleanLiteral",
+      "replacement": "warnings.some(warning => warning.code === \"sparse_checkout\")",
+      "dist_line": 253,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "263",
+      "mutator": "MethodExpression",
+      "replacement": "warnings.every(warning => warning.code === \"sparse_checkout\")",
+      "dist_line": 253,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "269",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 255,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/fossil/dist/repository-analysis.js",
+      "id": "264",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 253,
+      "dist_col": 53
+    }
+  ]
+}
