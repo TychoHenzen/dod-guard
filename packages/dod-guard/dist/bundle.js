@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path13) {
-      let input = path13;
+    function removeDotSegments(path16) {
+      let input = path16;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path13, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path13 && path13 !== "/" ? path13 : void 0;
+        const [path16, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path16 && path16 !== "/" ? path16 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -6902,12 +6902,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs9, exportName) {
+    function addFormats(ajv, list, fs12, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs9[f]);
+        ajv.addFormat(f, fs12[f]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -6917,7 +6917,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync, realpathSync } from "node:fs";
-import * as path12 from "node:path";
+import * as path15 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
@@ -7398,8 +7398,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path13, errorMaps, issueData } = params;
-  const fullPath = [...path13, ...issueData.path || []];
+  const { data, path: path16, errorMaps, issueData } = params;
+  const fullPath = [...path16, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7515,11 +7515,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path13, key) {
+  constructor(parent, value, path16, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path13;
+    this._path = path16;
     this._key = key;
   }
   get path() {
@@ -11156,10 +11156,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path13) {
-  if (!path13)
+function getElementAtPath(obj, path16) {
+  if (!path16)
     return obj;
-  return path13.reduce((acc, key) => acc?.[key], obj);
+  return path16.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11479,11 +11479,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path13, issues) {
+function prefixIssues(path16, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path13);
+    iss.path.unshift(path16);
     return iss;
   });
 }
@@ -14894,11 +14894,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path13) {
-  if (path13.length === 0) {
+function getDotPath(path16) {
+  if (path16.length === 0) {
     return "object root";
   }
-  return path13.reduce((acc, seg, index) => {
+  return path16.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -21155,8 +21155,8 @@ var StdioServerTransport = class {
 };
 
 // src/complete/run.ts
-import { promises as fs5 } from "node:fs";
-import * as path6 from "node:path";
+import { promises as fs6 } from "node:fs";
+import * as path7 from "node:path";
 
 // src/cover/enumerate.ts
 import { promises as fs2 } from "node:fs";
@@ -21945,22 +21945,133 @@ function checkStub(testBody) {
   return { pass: reasons.length === 0, reasons };
 }
 
+// src/complete/task-guard.ts
+import { createHmac } from "node:crypto";
+import { promises as fs5 } from "node:fs";
+import * as path6 from "node:path";
+var GUARD_FILENAME = ".task-guard.json";
+var GUARD_VERSION = 1;
+var HMAC_SALT = "dod-guard-tamper-detection-v1-9f3a7c2e";
+function guardPath(tasksPath) {
+  return path6.join(path6.dirname(tasksPath), GUARD_FILENAME);
+}
+function computeHmac(tasksPath, tasks) {
+  const payload = JSON.stringify(tasks, Object.keys(tasks).sort());
+  return createHmac("sha256", HMAC_SALT + tasksPath).update(payload).digest("hex");
+}
+async function readGuard(tasksPath) {
+  let raw;
+  try {
+    raw = await fs5.readFile(guardPath(tasksPath), "utf-8");
+  } catch {
+    return { kind: "missing" };
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.v !== GUARD_VERSION) return { kind: "corrupted" };
+    const expected = computeHmac(tasksPath, parsed.tasks);
+    if (parsed.hmac !== expected) return { kind: "corrupted" };
+    return { kind: "ok", guard: parsed };
+  } catch {
+    return { kind: "corrupted" };
+  }
+}
+async function snapshotTasks(tasksPath, tasks) {
+  const snapshots = {};
+  for (const t of tasks) {
+    const snap = { checked: t.checked };
+    if (t.status) snap.status = t.status;
+    snapshots[t.id] = snap;
+  }
+  const guard = {
+    v: GUARD_VERSION,
+    tasks: snapshots,
+    hmac: computeHmac(tasksPath, snapshots)
+  };
+  await fs5.writeFile(guardPath(tasksPath), JSON.stringify(guard, null, 2), "utf-8");
+}
+async function detectTampering(tasksPath, tasks) {
+  const result = await readGuard(tasksPath);
+  if (result.kind === "missing") return { tampered: [], shadowMissing: true, shadowCorrupted: false };
+  if (result.kind === "corrupted") return { tampered: [], shadowMissing: false, shadowCorrupted: true };
+  const tampered = [];
+  for (const task of tasks) {
+    const shadow = result.guard.tasks[task.id];
+    if (!shadow) continue;
+    if (task.checked && !shadow.checked) {
+      tampered.push({
+        taskId: task.id,
+        field: "checked",
+        shadowValue: shadow.checked,
+        diskValue: task.checked
+      });
+    }
+    if (task.status === "completed" && shadow.status !== "completed") {
+      tampered.push({
+        taskId: task.id,
+        field: "status",
+        shadowValue: shadow.status,
+        diskValue: task.status
+      });
+    }
+  }
+  return { tampered, shadowMissing: false, shadowCorrupted: false };
+}
+function revertTampering(content, tampered) {
+  let result = content;
+  const seen = /* @__PURE__ */ new Set();
+  for (const t of tampered) {
+    if (seen.has(t.taskId)) continue;
+    seen.add(t.taskId);
+    result = writeTaskStatus(result, t.taskId, { checked: false, status: "reverted" });
+  }
+  return result;
+}
+async function guardExists(tasksPath) {
+  try {
+    await fs5.access(guardPath(tasksPath));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // src/complete/run.ts
 var EXIT_OK = 0;
 var EXIT_REJECTED = 1;
 var EXIT_USAGE = 3;
 async function runComplete(opts, io) {
   const { cwd, changeId, taskId } = opts;
-  const tasksPath = path6.join(cwd, "openspec", "changes", changeId, "tasks.md");
+  const tasksPath = path7.join(cwd, "openspec", "changes", changeId, "tasks.md");
   let content;
   try {
-    content = await fs5.readFile(tasksPath, "utf-8");
+    content = await fs6.readFile(tasksPath, "utf-8");
   } catch {
     io.writeErr(`ERROR: cannot read ${tasksPath}
 `);
     return EXIT_USAGE;
   }
-  const tasks = parseTasksMarkdown(content);
+  let tasks = parseTasksMarkdown(content);
+  const tamperResult = await detectTampering(tasksPath, tasks);
+  if (tamperResult.shadowCorrupted) {
+    io.writeErr("ERROR: .task-guard.json is corrupted or forged. Re-run dod-guard cover to re-seed it.\n");
+    return EXIT_REJECTED;
+  }
+  if (tamperResult.shadowMissing) {
+    await snapshotTasks(tasksPath, tasks);
+  }
+  if (!tamperResult.shadowMissing && tamperResult.tampered.length > 0) {
+    content = revertTampering(content, tamperResult.tampered);
+    await fs6.writeFile(tasksPath, content, "utf-8");
+    tasks = parseTasksMarkdown(content);
+    for (const t of tamperResult.tampered) {
+      io.writeErr(
+        `REVERTED: task ${t.taskId} was ${t.field === "checked" ? "checked" : "marked completed"} outside the complete gate
+`
+      );
+    }
+    await snapshotTasks(tasksPath, tasks);
+  }
   const task = tasks.find((t) => t.id === taskId);
   if (!task) {
     io.writeErr(`ERROR: task "${taskId}" not found in ${tasksPath}
@@ -22048,33 +22159,39 @@ async function resolveScenarioText(cwd, changeId, scenarioId) {
     scenario = allScenarios.find((s) => s.id === scenarioId);
   }
   if (!scenario) return void 0;
-  const specContent = await fs5.readFile(scenario.specPath, "utf-8");
+  const specContent = await fs6.readFile(scenario.specPath, "utf-8");
   return extractFullScenarioText(specContent, scenario.scenarioTitle);
 }
 async function writeAndReport(tasksPath, content, taskId, io) {
   const updated = writeTaskStatus(content, taskId, { checked: true, status: "completed" });
-  await fs5.writeFile(tasksPath, updated, "utf-8");
+  await fs6.writeFile(tasksPath, updated, "utf-8");
+  const updatedTasks = parseTasksMarkdown(updated);
+  await snapshotTasks(tasksPath, updatedTasks);
   io.write(`task ${taskId}: marked complete
 `);
   return EXIT_OK;
 }
 
+// src/cover/run.ts
+import { promises as fs10 } from "node:fs";
+import * as path12 from "node:path";
+
 // src/cover/baseline.ts
-import { promises as fs7 } from "node:fs";
-import * as path9 from "node:path";
+import { promises as fs8 } from "node:fs";
+import * as path10 from "node:path";
 
 // src/cover/report.ts
-import * as path8 from "node:path";
+import * as path9 from "node:path";
 
 // src/cover/test-runners.ts
-import { promises as fs6 } from "node:fs";
-import * as path7 from "node:path";
+import { promises as fs7 } from "node:fs";
+import * as path8 from "node:path";
 var CONFIG_PATH = "openspec/test-runners.json";
 async function loadTestRunnerConfig(workspaceRoot) {
-  const configFile = path7.join(workspaceRoot, ...CONFIG_PATH.split("/"));
+  const configFile = path8.join(workspaceRoot, ...CONFIG_PATH.split("/"));
   let content;
   try {
-    content = await fs6.readFile(configFile, "utf-8");
+    content = await fs7.readFile(configFile, "utf-8");
   } catch (error2) {
     if (error2.code === "ENOENT") return { config: {} };
     throw error2;
@@ -22093,7 +22210,7 @@ async function loadTestRunnerConfig(workspaceRoot) {
 
 // src/cover/report.ts
 function reportBinding(file, testName, workspaceRoot, runnerConfig) {
-  const adapter = LANG_TABLE.get(path8.extname(file).toLowerCase());
+  const adapter = LANG_TABLE.get(path9.extname(file).toLowerCase());
   const language = adapter?.language ?? "unknown";
   const resolution = adapter?.resolveWholeFileCommand({
     workspaceRoot,
@@ -22152,11 +22269,11 @@ function summarizeReport(reports) {
 // src/cover/baseline.ts
 var NOTE = "Coverage outcome each scenario holds today. A drop below its own outcome fails the gate.";
 function baselinePath(cwd) {
-  return path9.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
+  return path10.join(cwd, ".github", "quality", "coverage-gate-baseline.json");
 }
 async function readBaseline(cwd) {
   try {
-    const raw = await fs7.readFile(baselinePath(cwd), "utf-8");
+    const raw = await fs8.readFile(baselinePath(cwd), "utf-8");
     const parsed = JSON.parse(raw);
     return parsed.scenarios ?? {};
   } catch {
@@ -22165,8 +22282,8 @@ async function readBaseline(cwd) {
 }
 async function writeBaseline(cwd, current) {
   const sorted = Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b)));
-  await fs7.mkdir(path9.dirname(baselinePath(cwd)), { recursive: true });
-  await fs7.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
+  await fs8.mkdir(path10.dirname(baselinePath(cwd)), { recursive: true });
+  await fs8.writeFile(baselinePath(cwd), `${JSON.stringify({ note: NOTE, scenarios: sorted }, null, 2)}
 `);
 }
 function compareToBaseline(reports, baseline) {
@@ -22198,11 +22315,11 @@ function outcomesFromReport(reports) {
 }
 
 // src/cover/plan-checks.ts
-import { promises as fs8 } from "node:fs";
-import * as path10 from "node:path";
+import { promises as fs9 } from "node:fs";
+import * as path11 from "node:path";
 function readTasks(cwd, changeId) {
-  const tasksPath = path10.join(cwd, "openspec", "changes", changeId, "tasks.md");
-  return fs8.readFile(tasksPath, "utf-8").catch(() => "");
+  const tasksPath = path11.join(cwd, "openspec", "changes", changeId, "tasks.md");
+  return fs9.readFile(tasksPath, "utf-8").catch(() => "");
 }
 async function checkPlanComplete(opts, io) {
   if (opts.all) return void 0;
@@ -22253,6 +22370,7 @@ var EXIT_USAGE_ERROR = 3;
 var scenarioIds = (reports) => reports.map((report) => report.scenarioId);
 async function runCoverage(opts) {
   const scenarios = opts.all ? await enumerateAllScenarios(opts.cwd) : await enumerateChangeScenarios(opts.cwd, opts.changeId);
+  if (!opts.all && opts.changeId) await seedTaskGuard(opts.cwd, opts.changeId);
   if (scenarios.length === 0) {
     return { reports: [], adopted: [], regressions: [], improved: [], orphaned: [] };
   }
@@ -22326,6 +22444,39 @@ cover FAILED - ${result.regressions.length} regression(s)
   if (result.planBound !== void 0) await checkPlanBound(opts, scenarioIds(result.reports), io);
   return EXIT_REGRESSION;
 }
+async function seedTaskGuard(cwd, changeId) {
+  const tasksPath = path12.join(cwd, "openspec", "changes", changeId, "tasks.md");
+  if (await guardExists(tasksPath)) return;
+  try {
+    const content = await fs10.readFile(tasksPath, "utf-8");
+    await snapshotTasks(tasksPath, parseTasksMarkdown(content));
+  } catch {
+  }
+}
+
+// src/lock/run.ts
+import { promises as fs11 } from "node:fs";
+import * as path13 from "node:path";
+var EXIT_OK3 = 0;
+var EXIT_USAGE2 = 3;
+async function runLock(opts, io) {
+  const tasksPath = path13.join(opts.cwd, "openspec", "changes", opts.changeId, "tasks.md");
+  let content;
+  try {
+    content = await fs11.readFile(tasksPath, "utf-8");
+  } catch {
+    io.writeErr(`ERROR: ${tasksPath} not found.
+`);
+    return EXIT_USAGE2;
+  }
+  const tasks = parseTasksMarkdown(content);
+  const wasLocked = await guardExists(tasksPath);
+  await snapshotTasks(tasksPath, tasks);
+  const verb = wasLocked ? "re-locked" : "locked";
+  io.write(`${verb} ${tasks.length} task(s) in ${opts.changeId}
+`);
+  return EXIT_OK3;
+}
 
 // src/cli.ts
 var USAGE = `dod-guard - OpenSpec scenario coverage and completion gate
@@ -22348,6 +22499,11 @@ COMMANDS
                                       for stub tests, and (when DOD_GUARD_EVAL_MODEL
                                       is set) asks an ollama model whether the
                                       test aligns with its claimed scenario.
+                                      --cwd=<dir> overrides the working directory.
+
+  lock <change-id>                   Lock the task list so only dod-guard
+                                      complete can mark tasks done. Re-running
+                                      re-locks at current state.
                                       --cwd=<dir> overrides the working directory.
 
 EXIT CODES
@@ -22410,6 +22566,19 @@ var COMMANDS = {
       },
       io
     );
+  },
+  lock: (positional, flags, io) => {
+    if (positional.length < 1) {
+      io.writeErr("ERROR: lock requires <change-id>\n");
+      return Promise.resolve(EXIT_USAGE_ERROR2);
+    }
+    return runLock(
+      {
+        cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(),
+        changeId: positional[0]
+      },
+      io
+    );
   }
 };
 async function runCli(argv, io = defaultIo) {
@@ -22462,7 +22631,7 @@ function registerTools(server2) {
   server2.registerTool(
     "complete",
     {
-      description: "Mark a task complete after passing the completion gate. Runs verify_cmd, checks for stub tests, and optionally asks an eval model whether the test aligns with its claimed scenario.",
+      description: "The ONLY permitted way to mark a task complete. Direct edits to task checkboxes in tasks.md are unauthorized and will be automatically reverted. Runs verify_cmd, checks for stub tests, and optionally asks an eval model whether the test aligns with its claimed scenario.",
       inputSchema: {
         cwd: external_exports.string().describe("Absolute path to the consumer workspace."),
         changeId: external_exports.string().describe("OpenSpec change id."),
@@ -22491,15 +22660,45 @@ function registerTools(server2) {
       };
     }
   );
+  server2.registerTool(
+    "lock",
+    {
+      description: "Lock the task list for a change so that only dod-guard complete can mark tasks done. Re-running re-locks at current state.",
+      inputSchema: {
+        cwd: external_exports.string().describe("Absolute path to the consumer workspace."),
+        changeId: external_exports.string().describe("OpenSpec change id.")
+      }
+    },
+    async ({ cwd, changeId }) => {
+      const output = [];
+      const errors = [];
+      const io = {
+        write: (s) => output.push(s),
+        writeErr: (s) => errors.push(s)
+      };
+      const code = await runLock({ cwd, changeId }, io);
+      const result = {
+        locked: code === 0,
+        exitCode: code,
+        output: output.join(""),
+        errors: errors.join("")
+      };
+      const serialized = JSON.stringify(result);
+      return {
+        content: [{ type: "text", text: serialized }],
+        structuredContent: JSON.parse(serialized)
+      };
+    }
+  );
 }
 
 // src/runtime-root.ts
-import * as path11 from "node:path";
+import * as path14 from "node:path";
 import { fileURLToPath } from "node:url";
-var runtimeRoot = path11.resolve(fileURLToPath(import.meta.url), "..", "..");
+var runtimeRoot = path14.resolve(fileURLToPath(import.meta.url), "..", "..");
 
 // src/index.ts
-var _pkgPath = path12.join(runtimeRoot, "package.json");
+var _pkgPath = path15.join(runtimeRoot, "package.json");
 var _pkg = JSON.parse(readFileSync(_pkgPath, "utf-8"));
 function createServer() {
   const server2 = new McpServer({ name: "dod-guard", version: _pkg.version });
