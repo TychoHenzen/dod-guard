@@ -72,6 +72,28 @@ mock.module("./ollama.js", {
   },
 });
 
+const mockDetectTampering = mock.fn(async () => ({
+  tampered: [] as Array<{
+    taskId: string;
+    field: string;
+    shadowValue: boolean | string | undefined;
+    diskValue: boolean | string | undefined;
+  }>,
+  shadowMissing: true,
+  shadowCorrupted: false,
+}));
+const mockRevertTampering = mock.fn((content: string) => content);
+const mockSnapshotTasks = mock.fn(async () => {});
+
+mock.module("./task-guard.js", {
+  namedExports: {
+    detectTampering: mockDetectTampering,
+    revertTampering: mockRevertTampering,
+    snapshotTasks: mockSnapshotTasks,
+    guardExists: mock.fn(async () => false),
+  },
+});
+
 const { runComplete, EXIT_OK, EXIT_REJECTED, EXIT_USAGE } = await import("./run.js");
 
 describe("runComplete", () => {
@@ -85,6 +107,13 @@ describe("runComplete", () => {
     });
     mockRunShellCommand.mock.mockImplementation(async () => ({ stdout: "", stderr: "", code: 0 }));
     mockScanMarkers.mock.mockImplementation(async () => new Map());
+    mockDetectTampering.mock.mockImplementation(async () => ({
+      tampered: [],
+      shadowMissing: true,
+      shadowCorrupted: false,
+    }));
+    mockRevertTampering.mock.mockImplementation((content: string) => content);
+    mockSnapshotTasks.mock.resetCalls();
   });
 
   it("returns EXIT_USAGE when tasks.md does not exist", async () => {
@@ -134,5 +163,30 @@ describe("runComplete", () => {
     const code = await runComplete({ cwd: ".", changeId: "test-change", taskId: "1.4" }, io);
     assert.equal(code, EXIT_OK);
     assert.ok(lastWrittenContent?.includes("[x] 1.4"));
+  });
+
+  it("rejects when the shadow guard is corrupted", async () => {
+    mockDetectTampering.mock.mockImplementation(async () => ({
+      tampered: [],
+      shadowMissing: false,
+      shadowCorrupted: true,
+    }));
+    const code = await runComplete({ cwd: ".", changeId: "test-change", taskId: "1.1" }, io);
+    assert.equal(code, EXIT_REJECTED);
+    assert.ok(errors.some((s) => s.includes("corrupted")));
+  });
+
+  it("reverts tampered tasks and re-snapshots", async () => {
+    mockDetectTampering.mock.mockImplementation(async () => ({
+      tampered: [{ taskId: "1.1", field: "checked", shadowValue: false, diskValue: true }],
+      shadowMissing: false,
+      shadowCorrupted: false,
+    }));
+    mockRevertTampering.mock.mockImplementation((content: string) =>
+      content.replace("[x] 1.1", "[ ] 1.1").replace("status: completed", "status: reverted"),
+    );
+    const code = await runComplete({ cwd: ".", changeId: "test-change", taskId: "1.2" }, io);
+    assert.equal(code, EXIT_OK);
+    assert.ok(errors.some((s) => s.includes("REVERTED")));
   });
 });

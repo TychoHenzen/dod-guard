@@ -19,7 +19,7 @@ describe("registerTools", () => {
 
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    assert.deepStrictEqual(names, ["complete", "cover"]);
+    assert.deepStrictEqual(names, ["complete", "cover", "lock"]);
 
     await client.close();
     await server.close();

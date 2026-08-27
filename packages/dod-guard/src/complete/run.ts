@@ -16,6 +16,7 @@ import { runShellCommand } from "../shell.js";
 import { checkClaimAlignment, getOllamaConfig } from "./ollama.js";
 import { extractFullScenarioText } from "./scenario-text.js";
 import { checkStub } from "./stub-check.js";
+import { detectTampering, revertTampering, snapshotTasks } from "./task-guard.js";
 
 export const EXIT_OK = 0;
 export const EXIT_REJECTED = 1;
@@ -39,7 +40,29 @@ export async function runComplete(opts: CompleteOpts, io: CliIo): Promise<number
     return EXIT_USAGE;
   }
 
-  const tasks = parseTasksMarkdown(content);
+  let tasks = parseTasksMarkdown(content);
+
+  // Tamper detection: compare on-disk state against the shadow
+  const tamperResult = await detectTampering(tasksPath, tasks);
+  if (tamperResult.shadowCorrupted) {
+    io.writeErr("ERROR: .task-guard.json is corrupted or forged. Re-run dod-guard cover to re-seed it.\n");
+    return EXIT_REJECTED;
+  }
+  if (tamperResult.shadowMissing) {
+    await snapshotTasks(tasksPath, tasks);
+  }
+  if (!tamperResult.shadowMissing && tamperResult.tampered.length > 0) {
+    content = revertTampering(content, tamperResult.tampered);
+    await fs.writeFile(tasksPath, content, "utf-8");
+    tasks = parseTasksMarkdown(content);
+    for (const t of tamperResult.tampered) {
+      io.writeErr(
+        `REVERTED: task ${t.taskId} was ${t.field === "checked" ? "checked" : "marked completed"} outside the complete gate\n`,
+      );
+    }
+    await snapshotTasks(tasksPath, tasks);
+  }
+
   const task = tasks.find((t) => t.id === taskId);
   if (!task) {
     io.writeErr(`ERROR: task "${taskId}" not found in ${tasksPath}\n`);
@@ -146,6 +169,8 @@ async function resolveScenarioText(cwd: string, changeId: string, scenarioId: st
 async function writeAndReport(tasksPath: string, content: string, taskId: string, io: CliIo): Promise<number> {
   const updated = writeTaskStatus(content, taskId, { checked: true, status: "completed" });
   await fs.writeFile(tasksPath, updated, "utf-8");
+  const updatedTasks = parseTasksMarkdown(updated);
+  await snapshotTasks(tasksPath, updatedTasks);
   io.write(`task ${taskId}: marked complete\n`);
   return EXIT_OK;
 }

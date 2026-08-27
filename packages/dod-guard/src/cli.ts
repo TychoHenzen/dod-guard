@@ -6,6 +6,7 @@
  */
 import { runComplete } from "./complete/run.js";
 import { runCover } from "./cover/run.js";
+import { runLock } from "./lock/run.js";
 
 const USAGE = `dod-guard - OpenSpec scenario coverage and completion gate
 
@@ -27,6 +28,11 @@ COMMANDS
                                       for stub tests, and (when DOD_GUARD_EVAL_MODEL
                                       is set) asks an ollama model whether the
                                       test aligns with its claimed scenario.
+                                      --cwd=<dir> overrides the working directory.
+
+  lock <change-id>                   Lock the task list so only dod-guard
+                                      complete can mark tasks done. Re-running
+                                      re-locks at current state.
                                       --cwd=<dir> overrides the working directory.
 
 EXIT CODES
@@ -109,6 +115,19 @@ const COMMANDS: Record<string, Command> = {
         cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(),
         changeId: positional[0],
         taskId: positional[1],
+      },
+      io,
+    );
+  },
+  lock: (positional, flags, io) => {
+    if (positional.length < 1) {
+      io.writeErr("ERROR: lock requires <change-id>\n");
+      return Promise.resolve(EXIT_USAGE_ERROR);
+    }
+    return runLock(
+      {
+        cwd: typeof flags.cwd === "string" ? flags.cwd : process.cwd(),
+        changeId: positional[0],
       },
       io,
     );

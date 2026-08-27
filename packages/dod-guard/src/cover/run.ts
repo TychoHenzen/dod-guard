@@ -3,7 +3,11 @@
  * deltas, or the whole main tree), build the three-outcome report, and either
  * write a fresh ratchet baseline or check the report against the existing one.
  */
+import { promises as fs } from "node:fs";
+import * as path from "node:path";
 import type { CliIo } from "../cli.js";
+import { guardExists, snapshotTasks } from "../complete/task-guard.js";
+import { parseTasksMarkdown } from "../openspec/tasks-parser.js";
 import { compareToBaseline, findOrphans, outcomesFromReport, readBaseline, writeBaseline } from "./baseline.js";
 import { enumerateAllScenarios, enumerateChangeScenarios } from "./enumerate.js";
 import { checkPlanBound, checkPlanComplete } from "./plan-checks.js";
@@ -31,6 +35,8 @@ export async function runCoverage(opts: CoverOptions): Promise<CoverageGateResul
   const scenarios = opts.all
     ? await enumerateAllScenarios(opts.cwd)
     : await enumerateChangeScenarios(opts.cwd, opts.changeId as string);
+
+  if (!opts.all && opts.changeId) await seedTaskGuard(opts.cwd, opts.changeId);
 
   if (scenarios.length === 0) {
     return { reports: [], adopted: [], regressions: [], improved: [], orphaned: [] };
@@ -107,4 +113,15 @@ export async function runCover(opts: CoverOptions, io: CliIo): Promise<number> {
   if (result.planComplete !== undefined) await checkPlanComplete(opts, io);
   if (result.planBound !== undefined) await checkPlanBound(opts, scenarioIds(result.reports), io);
   return EXIT_REGRESSION;
+}
+
+async function seedTaskGuard(cwd: string, changeId: string): Promise<void> {
+  const tasksPath = path.join(cwd, "openspec", "changes", changeId, "tasks.md");
+  if (await guardExists(tasksPath)) return;
+  try {
+    const content = await fs.readFile(tasksPath, "utf-8");
+    await snapshotTasks(tasksPath, parseTasksMarkdown(content));
+  } catch {
+    // tasks.md may not exist yet for this change
+  }
 }

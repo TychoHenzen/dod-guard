@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { EXIT_OK, EXIT_REJECTED, runComplete } from "./complete/run.js";
 import { runCoverage } from "./cover/run.js";
+import { runLock } from "./lock/run.js";
 
 export function registerTools(server: McpServer): void {
   server.registerTool(
@@ -28,7 +29,8 @@ export function registerTools(server: McpServer): void {
     "complete",
     {
       description:
-        "Mark a task complete after passing the completion gate. " +
+        "The ONLY permitted way to mark a task complete. Direct edits to task " +
+        "checkboxes in tasks.md are unauthorized and will be automatically reverted. " +
         "Runs verify_cmd, checks for stub tests, and optionally asks an eval model " +
         "whether the test aligns with its claimed scenario.",
       inputSchema: {
@@ -48,6 +50,39 @@ export function registerTools(server: McpServer): void {
       const result = {
         passed: code === EXIT_OK,
         rejected: code === EXIT_REJECTED,
+        exitCode: code,
+        output: output.join(""),
+        errors: errors.join(""),
+      };
+      const serialized = JSON.stringify(result);
+      return {
+        content: [{ type: "text" as const, text: serialized }],
+        structuredContent: JSON.parse(serialized),
+      };
+    },
+  );
+
+  server.registerTool(
+    "lock",
+    {
+      description:
+        "Lock the task list for a change so that only dod-guard complete can mark tasks done. " +
+        "Re-running re-locks at current state.",
+      inputSchema: {
+        cwd: z.string().describe("Absolute path to the consumer workspace."),
+        changeId: z.string().describe("OpenSpec change id."),
+      },
+    },
+    async ({ cwd, changeId }) => {
+      const output: string[] = [];
+      const errors: string[] = [];
+      const io = {
+        write: (s: string) => output.push(s),
+        writeErr: (s: string) => errors.push(s),
+      };
+      const code = await runLock({ cwd, changeId }, io);
+      const result = {
+        locked: code === 0,
         exitCode: code,
         output: output.join(""),
         errors: errors.join(""),

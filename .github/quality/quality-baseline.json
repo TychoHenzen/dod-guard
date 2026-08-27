@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-25T10:13:14.078Z",
-  "total": 650,
+  "total": 655,
   "files": [
     "packages/dod-guard/esbuild.config.mjs",
     "packages/dod-guard/lib/args.mjs",
@@ -82,6 +82,7 @@
     "packages/dod-guard/skills/tighten/scripts/simplicity-gate.test.mjs",
     "packages/dod-guard/src/cli.test.ts",
     "packages/dod-guard/src/cli.ts",
+    "packages/dod-guard/src/complete/guard-integration.test.ts",
     "packages/dod-guard/src/complete/ollama.test.ts",
     "packages/dod-guard/src/complete/ollama.ts",
     "packages/dod-guard/src/complete/run.test.ts",
@@ -90,6 +91,7 @@
     "packages/dod-guard/src/complete/scenario-text.ts",
     "packages/dod-guard/src/complete/stub-check.test.ts",
     "packages/dod-guard/src/complete/stub-check.ts",
+    "packages/dod-guard/src/complete/task-guard.ts",
     "packages/dod-guard/src/cover/baseline.test.ts",
     "packages/dod-guard/src/cover/baseline.ts",
     "packages/dod-guard/src/cover/enumerate.test.ts",
@@ -532,6 +534,10 @@
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs::else-branch": 1,
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.test.mjs::comment-bloat": 4,
     "packages/dod-guard/src/complete/run.ts::comment-restates-code": 2,
-    "packages/fossil/src/git-history-core.ts::comment-restates-code": 1
+    "packages/fossil/src/git-history-core.ts::comment-restates-code": 1,
+    "packages/dod-guard/src/complete/task-guard.ts::dead-export": 2,
+    "packages/dod-guard/src/complete/task-guard.ts::types-per-file": 1,
+    "packages/dod-guard/src/complete/task-guard.ts::file-length": 1,
+    "packages/dod-guard/src/complete/task-guard.ts::complexity": 1
   }
 }
