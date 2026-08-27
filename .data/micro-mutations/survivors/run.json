@@ -1,205 +1,373 @@
 {
-  "source": "packages/dod-guard/src/cover/run.ts",
-  "date": "2026-08-23T07:12:47.720Z",
+  "source": "packages/dod-guard/src/complete/run.ts",
+  "date": "2026-08-27T17:51:53.378Z",
   "summary": {
-    "total": 83,
-    "killed": 56,
-    "survived": 24,
+    "total": 140,
+    "killed": 46,
+    "survived": 45,
     "timeout": 0,
-    "unviable": 3
+    "unviable": 49
   },
   "survivors": [
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "4",
-      "mutator": "ConditionalExpression",
-      "replacement": "false",
-      "dist_line": 18,
-      "dist_col": 9
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 24,
+      "dist_col": 38
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "6",
-      "mutator": "BlockStatement",
-      "replacement": "{}",
-      "dist_line": 18,
-      "dist_col": 33
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 24,
+      "dist_col": 50
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "9",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[\"Stryker was here\"]",
-      "dist_line": 19,
-      "dist_col": 40
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "10",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[\"Stryker was here\"]",
-      "dist_line": 19,
-      "dist_col": 57
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "11",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[\"Stryker was here\"]",
-      "dist_line": 19,
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 24,
       "dist_col": 71
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 27,
+      "dist_col": 48
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 30,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
       "id": "12",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[\"Stryker was here\"]",
-      "dist_line": 19,
-      "dist_col": 85
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "17",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[\"Stryker was here\"]",
-      "dist_line": 24,
-      "dist_col": 36
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "18",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[\"Stryker was here\"]",
-      "dist_line": 24,
-      "dist_col": 53
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "19",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[\"Stryker was here\"]",
-      "dist_line": 24,
-      "dist_col": 67
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "20",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[\"Stryker was here\"]",
-      "dist_line": 24,
-      "dist_col": 81
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "21",
-      "mutator": "ArrayDeclaration",
-      "replacement": "[\"Stryker was here\"]",
-      "dist_line": 28,
-      "dist_col": 66
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "24",
-      "mutator": "ConditionalExpression",
-      "replacement": "false",
-      "dist_line": 31,
-      "dist_col": 23
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "28",
       "mutator": "ConditionalExpression",
       "replacement": "true",
-      "dist_line": 31,
-      "dist_col": 51
+      "dist_line": 40,
+      "dist_col": 9
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "29",
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "13",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 40,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "14",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 40,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "15",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 43,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "17",
+      "mutator": "LogicalOperator",
+      "replacement": "!tamperResult.shadowMissing || tamperResult.tampered.length > 0",
+      "dist_line": 43,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "19",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 43,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "20",
       "mutator": "EqualityOperator",
-      "replacement": "planComplete === undefined",
-      "dist_line": 31,
-      "dist_col": 51
+      "replacement": "tamperResult.tampered.length >= 0",
+      "dist_line": 43,
+      "dist_col": 40
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "52",
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "23",
       "mutator": "StringLiteral",
-      "replacement": "``",
-      "dist_line": 55,
-      "dist_col": 18
+      "replacement": "\"\"",
+      "dist_line": 45,
+      "dist_col": 48
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "53",
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "27",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 48,
+      "dist_col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "26",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 48,
+      "dist_col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "29",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 48,
+      "dist_col": 71
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "28",
+      "mutator": "EqualityOperator",
+      "replacement": "t.field !== \"checked\"",
+      "dist_line": 48,
+      "dist_col": 59
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "30",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 48,
+      "dist_col": 83
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "40",
       "mutator": "StringLiteral",
       "replacement": "``",
+      "dist_line": 54,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "44",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
       "dist_line": 57,
-      "dist_col": 14
+      "dist_col": 25
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "58",
-      "mutator": "StringLiteral",
-      "replacement": "``",
-      "dist_line": 63,
-      "dist_col": 18
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "43",
+      "mutator": "LogicalOperator",
+      "replacement": "task.checked || task.status === \"completed\"",
+      "dist_line": 57,
+      "dist_col": 9
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "66",
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "50",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 62,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "51",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 62,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "52",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "60",
       "mutator": "ConditionalExpression",
       "replacement": "true",
       "dist_line": 70,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "61",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 70,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "64",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 76,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "63",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 76,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "66",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 78,
       "dist_col": 13
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "69",
-      "mutator": "ConditionalExpression",
-      "replacement": "true",
-      "dist_line": 72,
-      "dist_col": 18
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
+      "file": "packages/dod-guard/dist/complete/run.js",
       "id": "70",
       "mutator": "ConditionalExpression",
-      "replacement": "false",
-      "dist_line": 72,
-      "dist_col": 18
+      "replacement": "true",
+      "dist_line": 86,
+      "dist_col": 9
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "71",
-      "mutator": "EqualityOperator",
-      "replacement": "result.planBound === undefined",
-      "dist_line": 72,
-      "dist_col": 18
-    },
-    {
-      "file": "packages/dod-guard/dist/cover/run.js",
-      "id": "74",
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "69",
       "mutator": "StringLiteral",
-      "replacement": "``",
-      "dist_line": 76,
-      "dist_col": 14
+      "replacement": "\"\"",
+      "dist_line": 85,
+      "dist_col": 41
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "72",
+      "mutator": "EqualityOperator",
+      "replacement": "colonPos !== -1",
+      "dist_line": 86,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "71",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 86,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "73",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "dist_line": 86,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "74",
+      "mutator": "MethodExpression",
+      "replacement": "scenarioId",
+      "dist_line": 88,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "75",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 89,
+      "dist_col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "76",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 90,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "78",
+      "mutator": "EqualityOperator",
+      "replacement": "slashPos !== -1",
+      "dist_line": 90,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
       "id": "77",
       "mutator": "ConditionalExpression",
-      "replacement": "true",
-      "dist_line": 82,
+      "replacement": "false",
+      "dist_line": 90,
       "dist_col": 9
     },
     {
-      "file": "packages/dod-guard/dist/cover/run.js",
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "79",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "dist_line": 90,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
       "id": "80",
+      "mutator": "MethodExpression",
+      "replacement": "groupCapability",
+      "dist_line": 92,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "82",
       "mutator": "ConditionalExpression",
       "replacement": "true",
-      "dist_line": 84,
+      "dist_line": 96,
       "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "85",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 100,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "138",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 151,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/run.js",
+      "id": "137",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 150,
+      "dist_col": 79
     }
   ]
 }

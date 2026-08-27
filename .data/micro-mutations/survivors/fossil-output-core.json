@@ -1,0 +1,69 @@
+{
+  "source": "packages/fossil/src/fossil-output-core.ts",
+  "date": "2026-08-27T17:52:02.117Z",
+  "summary": {
+    "total": 186,
+    "killed": 20,
+    "survived": 7,
+    "timeout": 0,
+    "unviable": 159
+  },
+  "survivors": [
+    {
+      "file": "packages/fossil/dist/fossil-output-core.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/fossil/dist/fossil-output-core.js",
+      "id": "0",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 1,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/fossil/dist/fossil-output-core.js",
+      "id": "8",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 7,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/fossil/dist/fossil-output-core.js",
+      "id": "13",
+      "mutator": "EqualityOperator",
+      "replacement": "codePoint >= 0x1f",
+      "dist_line": 7,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/fossil/dist/fossil-output-core.js",
+      "id": "18",
+      "mutator": "EqualityOperator",
+      "replacement": "codePoint <= 0x7f",
+      "dist_line": 7,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/fossil/dist/fossil-output-core.js",
+      "id": "20",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 7,
+      "dist_col": 82
+    },
+    {
+      "file": "packages/fossil/dist/fossil-output-core.js",
+      "id": "21",
+      "mutator": "EqualityOperator",
+      "replacement": "codePoint >= 0x9f",
+      "dist_line": 7,
+      "dist_col": 82
+    }
+  ]
+}

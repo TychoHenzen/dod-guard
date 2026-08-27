@@ -28,9 +28,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 122,
+      "lines": 140,
       "error_count": 0,
-      "recent_commits": 16,
+      "recent_commits": 17,
       "fingerprint": "cc4ecf207726ffc62a004da8da09681142e344b6f1b5eed4b599db198a204e2d",
       "dirty": true
     },
@@ -283,11 +283,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 94,
+      "lines": 109,
       "error_count": 0,
-      "recent_commits": 10,
+      "recent_commits": 11,
       "fingerprint": "7afe20dba8f4da34b9e4efdb1349b304cc30b1d2006253673a31b1d6839bdaec",
-      "dirty": false
+      "dirty": true
     },
     "packages/dod-guard/src/openspec/scenario-id.ts": {
       "last_tested": "2026-08-21",
@@ -495,13 +495,21 @@
       "dirty": true
     },
     "packages/fossil/src/fossil-output-core.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-27",
+      "last_result": {
+        "total": 186,
+        "caught": 20,
+        "missed": 7,
+        "timeout": 0,
+        "unviable": 159,
+        "status": "ok",
+        "error": null
+      },
       "lines": 201,
       "error_count": 0,
       "recent_commits": 1,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "d0b190915f300806bec7c6937661e060b1597f46d5475d84f5de0dd4fa080569",
+      "dirty": false
     },
     "packages/fossil/src/fossil-report-table.ts": {
       "last_tested": null,
@@ -574,13 +582,21 @@
       "dirty": true
     },
     "packages/fossil/src/output.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-27",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 3,
       "error_count": 0,
       "recent_commits": 11,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "0c049783cd7487a91d168ea6bcf4697550b99f327286f00c435b31b0ec7313de",
+      "dirty": false
     },
     "packages/fossil/src/ref-analyzer.ts": {
       "last_tested": null,
@@ -670,13 +686,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/complete/run.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 133,
+      "last_tested": "2026-08-27",
+      "last_result": {
+        "total": 140,
+        "caught": 46,
+        "missed": 45,
+        "timeout": 0,
+        "unviable": 49,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 156,
       "error_count": 0,
-      "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "recent_commits": 3,
+      "fingerprint": "0480ce57502cf6d7f41a3032e6e7ecc7bfca8808519a882769ce47eb4bd8c597",
+      "dirty": false
     },
     "packages/dod-guard/src/complete/scenario-text.ts": {
       "last_tested": null,
@@ -699,7 +723,25 @@
     "packages/dod-guard/src/mcp-tools.ts": {
       "last_tested": null,
       "last_result": null,
-      "lines": 60,
+      "lines": 94,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/complete/task-guard.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 120,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/dod-guard/src/lock/run.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 27,
       "error_count": 0,
       "recent_commits": 1,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -707,58 +749,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 24043,
-    "caught": 9185,
-    "missed": 7480,
+    "total_mutants": 24369,
+    "caught": 9251,
+    "missed": 7532,
     "timeout": 110,
-    "unviable": 7268,
+    "unviable": 7476,
     "error": 44,
-    "runs": 161,
-    "files_tested": 161
+    "runs": 164,
+    "files_tested": 164
   },
   "runs": [
-    {
-      "date": "2026-07-12",
-      "commit": "2f117f279d50109efc411771b33d789c9077e92b",
-      "file": "packages/dod-guard/src/regression.ts",
-      "result": {
-        "total": 25,
-        "caught": 21,
-        "missed": 4,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "ok",
-        "error": null
-      }
-    },
-    {
-      "date": "2026-07-13",
-      "commit": "ef271d3c0a70efafa59f6058f8c90a7d3fa9f928",
-      "file": "packages/dod-guard/src/index.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
-      }
-    },
-    {
-      "date": "2026-07-13",
-      "commit": "ef271d3c0a70efafa59f6058f8c90a7d3fa9f928",
-      "file": "packages/dod-guard/src/evaluate-proof.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/evaluate-proof.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
     {
       "date": "2026-07-13",
       "commit": "ef271d3c0a70efafa59f6058f8c90a7d3fa9f928",
@@ -2113,6 +2113,48 @@
         "missed": 100,
         "timeout": 0,
         "unviable": 98,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-27",
+      "commit": "c7b6d8683a05f11debd21d3b3d94f1c5743621c1",
+      "file": "packages/dod-guard/src/complete/run.ts",
+      "result": {
+        "total": 140,
+        "caught": 46,
+        "missed": 45,
+        "timeout": 0,
+        "unviable": 49,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-27",
+      "commit": "c7b6d8683a05f11debd21d3b3d94f1c5743621c1",
+      "file": "packages/fossil/src/output.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-27",
+      "commit": "c7b6d8683a05f11debd21d3b3d94f1c5743621c1",
+      "file": "packages/fossil/src/fossil-output-core.ts",
+      "result": {
+        "total": 186,
+        "caught": 20,
+        "missed": 7,
+        "timeout": 0,
+        "unviable": 159,
         "status": "ok",
         "error": null
       }
