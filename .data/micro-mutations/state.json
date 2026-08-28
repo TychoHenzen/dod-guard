@@ -486,13 +486,21 @@
       "dirty": false
     },
     "packages/fossil/src/fossil-grader.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-28",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 2,
       "error_count": 0,
       "recent_commits": 12,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "688ab0d7e1824565233f60f90a1cbb8dbbbb57b8b475a4a9c291a3ee11bf26b9",
+      "dirty": false
     },
     "packages/fossil/src/fossil-output-core.ts": {
       "last_tested": "2026-08-27",
@@ -530,13 +538,21 @@
       "dirty": true
     },
     "packages/fossil/src/git-analyzer.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-28",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 2,
       "error_count": 0,
       "recent_commits": 24,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "7449e7186c38699477029e84bd97f2115854fb2cf626d6acc3922f406103a163",
+      "dirty": false
     },
     "packages/fossil/src/git-history-core.ts": {
       "last_tested": "2026-08-26",
@@ -573,13 +589,21 @@
       "dirty": false
     },
     "packages/fossil/src/index.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-28",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 2,
       "error_count": 0,
       "recent_commits": 10,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "ddfdb900ab42cd831903cda9df3b72264312fcb5baace10cd08bfe57ec8cd332",
+      "dirty": false
     },
     "packages/fossil/src/output.ts": {
       "last_tested": "2026-08-27",
@@ -755,52 +779,10 @@
     "timeout": 110,
     "unviable": 7476,
     "error": 44,
-    "runs": 164,
-    "files_tested": 164
+    "runs": 167,
+    "files_tested": 167
   },
   "runs": [
-    {
-      "date": "2026-07-13",
-      "commit": "ef271d3c0a70efafa59f6058f8c90a7d3fa9f928",
-      "file": "packages/obsidian-rag/src/store.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/store.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/store.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
-    {
-      "date": "2026-07-14",
-      "commit": "989799caf2215ce972612b229b4a03fa8d362972",
-      "file": "packages/dod-guard/src/index.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
-      }
-    },
-    {
-      "date": "2026-07-14",
-      "commit": "989799caf2215ce972612b229b4a03fa8d362972",
-      "file": "packages/dod-guard/src/checker.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/checker.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
     {
       "date": "2026-07-14",
       "commit": "989799caf2215ce972612b229b4a03fa8d362972",
@@ -2155,6 +2137,48 @@
         "missed": 7,
         "timeout": 0,
         "unviable": 159,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-28",
+      "commit": "d1740ad40e1cb43b9b589b2eeb9ad2e90590094c",
+      "file": "packages/fossil/src/fossil-grader.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-28",
+      "commit": "d1740ad40e1cb43b9b589b2eeb9ad2e90590094c",
+      "file": "packages/fossil/src/git-analyzer.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-28",
+      "commit": "d1740ad40e1cb43b9b589b2eeb9ad2e90590094c",
+      "file": "packages/fossil/src/index.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
         "status": "ok",
         "error": null
       }
