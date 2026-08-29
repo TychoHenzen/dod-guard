@@ -1,0 +1,205 @@
+{
+  "source": "packages/dod-guard/src/complete/ollama.ts",
+  "date": "2026-08-29T12:48:25.774Z",
+  "summary": {
+    "total": 76,
+    "killed": 30,
+    "survived": 24,
+    "timeout": 0,
+    "unviable": 22
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "1",
+      "mutator": "Regex",
+      "replacement": "/<think>[^\\s\\S]*?<\\/think>/g",
+      "dist_line": 10,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "0",
+      "mutator": "Regex",
+      "replacement": "/<think>[\\s\\S]<\\/think>/g",
+      "dist_line": 10,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "3",
+      "mutator": "Regex",
+      "replacement": "/<think>[\\s\\s]*?<\\/think>/g",
+      "dist_line": 10,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "2",
+      "mutator": "Regex",
+      "replacement": "/<think>[\\S\\S]*?<\\/think>/g",
+      "dist_line": 10,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 12,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "4",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 11,
+      "dist_col": 46
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "7",
+      "mutator": "MethodExpression",
+      "replacement": "raw.replace(THINK_RE, \"\")",
+      "dist_line": 27,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 27,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "11",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 30,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "21",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 36,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "22",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 36,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "23",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 37,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 40,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 41,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "26",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 42,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 42,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "42",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 58,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "63",
+      "mutator": "OptionalChaining",
+      "replacement": "err.message",
+      "dist_line": 83,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "62",
+      "mutator": "LogicalOperator",
+      "replacement": "err?.message && String(err)",
+      "dist_line": 83,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "65",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 84,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "64",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 84,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "67",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 84,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "66",
+      "mutator": "LogicalOperator",
+      "replacement": "message.includes(\"ECONNREFUSED\") && message.includes(\"timed out\")",
+      "dist_line": 84,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/complete/ollama.js",
+      "id": "69",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 84,
+      "dist_col": 80
+    }
+  ]
+}

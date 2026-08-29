@@ -1,0 +1,245 @@
+{
+  "source": "packages/dod-guard/src/mcp-tools.ts",
+  "date": "2026-08-29T12:48:36.280Z",
+  "summary": {
+    "total": 70,
+    "killed": 17,
+    "survived": 29,
+    "timeout": 0,
+    "unviable": 24
+  },
+  "survivors": [
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 7,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "2",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 6,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 9,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "4",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 8,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "7",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 11,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 10,
+      "dist_col": 54
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 11,
+      "dist_col": 65
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 22,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "19",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 23,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "20",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 24,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "21",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 25,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 28,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 27,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 29,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "27",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 32,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "28",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 33,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "30",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 35,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "31",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 36,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "37",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 41,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "38",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 41,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "39",
+      "mutator": "EqualityOperator",
+      "replacement": "code !== EXIT_REJECTED",
+      "dist_line": 41,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "40",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 43,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "41",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 44,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "47",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 52,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "48",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 53,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "49",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 54,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "50",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 55,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "51",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 56,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/dod-guard/dist/mcp-tools.js",
+      "id": "52",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 57,
+      "dist_col": 43
+    }
+  ]
+}

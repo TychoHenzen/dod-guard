@@ -623,13 +623,21 @@
       "dirty": false
     },
     "packages/fossil/src/ref-analyzer.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-29",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      },
       "lines": 2,
       "error_count": 0,
       "recent_commits": 20,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "b9419b4e4b4e049ea312f2b447c881fe2157dd685c923f8bd14f8639e86294b8",
+      "dirty": false
     },
     "packages/fossil/src/reference-analysis-core.ts": {
       "last_tested": "2026-08-25",
@@ -701,13 +709,21 @@
       "dirty": false
     },
     "packages/dod-guard/src/complete/ollama.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-29",
+      "last_result": {
+        "total": 76,
+        "caught": 30,
+        "missed": 24,
+        "timeout": 0,
+        "unviable": 22,
+        "status": "ok",
+        "error": null
+      },
       "lines": 105,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "a3d622fe20781d98d12698002d77f41b38589d69eadef8584fc06550e227b231",
+      "dirty": false
     },
     "packages/dod-guard/src/complete/run.ts": {
       "last_tested": "2026-08-27",
@@ -745,13 +761,21 @@
       "dirty": true
     },
     "packages/dod-guard/src/mcp-tools.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-08-29",
+      "last_result": {
+        "total": 70,
+        "caught": 17,
+        "missed": 29,
+        "timeout": 0,
+        "unviable": 24,
+        "status": "ok",
+        "error": null
+      },
       "lines": 94,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "3106e9becfad47672b8f5dcbe9872002f85672fe645e7c3086707c5d7edb1ecf",
+      "dirty": false
     },
     "packages/dod-guard/src/complete/task-guard.ts": {
       "last_tested": null,
@@ -773,58 +797,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 24369,
-    "caught": 9251,
-    "missed": 7532,
+    "total_mutants": 24515,
+    "caught": 9298,
+    "missed": 7585,
     "timeout": 110,
-    "unviable": 7476,
+    "unviable": 7522,
     "error": 44,
-    "runs": 167,
-    "files_tested": 167
+    "runs": 170,
+    "files_tested": 170
   },
   "runs": [
-    {
-      "date": "2026-07-14",
-      "commit": "989799caf2215ce972612b229b4a03fa8d362972",
-      "file": "packages/gitevo/src/operations.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/gitevo/dist/operations.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/gitevo/dist/operations.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
-    {
-      "date": "2026-07-15",
-      "commit": "e2ad0b34e889a32e7b65a8220509eb7cf9c2086a",
-      "file": "packages/dod-guard/src/index.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
-      }
-    },
-    {
-      "date": "2026-07-15",
-      "commit": "e2ad0b34e889a32e7b65a8220509eb7cf9c2086a",
-      "file": "packages/dod-guard/src/tree-utils.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/tree-utils.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new Con"
-      }
-    },
     {
       "date": "2026-07-15",
       "commit": "e2ad0b34e889a32e7b65a8220509eb7cf9c2086a",
@@ -2179,6 +2161,48 @@
         "missed": 0,
         "timeout": 0,
         "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-29",
+      "commit": "939f04bcfa95a8e3fa5c7d3376c364d8912de3a0",
+      "file": "packages/fossil/src/ref-analyzer.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-29",
+      "commit": "939f04bcfa95a8e3fa5c7d3376c364d8912de3a0",
+      "file": "packages/dod-guard/src/complete/ollama.ts",
+      "result": {
+        "total": 76,
+        "caught": 30,
+        "missed": 24,
+        "timeout": 0,
+        "unviable": 22,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-29",
+      "commit": "939f04bcfa95a8e3fa5c7d3376c364d8912de3a0",
+      "file": "packages/dod-guard/src/mcp-tools.ts",
+      "result": {
+        "total": 70,
+        "caught": 17,
+        "missed": 29,
+        "timeout": 0,
+        "unviable": 24,
         "status": "ok",
         "error": null
       }
