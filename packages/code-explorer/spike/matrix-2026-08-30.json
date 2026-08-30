@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "project": "<DeepSeekCustom-checkout>",
+  "project_mutation_check": {
+    "method": "git status --porcelain=v1 before and after the queries",
+    "result": "failed",
+    "evidence": "Serena saved .serena/cache/rust/raw_document_symbols.pkl and document_symbols.pkl during project_block. The external project had unrelated pre-existing settings.json and .serena work, so this record does not claim a clean before/after status."
+  },
+  "dependencies": {
+    "serena": {
+      "version": "1.7.0",
+      "boundary": "serena start-project-server, GET /heartbeat, POST /query_project",
+      "boundary_documented": true,
+      "initialization": {"elapsed_ms": 59503, "limit_ms": 30000, "passed": false},
+      "maximum_observed_operation_ms": 26644,
+      "maximum_captured_bounded_text_bytes": 177,
+      "complete_upstream_raw_response_bytes": "not_captured_or_measured",
+      "hard_gates": {
+        "callable_public_boundary": true,
+        "no_project_write": false,
+        "initialize_within_30_seconds": false,
+        "bounded_operations_within_10_seconds": false,
+        "response_under_1_mib": "unverified",
+        "transcript_content_enum": true,
+        "agent_event_exact_empty_and_fuzzy_located": true,
+        "send_message_app_command_variant": true,
+        "tool_bounded_refinable_candidates": true,
+        "project_block_content_and_local_relation": true
+      },
+      "targets": {
+        "TranscriptContent": {"exact": "Enum at crates/deepseek-custom/src/application/dto.rs lines 101-138", "fuzzy": "located candidates", "stable_location": true},
+        "AgentEvent": {"exact": "[]", "fuzzy": "20-candidate shortened located result, including AppEvent and StreamEvent", "stable_location": true},
+        "SendMessage": {"exact": "AppCommand/SendMessage at dto.rs lines 337-340", "fuzzy": "AppCommand/SendMessage, SendMessageInput, SendMessageTool and implementations", "stable_location": true},
+        "Tool": {"exact": "three candidates: Role/Tool, HarnessError/Tool, Tool trait", "fuzzy": "83 matches shortened to a located refinement map", "stable_location": true},
+        "project_block": {"content": "bounded function body at application/session.rs lines 69-124", "references": "ApplicationSession/transcript_projection and recursive project_block call", "implementations": "[]", "stable_location": true}
+      },
+      "file_discovery": {"source": "find_file *.rs under application returned eight Rust source files", "test_filter": "HTTP 500 HTML error because relative_path was required"},
+      "unsupported": {"incoming_calls": "no public Serena tool", "outgoing_calls": "HTTP 500 HTML response with ValueError: Tool named 'outgoing_calls' not found", "type_definition": "no public Serena tool"},
+      "error_shape": "HTTP 500 with HTML, not a stable JSON error",
+      "raw_observation": "serena-1.7.0-deepseek.raw.json"
+    },
+    "symbols": {
+      "version": "0.0.25",
+      "boundary": "MCP stdio through node <isolated-install>/node_modules/@p1va/symbols/dist/index.js",
+      "boundary_documented": true,
+      "initialization": {"elapsed_ms": 847, "limit_ms": 30000, "passed": true},
+      "tool_inventory": ["outline", "inspect", "search", "references", "call_hierarchy", "reload"],
+      "deepseek_probe": {"command": "symbols run -w <DeepSeekCustom-checkout> rust-analyzer", "operation": "search TranscriptContent", "result": "the initial 30-second budget elapsed; the child completed after 227513 ms with Found no matches for query TranscriptContent", "passed": false, "raw_observations": ["symbols-0.0.25-deepseek-timeout.raw.json", "symbols-0.0.25-deepseek-search.raw.json"]},
+      "hard_gates": {"callable_public_boundary": true, "semantic_deepseek_matrix": false},
+      "note": "No language-server profile was configured by `symbols start`. A direct rust-analyzer run was attempted through the documented command boundary but did not complete within the bounded probe."
+    }
+  },
+  "fixture_matrix": {
+    "status": "not_run_after_deepseek_hard_gate_failures",
+    "rule": "The design rejects a dependency that fails a hard gate before selection. Serena failed no-project-write, 30-second initialization, and 10-second operation gates. Symbols failed its bounded DeepSeek semantic probe.",
+    "cells": [
+      "rust:fuzzy_symbol=0", "rust:filename=0", "rust:focus=0", "rust:definition=0", "rust:references=0", "rust:type_definition=0", "rust:implementation=0", "rust:incoming_calls=0", "rust:outgoing_calls=0", "rust:saved_file_reload=0",
+      "python:fuzzy_symbol=0", "python:filename=0", "python:focus=0", "python:definition=0", "python:references=0", "python:type_definition=0", "python:implementation=0", "python:incoming_calls=0", "python:outgoing_calls=0", "python:saved_file_reload=0",
+      "csharp:fuzzy_symbol=0", "csharp:filename=0", "csharp:focus=0", "csharp:definition=0", "csharp:references=0", "csharp:type_definition=0", "csharp:implementation=0", "csharp:incoming_calls=0", "csharp:outgoing_calls=0", "csharp:saved_file_reload=0"
+    ]
+  },
+  "selection": "not applied here; task 1.5 owns the selection rule"
+}

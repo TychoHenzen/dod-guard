@@ -1,0 +1,80 @@
+{
+  "command": "node",
+  "args": [
+    "<isolated-install>\\node_modules\\@p1va\\symbols\\dist\\index.js",
+    "run",
+    "-w",
+    "<DeepSeekCustom-checkout>",
+    "rust-analyzer"
+  ],
+  "method": "search",
+  "params": {
+    "query": "TranscriptContent"
+  },
+  "elapsed_ms": 227513,
+  "initialize": {
+    "result": {
+      "protocolVersion": "2025-11-25",
+      "capabilities": {
+        "tools": {
+          "listChanged": true
+        },
+        "resources": {
+          "listChanged": true
+        }
+      },
+      "serverInfo": {
+        "name": "symbols",
+        "version": "1.0.0"
+      }
+    },
+    "jsonrpc": "2.0",
+    "id": 1
+  },
+  "result": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Found no matches for query \"TranscriptContent\""
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 2
+  },
+  "stderr": "",
+  "messages": [
+    {
+      "result": {
+        "protocolVersion": "2025-11-25",
+        "capabilities": {
+          "tools": {
+            "listChanged": true
+          },
+          "resources": {
+            "listChanged": true
+          }
+        },
+        "serverInfo": {
+          "name": "symbols",
+          "version": "1.0.0"
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 1
+    },
+    {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Found no matches for query \"TranscriptContent\""
+          }
+        ]
+      },
+      "jsonrpc": "2.0",
+      "id": 2
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "dependency": "@p1va/symbols",
+  "version": "0.0.25",
+  "command": "node <isolated-install>\\node_modules\\@p1va\\symbols\\dist\\index.js run -w <DeepSeekCustom-checkout> rust-analyzer",
+  "mcp_request": {"method":"tools/call","params":{"name":"search","arguments":{"query":"TranscriptContent"}}},
+  "started_at": "2026-08-30T20:48:05+02:00",
+  "elapsed_ms": 30000,
+  "termination": "the initial 30-second command budget elapsed; the child later completed and wrote symbols-0.0.25-deepseek-search.raw.json",
+  "stdout_bytes": 0,
+  "stderr_bytes": 0,
+  "semantic_response": "Found no matches for query \"TranscriptContent\" after 227513 ms; see symbols-0.0.25-deepseek-search.raw.json",
+  "output_path": "packages/code-explorer/spike/symbols-0.0.25-deepseek-search.raw.json",
+  "output_path_exists": true,
+  "child_processes_stopped": [47140]
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "dependency": "@p1va/symbols",
+  "source": {
+    "registry": "https://registry.npmjs.org/@p1va/symbols",
+    "project": "https://github.com/p1va/symbols",
+    "release": "https://github.com/p1va/symbols/releases/tag/v0.0.25",
+    "resolved_version": "0.0.25",
+    "resolved_tag": "v0.0.25",
+    "resolved_commit": "435210ae30c3a42a4cff3ba832ba8e4887ef7eca",
+    "checked_at": "2026-08-30"
+  },
+  "isolation": {
+    "install_command": "npm install --prefix <temporary-directory> --ignore-scripts --no-package-lock @p1va/symbols@0.0.25",
+    "observed_directory": "<temporary-directory>",
+    "production_dependency_added": false,
+    "root_lockfile_changed": false
+  },
+  "public_process_boundary": {
+    "command": "node <isolated-install>\\node_modules\\@p1va\\symbols\\dist\\index.js start",
+    "protocol": "MCP JSON-RPC over stdio, newline-delimited JSON",
+    "handshake": ["initialize", "notifications/initialized", "tools/list"],
+    "result": "success",
+    "elapsed_ms": 847,
+    "raw_observation": "symbols-0.0.25-handshake.raw.json"
+  },
+  "server_identity": {
+    "initialize_server_name": "symbols",
+    "initialize_server_version": "1.0.0",
+    "package_version": "0.0.25",
+    "note": "The observed MCP serverInfo version differs from the published package version. The package and signed release tag are the version pins."
+  },
+  "tools": ["reload", "inspect", "references", "call_hierarchy", "completion", "rename", "search", "outline", "diagnostics"],
+  "resources_documented": ["language-servers://profiles", "language-servers://profiles/{name}", "language-servers://profiles/{name}/logs"],
+  "boundary_limits": [
+    "The documented MCP tool surface includes rename, so production must allowlist its read-only operations.",
+    "The start command exposes tools before a language-server profile is configured.",
+    "The direct run form is `symbols run -w <workspace> <language-server-command>` and requires a compatible host executable."
+  ]
+}

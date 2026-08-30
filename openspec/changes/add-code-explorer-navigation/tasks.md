@@ -4,8 +4,10 @@
 <!-- status: completed -->
 - [x] 1.2 Add a standalone MCP handshake test harness and a controllable fake semantic adapter before connecting a real backend.
 <!-- status: completed -->
-- [ ] 1.3 Install or launch the current public Symbols MCP release in an isolated test configuration and record the exact version and supported process boundary.
-- [ ] 1.4 Run the bounded Serena-versus-Symbols matrix against `TranscriptContent`, `AgentEvent`, `SendMessage`, `Tool`, and `project_block`, recording every observation required by `design.md`.
+- [x] 1.3 Install or launch the current public Symbols MCP release in an isolated test configuration and record the exact version and supported process boundary.
+<!-- status: completed -->
+- [x] 1.4 Run the bounded Serena-versus-Symbols matrix against `TranscriptContent`, `AgentEvent`, `SendMessage`, `Tool`, and `project_block`, recording every observation required by `design.md`.
+<!-- status: completed -->
 - [ ] 1.5 Apply the fixed selection rule, record the selected adapter path and unsupported operations, and stop production source work if the spike record is incomplete.
 - [ ] 1.6 Implement and test the advertised five-tool workspace-read-only MCP surface, internal refresh boundary, and structured unknown-tool failure.
   <!-- covers: code-explorer/mcp-navigation :: The MCP surface stays small and workspace-read-only :: Client lists Code Explorer tools -->

@@ -1,0 +1,604 @@
+{
+  "command": "node",
+  "args": [
+    "<isolated-install>\\node_modules\\@p1va\\symbols\\dist\\index.js",
+    "start"
+  ],
+  "cwd": "<DeepSeekCustom-checkout>",
+  "elapsed_ms": 847,
+  "initialize": {
+    "result": {
+      "protocolVersion": "2025-11-25",
+      "capabilities": {
+        "tools": {
+          "listChanged": true
+        },
+        "resources": {
+          "listChanged": true
+        }
+      },
+      "serverInfo": {
+        "name": "symbols",
+        "version": "1.0.0"
+      }
+    },
+    "jsonrpc": "2.0",
+    "id": 1
+  },
+  "tools": {
+    "result": {
+      "tools": [
+        {
+          "name": "reload",
+          "title": "Reload",
+          "description": "Reload the active language-server configuration and reapply it to currently running LSP sessions.",
+          "inputSchema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {}
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "inspect",
+          "title": "Inspect",
+          "description": "Inspect the symbol at a file position and return documentation, signature details, and related code locations such as definitions, implementations, and type declarations.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based line number for the target symbol or cursor position."
+              },
+              "character": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based character number for the target symbol or cursor position."
+              }
+            },
+            "required": [
+              "file",
+              "line",
+              "character"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "references",
+          "title": "References",
+          "description": "Find semantic references to the symbol at a file position across the workspace.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based line number for the target symbol or cursor position."
+              },
+              "character": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based character number for the target symbol or cursor position."
+              }
+            },
+            "required": [
+              "file",
+              "line",
+              "character"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "call_hierarchy",
+          "title": "Call Hierarchy",
+          "description": "Inspect incoming and outgoing call relationships for the callable symbol at a file position.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based line number for the target symbol or cursor position."
+              },
+              "character": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based character number for the target symbol or cursor position."
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "incoming",
+                  "outgoing",
+                  "both"
+                ],
+                "default": "both",
+                "description": "Which call relationships to include. Defaults to both."
+              }
+            },
+            "required": [
+              "file",
+              "line",
+              "character"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "completion",
+          "title": "Completion",
+          "description": "Get context-aware code completions at a precise file position. For the best results, place the cursor immediately after the trigger point, for example right after `client.`.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based line number for the target symbol or cursor position."
+              },
+              "character": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based character number for the target symbol or cursor position."
+              }
+            },
+            "required": [
+              "file",
+              "line",
+              "character"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "rename",
+          "title": "Rename",
+          "description": "Rename the symbol at a file position across the workspace using language-server rename support.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based line number for the target symbol or cursor position."
+              },
+              "character": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based character number for the target symbol or cursor position."
+              },
+              "newName": {
+                "type": "string",
+                "description": "Replacement name to use for the symbol at the given position."
+              }
+            },
+            "required": [
+              "file",
+              "line",
+              "character",
+              "newName"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "search",
+          "title": "Search",
+          "description": "Search workspace symbols by name or pattern. Result quality depends on the language server and current indexing state.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Workspace symbol query. Prefer a symbol name, prefix, or API term rather than full-text code."
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "outline",
+          "title": "Outline",
+          "description": "Return a hierarchical outline of symbols in a file, including names, kinds, and locations. Use `preview: true` to include short declaration snippets.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+              },
+              "preview": {
+                "type": "boolean",
+                "default": false,
+                "description": "Include short declaration previews for symbols. Defaults to false for more compact output."
+              }
+            },
+            "required": [
+              "file"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        },
+        {
+          "name": "diagnostics",
+          "title": "Diagnostics",
+          "description": "Return active diagnostics for a file, including errors, warnings, info, and hints reported by the language server.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+              }
+            },
+            "required": [
+              "file"
+            ],
+            "additionalProperties": false,
+            "$schema": "http://json-schema.org/draft-07/schema#"
+          },
+          "execution": {
+            "taskSupport": "forbidden"
+          }
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 2
+  },
+  "stderr": "",
+  "messages": [
+    {
+      "result": {
+        "protocolVersion": "2025-11-25",
+        "capabilities": {
+          "tools": {
+            "listChanged": true
+          },
+          "resources": {
+            "listChanged": true
+          }
+        },
+        "serverInfo": {
+          "name": "symbols",
+          "version": "1.0.0"
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 1
+    },
+    {
+      "result": {
+        "tools": [
+          {
+            "name": "reload",
+            "title": "Reload",
+            "description": "Reload the active language-server configuration and reapply it to currently running LSP sessions.",
+            "inputSchema": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {}
+            },
+            "execution": {
+              "taskSupport": "forbidden"
+            }
+          },
+          {
+            "name": "inspect",
+            "title": "Inspect",
+            "description": "Inspect the symbol at a file position and return documentation, signature details, and related code locations such as definitions, implementations, and type declarations.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based line number for the target symbol or cursor position."
+                },
+                "character": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based character number for the target symbol or cursor position."
+                }
+              },
+              "required": [
+                "file",
+                "line",
+                "character"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "execution": {
+              "taskSupport": "forbidden"
+            }
+          },
+          {
+            "name": "references",
+            "title": "References",
+            "description": "Find semantic references to the symbol at a file position across the workspace.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based line number for the target symbol or cursor position."
+                },
+                "character": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based character number for the target symbol or cursor position."
+                }
+              },
+              "required": [
+                "file",
+                "line",
+                "character"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "execution": {
+              "taskSupport": "forbidden"
+            }
+          },
+          {
+            "name": "call_hierarchy",
+            "title": "Call Hierarchy",
+            "description": "Inspect incoming and outgoing call relationships for the callable symbol at a file position.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based line number for the target symbol or cursor position."
+                },
+                "character": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based character number for the target symbol or cursor position."
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "incoming",
+                    "outgoing",
+                    "both"
+                  ],
+                  "default": "both",
+                  "description": "Which call relationships to include. Defaults to both."
+                }
+              },
+              "required": [
+                "file",
+                "line",
+                "character"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "execution": {
+              "taskSupport": "forbidden"
+            }
+          },
+          {
+            "name": "completion",
+            "title": "Completion",
+            "description": "Get context-aware code completions at a precise file position. For the best results, place the cursor immediately after the trigger point, for example right after `client.`.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based line number for the target symbol or cursor position."
+                },
+                "character": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based character number for the target symbol or cursor position."
+                }
+              },
+              "required": [
+                "file",
+                "line",
+                "character"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "execution": {
+              "taskSupport": "forbidden"
+            }
+          },
+          {
+            "name": "rename",
+            "title": "Rename",
+            "description": "Rename the symbol at a file position across the workspace using language-server rename support.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based line number for the target symbol or cursor position."
+                },
+                "character": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "1-based character number for the target symbol or cursor position."
+                },
+                "newName": {
+                  "type": "string",
+                  "description": "Replacement name to use for the symbol at the given position."
+                }
+              },
+              "required": [
+                "file",
+                "line",
+                "character",
+                "newName"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "execution": {
+              "taskSupport": "forbidden"
+            }
+          },
+          {
+            "name": "search",
+            "title": "Search",
+            "description": "Search workspace symbols by name or pattern. Result quality depends on the language server and current indexing state.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "Workspace symbol query. Prefer a symbol name, prefix, or API term rather than full-text code."
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "execution": {
+              "taskSupport": "forbidden"
+            }
+          },
+          {
+            "name": "outline",
+            "title": "Outline",
+            "description": "Return a hierarchical outline of symbols in a file, including names, kinds, and locations. Use `preview: true` to include short declaration snippets.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+                },
+                "preview": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Include short declaration previews for symbols. Defaults to false for more compact output."
+                }
+              },
+              "required": [
+                "file"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "execution": {
+              "taskSupport": "forbidden"
+            }
+          },
+          {
+            "name": "diagnostics",
+            "title": "Diagnostics",
+            "description": "Return active diagnostics for a file, including errors, warnings, info, and hints reported by the language server.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "File path to inspect. Accepts either an absolute path or a path relative to the current workspace."
+                }
+              },
+              "required": [
+                "file"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "execution": {
+              "taskSupport": "forbidden"
+            }
+          }
+        ]
+      },
+      "jsonrpc": "2.0",
+      "id": 2
+    }
+  ]
+}
