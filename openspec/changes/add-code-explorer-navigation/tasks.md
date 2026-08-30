@@ -106,7 +106,8 @@
 
 ## 3. Symbol and File Discovery
 
-- [ ] 3.1 Implement exact, prefix, fuzzy, and filename discovery with match evidence.
+- [x] 3.1 Implement exact, prefix, fuzzy, and filename discovery with match evidence.
+<!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Search accepts incomplete symbol and file names :: Exact symbol name exists -->
   <!-- covers: code-explorer/symbol-discovery :: Search accepts incomplete symbol and file names :: Symbol name is misspelled -->
   <!-- covers: code-explorer/symbol-discovery :: Search accepts incomplete symbol and file names :: Query matches a filename -->
