@@ -13,10 +13,15 @@ export type InjectedSemanticBackend = {
   readiness():
     | { state: "initializing" }
     | { state: "ready" }
+    | { state: "degraded" }
     | { state: "refreshing" }
-    | { state: "unavailable" }
+    | { state: "unavailable"; failure_code?: string }
     | { state: "failed"; failure_code: string };
   query(request: SemanticRequest): Promise<SemanticResult>;
+  start?(): Promise<void>;
+  shutdown?(): Promise<void>;
+  refresh?(): Promise<void>;
+  capabilities?(): RelationCapabilities;
 };
 
 export type LanguageAdapterOptions = {
@@ -26,11 +31,16 @@ export type LanguageAdapterOptions = {
   backend_version: string;
   capabilities?: Partial<RelationCapabilities>;
   now?: () => number;
+  unavailable_failure_code?: string;
+  discovery_source?: BackendStatus["discovery_source"];
 };
 
 export type LanguageAdapter = {
   status(): BackendStatus;
   request(request: SemanticRequest): Promise<SemanticResult>;
+  start?(): Promise<void>;
+  shutdown?(): Promise<void>;
+  refresh?(): Promise<void>;
 };
 
 export function createRustAdapter(options: LanguageAdapterOptions): LanguageAdapter {
@@ -46,7 +56,10 @@ export function createCSharpAdapter(options: LanguageAdapterOptions): LanguageAd
 }
 
 function createLanguageAdapter(language: Language, options: LanguageAdapterOptions): LanguageAdapter {
-  const capabilities = createCapabilities(options.capabilities);
+  const start = options.backend.start;
+  const shutdown = options.backend.shutdown;
+  const refresh = options.backend.refresh;
+  const configuredCapabilities = createCapabilities(options.capabilities);
   const now = options.now ?? Date.now;
   let initializingSince: number | undefined;
   let lastSignature: string | undefined;
@@ -57,7 +70,7 @@ function createLanguageAdapter(language: Language, options: LanguageAdapterOptio
       const status = createStatus(
         language,
         options,
-        capabilities,
+        options.backend.capabilities?.() ?? configuredCapabilities,
         now,
         () => initializingSince,
         (value) => {
@@ -72,6 +85,9 @@ function createLanguageAdapter(language: Language, options: LanguageAdapterOptio
       return { ...status, last_transition_time: lastTransitionTime };
     },
     request: async (request) => parseSemanticResult(await options.backend.query(parseSemanticRequest(request))),
+    ...(start ? { start } : {}),
+    ...(shutdown ? { shutdown } : {}),
+    ...(refresh ? { refresh } : {}),
   };
 }
 
@@ -102,17 +118,19 @@ function createStatus(
     language,
     backend_name: options.backend_name ?? defaultBackendName(language),
     backend_version: options.backend_version,
-    discovery_source: "injected",
+    discovery_source: options.discovery_source ?? "injected",
     state,
     capabilities: effectiveCapabilities,
     last_transition_time: 0,
     ...(!options.compatible
       ? { failure_code: "unsupported_backend_version" }
-      : timedOut
-        ? { failure_code: "initialization_timeout" }
-        : failed && backendState.state === "failed"
-          ? { failure_code: backendState.failure_code }
-          : {}),
+      : backendState.state === "unavailable"
+        ? { failure_code: backendState.failure_code ?? options.unavailable_failure_code ?? "backend_unavailable" }
+        : timedOut
+          ? { failure_code: "initialization_timeout" }
+          : failed && backendState.state === "failed"
+            ? { failure_code: backendState.failure_code }
+            : {}),
   };
 }
 

@@ -97,7 +97,8 @@
   <!-- covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: Backend dynamically registers a write method -->
   <!-- covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: Backend ignores cancellation or shutdown -->
   <!-- covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: Backend sends an unsolicited request -->
-- [ ] 2.14 Persist the exact adapter selection record and prove every production startup path runs without spike-only dependencies.
+- [x] 2.14 Persist the exact adapter selection record and prove every production startup path runs without spike-only dependencies.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Production runtime uses a checked-in adapter selection record :: Runtime starts without spike dependencies -->
   <!-- covers: code-explorer/language-adapters :: Production runtime uses a checked-in adapter selection record :: Approved C# executable is absent -->
 - [ ] 2.15 Run the same definition, reference, call, external-location, and unavailable-relation practice fixture against Rust, Python, and C#.

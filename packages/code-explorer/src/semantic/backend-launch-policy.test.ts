@@ -26,6 +26,7 @@ function policy(overrides: Partial<BackendIdentity> & { endpoint?: "stdio" | str
       {
         language: "rust",
         executable_basename: "rust-analyzer",
+        executable_sha256: "a".repeat(64),
         compatible_version: "^1.0.0",
         arguments: ["--stdio"],
         endpoint: overrides.endpoint ?? "http://127.0.0.1:8181",
@@ -52,6 +53,7 @@ it("ignores project backend commands and keeps the allowlisted command", () => {
   assert.deepEqual(launch, {
     status: "ready",
     executable: "/host/bin/rust-analyzer",
+    version: "1.0.0",
     arguments: ["--stdio"],
     shell: false,
     environment: { RUST_BACKTRACE: "0" },
@@ -114,6 +116,117 @@ it("refuses a restart when its accepted identity tuple changes", () => {
   assert.equal(launch.prepare("rust").status, "ready");
   current = { ...identity, sha256: "b".repeat(64) };
   assert.deepEqual(launch.prepare("rust"), { status: "unavailable", code: "backend_identity_changed" });
+});
+
+it("binds a trusted entrypoint into fixed arguments and rejects an entrypoint replacement", () => {
+  let current: BackendIdentity = {
+    ...identity,
+    canonical_path: "/host/bin/node",
+    entrypoints: [
+      {
+        canonical_path: "/host/npm/node_modules/pyright/langserver.index.js",
+        device: "host-device",
+        file_id: "entrypoint-file",
+        sha256: "b".repeat(64),
+        regular_file: true,
+        link_or_reparse_point: false,
+      },
+    ],
+    package_metadata: {
+      canonical_path: "/host/npm/node_modules/pyright/package.json",
+      device: "host-device",
+      file_id: "package-file",
+      sha256: "d".repeat(64),
+      regular_file: true,
+      link_or_reparse_point: false,
+    },
+  };
+  const launch = createBackendLaunchPolicy({
+    project_root: "/project",
+    allowlist: [
+      {
+        ...policyAllowlist()[0],
+        language: "python",
+        executable_basename: "node",
+        entrypoint_basenames: ["langserver.index.js"],
+        executable_sha256: "a".repeat(64),
+        entrypoint_sha256s: ["b".repeat(64)],
+        package_metadata_sha256: "d".repeat(64),
+        arguments: ["{entrypoint:0}", "--stdio"],
+        safe_initialization_options: { use_project_environment: false, mirror_only: true },
+      },
+    ],
+    inspect: () => current,
+  });
+  assert.deepEqual(launch.prepare("python"), {
+    status: "ready",
+    executable: "/host/bin/node",
+    version: "1.0.0",
+    arguments: ["/host/npm/node_modules/pyright/langserver.index.js", "--stdio"],
+    shell: false,
+    environment: { RUST_BACKTRACE: "0" },
+    endpoint: "http://127.0.0.1:8181",
+    safe_initialization_options: { use_project_environment: false, mirror_only: true },
+  });
+  const entrypoint = current.entrypoints?.[0];
+  if (!entrypoint) throw new Error("expected trusted entrypoint");
+  current = { ...current, entrypoints: [{ ...entrypoint, sha256: "c".repeat(64) }] };
+  assert.deepEqual(launch.confirmInitialized("python"), {
+    status: "unavailable",
+    code: "backend_identity_changed",
+    terminate: true,
+  });
+});
+
+it("rejects a same-version C# executable byte replacement before spawn", () => {
+  const launch = createBackendLaunchPolicy({
+    project_root: "/project",
+    allowlist: [{ ...policyAllowlist()[0], language: "csharp", executable_basename: "roslyn-language-server" }],
+    inspect: () => ({ ...identity, canonical_path: "/host/bin/roslyn-language-server", sha256: "b".repeat(64) }),
+  });
+  assert.deepEqual(launch.prepare("csharp"), { status: "unavailable", code: "backend_identity_changed" });
+});
+
+it("rejects a Python package metadata byte replacement before spawn", () => {
+  const current: BackendIdentity = {
+    ...identity,
+    canonical_path: "/host/bin/node",
+    entrypoints: [
+      {
+        canonical_path: "/host/npm/node_modules/pyright/langserver.index.js",
+        device: "host-device",
+        file_id: "entrypoint-file",
+        sha256: "b".repeat(64),
+        regular_file: true,
+        link_or_reparse_point: false,
+      },
+    ],
+    package_metadata: {
+      canonical_path: "/host/npm/node_modules/pyright/package.json",
+      device: "host-device",
+      file_id: "package-file",
+      sha256: "c".repeat(64),
+      regular_file: true,
+      link_or_reparse_point: false,
+    },
+  };
+  const launch = createBackendLaunchPolicy({
+    project_root: "/project",
+    allowlist: [
+      {
+        ...policyAllowlist()[0],
+        language: "python",
+        executable_basename: "node",
+        entrypoint_basenames: ["langserver.index.js"],
+        entrypoint_sha256s: ["b".repeat(64)],
+        package_metadata_sha256: "d".repeat(64),
+        arguments: ["{entrypoint:0}", "--stdio"],
+        safe_initialization_options: { use_project_environment: false, mirror_only: true },
+      },
+    ],
+    inspect: () => current,
+  });
+  assert.deepEqual(launch.prepare("python"), { status: "unavailable", code: "backend_identity_changed" });
 });
 
 // covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Executable changes during launch
@@ -193,6 +306,7 @@ it("treats Windows executable path and basename case changes as the accepted ide
   assert.deepEqual(launch.prepare("rust"), {
     status: "ready",
     executable: "c:\\host\\rust-analyzer.exe",
+    version: "1.0.0",
     arguments: ["--stdio"],
     shell: false,
     environment: { RUST_BACKTRACE: "0" },
@@ -350,6 +464,7 @@ it("does not launch a mode whose sentinel proof is absent", () => {
     {
       language: "rust",
       executable_basename: "rust-analyzer",
+      executable_sha256: "a".repeat(64),
       compatible_version: "^1.0.0",
       arguments: ["--stdio"],
       endpoint: "http://127.0.0.1:8181",
@@ -380,6 +495,7 @@ function policyAllowlist(overrides: Record<string, unknown> = {}) {
     {
       language: "rust" as const,
       executable_basename: "rust-analyzer",
+      executable_sha256: "a".repeat(64),
       compatible_version: "^1.0.0",
       arguments: ["--stdio"],
       endpoint: "http://127.0.0.1:8181",

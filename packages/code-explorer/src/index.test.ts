@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -9,7 +13,383 @@ import { FakeSemanticAdapter } from "./testing/fake-semantic-adapter.js";
 
 const entryPoint = fileURLToPath(new URL("./index.js", import.meta.url));
 
+type FakeBackendLog = {
+  starts: number;
+  shutdowns: number;
+  exits: number;
+  root_uri?: string;
+  initialization_options?: unknown;
+  configuration_sections: string[];
+};
+
+function sha256(value: string | Uint8Array): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+async function waitForFakeConfiguration(counter: string): Promise<void> {
+  let observed = "";
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const log = JSON.parse(readFileSync(counter, "utf8")) as FakeBackendLog;
+    observed = JSON.stringify(log);
+    if (log.configuration_sections.length === 3) return;
+    await new Promise((resolve_) => setTimeout(resolve_, 20));
+  }
+  throw new Error(`fake_backend_configuration_timeout:${observed}`);
+}
+
+function writeFakeLspServer(path: string): void {
+  writeFileSync(
+    path,
+    `import { readFileSync, writeFileSync } from "node:fs";
+const logPath = process.env.CODE_EXPLORER_FAKE_COUNTER;
+const log = () => JSON.parse(readFileSync(logPath, "utf8"));
+const save = (value) => writeFileSync(logPath, JSON.stringify(value));
+const record = (change) => { const value = log(); change(value); save(value); };
+const send = (message) => { const body = Buffer.from(JSON.stringify(message)); process.stdout.write("Content-Length: " + body.length + "\\r\\n\\r\\n"); process.stdout.write(body); };
+let input = Buffer.alloc(0);
+const receive = (message) => {
+  if (message.method === "initialize") {
+    record((value) => { value.starts += 1; value.root_uri = message.params.rootUri; value.initialization_options = message.params.initializationOptions; });
+    send({ jsonrpc: "2.0", id: message.id, result: { capabilities: { definitionProvider: true, referencesProvider: true } } });
+    return;
+  }
+  if (message.method === "initialized") {
+    send({ jsonrpc: "2.0", id: 71, method: "workspace/configuration", params: { items: [{ section: "python.pythonPath" }, { section: "python.venvPath" }, { section: "python.analysis.extraPaths" }] } });
+    return;
+  }
+  if (message.id === 71 && Array.isArray(message.result)) {
+    record((value) => { value.configuration_sections = message.result.map((item) => JSON.stringify(item)); });
+    return;
+  }
+  if (message.method === "textDocument/definition") {
+    send({ jsonrpc: "2.0", id: message.id, result: [] });
+    return;
+  }
+  if (message.method === "shutdown") {
+    record((value) => { value.shutdowns += 1; });
+    send({ jsonrpc: "2.0", id: message.id, result: null });
+    return;
+  }
+  if (message.method === "exit") {
+    record((value) => { value.exits += 1; });
+    process.exit(0);
+  }
+};
+process.stdin.on("data", (chunk) => {
+  input = Buffer.concat([input, chunk]);
+  for (;;) {
+    const boundary = input.indexOf("\\r\\n\\r\\n");
+    if (boundary < 0) return;
+    const length = /^Content-Length: (\\d+)$/.exec(input.subarray(0, boundary).toString("ascii"));
+    if (!length) process.exit(2);
+    const end = boundary + 4 + Number(length[1]);
+    if (input.length < end) return;
+    receive(JSON.parse(input.subarray(boundary + 4, end).toString("utf8")));
+    input = input.subarray(end);
+  }
+});
+`,
+    "utf8",
+  );
+}
+
+function createStandaloneBackendRecord(
+  root: string,
+  counters: Record<string, string>,
+): { record: unknown; evidence: unknown } {
+  const version = process.version.replace(/^v/, "");
+  const fixtureHashes = Object.fromEntries(
+    ["rust", "python", "csharp"].map((language) => [language, sha256(`${language}:fixture`)]),
+  );
+  const executable = (language: string) =>
+    language === "rust" ? "rust-analyzer.exe" : language === "python" ? "node.exe" : "roslyn-language-server.exe";
+  const safeOptions = (language: string) =>
+    language === "rust"
+      ? {
+          cargo: { buildScripts: { enable: false }, procMacro: { enable: false }, checkOnSave: { enable: false } },
+          projectConfiguration: { enable: false },
+        }
+      : language === "python"
+        ? { use_project_environment: false, mirror_only: true }
+        : { analyzers: false, source_generators: false };
+  const entrypoints = (language: string) => [`${language}-server.js`];
+  const packageMetadataPath = join(root, "node_modules", "pyright", "package.json");
+  const packageMetadataHash = sha256(readFileSync(packageMetadataPath));
+  const authorization = (language: string) => {
+    const executableName = executable(language);
+    const entrypointNames = entrypoints(language);
+    const versionProbe =
+      language === "python"
+        ? {
+            method: "package_json",
+            command_root: "code_explorer_backends",
+            executable: executableName,
+            entrypoints: entrypointNames,
+            arguments: [],
+            command_template: "<code_explorer_backends>/node_modules/pyright/package.json",
+          }
+        : {
+            method: "command",
+            command_root: "code_explorer_backends",
+            executable: executableName,
+            entrypoints: entrypointNames,
+            arguments: ["--version"],
+            command_template: `<code_explorer_backends>/${executableName} --version`,
+          };
+    return {
+      executable_sha256: sha256(readFileSync(join(root, executableName))),
+      entrypoint_sha256s: entrypointNames.map((entrypoint) =>
+        sha256(readFileSync(join(root, "node_modules", "pyright", entrypoint))),
+      ),
+      package_metadata_sha256: language === "python" ? packageMetadataHash : null,
+      version_probe: versionProbe,
+    };
+  };
+  const backends = ["rust", "python", "csharp"].map((language) => ({
+    language,
+    platform_executables: { win32: executable(language), posix: executable(language).replace(/\\.exe$/, "") },
+    platform_entrypoints: { win32: entrypoints(language), posix: entrypoints(language) },
+    compatible_version: version,
+    arguments: ["{entrypoint:0}"],
+    endpoint: "stdio",
+    environment: { CODE_EXPLORER_FAKE_COUNTER: counters[language] ?? "" },
+    safe_initialization_options: safeOptions(language),
+    capabilities: {
+      definition: "unavailable",
+      references: "unavailable",
+      type_definition: "unavailable",
+      implementation: "unavailable",
+      callers: "unavailable",
+      callees: "unavailable",
+    },
+    sentinel_evidence: {
+      fixture: `fixtures/${language}`,
+      platform: "win32",
+      fixture_sha256: fixtureHashes[language] ?? "",
+      side_effect_absent: true,
+      result: "passed",
+      passed: true,
+    },
+    authorization: authorization(language),
+  }));
+  const sentinel = (language: string) => {
+    const identity = authorization(language);
+    return {
+      executable: executable(language),
+      executable_sha256: identity.executable_sha256,
+      entrypoints: entrypoints(language),
+      entrypoint_sha256s: identity.entrypoint_sha256s,
+      package_metadata_sha256: identity.package_metadata_sha256,
+      backend_version: version,
+      fixture_sha256: fixtureHashes[language] ?? "",
+      version_probe: identity.version_probe,
+      startup: true,
+      definition_navigation: true,
+      side_effect_absent: true,
+      stderr: "",
+      positive_control: { initialized: true, definition_responded: true, side_effect_absent: false },
+    };
+  };
+  return {
+    record: {
+      schema_version: 1,
+      source_dependency_versions: { serena: "test-only", "@p1va/symbols": "test-only" },
+      evidence_artifact: "adapter-selection-evidence.json",
+      trusted_command_roots: { posix: ["posix_code_explorer_backends"], win32: ["code_explorer_backends"] },
+      selected_paths: {
+        rust: "direct_standard_public_lsp",
+        python: "direct_standard_public_lsp",
+        csharp: "direct_standard_public_lsp",
+      },
+      runtime_backends: backends,
+    },
+    evidence: {
+      schema_version: 1,
+      recorded_at: "2026-08-30T00:00:00.000Z",
+      purpose: "Standalone installed-package test fixture.",
+      platforms: {
+        win32: {
+          status: "passed",
+          command_roots: ["code_explorer_backends"],
+          commands: ["test fixture"],
+          bounded_output: "test fixture",
+          backend_versions: { rust: version, python: version, csharp: version },
+          positive_controls: { rust: "passed", python: "passed", csharp: "passed" },
+        },
+        posix: {
+          status: "unproven",
+          command_roots: ["posix_code_explorer_backends"],
+          commands: [],
+          bounded_output: "not run",
+          backend_versions: { rust: null, python: null, csharp: null },
+          positive_controls: { rust: "not_run", python: "not_run", csharp: "not_run" },
+        },
+      },
+      fixture_tree_hashes: fixtureHashes,
+      sentinel_runs: {
+        rust: sentinel("rust"),
+        python: { ...sentinel("python"), environment: { PATH: "", PYTHONPATH: "", VIRTUAL_ENV: "", CONDA_PREFIX: "" } },
+        csharp: sentinel("csharp"),
+      },
+    },
+  };
+}
+
 describe("code-explorer package boundary", () => {
+  it("starts all approved standalone backends from a copied installed package without project-path leakage", async () => {
+    if (process.platform !== "win32") return;
+    const temporary = mkdtempSync(join(tmpdir(), "code-explorer-standalone-ready-"));
+    const installed = join(temporary, "node_modules", "code-explorer");
+    const project = join(temporary, "project");
+    const backendRoot = join(temporary, "trusted-backends");
+    const counters = Object.fromEntries(
+      ["rust", "python", "csharp"].map((language) => [language, join(temporary, `${language}-counter.json`)]),
+    );
+    const packageRoot = dirname(dirname(entryPoint));
+    try {
+      mkdirSync(join(installed, "dist"), { recursive: true });
+      mkdirSync(join(backendRoot, "node_modules", "pyright"), { recursive: true });
+      mkdirSync(project);
+      writeFileSync(join(project, "module.py"), "def symbol():\n    return 1\n", "utf8");
+      for (const counter of Object.values(counters))
+        writeFileSync(
+          counter,
+          JSON.stringify({ starts: 0, shutdowns: 0, exits: 0, configuration_sections: [] }),
+          "utf8",
+        );
+      for (const executable of ["rust-analyzer.exe", "node.exe", "roslyn-language-server.exe"])
+        copyFileSync(process.execPath, join(backendRoot, executable));
+      for (const language of ["rust", "python", "csharp"])
+        writeFakeLspServer(join(backendRoot, "node_modules", "pyright", `${language}-server.js`));
+      writeFileSync(
+        join(backendRoot, "node_modules", "pyright", "package.json"),
+        JSON.stringify({ version: process.version.slice(1) }),
+      );
+      const { record, evidence } = createStandaloneBackendRecord(backendRoot, counters);
+      copyFileSync(join(packageRoot, "dist", "bundle.js"), join(installed, "dist", "bundle.js"));
+      copyFileSync(join(packageRoot, "package.json"), join(installed, "package.json"));
+      writeFileSync(join(installed, "adapter-selection.json"), JSON.stringify(record));
+      writeFileSync(join(installed, "adapter-selection-evidence.json"), JSON.stringify(evidence));
+
+      const client = new Client({ name: "code-explorer-standalone-ready-test", version: "1.0.0" });
+      const transport = new StdioClientTransport({
+        command: process.execPath,
+        args: [join(installed, "dist", "bundle.js"), "--project-root", project],
+        cwd: project,
+        env: {
+          PATH: "",
+          SystemRoot: process.env.SystemRoot ?? "",
+          CODE_EXPLORER_BACKENDS_ROOT: backendRoot,
+        },
+      });
+      try {
+        await client.connect(transport);
+        const response = (await client.callTool({ name: "code_status", arguments: { action: "status" } })) as {
+          content: Array<{ text: string }>;
+        };
+        const status = JSON.parse(response.content[0]?.text ?? "") as {
+          data: {
+            backend_status: {
+              backends: Array<{
+                language: string;
+                state: string;
+                backend_version: string;
+                capabilities: Record<string, { state: string }>;
+              }>;
+            };
+          };
+        };
+        const backends = status.data.backend_status.backends;
+        assert.deepEqual(
+          backends.map(({ language }) => language),
+          ["rust", "python", "csharp"],
+        );
+        assert.ok(
+          backends.every(({ state }) => state === "degraded"),
+          JSON.stringify(backends),
+        );
+        assert.ok(backends.every(({ backend_version }) => backend_version === process.version.slice(1)));
+        assert.ok(backends.every(({ capabilities }) => capabilities.definition?.state === "ready"));
+        assert.equal(JSON.stringify(status).includes(project), false);
+        await waitForFakeConfiguration(counters.python ?? "");
+      } finally {
+        await client.close();
+      }
+      for (const language of ["rust", "python", "csharp"]) {
+        const log = JSON.parse(readFileSync(counters[language] ?? "", "utf8")) as FakeBackendLog;
+        assert.equal(log.starts, 1, `${language} launched once after the pre-spawn identity check`);
+        assert.equal(log.shutdowns, 1, `${language} received a clean shutdown`);
+        assert.equal(log.exits, 1, `${language} received exit after shutdown`);
+        assert.deepEqual(log.configuration_sections, language === "python" ? ["[]", "[]", "[]"] : []);
+        assert.equal(JSON.stringify(log.initialization_options).includes(project), false);
+        if (language === "python") {
+          assert.notEqual(log.root_uri, new URL(`file:///${project.replaceAll("\\\\", "/")}/`).href);
+          assert.match(log.root_uri ?? "", /^file:/);
+          assert.equal((log.root_uri ?? "").includes(project.replaceAll("\\", "/")), false);
+        }
+      }
+    } finally {
+      rmSync(temporary, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps the production bundle free of spike and rejected-dependency imports", () => {
+    const bundle = readFileSync(join(dirname(dirname(entryPoint)), "dist", "bundle.js"), "utf8");
+    assert.equal(/(?:import|require)\([^)]*(?:spike|serena|@p1va\/symbols)/i.test(bundle), false);
+    assert.equal(/node_modules[\\/](?:serena|@p1va)[\\/]/i.test(bundle), false);
+  });
+
+  // covers: code-explorer/language-adapters :: Production runtime uses a checked-in adapter selection record :: Runtime starts without spike dependencies
+  it("runs the bundled installed package with only its production record and no spike tree", async () => {
+    const temporary = mkdtempSync(join(tmpdir(), "code-explorer-installed-"));
+    const installed = join(temporary, "node_modules", "code-explorer");
+    const project = join(temporary, "project");
+    const packageRoot = dirname(dirname(entryPoint));
+    mkdirSync(join(installed, "dist"), { recursive: true });
+    mkdirSync(project);
+    copyFileSync(join(packageRoot, "dist", "bundle.js"), join(installed, "dist", "bundle.js"));
+    copyFileSync(join(packageRoot, "package.json"), join(installed, "package.json"));
+    copyFileSync(join(packageRoot, "adapter-selection.json"), join(installed, "adapter-selection.json"));
+    copyFileSync(
+      join(packageRoot, "adapter-selection-evidence.json"),
+      join(installed, "adapter-selection-evidence.json"),
+    );
+
+    const client = new Client({ name: "code-explorer-installed-test", version: "1.0.0" });
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: [join(installed, "dist", "bundle.js"), "--project-root", project],
+      cwd: project,
+      env: { PATH: "" },
+    });
+    try {
+      await client.connect(transport);
+      let backends: Array<{ language: string; state: string; failure_code?: string }> = [];
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const response = (await client.callTool({ name: "code_status", arguments: { action: "status" } })) as {
+          content: Array<{ text: string }>;
+        };
+        const envelope = JSON.parse(response.content[0]?.text ?? "") as {
+          data: { backend_status: { backends: Array<{ language: string; state: string; failure_code?: string }> } };
+        };
+        backends = envelope.data.backend_status.backends;
+        if (backends.every(({ state }) => state !== "initializing")) break;
+        await new Promise((resolve_) => setTimeout(resolve_, 20));
+      }
+      assert.deepEqual(
+        backends.map(({ language }) => language),
+        ["rust", "python", "csharp"],
+      );
+      assert.ok(backends.every(({ state }) => state !== "initializing"));
+      const csharp = backends.find(({ language }) => language === "csharp");
+      assert.equal(csharp?.state, "unavailable");
+      assert.equal(csharp?.failure_code, "backend_unavailable");
+    } finally {
+      await client.close();
+      rmSync(temporary, { recursive: true, force: true });
+    }
+  });
+
   it("completes initialize and tools/list through the compiled MCP process", async () => {
     const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
     const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });

@@ -79,6 +79,7 @@ async function tick(): Promise<void> {
 }
 async function ready(process: FakeProcess, scheduler = new Scheduler()) {
   const client = createDirectLspClient({
+    language: "python",
     root_uri: "file:///frozen",
     capabilities: { workspace: {} },
     safe_initialization_options: { safe: true },
@@ -126,6 +127,28 @@ it("uses frozen initialization and a framed read-only request then shuts down wi
   await assert.rejects(client.request("textDocument/definition", {}), { code: "backend_failed" });
   process.respond({ jsonrpc: "2.0", method: "window/logMessage", params: { ignored: true } });
   assert.deepEqual(client.status().events, []);
+});
+
+it("retains initialize capabilities and answers only safe Python configuration requests", async () => {
+  const process = new FakeProcess();
+  const client = createDirectLspClient({
+    language: "python",
+    root_uri: "file:///frozen",
+    capabilities: {},
+    safe_initialization_options: {},
+  });
+  const start = client.start(process);
+  const initialize = process.sent[0] as { id: number };
+  process.respond({ jsonrpc: "2.0", id: initialize.id, result: { capabilities: { definitionProvider: true } } });
+  await start;
+  assert.deepEqual(client.status().server_capabilities, { definitionProvider: true });
+  process.respond({
+    jsonrpc: "2.0",
+    id: 7,
+    method: "workspace/configuration",
+    params: { items: [{ section: "python.pythonPath" }, { section: "other" }] },
+  });
+  assert.deepEqual(process.sent.at(-1), { jsonrpc: "2.0", id: 7, result: [[], null] });
 });
 
 it("snapshots client capabilities and safe initialization options before process startup", async () => {

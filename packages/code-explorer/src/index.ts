@@ -5,9 +5,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { loadAdapterSelectionRecord } from "./semantic/adapter-selection.js";
 import { createBackendStatusReport } from "./semantic/backend-status.js";
 import type { LanguageAdapter } from "./semantic/language-adapter.js";
 import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "./semantic/project-root.js";
+import { createStartedRuntimeAdapters } from "./semantic/runtime-bootstrap.js";
 
 const filename = fileURLToPath(import.meta.url);
 const packagePath = path.join(path.dirname(filename), "..", "package.json");
@@ -215,7 +217,12 @@ export function createServer(
     if (!isToolName(name)) return unknownTool();
     const parsed = schemas[name].safeParse(arguments_);
     if (!parsed.success) return invalidRequest();
-    if (name === "code_status" && arguments_.action === "refresh") refreshGeneration += 1;
+    if (name === "code_status" && arguments_.action === "refresh") {
+      refreshGeneration += 1;
+      await Promise.allSettled(
+        (options.adapters ?? []).flatMap((adapter) => (adapter.refresh ? [adapter.refresh()] : [])),
+      );
+    }
     const relation = arguments_.relation;
     if (name === "code_follow" && typeof relation === "string") {
       return {
@@ -260,10 +267,23 @@ export function createServer(
 }
 
 async function main(): Promise<void> {
+  loadAdapterSelectionRecord();
+  const projectRoot = createNativeProjectRoot(parseProjectRootArgument(process.argv.slice(2)));
+  const adapters = await createStartedRuntimeAdapters(projectRoot);
   const server = createServer({
-    projectRoot: createNativeProjectRoot(parseProjectRootArgument(process.argv.slice(2))),
+    projectRoot,
+    adapters,
   });
   const transport = new StdioServerTransport();
+  let shuttingDown: Promise<void> | undefined;
+  const shutdownBackends = () => {
+    shuttingDown ??= Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.())).then(() => undefined);
+    return shuttingDown;
+  };
+  transport.onclose = () => {
+    void shutdownBackends();
+  };
+  process.stdin.once("end", () => void shutdownBackends());
   await server.mcp.connect(transport);
 }
 

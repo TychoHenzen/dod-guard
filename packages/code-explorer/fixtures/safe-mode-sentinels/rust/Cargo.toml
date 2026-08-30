@@ -1,0 +1,3 @@
+[workspace]
+members = ["app", "sentinel-macro"]
+resolver = "2"

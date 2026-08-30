@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "source_dependency_versions": { "serena": "1.7.0", "@p1va/symbols": "0.0.25" },
+  "evidence_artifact": "adapter-selection-evidence.json",
+  "trusted_command_roots": {
+    "posix": ["posix_code_explorer_backends"],
+    "win32": [
+      "cargo_home_bin",
+      "dotnet_tools",
+      "node_install",
+      "npm_global",
+      "code_explorer_backends"
+    ]
+  },
+  "selected_paths": { "rust": "direct_standard_public_lsp", "python": "direct_standard_public_lsp", "csharp": "direct_standard_public_lsp" },
+  "runtime_backends": [
+    {
+      "language": "rust", "platform_executables": { "posix": "rust-analyzer", "win32": "rust-analyzer.exe" }, "platform_entrypoints": { "posix": [], "win32": [] }, "compatible_version": "1.94.0", "arguments": [], "endpoint": "stdio", "environment": {},
+      "safe_initialization_options": { "cargo": { "buildScripts": { "enable": false }, "procMacro": { "enable": false }, "checkOnSave": { "enable": false } }, "projectConfiguration": { "enable": false } },
+      "capabilities": { "definition": "unavailable", "references": "unavailable", "type_definition": "unavailable", "implementation": "unavailable", "callers": "unavailable", "callees": "unavailable" },
+      "sentinel_evidence": { "fixture": "fixtures/safe-mode-sentinels/rust", "platform": "win32", "fixture_sha256": "0a6c5b2a519cebe9758a400670b9b9d7f97283a3e32c322660830751c2e1b238", "side_effect_absent": true, "result": "passed", "passed": true },
+      "authorization": { "executable_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7", "entrypoint_sha256s": [], "package_metadata_sha256": null, "version_probe": { "method": "command", "command_root": "cargo_home_bin", "executable": "rust-analyzer.exe", "entrypoints": [], "arguments": ["--version"], "command_template": "<cargo_home_bin>\\rust-analyzer.exe --version" } }
+    },
+    {
+      "language": "python", "platform_executables": { "posix": "node", "win32": "node.exe" }, "platform_entrypoints": { "posix": ["langserver.index.js"], "win32": ["langserver.index.js"] }, "compatible_version": "1.1.410", "arguments": ["{entrypoint:0}", "--stdio"], "endpoint": "stdio", "environment": {},
+      "safe_initialization_options": { "use_project_environment": false, "mirror_only": true },
+      "capabilities": { "definition": "unavailable", "references": "unavailable", "type_definition": "unavailable", "implementation": "unavailable", "callers": "unavailable", "callees": "unavailable" },
+      "sentinel_evidence": { "fixture": "fixtures/safe-mode-sentinels/python", "platform": "win32", "fixture_sha256": "35778569099fc1bd7319014a0da27cedce80f09ac63413602b6c530fc75fa67a", "side_effect_absent": true, "result": "passed", "passed": true },
+      "authorization": { "executable_sha256": "77bdff912b1c569b3e693fe126f619337c3e9d73dafbc4d0bf1d4f1f6a145761", "entrypoint_sha256s": ["f200762078eb9880faf421a5b30f9ef3055b1d85c6f10780d75db4da8d8499f1"], "package_metadata_sha256": "29fc918dc261365838c082811fbd842d4dc60a1d8115b7a9ab288826f0ce99e6", "version_probe": { "method": "package_json", "command_root": "npm_global", "executable": "node.exe", "entrypoints": ["langserver.index.js"], "arguments": [], "command_template": "read <npm_global>\\node_modules\\pyright\\package.json version after canonical identity and SHA-256 verification" } }
+    },
+    {
+      "language": "csharp", "platform_executables": { "posix": "roslyn-language-server", "win32": "roslyn-language-server.exe" }, "platform_entrypoints": { "posix": [], "win32": [] }, "compatible_version": "5.11.0-1.26380.4", "arguments": ["--stdio"], "endpoint": "stdio", "environment": {},
+      "safe_initialization_options": { "analyzers": false, "source_generators": false },
+      "capabilities": { "definition": "unavailable", "references": "unavailable", "type_definition": "unavailable", "implementation": "unavailable", "callers": "unavailable", "callees": "unavailable" },
+      "sentinel_evidence": { "fixture": "fixtures/safe-mode-sentinels/csharp", "platform": "win32", "fixture_sha256": "df2d38b254160328665bf02a4f40cd4a37242d2c06e7f6b4e22af26bdafa695c", "side_effect_absent": true, "result": "passed", "passed": true },
+      "authorization": { "executable_sha256": "9c16bcb4442d30b260942a7a1a0b919b29dfcbf8ed4c441cc68172056953c00b", "entrypoint_sha256s": [], "package_metadata_sha256": null, "version_probe": { "method": "windows_file_version", "command_root": "dotnet_tools", "executable": "roslyn-language-server.exe", "entrypoints": [], "arguments": [], "command_template": "ProductVersion/FileVersion(<dotnet_tools>\\roslyn-language-server.exe) => ProductVersion=5.11.0-1.26380.4+dc1db3e7dee178e2744a73eb06dce107c07fa7b1; FileVersion=5.1100.26.38004" } }
+    }
+  ]
+}

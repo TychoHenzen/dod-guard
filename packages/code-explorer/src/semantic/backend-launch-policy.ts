@@ -10,11 +10,30 @@ export type BackendIdentity = {
   version?: string;
   regular_file: boolean;
   link_or_reparse_point: boolean;
+  /** Trusted, server-owned files passed to the executable, in argument order. */
+  entrypoints?: readonly BackendFileIdentity[];
+  /** Trusted Pyright package metadata used for the package-version probe. */
+  package_metadata?: BackendFileIdentity;
+};
+
+export type BackendFileIdentity = {
+  canonical_path?: string;
+  device?: string;
+  file_id?: string;
+  sha256?: string;
+  regular_file: boolean;
+  link_or_reparse_point: boolean;
 };
 
 export type BackendAllowlistEntry = {
   language: Language;
   executable_basename: string;
+  /** Basenames of immutable server-owned files substituted into {entrypoint:N}. */
+  entrypoint_basenames?: readonly string[];
+  /** Immutable evidence-authorized hashes, never inferred from a version range. */
+  executable_sha256: string;
+  entrypoint_sha256s?: readonly string[];
+  package_metadata_sha256?: string | null;
   compatible_version: string;
   arguments: readonly string[];
   endpoint: "stdio" | string;
@@ -27,13 +46,18 @@ export type BackendLaunchPolicyOptions = {
   project_root: string;
   platform?: "posix" | "win32";
   allowlist: readonly BackendAllowlistEntry[];
-  inspect(language: Language, executableBasename: string): BackendIdentity | undefined;
+  inspect(
+    language: Language,
+    executableBasename: string,
+    entrypointBasenames?: readonly string[],
+  ): BackendIdentity | undefined;
 };
 
 export type BackendLaunchPreparation =
   | {
       status: "ready";
       executable: string;
+      version: string;
       arguments: readonly string[];
       shell: false;
       environment: Readonly<Record<string, string>>;
@@ -68,9 +92,6 @@ export function createBackendLaunchPolicy(options: BackendLaunchPolicyOptions) {
     prepare(language: Language, projectConfiguration?: unknown): BackendLaunchPreparation {
       const entry = allowlist.find((candidate) => candidate.language === language);
       if (!entry) return { status: "unavailable", code: "backend_unavailable" };
-      if (!(entry.sentinel_passed && safeModeIsProven(entry)))
-        return { status: "unavailable", code: "unsafe_backend_mode" };
-
       const inspected = inspect(entry, policyOptions);
       const prior = accepted.get(language);
       if (inspected.status !== "accepted") {
@@ -79,6 +100,8 @@ export function createBackendLaunchPolicy(options: BackendLaunchPolicyOptions) {
           code: inspected.code === "version_incompatible" ? "unsupported_backend_version" : inspected.code,
         };
       }
+      if (!(entry.sentinel_passed && safeModeIsProven(entry)))
+        return { status: "unavailable", code: "unsafe_backend_mode" };
       if (prior && !sameIdentity(prior.identity, inspected.identity, platform)) {
         accepted.delete(language);
         return { status: "unavailable", code: "backend_identity_changed" };
@@ -87,7 +110,8 @@ export function createBackendLaunchPolicy(options: BackendLaunchPolicyOptions) {
       return {
         status: "ready",
         executable: inspected.identity.canonical_path,
-        arguments: entry.arguments,
+        version: inspected.identity.version,
+        arguments: resolveArguments(entry.arguments, inspected.identity.entrypoints),
         shell: false,
         environment: entry.environment,
         endpoint: entry.endpoint,
@@ -153,7 +177,7 @@ function inspect(
       status: "rejected";
       code: Exclude<BackendLaunchFailure, "unsupported_backend_version"> | "version_incompatible";
     } {
-  const identity = options.inspect(entry.language, entry.executable_basename);
+  const identity = options.inspect(entry.language, entry.executable_basename, entry.entrypoint_basenames ?? []);
   if (!identity?.canonical_path) return { status: "rejected", code: "backend_unavailable" };
   if (!(identity.device && identity.file_id && identity.sha256 && identity.version)) {
     return { status: "rejected", code: "backend_identity_unverifiable" };
@@ -171,8 +195,47 @@ function inspect(
     return { status: "rejected", code: "backend_identity_unverifiable" };
   }
   if (!/^[a-f0-9]{64}$/i.test(identity.sha256)) return { status: "rejected", code: "backend_identity_unverifiable" };
+  if (identity.sha256 !== entry.executable_sha256) return { status: "rejected", code: "backend_identity_changed" };
   if (!versionMatches(identity.version, entry.compatible_version))
     return { status: "rejected", code: "version_incompatible" };
+  const entrypoints = identity.entrypoints ?? [];
+  if (entrypoints.length !== (entry.entrypoint_basenames ?? []).length) {
+    return { status: "rejected", code: "backend_identity_unverifiable" };
+  }
+  for (const [index, file] of entrypoints.entries()) {
+    const expected = entry.entrypoint_basenames?.[index];
+    if (
+      !(file.canonical_path && file.device && file.file_id && file.sha256 && file.regular_file) ||
+      file.link_or_reparse_point ||
+      isWithin(options.project_root, file.canonical_path, options.platform ?? platformForHost()) ||
+      !samePath(
+        basename(file.canonical_path, options.platform ?? platformForHost()),
+        expected ?? "",
+        options.platform ?? platformForHost(),
+      ) ||
+      !/^[a-f0-9]{64}$/i.test(file.sha256)
+    ) {
+      return { status: "rejected", code: "backend_identity_unverifiable" };
+    }
+    if (file.sha256 !== entry.entrypoint_sha256s?.[index]) {
+      return { status: "rejected", code: "backend_identity_changed" };
+    }
+  }
+  if (entry.package_metadata_sha256 !== null && entry.package_metadata_sha256 !== undefined) {
+    const metadata = identity.package_metadata;
+    if (
+      !(metadata?.canonical_path && metadata.device && metadata.file_id && metadata.sha256 && metadata.regular_file) ||
+      metadata.link_or_reparse_point ||
+      isWithin(options.project_root, metadata.canonical_path, options.platform ?? platformForHost()) ||
+      basename(metadata.canonical_path, options.platform ?? platformForHost()) !== "package.json" ||
+      !/^[a-f0-9]{64}$/i.test(metadata.sha256) ||
+      metadata.sha256 !== entry.package_metadata_sha256
+    ) {
+      return { status: "rejected", code: "backend_identity_changed" };
+    }
+  } else if (identity.package_metadata) {
+    return { status: "rejected", code: "backend_identity_changed" };
+  }
   return { status: "accepted", identity: identity as Required<BackendIdentity> };
 }
 
@@ -186,7 +249,60 @@ function sameIdentity(
     left.device === right.device &&
     left.file_id === right.file_id &&
     left.sha256 === right.sha256 &&
-    left.version === right.version
+    left.version === right.version &&
+    sameEntrypoints(left.entrypoints, right.entrypoints, platform) &&
+    sameFileIdentity(left.package_metadata, right.package_metadata, platform)
+  );
+}
+
+function sameFileIdentity(
+  left: BackendFileIdentity | undefined,
+  right: BackendFileIdentity | undefined,
+  platform: "posix" | "win32",
+): boolean {
+  if (!(left && right)) return left === right;
+  return !!(
+    left.canonical_path &&
+    right.canonical_path &&
+    samePath(left.canonical_path, right.canonical_path, platform) &&
+    left.device === right.device &&
+    left.file_id === right.file_id &&
+    left.sha256 === right.sha256
+  );
+}
+
+function sameEntrypoints(
+  left: readonly BackendFileIdentity[] | undefined,
+  right: readonly BackendFileIdentity[] | undefined,
+  platform: "posix" | "win32",
+): boolean {
+  if ((left?.length ?? 0) !== (right?.length ?? 0)) return false;
+  return (left ?? []).every((file, index) => {
+    const other = right?.[index];
+    return !!(
+      other &&
+      file.canonical_path &&
+      other.canonical_path &&
+      samePath(file.canonical_path, other.canonical_path, platform) &&
+      file.device === other.device &&
+      file.file_id === other.file_id &&
+      file.sha256 === other.sha256
+    );
+  });
+}
+
+function resolveArguments(
+  template: readonly string[],
+  entrypoints: readonly BackendFileIdentity[] | undefined,
+): readonly string[] {
+  return deepFreeze(
+    template.map((argument) => {
+      const match = /^\{entrypoint:(\d+)\}$/.exec(argument);
+      if (!match) return argument;
+      const path = entrypoints?.[Number(match[1])]?.canonical_path;
+      if (!path) throw new Error("backend_identity_unverifiable");
+      return path;
+    }),
   );
 }
 
@@ -386,6 +502,10 @@ function snapshotAllowlistEntry(entry: BackendAllowlistEntry): BackendAllowlistE
   return {
     language: entry.language,
     executable_basename: entry.executable_basename,
+    entrypoint_basenames: entry.entrypoint_basenames ? [...entry.entrypoint_basenames] : [],
+    executable_sha256: entry.executable_sha256,
+    entrypoint_sha256s: entry.entrypoint_sha256s ? [...entry.entrypoint_sha256s] : [],
+    package_metadata_sha256: entry.package_metadata_sha256 ?? null,
     compatible_version: entry.compatible_version,
     arguments: [...entry.arguments],
     endpoint: entry.endpoint,

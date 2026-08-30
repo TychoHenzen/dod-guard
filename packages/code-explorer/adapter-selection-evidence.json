@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-30T00:00:00Z",
+  "purpose": "Native sentinel evidence, recorded after the spike decision. It supersedes the spike statement that direct LSP behavior remained unproven, but authorizes only the recorded platform and identities.",
+  "platforms": {
+    "win32": {
+      "status": "passed",
+      "command_roots": ["cargo_home_bin", "dotnet_tools", "node_install", "npm_global", "code_explorer_backends"],
+      "commands": ["<cargo_home_bin>\\rust-analyzer.exe --version", "read <npm_global>\\node_modules\\pyright\\package.json version after canonical identity and SHA-256 verification", "Windows ProductVersion/FileVersion for <dotnet_tools>\\roslyn-language-server.exe"],
+      "bounded_output": "Rust and C# safe-mode sentinel positive controls passed. Python initialized through an owned mirror and returned a definition with stderr empty.",
+      "backend_versions": { "rust": "1.94.0", "python": "1.1.410", "csharp": "5.11.0-1.26380.4" },
+      "positive_controls": { "rust": "passed", "python": "passed", "csharp": "passed" }
+    },
+    "posix": {
+      "status": "unproven",
+      "command_roots": ["posix_code_explorer_backends"],
+      "commands": [],
+      "bounded_output": "No POSIX sentinel was run. Win32 evidence never authorizes POSIX.",
+      "backend_versions": { "rust": null, "python": null, "csharp": null },
+      "positive_controls": { "rust": "not_run", "python": "not_run", "csharp": "not_run" }
+    }
+  },
+  "fixture_tree_hashes": { "rust": "0a6c5b2a519cebe9758a400670b9b9d7f97283a3e32c322660830751c2e1b238", "python": "35778569099fc1bd7319014a0da27cedce80f09ac63413602b6c530fc75fa67a", "csharp": "df2d38b254160328665bf02a4f40cd4a37242d2c06e7f6b4e22af26bdafa695c" },
+  "sentinel_runs": {
+    "rust": {
+      "executable": "rust-analyzer.exe",
+      "executable_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "backend_version": "1.94.0",
+      "fixture_sha256": "0a6c5b2a519cebe9758a400670b9b9d7f97283a3e32c322660830751c2e1b238",
+      "entrypoints": [],
+      "entrypoint_sha256s": [],
+      "package_metadata_sha256": null,
+      "version_probe": { "method": "command", "command_root": "cargo_home_bin", "executable": "rust-analyzer.exe", "entrypoints": [], "arguments": ["--version"], "command_template": "<cargo_home_bin>\\rust-analyzer.exe --version" },
+      "startup": true,
+      "definition_navigation": true,
+      "side_effect_absent": true,
+      "stderr": "",
+      "positive_control": { "initialized": true, "definition_responded": true, "side_effect_absent": false }
+    },
+    "python": {
+      "executable": "node.exe",
+      "executable_sha256": "77bdff912b1c569b3e693fe126f619337c3e9d73dafbc4d0bf1d4f1f6a145761",
+      "backend_version": "1.1.410",
+      "entrypoints": ["langserver.index.js"],
+      "entrypoint_sha256s": ["f200762078eb9880faf421a5b30f9ef3055b1d85c6f10780d75db4da8d8499f1"],
+      "package_metadata_sha256": "29fc918dc261365838c082811fbd842d4dc60a1d8115b7a9ab288826f0ce99e6",
+      "fixture_sha256": "35778569099fc1bd7319014a0da27cedce80f09ac63413602b6c530fc75fa67a",
+      "version_probe": { "method": "package_json", "command_root": "npm_global", "executable": "node.exe", "entrypoints": ["langserver.index.js"], "arguments": [], "command_template": "read <npm_global>\\node_modules\\pyright\\package.json version after canonical identity and SHA-256 verification" },
+      "startup": true,
+      "definition_navigation": true,
+      "side_effect_absent": true,
+      "stderr": "",
+      "environment": { "PATH": "", "PYTHONPATH": "", "VIRTUAL_ENV": "", "CONDA_PREFIX": "" },
+      "positive_control": { "initialized": true, "definition_responded": true, "side_effect_absent": false }
+    },
+    "csharp": {
+      "executable": "roslyn-language-server.exe",
+      "executable_sha256": "9c16bcb4442d30b260942a7a1a0b919b29dfcbf8ed4c441cc68172056953c00b",
+      "entrypoints": [],
+      "entrypoint_sha256s": [],
+      "package_metadata_sha256": null,
+      "backend_version": "5.11.0-1.26380.4",
+      "fixture_sha256": "df2d38b254160328665bf02a4f40cd4a37242d2c06e7f6b4e22af26bdafa695c",
+      "version_probe": { "method": "windows_file_version", "command_root": "dotnet_tools", "executable": "roslyn-language-server.exe", "entrypoints": [], "arguments": [], "command_template": "ProductVersion/FileVersion(<dotnet_tools>\\roslyn-language-server.exe) => ProductVersion=5.11.0-1.26380.4+dc1db3e7dee178e2744a73eb06dce107c07fa7b1; FileVersion=5.1100.26.38004" },
+      "startup": true,
+      "definition_navigation": true,
+      "side_effect_absent": true,
+      "stderr": "",
+      "positive_control": { "initialized": true, "definition_responded": true, "side_effect_absent": false }
+    }
+  }
+}

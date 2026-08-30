@@ -19,6 +19,7 @@ export type LspProcess = {
   write(chunk: Uint8Array): void;
   onStdout(listener: (chunk: Uint8Array) => void): void;
   onExit(listener: () => void): void;
+  onError?(listener: () => void): void;
   kill(): void;
 };
 export type DirectLspScheduler = {
@@ -27,17 +28,20 @@ export type DirectLspScheduler = {
   clearTimeout(handle: unknown): void;
 };
 export type DirectLspOptions = {
+  language?: "rust" | "python" | "csharp";
   root_uri: string;
   capabilities: Record<string, unknown>;
   safe_initialization_options: Record<string, unknown>;
   request_timeout_ms?: number;
   scheduler?: DirectLspScheduler;
   restart?: () => LspProcess | undefined;
+  afterInitialize?: () => { status: "ready" } | { status: "unavailable"; code: string };
 };
 export type DirectLspStatus = {
   state: "initializing" | "ready" | "failed" | "unavailable";
   events: readonly ("backend_capability_rejected" | "backend_write_rejected" | "backend_notification")[];
   restart_delays_ms: readonly number[];
+  server_capabilities?: Readonly<Record<string, unknown>>;
 };
 export class DirectLspError extends Error {
   constructor(readonly code: "backend_timeout" | "backend_crashed" | "backend_failed" | "backend_write_rejected") {
@@ -70,6 +74,7 @@ export function createDirectLspClient(options: DirectLspOptions) {
   const pending = new Map<number, Pending>();
   const events: DirectLspStatus["events"][number][] = [];
   const restartDelays: number[] = [];
+  let serverCapabilities: Record<string, unknown> | undefined;
   const current = (candidate: number) => candidate === epoch;
   const send = (message: Record<string, unknown>, expectedEpoch = epoch) => {
     if (process && current(expectedEpoch)) process.write(encodeMessage(message));
@@ -124,6 +129,14 @@ export function createDirectLspClient(options: DirectLspOptions) {
       if (!isRequestId(message.id)) return fail("backend_failed", false, expectedEpoch);
       if (message.method === "client/registerCapability") events.push("backend_capability_rejected");
       if (message.method === "workspace/applyEdit") events.push("backend_write_rejected");
+      if (message.method === "workspace/configuration" && options.language === "python") {
+        const items = (message.params as { items?: Array<{ section?: string }> } | undefined)?.items ?? [];
+        send(
+          { jsonrpc: "2.0", id: message.id, result: items.map((item) => pythonConfiguration(item.section)) },
+          expectedEpoch,
+        );
+        return;
+      }
       send({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: "Method not found" } }, expectedEpoch);
       return;
     }
@@ -190,6 +203,7 @@ export function createDirectLspClient(options: DirectLspOptions) {
       }
       if (!stopping) fail("backend_crashed", true, expectedEpoch);
     });
+    nextProcess.onError?.(() => fail("backend_crashed", true, expectedEpoch));
     try {
       const result = await sendRequest(
         "initialize",
@@ -198,6 +212,13 @@ export function createDirectLspClient(options: DirectLspOptions) {
         expectedEpoch,
       );
       if (!(current(expectedEpoch) && isInitializeResult(result))) throw new DirectLspError("backend_failed");
+      serverCapabilities = result.capabilities;
+      const confirmation = options.afterInitialize?.();
+      if (confirmation?.status === "unavailable") {
+        state = "unavailable";
+        process?.kill();
+        throw new Error(confirmation.code);
+      }
       send({ jsonrpc: "2.0", method: "initialized", params: {} }, expectedEpoch);
       state = "ready";
     } catch (error) {
@@ -245,8 +266,17 @@ export function createDirectLspClient(options: DirectLspOptions) {
       timeoutTimes = [];
       if (state === "unavailable") state = "initializing";
     },
-    status: (): DirectLspStatus => ({ state, events: [...events], restart_delays_ms: [...restartDelays] }),
+    status: (): DirectLspStatus => ({
+      state,
+      events: [...events],
+      restart_delays_ms: [...restartDelays],
+      ...(serverCapabilities ? { server_capabilities: deepFreeze(clone(serverCapabilities)) } : {}),
+    }),
   };
+}
+
+function pythonConfiguration(section: string | undefined): unknown {
+  return ["python.pythonPath", "python.venvPath", "python.analysis.extraPaths"].includes(section ?? "") ? [] : null;
 }
 
 const CRLFCRLF = new Uint8Array([13, 10, 13, 10]);

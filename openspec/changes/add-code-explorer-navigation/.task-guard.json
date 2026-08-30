@@ -86,7 +86,8 @@
       "status": "completed"
     },
     "2.14": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     },
     "2.15": {
       "checked": false

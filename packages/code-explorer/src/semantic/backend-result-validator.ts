@@ -88,15 +88,16 @@ function containsUnexpectedLanguage(input: unknown, allowedLanguages: readonly L
 function symbolsIn(result: SemanticResult): readonly SymbolIdentity[] {
   if (result.operation === "search") return result.symbols;
   if (result.operation === "focus") return [result.symbol];
-  return result.relations.map(({ symbol }) => symbol);
+  return result.relations.flatMap((relation) => ("symbol" in relation ? [relation.symbol] : []));
 }
 
 function projectLocationsIn(result: SemanticResult): readonly ProjectLocation[] {
   if (result.operation === "search") return result.symbols.map(({ location }) => location);
   if (result.operation === "focus") return [result.symbol.location];
-  return result.relations.flatMap(({ symbol, location }) =>
-    "external" in location ? [symbol.location] : [symbol.location, location],
-  );
+  return result.relations.flatMap((relation) => {
+    if (!("symbol" in relation)) return [];
+    return "external" in relation.location ? [relation.symbol.location] : [relation.symbol.location, relation.location];
+  });
 }
 
 function validateSymbol(symbol: SymbolIdentity, options: BackendResultValidationOptions): void {

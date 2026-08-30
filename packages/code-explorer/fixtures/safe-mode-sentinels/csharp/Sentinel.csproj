@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="hooks/**/*.cs" />
+    <Analyzer Include="hooks/bin/Release/net10.0/SentinelHooks.dll" />
+  </ItemGroup>
+</Project>

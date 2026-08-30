@@ -58,7 +58,10 @@ export type FocusResult = { operation: "focus"; revision: ProjectRevision; symbo
 export type RelationResult = {
   operation: RelationName;
   revision: ProjectRevision;
-  relations: Array<{ relation: RelationName; symbol: SymbolIdentity; location: SourceLocation }>;
+  relations: Array<
+    | { relation: RelationName; symbol: SymbolIdentity; location: SourceLocation }
+    | { relation: RelationName; external: { external: true } }
+  >;
 };
 export type SemanticResult = SearchResult | FocusResult | RelationResult;
 
@@ -103,7 +106,10 @@ export const semanticResultSchema = z.discriminatedUnion("operation", [
         operation: z.literal(operation),
         revision: revisionSchema,
         relations: z.array(
-          z.object({ relation: z.literal(operation), symbol: symbolSchema, location: sourceLocationSchema }).strict(),
+          z.union([
+            z.object({ relation: z.literal(operation), symbol: symbolSchema, location: sourceLocationSchema }).strict(),
+            z.object({ relation: z.literal(operation), external: externalLocationSchema }).strict(),
+          ]),
         ),
       })
       .strict(),
