@@ -33,12 +33,15 @@
 - [x] 2.3 Implement and test shared Python adapter readiness and navigation request shapes.
 <!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Rust, Python, and C# share one capability-aware navigation contract :: Python project is ready -->
-- [ ] 2.4 Implement and test shared C# adapter readiness and navigation request shapes.
+- [x] 2.4 Implement and test shared C# adapter readiness and navigation request shapes.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Rust, Python, and C# share one capability-aware navigation contract :: C# project is ready -->
-- [ ] 2.5 Preserve semantic authority when structural discovery conflicts or a reference resembles a call.
+- [x] 2.5 Preserve semantic authority when structural discovery conflicts or a reference resembles a call.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Semantic results remain authoritative :: Structural candidate conflicts with a semantic definition -->
   <!-- covers: code-explorer/language-adapters :: Semantic results remain authoritative :: Reference resembles a function call -->
-- [ ] 2.6 Return source-located project relations and label external definitions without issuing project handles.
+- [x] 2.6 Return source-located project relations and label external definitions without issuing project handles.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Relation results cite their source locations :: Project-local caller is found -->
   <!-- covers: code-explorer/language-adapters :: Relation results cite their source locations :: Definition belongs to an external dependency -->
 - [ ] 2.7 Report missing servers, unsupported call hierarchy, and isolated initialization failures through `code_status`.

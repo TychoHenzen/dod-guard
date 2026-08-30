@@ -35,6 +35,10 @@ export function createPythonAdapter(options: LanguageAdapterOptions): LanguageAd
   return createLanguageAdapter("python", options);
 }
 
+export function createCSharpAdapter(options: LanguageAdapterOptions): LanguageAdapter {
+  return createLanguageAdapter("csharp", options);
+}
+
 function createLanguageAdapter(language: Language, options: LanguageAdapterOptions): LanguageAdapter {
   const capabilities = createCapabilities(options.capabilities);
 
