@@ -20,14 +20,18 @@
   <!-- covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Tool input contains an unknown field -->
   <!-- covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Successful tool response uses the common envelope -->
   <!-- covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Backend reports an unsupported operation -->
-- [ ] 1.8 Run the package handshake practice check from the built bundle and confirm no project-editing tool is advertised.
+- [x] 1.8 Run the package handshake practice check from the built bundle and confirm no project-editing tool is advertised.
+<!-- status: completed -->
 
 ## 2. Semantic Adapter Contract
 
-- [ ] 2.1 Define normalized symbol, location, relation, capability, revision, and backend-status types with fake-adapter contract tests.
-- [ ] 2.2 Implement and test shared Rust adapter readiness and navigation request shapes.
+- [x] 2.1 Define normalized symbol, location, relation, capability, revision, and backend-status types with fake-adapter contract tests.
+<!-- status: completed -->
+- [x] 2.2 Implement and test shared Rust adapter readiness and navigation request shapes.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Rust, Python, and C# share one capability-aware navigation contract :: Rust project is ready -->
-- [ ] 2.3 Implement and test shared Python adapter readiness and navigation request shapes.
+- [x] 2.3 Implement and test shared Python adapter readiness and navigation request shapes.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Rust, Python, and C# share one capability-aware navigation contract :: Python project is ready -->
 - [ ] 2.4 Implement and test shared C# adapter readiness and navigation request shapes.
   <!-- covers: code-explorer/language-adapters :: Rust, Python, and C# share one capability-aware navigation contract :: C# project is ready -->
