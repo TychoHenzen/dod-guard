@@ -37,6 +37,21 @@ async function waitForFakeConfiguration(counter: string): Promise<void> {
   throw new Error(`fake_backend_configuration_timeout:${observed}`);
 }
 
+/** Windows keeps a process working directory locked until the MCP child has observed transport close. */
+async function removeTemporaryTree(path: string): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    try {
+      rmSync(path, { recursive: true, force: true, maxRetries: 1, retryDelay: 20 });
+      return;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve_) => setTimeout(resolve_, 20));
+    }
+  }
+  throw lastError;
+}
+
 function writeFakeLspServer(path: string): void {
   writeFileSync(
     path,
@@ -115,6 +130,21 @@ function createStandaloneBackendRecord(
   const entrypoints = (language: string) => [`${language}-server.js`];
   const packageMetadataPath = join(root, "node_modules", "pyright", "package.json");
   const packageMetadataHash = sha256(readFileSync(packageMetadataPath));
+  const executablePath = (language: string) =>
+    language === "csharp"
+      ? join(
+          root,
+          ".store",
+          "roslyn-language-server",
+          "5.11.0-1.26380.4",
+          "roslyn-language-server.win-x64",
+          "5.11.0-1.26380.4",
+          "tools",
+          "net10.0",
+          "win-x64",
+          executable(language),
+        )
+      : join(root, executable(language));
   const authorization = (language: string) => {
     const executableName = executable(language);
     const entrypointNames = entrypoints(language);
@@ -137,7 +167,7 @@ function createStandaloneBackendRecord(
             command_template: `<code_explorer_backends>/${executableName} --version`,
           };
     return {
-      executable_sha256: sha256(readFileSync(join(root, executableName))),
+      executable_sha256: sha256(readFileSync(executablePath(language))),
       entrypoint_sha256s: entrypointNames.map((entrypoint) =>
         sha256(readFileSync(join(root, "node_modules", "pyright", entrypoint))),
       ),
@@ -257,8 +287,21 @@ describe("code-explorer package boundary", () => {
           JSON.stringify({ starts: 0, shutdowns: 0, exits: 0, configuration_sections: [] }),
           "utf8",
         );
-      for (const executable of ["rust-analyzer.exe", "node.exe", "roslyn-language-server.exe"])
+      for (const executable of ["rust-analyzer.exe", "node.exe"])
         copyFileSync(process.execPath, join(backendRoot, executable));
+      const roslynStore = join(
+        backendRoot,
+        ".store",
+        "roslyn-language-server",
+        "5.11.0-1.26380.4",
+        "roslyn-language-server.win-x64",
+        "5.11.0-1.26380.4",
+        "tools",
+        "net10.0",
+        "win-x64",
+      );
+      mkdirSync(roslynStore, { recursive: true });
+      copyFileSync(process.execPath, join(roslynStore, "roslyn-language-server.exe"));
       for (const language of ["rust", "python", "csharp"])
         writeFakeLspServer(join(backendRoot, "node_modules", "pyright", `${language}-server.js`));
       writeFileSync(
@@ -329,7 +372,7 @@ describe("code-explorer package boundary", () => {
         }
       }
     } finally {
-      rmSync(temporary, { recursive: true, force: true });
+      await removeTemporaryTree(temporary);
     }
   });
 
@@ -382,11 +425,12 @@ describe("code-explorer package boundary", () => {
       );
       assert.ok(backends.every(({ state }) => state !== "initializing"));
       const csharp = backends.find(({ language }) => language === "csharp");
-      assert.equal(csharp?.state, "unavailable");
-      assert.equal(csharp?.failure_code, "backend_unavailable");
+      // A copied package has no spike tree. A separately pinned tool-store payload may still be available.
+      assert.ok(csharp?.state === "ready" || csharp?.state === "unavailable");
+      if (csharp?.state === "unavailable") assert.equal(csharp.failure_code, "backend_unavailable");
     } finally {
       await client.close();
-      rmSync(temporary, { recursive: true, force: true });
+      await removeTemporaryTree(temporary);
     }
   });
 

@@ -8,12 +8,13 @@ import type {
   SemanticResult,
   SymbolIdentity,
 } from "./contract.js";
-import type { DirectLspStatus } from "./direct-lsp.js";
+import type { DirectLspStatus, ProtectedDocumentContent } from "./direct-lsp.js";
 import type { InjectedSemanticBackend } from "./language-adapter.js";
 import type { ProjectRoot } from "./project-root.js";
 
 export type ReadOnlyLspClient = {
   request(method: string, params: unknown): Promise<unknown>;
+  openProtectedDocument?(uri: string, content: ProtectedDocumentContent): void;
   status(): DirectLspStatus;
 };
 
@@ -54,6 +55,12 @@ export function createDirectLspSemanticBackend(options: DirectLspSemanticOptions
         throw new Error("backend_unavailable");
       const source = request.operation === "search" ? undefined : options.symbols.get(request.symbol_id);
       if (!source && request.operation !== "search") throw new Error("backend_unavailable");
+      if (
+        isRelation(request) &&
+        relationCapabilitiesFromInitialize(options.client.status())[request.operation].state !== "ready"
+      )
+        throw new Error("backend_unavailable");
+      if (source && request.operation !== "focus") openSourceDocument(source, options);
       const raw = await requestLsp(request, source, options);
       let result: SemanticResult;
       try {
@@ -74,6 +81,13 @@ export function createDirectLspSemanticBackend(options: DirectLspSemanticOptions
       return checked.result;
     },
   };
+}
+
+function openSourceDocument(source: SymbolIdentity, options: DirectLspSemanticOptions): void {
+  if (!options.client.openProtectedDocument) return;
+  const uri = options.toBackendUri(source.location);
+  const document = options.root.protectedRead(source.location.path);
+  options.client.openProtectedDocument(uri, { language_id: options.language, bytes: document.bytes });
 }
 
 function isRelation(request: SemanticRequest): request is SemanticRequest & { operation: RelationName } {

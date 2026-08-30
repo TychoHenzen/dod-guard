@@ -141,8 +141,9 @@ it("exposes one fail-closed status for every selected production language", () =
     statuses.map((status) => status.language),
     ["rust", "python", "csharp"],
   );
-  assert.equal(statuses.find((status) => status.language === "csharp")?.state, "unavailable");
-  assert.equal(statuses.find((status) => status.language === "csharp")?.failure_code, "backend_unavailable");
+  const csharp = statuses.find((status) => status.language === "csharp");
+  assert.ok(csharp?.state === "initializing" || csharp?.state === "unavailable");
+  if (csharp?.state === "unavailable") assert.equal(csharp.failure_code, "backend_unavailable");
 });
 
 function loadJson(relativePath: string): unknown {

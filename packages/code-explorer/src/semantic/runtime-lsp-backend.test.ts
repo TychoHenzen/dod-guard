@@ -6,6 +6,7 @@ import { createRuntimeLspBackend } from "./runtime-lsp-backend.js";
 
 class Process implements LspProcess {
   readonly events: string[];
+  readonly sent: Array<{ id?: number; method?: string; params?: unknown }> = [];
   private stdout: ((chunk: Uint8Array) => void)[] = [];
   private exit: (() => void)[] = [];
   private errors: (() => void)[] = [];
@@ -24,6 +25,7 @@ class Process implements LspProcess {
       method?: string;
       params?: unknown;
     };
+    this.sent.push(message);
     if (message.method === "initialize")
       this.respond({ jsonrpc: "2.0", id: message.id, result: { capabilities: this.serverCapabilities } });
     if (message.method === "shutdown" && !this.ignoreShutdown)
@@ -91,6 +93,128 @@ const capabilities = {
   callers: { state: "unavailable" },
   callees: { state: "unavailable" },
 } as never;
+
+it("opens the protected source document before asking a real LSP for its definition", async () => {
+  const process = new Process([], { definitionProvider: true }, (method) =>
+    method === "textDocument/definition"
+      ? [{ uri: "file:///project/a.rs", range: { start: { line: 0, character: 7 }, end: { line: 0, character: 13 } } }]
+      : [],
+  );
+  const backend = createRuntimeLspBackend({
+    language: "rust",
+    root: {
+      canonicalPath: "/project",
+      resolveClientPath: () => "/project/a.rs",
+      classifyBackendPath: () => ({ relative_path: "a.rs" }),
+      openProtected: () => ({ path: "/project/a.rs", handle: undefined }),
+      protectedRead: () => ({ path: "/project/a.rs", bytes: "pub fn helper() {}\n" }),
+    } as never,
+    root_uri: "file:///project",
+    revision: { generation: 0, manifest_sha256: "x" },
+    symbols: new Map([
+      [
+        "entry",
+        {
+          id: "entry",
+          name: "helper",
+          language: "rust",
+          kind: "function",
+          location: { path: "a.rs", range: { start: { line: 0, character: 7 }, end: { line: 0, character: 13 } } },
+        },
+      ],
+    ]),
+    capabilities,
+    safe_initialization_options: {},
+    toBackendUri: () => "file:///project/a.rs",
+    fromBackendUri: () => "a.rs",
+    prepare: () => ({ status: "ready", executable: "server", arguments: [], environment: {} }),
+    confirmInitialized: () => ({ status: "ready" }),
+    spawn: () => process,
+  });
+
+  await backend.query({ operation: "definition", symbol_id: "entry" });
+
+  assert.deepEqual(
+    process.sent.filter((message) => message.method?.startsWith("textDocument/")).map((message) => message),
+    [
+      {
+        jsonrpc: "2.0",
+        method: "textDocument/didOpen",
+        params: {
+          textDocument: {
+            uri: "file:///project/a.rs",
+            languageId: "rust",
+            version: 0,
+            text: "pub fn helper() {}\n",
+          },
+        },
+      },
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "textDocument/definition",
+        params: { textDocument: { uri: "file:///project/a.rs" }, position: { line: 0, character: 7 } },
+      },
+    ],
+  );
+});
+
+it("reopens one protected source document for a replacement process after a crash", async () => {
+  const responseFor = (method: string) =>
+    method === "textDocument/definition"
+      ? [{ uri: "file:///project/a.rs", range: { start: { line: 0, character: 7 }, end: { line: 0, character: 13 } } }]
+      : [];
+  const first = new Process([], { definitionProvider: true }, responseFor);
+  const replacement = new Process([], { definitionProvider: true }, responseFor);
+  const scheduler = new Scheduler();
+  const processes = [first, replacement];
+  const backend = createRuntimeLspBackend({
+    language: "rust",
+    root: {
+      canonicalPath: "/project",
+      resolveClientPath: () => "/project/a.rs",
+      classifyBackendPath: () => ({ relative_path: "a.rs" }),
+      openProtected: () => ({ path: "/project/a.rs", handle: undefined }),
+      protectedRead: () => ({ path: "/project/a.rs", bytes: "pub fn helper() {}\n" }),
+    } as never,
+    root_uri: "file:///project",
+    revision: { generation: 0, manifest_sha256: "x" },
+    symbols: new Map([
+      [
+        "entry",
+        {
+          id: "entry",
+          name: "helper",
+          language: "rust",
+          kind: "function",
+          location: { path: "a.rs", range: { start: { line: 0, character: 7 }, end: { line: 0, character: 13 } } },
+        },
+      ],
+    ]),
+    capabilities,
+    safe_initialization_options: {},
+    toBackendUri: () => "file:///project/a.rs",
+    fromBackendUri: () => "a.rs",
+    prepare: () => ({ status: "ready", executable: "server", arguments: [], environment: {} }),
+    confirmInitialized: () => ({ status: "ready" }),
+    spawn: () => processes.shift() as Process,
+    scheduler,
+  });
+  await backend.query({ operation: "definition", symbol_id: "entry" });
+  first.kill();
+  scheduler.run();
+  await Promise.resolve();
+  await backend.query({ operation: "definition", symbol_id: "entry" });
+  await backend.query({ operation: "definition", symbol_id: "entry" });
+  const countDidOpen = (process: Process) =>
+    process.sent.filter((message) => message.method === "textDocument/didOpen").length;
+  assert.equal(countDidOpen(first), 1);
+  assert.equal(countDidOpen(replacement), 1);
+  const replacementMethods = replacement.sent
+    .filter((message) => message.method?.startsWith("textDocument/"))
+    .map((message) => message.method);
+  assert.deepEqual(replacementMethods, ["textDocument/didOpen", "textDocument/definition", "textDocument/definition"]);
+});
 
 it("confirms identity before publishing and disposes only after child exit", async () => {
   const events: string[] = [];

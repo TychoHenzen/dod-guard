@@ -64,6 +64,77 @@ it("maps definition and references through protected semantic validation", async
   assert.deepEqual(methods, ["textDocument/definition", "textDocument/references"]);
 });
 
+it("delegates protected source opening to the epoch-aware client before navigation", async () => {
+  const opened: Array<{ uri: string; content: unknown }> = [];
+  const source = {
+    id: "entry",
+    name: "main",
+    language: "rust" as const,
+    kind: "function",
+    location: { path: "src/main.rs", range: { start: { line: 0, character: 3 }, end: { line: 0, character: 7 } } },
+  };
+  const backend = createDirectLspSemanticBackend({
+    language: "rust",
+    root,
+    revision: { generation: 0, manifest_sha256: "fixture" },
+    symbols: new Map([[source.id, source]]),
+    capabilities: {} as never,
+    client: {
+      status: () => ({
+        state: "ready",
+        events: [],
+        restart_delays_ms: [],
+        server_capabilities: { definitionProvider: true },
+      }),
+      openProtectedDocument: (uri, content) => opened.push({ uri, content }),
+      request: async () => [],
+    },
+    toBackendUri: () => "file:///project/src/main.rs",
+    fromBackendUri: () => "src/main.rs",
+  });
+  await backend.query({ operation: "definition", symbol_id: source.id });
+  await backend.query({ operation: "definition", symbol_id: source.id });
+  assert.deepEqual(opened, [
+    { uri: "file:///project/src/main.rs", content: { language_id: "rust", bytes: "fn main() {}\n" } },
+    { uri: "file:///project/src/main.rs", content: { language_id: "rust", bytes: "fn main() {}\n" } },
+  ]);
+});
+
+it("does not send a relation request that initialize reported unavailable", async () => {
+  const methods: string[] = [];
+  const source = {
+    id: "entry",
+    name: "main",
+    language: "python" as const,
+    kind: "function",
+    location: { path: "src/main.py", range: { start: { line: 0, character: 4 }, end: { line: 0, character: 8 } } },
+  };
+  const backend = createDirectLspSemanticBackend({
+    language: "python",
+    root,
+    revision: { generation: 0, manifest_sha256: "fixture" },
+    symbols: new Map([[source.id, source]]),
+    capabilities: {} as never,
+    client: {
+      status: () => ({
+        state: "ready",
+        events: [],
+        restart_delays_ms: [],
+        server_capabilities: { definitionProvider: true, implementationProvider: false },
+      }),
+      request: async (method) => {
+        methods.push(method);
+        return [];
+      },
+    },
+    toBackendUri: () => "file:///project/src/main.py",
+    fromBackendUri: () => "src/main.py",
+  });
+
+  await assert.rejects(backend.query({ operation: "implementation", symbol_id: source.id }), /backend_unavailable/);
+  assert.deepEqual(methods, []);
+});
+
 it("does not retain a backend URI outside the protected project root", async () => {
   const backend = createDirectLspSemanticBackend({
     language: "rust",

@@ -14,7 +14,11 @@ export function createNativeBackendInspector(commandRoots: readonly string[], pr
     entrypointBasenames: readonly string[] = [],
   ): BackendIdentity | undefined => {
     for (const root of roots) {
-      const executable = inspectFile(join(root, executableBasename), root, projectRoot);
+      const executable = inspectFile(
+        language === "csharp" ? pinnedRoslynExecutable(root, executableBasename) : join(root, executableBasename),
+        root,
+        projectRoot,
+      );
       if (!executable?.canonical_path) continue;
       const entrypoints = entrypointBasenames.map((name) =>
         roots
@@ -43,6 +47,22 @@ export function createNativeBackendInspector(commandRoots: readonly string[], pr
     }
     return undefined;
   };
+}
+
+/** The dotnet tool shim is a command script. Only the pinned store payload is executable evidence. */
+function pinnedRoslynExecutable(root: string, executableBasename: string): string {
+  return join(
+    root,
+    ".store",
+    "roslyn-language-server",
+    "5.11.0-1.26380.4",
+    "roslyn-language-server.win-x64",
+    "5.11.0-1.26380.4",
+    "tools",
+    "net10.0",
+    "win-x64",
+    executableBasename,
+  );
 }
 
 function inspectFile(candidate: string, root: string, projectRoot?: string): BackendFileIdentity | undefined {
@@ -90,7 +110,8 @@ function commandVersion(executable: string): string | undefined {
 /** Roslyn does not support --version. Read the PE ProductVersion/FileVersion resource conservatively. */
 function peFileVersion(path: string): string | undefined {
   const source = readFileSync(path).toString("utf16le");
-  return firstVersion(source.match(/(?:ProductVersion|FileVersion)[\s\S]{0,160}/)?.[0] ?? "");
+  const productVersion = /ProductVersion\0(v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/.exec(source)?.[1];
+  return productVersion?.replace(/^v/, "") ?? firstVersion(source.match(/FileVersion[\s\S]{0,160}/)?.[0] ?? "");
 }
 
 function pyrightPackageVersion(entrypoint: string | undefined): string | undefined {

@@ -2,7 +2,13 @@ const MAX_BODY_BYTES = 1024 * 1024;
 const SHUTDOWN_TIMEOUT_MS = 5_000;
 const RESTART_WINDOW_MS = 60_000;
 const RESTART_DELAYS_MS = [250, 1_000] as const;
-const PERMITTED_NOTIFICATIONS = new Set(["window/logMessage", "window/showMessage", "telemetry/event", "$/progress"]);
+const PERMITTED_NOTIFICATIONS = new Set([
+  "window/logMessage",
+  "window/showMessage",
+  "telemetry/event",
+  "$/progress",
+  "textDocument/publishDiagnostics",
+]);
 const READ_ONLY_METHODS = new Set([
   "textDocument/definition",
   "textDocument/references",
@@ -43,8 +49,16 @@ export type DirectLspStatus = {
   restart_delays_ms: readonly number[];
   server_capabilities?: Readonly<Record<string, unknown>>;
 };
+export type ProtectedDocumentContent = Readonly<{ language_id: "rust" | "python" | "csharp"; bytes: string }>;
 export class DirectLspError extends Error {
-  constructor(readonly code: "backend_timeout" | "backend_crashed" | "backend_failed" | "backend_write_rejected") {
+  constructor(
+    readonly code:
+      | "backend_timeout"
+      | "backend_crashed"
+      | "backend_failed"
+      | "backend_write_rejected"
+      | "backend_content_modified",
+  ) {
     super(code);
   }
 }
@@ -74,6 +88,7 @@ export function createDirectLspClient(options: DirectLspOptions) {
   const pending = new Map<number, Pending>();
   const events: DirectLspStatus["events"][number][] = [];
   const restartDelays: number[] = [];
+  let openedDocumentUris = new Set<string>();
   let serverCapabilities: Record<string, unknown> | undefined;
   const current = (candidate: number) => candidate === epoch;
   const send = (message: Record<string, unknown>, expectedEpoch = epoch) => {
@@ -151,8 +166,10 @@ export function createDirectLspClient(options: DirectLspOptions) {
     if (!entry) return;
     pending.delete(message.id);
     scheduler.clearTimeout(entry.timer);
-    if ("error" in message) entry.reject(new DirectLspError("backend_failed"));
-    else entry.resolve(message.result);
+    if ("error" in message) {
+      const errorCode = (message.error as { code?: unknown } | undefined)?.code;
+      entry.reject(new DirectLspError(errorCode === -32801 ? "backend_content_modified" : "backend_failed"));
+    } else entry.resolve(message.result);
   };
   const handleStdout = (chunk: Uint8Array, expectedEpoch: number) => {
     if (!current(expectedEpoch) || stopped || state === "failed" || state === "unavailable") return;
@@ -185,6 +202,7 @@ export function createDirectLspClient(options: DirectLspOptions) {
     process = nextProcess;
     const expectedEpoch = ++epoch;
     bytes = new Uint8Array(0) as Uint8Array<ArrayBufferLike>;
+    openedDocumentUris = new Set<string>();
     stopping = false;
     stopped = false;
     state = "initializing";
@@ -226,11 +244,34 @@ export function createDirectLspClient(options: DirectLspOptions) {
       throw error;
     }
   };
-  const request = (method: string, params: unknown): Promise<unknown> => {
+  const request = async (method: string, params: unknown): Promise<unknown> => {
     if (!READ_ONLY_METHODS.has(method)) return Promise.reject(new DirectLspError("backend_write_rejected"));
     if (state !== "ready")
       return Promise.reject(new DirectLspError(state === "unavailable" ? "backend_crashed" : "backend_failed"));
-    return sendRequest(method, params, timeoutMs);
+    try {
+      return await sendRequest(method, params, timeoutMs);
+    } catch (error) {
+      if (!(error instanceof DirectLspError && error.code === "backend_content_modified")) throw error;
+      try {
+        return await sendRequest(method, params, timeoutMs);
+      } catch (retryError) {
+        if (retryError instanceof DirectLspError && retryError.code === "backend_content_modified")
+          throw new DirectLspError("backend_failed");
+        throw retryError;
+      }
+    }
+  };
+  const openProtectedDocument = (uri: string, content: ProtectedDocumentContent): void => {
+    if (state !== "ready") throw new DirectLspError(state === "unavailable" ? "backend_crashed" : "backend_failed");
+    if (!isProtectedFileUri(uri, options.root_uri) || typeof content.bytes !== "string")
+      throw new DirectLspError("backend_write_rejected");
+    if (openedDocumentUris.has(uri)) return;
+    send({
+      jsonrpc: "2.0",
+      method: "textDocument/didOpen",
+      params: { textDocument: { uri, languageId: content.language_id, version: 0, text: content.bytes } },
+    });
+    openedDocumentUris.add(uri);
   };
   const shutdown = async (): Promise<void> => {
     if (!process || state === "unavailable") return;
@@ -260,6 +301,7 @@ export function createDirectLspClient(options: DirectLspOptions) {
   return {
     start,
     request,
+    openProtectedDocument,
     shutdown,
     refresh: () => {
       crashTimes = [];
@@ -273,6 +315,19 @@ export function createDirectLspClient(options: DirectLspOptions) {
       ...(serverCapabilities ? { server_capabilities: deepFreeze(clone(serverCapabilities)) } : {}),
     }),
   };
+}
+
+function isProtectedFileUri(uri: string, rootUri: string): boolean {
+  try {
+    const document = new URL(uri);
+    const root = new URL(rootUri);
+    const rootPath = root.pathname.endsWith("/") ? root.pathname : `${root.pathname}/`;
+    return (
+      document.protocol === "file:" && !document.search && !document.hash && document.pathname.startsWith(rootPath)
+    );
+  } catch {
+    return false;
+  }
 }
 
 function pythonConfiguration(section: string | undefined): unknown {

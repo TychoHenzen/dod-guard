@@ -91,11 +91,17 @@ export function createRuntimeAdapters(projectRoot: ProjectRoot): readonly Langua
   return adapters;
 }
 
-function createManagedPythonBackend(
+/**
+ * Constructs Python navigation only through immutable mirror generations.
+ * The optional inputs make the same boundary usable by the live-practice
+ * harness without exposing the source project to Pyright.
+ */
+export function createManagedPythonBackend(
   projectRoot: ProjectRoot,
   policy: ReturnType<typeof createRuntimeLaunchPolicy>,
   safeInitializationOptions: Record<string, unknown>,
   capabilities: RelationCapabilities,
+  options: Pick<Parameters<typeof createRuntimeLspBackend>[0], "symbols" | "spawn"> = { symbols: new Map() },
 ) {
   let inner: ReturnType<typeof createRuntimeLspBackend> | undefined;
   let state: ReturnType<InjectedSemanticBackend["readiness"]> = { state: "initializing" };
@@ -116,13 +122,14 @@ function createManagedPythonBackend(
         root: projectRoot,
         root_uri: pathToFileURL(mirror.root).href,
         revision: { generation: mirror.generation, manifest_sha256: "python-mirror" },
-        symbols: new Map(),
+        symbols: options.symbols,
         capabilities,
         safe_initialization_options: safeInitializationOptions,
         toBackendUri: (location) => mirror.uriFor(location.path),
         fromBackendUri: (uri) => mirror.pathForUri(uri),
         prepare: () => policy.prepare("python"),
         confirmInitialized: () => policy.confirmInitialized("python"),
+        ...(options.spawn ? { spawn: options.spawn } : {}),
       });
     }
     await inner.start?.();

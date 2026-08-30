@@ -93,6 +93,29 @@ async function ready(process: FakeProcess, scheduler = new Scheduler()) {
   return { client, scheduler };
 }
 
+it("opens each protected file URI once and exposes no generic notification route", async () => {
+  const process = new FakeProcess();
+  const { client } = await ready(process);
+
+  client.openProtectedDocument("file:///frozen/a.rs", { language_id: "rust", bytes: "fn main() {}\n" });
+  client.openProtectedDocument("file:///frozen/a.rs", { language_id: "rust", bytes: "changed" });
+
+  assert.equal(process.sent.at(-1)?.method, "textDocument/didOpen");
+  assert.equal(process.sent.filter((message) => message.method === "textDocument/didOpen").length, 1);
+  assert.equal("notify" in client, false);
+  assert.throws(
+    () => (client as unknown as { notify(method: string, params: unknown): void }).notify("textDocument/didChange", {}),
+    TypeError,
+  );
+  assert.throws(
+    () => (client as unknown as { notify(method: string, params: unknown): void }).notify("unknown/outbound", {}),
+    TypeError,
+  );
+  assert.throws(() => client.openProtectedDocument("https://example.test/a.rs", { language_id: "rust", bytes: "x" }), {
+    code: "backend_write_rejected",
+  });
+});
+
 // covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: LSP backend starts and stops normally
 it("uses frozen initialization and a framed read-only request then shuts down without restart", async () => {
   const process = new FakeProcess();
@@ -313,6 +336,38 @@ it("force terminates ignored shutdown and counts initialization failures in the 
   bad.respond({ jsonrpc: "2.0", id: 1, result: {} });
   await assert.rejects(start, { code: "backend_failed" });
   assert.deepEqual(badClient.status().restart_delays_ms, [250]);
+});
+
+it("ignores diagnostics but terminates on an unknown server notification", async () => {
+  const process = new FakeProcess();
+  const { client } = await ready(process);
+
+  process.respond({
+    jsonrpc: "2.0",
+    method: "textDocument/publishDiagnostics",
+    params: { uri: "file:///frozen/a.py", diagnostics: [{ message: "discarded" }] },
+  });
+  assert.equal(client.status().state, "ready");
+  assert.deepEqual(client.status().events, ["backend_notification"]);
+
+  process.respond({ jsonrpc: "2.0", method: "workspace/unsafeExtension", params: {} });
+  assert.equal(client.status().state, "failed");
+  assert.equal(process.killed, true);
+});
+
+it("retries one read-only request after the server reports content modified", async () => {
+  const process = new FakeProcess();
+  const { client } = await ready(process);
+  const pending = client.request("textDocument/references", { textDocument: { uri: "file:///frozen/a.rs" } });
+  const first = process.sent.at(-1) as { id: number };
+  process.respond({ jsonrpc: "2.0", id: first.id, error: { code: -32801, message: "content modified" } });
+  await tick();
+  const second = process.sent.at(-1) as { id: number; method: string };
+  assert.equal(second.method, "textDocument/references");
+  assert.notEqual(second.id, first.id);
+  process.respond({ jsonrpc: "2.0", id: second.id, result: [{ uri: "file:///frozen/a.rs" }] });
+  assert.deepEqual(await pending, [{ uri: "file:///frozen/a.rs" }]);
+  assert.equal(client.status().state, "ready");
 });
 
 // covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: Backend sends an unsolicited request

@@ -101,7 +101,8 @@
 <!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Production runtime uses a checked-in adapter selection record :: Runtime starts without spike dependencies -->
   <!-- covers: code-explorer/language-adapters :: Production runtime uses a checked-in adapter selection record :: Approved C# executable is absent -->
-- [ ] 2.15 Run the same definition, reference, call, external-location, and unavailable-relation practice fixture against Rust, Python, and C#.
+- [x] 2.15 Run the same definition, reference, call, external-location, and unavailable-relation practice fixture against Rust, Python, and C#.
+<!-- status: completed -->
 
 ## 3. Symbol and File Discovery
 

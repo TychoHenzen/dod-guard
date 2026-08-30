@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "platform": "win32",
+  "fixture": "same-shape helper, caller, and external-library call",
+  "public_mcp_boundary": {
+    "exercised": false,
+    "reason": "This is internal semantic-adapter practice. Public handle creation and navigation are implemented by tasks 3 and 4."
+  },
+  "backends": {
+    "rust": {
+      "version": "1.94.0",
+      "readiness_after_practice": "ready",
+      "definition": { "local": 1, "external": 0 },
+      "references": { "local": 2, "external": 0 },
+      "callers": { "local": 1, "external": 0 },
+      "callees": { "local": 1, "external": 1 },
+      "external_definition": { "local": 0, "external": 1 },
+      "implementation": { "local": 0, "external": 0 },
+      "missing_handle_relation": "backend_unavailable"
+    },
+    "python": {
+      "version": "1.1.410",
+      "readiness_after_practice": "ready",
+      "definition": { "local": 1, "external": 0 },
+      "references": { "local": 2, "external": 0 },
+      "callers": { "local": 1, "external": 0 },
+      "callees": { "local": 1, "external": 2 },
+      "external_definition": { "local": 0, "external": 2 },
+      "implementation": "backend_unavailable",
+      "missing_handle_relation": "backend_unavailable"
+    },
+    "csharp": {
+      "version": "5.11.0-1.26380.4",
+      "readiness_after_practice": "ready",
+      "definition": { "local": 1, "external": 0 },
+      "references": { "local": 2, "external": 0 },
+      "callers": { "local": 1, "external": 0 },
+      "callees": { "local": 1, "external": 0 },
+      "external_definition": { "local": 0, "external": 0 },
+      "external_definition_note": "The approved Roslyn payload returned no external location for System.Console.",
+      "implementation": { "local": 1, "external": 0 },
+      "missing_handle_relation": "backend_unavailable"
+    }
+  }
+}
