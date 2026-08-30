@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "language": "csharp",
+  "source_file": "src/Demo.cs",
+  "symbols": {
+    "entry": {
+      "identity": "csharp:Demo.Entry",
+      "name": "Entry",
+      "declaration": {
+        "start": { "line": 1, "character": 16 },
+        "end": { "line": 1, "character": 21 }
+      }
+    },
+    "helper": {
+      "identity": "csharp:Demo.Helper",
+      "name": "Helper",
+      "declaration": {
+        "start": { "line": 2, "character": 24 },
+        "end": { "line": 2, "character": 30 }
+      },
+      "body": "private static void Helper() { var item = new Item(); }"
+    }
+  },
+  "relations": {
+    "definition": {
+      "from_call": {
+        "start": { "line": 1, "character": 33 },
+        "end": { "line": 1, "character": 39 }
+      },
+      "target": {
+        "start": { "line": 2, "character": 24 },
+        "end": { "line": 2, "character": 30 }
+      }
+    },
+    "callers": {
+      "target": "csharp:Demo.Helper",
+      "callers": [
+        {
+          "identity": "csharp:Demo.Entry",
+          "call_site": {
+            "start": { "line": 1, "character": 33 },
+            "end": { "line": 1, "character": 39 }
+          }
+        }
+      ]
+    },
+    "callees": {
+      "source": "csharp:Demo.Entry",
+      "callees": [
+        {
+          "identity": "csharp:Demo.Helper",
+          "call_site": {
+            "start": { "line": 1, "character": 33 },
+            "end": { "line": 1, "character": 39 }
+          }
+        }
+      ]
+    }
+  },
+  "unavailable_relations": [
+    { "relation": "implementations:unresolved", "reason": "fixture-unresolved-symbol" }
+  ]
+}

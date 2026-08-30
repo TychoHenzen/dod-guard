@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "language": "rust",
+  "source_file": "src/lib.rs",
+  "symbols": {
+    "entry": {
+      "identity": "rust:entry",
+      "name": "entry",
+      "declaration": {
+        "start": { "line": 0, "character": 3 },
+        "end": { "line": 0, "character": 8 }
+      }
+    },
+    "helper": {
+      "identity": "rust:helper",
+      "name": "helper",
+      "declaration": {
+        "start": { "line": 4, "character": 3 },
+        "end": { "line": 4, "character": 9 }
+      },
+      "body": "fn helper() {\n    let _item = Item;\n}"
+    }
+  },
+  "relations": {
+    "definition": {
+      "from_call": {
+        "start": { "line": 1, "character": 4 },
+        "end": { "line": 1, "character": 10 }
+      },
+      "target": {
+        "start": { "line": 4, "character": 3 },
+        "end": { "line": 4, "character": 9 }
+      }
+    },
+    "callers": {
+      "target": "rust:helper",
+      "callers": [
+        {
+          "identity": "rust:entry",
+          "call_site": {
+            "start": { "line": 1, "character": 4 },
+            "end": { "line": 1, "character": 10 }
+          }
+        }
+      ]
+    },
+    "callees": {
+      "source": "rust:entry",
+      "callees": [
+        {
+          "identity": "rust:helper",
+          "call_site": {
+            "start": { "line": 1, "character": 4 },
+            "end": { "line": 1, "character": 10 }
+          }
+        }
+      ]
+    }
+  },
+  "unavailable_relations": [
+    { "relation": "implementations:unresolved", "reason": "fixture-unresolved-symbol" }
+  ]
+}

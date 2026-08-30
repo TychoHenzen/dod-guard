@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "language": "python",
+  "source_file": "src/sample.py",
+  "symbols": {
+    "entry": {
+      "identity": "python:entry",
+      "name": "entry",
+      "declaration": {
+        "start": { "line": 0, "character": 4 },
+        "end": { "line": 0, "character": 9 }
+      }
+    },
+    "helper": {
+      "identity": "python:helper",
+      "name": "helper",
+      "declaration": {
+        "start": { "line": 3, "character": 4 },
+        "end": { "line": 3, "character": 10 }
+      },
+      "body": "def helper():\n    return Item()"
+    }
+  },
+  "relations": {
+    "definition": {
+      "from_call": {
+        "start": { "line": 1, "character": 4 },
+        "end": { "line": 1, "character": 10 }
+      },
+      "target": {
+        "start": { "line": 3, "character": 4 },
+        "end": { "line": 3, "character": 10 }
+      }
+    },
+    "callers": {
+      "target": "python:helper",
+      "callers": [
+        {
+          "identity": "python:entry",
+          "call_site": {
+            "start": { "line": 1, "character": 4 },
+            "end": { "line": 1, "character": 10 }
+          }
+        }
+      ]
+    },
+    "callees": {
+      "source": "python:entry",
+      "callees": [
+        {
+          "identity": "python:helper",
+          "call_site": {
+            "start": { "line": 1, "character": 4 },
+            "end": { "line": 1, "character": 10 }
+          }
+        }
+      ]
+    }
+  },
+  "unavailable_relations": [
+    { "relation": "implementations:unresolved", "reason": "fixture-unresolved-symbol" }
+  ]
+}

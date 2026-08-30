@@ -83,7 +83,8 @@
   <!-- covers: code-explorer/language-adapters :: Known project-controlled execution hooks stay disabled :: Python project selects an interpreter or external path -->
   <!-- covers: code-explorer/language-adapters :: Known project-controlled execution hooks stay disabled :: Python configuration changes after validation -->
   <!-- covers: code-explorer/language-adapters :: Known project-controlled execution hooks stay disabled :: Backend lacks a verified safe configuration -->
-- [ ] 2.12 Create the exact Rust, Python, and C# helper fixtures and machine-readable range manifests.
+- [x] 2.12 Create the exact Rust, Python, and C# helper fixtures and machine-readable range manifests.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Language fixtures define one exact semantic oracle :: Rust helper oracle -->
   <!-- covers: code-explorer/language-adapters :: Language fixtures define one exact semantic oracle :: Python helper oracle -->
   <!-- covers: code-explorer/language-adapters :: Language fixtures define one exact semantic oracle :: C# helper oracle -->
