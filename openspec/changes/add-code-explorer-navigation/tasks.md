@@ -88,7 +88,8 @@
   <!-- covers: code-explorer/language-adapters :: Language fixtures define one exact semantic oracle :: Rust helper oracle -->
   <!-- covers: code-explorer/language-adapters :: Language fixtures define one exact semantic oracle :: Python helper oracle -->
   <!-- covers: code-explorer/language-adapters :: Language fixtures define one exact semantic oracle :: C# helper oracle -->
-- [ ] 2.13 Implement and test JSON-RPC stdio framing, initialization, cancellation, dynamic registration, crash restart, shutdown, and malformed-response handling.
+- [x] 2.13 Implement and test JSON-RPC stdio framing, initialization, cancellation, dynamic registration, crash restart, shutdown, and malformed-response handling.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: LSP backend starts and stops normally -->
   <!-- covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: LSP response is malformed or oversized -->
   <!-- covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: LSP request times out -->
