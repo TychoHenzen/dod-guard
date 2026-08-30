@@ -64,11 +64,13 @@
   <!-- covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns an oversized payload -->
   <!-- covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns another language unexpectedly -->
   <!-- covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns a virtual document -->
-- [ ] 2.10 Isolate invalid encodings, syntax errors, and unsupported generated syntax to per-file partial or unavailable states.
+- [x] 2.10 Isolate invalid encodings, syntax errors, and unsupported generated syntax to per-file partial or unavailable states.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Partial files fail locally instead of disabling a language :: One source file has invalid encoding -->
   <!-- covers: code-explorer/language-adapters :: Partial files fail locally instead of disabling a language :: One file contains syntax errors -->
   <!-- covers: code-explorer/language-adapters :: Partial files fail locally instead of disabling a language :: Project contains unsupported source syntax -->
-- [ ] 2.11 Enforce the server-owned backend allowlist, reject project command configuration and protocol writes, and permit loopback endpoints only.
+- [x] 2.11 Enforce the server-owned backend allowlist, reject project command configuration and protocol writes, and permit loopback endpoints only.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Project config names another executable -->
   <!-- covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Backend requests a workspace edit -->
   <!-- covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Allowlisted executable is missing -->
