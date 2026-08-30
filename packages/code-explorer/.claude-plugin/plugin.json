@@ -1,0 +1,9 @@
+{
+  "name": "code-explorer",
+  "version": "0.1.0",
+  "description": "Read-only MCP source navigation for one project.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/TychoHenzen"
+  }
+}

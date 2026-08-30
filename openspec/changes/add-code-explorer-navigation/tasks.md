@@ -1,7 +1,9 @@
 ## 1. Package Boundary and Dependency Spike
 
-- [ ] 1.1 Create `packages/code-explorer` with package, TypeScript, plugin, MCP, main-module, bundle, and package test configuration matching the monorepo contracts.
-- [ ] 1.2 Add a standalone MCP handshake test harness and a controllable fake semantic adapter before connecting a real backend.
+- [x] 1.1 Create `packages/code-explorer` with package, TypeScript, plugin, MCP, main-module, bundle, and package test configuration matching the monorepo contracts.
+<!-- status: completed -->
+- [x] 1.2 Add a standalone MCP handshake test harness and a controllable fake semantic adapter before connecting a real backend.
+<!-- status: completed -->
 - [ ] 1.3 Install or launch the current public Symbols MCP release in an isolated test configuration and record the exact version and supported process boundary.
 - [ ] 1.4 Run the bounded Serena-versus-Symbols matrix against `TranscriptContent`, `AgentEvent`, `SendMessage`, `Tool`, and `project_block`, recording every observation required by `design.md`.
 - [ ] 1.5 Apply the fixed selection rule, record the selected adapter path and unsupported operations, and stop production source work if the spike record is incomplete.
