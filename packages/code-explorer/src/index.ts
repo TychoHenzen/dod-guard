@@ -5,6 +5,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { createBackendStatusReport } from "./semantic/backend-status.js";
+import type { LanguageAdapter } from "./semantic/language-adapter.js";
+import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "./semantic/project-root.js";
 
 const filename = fileURLToPath(import.meta.url);
 const packagePath = path.join(path.dirname(filename), "..", "package.json");
@@ -39,6 +42,7 @@ export type CodeExplorerServer = {
   mcp: McpServer;
   call(name: string, arguments_: Record<string, unknown>): Promise<CodeExplorerEnvelope | CodeExplorerError>;
   state(): CodeExplorerState;
+  projectRoot: ProjectRoot | undefined;
 };
 
 function isToolName(name: string): name is ToolName {
@@ -197,7 +201,9 @@ function textResult(result: CodeExplorerEnvelope | CodeExplorerError, isError = 
   };
 }
 
-export function createServer(): CodeExplorerServer {
+export function createServer(
+  options: { adapters?: readonly LanguageAdapter[]; projectRoot?: ProjectRoot } = {},
+): CodeExplorerServer {
   let refreshGeneration = 0;
   const viewHistory: string[] = [];
   const mcp = new McpServer({ name: "code-explorer", version: packageInfo.version }, { capabilities: { tools: {} } });
@@ -221,13 +227,15 @@ export function createServer(): CodeExplorerServer {
         data: { relation },
       };
     }
+    const backendStatus =
+      name === "code_status" ? { backend_status: createBackendStatusReport(options.adapters ?? []) } : {};
     return {
       schema_version: 1,
       project_id: "project",
       project_generation: 0,
       pending_generation: null,
       state: name === "code_status" && arguments_.action === "refresh" ? "refreshed" : "ready",
-      data: {},
+      data: backendStatus,
     };
   };
 
@@ -247,13 +255,22 @@ export function createServer(): CodeExplorerServer {
     mcp,
     call,
     state: () => ({ refresh_generation: refreshGeneration, view_history: [...viewHistory] }),
+    projectRoot: options.projectRoot,
   };
 }
 
 async function main(): Promise<void> {
-  const server = createServer();
+  const server = createServer({
+    projectRoot: createNativeProjectRoot(parseProjectRootArgument(process.argv.slice(2))),
+  });
   const transport = new StdioServerTransport();
   await server.mcp.connect(transport);
+}
+
+function parseProjectRootArgument(arguments_: readonly string[]): string | undefined {
+  if (arguments_.length === 0) return undefined;
+  if (arguments_.length === 2 && arguments_[0] === "--project-root" && arguments_[1].length > 0) return arguments_[1];
+  throw new ProjectPathError("invalid_project_root", "project_root");
 }
 
 function isMainModule(): boolean {
@@ -268,7 +285,8 @@ function isMainModule(): boolean {
 
 if (isMainModule()) {
   main().catch((error) => {
-    process.stderr.write(`code-explorer MCP server failed: ${error}\n`);
+    const message = error instanceof ProjectPathError ? `${error.code}:${error.root_source ?? "cwd"}` : String(error);
+    process.stderr.write(`code-explorer MCP server failed: ${message}\n`);
     process.exit(1);
   });
 }

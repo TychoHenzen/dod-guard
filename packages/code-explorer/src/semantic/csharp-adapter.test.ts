@@ -45,7 +45,7 @@ it("reports a compatible C# backend ready and forwards every shared request shap
   for (const request of requests) backend.setResult(request, resultFor(request));
 
   assert.equal(adapter.status().language, "csharp");
-  assert.equal(adapter.status().state, "ready");
+  assert.equal(adapter.status().state, "degraded");
   assert.deepEqual(adapter.status().capabilities.callers, { state: "ready" });
   assert.deepEqual(adapter.status().capabilities.implementation, { state: "unavailable" });
 

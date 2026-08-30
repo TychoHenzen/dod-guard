@@ -45,7 +45,7 @@ it("reports a compatible Python backend ready and forwards every shared request 
   for (const request of requests) backend.setResult(request, resultFor(request));
 
   assert.equal(adapter.status().language, "python");
-  assert.equal(adapter.status().state, "ready");
+  assert.equal(adapter.status().state, "degraded");
   assert.deepEqual(adapter.status().capabilities.definition, { state: "ready" });
   assert.deepEqual(adapter.status().capabilities.callers, { state: "failed", failure_code: "backend_failed" });
 

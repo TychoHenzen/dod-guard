@@ -45,7 +45,7 @@ it("reports a compatible Rust backend ready and forwards every shared request sh
   for (const request of requests) backend.setResult(request, resultFor(request));
 
   assert.equal(adapter.status().language, "rust");
-  assert.equal(adapter.status().state, "ready");
+  assert.equal(adapter.status().state, "degraded");
   assert.deepEqual(adapter.status().capabilities.callers, { state: "ready" });
   assert.deepEqual(adapter.status().capabilities.callees, { state: "unavailable" });
 
@@ -61,22 +61,11 @@ it("observes injected backend readiness changes after adapter construction", () 
   backend.setReady();
   assert.equal(adapter.status().state, "ready");
   backend.setFailed("backend_failed");
-  assert.deepEqual(adapter.status(), {
-    language: "rust",
-    backend_name: "rust-analyzer",
-    backend_version: "1.0.0",
-    discovery_source: "injected",
-    state: "failed",
-    capabilities: {
-      definition: { state: "ready" },
-      references: { state: "ready" },
-      type_definition: { state: "ready" },
-      implementation: { state: "ready" },
-      callers: { state: "ready" },
-      callees: { state: "ready" },
-    },
-    failure_code: "backend_failed",
-  });
+  const failed = adapter.status();
+  assert.equal(failed.state, "failed");
+  assert.equal(failed.failure_code, "backend_failed");
+  assert.equal(failed.last_transition_time > 0, true);
+  assert.deepEqual(failed.capabilities.definition, { state: "unavailable" });
 });
 
 it("validates runtime requests and injected backend results at the adapter boundary", async () => {

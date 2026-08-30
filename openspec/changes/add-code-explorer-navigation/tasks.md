@@ -44,19 +44,22 @@
 <!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Relation results cite their source locations :: Project-local caller is found -->
   <!-- covers: code-explorer/language-adapters :: Relation results cite their source locations :: Definition belongs to an external dependency -->
-- [ ] 2.7 Report missing servers, unsupported call hierarchy, and isolated initialization failures through `code_status`.
+- [x] 2.7 Report missing servers, unsupported call hierarchy, and isolated initialization failures through `code_status`.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Required language server is missing -->
   <!-- covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Backend lacks call hierarchy -->
   <!-- covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Backend initialization fails -->
   <!-- covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Every semantic backend is unavailable -->
   <!-- covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Backend version is incompatible -->
-- [ ] 2.8 Enforce the startup-frozen canonical project root across parent paths, symlinks, junctions, and invalid startup roots.
+- [x] 2.8 Enforce the startup-frozen canonical project root across parent paths, symlinks, junctions, and invalid startup roots.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: Client supplies a parent-directory path -->
   <!-- covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: In-root symlink targets an external file -->
   <!-- covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: Startup root is invalid -->
   <!-- covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: Backend returns a symlinked external file -->
   <!-- covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: Local path changes during a protected read -->
-- [ ] 2.9 Validate backend ranges, payload sizes, declared languages, and local path containment before retaining a result.
+- [x] 2.9 Validate backend ranges, payload sizes, declared languages, and local path containment before retaining a result.
+<!-- status: completed -->
   <!-- covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns an invalid range -->
   <!-- covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns an oversized payload -->
   <!-- covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns another language unexpectedly -->

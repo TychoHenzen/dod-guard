@@ -44,6 +44,7 @@ export type BackendStatus = {
   discovery_source: "injected" | "server_path";
   state: BackendState;
   capabilities: RelationCapabilities;
+  last_transition_time: number;
   failure_code?: string;
 };
 

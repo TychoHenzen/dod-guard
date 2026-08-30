@@ -28,6 +28,7 @@ describe("normalized semantic adapter contract", () => {
       backend_version: "1.0.0",
       discovery_source: "injected",
       state: "ready",
+      last_transition_time: 0,
       capabilities: {
         definition: capability,
         references: { state: "unavailable" },

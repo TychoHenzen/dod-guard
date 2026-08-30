@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -11,7 +12,7 @@ const entryPoint = fileURLToPath(new URL("./index.js", import.meta.url));
 describe("code-explorer package boundary", () => {
   it("completes initialize and tools/list through the compiled MCP process", async () => {
     const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
-    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint] });
+    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });
 
     try {
       await client.connect(transport);
@@ -28,10 +29,32 @@ describe("code-explorer package boundary", () => {
     }
   });
 
+  it("uses an explicit startup root and redacts invalid root paths in the compiled child", async () => {
+    const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: [entryPoint, "--project-root", process.cwd()],
+      cwd: process.cwd(),
+    });
+    try {
+      await client.connect(transport);
+      assert.equal((await client.listTools()).tools.length, 5);
+    } finally {
+      await client.close();
+    }
+
+    const invalid = spawnSync(process.execPath, [entryPoint, "--project-root", "missing-project-root"], {
+      encoding: "utf8",
+    });
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.stderr, /invalid_project_root:project_root/);
+    assert.equal(invalid.stderr.includes("missing-project-root"), false);
+  });
+
   // covers: code-explorer/mcp-navigation :: The MCP surface stays small and workspace-read-only :: Client lists Code Explorer tools
   it("advertises exactly the five read-only navigation tools", async () => {
     const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
-    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint] });
+    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });
 
     try {
       await client.connect(transport);
@@ -62,7 +85,7 @@ describe("code-explorer package boundary", () => {
     assert.deepEqual(server.state(), before);
 
     const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
-    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint] });
+    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });
     try {
       await client.connect(transport);
       const response = (await client.callTool({ name: "rename", arguments: {} })) as {
@@ -135,7 +158,7 @@ describe("code-explorer package boundary", () => {
 
   it("advertises closed action variants for history and status", async () => {
     const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
-    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint] });
+    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });
 
     try {
       await client.connect(transport);
