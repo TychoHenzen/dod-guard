@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "decision": "direct_standard_public_lsp",
+  "production_work": "authorized",
+  "rule_evaluation": [
+    {
+      "step": 1,
+      "rule": "Reject a dependency that fails a hard gate or returns one incorrect semantic relation.",
+      "candidate": "serena@1.7.0",
+      "result": "rejected",
+      "failed_hard_gates": [
+        "no_project_write",
+        "initialize_within_30_seconds",
+        "operations_within_10_seconds",
+        "response_under_1_mib_unverified"
+      ]
+    },
+    {
+      "step": 1,
+      "rule": "Reject a dependency that fails a hard gate or returns one incorrect semantic relation.",
+      "candidate": "@p1va/symbols@0.0.25",
+      "result": "rejected",
+      "failed_hard_gates": ["bounded_deepseek_semantic_probe"]
+    },
+    {
+      "step": 2,
+      "rule": "Select the remaining dependency with the higher operation-language score.",
+      "result": "not_applicable",
+      "reason": "No dependency remained after step 1. The 30 fixture cells were not executed and cannot be used as a score."
+    },
+    {
+      "step": 3,
+      "rule": "Break a score tie by call pairs, response bytes, elapsed time, then ordinal dependency name.",
+      "result": "not_applicable",
+      "reason": "No dependency remained after step 1."
+    },
+    {
+      "step": 4,
+      "rule": "Use the selected dependency alone at 30 points.",
+      "result": "not_applicable"
+    },
+    {
+      "step": 5,
+      "rule": "At 24 through 29 points, use proved relations and public LSP requests for missing operations.",
+      "result": "not_applicable"
+    },
+    {
+      "step": 6,
+      "rule": "Below 24 points, or when neither dependency survives, implement through standard public LSP requests.",
+      "result": "selected",
+      "selected_path": "direct_standard_public_lsp"
+    }
+  ],
+  "unsupported_or_unproven_operations": {
+    "serena@1.7.0": [
+      "incoming_calls: no public Serena tool",
+      "outgoing_calls: unsupported public tool returned HTTP 500 HTML",
+      "type_definition: no public Serena tool",
+      "raw_response_size_under_1_mib: unproven because complete upstream response bodies were not captured"
+    ],
+    "@p1va/symbols@0.0.25": [
+      "DeepSeek semantic search: timed out at the 30-second budget and later returned no TranscriptContent match after 227513 ms",
+      "all 30 fixture operations: unproven because fixture execution stopped after the hard-gate failure"
+    ],
+    "selected_path": [
+      "Direct LSP executable compatibility, safety initialization, capability support, and per-language sentinel behavior remain unproven until later adapter tasks."
+    ]
+  },
+  "evidence": [
+    "manifest.json",
+    "matrix-2026-08-30.json",
+    "matrix-2026-08-30.md",
+    "serena-1.7.0-deepseek.raw.json",
+    "symbols-0.0.25-deepseek-timeout.raw.json",
+    "symbols-0.0.25-deepseek-search.raw.json",
+    "symbols-0.0.25.record.json"
+  ],
+  "repeatable_commands_source": "manifest.json",
+  "scope_note": "This is the spike decision record required before production source work. It is not the runtime adapter-selection.json owned by task 2.14."
+}

@@ -1,0 +1,3 @@
+{
+  "javascript": "node scripts/ci/run-compiled-js-test.mjs"
+}

@@ -8,12 +8,15 @@
 <!-- status: completed -->
 - [x] 1.4 Run the bounded Serena-versus-Symbols matrix against `TranscriptContent`, `AgentEvent`, `SendMessage`, `Tool`, and `project_block`, recording every observation required by `design.md`.
 <!-- status: completed -->
-- [ ] 1.5 Apply the fixed selection rule, record the selected adapter path and unsupported operations, and stop production source work if the spike record is incomplete.
-- [ ] 1.6 Implement and test the advertised five-tool workspace-read-only MCP surface, internal refresh boundary, and structured unknown-tool failure.
+- [x] 1.5 Apply the fixed selection rule, record the selected adapter path and unsupported operations, and stop production source work if the spike record is incomplete.
+<!-- status: completed -->
+- [x] 1.6 Implement and test the advertised five-tool workspace-read-only MCP surface, internal refresh boundary, and structured unknown-tool failure.
+<!-- status: completed -->
   <!-- covers: code-explorer/mcp-navigation :: The MCP surface stays small and workspace-read-only :: Client lists Code Explorer tools -->
   <!-- covers: code-explorer/mcp-navigation :: The MCP surface stays small and workspace-read-only :: Client requests an unknown tool -->
   <!-- covers: code-explorer/mcp-navigation :: The MCP surface stays small and workspace-read-only :: Client refreshes derived state -->
-- [ ] 1.7 Implement closed versioned request and response schemas for every tool and action.
+- [x] 1.7 Implement closed versioned request and response schemas for every tool and action.
+<!-- status: completed -->
   <!-- covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Tool input contains an unknown field -->
   <!-- covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Successful tool response uses the common envelope -->
   <!-- covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Backend reports an unsupported operation -->
