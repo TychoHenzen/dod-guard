@@ -64,18 +64,21 @@
   <!-- covers: code-explorer/browser-navigation :: Browser discovery preserves service ranking and filters :: User clears the query -->
   <!-- covers: code-explorer/browser-navigation :: Browser discovery preserves service ranking and filters :: Results are omitted by a limit -->
 
-- [ ] 2.3 Render bounded source through validated UTF-16 spans, escaped text nodes, line numbers, handle actions, identity metadata, and truncation counts in `packages/code-explorer/src/browser/`. Verify with deterministic source and hostile-markup browser fixtures.
+- [x] 2.3 Render bounded source through validated UTF-16 spans, escaped text nodes, line numbers, handle actions, identity metadata, and truncation counts in `packages/code-explorer/src/browser/`. Verify with deterministic source and hostile-markup browser fixtures.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-navigation :: Focused source is bounded text with navigable handles :: Focused body contains visible symbols -->
   <!-- covers: code-explorer/browser-navigation :: Focused source is bounded text with navigable handles :: Focused body is truncated -->
   <!-- covers: code-explorer/browser-navigation :: Focused source is bounded text with navigable handles :: Focused body contains unsafe markup text -->
 
-- [ ] 2.4 Implement lazy relation groups with supported, unavailable, external, omitted, loading, and failed states in `packages/code-explorer/src/browser/`. Prove one dispatch per opened group and no eager relation requests with fake-core browser assertions.
+- [x] 2.4 Implement lazy relation groups with supported, unavailable, external, omitted, loading, and failed states in `packages/code-explorer/src/browser/`. Prove one dispatch per opened group and no eager relation requests with fake-core browser assertions.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-navigation :: Semantic relations load only on demand :: Focus view first opens -->
   <!-- covers: code-explorer/browser-navigation :: Semantic relations load only on demand :: User opens a relation group -->
   <!-- covers: code-explorer/browser-navigation :: Semantic relations load only on demand :: Relation is unsupported -->
   <!-- covers: code-explorer/browser-navigation :: Semantic relations load only on demand :: Result belongs to an external dependency -->
 
-- [ ] 2.5 Route search, landmark, source-handle, and relation selections through one focus action that updates view state only after success. Add browser assertions for history append and failure preservation.
+- [x] 2.5 Route search, landmark, source-handle, and relation selections through one focus action that updates view state only after success. Add browser assertions for history append and failure preservation.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-navigation :: Selecting a local result recenters navigation :: User selects a search candidate -->
   <!-- covers: code-explorer/browser-navigation :: Selecting a local result recenters navigation :: User follows a visible handle -->
   <!-- covers: code-explorer/browser-navigation :: Selecting a local result recenters navigation :: Focus request fails -->
