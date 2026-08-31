@@ -2,11 +2,9 @@
 /**
  * quality-guard - PostToolUse gate for code structure.
  *
- * It runs the quality-refactor scanner on the one file that was written, then
- * decides with a ratchet rather than an absolute bound. The baseline is the
- * same `.github/quality/quality-baseline.json` the CI ratchet uses, read
- * through the scanner's own baseline module. A write and a CI run therefore
- * cannot disagree about what the bar is.
+ * It runs the quality-refactor scanner on the one file that was written. An
+ * existing baseline supplies a ratchet comparison. Otherwise, normal
+ * file-local hard bounds apply. The tracked baseline is read-only here.
  *
  * A `.quality-skip` sentinel waives one blocked write. See sentinel.mjs.
  *
@@ -20,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { scopeToChangedLines } from "./changed-lines.mjs";
 import { hookTargets } from "./hook-targets.mjs";
 import { runProjectLinter } from "./project-linter.mjs";
-import { newFileVerdict, ratchetVerdict, rebaselineFile } from "./baseline-gate.mjs";
+import { absoluteVerdict, ratchetVerdict } from "./baseline-gate.mjs";
 import { deleteSentinel, readSentinel, recordConsumption } from "./sentinel.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -37,7 +35,7 @@ const CODE_EXT = new Set([
  * test-only-export need whole-project reachability, so a per-file gate would
  * call every export dead. Run those in a repository-wide scan instead.
  */
-const FILE_RULES = [
+export const FILE_RULES = [
   "file-length", "function-length", "complexity", "param-count",
   "nesting-depth", "types-per-file", "else-branch", "unnamed-tuple",
   "unused-local", "commented-out-code", "todo-marker", "stateless-method",
@@ -57,22 +55,6 @@ function findRepoRoot(filePath) {
     dir = parent;
   }
   return dirname(resolve(filePath));
-}
-
-/**
- * Whether git already tracks this path. Used to tell a genuinely new file
- * (never committed) from a file the baseline simply never scanned, so the
- * two do not get the same generous ceiling.
- *
- * Any failure reports false: git missing, not a work tree, path untracked.
- * That is the same as today's behaviour. An unreadable answer means "new".
- */
-function isGitTracked(repoRoot, filePath) {
-  const result = spawnSync("git", ["ls-files", "--error-unmatch", "--", filePath], {
-    cwd: repoRoot,
-    encoding: "utf8",
-  });
-  return result.status === 0;
 }
 
 function runScanner(filePath, repoRoot) {
@@ -95,11 +77,17 @@ function report(header, lines, tail) {
   return 2;
 }
 
-function newFileTail(repoRoot) {
+export function successMessage(filePath) {
+  return `quality-guard file-local feedback passed for ${filePath}. This is not commit evidence.\n`
+    + "Run quality-guard check --staged before committing.";
+}
+
+function absoluteTail(repoRoot) {
   const sentinel = join(repoRoot, ".quality-skip");
   return (
-    "This file is new, so only the generous ceiling applies. Split it up.\n"
-    + `To waive this once: touch "${sentinel}"`
+    "This file-local hard bound applies before a baseline exists or knows this file. Split it up.\n"
+    + `To waive this one write: touch "${sentinel}"\n`
+    + "Before committing, run: quality-guard check --staged"
   );
 }
 
@@ -109,14 +97,15 @@ function trackedTail(filePath, repoRoot) {
     "Fix the new violations, or split the change. The baseline records what was\n"
     + "already there, so only the increase blocks. Run the scanner directly:\n"
     + `  node "${SCANNER}" "${filePath}" --root="${repoRoot}"\n`
-    + `To record a deliberate raise: echo '{"rebaseline": true}' > "${sentinel}"`
+    + `To waive this tracked regression once: echo '{"rebaseline": true}' > "${sentinel}"\n`
+    + "Before committing, run: quality-guard check --staged"
   );
 }
 
 /**
- * Honour a sentinel. A plain sentinel waives only the new-file ceiling.
- * Raising a tracked file's bar needs `{"rebaseline": true}`. Either way the
- * consumption is logged and the sentinel is deleted.
+ * Honour a sentinel. A plain sentinel waives file-local hard bounds. A
+ * tracked-file regression needs `{"rebaseline": true}`. Either way, the
+ * consumption is logged and the sentinel is deleted without writing a baseline.
  */
 export function waive(repoRoot, sentinel, context) {
   if (!sentinel) return false;
@@ -127,53 +116,46 @@ export function waive(repoRoot, sentinel, context) {
 }
 
 /**
- * Read a file the baseline has never scanned. Genuinely new means git does not
- * track it, and only that one gets the generous ceiling. A file git already
- * tracks is pre-existing, so it adopts at its current counts, the same as CI
- * does. `checkTracked` is a callback, so a file the baseline already knows
- * costs no git call at all.
+ * A file the baseline has never scanned has no comparison point. It receives
+ * normal file-local hard bounds whether Git tracks it or not.
  */
-function unseenVerdict(comparison, relPath, checkTracked) {
-  if (!comparison.newFiles.includes(relPath)) return { isNew: false, adopt: false };
-  const tracked = checkTracked();
-  return { isNew: !tracked, adopt: tracked };
+function unseenVerdict(comparison, relPath) {
+  return comparison === null || comparison.newFiles.includes(relPath);
 }
 
 export function gate(input, filePath, deps) {
-  const { readBaseline, compareToBaseline, writeBaseline, isTracked = isGitTracked } = deps;
+  const { readBaseline, compareToBaseline } = deps;
   const repoRoot = findRepoRoot(filePath);
   const baselinePath = join(repoRoot, BASELINE);
-  if (!existsSync(baselinePath)) return 0;
 
   const scan = runScanner(filePath, repoRoot);
   if (!scan || !Array.isArray(scan.violations)) return 0;
+  const relPath = relative(repoRoot, resolve(filePath)).split("\\").join("/");
 
-  let baseline;
-  try {
-    baseline = readBaseline(baselinePath);
-  } catch {
-    return 0;
+  let comparison = null;
+  if (existsSync(baselinePath)) {
+    try {
+      comparison = compareToBaseline(scan.violations, readBaseline(baselinePath), [relPath]);
+    } catch {
+      return 0;
+    }
   }
 
-  const relPath = relative(repoRoot, resolve(filePath)).split("\\").join("/");
-  const comparison = compareToBaseline(scan.violations, baseline, [relPath]);
-  const { isNew, adopt } = unseenVerdict(comparison, relPath, () => isTracked(repoRoot, filePath));
-  const blocking = isNew
-    ? newFileVerdict(scan.violations)
+  const isUnseen = unseenVerdict(comparison, relPath);
+  const blocking = isUnseen
+    ? absoluteVerdict(scan.violations)
     : ratchetVerdict(comparison, relPath, scan.violations);
 
   const waived = blocking.length > 0
-    && waive(repoRoot, readSentinel(repoRoot), { isNew, record: { file: relPath, reasons: blocking } });
+    && waive(repoRoot, readSentinel(repoRoot), { isNew: isUnseen, record: { file: relPath, reasons: blocking } });
 
   if (blocking.length > 0 && !waived) {
     return report(
-      `quality-guard blocked this write. ${filePath} got structurally worse.`,
+      `quality-guard blocked this file-local write. ${filePath} did not pass its applicable check.`,
       blocking,
-      isNew ? newFileTail(repoRoot) : trackedTail(filePath, repoRoot),
+      isUnseen ? absoluteTail(repoRoot) : trackedTail(filePath, repoRoot),
     );
   }
-
-  if (isNew || adopt || waived) writeBaseline(baselinePath, rebaselineFile(baseline, scan.violations, relPath));
 
   const findings = scopeToChangedLines(input, runProjectLinter(filePath, repoRoot));
   if (findings.length > 0) {
@@ -183,6 +165,7 @@ export function gate(input, filePath, deps) {
       "These rules come from the repository config, not from this hook.",
     );
   }
+  process.stderr.write(`${successMessage(filePath)}\n`);
   return 0;
 }
 

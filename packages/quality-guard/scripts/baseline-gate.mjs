@@ -2,35 +2,15 @@
  * Verdicts for a single-file scan, decided against the recorded baseline.
  *
  * A file the baseline already knows may not raise the count of any
- * error-severity rule. A file it has never seen has nothing to be worse than.
- * Such a file passes unless a metric goes past a generous ceiling. Its counts
- * then become the bar it must hold from the next write on.
+ * error-severity rule. A file without a baseline comparison is checked against
+ * the scanner's normal file-local error rules. The hook never records a row.
  */
 
-const ERROR_BOUNDS = {
-  "line-length": 120,
-  "file-length": 300,
-  "function-length": 60,
-  complexity: 10,
-  "param-count": 7,
-  "nesting-depth": 5,
-};
-
-/** A first draft gets this much room over the hard bound. */
-const NEW_FILE_FACTOR = 1.5;
-
-/** A new file passes unless a metric goes past the generous ceiling. */
-export function newFileVerdict(violations) {
-  const blocking = [];
-  for (const violation of violations) {
-    const bound = ERROR_BOUNDS[violation.rule];
-    if (bound === undefined || typeof violation.metric !== "number") continue;
-    const ceiling = Math.round(bound * NEW_FILE_FACTOR);
-    if (violation.metric > ceiling) {
-      blocking.push(`${violation.file}:${violation.line}: ${violation.message} (new-file ceiling ${ceiling})`);
-    }
-  }
-  return blocking;
+/** File-local hard bounds, including presence rules such as types-per-file. */
+export function absoluteVerdict(violations) {
+  return violations
+    .filter((violation) => violation.severity === "error")
+    .map((violation) => `${violation.file}:${violation.line}: ${violation.message} (file-local hard bound)`);
 }
 
 /** Regressions the comparison found in this one file, rendered for a human. */

@@ -215,11 +215,29 @@ exact test command once and write it down, because every step uses it. Open the 
 `--skip-specs` and set `skip_specs: true` in its `.openspec.yaml`. Run `mkdir -p .quality`, then record the
 ratchet baseline with `--write-baseline=.quality/baseline.json`.
 
-**Phase 1.** Run the scanner twice over the scope. The first run is a worst-first summary with `--top=20`.
-The second writes per-file work units to `.quality/units.json` with `--format=units`, worst first, one entry
-per file naming every rule that file breaks. `.quality/units.json` stays regenerable scanner output, not the
-plan. Then read those same files yourself for the five things no scanner sees, and write the findings to the
-change's `design.md` under one heading per category.
+**Phase 1.** Build a responsibility map before writing any implementation task. Run the scanner twice over
+the scope. The first run is a worst-first summary with `--top=20`. The second writes per-file work units to
+`.quality/units.json` with `--format=units`. That file is regenerable evidence, not a work breakdown.
+
+Read the affected source, callers, tests, imports, and dependency edges. Record the discovery result in
+`.quality/responsibility-discovery.json` and summarize it in the change's `design.md`. Validate the record
+before planning:
+
+```bash
+QRM="${CLAUDE_PLUGIN_ROOT}/skills/quality-refactor/scripts/lib/responsibility-map.mjs" node -e "import(process.env.QRM).then(({ validateResponsibilityDiscovery }) => validateResponsibilityDiscovery(JSON.parse(require('node:fs').readFileSync('.quality/responsibility-discovery.json', 'utf8'))))"
+```
+
+The record has two layers. `stagedMap` uses the staged commit gate's responsibility-map JSON shape. It lists
+`targetScope`, each responsibility, its `currentOwners`, `consumers`, and `dependencies`, plus desired
+ownership and dependency-boundary outcomes. `structuralOutcomes` adds the planning facts the commit gate does
+not store: `desiredOwner`, `directory`, `publicBoundary`, `dependencyDirection`, `stableContracts`,
+`compatibilityRemovals`, and `evidence`.
+
+Separate responsibilities even when one existing class owns them and the scanner reports no error. Treat
+scanner findings as symptoms. Connect each symptom to the responsibility or dependency cause before choosing
+a move. Define the desired owner, directory, public boundary, dependency direction, contracts to preserve,
+and forwarding or compatibility paths to remove before creating implementation tasks. Do not use existing
+file boundaries or scanner units as task boundaries.
 
 **Phase 2, sort units into waves.** Place every unit into the six waves and hold that sequence. A file
 with violations in three waves yields three tasks, one in each. Write the waves to the change's

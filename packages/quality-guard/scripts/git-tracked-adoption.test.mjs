@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -7,11 +7,9 @@ import { compareToBaseline, readBaseline, writeBaseline } from "./baseline-lib.m
 import { gate } from "./quality-guard.mjs";
 
 /**
- * A file whose file-length violation sits past the 450-line new-file
- * ceiling, so a genuinely new file would block and a pre-existing one
- * would not.
+ * A file whose file-length violation is over the normal 300-line hard bound.
  */
-const OVER_CEILING_LINES = 452;
+const OVER_BOUND_LINES = 301;
 
 function tempRepo() {
   const root = mkdtempSync(join(tmpdir(), "qg-tracked-"));
@@ -44,36 +42,68 @@ function fakeInput(filePath) {
   return { tool_name: "Edit", tool_input: { file_path: filePath } };
 }
 
-test("a git-tracked, baseline-unseen file over the ceiling is adopted, not blocked", () => {
+// covers: quality-guard/write-gate :: A new file is held to normal hard bounds :: New file exceeds normal file limit
+test("an unseen source file over the normal bound blocks without changing the baseline", () => {
   const root = tempRepo();
-  const filePath = writeTargetFile(root, "big.js", OVER_CEILING_LINES);
+  const filePath = writeTargetFile(root, "big.js", OVER_BOUND_LINES);
   const baselinePath = writeBaselineFile(root, [], {});
+  const before = readFileSync(baselinePath, "utf8");
 
   const code = gate(fakeInput(filePath), filePath, {
     readBaseline, compareToBaseline, writeBaseline, isTracked: () => true,
   });
 
-  assert.equal(code, 0, "a tracked pre-existing file must not block on the new-file ceiling");
-  const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
-  assert.ok(baseline.files.includes("big.js"), "the file must be adopted into the baseline");
-  assert.ok(baseline.counts["big.js::file-length"] >= 1, "its current count must be recorded");
+  assert.equal(code, 2);
+  assert.equal(readFileSync(baselinePath, "utf8"), before, "a blocked write must not update the tracked baseline");
 
   rmSync(root, { recursive: true, force: true });
 });
 
-test("negative control: the same file, same metrics, but untracked, is blocked", () => {
+// covers: quality-guard/write-gate :: A blocked write records nothing :: Oversized new file is blocked
+test("a blocked tracked source write preserves the tracked baseline byte-for-byte", () => {
   const root = tempRepo();
-  const filePath = writeTargetFile(root, "big.js", OVER_CEILING_LINES);
+  const filePath = writeTargetFile(root, "blocked.js", OVER_BOUND_LINES);
+  const baselinePath = writeBaselineFile(root, [], {});
+  const before = readFileSync(baselinePath, "utf8");
+
+  const code = gate(fakeInput(filePath), filePath, {
+    readBaseline, compareToBaseline, writeBaseline, isTracked: () => true,
+  });
+
+  assert.equal(code, 2);
+  assert.equal(readFileSync(baselinePath, "utf8"), before, "a blocked write must not update the tracked baseline");
+
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("an untracked source file is held to the same normal bound", () => {
+  const root = tempRepo();
+  const filePath = writeTargetFile(root, "big.js", OVER_BOUND_LINES);
   const baselinePath = writeBaselineFile(root, [], {});
 
   const code = gate(fakeInput(filePath), filePath, {
     readBaseline, compareToBaseline, writeBaseline, isTracked: () => false,
   });
 
-  assert.equal(code, 2, "an untracked file past the ceiling must still block");
+  assert.equal(code, 2, "an untracked file past the normal bound must block");
   const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
   assert.deepEqual(baseline.files, [], "a blocked write must not adopt the file");
 
+  rmSync(root, { recursive: true, force: true });
+});
+
+// covers: quality-guard/write-gate :: A new file is held to normal hard bounds :: New file contains a second top-level type
+test("an unseen source file with two top-level types blocks without baseline adoption", () => {
+  const root = tempRepo();
+  const filePath = join(root, "two-types.js");
+  writeFileSync(filePath, "class One {}\nclass Two {}\n");
+  const baselinePath = writeBaselineFile(root, [], {});
+  const before = readFileSync(baselinePath, "utf8");
+
+  const code = gate(fakeInput(filePath), filePath, { readBaseline, compareToBaseline, writeBaseline });
+
+  assert.equal(code, 2);
+  assert.equal(readFileSync(baselinePath, "utf8"), before);
   rmSync(root, { recursive: true, force: true });
 });
 
@@ -96,103 +126,65 @@ test("a tracked file the baseline already knows still blocks on a regression", (
   rmSync(root, { recursive: true, force: true });
 });
 
-test(
-  "an additive edit on a tracked, baseline-unseen file does not report its pre-existing "
-    + "violations as new (Case 5)",
-  () => {
+// covers: quality-guard/write-gate :: Write-time success is not commit evidence :: File-local write passes
+test("a clean file-local write passes without changing the baseline", () => {
+  const root = tempRepo();
+  const filePath = writeTargetFile(root, "file-local.js", 10);
+  const baselinePath = writeBaselineFile(root, [], {});
+  const before = readFileSync(baselinePath, "utf8");
+
+  const code = gate(fakeInput(filePath), filePath, {
+    readBaseline, compareToBaseline, writeBaseline, isTracked: () => false,
+  });
+
+  assert.equal(code, 0, "a clean file-local write should be allowed");
+  assert.equal(readFileSync(baselinePath, "utf8"), before);
+
+  rmSync(root, { recursive: true, force: true });
+});
+
+// covers: quality-guard/write-gate :: A blocked write records nothing :: Write is allowed after adoption
+test("an allowed tracked source write preserves the adopted baseline byte-for-byte", () => {
+  const root = tempRepo();
+  const filePath = writeTargetFile(root, "allowed.js", 10);
+  const baselinePath = writeBaselineFile(root, ["allowed.js"], {});
+  const before = readFileSync(baselinePath, "utf8");
+
+  const code = gate(fakeInput(filePath), filePath, {
+    readBaseline, compareToBaseline, writeBaseline, isTracked: () => true,
+  });
+
+  assert.equal(code, 0, "a clean adopted file should be allowed");
+  assert.equal(readFileSync(baselinePath, "utf8"), before);
+
+  rmSync(root, { recursive: true, force: true });
+});
+
+// covers: quality-guard/write-gate :: Gate declines work it cannot judge :: Repository has no baseline
+test("a missing baseline still runs file-local hard-bound checks", () => {
     const root = tempRepo();
-    // Build a file that mirrors the reported shape. It has 66 plain lines,
-    // three over-length lines (line-length), then a 68-line Expand()
-    // function (function-length) the edit never touched. Padding pushes it
-    // past the file-length bound. An additive edit to this file would leave
-    // every one of these violations exactly as they already are at HEAD. A
-    // baseline that has never scanned the file must adopt them. It must not
-    // report them as regressions from zero.
-    const lines = [];
-    for (let i = 0; i < 66; i++) lines.push(`const filler${i} = ${i};`);
-    for (let i = 0; i < 3; i++) lines.push(`const longLine${i} = "${"a".repeat(130)}";`);
-    lines.push("function Expand() {");
-    for (let i = 0; i < 65; i++) lines.push(`  const step${i} = ${i};`);
-    lines.push("  return step0;");
-    lines.push("}");
-    while (lines.length < 588) lines.push(`const pad${lines.length} = 0;`);
-    const filePath = join(root, "additive.js");
-    writeFileSync(filePath, `${lines.join("\n")}\n`);
-    const baselinePath = writeBaselineFile(root, [], {});
+    const filePath = writeTargetFile(root, "no-baseline.js", OVER_BOUND_LINES);
 
     const code = gate(fakeInput(filePath), filePath, {
       readBaseline, compareToBaseline, writeBaseline, isTracked: () => true,
     });
 
-    assert.equal(
-      code,
-      0,
-      "pre-existing file-length and function-length violations on an unseen "
-        + "tracked file must not block",
-    );
-    const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
-    assert.ok(baseline.files.includes("additive.js"), "the file must be adopted into the baseline");
-    assert.equal(
-      baseline.counts["additive.js::file-length"],
-      1,
-      "the pre-existing file-length violation is recorded, not blocked as a new regression",
-    );
-    assert.equal(baseline.counts["additive.js::function-length"], 1);
+    assert.equal(code, 2, "the normal hard bound applies even when baseline comparison is unavailable");
+    assert.equal(existsSync(join(root, ".github", "quality", "quality-baseline.json")), false);
 
     rmSync(root, { recursive: true, force: true });
-  },
-);
-
-test(
-  "a pure deletion on a tracked, baseline-unseen file that still trips the file-length "
-    + "bound is adopted, not blocked (Case 2)",
-  () => {
-    const root = tempRepo();
-    // Reported shape: a deletion removed a 41-line duplicate helper, taking the
-    // file from 539 lines to 498. That deletion also removed the file's one
-    // complexity violation outright. What remains is a file-length violation,
-    // since 498 is still over the 300-line hard bound. 498 also exceeds the
-    // 450-line new-file ceiling (300 * 1.5). A gate that still routes an unseen
-    // tracked file through the new-file ceiling blocks this pure improvement.
-    const filePath = writeTargetFile(root, "case2.js", 498);
-    const baselinePath = writeBaselineFile(root, [], {});
-
-    const code = gate(fakeInput(filePath), filePath, {
-      readBaseline, compareToBaseline, writeBaseline, isTracked: () => true,
-    });
-
-    assert.equal(
-      code,
-      0,
-      "a pure deletion that shrinks a tracked file and removes a violation must never block",
-    );
-    const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
-    assert.ok(baseline.files.includes("case2.js"), "the file must be adopted into the baseline");
-    assert.equal(
-      baseline.counts["case2.js::file-length"],
-      1,
-      "the surviving file-length violation is recorded once",
-    );
-    assert.equal(
-      baseline.counts["case2.js::complexity"],
-      undefined,
-      "the removed complexity violation must not be recorded",
-    );
-
-    rmSync(root, { recursive: true, force: true });
-  },
-);
+});
 
 test("git unavailable or failing falls back to today's new-file behaviour", () => {
   const root = tempRepo();
-  const filePath = writeTargetFile(root, "big.js", OVER_CEILING_LINES);
+  const filePath = writeTargetFile(root, "big.js", OVER_BOUND_LINES);
   writeBaselineFile(root, [], {});
 
   // No isTracked override: the real isGitTracked runs against a directory
   // that is not a git work tree, so the git call fails and reports untracked.
   const code = gate(fakeInput(filePath), filePath, { readBaseline, compareToBaseline, writeBaseline });
 
-  assert.equal(code, 2, "an unreadable tracking answer must behave like today's new-file ceiling");
+  assert.equal(code, 2, "an unreadable tracking answer does not weaken normal hard bounds");
 
   rmSync(root, { recursive: true, force: true });
 });

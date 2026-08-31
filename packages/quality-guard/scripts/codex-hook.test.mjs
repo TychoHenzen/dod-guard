@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { scopeToChangedLines } from "./changed-lines.mjs";
 import { hookTargets } from "./hook-targets.mjs";
+import { shouldGate } from "./quality-guard.mjs";
 
 test("Claude write calls keep their file target", () => {
   const input = {
@@ -78,6 +79,12 @@ test("Codex added runs scope linter findings to their final lines", () => {
   rmSync(directory, { recursive: true });
 });
 
-test("unsupported tools have no hook targets", () => {
+// covers: quality-guard/write-gate :: Gate declines work it cannot judge :: Markdown file written
+test("unsupported tools and Markdown writes have no quality-gate target", () => {
   assert.deepEqual(hookTargets({ tool_name: "Bash", tool_input: {} }), []);
+  const directory = mkdtempSync(resolve(tmpdir(), "quality-guard-markdown-"));
+  const filePath = resolve(directory, "notes.md");
+  writeFileSync(filePath, "# Notes\n");
+  assert.equal(shouldGate({ tool_name: "Write", tool_input: { file_path: filePath } }), false);
+  rmSync(directory, { recursive: true });
 });

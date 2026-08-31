@@ -88,13 +88,15 @@
 
 ## 5. Write-Time Feedback
 
-- [ ] 5.1 Make the PostToolUse gate treat the tracked baseline as read-only. When no baseline exists, run absolute hard-bound checks without claiming a regression. Add byte-for-byte baseline preservation tests for allowed and blocked writes.
+- [x] 5.1 Make the PostToolUse gate treat the tracked baseline as read-only. When no baseline exists, run absolute hard-bound checks without claiming a regression. Add byte-for-byte baseline preservation tests for allowed and blocked writes.
+<!-- status: completed -->
 <!-- covers: quality-guard/write-gate :: Gate declines work it cannot judge :: Markdown file written -->
 <!-- covers: quality-guard/write-gate :: Gate declines work it cannot judge :: Repository has no baseline -->
 <!-- covers: quality-guard/write-gate :: A blocked write records nothing :: Oversized new file is blocked -->
 <!-- covers: quality-guard/write-gate :: A blocked write records nothing :: Write is allowed after adoption -->
 
-- [ ] 5.2 Replace the multiplied new-file ceiling with normal scanner hard bounds and presence errors. Update block and success messages to identify the check as file-local and direct commit callers to the staged gate.
+- [x] 5.2 Replace the multiplied new-file ceiling with normal scanner hard bounds and presence errors. Update block and success messages to identify the check as file-local and direct commit callers to the staged gate.
+<!-- status: completed -->
 <!-- covers: quality-guard/write-gate :: A new file is held to normal hard bounds :: New file exceeds normal file limit -->
 <!-- covers: quality-guard/write-gate :: A new file is held to normal hard bounds :: New file contains a second top-level type -->
 <!-- covers: quality-guard/write-gate :: Write-time success is not commit evidence :: File-local write passes -->
@@ -102,7 +104,8 @@
 
 ## 6. Architecture-First Refactor Planning
 
-- [ ] 6.1 Rewrite quality-refactor discovery so it records responsibilities, current owners, consumers, dependencies, desired owners, directories, public boundaries, and compatibility removals before creating implementation tasks.
+- [x] 6.1 Rewrite quality-refactor discovery so it records responsibilities, current owners, consumers, dependencies, desired owners, directories, public boundaries, and compatibility removals before creating implementation tasks.
+<!-- status: completed -->
 <!-- covers: quality-guard/quality-refactor :: responsibility map drives architectural work :: Existing class owns unrelated responsibilities -->
 <!-- covers: quality-guard/quality-refactor :: responsibility map drives architectural work :: Scanner reports local symptoms -->
 <!-- covers: quality-guard/quality-refactor :: desired ownership is defined before implementation tasks :: Responsibility needs a new module -->

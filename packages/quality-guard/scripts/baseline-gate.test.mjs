@@ -3,36 +3,45 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { newFileVerdict, ratchetVerdict, rebaselineFile } from "./baseline-gate.mjs";
+import { absoluteVerdict, ratchetVerdict, rebaselineFile } from "./baseline-gate.mjs";
 import { readSkipLog, SENTINEL_NAME } from "./sentinel.mjs";
-import { waive } from "./quality-guard.mjs";
+import { FILE_RULES, successMessage, waive } from "./quality-guard.mjs";
 
 function tempRepo() {
   return mkdtempSync(join(tmpdir(), "qg-gate-"));
 }
 
-test("newFileVerdict allows a metric under the generous ceiling", () => {
-  // file-length bound is 300, so the new-file ceiling is 450.
-  const blocking = newFileVerdict([
-    { rule: "file-length", metric: 449, file: "src/a.ts", line: 1, message: "file is 449 lines" },
+test("absoluteVerdict allows a metric within the normal hard bound", () => {
+  const blocking = absoluteVerdict([
+    { rule: "file-length", severity: "warn", metric: 300, file: "src/a.ts", line: 1, message: "file is 300 lines" },
   ]);
   assert.deepEqual(blocking, []);
 });
 
-test("newFileVerdict blocks a metric past the generous ceiling", () => {
-  const blocking = newFileVerdict([
-    { rule: "file-length", metric: 451, file: "src/a.ts", line: 1, message: "file is 451 lines" },
+test("absoluteVerdict blocks a normal hard-bound error", () => {
+  const blocking = absoluteVerdict([
+    { rule: "file-length", severity: "error", metric: 301, file: "src/a.ts", line: 1, message: "file is 301 lines" },
   ]);
   assert.equal(blocking.length, 1);
-  assert.match(blocking[0], /new-file ceiling 450/);
+  assert.match(blocking[0], /file-local hard bound/);
 });
 
-test("newFileVerdict ignores rules that carry no numeric bound", () => {
-  const blocking = newFileVerdict([
-    { rule: "todo-marker", metric: 99, file: "src/a.ts", line: 3, message: "TODO left behind" },
-    { rule: "complexity", file: "src/a.ts", line: 4, message: "no metric reported" },
+test("absoluteVerdict blocks presence errors without a numeric bound", () => {
+  const blocking = absoluteVerdict([
+    { rule: "types-per-file", severity: "error", metric: 2, file: "src/a.ts", line: 3, message: "2 types in one file" },
+    { rule: "complexity", severity: "warn", metric: 6, file: "src/a.ts", line: 4, message: "complexity 6" },
   ]);
-  assert.deepEqual(blocking, []);
+  assert.equal(blocking.length, 1);
+  assert.match(blocking[0], /2 types in one file/);
+});
+
+// covers: quality-guard/write-gate :: Write-time success is not commit evidence :: Project-level rule could not run
+test("file-local feedback excludes project rules and points to the staged gate", () => {
+  assert.equal(FILE_RULES.includes("duplicate-block"), false);
+  assert.equal(FILE_RULES.includes("dead-export"), false);
+  assert.match(successMessage("src/a.ts"), /file-local/i);
+  assert.match(successMessage("src/a.ts"), /quality-guard check --staged/);
+  assert.doesNotMatch(successMessage("src/a.ts"), /commit ready|project clean/i);
 });
 
 test("ratchetVerdict reports only regressions belonging to the scanned file", () => {
