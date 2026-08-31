@@ -28,11 +28,13 @@
 <!-- status: completed -->
 <!-- covers: quality-guard/architecture-analysis :: Every finding is reproducible :: Required analysis cannot complete -->
 
-- [ ] 2.3 Implement placement analysis over affected directories, including direct production-type counts, configured limits, generic buckets, test-support exclusions, and deterministic before-and-after evidence.
+- [x] 2.3 Implement placement analysis over affected directories, including direct production-type counts, configured limits, generic buckets, test-support exclusions, and deterministic before-and-after evidence.
+<!-- status: completed -->
 <!-- covers: quality-guard/architecture-analysis :: Placement analysis detects flat and generic accumulation :: Overloaded directory gains another class -->
 <!-- covers: quality-guard/architecture-analysis :: Placement analysis detects flat and generic accumulation :: Type is placed in a domain directory -->
 
-- [ ] 2.4 Build the production dependency graph and detect configured forbidden directions and newly introduced cycles. Add fixtures that show the offending edge and complete cycle.
+- [x] 2.4 Build the production dependency graph and detect configured forbidden directions and newly introduced cycles. Add fixtures that show the offending edge and complete cycle.
+<!-- status: completed -->
 <!-- covers: quality-guard/architecture-analysis :: Dependency boundaries are enforceable :: Policy imports a forbidden driver -->
 <!-- covers: quality-guard/architecture-analysis :: Dependency boundaries are enforceable :: Staged edge closes a cycle -->
 

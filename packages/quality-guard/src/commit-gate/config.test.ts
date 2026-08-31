@@ -10,7 +10,6 @@ test("uses conservative architecture policy defaults", () => {
   assert.deepEqual(config.pathGroups, {});
 });
 
-// covers: quality-guard/architecture-analysis :: Placement analysis detects flat and generic accumulation :: Type is placed in a domain directory
 test("accepts named path groups and placement-related policy", () => {
   const config = parseQualityConfig(
     JSON.stringify({
@@ -27,7 +26,6 @@ test("accepts named path groups and placement-related policy", () => {
   assert.equal(config.history.maxFirstParentCommits, 25);
 });
 
-// covers: quality-guard/architecture-analysis :: Dependency boundaries are enforceable :: Policy imports a forbidden driver
 test("validates explicit dependency directions against configured groups", () => {
   const config = parseQualityConfig(
     JSON.stringify({
