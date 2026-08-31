@@ -5,6 +5,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
+import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
 import { loadAdapterSelectionRecord } from "./semantic/adapter-selection.js";
 import { createBackendStatusReport } from "./semantic/backend-status.js";
 import type { LanguageAdapter } from "./semantic/language-adapter.js";
@@ -204,11 +206,14 @@ function textResult(result: CodeExplorerEnvelope | CodeExplorerError, isError = 
 }
 
 export function createServer(
-  options: { adapters?: readonly LanguageAdapter[]; projectRoot?: ProjectRoot } = {},
+  options: { adapters?: readonly LanguageAdapter[]; projectRoot?: ProjectRoot; sensitive_paths_excluded?: number } = {},
 ): CodeExplorerServer {
   let refreshGeneration = 0;
   const viewHistory: string[] = [];
   const mcp = new McpServer({ name: "code-explorer", version: packageInfo.version }, { capabilities: { tools: {} } });
+  const discovery: DiscoveryPipeline | undefined = options.projectRoot
+    ? createDiscoveryPipeline(options.projectRoot)
+    : undefined;
 
   const call = async (
     name: string,
@@ -234,8 +239,27 @@ export function createServer(
         data: { relation },
       };
     }
+    if (name === "code_search" && discovery) {
+      const search = schemas.code_search.parse(arguments_);
+      const semanticSymbols = await collectSemanticSymbols(options.adapters ?? [], search.query);
+      const results = discovery.search(search.query, search, semanticSymbols);
+      return {
+        schema_version: 1,
+        project_id: "project",
+        project_generation: 0,
+        pending_generation: null,
+        state: "ready",
+        data: { candidates: results },
+      };
+    }
     const backendStatus =
-      name === "code_status" ? { backend_status: createBackendStatusReport(options.adapters ?? []) } : {};
+      name === "code_status"
+        ? {
+            backend_status: createBackendStatusReport(options.adapters ?? []),
+            sensitive_paths_excluded: options.sensitive_paths_excluded ?? 0,
+            ...discovery?.status(),
+          }
+        : {};
     return {
       schema_version: 1,
       project_id: "project",
@@ -266,6 +290,14 @@ export function createServer(
   };
 }
 
+/** Workspace-symbol replies are discovery evidence only. Relation authority remains in the language adapters. */
+async function collectSemanticSymbols(adapters: readonly LanguageAdapter[], query: string) {
+  const replies = await Promise.allSettled(adapters.map((adapter) => adapter.request({ operation: "search", query })));
+  return replies.flatMap((reply) =>
+    reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : [],
+  );
+}
+
 async function main(): Promise<void> {
   loadAdapterSelectionRecord();
   const projectRoot = createNativeProjectRoot(parseProjectRootArgument(process.argv.slice(2)));
@@ -273,6 +305,7 @@ async function main(): Promise<void> {
   const server = createServer({
     projectRoot,
     adapters,
+    sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
   });
   const transport = new StdioServerTransport();
   let shuttingDown: Promise<void> | undefined;

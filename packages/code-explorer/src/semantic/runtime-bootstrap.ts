@@ -5,6 +5,7 @@ import {
   resolveTrustedCommandRoots,
 } from "./adapter-selection.js";
 import type { Language, RelationCapabilities, SemanticRequest, SemanticResult } from "./contract.js";
+import { createFilteredWorkspace } from "./filtered-workspace.js";
 import {
   createCSharpAdapter,
   createPythonAdapter,
@@ -58,21 +59,23 @@ export function createRuntimeAdapters(projectRoot: ProjectRoot): readonly Langua
       return makeAdapter("python", options);
     }
     const prepared = policy.prepare(backend.language);
+    const filtered = prepared.status === "ready" ? createFilteredWorkspace(projectRoot) : undefined;
     const options = {
       backend:
         prepared.status === "ready"
           ? createRuntimeLspBackend({
               language: backend.language,
-              root: projectRoot,
-              root_uri: pathToFileURL(projectRoot.canonicalPath).href,
+              root: filtered?.root ?? projectRoot,
+              root_uri: pathToFileURL((filtered?.root ?? projectRoot).canonicalPath).href,
               revision: { generation: 0, manifest_sha256: "runtime" },
               symbols: new Map(),
               capabilities,
               safe_initialization_options: backend.safe_initialization_options,
-              toBackendUri: (location) => pathToFileURL(projectRoot.resolveClientPath(location.path)).href,
+              toBackendUri: (location) =>
+                pathToFileURL((filtered?.root ?? projectRoot).resolveClientPath(location.path)).href,
               fromBackendUri: (uri) => {
                 if (!uri.startsWith("file:")) return undefined;
-                const classified = projectRoot.classifyBackendPath(fileURLToPath(uri));
+                const classified = (filtered?.root ?? projectRoot).classifyBackendPath(fileURLToPath(uri));
                 return "relative_path" in classified ? classified.relative_path : undefined;
               },
               prepare: () => policy.prepare(backend.language),
@@ -86,7 +89,18 @@ export function createRuntimeAdapters(projectRoot: ProjectRoot): readonly Langua
       unavailable_failure_code: prepared.status === "unavailable" ? prepared.code : "backend_unavailable",
       capabilities,
     };
-    return makeAdapter(backend.language, options);
+    const adapter = makeAdapter(backend.language, options);
+    if (!filtered) return adapter;
+    return {
+      ...adapter,
+      shutdown: async () => {
+        try {
+          await adapter.shutdown?.();
+        } finally {
+          filtered.dispose();
+        }
+      },
+    };
   });
   return adapters;
 }

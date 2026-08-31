@@ -100,6 +100,37 @@ it("delegates protected source opening to the epoch-aware client before navigati
   ]);
 });
 
+it("preserves public workspace-symbol names and kinds for discovery filters", async () => {
+  const backend = createDirectLspSemanticBackend({
+    language: "rust",
+    root,
+    revision: { generation: 0, manifest_sha256: "fixture" },
+    symbols: new Map(),
+    capabilities: {} as never,
+    client: {
+      status: () => ({ state: "ready", events: [], restart_delays_ms: [] }),
+      request: async () => [
+        {
+          name: "helper",
+          kind: 12,
+          location: {
+            uri: "file:///project/src/main.rs",
+            range: { start: { line: 0, character: 3 }, end: { line: 0, character: 9 } },
+          },
+        },
+      ],
+    },
+    toBackendUri: () => "file:///project/src/main.rs",
+    fromBackendUri: (uri) => (uri === "file:///project/src/main.rs" ? "src/main.rs" : undefined),
+  });
+  const result = await backend.query({ operation: "search", query: "helper" });
+  if (result.operation !== "search") throw new Error("expected search result");
+  assert.deepEqual(
+    result.symbols.map(({ name, kind, location }) => ({ name, kind, path: location.path })),
+    [{ name: "helper", kind: "function", path: "src/main.rs" }],
+  );
+});
+
 it("does not send a relation request that initialize reported unavailable", async () => {
   const methods: string[] = [];
   const source = {

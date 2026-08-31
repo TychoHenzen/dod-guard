@@ -1,5 +1,6 @@
 import { closeSync, constants, fstatSync, openSync, readFileSync, realpathSync, statSync } from "node:fs";
 import * as path from "node:path";
+import { isSensitiveProjectPath } from "../discovery/sensitive-paths.js";
 
 export type FileIdentity = { dev: number | bigint; ino: number | bigint };
 
@@ -71,7 +72,8 @@ export function createProjectRoot<Handle = unknown>(options: ProjectRootOptions<
   };
 
   const resolveClientPath = (relativePath: string): string => {
-    if (!isRelativeProjectPath(relativePath, pathApi)) throw new ProjectPathError("path_outside_project");
+    if (!isRelativeProjectPath(relativePath, pathApi) || isSensitiveProjectPath(relativePath))
+      throw new ProjectPathError("path_outside_project");
     const candidate = pathApi.resolve(root.path, relativePath);
     const resolved = canonicalize(candidate, options.filesystem);
     if (!(resolved && isDescendant(resolved.path))) throw new ProjectPathError("path_outside_project");

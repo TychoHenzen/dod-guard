@@ -55,6 +55,30 @@ it("uses unrestricted Damerau-Levenshtein for repeated transpositions", () => {
   assert.equal(result?.match_score, 78);
 });
 
+// covers: code-explorer/symbol-discovery :: Search order is deterministic :: Equal-rank candidates are returned
+// covers: code-explorer/symbol-discovery :: Search order is deterministic :: Search is repeated without project changes
+it("uses stable path, kind, and identity keys independently of collection order", () => {
+  const candidates = [
+    symbol("helper", "src/zeta.ts", "zeta", "method"),
+    symbol("helper", "src/alpha.ts", "method", "method"),
+    symbol("helper", "src/alpha.ts", "function", "function"),
+  ];
+  const expected = ["function", "method", "zeta"];
+
+  assert.deepEqual(
+    matchDiscoveryCandidates("helper", candidates).map((result) => result.identity),
+    expected,
+  );
+  assert.deepEqual(
+    matchDiscoveryCandidates("helper", [...candidates].reverse()).map((result) => result.identity),
+    expected,
+  );
+  assert.deepEqual(
+    matchDiscoveryCandidates("helper", candidates).map((result) => result),
+    matchDiscoveryCandidates("helper", candidates).map((result) => result),
+  );
+});
+
 it("includes 60 percent similarity and rejects a score below the threshold", () => {
   assert.equal(matchDiscoveryCandidates("abcde", [symbol("abxye", "src/included.ts")])[0]?.match_score, 60);
   assert.deepEqual(matchDiscoveryCandidates("abcdefg", [symbol("abc", "src/rejected.ts")]), []);

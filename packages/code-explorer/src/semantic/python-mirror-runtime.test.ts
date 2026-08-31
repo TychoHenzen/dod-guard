@@ -94,6 +94,35 @@ it("maps only unchanged protected source through an immutable generation", () =>
   }
 });
 
+it("omits denied credentials from the Python mirror before a backend can receive a root URI", () => {
+  const fixture = project({ "src/a.py": "x = 1\n", ".env": "SECRET=not-for-pyright\n", "keys/nested.pem": "private" });
+  const mirror = createNativePythonMirror(fixture.project);
+  try {
+    assert.equal(existsSync(join(mirror.root, ".env")), false);
+    assert.equal(existsSync(join(mirror.root, "keys", "nested.pem")), false);
+    assert.equal(mirror.uriFor(".env"), "");
+    assert.equal(JSON.stringify(mirror).includes(".env"), false);
+  } finally {
+    mirror.dispose();
+    fixture.dispose();
+  }
+});
+
+it("omits a Windows case-insensitive classification file from the Python mirror output", () => {
+  const fixture = project({
+    "src/a.py": "x = 1\n",
+    ".CoDe-ExPlOrEr.JsOn": JSON.stringify({ production: [".env"], generated: ["private/**"] }),
+  });
+  const mirror = createNativePythonMirror(fixture.project);
+  try {
+    assert.equal(existsSync(join(mirror.root, ".CoDe-ExPlOrEr.JsOn")), false);
+    assert.equal(JSON.stringify(mirror).includes("CoDe-ExPlOrEr"), false);
+  } finally {
+    mirror.dispose();
+    fixture.dispose();
+  }
+});
+
 it("rejects a URI from another mirror generation", () => {
   const fixture = project({ "src/a.py": "x = 1\n" });
   const first = createNativePythonMirror(fixture.project, 1);

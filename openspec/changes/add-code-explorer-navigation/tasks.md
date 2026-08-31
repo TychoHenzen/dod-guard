@@ -111,7 +111,8 @@
   <!-- covers: code-explorer/symbol-discovery :: Search accepts incomplete symbol and file names :: Exact symbol name exists -->
   <!-- covers: code-explorer/symbol-discovery :: Search accepts incomplete symbol and file names :: Symbol name is misspelled -->
   <!-- covers: code-explorer/symbol-discovery :: Search accepts incomplete symbol and file names :: Query matches a filename -->
-- [ ] 3.2 Implement deterministic ranking and stable tie keys for unchanged project revisions.
+- [x] 3.2 Implement deterministic ranking and stable tie keys for unchanged project revisions.
+<!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Search order is deterministic :: Equal-rank candidates are returned -->
   <!-- covers: code-explorer/symbol-discovery :: Search order is deterministic :: Search is repeated without project changes -->
 - [ ] 3.3 Apply path, language, symbol-kind, test, production, and generated filters before ranking and limiting.
@@ -122,7 +123,8 @@
   <!-- covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Classification rules conflict -->
   <!-- covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: File classification is unknown -->
   <!-- covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Classification configuration is malformed -->
-- [ ] 3.4 Apply the non-overridable sensitive-path denylist before watching, backend initialization, indexing, or output.
+- [x] 3.4 Apply the non-overridable sensitive-path denylist before watching, backend initialization, indexing, or output.
+<!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Sensitive paths are never indexed or returned :: Project contains a denied credential file -->
   <!-- covers: code-explorer/symbol-discovery :: Sensitive paths are never indexed or returned :: Project configuration tries to include a denied path -->
 - [ ] 3.5 Return bounded candidate sets, omitted counts, narrowing filters, and honest empty results.

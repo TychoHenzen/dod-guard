@@ -13,6 +13,8 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { isClassificationConfigPath } from "../discovery/config-path.js";
+import { isSensitiveProjectPath } from "../discovery/sensitive-paths.js";
 import { createPythonMirrorPlan } from "./backend-launch-policy.js";
 import type { ProjectRoot } from "./project-root.js";
 
@@ -250,10 +252,11 @@ function collectPythonFiles(root: ProjectRoot): string[] {
       const absolute = join(directory, entry.name);
       const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
       if (lstatSync(absolute).isSymbolicLink()) throw new Error("unsafe_backend_mode");
-      if (entry.isDirectory()) return isSensitivePath(relativePath) ? [] : visit(absolute, relativePath);
+      if (entry.isDirectory()) return isExcludedPythonDirectory(relativePath) ? [] : visit(absolute, relativePath);
       if (
         !(entry.isFile() && (relativePath.endsWith(".py") || relativePath.endsWith(".pyi"))) ||
-        isSensitivePath(relativePath)
+        isSensitiveProjectPath(relativePath) ||
+        isClassificationConfigPath(relativePath)
       )
         return [];
       const resolved = root.resolveClientPath(relativePath);
@@ -263,14 +266,17 @@ function collectPythonFiles(root: ProjectRoot): string[] {
   return visit(root.canonicalPath, "");
 }
 
-function isSensitivePath(path: string): boolean {
-  return path.split("/").some((part) => /^(\.git|\.venv|venv|node_modules|__pycache__|secrets?)$/i.test(part));
-}
-
 function writeMirrorFile(root: string, relativePath: string, text: string): void {
   const target = join(root, relativePath);
   mkdirSync(dirname(target), { recursive: true, mode: 0o755 });
   writeFileSync(target, text, { encoding: "utf8", mode: 0o444 });
+}
+
+function isExcludedPythonDirectory(path: string): boolean {
+  return (
+    isSensitiveProjectPath(path) ||
+    path.split("/").some((part) => /^(\.venv|venv|node_modules|__pycache__)$/iu.test(part))
+  );
 }
 
 function makeTreeReadOnly(directory: string): void {

@@ -164,9 +164,7 @@ function normalizeResult(
     return {
       operation: "search",
       revision: options.revision,
-      symbols: locations(raw, options)
-        .filter((location): location is SymbolIdentity["location"] => !("external" in location))
-        .map((location, index) => symbolFor(location, index, options)),
+      symbols: workspaceSymbols(raw, options),
     };
   }
   if (request.operation === "focus") {
@@ -194,6 +192,34 @@ function normalizeResult(
       return { relation, symbol, location: symbol.location };
     }),
   };
+}
+
+/** Keeps the public workspace/symbol name and SymbolKind as discovery evidence. */
+function workspaceSymbols(raw: unknown, options: DirectLspSemanticOptions): SymbolIdentity[] {
+  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return values.flatMap((value, index): SymbolIdentity[] => {
+    const item = value && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
+    const location = lspLocation(
+      item?.location && typeof item.location === "object" ? (item.location as Record<string, unknown>) : item,
+      options,
+    );
+    if (!(location && !("external" in location))) return [];
+    return [
+      {
+        id: `${options.language}:${location.path}:${index}`,
+        name: typeof item?.name === "string" ? item.name : location.path,
+        language: options.language,
+        kind: workspaceSymbolKind(item?.kind),
+        location,
+      },
+    ];
+  });
+}
+
+function workspaceSymbolKind(value: unknown): string {
+  if (typeof value === "string" && value.length > 0) return value.toLocaleLowerCase("en-US");
+  const kinds: Record<number, string> = { 5: "class", 6: "method", 12: "function" };
+  return typeof value === "number" && kinds[value] ? kinds[value] : "symbol";
 }
 
 function hierarchyRelations(

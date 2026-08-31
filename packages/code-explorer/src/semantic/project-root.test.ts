@@ -45,6 +45,18 @@ it("rejects a client parent path before it can reach a backend", () => {
   assert.throws(() => guard.resolveClientPath("../outside.rs"), ProjectPathError);
 });
 
+it("rejects a sensitive path before a protected read can reach a backend", () => {
+  const root = createProjectRoot({
+    cwd: "/project",
+    filesystem: filesystem({
+      "/project": { realpath: "/project", dev: 1, ino: 1 },
+      "/project/.env": { realpath: "/project/.env", dev: 1, ino: 2 },
+    }),
+    platform: "posix",
+  });
+  assert.throws(() => root.protectedRead(".env"), { code: "path_outside_project" });
+});
+
 // covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: In-root symlink targets an external file
 it("rejects an apparent project path when its canonical target escapes the root", () => {
   const guard = createProjectRoot({
