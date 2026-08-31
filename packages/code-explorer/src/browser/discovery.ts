@@ -33,6 +33,8 @@ export type DiscoveryState = {
   omittedCount: number;
   refinementGuidance?: string;
   mode: "landmarks" | "results";
+  areaState: "not_loaded" | "loading" | "empty" | "unavailable" | "stale" | "failed" | "ready";
+  error?: string;
 };
 
 function escapeText(value: string): string {
@@ -52,7 +54,15 @@ export class BrowserDiscoveryController {
     private readonly searchCore: (request: Record<string, unknown>) => Promise<DiscoveryReply>,
     landmarks: readonly BrowserLandmarkGroup[] = [],
   ) {
-    this.current = { query: "", filters: {}, candidates: [], landmarks, omittedCount: 0, mode: "landmarks" };
+    this.current = {
+      query: "",
+      filters: {},
+      candidates: [],
+      landmarks,
+      omittedCount: 0,
+      mode: "landmarks",
+      areaState: "not_loaded",
+    };
   }
 
   state(): DiscoveryState {
@@ -70,6 +80,8 @@ export class BrowserDiscoveryController {
         omittedCount: 0,
         refinementGuidance: undefined,
         mode: "landmarks",
+        areaState: "not_loaded",
+        error: undefined,
       };
       return this.current;
     }
@@ -79,16 +91,21 @@ export class BrowserDiscoveryController {
     if (filters.kinds) request.kinds = [...filters.kinds];
     if (filters.content) request.content = filters.content;
     if (filters.include_generated !== undefined) request.include_generated = filters.include_generated;
-    const reply = await this.searchCore(request);
-    this.current = {
-      ...this.current,
-      query: normalized,
-      filters,
-      candidates: reply.data.candidates ?? [],
-      omittedCount: reply.data.omitted_count ?? 0,
-      refinementGuidance: reply.data.refinement_guidance,
-      mode: "results",
-    };
+    this.current = { ...this.current, query: normalized, filters, areaState: "loading", error: undefined };
+    try {
+      const reply = await this.searchCore(request);
+      const candidates = reply.data.candidates ?? [];
+      this.current = {
+        ...this.current,
+        candidates,
+        omittedCount: reply.data.omitted_count ?? 0,
+        refinementGuidance: reply.data.refinement_guidance,
+        mode: "results",
+        areaState: candidates.length === 0 ? "empty" : "ready",
+      };
+    } catch {
+      this.current = { ...this.current, mode: "results", areaState: "failed", error: "backend_unavailable" };
+    }
     return this.current;
   }
 }
@@ -104,6 +121,8 @@ function renderLandmarks(landmarks: readonly BrowserLandmarkGroup[]): string {
 
 /** Renders only service-provided fields. Candidate order is intentionally unchanged. */
 export function renderDiscovery(state: DiscoveryState): string {
+  if (state.areaState !== "ready" && state.areaState !== "empty" && state.areaState !== "not_loaded")
+    return `<section data-discovery="results" data-state="${state.areaState}">${state.error ?? state.areaState}</section>`;
   if (state.mode === "landmarks")
     return `<section data-discovery="landmarks">${renderLandmarks(state.landmarks)}</section>`;
   const candidates = state.candidates
@@ -114,5 +133,5 @@ export function renderDiscovery(state: DiscoveryState): string {
     .join("");
   const omitted = state.omittedCount > 0 ? `<p>${state.omittedCount} omitted</p>` : "";
   const guidance = state.refinementGuidance ? `<p>${escapeText(state.refinementGuidance)}</p>` : "";
-  return `<section data-discovery="results"><ul>${candidates}</ul>${omitted}${guidance}</section>`;
+  return `<section data-discovery="results" data-state="${state.areaState}"><ul>${candidates}</ul>${omitted}${guidance}</section>`;
 }

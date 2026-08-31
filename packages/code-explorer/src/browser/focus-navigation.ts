@@ -1,7 +1,12 @@
 export type FocusTarget = { symbol_id: string };
 export type BrowserFocus = { view_id: string; symbol_id: string; name: string };
 export type FocusReply = { state: string; data?: BrowserFocus };
-export type FocusNavigationState = { focus: BrowserFocus; history: readonly BrowserFocus[]; error?: string };
+export type FocusNavigationState = {
+  focus: BrowserFocus;
+  history: readonly BrowserFocus[];
+  historyPosition: number;
+  error?: string;
+};
 
 /** Commits a new browser view only after the shared core accepts a local focus request. */
 export class BrowserFocusNavigation {
@@ -11,7 +16,7 @@ export class BrowserFocusNavigation {
     initial: BrowserFocus,
     private readonly focusCore: (request: FocusTarget) => Promise<FocusReply>,
   ) {
-    this.current = { focus: initial, history: [initial] };
+    this.current = { focus: initial, history: [initial], historyPosition: 0 };
   }
 
   state(): FocusNavigationState {
@@ -34,6 +39,24 @@ export class BrowserFocusNavigation {
     return this.focus(target);
   }
 
+  back(): boolean {
+    if (this.current.historyPosition === 0) return false;
+    const historyPosition = this.current.historyPosition - 1;
+    const focus = this.current.history[historyPosition];
+    if (!focus) return false;
+    this.current = { ...this.current, focus, historyPosition, error: undefined };
+    return true;
+  }
+
+  forward(): boolean {
+    if (this.current.historyPosition >= this.current.history.length - 1) return false;
+    const historyPosition = this.current.historyPosition + 1;
+    const focus = this.current.history[historyPosition];
+    if (!focus) return false;
+    this.current = { ...this.current, focus, historyPosition, error: undefined };
+    return true;
+  }
+
   private async focus(target: FocusTarget): Promise<boolean> {
     try {
       const reply = await this.focusCore(target);
@@ -41,11 +64,8 @@ export class BrowserFocusNavigation {
         this.current = { ...this.current, error: reply.state };
         return false;
       }
-      this.current = {
-        focus: reply.data,
-        history: [...this.current.history, reply.data],
-        error: undefined,
-      };
+      const history = [...this.current.history.slice(0, this.current.historyPosition + 1), reply.data];
+      this.current = { focus: reply.data, history, historyPosition: history.length - 1, error: undefined };
       return true;
     } catch {
       this.current = { ...this.current, error: "backend_unavailable" };

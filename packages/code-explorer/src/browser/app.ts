@@ -22,6 +22,7 @@ export type BrowserShellState = {
   focus?: FocusedSymbol;
   activeDrawer?: "discovery" | "relations";
   status: string;
+  navigationEnabled: boolean;
 };
 
 const visibleOperations: readonly BrowserOperation[] = [
@@ -52,6 +53,7 @@ export function createBrowserStore(initial: Partial<BrowserShellState> = {}) {
     focus: initial.focus,
     activeDrawer: initial.activeDrawer,
     status: initial.status ?? "Project ready",
+    navigationEnabled: initial.navigationEnabled ?? true,
   };
 
   return {
@@ -89,5 +91,6 @@ export function renderBrowserShell(state: BrowserShellState, viewportWidth: numb
   const focus = state.focus
     ? `<article class="focused-symbol"><h2>${escapeText(state.focus.name)}</h2><p>${escapeText(state.focus.kind)} · ${escapeText(state.focus.path)}</p></article>`
     : '<p data-state="empty-focus">Select a symbol</p>';
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Code Explorer</title></head><body><header class="status-strip"><span>${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back">Back</button><button type="button" data-operation="forward">Forward</button><button type="button" data-operation="refocus">Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header><main class="explorer-shell ${narrow ? "narrow" : "desktop"}">${discoveryDrawer}<aside id="discovery-pane" data-pane="discovery"><h2>Landmarks</h2><label>Search <input type="search" data-operation="search"></label>${renderLandmarks(state.landmarks)}</aside><section data-pane="focus"><h1>Focused source</h1>${focus}</section><aside id="relations-pane" data-pane="relations"><h2>Relations</h2><p data-state="empty-relations">No relations loaded</p></aside>${relationDrawer}</main></body></html>`;
+  const disabled = state.navigationEnabled ? "" : " disabled";
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Code Explorer</title></head><body><header class="status-strip"><span>${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back"${disabled}>Back</button><button type="button" data-operation="forward"${disabled}>Forward</button><button type="button" data-operation="refocus"${disabled}>Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header><main class="explorer-shell ${narrow ? "narrow" : "desktop"}">${discoveryDrawer}<aside id="discovery-pane" data-pane="discovery"><h2>Landmarks</h2><label>Search <input type="search" data-operation="search"${disabled}></label>${renderLandmarks(state.landmarks)}</aside><section data-pane="focus"><h1>Focused source</h1>${focus}</section><aside id="relations-pane" data-pane="relations"><h2>Relations</h2><p data-state="empty-relations">No relations loaded</p></aside>${relationDrawer}</main></body></html>`;
 }

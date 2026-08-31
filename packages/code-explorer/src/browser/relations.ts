@@ -96,6 +96,8 @@ export class BrowserRelationsController {
 export function renderRelationGroup(group: RelationGroup): string {
   if (group.state !== "loaded")
     return `<section data-relation="${group.relation}" data-state="${group.state}">${group.state}</section>`;
+  if (group.candidates.length === 0)
+    return `<section data-relation="${group.relation}" data-state="empty">empty</section>`;
   const rows = group.candidates
     .map((candidate) => {
       const name = escapeText(candidate.name);

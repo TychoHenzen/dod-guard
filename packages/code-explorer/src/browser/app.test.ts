@@ -49,4 +49,15 @@ describe("browser shell", () => {
     const store = createBrowserStore();
     assert.throws(() => store.dispatch({ operation: "write_file" }), /unsupported_browser_operation/);
   });
+
+  it("keeps refresh available while generation-zero state disables navigation controls", () => {
+    const html = renderBrowserShell(
+      createBrowserStore({ navigationEnabled: false, status: "workspace_unavailable" }).state(),
+      1200,
+    );
+    assert.match(html, /data-operation="back" disabled/);
+    assert.match(html, /data-operation="search" disabled/);
+    assert.doesNotMatch(html, /data-operation="refresh" disabled/);
+    assert.match(html, /workspace_unavailable/);
+  });
 });

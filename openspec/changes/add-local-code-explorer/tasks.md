@@ -83,18 +83,21 @@
   <!-- covers: code-explorer/browser-navigation :: Selecting a local result recenters navigation :: User follows a visible handle -->
   <!-- covers: code-explorer/browser-navigation :: Selecting a local result recenters navigation :: Focus request fails -->
 
-- [ ] 2.6 Implement shared-session Back and Forward controls with immutable view restoration and branch replacement in `packages/code-explorer/src/browser/`. Verify restored source, relations, graph state, and history positions in browser tests.
+- [x] 2.6 Implement shared-session Back and Forward controls with immutable view restoration and branch replacement in `packages/code-explorer/src/browser/`. Verify restored source, relations, graph state, and history positions in browser tests.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-navigation :: Back and Forward restore explicit views :: User selects Back -->
   <!-- covers: code-explorer/browser-navigation :: Back and Forward restore explicit views :: User selects Forward -->
   <!-- covers: code-explorer/browser-navigation :: Back and Forward restore explicit views :: User navigates after Back -->
 
-- [ ] 2.7 Add visible-tab status polling, generation and readiness display, stale navigation locks, Refocus, and Refresh states in `packages/code-explorer/src/browser/`. Verify pending, stale, refocus, and failure behavior with a controllable fake clock and core.
+- [x] 2.7 Add visible-tab status polling, generation and readiness display, stale navigation locks, Refocus, and Refresh states in `packages/code-explorer/src/browser/`. Verify pending, stale, refocus, and failure behavior with a controllable fake clock and core.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-navigation :: Freshness remains visible without replacing the focus :: New generation is pending -->
   <!-- covers: code-explorer/browser-navigation :: Freshness remains visible without replacing the focus :: Current view becomes stale -->
   <!-- covers: code-explorer/browser-navigation :: Freshness remains visible without replacing the focus :: User selects Refocus -->
   <!-- covers: code-explorer/browser-navigation :: Freshness remains visible without replacing the focus :: Refresh fails -->
 
-- [ ] 2.8 Give search, relation, graph, freshness, and workspace areas distinct local not-loaded, loading, empty, unavailable, stale, and failure rendering. Verify that local failures preserve the other panes and that generation 0 disables navigation.
+- [x] 2.8 Give search, relation, graph, freshness, and workspace areas distinct local not-loaded, loading, empty, unavailable, stale, and failure rendering. Verify that local failures preserve the other panes and that generation 0 disables navigation.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-navigation :: Empty, loading, and failure states preserve context :: Search has no matches -->
   <!-- covers: code-explorer/browser-navigation :: Empty, loading, and failure states preserve context :: One relation fails -->
   <!-- covers: code-explorer/browser-navigation :: Empty, loading, and failure states preserve context :: Workspace has no published generation -->
