@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { readFileSync, realpathSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,9 +10,11 @@ import { type LandmarkDiscovery, landmarksNotReady } from "./discovery/landmarks
 import { normalizeDiscoveryQuery } from "./discovery/matcher.js";
 import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
-import { createFocusView, FocusBodyLimitError } from "./navigation/focus-view.js";
+import { createFocusView, FocusBodyLimitError, type FocusView, mintOpaqueId } from "./navigation/focus-view.js";
+import { SessionManager } from "./navigation/session.js";
 import { loadAdapterSelectionRecord } from "./semantic/adapter-selection.js";
 import { createBackendStatusReport } from "./semantic/backend-status.js";
+import type { RelationName, RelationResult, SymbolIdentity } from "./semantic/contract.js";
 import type { LanguageAdapter } from "./semantic/language-adapter.js";
 import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "./semantic/project-root.js";
 import { createStartedRuntimeAdapters } from "./semantic/runtime-bootstrap.js";
@@ -31,9 +34,16 @@ export type CodeExplorerState = {
 
 export type CodeExplorerError = {
   schema_version: 1;
-  code: "unknown_tool" | "invalid_request" | "path_outside_project" | "resource_limit";
-  message: "unknown_tool" | "invalid_request" | "path_outside_project" | "resource_limit";
-  retryable: false;
+  code:
+    | "unknown_tool"
+    | "invalid_request"
+    | "path_outside_project"
+    | "resource_limit"
+    | "invalid_session"
+    | "invalid_view_handle"
+    | "request_id_conflict";
+  message: CodeExplorerError["code"];
+  retryable: boolean;
 };
 
 export type CodeExplorerEnvelope = {
@@ -50,6 +60,7 @@ export type CodeExplorerServer = {
   call(name: string, arguments_: Record<string, unknown>): Promise<CodeExplorerEnvelope | CodeExplorerError>;
   state(): CodeExplorerState;
   projectRoot: ProjectRoot | undefined;
+  closeConnection(): void;
 };
 
 function isToolName(name: string): name is ToolName {
@@ -70,6 +81,23 @@ function pathOutsideProject(): CodeExplorerError {
 
 function resourceLimit(): CodeExplorerError {
   return { schema_version: 1, code: "resource_limit", message: "resource_limit", retryable: false };
+}
+
+function invalidSession(): CodeExplorerError {
+  return { schema_version: 1, code: "invalid_session", message: "invalid_session", retryable: true };
+}
+
+function invalidViewHandle(): CodeExplorerError {
+  return { schema_version: 1, code: "invalid_view_handle", message: "invalid_view_handle", retryable: false };
+}
+
+function requestIdConflict(): CodeExplorerError {
+  return { schema_version: 1, code: "request_id_conflict", message: "request_id_conflict", retryable: false };
+}
+
+function hasValidRequestId(value: string): boolean {
+  const bytes = Buffer.byteLength(value, "utf8");
+  return bytes >= 16 && bytes <= 128;
 }
 
 const schemas = {
@@ -222,10 +250,14 @@ export function createServer(
     projectRoot?: ProjectRoot;
     sensitive_paths_excluded?: number;
     landmarks?: LandmarkDiscovery;
+    connection_id?: string;
+    now?: () => number;
   } = {},
 ): CodeExplorerServer {
   let refreshGeneration = 0;
   const viewHistory: string[] = [];
+  const connectionId = options.connection_id ?? mintOpaqueId();
+  const sessions = new SessionManager();
   const mcp = new McpServer({ name: "code-explorer", version: packageInfo.version }, { capabilities: { tools: {} } });
   const discovery: DiscoveryPipeline | undefined = options.projectRoot
     ? createDiscoveryPipeline(options.projectRoot)
@@ -238,88 +270,166 @@ export function createServer(
     if (!isToolName(name)) return unknownTool();
     const parsed = schemas[name].safeParse(arguments_);
     if (!parsed.success) return invalidRequest();
-    if (name === "code_status" && arguments_.action === "refresh") {
-      refreshGeneration += 1;
-      await Promise.allSettled(
-        (options.adapters ?? []).flatMap((adapter) => (adapter.refresh ? [adapter.refresh()] : [])),
-      );
-    }
-    if (name === "code_focus") {
-      const focus = schemas.code_focus.parse(arguments_);
-      const selected = await collectFocusedSymbol(options.adapters ?? [], focus.symbol_id);
-      if (selected) {
-        try {
-          return {
-            schema_version: 1,
-            project_id: "project",
-            project_generation: selected.revision.generation,
-            pending_generation: null,
-            state: "ready",
-            data: createFocusView(selected.symbol, selected.content, focus.body_limit_bytes),
-          };
-        } catch (error) {
-          if (error instanceof FocusBodyLimitError) return resourceLimit();
-          throw error;
-        }
-      }
-    }
-    const relation = arguments_.relation;
-    if (name === "code_follow" && typeof relation === "string") {
-      return {
-        schema_version: 1,
-        project_id: "project",
-        project_generation: 0,
-        pending_generation: null,
-        state: "unavailable_relation",
-        data: { relation },
-      };
-    }
-    if (name === "code_search" && discovery) {
-      const search = schemas.code_search.parse(arguments_);
-      if (normalizeDiscoveryQuery(search.query).length === 0) {
-        const landmarks = options.landmarks ?? landmarksNotReady();
-        return {
-          schema_version: 1,
-          project_id: "project",
-          project_generation: 0,
-          pending_generation: null,
-          state: landmarks.state === "ready" ? "ready" : "landmarks_not_ready",
-          data: { landmarks: landmarks.landmarks, landmark_state: landmarks.state },
-        };
-      }
-      const semanticSymbols = await collectSemanticSymbols(options.adapters ?? [], search.query);
-      let results: ReturnType<DiscoveryPipeline["searchResult"]>;
-      try {
-        results = discovery.searchResult(search.query, search, semanticSymbols);
-      } catch (error) {
-        if (error instanceof ProjectPathError && error.code === "path_outside_project") return pathOutsideProject();
-        throw error;
-      }
+    if (name === "code_status" && arguments_.action === "start_session") {
       return {
         schema_version: 1,
         project_id: "project",
         project_generation: 0,
         pending_generation: null,
         state: "ready",
-        data: results,
+        data: { session_id: sessions.start(connectionId) },
       };
     }
-    const backendStatus =
-      name === "code_status"
-        ? {
-            backend_status: createBackendStatusReport(options.adapters ?? []),
-            sensitive_paths_excluded: options.sensitive_paths_excluded ?? 0,
-            ...discovery?.status(),
+    const parsedArguments = parsed.data as Record<string, unknown>;
+    const sessionId = typeof parsedArguments.session_id === "string" ? parsedArguments.session_id : undefined;
+    const requestId = typeof parsedArguments.request_id === "string" ? parsedArguments.request_id : undefined;
+    const stateChanging =
+      name === "code_focus" ||
+      name === "code_follow" ||
+      name === "code_history" ||
+      (name === "code_status" && arguments_.action === "refresh");
+    if (stateChanging && !(requestId && hasValidRequestId(requestId) && sessionId)) return invalidRequest();
+
+    const perform = async (): Promise<CodeExplorerEnvelope | CodeExplorerError> => {
+      if (name === "code_status" && arguments_.action === "refresh") {
+        refreshGeneration += 1;
+        await Promise.allSettled(
+          (options.adapters ?? []).flatMap((adapter) => (adapter.refresh ? [adapter.refresh()] : [])),
+        );
+      }
+      if (name === "code_focus") {
+        const focus = schemas.code_focus.parse(arguments_);
+        const selected = await collectFocusedSymbol(options.adapters ?? [], focus.symbol_id);
+        if (selected) {
+          try {
+            const view = createFocusView(selected.symbol, selected.content, focus.body_limit_bytes);
+            sessions.addView(connectionId, focus.session_id, view);
+            viewHistory.push(view.view_id);
+            return {
+              schema_version: 1,
+              project_id: "project",
+              project_generation: selected.revision.generation,
+              pending_generation: null,
+              state: "ready",
+              data: { ...view, history_position: sessions.history(connectionId, focus.session_id)?.length ?? 0 },
+            };
+          } catch (error) {
+            if (error instanceof FocusBodyLimitError) return resourceLimit();
+            throw error;
           }
-        : {};
-    return {
-      schema_version: 1,
-      project_id: "project",
-      project_generation: 0,
-      pending_generation: null,
-      state: name === "code_status" && arguments_.action === "refresh" ? "refreshed" : "ready",
-      data: backendStatus,
+        }
+      }
+      const relation = arguments_.relation;
+      if (name === "code_follow" && typeof relation === "string") {
+        const follow = schemas.code_follow.parse(arguments_);
+        const symbolId = sessions.resolveHandle(connectionId, follow.session_id, follow.view_id, follow.handle);
+        if (!symbolId) return invalidViewHandle();
+        const semanticRelation = follow.relation === "type" ? "type_definition" : follow.relation;
+        const replies = await collectRelations(options.adapters ?? [], semanticRelation, symbolId);
+        if (replies.length === 0) {
+          return {
+            schema_version: 1,
+            project_id: "project",
+            project_generation: 0,
+            pending_generation: null,
+            state: "unavailable_relation",
+            data: { relation },
+          };
+        }
+        const { adapter, result } = replies[0];
+        const limit = Math.min(follow.limit ?? 50, 200);
+        const candidates = result.relations
+          .map((candidate) =>
+            relationCandidate(candidate, relation, adapter, sessions, connectionId, follow.session_id),
+          )
+          .sort(compareRelationCandidates)
+          .slice(0, limit);
+        if (relation === "definition") {
+          const local = candidates.find((candidate) => candidate.external === false);
+          if (local) {
+            return {
+              schema_version: 1,
+              project_id: "project",
+              project_generation: result.revision.generation,
+              pending_generation: null,
+              state: "ready",
+              data: { focus: local, source_location: local.range },
+            };
+          }
+        }
+        return {
+          schema_version: 1,
+          project_id: "project",
+          project_generation: result.revision.generation,
+          pending_generation: null,
+          state: "ready",
+          data: { relation, candidates },
+        };
+      }
+      if (name === "code_search" && discovery) {
+        const search = schemas.code_search.parse(arguments_);
+        if (normalizeDiscoveryQuery(search.query).length === 0) {
+          const landmarks = options.landmarks ?? landmarksNotReady();
+          return {
+            schema_version: 1,
+            project_id: "project",
+            project_generation: 0,
+            pending_generation: null,
+            state: landmarks.state === "ready" ? "ready" : "landmarks_not_ready",
+            data: { landmarks: landmarks.landmarks, landmark_state: landmarks.state },
+          };
+        }
+        const semanticSymbols = await collectSemanticSymbols(options.adapters ?? [], search.query);
+        let results: ReturnType<DiscoveryPipeline["searchResult"]>;
+        try {
+          results = discovery.searchResult(search.query, search, semanticSymbols);
+        } catch (error) {
+          if (error instanceof ProjectPathError && error.code === "path_outside_project") return pathOutsideProject();
+          throw error;
+        }
+        return {
+          schema_version: 1,
+          project_id: "project",
+          project_generation: 0,
+          pending_generation: null,
+          state: "ready",
+          data: results,
+        };
+      }
+      const backendStatus =
+        name === "code_status"
+          ? {
+              backend_status: createBackendStatusReport(options.adapters ?? []),
+              sensitive_paths_excluded: options.sensitive_paths_excluded ?? 0,
+              ...discovery?.status(),
+            }
+          : {};
+      return {
+        schema_version: 1,
+        project_id: "project",
+        project_generation: 0,
+        pending_generation: null,
+        state: name === "code_status" && arguments_.action === "refresh" ? "refreshed" : "ready",
+        data: backendStatus,
+      };
     };
+
+    if (stateChanging && sessionId && requestId) {
+      const execution = sessions.execute(
+        connectionId,
+        sessionId,
+        requestId,
+        name,
+        parsedArguments,
+        perform,
+        options.now?.(),
+      );
+      if (execution.state === "invalid_session") return invalidSession();
+      if (execution.state === "request_id_conflict") return requestIdConflict();
+      if (execution.state === "ok") return execution.response;
+      return invalidSession();
+    }
+    return perform();
   };
 
   mcp.server.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -339,6 +449,7 @@ export function createServer(
     call,
     state: () => ({ refresh_generation: refreshGeneration, view_history: [...viewHistory] }),
     projectRoot: options.projectRoot,
+    closeConnection: () => sessions.closeConnection(connectionId),
   };
 }
 
@@ -363,6 +474,88 @@ async function collectFocusedSymbol(adapters: readonly LanguageAdapter[], symbol
   )?.value;
 }
 
+type FollowCandidate = {
+  relation: string;
+  relation_source: "semantic";
+  backend_name: string;
+  backend_version: string;
+  external: boolean;
+  symbol_id?: string;
+  display_name?: string;
+  path?: string;
+  kind?: string;
+  range?: SymbolIdentity["location"]["range"];
+  call_site?: SymbolIdentity["location"];
+  view_id?: string;
+  handle?: string;
+  content?: FocusView["content"];
+};
+
+async function collectRelations(adapters: readonly LanguageAdapter[], relation: RelationName, symbolId: string) {
+  const supported = adapters.filter((adapter) => adapter.status().capabilities[relation].state === "ready");
+  const replies = await Promise.allSettled(
+    supported.map((adapter) => adapter.request({ operation: relation, symbol_id: symbolId })),
+  );
+  return replies.flatMap((reply, index) =>
+    reply.status === "fulfilled" && reply.value.operation === relation
+      ? [{ adapter: supported[index], result: reply.value as RelationResult }]
+      : [],
+  );
+}
+
+function relationCandidate(
+  candidate: RelationResult["relations"][number],
+  relation: string,
+  adapter: LanguageAdapter,
+  sessions: SessionManager,
+  connectionId: string,
+  sessionId: string,
+): FollowCandidate {
+  const status = adapter.status();
+  if ("external" in candidate) {
+    return {
+      relation,
+      relation_source: "semantic",
+      backend_name: status.backend_name,
+      backend_version: status.backend_version,
+      display_name: candidate.external.display_name,
+      external: true,
+    };
+  }
+  const symbol = candidate.symbol;
+  const view = createFocusView(symbol, {
+    declaration: symbol.name,
+    visible_symbols: [{ name: symbol.name, symbol_id: symbol.id }],
+  });
+  sessions.addView(connectionId, sessionId, view);
+  const handle = view.handles[0]?.handle;
+  const sourceRange = "range" in candidate.location ? candidate.location.range : symbol.location.range;
+  return {
+    relation,
+    relation_source: "semantic",
+    backend_name: status.backend_name,
+    backend_version: status.backend_version,
+    symbol_id: view.symbol_id,
+    path: symbol.location.path.replaceAll("\\", "/"),
+    kind: symbol.kind,
+    range: sourceRange,
+    ...(candidate.call_site
+      ? { call_site: { path: candidate.call_site.path.replaceAll("\\", "/"), range: candidate.call_site.range } }
+      : {}),
+    external: false,
+    view_id: view.view_id,
+    ...(handle ? { handle } : {}),
+    content: view.content,
+  };
+}
+
+function compareRelationCandidates(left: FollowCandidate, right: FollowCandidate): number {
+  if (left.external !== right.external) return left.external ? 1 : -1;
+  return `${left.path ?? ""}\u0000${left.range?.start.line ?? 0}\u0000${left.range?.start.character ?? 0}\u0000${left.kind ?? ""}\u0000${left.symbol_id ?? left.display_name ?? ""}`.localeCompare(
+    `${right.path ?? ""}\u0000${right.range?.start.line ?? 0}\u0000${right.range?.start.character ?? 0}\u0000${right.kind ?? ""}\u0000${right.symbol_id ?? right.display_name ?? ""}`,
+  );
+}
+
 async function main(): Promise<void> {
   loadAdapterSelectionRecord();
   const projectRoot = createNativeProjectRoot(parseProjectRootArgument(process.argv.slice(2)));
@@ -379,6 +572,7 @@ async function main(): Promise<void> {
     return shuttingDown;
   };
   transport.onclose = () => {
+    server.closeConnection();
     void shutdownBackends();
   };
   process.stdin.once("end", () => void shutdownBackends());

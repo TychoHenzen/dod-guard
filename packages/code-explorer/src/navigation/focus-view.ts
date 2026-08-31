@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type { FocusContent, SymbolIdentity } from "../semantic/contract.js";
 
 export const DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
@@ -33,6 +33,11 @@ export class FocusBodyLimitError extends Error {
   }
 }
 
+/** Opaque identifiers carry 128 bits of cryptographically random data. */
+export function mintOpaqueId(): string {
+  return randomBytes(16).toString("base64url");
+}
+
 /** Creates an immutable response from semantic content without reading a source file itself. */
 export function createFocusView(
   symbol: SymbolIdentity,
@@ -59,9 +64,9 @@ export function createFocusView(
   const symbolId = stableSymbolId(symbol);
   const handles = (detail?.visible_symbols ?? [])
     .filter(({ name }) => source?.includes(name) ?? false)
-    .map(({ name, symbol_id }) => ({ handle: randomUUID(), name, symbol_id }));
+    .map(({ name, symbol_id }) => ({ handle: mintOpaqueId(), name, symbol_id }));
   return {
-    view_id: randomUUID(),
+    view_id: mintOpaqueId(),
     symbol_id: symbolId,
     name: symbol.name,
     qualified_name: symbol.qualified_name ?? symbol.name,

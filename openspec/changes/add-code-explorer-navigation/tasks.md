@@ -150,7 +150,8 @@
   <!-- covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Function focus succeeds -->
   <!-- covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Symbol content exceeds the response budget -->
   <!-- covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Symbol has no retrievable body -->
-- [ ] 4.2 Mint connection-bound opaque sessions, views, and handles and serialize concurrent requests within one session.
+- [x] 4.2 Mint connection-bound opaque sessions, views, and handles and serialize concurrent requests within one session.
+<!-- status: completed -->
   <!-- covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Client follows a valid visible handle -->
   <!-- covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Handle belongs to another view -->
   <!-- covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Client connection closes -->
@@ -160,7 +161,8 @@
   <!-- covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Duplicate request is still in flight -->
   <!-- covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Request identifier is reused for different content -->
   <!-- covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Request identifier retention expires -->
-- [ ] 4.3 Follow definition, reference, caller, callee, type, and implementation relations with bounded candidates and honest unsupported results.
+- [x] 4.3 Follow definition, reference, caller, callee, type, and implementation relations with bounded candidates and honest unsupported results.
+<!-- status: completed -->
   <!-- covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Visible type follows to its definition -->
   <!-- covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Client requests references -->
   <!-- covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Client requests callers or callees -->

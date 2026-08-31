@@ -26,15 +26,16 @@ it("focuses one semantic function into a new immutable view with visible handles
       }),
     ],
   });
+  const sessionId = await startSession(server);
 
   const first = await server.call("code_focus", {
-    session_id: "session",
-    request_id: "request",
+    session_id: sessionId,
+    request_id: "focus-request-0001",
     symbol_id: "backend-id",
   });
   const second = await server.call("code_focus", {
-    session_id: "session",
-    request_id: "request-2",
+    session_id: sessionId,
+    request_id: "focus-request-0002",
     symbol_id: "backend-id",
   });
   assert.equal("code" in first, false);
@@ -69,9 +70,10 @@ it("returns a UTF-8-safe prefix and byte accounting when a focus body exceeds it
 // covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Symbol has no retrievable body
 it("returns semantic identity without reading a whole file when the backend supplies no content", async () => {
   const server = createServer({ adapters: [focusAdapter(undefined)] });
+  const sessionId = await startSession(server);
   const result = await server.call("code_focus", {
-    session_id: "session",
-    request_id: "request",
+    session_id: sessionId,
+    request_id: "focus-request-0001",
     symbol_id: "backend-id",
   });
   assert.equal("code" in result, false);
@@ -115,4 +117,10 @@ function focusAdapter(
       ...(content ? { content } : {}),
     }),
   };
+}
+
+async function startSession(server: ReturnType<typeof createServer>): Promise<string> {
+  const response = await server.call("code_status", { action: "start_session" });
+  if ("code" in response || typeof response.data.session_id !== "string") throw new Error("expected session");
+  return response.data.session_id;
 }

@@ -533,11 +533,12 @@ describe("code-explorer package boundary", () => {
   // covers: code-explorer/mcp-navigation :: The MCP surface stays small and workspace-read-only :: Client refreshes derived state
   it("refreshes only derived state and preserves view history", async () => {
     const server = createServer();
+    const sessionId = await startSession(server);
     const before = server.state();
     const result = await server.call("code_status", {
       action: "refresh",
-      session_id: "session",
-      request_id: "request",
+      session_id: sessionId,
+      request_id: "refresh-request-0001",
     });
 
     assert.equal("code" in result, false);
@@ -631,15 +632,12 @@ describe("code-explorer package boundary", () => {
 
   // covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Successful tool response uses the common envelope
   it("returns only the common versioned envelope for every successful tool", async () => {
-    const server = createServer();
+    const server = createServer({ adapters: [focusableNavigationAdapter()] });
+    const sessionId = await startSession(server);
     const calls: ReadonlyArray<readonly [string, Record<string, unknown>]> = [
       ["code_search", { query: "helper" }],
-      ["code_focus", { session_id: "session", request_id: "request", symbol_id: "symbol" }],
-      [
-        "code_follow",
-        { session_id: "session", request_id: "request", view_id: "view", handle: "handle", relation: "definition" },
-      ],
-      ["code_history", { session_id: "session", request_id: "request", action: "recent", limit: 1 }],
+      ["code_focus", { session_id: sessionId, request_id: "focus-request-00001", symbol_id: "symbol" }],
+      ["code_history", { session_id: sessionId, request_id: "history-request-001", action: "recent", limit: 1 }],
       ["code_status", { action: "status" }],
     ];
 
@@ -660,17 +658,47 @@ describe("code-explorer package boundary", () => {
       assert.equal(typeof result.project_generation, "number");
       assert.equal(result.pending_generation, null);
     }
+    const focused = await server.call("code_focus", {
+      session_id: sessionId,
+      request_id: "focus-request-00002",
+      symbol_id: "symbol",
+    });
+    if ("code" in focused) throw new Error("expected focus");
+    const data = focused.data as { view_id: string; handles: Array<{ handle: string }> };
+    const followed = await server.call("code_follow", {
+      session_id: sessionId,
+      request_id: "follow-request-0001",
+      view_id: data.view_id,
+      handle: data.handles[0]?.handle ?? "missing",
+      relation: "definition",
+    });
+    assert.equal("code" in followed, false);
   });
 
   // covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Backend reports an unsupported operation
   it("makes an unsupported relation explicit instead of returning an empty result array", async () => {
-    const server = createServer();
-    for (const relation of ["definition", "references", "callers", "callees", "type", "implementation"]) {
+    const server = createServer({ adapters: [focusableNavigationAdapter()] });
+    const sessionId = await startSession(server);
+    const focused = await server.call("code_focus", {
+      session_id: sessionId,
+      request_id: "focus-request-00001",
+      symbol_id: "symbol",
+    });
+    if ("code" in focused) throw new Error("expected focus");
+    const data = focused.data as { view_id: string; handles: Array<{ handle: string }> };
+    for (const [index, relation] of [
+      "definition",
+      "references",
+      "callers",
+      "callees",
+      "type",
+      "implementation",
+    ].entries()) {
       const result = await server.call("code_follow", {
-        session_id: "session",
-        request_id: "request",
-        view_id: "view",
-        handle: "handle",
+        session_id: sessionId,
+        request_id: `follow-request-${index.toString().padStart(4, "0")}`,
+        view_id: data.view_id,
+        handle: data.handles[0]?.handle ?? "missing",
         relation,
       });
 
@@ -875,6 +903,40 @@ function symbol(kind: string, path: string) {
     language: "rust" as const,
     kind,
     location: { path, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } },
+  };
+}
+
+async function startSession(server: ReturnType<typeof createServer>): Promise<string> {
+  const response = await server.call("code_status", { action: "start_session" });
+  if ("code" in response || typeof response.data.session_id !== "string") throw new Error("expected session");
+  return response.data.session_id;
+}
+
+function focusableNavigationAdapter(): LanguageAdapter {
+  const focused = symbol("function", "src/helper.rs");
+  return {
+    status: () => ({
+      language: "rust",
+      backend_name: "test",
+      backend_version: "test",
+      discovery_source: "injected",
+      state: "ready",
+      capabilities: {
+        definition: { state: "unavailable" },
+        references: { state: "unavailable" },
+        type_definition: { state: "unavailable" },
+        implementation: { state: "unavailable" },
+        callers: { state: "unavailable" },
+        callees: { state: "unavailable" },
+      },
+      last_transition_time: 0,
+    }),
+    request: async () => ({
+      operation: "focus",
+      revision: { generation: 1, manifest_sha256: "test" },
+      symbol: focused,
+      content: { body: "Target", visible_symbols: [{ name: "Target", symbol_id: "target" }] },
+    }),
   };
 }
 
