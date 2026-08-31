@@ -72,5 +72,7 @@ test-anticheat.md
 
 # openspec archive output
 openspec/changes/archive/
+# dod-guard task snapshots include the local absolute tasks.md path.
+.task-guard.json
 # openspec-dashboard process lock
 .dashboard.pid
