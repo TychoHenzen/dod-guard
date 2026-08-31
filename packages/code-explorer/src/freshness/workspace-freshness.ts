@@ -4,7 +4,7 @@ import { join, relative } from "node:path";
 import chokidar from "chokidar";
 
 export type FreshnessCause = "freshness_unavailable" | "incomplete_write" | "scan_limit" | "workspace_churn";
-export type FreshnessState = "initializing" | "ready" | "refreshing" | "degraded";
+export type FreshnessState = "initializing" | "ready" | "refreshing" | "degraded" | "refresh_failed";
 export type FreshnessStatus = {
   current_generation: number;
   pending_generation: number | null;
@@ -65,11 +65,30 @@ export class WorkspaceFreshness {
   #manifestTimer: unknown;
   #running: Promise<void> | undefined;
   #nextGeneration = 1;
+  #forceRefresh = false;
 
   constructor(private readonly options: FreshnessOptions) {}
 
   status(): FreshnessStatus {
     return { ...this.#status };
+  }
+
+  /** Keeps the last complete generation readable when an explicit refresh cannot finish. */
+  failRefresh(): void {
+    this.#forceRefresh = false;
+    this.#status = {
+      current_generation: this.#status.current_generation,
+      pending_generation: null,
+      state: "refresh_failed",
+      mode: this.#status.mode,
+    };
+  }
+
+  /** Reserves an explicit-refresh generation before backend and derived-data work begins. */
+  reserveRefresh(): FreshnessStatus {
+    if (this.#status.pending_generation === null) this.#reserveGeneration();
+    this.#forceRefresh = true;
+    return this.status();
   }
 
   async start(activeSessions = 0): Promise<void> {
@@ -102,7 +121,7 @@ export class WorkspaceFreshness {
 
   async reconcile(): Promise<void> {
     if (this.#running) return this.#running;
-    this.#reserveGeneration();
+    if (this.#status.pending_generation === null) this.#reserveGeneration();
     const run = this.#reconcile().catch(() => {
         this.#status = {
           current_generation: this.#status.current_generation,
@@ -122,13 +141,14 @@ export class WorkspaceFreshness {
     for (let mismatchCount = 0; mismatchCount < 3; mismatchCount += 1) {
       const captured = await this.options.reconcile();
       if ("cause" in captured) return this.#degrade(captured.cause);
-      if (this.#status.current_generation > 0 && sameManifest(this.#manifest, captured.manifest)) {
+      if (!this.#forceRefresh && this.#status.current_generation > 0 && sameManifest(this.#manifest, captured.manifest)) {
         this.#status = {
           current_generation: this.#status.current_generation,
           pending_generation: null,
           state: "ready",
           mode: this.#status.mode,
         };
+        this.#forceRefresh = false;
         return;
       }
       const generation = this.#status.pending_generation ?? this.#reserveGeneration();
@@ -143,6 +163,7 @@ export class WorkspaceFreshness {
           state: "ready",
           mode: this.#status.mode,
         };
+        this.#forceRefresh = false;
         return;
       }
       this.#reserveGeneration();
@@ -151,6 +172,7 @@ export class WorkspaceFreshness {
   }
 
   #degrade(cause: FreshnessCause): void {
+    this.#forceRefresh = false;
     this.#status = {
       current_generation: this.#status.current_generation,
       pending_generation: null,

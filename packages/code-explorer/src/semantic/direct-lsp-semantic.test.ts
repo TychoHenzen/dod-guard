@@ -5,6 +5,7 @@ import type { ProjectRoot } from "./project-root.js";
 
 const root: ProjectRoot = {
   canonicalPath: "/project",
+  revalidate: () => "ready",
   resolveClientPath: (path) => `/project/${path}`,
   classifyBackendPath: (path) => (path.startsWith("/project/") ? { relative_path: path.slice(9) } : { external: true }),
   openProtected: () => ({ path: "/project/src/main.rs", handle: undefined }),

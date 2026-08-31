@@ -250,17 +250,20 @@
 <!-- status: completed -->
   <!-- covers: code-explorer/workspace-freshness :: Views remain immutable after creation :: Client follows a handle from an older view -->
   <!-- covers: code-explorer/workspace-freshness :: Views remain immutable after creation :: Client restores old history -->
-- [ ] 6.5 Rebuild derived discovery and landmark data atomically while retaining the prior complete revision after refresh failure.
+- [x] 6.5 Rebuild derived discovery and landmark data atomically while retaining the prior complete revision after refresh failure.
+<!-- status: completed -->
   <!-- covers: code-explorer/workspace-freshness :: Explicit refresh rebuilds derived discovery data :: Refresh completes -->
   <!-- covers: code-explorer/workspace-freshness :: Explicit refresh rebuilds derived discovery data :: Refresh fails before completion -->
-- [ ] 6.6 Report project root, revision, working-tree source states, exclusions, readiness, and pending analysis through `code_status`.
+- [x] 6.6 Report project root, revision, working-tree source states, exclusions, readiness, and pending analysis through `code_status`.
+<!-- status: completed -->
   <!-- covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Working tree contains source changes -->
   <!-- covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Generated path is excluded -->
   <!-- covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Frozen project root disappears -->
   <!-- covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Project root is temporarily inaccessible -->
   <!-- covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Same root identity becomes accessible again -->
   <!-- covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Root accessibility does not recover -->
-- [ ] 6.7 Run the freshness practice fixture through save, rename, delete, pending analysis, concurrent sessions, successful refresh, and failed refresh without restarting the MCP process.
+- [x] 6.7 Run the freshness practice fixture through save, rename, delete, pending analysis, concurrent sessions, successful refresh, and failed refresh without restarting the MCP process.
+<!-- status: completed -->
 
 ## 7. Packaging and Repository Gates
 

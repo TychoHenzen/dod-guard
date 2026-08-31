@@ -39,6 +39,8 @@ export type ProtectedPath<Handle = unknown> = { path: string; handle: Handle };
 
 export type ProjectRoot<Handle = unknown> = {
   canonicalPath: string;
+  /** Revalidates the frozen startup root without revealing its host path. */
+  revalidate(): "ready" | "inaccessible" | "unavailable";
   resolveClientPath(relativePath: string): string;
   classifyBackendPath(candidate: string): { relative_path: string } | { external: true };
   openProtected(relativePath: string): ProtectedPath<Handle>;
@@ -82,6 +84,20 @@ export function createProjectRoot<Handle = unknown>(options: ProjectRootOptions<
 
   return {
     canonicalPath: root.path,
+    revalidate() {
+      try {
+        const path = options.filesystem.realpath(configuredRoot);
+        const identity = options.filesystem.stat(path);
+        if (!(isStableIdentityPart(identity.dev) && isStableIdentityPart(identity.ino))) return "unavailable";
+        const current = { path, identity };
+        return sameCanonicalPath(current.path, root.path, options.platform) && sameIdentity(current.identity, root.identity)
+          ? "ready"
+          : "unavailable";
+      } catch (error) {
+        const code = error instanceof Error && "code" in error ? (error as { code?: string }).code : undefined;
+        return code === "EACCES" || code === "EPERM" || code === "EBUSY" || code === "EIO" ? "inaccessible" : "unavailable";
+      }
+    },
     resolveClientPath,
     classifyBackendPath(candidate: string) {
       // Backends can report Windows separators even when the service runs elsewhere.

@@ -18,8 +18,13 @@ export class ProjectGenerationScheduler {
     if (this.#refresh) return this.#refresh;
     const refresh = this.#enqueue(async () => {
       ++this.#acceptedRequests;
-      await work();
-      await this.freshness.reconcile();
+      this.freshness.reserveRefresh();
+      try {
+        await work();
+        await this.freshness.reconcile();
+      } catch {
+        this.freshness.failRefresh();
+      }
       return this.freshness.status();
     });
     this.#refresh = refresh;

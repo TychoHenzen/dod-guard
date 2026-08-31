@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { execFileSync } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +27,7 @@ import type { RelationName, RelationResult, SymbolIdentity } from "./semantic/co
 import type { LanguageAdapter } from "./semantic/language-adapter.js";
 import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "./semantic/project-root.js";
 import { createStartedRuntimeAdapters } from "./semantic/runtime-bootstrap.js";
+import { RootAccessGate } from "./semantic/root-access.js";
 import { createNativeWorkspaceFreshness, WorkspaceFreshness } from "./freshness/workspace-freshness.js";
 import { ProjectGenerationScheduler } from "./freshness/project-generation-scheduler.js";
 
@@ -35,7 +37,14 @@ const packageInfo = JSON.parse(readFileSync(packagePath, "utf-8")) as { version:
 
 const toolNames = ["code_search", "code_focus", "code_follow", "code_history", "code_status"] as const;
 type ToolName = (typeof toolNames)[number];
-type EnvelopeState = "ready" | "refreshed" | "refreshing" | "degraded" | "unavailable_relation" | "landmarks_not_ready";
+type EnvelopeState =
+  | "ready"
+  | "refreshed"
+  | "refreshing"
+  | "degraded"
+  | "refresh_failed"
+  | "unavailable_relation"
+  | "landmarks_not_ready";
 
 export type CodeExplorerState = {
   refresh_generation: number;
@@ -269,6 +278,9 @@ export function createServer(
     backend_timeout_ms?: number;
     freshness?: WorkspaceFreshness;
     generation_scheduler?: ProjectGenerationScheduler;
+    /** Rebuilds replacement derived data off to the side of the current generation. */
+    rebuild_derived?: () => Promise<{ landmarks?: LandmarkDiscovery } | void>;
+    workspace_status?: () => Record<string, unknown>;
   } = {},
 ): CodeExplorerServer {
   let refreshGeneration = 0;
@@ -281,10 +293,12 @@ export function createServer(
   let freshnessStarted: Promise<void> | undefined;
   const ensureFreshness = () => (freshnessStarted ??= freshness.start());
   const generationScheduler = options.generation_scheduler ?? new ProjectGenerationScheduler(freshness);
+  const rootAccess = new RootAccessGate(options.projectRoot, options.adapters ?? [], options.now);
   const mcp = new McpServer({ name: "code-explorer", version: packageInfo.version }, { capabilities: { tools: {} } });
-  const discovery: DiscoveryPipeline | undefined = options.projectRoot
+  let discovery: DiscoveryPipeline | undefined = options.projectRoot
     ? createDiscoveryPipeline(options.projectRoot)
     : undefined;
+  let landmarks = options.landmarks;
 
   const call = async (
     name: string,
@@ -299,13 +313,14 @@ export function createServer(
     if (name === "code_status" && arguments_.action === "start_session") {
       const sessionId = sessions.tryStart(connectionId, options.now?.());
       if (!sessionId) return projectCapacity();
+      const rootStatus = await rootAccess.check();
       return {
         schema_version: 1,
         project_id: "project",
         project_generation: 0,
         pending_generation: null,
-        state: "ready",
-        data: { session_id: sessionId },
+        state: rootStatus.state === "ready" ? "ready" : "degraded",
+        data: { session_id: sessionId, project_root: ".", root_access: rootStatus.state, restart_required: rootStatus.restart_required },
       };
     }
     const parsedArguments = parsed.data as Record<string, unknown>;
@@ -319,6 +334,8 @@ export function createServer(
     if (stateChanging && !(requestId && hasValidRequestId(requestId) && sessionId)) return invalidRequest();
 
     const perform = async (): Promise<CodeExplorerEnvelope | CodeExplorerError> => {
+      const rootStatus = await rootAccess.check();
+      if (name !== "code_status" && rootStatus.state !== "ready") return codeExplorerError(rootStatus.state);
       let capturedFreshness;
       if (name === "code_status" && arguments_.action === "refresh") {
         await generationScheduler.refresh(async () => {
@@ -329,6 +346,9 @@ export function createServer(
               return refresh ? [backendRequests.run(sessionId, () => refresh())] : [];
             }),
           );
+          const replacement = await options.rebuild_derived?.();
+          if (options.projectRoot) discovery = createDiscoveryPipeline(options.projectRoot);
+          if (replacement?.landmarks) landmarks = replacement.landmarks;
         });
         capturedFreshness = freshness.status();
       } else {
@@ -458,14 +478,14 @@ export function createServer(
       if (name === "code_search" && discovery) {
         const search = schemas.code_search.parse(arguments_);
         if (normalizeDiscoveryQuery(search.query).length === 0) {
-          const landmarks = options.landmarks ?? landmarksNotReady();
+          const currentLandmarks = landmarks ?? landmarksNotReady();
           return {
             schema_version: 1,
             project_id: "project",
             project_generation: capturedFreshness.current_generation,
             pending_generation: capturedFreshness.pending_generation,
-            state: landmarks.state === "ready" ? "ready" : "landmarks_not_ready",
-            data: { landmarks: landmarks.landmarks, landmark_state: landmarks.state },
+            state: currentLandmarks.state === "ready" ? "ready" : "landmarks_not_ready",
+            data: { landmarks: currentLandmarks.landmarks, landmark_state: currentLandmarks.state },
           };
         }
         const semanticSymbols = await collectSemanticSymbols(options.adapters ?? [], search.query, (operation) =>
@@ -492,6 +512,14 @@ export function createServer(
           ? {
               backend_status: createBackendStatusReport(options.adapters ?? []),
               sensitive_paths_excluded: options.sensitive_paths_excluded ?? 0,
+              project_root: ".",
+              current_generation: capturedFreshness.current_generation,
+              pending_generation: capturedFreshness.pending_generation,
+              workspace_state: capturedFreshness.state,
+              pending_analysis: capturedFreshness.pending_generation !== null,
+              root_access: rootStatus.state,
+              restart_required: rootStatus.restart_required,
+              ...(options.workspace_status?.() ?? nativeWorkspaceStatus(options.projectRoot)),
               ...discovery?.status(),
             }
           : {};
@@ -501,9 +529,11 @@ export function createServer(
         project_generation: capturedFreshness.current_generation,
         pending_generation: capturedFreshness.pending_generation,
         state:
-          name === "code_status" && arguments_.action === "refresh"
+          name === "code_status" && rootStatus.state !== "ready"
+            ? "degraded"
+            : name === "code_status" && arguments_.action === "refresh" && capturedFreshness.state === "ready"
             ? "refreshed"
-            : capturedFreshness.state === "refreshing" || capturedFreshness.state === "degraded"
+            : capturedFreshness.state === "refreshing" || capturedFreshness.state === "degraded" || capturedFreshness.state === "refresh_failed"
               ? capturedFreshness.state
               : "ready",
         data: backendStatus,
@@ -548,6 +578,28 @@ export function createServer(
     projectRoot: options.projectRoot,
     closeConnection: () => sessions.closeConnection(connectionId),
   };
+}
+
+function nativeWorkspaceStatus(root: ProjectRoot | undefined): Record<string, unknown> {
+  if (!root) return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
+  try {
+    const output = execFileSync("git", ["-C", root.canonicalPath, "status", "--porcelain=v1", "--untracked-files=all"], {
+      encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+    });
+    const changed_paths: Array<{ path: string; state: "modified" | "deleted" }> = [];
+    const untracked_paths: Array<{ path: string; state: "untracked" }> = [];
+    for (const line of output.split(/\r?\n/u)) {
+      const status = line.slice(0, 2);
+      const candidate = line.slice(3).replaceAll("\\", "/");
+      if (!candidate || candidate.startsWith("/") || /^[A-Za-z]:\//u.test(candidate) || candidate.split("/").includes("..")) continue;
+      if (!/\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)) continue;
+      if (status === "??") untracked_paths.push({ path: candidate, state: "untracked" });
+      else changed_paths.push({ path: candidate, state: status.includes("D") ? "deleted" : "modified" });
+    }
+    return { changed_paths, untracked_paths, active_exclusions: ["dist/**", "target/**", "bin/**", "obj/**", ".venv/**"] };
+  } catch {
+    return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
+  }
 }
 
 /** Workspace-symbol replies are discovery evidence only. Relation authority remains in the language adapters. */

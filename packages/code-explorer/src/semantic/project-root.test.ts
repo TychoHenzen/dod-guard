@@ -165,3 +165,14 @@ it("reports unavailable identity when fstat cannot prove the opened file", () =>
 
   assert.throws(() => guard.openProtected("src/lib.rs"), /path_identity_unavailable/);
 });
+
+it("distinguishes transient root access failures from a changed root identity", () => {
+  const fs = filesystem({ [root]: { realpath: root, dev: 1, ino: 1 } });
+  const guard = createProjectRoot({ cwd: root, filesystem: fs, platform: "win32" });
+  fs.realpath = () => {
+    const error = new Error("denied") as Error & { code: string };
+    error.code = "EACCES";
+    throw error;
+  };
+  assert.equal(guard.revalidate(), "inaccessible");
+});
