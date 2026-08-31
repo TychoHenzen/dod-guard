@@ -24,6 +24,7 @@ export type DirectLspSemanticOptions = {
   root: ProjectRoot;
   revision: ProjectRevision;
   symbols: ReadonlyMap<string, SymbolIdentity>;
+  discovery_document_paths?: readonly string[];
   capabilities: RelationCapabilities;
   toBackendUri(location: SymbolIdentity["location"]): string;
   fromBackendUri(uri: string): string | undefined;
@@ -36,6 +37,7 @@ export type DirectLspSemanticOptions = {
  */
 export function createDirectLspSemanticBackend(options: DirectLspSemanticOptions): InjectedSemanticBackend {
   const unavailableRelations = new Set<RelationName>();
+  const symbols = new Map(options.symbols);
   return {
     readiness: () =>
       unavailableRelations.size > 0 && options.client.status().state === "ready"
@@ -53,7 +55,7 @@ export function createDirectLspSemanticBackend(options: DirectLspSemanticOptions
         unavailableRelations.has(request.operation)
       )
         throw new Error("backend_unavailable");
-      const source = request.operation === "search" ? undefined : options.symbols.get(request.symbol_id);
+      const source = request.operation === "search" ? undefined : symbols.get(request.symbol_id);
       if (!source && request.operation !== "search") throw new Error("backend_unavailable");
       if (
         isRelation(request) &&
@@ -78,9 +80,24 @@ export function createDirectLspSemanticBackend(options: DirectLspSemanticOptions
         if (isRelation(request)) unavailableRelations.add(request.operation);
         throw new Error(checked.code);
       }
+      retainReturnedSymbols(checked.result, symbols);
       return checked.result;
     },
   };
+}
+
+function retainReturnedSymbols(result: SemanticResult, symbols: Map<string, SymbolIdentity>): void {
+  if (result.operation === "search") {
+    for (const symbol of result.symbols) symbols.set(symbol.id, symbol);
+    return;
+  }
+  if (result.operation === "focus") {
+    symbols.set(result.symbol.id, result.symbol);
+    return;
+  }
+  for (const relation of result.relations) {
+    if ("symbol" in relation) symbols.set(relation.symbol.id, relation.symbol);
+  }
 }
 
 function openSourceDocument(source: SymbolIdentity, options: DirectLspSemanticOptions): void {
@@ -113,6 +130,28 @@ async function requestLsp(
   source: SymbolIdentity | undefined,
   options: DirectLspSemanticOptions,
 ) {
+  if (request.operation === "focus") return undefined;
+  if (request.operation === "search" && options.discovery_document_paths?.length) {
+    const symbols = [];
+    for (const path of options.discovery_document_paths) {
+      const uri = options.toBackendUri({
+        path,
+        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+      });
+      const reply = await options.client.request("textDocument/documentSymbol", { textDocument: { uri } });
+      const semantic = documentSymbols(reply, uri);
+      symbols.push(
+        ...(semantic.length > 0
+          ? semantic
+          : sourcePathSymbols(options.language, options.root.protectedRead(path).bytes, uri).slice(
+              0,
+              4096 - symbols.length,
+            )),
+      );
+      if (symbols.length >= 4096) break;
+    }
+    return symbols;
+  }
   if (request.operation !== "callers" && request.operation !== "callees")
     return options.client.request(methodFor(request.operation), paramsFor(request, source, options));
   if (!source) throw new Error("backend_unavailable");
@@ -126,6 +165,81 @@ async function requestLsp(
     request.operation === "callers" ? "callHierarchy/incomingCalls" : "callHierarchy/outgoingCalls",
     { item },
   );
+}
+
+function sourcePathSymbols(language: Language, source: string, uri: string): Record<string, unknown>[] {
+  if (language === "python") return pythonSourceSymbols(source, uri);
+  if (language === "csharp") return csharpSourceSymbols(source, uri);
+  return [];
+}
+
+function pythonSourceSymbols(source: string, uri: string): Record<string, unknown>[] {
+  return source.split(/\r?\n/).flatMap((line, lineNumber): Record<string, unknown>[] => {
+    const match = /^(\s*)(?:(async)\s+)?(def|class)\s+([A-Za-z_]\w*)/.exec(line);
+    if (!match) return [];
+    const name = match[4];
+    const character = line.indexOf(name, match[1].length);
+    return [
+      {
+        name,
+        kind: match[3] === "class" ? 5 : 12,
+        location: {
+          uri,
+          range: {
+            start: { line: lineNumber, character },
+            end: { line: lineNumber, character: character + name.length },
+          },
+        },
+      },
+    ];
+  });
+}
+
+function csharpSourceSymbols(source: string, uri: string): Record<string, unknown>[] {
+  return source.split(/\r?\n/).flatMap((line, lineNumber): Record<string, unknown>[] => {
+    const found: Record<string, unknown>[] = [];
+    const type = /\b(class|interface|struct|enum)\s+([A-Za-z_]\w*)/.exec(line);
+    if (type) found.push(sourceSymbol(type[2], type[1] === "interface" ? 11 : 5, line, lineNumber, uri));
+    const method =
+      /^\s*(?:(?:public|private|protected|internal|static|virtual|override|abstract|async|sealed|new|partial|extern)\s+)*(?:[A-Za-z_][\w<>[\],.?]*\s+)([A-Za-z_]\w*)\s*\(/.exec(
+        line,
+      );
+    if (method) found.push(sourceSymbol(method[1], 6, line, lineNumber, uri));
+    return found;
+  });
+}
+
+function sourceSymbol(
+  name: string,
+  kind: number,
+  line: string,
+  lineNumber: number,
+  uri: string,
+  from = 0,
+): Record<string, unknown> {
+  const character = line.indexOf(name, from);
+  return {
+    name,
+    kind,
+    location: {
+      uri,
+      range: {
+        start: { line: lineNumber, character },
+        end: { line: lineNumber, character: character + name.length },
+      },
+    },
+  };
+}
+
+function documentSymbols(raw: unknown, uri: string): Record<string, unknown>[] {
+  const values = Array.isArray(raw) ? raw : [];
+  return values.flatMap((value): Record<string, unknown>[] => {
+    if (!(value && typeof value === "object")) return [];
+    const symbol = value as Record<string, unknown>;
+    const range = validRange(symbol.selectionRange) ? symbol.selectionRange : symbol.range;
+    const current = validRange(range) ? [{ name: symbol.name, kind: symbol.kind, location: { uri, range } }] : [];
+    return [...current, ...documentSymbols(symbol.children, uri)];
+  });
 }
 
 function readiness(status: DirectLspStatus): ReturnType<InjectedSemanticBackend["readiness"]> {
@@ -169,7 +283,16 @@ function normalizeResult(
   }
   if (request.operation === "focus") {
     if (!source) throw new Error("backend_unavailable");
-    return { operation: "focus", revision: options.revision, symbol: source };
+    const document = options.root.protectedRead(source.location.path);
+    return {
+      operation: "focus",
+      revision: options.revision,
+      symbol: source,
+      content: {
+        body: document.bytes,
+        visible_symbols: [{ name: source.name, symbol_id: source.id }],
+      },
+    };
   }
   const capability = relationCapabilitiesFromInitialize(options.client.status())[request.operation];
   if (capability.state !== "ready") throw new Error("backend_unavailable");
@@ -231,6 +354,7 @@ function hierarchyRelations(
   relation: RelationName;
   symbol: SymbolIdentity;
   location: SymbolIdentity["location"] | { external: true };
+  call_site?: SymbolIdentity["location"];
 }> {
   const values = Array.isArray(raw) ? raw : [];
   return values.flatMap((value, index): Array<any> => {
@@ -256,7 +380,8 @@ function hierarchyRelations(
           kind: String(targetRecord?.kind ?? "symbol"),
           location,
         },
-        location: "external" in callSite ? { external: true } : callSite,
+        location,
+        ...(callSite && !("external" in callSite) ? { call_site: callSite } : {}),
       },
     ];
   });

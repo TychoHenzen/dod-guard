@@ -144,7 +144,8 @@
   <!-- covers: code-explorer/browser-server :: Static assets and server errors have stable behavior :: Browser requests the application shell -->
   <!-- covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Fresh Codex marketplace installation lists the tools -->
 
-- [ ] 4.2 Add the exact `practice:browser` process harness, disposable fixtures, cleanup, timeout, exit codes, and redacted evidence recording for Rust, Python, and C# under `packages/code-explorer/`. Run the live search, focus, semantic follow, Back, Forward, saved-file, stale, Refocus, and Refresh sequence once for each language.
+- [x] 4.2 Add the exact `practice:browser` process harness, disposable fixtures, cleanup, timeout, exit codes, and redacted evidence recording for Rust, Python, and C# under `packages/code-explorer/`. Run the live search, focus, semantic follow, Back, Forward, saved-file, stale, Refocus, and Refresh sequence once for each language.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-navigation :: The same browser workflow supports Rust, Python, and C# :: Rust practice project is explored -->
   <!-- covers: code-explorer/browser-navigation :: The same browser workflow supports Rust, Python, and C# :: Python practice project is explored -->
   <!-- covers: code-explorer/browser-navigation :: The same browser workflow supports Rust, Python, and C# :: C# practice project is explored -->

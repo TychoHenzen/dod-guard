@@ -12,6 +12,201 @@ const root: ProjectRoot = {
   protectedRead: () => ({ path: "/project/src/main.rs", bytes: "fn main() {}\n" }),
 };
 
+it("focuses the exact symbol identity returned by live workspace discovery", async () => {
+  const methods: string[] = [];
+  const backend = createDirectLspSemanticBackend({
+    language: "rust",
+    root,
+    revision: { generation: 0, manifest_sha256: "fixture" },
+    symbols: new Map(),
+    capabilities: Object.fromEntries(
+      ["definition", "references", "type_definition", "implementation", "callers", "callees"].map((name) => [
+        name,
+        { state: "ready" },
+      ]),
+    ) as never,
+    client: {
+      status: () => ({ state: "ready", events: [], restart_delays_ms: [], server_capabilities: {} }),
+      request: async (method: string) => {
+        methods.push(method);
+        return methods.length === 1 && method === "workspace/symbol"
+          ? [
+              {
+                name: "helper",
+                kind: 12,
+                location: {
+                  uri: "file:///project/src/main.rs",
+                  range: { start: { line: 0, character: 3 }, end: { line: 0, character: 9 } },
+                },
+              },
+            ]
+          : [];
+      },
+    },
+    toBackendUri: (location) => `file:///project/${location.path}`,
+    fromBackendUri: (uri) => (uri === "file:///project/src/main.rs" ? "src/main.rs" : undefined),
+  });
+
+  const search = await backend.query({ operation: "search", query: "helper" });
+  if (search.operation !== "search") throw new Error("expected search");
+  const discovered = search.symbols[0];
+  assert.ok(discovered);
+
+  const focus = await backend.query({ operation: "focus", symbol_id: discovered.id });
+  assert.deepEqual(focus, {
+    operation: "focus",
+    revision: { generation: 0, manifest_sha256: "fixture" },
+    symbol: discovered,
+    content: {
+      body: "fn main() {}\n",
+      visible_symbols: [{ name: "helper", symbol_id: discovered.id }],
+    },
+  });
+  assert.deepEqual(methods, ["workspace/symbol"]);
+});
+
+it("discovers Python symbols from approved opened mirror documents when workspace search is empty", async () => {
+  const methods: string[] = [];
+  const backend = createDirectLspSemanticBackend({
+    language: "python",
+    root: {
+      ...root,
+      protectedRead: () => ({
+        path: "/project/src/main.py",
+        bytes: "def entry():\n    pass\n\ndef helper():\n    pass\n",
+      }),
+    },
+    revision: { generation: 0, manifest_sha256: "fixture" },
+    symbols: new Map(),
+    capabilities: Object.fromEntries(
+      ["definition", "references", "type_definition", "implementation", "callers", "callees"].map((name) => [
+        name,
+        { state: "ready" },
+      ]),
+    ) as never,
+    discovery_document_paths: ["src/main.py"],
+    client: {
+      status: () => ({ state: "ready", events: [], restart_delays_ms: [], server_capabilities: {} }),
+      request: async (method: string) => {
+        methods.push(method);
+        return method === "textDocument/documentSymbol"
+          ? [
+              {
+                name: "helper",
+                kind: 12,
+                range: { start: { line: 3, character: 0 }, end: { line: 4, character: 8 } },
+                selectionRange: { start: { line: 3, character: 4 }, end: { line: 3, character: 10 } },
+              },
+            ]
+          : [];
+      },
+    },
+    toBackendUri: (location: { path: string }) => `file:///project/${location.path}`,
+    fromBackendUri: (uri: string) => (uri === "file:///project/src/main.py" ? "src/main.py" : undefined),
+  } as never);
+
+  const search = await backend.query({ operation: "search", query: "helper" });
+
+  if (search.operation !== "search") throw new Error("expected search");
+  assert.deepEqual(methods, ["textDocument/documentSymbol"]);
+  assert.deepEqual(search.symbols[0], {
+    id: "python:src/main.py:0",
+    name: "helper",
+    language: "python",
+    kind: "function",
+    location: {
+      path: "src/main.py",
+      range: { start: { line: 3, character: 4 }, end: { line: 3, character: 10 } },
+    },
+  });
+});
+
+it("uses bounded server-path discovery when Pyright returns no document symbols", async () => {
+  const backend = createDirectLspSemanticBackend({
+    language: "python",
+    root: {
+      ...root,
+      protectedRead: () => ({
+        path: "/project/src/main.py",
+        bytes: "def entry():\n    pass\n\ndef helper():\n    pass\n",
+      }),
+    },
+    revision: { generation: 0, manifest_sha256: "fixture" },
+    symbols: new Map(),
+    capabilities: Object.fromEntries(
+      ["definition", "references", "type_definition", "implementation", "callers", "callees"].map((name) => [
+        name,
+        { state: "ready" },
+      ]),
+    ) as never,
+    discovery_document_paths: ["src/main.py"],
+    client: {
+      status: () => ({ state: "ready", events: [], restart_delays_ms: [], server_capabilities: {} }),
+      request: async () => [],
+    },
+    toBackendUri: (location: { path: string }) => `file:///project/${location.path}`,
+    fromBackendUri: (uri: string) => (uri === "file:///project/src/main.py" ? "src/main.py" : undefined),
+  } as never);
+
+  const search = await backend.query({ operation: "search", query: "helper" });
+
+  if (search.operation !== "search") throw new Error("expected search");
+  assert.deepEqual(
+    search.symbols.find(({ name }) => name === "helper"),
+    {
+      id: "python:src/main.py:1",
+      name: "helper",
+      language: "python",
+      kind: "function",
+      location: {
+        path: "src/main.py",
+        range: { start: { line: 3, character: 4 }, end: { line: 3, character: 10 } },
+      },
+    },
+  );
+});
+
+it("uses bounded server-path discovery when Roslyn returns no workspace symbols", async () => {
+  const source =
+    "class Demo {\n    public void Entry() {        Helper(); }\n    private static void Helper() { }\n}\n";
+  const backend = createDirectLspSemanticBackend({
+    language: "csharp",
+    root: { ...root, protectedRead: () => ({ path: "/project/src/Demo.cs", bytes: source }) },
+    revision: { generation: 0, manifest_sha256: "fixture" },
+    symbols: new Map(),
+    capabilities: Object.fromEntries(
+      ["definition", "references", "type_definition", "implementation", "callers", "callees"].map((name) => [
+        name,
+        { state: "ready" },
+      ]),
+    ) as never,
+    discovery_document_paths: ["src/Demo.cs"],
+    client: {
+      status: () => ({ state: "ready", events: [], restart_delays_ms: [], server_capabilities: {} }),
+      request: async () => [],
+    },
+    toBackendUri: (location: { path: string }) => `file:///project/${location.path}`,
+    fromBackendUri: (uri: string) => (uri === "file:///project/src/Demo.cs" ? "src/Demo.cs" : undefined),
+  } as never);
+
+  const search = await backend.query({ operation: "search", query: "Helper" });
+
+  if (search.operation !== "search") throw new Error("expected search");
+  assert.deepEqual(
+    search.symbols.find(({ name }) => name === "Helper"),
+    {
+      id: "csharp:src/Demo.cs:2",
+      name: "Helper",
+      language: "csharp",
+      kind: "method",
+      location: {
+        path: "src/Demo.cs",
+        range: { start: { line: 2, character: 24 }, end: { line: 2, character: 30 } },
+      },
+    },
+  );
+});
+
 it("maps definition and references through protected semantic validation", async () => {
   const methods: string[] = [];
   const backend = createDirectLspSemanticBackend({
@@ -259,7 +454,8 @@ it("uses server-issued hierarchy items and preserves target metadata with call-s
   const caller = result.relations[0];
   if (!(caller && "symbol" in caller)) throw new Error("expected local caller");
   assert.equal(caller.symbol.name, "caller");
-  assert.equal((caller.location as { range: { start: { character: number } } }).range.start.character, 2);
+  assert.equal((caller.location as { range: { start: { character: number } } }).range.start.character, 0);
+  assert.equal(caller.call_site?.range.start.character, 2);
 });
 
 it("uses outgoing hierarchy targets and rejects virtual or malformed locations", async () => {
@@ -315,7 +511,8 @@ it("uses outgoing hierarchy targets and rejects virtual or malformed locations",
   const callee = result.relations[0];
   if (!(callee && "symbol" in callee)) throw new Error("expected local callee");
   assert.equal(callee.symbol.name, "callee");
-  assert.equal((callee.location as { range: { start: { character: number } } }).range.start.character, 3);
+  assert.equal((callee.location as { range: { start: { character: number } } }).range.start.character, 0);
+  assert.equal(callee.call_site?.range.start.character, 3);
 });
 
 it("rejects virtual backend locations instead of relabeling them external", async () => {

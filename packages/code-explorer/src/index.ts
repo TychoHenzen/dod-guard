@@ -714,12 +714,13 @@ async function collectRelations(
   const replies = await Promise.allSettled(
     supported.map((adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId }))),
   );
-  throwBackendLimitFailure(replies);
-  return replies.flatMap((reply, index) =>
+  const results = replies.flatMap((reply, index) =>
     reply.status === "fulfilled" && reply.value.operation === relation
       ? [{ adapter: supported[index], result: reply.value as RelationResult }]
       : [],
   );
+  if (results.length === 0) throwBackendLimitFailure(replies);
+  return results;
 }
 
 function throwBackendLimitFailure(replies: readonly PromiseSettledResult<unknown>[]): void {

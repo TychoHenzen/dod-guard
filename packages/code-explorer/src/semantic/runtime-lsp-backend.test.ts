@@ -94,6 +94,47 @@ const capabilities = {
   callees: { state: "unavailable" },
 } as never;
 
+it("opens approved initial Python mirror documents before workspace discovery", async () => {
+  const process = new Process([], {}, () => []);
+  const backend = createRuntimeLspBackend({
+    language: "python",
+    root: {
+      canonicalPath: "/project",
+      resolveClientPath: () => "/project/a.py",
+      classifyBackendPath: () => ({ relative_path: "a.py" }),
+      openProtected: () => ({ path: "/project/a.py", handle: undefined }),
+      protectedRead: () => ({ path: "/project/a.py", bytes: "def helper():\n    pass\n" }),
+    },
+    root_uri: "file:///mirror",
+    revision: { generation: 0, manifest_sha256: "x" },
+    symbols: new Map(),
+    capabilities,
+    safe_initialization_options: {},
+    initial_document_paths: ["a.py"],
+    toBackendUri: () => "file:///mirror/a.py",
+    fromBackendUri: () => "a.py",
+    prepare: () => ({ status: "ready", executable: "server", arguments: [], environment: {} }),
+    confirmInitialized: () => ({ status: "ready" }),
+    spawn: () => process,
+  } as never);
+
+  await backend.query({ operation: "search", query: "helper" });
+
+  assert.deepEqual(
+    process.sent.filter((message) => message.method === "textDocument/didOpen").map((message) => message.params),
+    [
+      {
+        textDocument: {
+          uri: "file:///mirror/a.py",
+          languageId: "python",
+          version: 0,
+          text: "def helper():\n    pass\n",
+        },
+      },
+    ],
+  );
+});
+
 it("opens the protected source document before asking a real LSP for its definition", async () => {
   const process = new Process([], { definitionProvider: true }, (method) =>
     method === "textDocument/definition"

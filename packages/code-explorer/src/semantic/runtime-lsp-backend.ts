@@ -1,4 +1,5 @@
 import type { BackendLaunchFailure } from "./backend-launch-policy.js";
+import type { SymbolIdentity } from "./contract.js";
 import { createDirectLspClient, type DirectLspScheduler, type LspProcess } from "./direct-lsp.js";
 import {
   createDirectLspSemanticBackend,
@@ -10,6 +11,7 @@ import { spawnNativeLspProcess } from "./native-lsp-process.js";
 
 export type RuntimeLspBackendOptions = Omit<DirectLspSemanticOptions, "client"> & {
   root_uri: string;
+  initial_document_paths?: readonly string[];
   safe_initialization_options: Record<string, unknown>;
   prepare():
     | {
@@ -61,7 +63,18 @@ export function createRuntimeLspBackend(options: RuntimeLspBackendOptions): Inje
         preparation.environment,
       );
       await client.start(process);
-      inner = createDirectLspSemanticBackend({ ...options, client });
+      for (const path of options.initial_document_paths ?? []) {
+        const document = options.root.protectedRead(path);
+        client.openProtectedDocument?.(options.toBackendUri(initialDocumentLocation(path)), {
+          language_id: options.language,
+          bytes: document.bytes,
+        });
+      }
+      inner = createDirectLspSemanticBackend({
+        ...options,
+        client,
+        discovery_document_paths: options.initial_document_paths,
+      });
       state = readiness(client.status().state);
     })().catch((error) => {
       const code = error instanceof Error ? error.message : "backend_failed";
@@ -103,6 +116,13 @@ export function createRuntimeLspBackend(options: RuntimeLspBackendOptions): Inje
       if (!inner) throw new Error("backend_unavailable");
       return inner.query(request);
     },
+  };
+}
+
+function initialDocumentLocation(path: string): SymbolIdentity["location"] {
+  return {
+    path,
+    range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
   };
 }
 

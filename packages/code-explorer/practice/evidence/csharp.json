@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "language": "csharp",
+  "backend": {
+    "name": "roslyn-language-server.exe",
+    "version": "5.11.0-1.26380.4"
+  },
+  "operation_states": {
+    "session": "created",
+    "status": "ready",
+    "search": "ready",
+    "focus": "ready",
+    "follow": "ready",
+    "back": "ready",
+    "forward": "ready",
+    "saved_file": "written",
+    "reconciliation": "ready",
+    "stale": "stale_view",
+    "refocus": "ready",
+    "refresh": "refreshed"
+  },
+  "expected_locations": {
+    "helper_definition": {
+      "path": "src/Demo.cs",
+      "range": {
+        "start": {
+          "line": 2,
+          "character": 24
+        },
+        "end": {
+          "line": 2,
+          "character": 30
+        }
+      }
+    },
+    "helper_call_site": {
+      "path": "src/Demo.cs",
+      "range": {
+        "start": {
+          "line": 1,
+          "character": 33
+        },
+        "end": {
+          "line": 1,
+          "character": 39
+        }
+      }
+    }
+  },
+  "actual_locations": {
+    "helper_definition": {
+      "path": "src/Demo.cs",
+      "range": {
+        "start": {
+          "line": 2,
+          "character": 24
+        },
+        "end": {
+          "line": 2,
+          "character": 30
+        }
+      }
+    },
+    "helper_call_site": {
+      "path": "src/Demo.cs",
+      "range": {
+        "start": {
+          "line": 1,
+          "character": 33
+        },
+        "end": {
+          "line": 1,
+          "character": 39
+        }
+      }
+    }
+  },
+  "generations": {
+    "start": 1,
+    "final": 3
+  },
+  "elapsed_ms": 4689,
+  "error_code": null
+}

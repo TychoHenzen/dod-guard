@@ -238,6 +238,22 @@ export function createDirectLspClient(options: DirectLspOptions) {
         throw new Error(confirmation.code);
       }
       send({ jsonrpc: "2.0", method: "initialized", params: {} }, expectedEpoch);
+      if (options.language === "python") {
+        send(
+          {
+            jsonrpc: "2.0",
+            method: "workspace/didChangeConfiguration",
+            params: {
+              settings: {
+                python: {
+                  analysis: { diagnosticMode: "workspace", indexing: true, useLibraryCodeForTypes: false },
+                },
+              },
+            },
+          },
+          expectedEpoch,
+        );
+      }
       state = "ready";
     } catch (error) {
       fail(error instanceof DirectLspError ? error.code : "backend_failed", true, expectedEpoch);

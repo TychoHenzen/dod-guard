@@ -143,7 +143,7 @@ it("uses frozen initialization and a framed read-only request then shuts down wi
   await stop;
   assert.deepEqual(
     process.sent.map((entry) => entry.method),
-    ["initialize", "initialized", "textDocument/definition", "shutdown", "exit"],
+    ["initialize", "initialized", "workspace/didChangeConfiguration", "textDocument/definition", "shutdown", "exit"],
   );
   assert.deepEqual(client.status().restart_delays_ms, []);
   assert.equal(client.status().state, "failed");
@@ -165,6 +165,17 @@ it("retains initialize capabilities and answers only safe Python configuration r
   process.respond({ jsonrpc: "2.0", id: initialize.id, result: { capabilities: { definitionProvider: true } } });
   await start;
   assert.deepEqual(client.status().server_capabilities, { definitionProvider: true });
+  assert.deepEqual(process.sent[2], {
+    jsonrpc: "2.0",
+    method: "workspace/didChangeConfiguration",
+    params: {
+      settings: {
+        python: {
+          analysis: { diagnosticMode: "workspace", indexing: true, useLibraryCodeForTypes: false },
+        },
+      },
+    },
+  });
   process.respond({
     jsonrpc: "2.0",
     id: 7,

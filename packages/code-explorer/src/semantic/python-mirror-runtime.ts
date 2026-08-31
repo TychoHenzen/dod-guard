@@ -28,6 +28,7 @@ type PythonMirrorSnapshot = {
 export type NativePythonMirror = {
   root: string;
   generation: number;
+  sourcePaths(): readonly string[];
   uriFor(path: string): string;
   pathForUri(uri: string): string | undefined;
   dispose(): void;
@@ -159,6 +160,7 @@ function createMirror(root: ProjectRoot, generation: number, snapshot: PythonMir
   return {
     root: mirrorRoot,
     generation,
+    sourcePaths: () => snapshot.inputs.map(({ path }) => path),
     uriFor: (path) => (verify(path) ? pathToFileURL(join(mirrorRoot, path)).href : ""),
     pathForUri: (uri) => {
       const path = relativeMirrorPath(uri, mirrorRoot);

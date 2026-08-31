@@ -25241,6 +25241,7 @@ import { dirname as dirname4, join as join8 } from "node:path";
 function createFilteredWorkspace(sourceRoot) {
   const serviceRoot = mkdtempSync(join8(tmpdir(), "code-explorer-native-"));
   let excluded = 0;
+  const sourcePaths = [];
   try {
     const copyDirectory = (absoluteDirectory, relativeDirectory) => {
       for (const entry of readdirSync4(absoluteDirectory, { withFileTypes: true })) {
@@ -25259,6 +25260,7 @@ function createFilteredWorkspace(sourceRoot) {
         } else if (entry.isFile() && isBackendSourceFile(relativePath)) {
           mkdirSync(dirname4(target), { recursive: true });
           writeFileSync(target, sourceRoot.protectedRead(relativePath).bytes, "utf8");
+          sourcePaths.push(relativePath);
         }
       }
     };
@@ -25267,6 +25269,7 @@ function createFilteredWorkspace(sourceRoot) {
     return {
       root,
       sensitive_paths_excluded: excluded,
+      sourcePaths: () => [...sourcePaths],
       dispose: () => {
         if (existsSync(serviceRoot)) rmSync(serviceRoot, { recursive: true, force: true });
       }
@@ -25592,6 +25595,7 @@ function createMirror(root, generation, snapshot) {
   return {
     root: mirrorRoot,
     generation,
+    sourcePaths: () => snapshot.inputs.map(({ path: path5 }) => path5),
     uriFor: (path5) => verify(path5) ? pathToFileURL(join10(mirrorRoot, path5)).href : "",
     pathForUri: (uri) => {
       const path5 = relativeMirrorPath(uri, mirrorRoot);
@@ -25954,6 +25958,22 @@ function createDirectLspClient(options) {
         throw new Error(confirmation.code);
       }
       send({ jsonrpc: "2.0", method: "initialized", params: {} }, expectedEpoch);
+      if (options.language === "python") {
+        send(
+          {
+            jsonrpc: "2.0",
+            method: "workspace/didChangeConfiguration",
+            params: {
+              settings: {
+                python: {
+                  analysis: { diagnosticMode: "workspace", indexing: true, useLibraryCodeForTypes: false }
+                }
+              }
+            }
+          },
+          expectedEpoch
+        );
+      }
       state = "ready";
     } catch (error2) {
       fail(error2 instanceof DirectLspError ? error2.code : "backend_failed", true, expectedEpoch);
@@ -26180,6 +26200,7 @@ function comparePositions(left, right) {
 // src/semantic/direct-lsp-semantic.ts
 function createDirectLspSemanticBackend(options) {
   const unavailableRelations = /* @__PURE__ */ new Set();
+  const symbols = new Map(options.symbols);
   return {
     readiness: () => unavailableRelations.size > 0 && options.client.status().state === "ready" ? { state: "degraded" } : readiness(options.client.status()),
     capabilities: () => {
@@ -26190,7 +26211,7 @@ function createDirectLspSemanticBackend(options) {
     query: async (request) => {
       if (request.operation !== "search" && request.operation !== "focus" && unavailableRelations.has(request.operation))
         throw new Error("backend_unavailable");
-      const source = request.operation === "search" ? void 0 : options.symbols.get(request.symbol_id);
+      const source = request.operation === "search" ? void 0 : symbols.get(request.symbol_id);
       if (!source && request.operation !== "search") throw new Error("backend_unavailable");
       if (isRelation(request) && relationCapabilitiesFromInitialize(options.client.status())[request.operation].state !== "ready")
         throw new Error("backend_unavailable");
@@ -26212,9 +26233,23 @@ function createDirectLspSemanticBackend(options) {
         if (isRelation(request)) unavailableRelations.add(request.operation);
         throw new Error(checked.code);
       }
+      retainReturnedSymbols(checked.result, symbols);
       return checked.result;
     }
   };
+}
+function retainReturnedSymbols(result, symbols) {
+  if (result.operation === "search") {
+    for (const symbol of result.symbols) symbols.set(symbol.id, symbol);
+    return;
+  }
+  if (result.operation === "focus") {
+    symbols.set(result.symbol.id, result.symbol);
+    return;
+  }
+  for (const relation of result.relations) {
+    if ("symbol" in relation) symbols.set(relation.symbol.id, relation.symbol);
+  }
 }
 function openSourceDocument(source, options) {
   if (!options.client.openProtectedDocument) return;
@@ -26238,6 +26273,26 @@ function relationCapabilitiesFromInitialize(status) {
   };
 }
 async function requestLsp(request, source, options) {
+  if (request.operation === "focus") return void 0;
+  if (request.operation === "search" && options.discovery_document_paths?.length) {
+    const symbols = [];
+    for (const path5 of options.discovery_document_paths) {
+      const uri = options.toBackendUri({
+        path: path5,
+        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
+      });
+      const reply = await options.client.request("textDocument/documentSymbol", { textDocument: { uri } });
+      const semantic = documentSymbols(reply, uri);
+      symbols.push(
+        ...semantic.length > 0 ? semantic : sourcePathSymbols(options.language, options.root.protectedRead(path5).bytes, uri).slice(
+          0,
+          4096 - symbols.length
+        )
+      );
+      if (symbols.length >= 4096) break;
+    }
+    return symbols;
+  }
   if (request.operation !== "callers" && request.operation !== "callees")
     return options.client.request(methodFor(request.operation), paramsFor(request, source, options));
   if (!source) throw new Error("backend_unavailable");
@@ -26251,6 +26306,68 @@ async function requestLsp(request, source, options) {
     request.operation === "callers" ? "callHierarchy/incomingCalls" : "callHierarchy/outgoingCalls",
     { item }
   );
+}
+function sourcePathSymbols(language, source, uri) {
+  if (language === "python") return pythonSourceSymbols(source, uri);
+  if (language === "csharp") return csharpSourceSymbols(source, uri);
+  return [];
+}
+function pythonSourceSymbols(source, uri) {
+  return source.split(/\r?\n/).flatMap((line, lineNumber) => {
+    const match = /^(\s*)(?:(async)\s+)?(def|class)\s+([A-Za-z_]\w*)/.exec(line);
+    if (!match) return [];
+    const name = match[4];
+    const character = line.indexOf(name, match[1].length);
+    return [
+      {
+        name,
+        kind: match[3] === "class" ? 5 : 12,
+        location: {
+          uri,
+          range: {
+            start: { line: lineNumber, character },
+            end: { line: lineNumber, character: character + name.length }
+          }
+        }
+      }
+    ];
+  });
+}
+function csharpSourceSymbols(source, uri) {
+  return source.split(/\r?\n/).flatMap((line, lineNumber) => {
+    const found = [];
+    const type = /\b(class|interface|struct|enum)\s+([A-Za-z_]\w*)/.exec(line);
+    if (type) found.push(sourceSymbol(type[2], type[1] === "interface" ? 11 : 5, line, lineNumber, uri));
+    const method = /^\s*(?:(?:public|private|protected|internal|static|virtual|override|abstract|async|sealed|new|partial|extern)\s+)*(?:[A-Za-z_][\w<>[\],.?]*\s+)([A-Za-z_]\w*)\s*\(/.exec(
+      line
+    );
+    if (method) found.push(sourceSymbol(method[1], 6, line, lineNumber, uri));
+    return found;
+  });
+}
+function sourceSymbol(name, kind, line, lineNumber, uri, from = 0) {
+  const character = line.indexOf(name, from);
+  return {
+    name,
+    kind,
+    location: {
+      uri,
+      range: {
+        start: { line: lineNumber, character },
+        end: { line: lineNumber, character: character + name.length }
+      }
+    }
+  };
+}
+function documentSymbols(raw, uri) {
+  const values = Array.isArray(raw) ? raw : [];
+  return values.flatMap((value) => {
+    if (!(value && typeof value === "object")) return [];
+    const symbol = value;
+    const range = validRange(symbol.selectionRange) ? symbol.selectionRange : symbol.range;
+    const current = validRange(range) ? [{ name: symbol.name, kind: symbol.kind, location: { uri, range } }] : [];
+    return [...current, ...documentSymbols(symbol.children, uri)];
+  });
 }
 function readiness(status) {
   return status.state === "failed" ? { state: "failed", failure_code: "backend_failed" } : { state: status.state };
@@ -26281,7 +26398,16 @@ function normalizeResult(request, raw, source, options) {
   }
   if (request.operation === "focus") {
     if (!source) throw new Error("backend_unavailable");
-    return { operation: "focus", revision: options.revision, symbol: source };
+    const document = options.root.protectedRead(source.location.path);
+    return {
+      operation: "focus",
+      revision: options.revision,
+      symbol: source,
+      content: {
+        body: document.bytes,
+        visible_symbols: [{ name: source.name, symbol_id: source.id }]
+      }
+    };
   }
   const capability = relationCapabilitiesFromInitialize(options.client.status())[request.operation];
   if (capability.state !== "ready") throw new Error("backend_unavailable");
@@ -26353,7 +26479,8 @@ function hierarchyRelations(raw, relation, source, options) {
           kind: String(targetRecord?.kind ?? "symbol"),
           location
         },
-        location: "external" in callSite ? { external: true } : callSite
+        location,
+        ...callSite && !("external" in callSite) ? { call_site: callSite } : {}
       }
     ];
   });
@@ -26465,7 +26592,18 @@ function createRuntimeLspBackend(options) {
         preparation.environment
       );
       await client.start(process3);
-      inner = createDirectLspSemanticBackend({ ...options, client });
+      for (const path5 of options.initial_document_paths ?? []) {
+        const document = options.root.protectedRead(path5);
+        client.openProtectedDocument?.(options.toBackendUri(initialDocumentLocation(path5)), {
+          language_id: options.language,
+          bytes: document.bytes
+        });
+      }
+      inner = createDirectLspSemanticBackend({
+        ...options,
+        client,
+        discovery_document_paths: options.initial_document_paths
+      });
       state = readiness2(client.status().state);
     })().catch((error2) => {
       const code = error2 instanceof Error ? error2.message : "backend_failed";
@@ -26503,6 +26641,12 @@ function createRuntimeLspBackend(options) {
       if (!inner) throw new Error("backend_unavailable");
       return inner.query(request);
     }
+  };
+}
+function initialDocumentLocation(path5) {
+  return {
+    path: path5,
+    range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
   };
 }
 function readiness2(value) {
@@ -26555,6 +26699,7 @@ function createRuntimeAdapters(projectRoot) {
         revision: { generation: 0, manifest_sha256: "runtime" },
         symbols: /* @__PURE__ */ new Map(),
         capabilities,
+        initial_document_paths: backend.language === "csharp" ? filtered?.sourcePaths().filter((path5) => /\.cs$/iu.test(path5)) : void 0,
         safe_initialization_options: backend.safe_initialization_options,
         toBackendUri: (location) => pathToFileURL2((filtered?.root ?? projectRoot).resolveClientPath(location.path)).href,
         fromBackendUri: (uri) => {
@@ -26610,6 +26755,7 @@ function createManagedPythonBackend(projectRoot, policy, safeInitializationOptio
         symbols: options.symbols,
         capabilities,
         safe_initialization_options: safeInitializationOptions,
+        initial_document_paths: mirror.sourcePaths(),
         toBackendUri: (location) => mirror.uriFor(location.path),
         fromBackendUri: (uri) => mirror.pathForUri(uri),
         prepare: () => policy.prepare("python"),
@@ -27184,10 +27330,11 @@ async function collectRelations(adapters, relation, symbolId, run) {
   const replies = await Promise.allSettled(
     supported.map((adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId })))
   );
-  throwBackendLimitFailure(replies);
-  return replies.flatMap(
+  const results = replies.flatMap(
     (reply, index) => reply.status === "fulfilled" && reply.value.operation === relation ? [{ adapter: supported[index], result: reply.value }] : []
   );
+  if (results.length === 0) throwBackendLimitFailure(replies);
+  return results;
 }
 function throwBackendLimitFailure(replies) {
   const failed = replies.find((reply) => reply.status === "rejected");

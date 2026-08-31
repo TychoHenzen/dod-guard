@@ -70,6 +70,10 @@ export function createRuntimeAdapters(projectRoot: ProjectRoot): readonly Langua
               revision: { generation: 0, manifest_sha256: "runtime" },
               symbols: new Map(),
               capabilities,
+              initial_document_paths:
+                backend.language === "csharp"
+                  ? filtered?.sourcePaths().filter((path) => /\.cs$/iu.test(path))
+                  : undefined,
               safe_initialization_options: backend.safe_initialization_options,
               toBackendUri: (location) =>
                 pathToFileURL((filtered?.root ?? projectRoot).resolveClientPath(location.path)).href,
@@ -139,6 +143,7 @@ export function createManagedPythonBackend(
         symbols: options.symbols,
         capabilities,
         safe_initialization_options: safeInitializationOptions,
+        initial_document_paths: mirror.sourcePaths(),
         toBackendUri: (location) => mirror.uriFor(location.path),
         fromBackendUri: (uri) => mirror.pathForUri(uri),
         prepare: () => policy.prepare("python"),

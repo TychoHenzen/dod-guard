@@ -8,6 +8,7 @@ import { createNativeProjectRoot, type ProjectRoot } from "./project-root.js";
 export type FilteredWorkspace = {
   root: ProjectRoot<number>;
   sensitive_paths_excluded: number;
+  sourcePaths(): readonly string[];
   dispose(): void;
 };
 
@@ -18,6 +19,7 @@ export type FilteredWorkspace = {
 export function createFilteredWorkspace(sourceRoot: ProjectRoot): FilteredWorkspace {
   const serviceRoot = mkdtempSync(join(tmpdir(), "code-explorer-native-"));
   let excluded = 0;
+  const sourcePaths: string[] = [];
   try {
     const copyDirectory = (absoluteDirectory: string, relativeDirectory: string) => {
       for (const entry of readdirSync(absoluteDirectory, { withFileTypes: true })) {
@@ -39,6 +41,7 @@ export function createFilteredWorkspace(sourceRoot: ProjectRoot): FilteredWorksp
         } else if (entry.isFile() && isBackendSourceFile(relativePath)) {
           mkdirSync(dirname(target), { recursive: true });
           writeFileSync(target, sourceRoot.protectedRead(relativePath).bytes, "utf8");
+          sourcePaths.push(relativePath);
         }
       }
     };
@@ -47,6 +50,7 @@ export function createFilteredWorkspace(sourceRoot: ProjectRoot): FilteredWorksp
     return {
       root,
       sensitive_paths_excluded: excluded,
+      sourcePaths: () => [...sourcePaths],
       dispose: () => {
         if (existsSync(serviceRoot)) rmSync(serviceRoot, { recursive: true, force: true });
       },

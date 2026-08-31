@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "language": "python",
+  "backend": {
+    "name": "node.exe",
+    "version": "1.1.410"
+  },
+  "operation_states": {
+    "session": "created",
+    "status": "ready",
+    "search": "ready",
+    "focus": "ready",
+    "follow": "ready",
+    "back": "ready",
+    "forward": "ready",
+    "saved_file": "written",
+    "reconciliation": "ready",
+    "stale": "stale_view",
+    "refocus": "backend_unavailable",
+    "refresh": "refreshed"
+  },
+  "expected_locations": {
+    "helper_definition": {
+      "path": "src/sample.py",
+      "range": {
+        "start": {
+          "line": 3,
+          "character": 4
+        },
+        "end": {
+          "line": 3,
+          "character": 10
+        }
+      }
+    },
+    "helper_call_site": {
+      "path": "src/sample.py",
+      "range": {
+        "start": {
+          "line": 1,
+          "character": 4
+        },
+        "end": {
+          "line": 1,
+          "character": 10
+        }
+      }
+    }
+  },
+  "actual_locations": {
+    "helper_definition": {
+      "path": "src/sample.py",
+      "range": {
+        "start": {
+          "line": 3,
+          "character": 4
+        },
+        "end": {
+          "line": 3,
+          "character": 10
+        }
+      }
+    },
+    "helper_call_site": {
+      "path": "src/sample.py",
+      "range": {
+        "start": {
+          "line": 1,
+          "character": 4
+        },
+        "end": {
+          "line": 1,
+          "character": 10
+        }
+      }
+    }
+  },
+  "generations": {
+    "start": 1,
+    "final": 3
+  },
+  "elapsed_ms": 5141,
+  "error_code": null
+}
