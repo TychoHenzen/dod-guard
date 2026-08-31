@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { RefactorProgress } from "./refactor-progress.js";
 
 export type FindingSeverity = "review" | "fail";
 export type DecisionVerdict = "PASS" | "REVIEW_REQUIRED" | "FAIL";
@@ -30,6 +31,8 @@ export interface DecisionResult {
   findings: Finding[];
   errors: string[];
   input: SnapshotSummary;
+  staleAcknowledgements?: string[];
+  refactorProgress?: RefactorProgress;
 }
 
 export interface FindingInput {

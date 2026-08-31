@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { exitCodeFor, parseCheckArguments, renderDecision } from "./cli.js";
+import { parseAcknowledgeArguments, exitCodeFor, parseCheckArguments, renderDecision } from "./cli.js";
 import type { DecisionResult } from "./types.js";
 
 const review: DecisionResult = {
@@ -34,4 +34,14 @@ test("unsupported intent is a usage error", () => {
   const result = parseCheckArguments(["check", "--staged", "--intent=surprise"]);
   assert.equal("exitCode" in result && result.exitCode, 3);
   assert.match("output" in result ? result.output : "", /Usage/);
+});
+
+test("acknowledge requires a finding, reason, and author", () => {
+  assert.deepEqual(parseAcknowledgeArguments(["acknowledge", "--finding", "finding", "--reason", "Reviewed", "--author", "A. Reviewer"]), {
+    findingId: "finding",
+    reason: "Reviewed",
+    author: "A. Reviewer",
+  });
+  const result = parseAcknowledgeArguments(["acknowledge", "--finding", "finding", "--reason", "", "--author", "A. Reviewer"]);
+  assert.equal("exitCode" in result && result.exitCode, 3);
 });

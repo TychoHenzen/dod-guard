@@ -118,7 +118,7 @@ const _filename = fileURLToPath(import.meta.url);
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  if (args[0] === "check") {
+  if (args[0] === "check" || args[0] === "acknowledge") {
     const result = runCheckCommand(args);
     process.stdout.write(`${result.output}\n`);
     process.exitCode = result.exitCode;

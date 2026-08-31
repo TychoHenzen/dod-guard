@@ -63,11 +63,13 @@
 <!-- covers: quality-guard/commit-gate :: Process exit codes preserve the verdict :: Review blocks a Git hook -->
 <!-- covers: quality-guard/commit-gate :: Process exit codes preserve the verdict :: Invalid option is passed -->
 
-- [ ] 3.3 Add the empty tracked architecture decision record and `quality-guard acknowledge` command. Accept only current review findings, record reason and author, ignore stale fingerprints, and refuse deterministic findings.
+- [x] 3.3 Add the empty tracked architecture decision record and `quality-guard acknowledge` command. Accept only current review findings, record reason and author, ignore stale fingerprints, and refuse deterministic findings.
+<!-- status: completed -->
 <!-- covers: quality-guard/commit-gate :: Architectural acknowledgements bind to staged content :: Finding is acknowledged for the current stage -->
 <!-- covers: quality-guard/commit-gate :: Architectural acknowledgements bind to staged content :: Source changes after acknowledgement -->
 
-- [ ] 3.4 Add refactor-target input and responsibility-map loading to the decision core. Require a desired ownership or boundary outcome and return review-required when local metrics improve without structural progress.
+- [x] 3.4 Add refactor-target input and responsibility-map loading to the decision core. Require a desired ownership or boundary outcome and return review-required when local metrics improve without structural progress.
+<!-- status: completed -->
 <!-- covers: quality-guard/commit-gate :: Refactor intent requires structural evidence :: Local metrics improve without ownership change -->
 <!-- covers: quality-guard/commit-gate :: Refactor intent requires structural evidence :: Declared structural outcome is achieved -->
 

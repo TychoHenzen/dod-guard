@@ -73,6 +73,21 @@ test("accepted review evidence produces pass when deterministic checks pass", ()
   assert.equal(result.errors.length, 0);
 });
 
+// covers: quality-guard/commit-gate :: Architectural acknowledgements bind to staged content :: Finding is acknowledged for the current stage
+test("current acknowledgement records accept only matching review findings", () => {
+  const review = createFinding({ severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" });
+  const result = decideQuality({
+    snapshot,
+    config: parseQualityConfig("{}"),
+    beforeFiles: [],
+    afterFiles: [],
+    scanner: { findings: [{ severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" }] },
+    acknowledgementRecords: [{ findingId: review.id, fingerprint: fingerprintSnapshot(snapshot, parseQualityConfig("{}")), reason: "Reviewed", author: "A. Reviewer", time: "2026-08-31T00:00:00.000Z" }],
+  });
+  assert.equal(result.verdict, "PASS");
+  assert.deepEqual(result.staleAcknowledgements, []);
+});
+
 // covers: quality-guard/commit-gate :: Non-source commits report their limited scope :: Documentation-only commit
 test("documentation-only changes report that no source decision was required", () => {
   const result = decideQuality({

@@ -2,9 +2,11 @@ import type { QualityConfig } from "./config.js";
 import { analyzeDependencies, type DependencyFinding } from "./dependency.js";
 import { analyzeEncapsulation, type ArchitectureFileFact, type EncapsulationFinding } from "./encapsulation.js";
 import { fingerprintSnapshot, DECISION_RECORD_PATH } from "./fingerprint.js";
+import type { ArchitectureAcknowledgement } from "./acknowledgements.js";
 import { analyzePlacement, type PlacementFinding } from "./placement.js";
 import type { Snapshot } from "./snapshot.js";
 import { createFinding, normalizeFindings, type DecisionResult, type Finding, type FindingEvidence, type FindingInput } from "./types.js";
+import { evaluateResponsibilityMap, type ResponsibilityMap } from "./responsibility-map.js";
 
 const SOURCE_PATH = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
 const QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
@@ -24,6 +26,8 @@ export interface DecisionCoreInput {
   analysisErrors?: string[];
   responsibilityFindings?: FindingInput[];
   acknowledgements?: string[];
+  acknowledgementRecords?: ArchitectureAcknowledgement[];
+  refactorMap?: ResponsibilityMap;
 }
 
 function changedPaths(snapshot: Snapshot): string[] {
@@ -82,6 +86,7 @@ export function decideQuality(input: DecisionCoreInput): DecisionResult {
     };
   }
 
+  const refactorProgress = input.refactorMap ? evaluateResponsibilityMap(input.refactorMap, input.beforeFiles, input.afterFiles, input.config) : undefined;
   const findings = [
     ...input.scanner.findings.map(createFinding),
     ...(input.hardBounds ?? []).map(createFinding),
@@ -96,18 +101,26 @@ export function decideQuality(input: DecisionCoreInput): DecisionResult {
     ),
     ...dependencyFindings(analyzeDependencies(input.beforeFiles, input.afterFiles, affectedPaths, input.config)),
     ...encapsulationFindings(analyzeEncapsulation(input.beforeFiles, input.afterFiles, affectedPaths, input.config)),
+    ...(refactorProgress && !refactorProgress.hasDeclaredOutcomeProgress
+      ? [architectureFinding("refactor-structural-progress", "review", input.refactorMap?.targetScope ?? affectedPaths, { ...refactorProgress }, "declared ownership or boundary outcome is unchanged")]
+      : []),
   ];
   const normalized = normalizeFindings(findings);
-  const accepted = new Set(input.acknowledgements ?? []);
+  const fingerprint = fingerprintSnapshot(input.snapshot, input.config);
+  const currentRecords = (input.acknowledgementRecords ?? []).filter((record) => record.fingerprint === fingerprint);
+  const accepted = new Set([...input.acknowledgements ?? [], ...currentRecords.map((record) => record.findingId)]);
+  const staleAcknowledgements = (input.acknowledgementRecords ?? []).filter((record) => record.fingerprint !== fingerprint).map((record) => record.findingId).sort();
   const errors = [...(input.scanner.errors ?? []), ...(input.analysisErrors ?? [])].sort((left, right) => left.localeCompare(right));
   const hasFailure = errors.length > 0 || normalized.some((finding) => finding.severity === "fail");
   const hasUnacknowledgedReview = normalized.some((finding) => finding.severity === "review" && !accepted.has(finding.id));
   return {
     verdict: hasFailure ? "FAIL" : hasUnacknowledgedReview ? "REVIEW_REQUIRED" : "PASS",
-    fingerprint: fingerprintSnapshot(input.snapshot, input.config),
+    fingerprint,
     findings: normalized,
     errors,
     input: summary,
+    staleAcknowledgements,
+    refactorProgress,
   };
 }
 
