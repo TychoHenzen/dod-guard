@@ -104,20 +104,23 @@
 
 ## 3. Bounded one-hop graph
 
-- [ ] 3.1 Build the graph projection from the current view and explicitly loaded local relations only, with normalized identity deduplication and no expansion. Verify focus-only, one-group, second-hop, and duplicate cases in pure projection tests and browser tests.
+- [x] 3.1 Build the graph projection from the current view and explicitly loaded local relations only, with normalized identity deduplication and no expansion. Verify focus-only, one-group, second-hop, and duplicate cases in pure projection tests and browser tests.
+<!-- status: completed -->
   <!-- covers: code-explorer/local-graph :: The graph contains one focus and loaded one-hop relations :: Focus has no loaded relations -->
   <!-- covers: code-explorer/local-graph :: The graph contains one focus and loaded one-hop relations :: One relation group loads -->
   <!-- covers: code-explorer/local-graph :: The graph contains one focus and loaded one-hop relations :: Loaded relation points beyond one hop -->
   <!-- covers: code-explorer/local-graph :: The graph contains one focus and loaded one-hop relations :: Duplicate identity arrives through two relations -->
 
-- [ ] 3.2 Render relation-source labels and deterministic incoming, center, and outgoing SVG lanes in `packages/code-explorer/src/browser/`. Verify distinct multi-edges, discovery exclusion, direction, order, and repeat rendering.
+- [x] 3.2 Render relation-source labels and deterministic incoming, center, and outgoing SVG lanes in `packages/code-explorer/src/browser/`. Verify distinct multi-edges, discovery exclusion, direction, order, and repeat rendering.
+<!-- status: completed -->
   <!-- covers: code-explorer/local-graph :: Graph edges retain honest semantic labels :: Reference has no call-hierarchy evidence -->
   <!-- covers: code-explorer/local-graph :: Graph edges retain honest semantic labels :: Caller and definition target the same symbol -->
   <!-- covers: code-explorer/local-graph :: Graph edges retain honest semantic labels :: Relation is discovery-only -->
   <!-- covers: code-explorer/local-graph :: Relation direction is visually stable :: Incoming and outgoing relations are loaded -->
   <!-- covers: code-explorer/local-graph :: Relation direction is visually stable :: Graph rerenders without state changes -->
 
-- [ ] 3.3 Bound SVG growth to returned candidates and show per-group omitted counts without placeholders. Verify the union of several bounded groups and the absence of recursive nodes.
+- [x] 3.3 Bound SVG growth to returned candidates and show per-group omitted counts without placeholders. Verify the union of several bounded groups and the absence of recursive nodes.
+<!-- status: completed -->
   <!-- covers: code-explorer/local-graph :: Graph growth remains visibly bounded :: Relation response is truncated -->
   <!-- covers: code-explorer/local-graph :: Graph growth remains visibly bounded :: Several bounded groups are loaded -->
 
