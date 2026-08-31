@@ -84,7 +84,13 @@ export function createProjectRoot<Handle = unknown>(options: ProjectRootOptions<
     canonicalPath: root.path,
     resolveClientPath,
     classifyBackendPath(candidate: string) {
-      const resolved = canonicalize(candidate, options.filesystem);
+      // Backends can report Windows separators even when the service runs elsewhere.
+      // Interpret a relative backend location within the frozen project root.
+      const portableCandidate = candidate.replaceAll("\\", "/");
+      const candidatePath = pathApi.isAbsolute(portableCandidate)
+        ? portableCandidate
+        : pathApi.resolve(root.path, portableCandidate);
+      const resolved = canonicalize(candidatePath, options.filesystem);
       if (!(resolved && isDescendant(resolved.path))) return { external: true };
       return { relative_path: pathApi.relative(root.path, resolved.path).replaceAll("\\", "/") };
     },
@@ -183,7 +189,13 @@ function identityForHandle<Handle>(handle: Handle, filesystem: ProjectFilesystem
 }
 
 function sameIdentity(left: FileIdentity, right: FileIdentity): boolean {
-  return left.dev === right.dev && left.ino === right.ino;
+  // Windows `stat` can report dev as zero while `fstat` reports a volume value
+  // for the same opened file. In that case ino remains the stable identity.
+  return left.ino === right.ino && (left.dev === right.dev || isZero(left.dev) || isZero(right.dev));
+}
+
+function isZero(value: number | bigint): boolean {
+  return value === 0 || value === BigInt(0);
 }
 
 function identityFromStat(stats: { dev: number | bigint; ino: number | bigint }): FileIdentity {

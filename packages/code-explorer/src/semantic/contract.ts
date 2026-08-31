@@ -22,9 +22,17 @@ export type SourceLocation = ProjectLocation | ExternalLocation;
 export type SymbolIdentity = {
   id: string;
   name: string;
+  qualified_name?: string;
   language: Language;
   kind: string;
   location: ProjectLocation;
+};
+
+export type VisibleSymbol = { name: string; symbol_id: string };
+export type FocusContent = {
+  body?: string;
+  declaration?: string;
+  visible_symbols?: readonly VisibleSymbol[];
 };
 
 export type ProjectRevision = { generation: number; manifest_sha256: string };
@@ -54,7 +62,12 @@ export type RelationRequest = { operation: RelationName; symbol_id: string };
 export type SemanticRequest = SearchRequest | FocusRequest | RelationRequest;
 
 export type SearchResult = { operation: "search"; revision: ProjectRevision; symbols: SymbolIdentity[] };
-export type FocusResult = { operation: "focus"; revision: ProjectRevision; symbol: SymbolIdentity };
+export type FocusResult = {
+  operation: "focus";
+  revision: ProjectRevision;
+  symbol: SymbolIdentity;
+  content?: FocusContent;
+};
 export type RelationResult = {
   operation: RelationName;
   revision: ProjectRevision;
@@ -80,6 +93,7 @@ const symbolSchema = z
   .object({
     id: z.string().min(1),
     name: z.string().min(1),
+    qualified_name: z.string().min(1).optional(),
     language: z.enum(languages),
     kind: z.string().min(1),
     location: projectLocationSchema,
@@ -99,7 +113,23 @@ export const semanticRequestSchema = z.discriminatedUnion("operation", [
 
 export const semanticResultSchema = z.discriminatedUnion("operation", [
   z.object({ operation: z.literal("search"), revision: revisionSchema, symbols: z.array(symbolSchema) }).strict(),
-  z.object({ operation: z.literal("focus"), revision: revisionSchema, symbol: symbolSchema }).strict(),
+  z
+    .object({
+      operation: z.literal("focus"),
+      revision: revisionSchema,
+      symbol: symbolSchema,
+      content: z
+        .object({
+          body: z.string().optional(),
+          declaration: z.string().optional(),
+          visible_symbols: z
+            .array(z.object({ name: z.string().min(1), symbol_id: z.string().min(1) }).strict())
+            .optional(),
+        })
+        .strict()
+        .optional(),
+    })
+    .strict(),
   ...relationNames.map((operation) =>
     z
       .object({

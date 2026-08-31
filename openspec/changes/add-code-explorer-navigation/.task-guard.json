@@ -118,13 +118,16 @@
       "status": "completed"
     },
     "3.7": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     },
     "3.8": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     },
     "4.1": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     },
     "4.2": {
       "checked": false
@@ -205,5 +208,5 @@
       "checked": false
     }
   },
-  "hmac": "b20f15f23114324a4d64b84981e80070f49b2b07423879ed32df76b744a90ae0"
+  "hmac": "7e06436a4b90530a4f6a0cb32101dcdf52f13529f184966cdbe787c6b6549742"
 }

@@ -1,7 +1,7 @@
 import { lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { SymbolIdentity } from "../semantic/contract.js";
-import type { ProjectRoot } from "../semantic/project-root.js";
+import { ProjectPathError, type ProjectRoot } from "../semantic/project-root.js";
 import {
   type ClassificationConfigStatus,
   classifyProjectPath,
@@ -60,39 +60,59 @@ export function createDiscoveryPipeline(root: ProjectRoot): DiscoveryPipeline {
     },
   };
 
-  function searchCandidates(query: string, filters: DiscoveryFilters, symbols: readonly SymbolIdentity[]): DiscoveryResult[] {
-      // Adapter locations are untrusted. Reject denied paths before classification can read a header.
-      const allowedSymbols = symbols.filter((symbol) => !isSensitiveProjectPath(symbol.location.path));
-      const semanticCandidates = allowedSymbols.map((symbol) => ({
-        type: "symbol" as const,
-        name: symbol.name,
-        path: symbol.location.path,
-        kind: symbol.kind,
-        identity: symbol.id,
-        classification: classifyProjectPath(
-          symbol.location.path,
-          loaded.config,
-          hasGeneratedHeader(root, symbol.location.path),
-        ),
-      }));
-      const allCandidates = [...candidates, ...semanticCandidates];
-      const classifications = new Map(allCandidates.map((candidate) => [candidate.identity, candidate.classification]));
-      const allowed = allCandidates.filter((candidate) => {
-        return matchesDiscoveryFilters(candidate.path, candidate.classification, filters, {
-          language:
-            candidate.type === "symbol"
-              ? allowedSymbols.find((symbol) => symbol.id === candidate.identity)?.language
-              : languageForPath(candidate.path),
-          ...(candidate.type === "symbol" ? { kind: candidate.kind } : {}),
-        });
+  function searchCandidates(
+    query: string,
+    filters: DiscoveryFilters,
+    symbols: readonly SymbolIdentity[],
+  ): DiscoveryResult[] {
+    // Adapter locations are untrusted. Reject denied paths before classification can read a header.
+    const allowedSymbols = symbols
+      .filter((symbol) => !isSensitiveProjectPath(symbol.location.path))
+      .map((symbol) => normalizeBackendSymbol(root, symbol));
+    const semanticCandidates = allowedSymbols.map((symbol) => ({
+      type: "symbol" as const,
+      name: symbol.name,
+      path: symbol.location.path,
+      kind: symbol.kind,
+      identity: symbol.id,
+      classification: classifyProjectPath(
+        symbol.location.path,
+        loaded.config,
+        hasGeneratedHeader(root, symbol.location.path),
+      ),
+    }));
+    const allCandidates = [...candidates, ...semanticCandidates];
+    const classifications = new Map(allCandidates.map((candidate) => [candidate.identity, candidate.classification]));
+    const allowed = allCandidates.filter((candidate) => {
+      return matchesDiscoveryFilters(candidate.path, candidate.classification, filters, {
+        language:
+          candidate.type === "symbol"
+            ? allowedSymbols.find((symbol) => symbol.id === candidate.identity)?.language
+            : languageForPath(candidate.path),
+        ...(candidate.type === "symbol" ? { kind: candidate.kind } : {}),
       });
-      return matchDiscoveryCandidates(query, allowed)
-        .map((candidate) => {
-          const classification = classifications.get(candidate.identity);
-          if (!classification) throw new Error("missing discovery classification");
-          return { ...candidate, ...classification };
-        });
+    });
+    return matchDiscoveryCandidates(query, allowed).map((candidate) => {
+      const classification = classifications.get(candidate.identity);
+      if (!classification) throw new Error("missing discovery classification");
+      return { ...candidate, ...classification };
+    });
   }
+}
+
+function normalizeBackendSymbol(root: ProjectRoot, symbol: SymbolIdentity): SymbolIdentity {
+  const portablePath = symbol.location.path.replaceAll("\\", "/").replace(/^\.\//, "");
+  if (!isAbsoluteBackendPath(portablePath)) {
+    if (!portablePath || portablePath.split("/").includes("..")) throw new ProjectPathError("path_outside_project");
+    return { ...symbol, location: { ...symbol.location, path: portablePath } };
+  }
+  const classified = root.classifyBackendPath(portablePath);
+  if ("external" in classified) throw new ProjectPathError("path_outside_project");
+  return { ...symbol, location: { ...symbol.location, path: classified.relative_path } };
+}
+
+function isAbsoluteBackendPath(path: string): boolean {
+  return path.startsWith("/") || /^[A-Za-z]:\//.test(path);
 }
 
 function resultLimit(filters: DiscoveryFilters): number {

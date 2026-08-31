@@ -5,10 +5,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
-import { landmarksNotReady, type LandmarkDiscovery } from "./discovery/landmarks.js";
+import { type LandmarkDiscovery, landmarksNotReady } from "./discovery/landmarks.js";
 import { normalizeDiscoveryQuery } from "./discovery/matcher.js";
+import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
+import { createFocusView, FocusBodyLimitError } from "./navigation/focus-view.js";
 import { loadAdapterSelectionRecord } from "./semantic/adapter-selection.js";
 import { createBackendStatusReport } from "./semantic/backend-status.js";
 import type { LanguageAdapter } from "./semantic/language-adapter.js";
@@ -30,8 +31,8 @@ export type CodeExplorerState = {
 
 export type CodeExplorerError = {
   schema_version: 1;
-  code: "unknown_tool" | "invalid_request";
-  message: "unknown_tool" | "invalid_request";
+  code: "unknown_tool" | "invalid_request" | "path_outside_project" | "resource_limit";
+  message: "unknown_tool" | "invalid_request" | "path_outside_project" | "resource_limit";
   retryable: false;
 };
 
@@ -61,6 +62,14 @@ function unknownTool(): CodeExplorerError {
 
 function invalidRequest(): CodeExplorerError {
   return { schema_version: 1, code: "invalid_request", message: "invalid_request", retryable: false };
+}
+
+function pathOutsideProject(): CodeExplorerError {
+  return { schema_version: 1, code: "path_outside_project", message: "path_outside_project", retryable: false };
+}
+
+function resourceLimit(): CodeExplorerError {
+  return { schema_version: 1, code: "resource_limit", message: "resource_limit", retryable: false };
 }
 
 const schemas = {
@@ -235,6 +244,25 @@ export function createServer(
         (options.adapters ?? []).flatMap((adapter) => (adapter.refresh ? [adapter.refresh()] : [])),
       );
     }
+    if (name === "code_focus") {
+      const focus = schemas.code_focus.parse(arguments_);
+      const selected = await collectFocusedSymbol(options.adapters ?? [], focus.symbol_id);
+      if (selected) {
+        try {
+          return {
+            schema_version: 1,
+            project_id: "project",
+            project_generation: selected.revision.generation,
+            pending_generation: null,
+            state: "ready",
+            data: createFocusView(selected.symbol, selected.content, focus.body_limit_bytes),
+          };
+        } catch (error) {
+          if (error instanceof FocusBodyLimitError) return resourceLimit();
+          throw error;
+        }
+      }
+    }
     const relation = arguments_.relation;
     if (name === "code_follow" && typeof relation === "string") {
       return {
@@ -260,7 +288,13 @@ export function createServer(
         };
       }
       const semanticSymbols = await collectSemanticSymbols(options.adapters ?? [], search.query);
-      const results = discovery.searchResult(search.query, search, semanticSymbols);
+      let results: ReturnType<DiscoveryPipeline["searchResult"]>;
+      try {
+        results = discovery.searchResult(search.query, search, semanticSymbols);
+      } catch (error) {
+        if (error instanceof ProjectPathError && error.code === "path_outside_project") return pathOutsideProject();
+        throw error;
+      }
       return {
         schema_version: 1,
         project_id: "project",
@@ -314,6 +348,19 @@ async function collectSemanticSymbols(adapters: readonly LanguageAdapter[], quer
   return replies.flatMap((reply) =>
     reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : [],
   );
+}
+
+async function collectFocusedSymbol(adapters: readonly LanguageAdapter[], symbolId: string) {
+  const replies = await Promise.allSettled(
+    adapters.map((adapter) => adapter.request({ operation: "focus", symbol_id: symbolId })),
+  );
+  return replies.find(
+    (
+      reply,
+    ): reply is PromiseFulfilledResult<
+      Extract<Awaited<ReturnType<LanguageAdapter["request"]>>, { operation: "focus" }>
+    > => reply.status === "fulfilled" && reply.value.operation === "focus",
+  )?.value;
 }
 
 async function main(): Promise<void> {

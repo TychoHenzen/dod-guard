@@ -771,6 +771,49 @@ describe("code-explorer package boundary", () => {
     }
   });
 
+  // covers: code-explorer/symbol-discovery :: Browser-independent paths use one form :: Backend returns Windows separators
+  it("normalizes Windows-form backend paths in discovery responses", async () => {
+    const root = mkdtempSync(join(tmpdir(), "code-explorer-server-windows-path-"));
+    try {
+      mkdirSync(join(root, "src"));
+      writeFileSync(join(root, "src", "Helper.rs"), "fn helper() {}\n");
+      const server = createServer({
+        projectRoot: createNativeProjectRoot(root),
+        adapters: [adapterWithSymbols([symbol("function", "src\\Helper.rs")])],
+      });
+      const result = await server.call("code_search", { query: "helper" });
+      assert.equal("code" in result, false);
+      if ("code" in result) throw new Error("expected discovery response");
+      assert.ok((result.data.candidates as { path: string }[]).every(({ path }) => path === "src/Helper.rs"));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // covers: code-explorer/symbol-discovery :: Browser-independent paths use one form :: Backend returns a path outside the project root
+  it("rejects an out-of-project backend location without exposing its path", async () => {
+    const root = mkdtempSync(join(tmpdir(), "code-explorer-server-external-path-"));
+    const outside = mkdtempSync(join(tmpdir(), "code-explorer-external-path-"));
+    try {
+      writeFileSync(join(outside, "Helper.rs"), "fn helper() {}\n");
+      const server = createServer({
+        projectRoot: createNativeProjectRoot(root),
+        adapters: [adapterWithSymbols([symbol("function", join(outside, "Helper.rs"))])],
+      });
+      const result = await server.call("code_search", { query: "helper" });
+      assert.deepEqual(result, {
+        schema_version: 1,
+        code: "path_outside_project",
+        message: "path_outside_project",
+        retryable: false,
+      });
+      assert.equal(JSON.stringify(result).includes(outside), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
   it("removes sensitive adapter symbols before discovery classification, filters, limits, and responses", async () => {
     const root = mkdtempSync(join(tmpdir(), "code-explorer-server-sensitive-symbols-"));
     try {
@@ -832,5 +875,27 @@ function symbol(kind: string, path: string) {
     language: "rust" as const,
     kind,
     location: { path, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } },
+  };
+}
+
+function adapterWithSymbols(symbols: ReturnType<typeof symbol>[]): LanguageAdapter {
+  return {
+    status: () => ({
+      language: "rust",
+      backend_name: "test",
+      backend_version: "test",
+      discovery_source: "injected",
+      state: "ready",
+      capabilities: {
+        definition: { state: "ready" },
+        references: { state: "ready" },
+        type_definition: { state: "ready" },
+        implementation: { state: "ready" },
+        callers: { state: "ready" },
+        callees: { state: "ready" },
+      },
+      last_transition_time: 0,
+    }),
+    request: async () => ({ operation: "search", revision: { generation: 1, manifest_sha256: "test" }, symbols }),
   };
 }

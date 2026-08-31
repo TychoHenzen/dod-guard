@@ -136,14 +136,17 @@
 <!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Empty search is reserved for landmarks :: Empty query has no qualifying landmarks -->
   <!-- covers: code-explorer/symbol-discovery :: Empty search is reserved for landmarks :: Whitespace-only query is submitted -->
-- [ ] 3.7 Normalize browser-independent project paths and reject out-of-root backend locations.
+- [x] 3.7 Normalize browser-independent project paths and reject out-of-root backend locations.
+<!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Browser-independent paths use one form :: Backend returns Windows separators -->
   <!-- covers: code-explorer/symbol-discovery :: Browser-independent paths use one form :: Backend returns a path outside the project root -->
-- [ ] 3.8 Run the discovery practice fixture with misspellings, duplicate generated symbols, tests, sensitive paths, broad queries, and Windows-form paths.
+- [x] 3.8 Run the discovery practice fixture with misspellings, duplicate generated symbols, tests, sensitive paths, broad queries, and Windows-form paths.
+<!-- status: completed -->
 
 ## 4. Focus Views, Handles, and History
 
-- [ ] 4.1 Implement immutable focus views with bounded bodies, identity metadata, revisions, and visible-symbol handles.
+- [x] 4.1 Implement immutable focus views with bounded bodies, identity metadata, revisions, and visible-symbol handles.
+<!-- status: completed -->
   <!-- covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Function focus succeeds -->
   <!-- covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Symbol content exceeds the response budget -->
   <!-- covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Symbol has no retrievable body -->

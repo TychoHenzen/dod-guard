@@ -100,6 +100,19 @@ it("classifies an escaped backend path as external without retaining a local pat
   assert.deepEqual(guard.classifyBackendPath("C:/repo/linked.rs"), { external: true });
 });
 
+it("normalizes a Windows-form backend path to a portable project-relative path", () => {
+  const guard = createProjectRoot({
+    cwd: root,
+    filesystem: filesystem({
+      [root]: { realpath: root, dev: 1, ino: 1 },
+      "C:/repo/src/module/file.rs": { realpath: "C:/repo/src/module/file.rs", dev: 1, ino: 2 },
+    }),
+    platform: "win32",
+  });
+
+  assert.deepEqual(guard.classifyBackendPath("src\\module\\file.rs"), { relative_path: "src/module/file.rs" });
+});
+
 // covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: Local path changes during a protected read
 it("fails a protected read when opened-file identity changes", () => {
   const fs = filesystem({
@@ -110,6 +123,17 @@ it("fails a protected read when opened-file identity changes", () => {
   fs.fstat = () => ({ dev: 1, ino: 3 });
 
   assert.throws(() => guard.openProtected("src/lib.rs"), /path_identity_changed/);
+});
+
+it("accepts an opened Windows file when stat has no device identity", () => {
+  const fs = filesystem({
+    [root]: { realpath: root, dev: 0, ino: 1 },
+    "C:/repo/src/lib.rs": { realpath: "C:/repo/src/lib.rs", dev: 0, ino: 2 },
+  });
+  fs.fstat = () => ({ dev: 12345, ino: 2 });
+  const guard = createProjectRoot({ cwd: root, filesystem: fs, platform: "win32" });
+
+  assert.deepEqual(guard.protectedRead("src/lib.rs"), { path: "C:/repo/src/lib.rs", bytes: "fixture" });
 });
 
 it("closes the protected handle and returns no bytes when a path changes during the read", () => {
