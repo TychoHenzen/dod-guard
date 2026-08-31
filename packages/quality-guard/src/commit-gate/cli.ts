@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
-import { runScan } from "../scanner.js";
+import { runScan, type ScanRequest } from "../scanner.js";
 import { appendArchitectureAcknowledgement, parseArchitectureAcknowledgements } from "./acknowledgements.js";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality, type ScannerEvidence } from "./decision-core.js";
@@ -33,6 +33,41 @@ export interface AcknowledgeOptions {
   findingId: string;
   reason: string;
   author: string;
+}
+
+// Keep the authoritative commit decision on the same scanner contract as CI.
+// Biome owns line length, and the distribution output is not source debt.
+const RATCHET_RULES = [
+  "file-length",
+  "function-length",
+  "complexity",
+  "param-count",
+  "nesting-depth",
+  "types-per-file",
+  "duplicate-block",
+  "else-branch",
+  "unnamed-tuple",
+  "dead-export",
+  "unused-local",
+  "test-only-export",
+  "commented-out-code",
+  "todo-marker",
+  "stateless-method",
+  "comment-bloat",
+  "comment-restates-code",
+  "assumption-marker",
+];
+
+/** Builds the scanner request shared by staged and committed decisions. */
+function commitScanRequest(root: string): ScanRequest {
+  return {
+    paths: ["packages"],
+    root,
+    rules: RATCHET_RULES,
+    excludes: ["/dist/", "node_modules"],
+    baseline: ".github/quality/quality-baseline.json",
+    failOn: "regression",
+  };
 }
 
 function usage(message?: string): CommandResult {
@@ -158,12 +193,7 @@ function materializeTree(root: string, ref: TreeReference): string {
 function scannerEvidence(root: string, ref: TreeReference): ScannerEvidence {
   const stagedRoot = materializeTree(root, ref);
   try {
-    const result = runScan({
-      paths: ["."],
-      root: stagedRoot,
-      baseline: ".github/quality/quality-baseline.json",
-      failOn: "regression",
-    });
+    const result = runScan(commitScanRequest(stagedRoot));
     if (result.exitCode === 0) return { findings: [] };
     const finding: FindingInput = {
       severity: "fail",
@@ -185,6 +215,22 @@ function isSourceOrConfiguration(filePath: string): boolean {
     /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i.test(filePath) ||
     filePath === ".quality-guard.json"
   );
+}
+
+function isDistributionPath(filePath: string): boolean {
+  return /(?:^|[/\\])dist(?:[/\\]|$)/.test(filePath);
+}
+
+function withoutDistributionChanges(snapshot: Snapshot): Snapshot {
+  return {
+    ...snapshot,
+    changes: snapshot.changes.filter((change) => {
+      const paths = [change.before?.path, change.after?.path].filter((filePath): filePath is string =>
+        Boolean(filePath),
+      );
+      return paths.some((filePath) => !isDistributionPath(filePath));
+    }),
+  };
 }
 
 function treeFile(root: string, ref: TreeReference, filePath: string, fallback?: string): string {
@@ -211,16 +257,17 @@ function decisionForSnapshot(
   targetRef: TreeReference,
   options: CheckOptions,
 ): DecisionResult {
+  const decisionSnapshot = withoutDistributionChanges(snapshot);
   const refactorMap =
     options.intent === "refactor" && options.target
       ? parseResponsibilityMap(treeFile(root, targetRef, options.target))
       : undefined;
-  const affected = snapshot.changes
+  const affected = decisionSnapshot.changes
     .flatMap((change) => [change.before?.path, change.after?.path])
     .filter((filePath): filePath is string => Boolean(filePath));
   if (!affected.some(isSourceOrConfiguration)) {
     return decideQuality({
-      snapshot,
+      snapshot: decisionSnapshot,
       config: parseQualityConfig("{}"),
       beforeFiles: [],
       afterFiles: [],
@@ -234,7 +281,7 @@ function decisionForSnapshot(
     treeFile(root, targetRef, DECISION_RECORD_PATH, "[]"),
   );
   return decideQuality({
-    snapshot,
+    snapshot: decisionSnapshot,
     config,
     beforeFiles: before.files,
     afterFiles: after.files,

@@ -55,7 +55,7 @@ function untestedSources() {
   const gaps = [];
   for (const pkg of readdirSync(packagesDir)) {
     for (const file of walk(join(packagesDir, pkg, "src"))) {
-      if (!file.endsWith(".ts") || file.endsWith(".test.ts")) continue;
+      if (!file.endsWith(".ts") || file.endsWith(".test.ts") || file.endsWith(".d.ts")) continue;
       if (EXEMPT.has(file.split(/[/\\]/).pop())) continue;
       if (hasTestFile(file)) continue;
       gaps.push(relative(ROOT, file).split("\\").join("/"));

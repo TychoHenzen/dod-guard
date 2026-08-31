@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
+import { runScan } from "../scanner.js";
 import {
   exitCodeFor,
   parseAcknowledgeArguments,
@@ -89,11 +90,18 @@ function parityFixture(): string {
   git(root, ["config", "user.email", "test@example.invalid"]);
   git(root, ["config", "user.name", "Test"]);
   mkdirSync(path.join(root, ".github", "quality"), { recursive: true });
-  writeFileSync(path.join(root, "source.ts"), "export class Existing {}\n");
+  mkdirSync(path.join(root, "packages", "fixture", "src"), { recursive: true });
   writeFileSync(
-    path.join(root, ".github", "quality", "quality-baseline.json"),
-    '{"version":2,"profile":"default","total":0,"counts":{},"files":["source.ts"]}\n',
+    path.join(root, "packages", "fixture", "src", "source.ts"),
+    'export class Existing { private value = "short"; public added(): string { return this.value; } }\n',
   );
+  const baseline = runScan({
+    paths: ["packages"],
+    root,
+    excludes: ["/dist/", "node_modules"],
+    writeBaseline: ".github/quality/quality-baseline.json",
+  });
+  assert.equal(baseline.exitCode, 0);
   git(root, ["add", "."]);
   git(root, ["commit", "-m", "base"]);
   return root;
@@ -103,8 +111,12 @@ function parityFixture(): string {
 test("runs the same decision against staged and committed fixtures", () => {
   const root = parityFixture();
   try {
-    writeFileSync(path.join(root, "source.ts"), "export class Existing { public added(): void {} }\n");
-    git(root, ["add", "source.ts"]);
+    const source = path.join(root, "packages", "fixture", "src", "source.ts");
+    writeFileSync(
+      source,
+      'export class Existing { private value = "this line is deliberately longer than eighty characters but remains within the Biome limit"; public added(): string { return this.value; } }\n',
+    );
+    git(root, ["add", "packages/fixture/src/source.ts"]);
     const local = runStagedCheck(root, { json: true, intent: "change" });
     git(root, ["commit", "-m", "change without hook"]);
     const committed = runCommittedCheck(root, "HEAD", { json: true, intent: "change" });
@@ -114,8 +126,30 @@ test("runs the same decision against staged and committed fixtures", () => {
       committed.findings.map((finding) => finding.id),
       local.findings.map((finding) => finding.id),
     );
+    assert.equal(
+      local.findings.some((finding) => finding.reason === "structural ratchet reported a deterministic regression"),
+      false,
+      "the commit decision must use CI's rule set and exclude line length",
+    );
     assert.equal(command.exitCode, committed.verdict === "PASS" ? 0 : committed.verdict === "FAIL" ? 1 : 2);
     assert.equal(JSON.parse(command.output).verdict, committed.verdict);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("ignores generated distribution JavaScript in the commit decision", () => {
+  const root = parityFixture();
+  try {
+    const distribution = path.join(root, "packages", "fixture", "dist");
+    mkdirSync(distribution, { recursive: true });
+    writeFileSync(path.join(distribution, "bundle.js"), "export class BundledDependency {");
+    git(root, ["add", "packages/fixture/dist/bundle.js"]);
+
+    const result = runStagedCheck(root, { json: true, intent: "change" });
+
+    assert.equal(result.verdict, "PASS");
+    assert.match(result.input.reason ?? "", /No source quality decision was required/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

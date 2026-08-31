@@ -20,6 +20,7 @@ export interface Snapshot {
 }
 
 const SOURCE_PATH = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
+const DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
 
 interface GitSource {
   base: string;
@@ -108,7 +109,7 @@ function sourcePaths(root: string, ref: TreeReference): string[] {
   return (git(root, args, "buffer") as Buffer)
     .toString("utf8")
     .split("\0")
-    .filter((filePath) => SOURCE_PATH.test(filePath))
+    .filter((filePath) => SOURCE_PATH.test(filePath) && !DISTRIBUTION_PATH.test(filePath))
     .sort((left, right) => left.localeCompare(right));
 }
 

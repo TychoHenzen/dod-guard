@@ -22149,6 +22149,7 @@ function extractFactInventory(files, requiredPaths) {
 // src/commit-gate/snapshot.ts
 import { execFileSync as execFileSync2 } from "node:child_process";
 var SOURCE_PATH3 = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
+var DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
 function git(root, args, encoding = "utf8") {
   return execFileSync2("git", args, { cwd: root, encoding });
 }
@@ -22218,7 +22219,7 @@ function readCommittedSnapshot(root, commit = "HEAD") {
 }
 function sourcePaths2(root, ref) {
   const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", ref];
-  return git(root, args, "buffer").toString("utf8").split("\0").filter((filePath) => SOURCE_PATH3.test(filePath)).sort((left, right) => left.localeCompare(right));
+  return git(root, args, "buffer").toString("utf8").split("\0").filter((filePath) => SOURCE_PATH3.test(filePath) && !DISTRIBUTION_PATH.test(filePath)).sort((left, right) => left.localeCompare(right));
 }
 function readSourceInventory(root, ref) {
   return sourcePaths2(root, ref).map((filePath) => ({
@@ -22228,6 +22229,36 @@ function readSourceInventory(root, ref) {
 }
 
 // src/commit-gate/cli.ts
+var RATCHET_RULES = [
+  "file-length",
+  "function-length",
+  "complexity",
+  "param-count",
+  "nesting-depth",
+  "types-per-file",
+  "duplicate-block",
+  "else-branch",
+  "unnamed-tuple",
+  "dead-export",
+  "unused-local",
+  "test-only-export",
+  "commented-out-code",
+  "todo-marker",
+  "stateless-method",
+  "comment-bloat",
+  "comment-restates-code",
+  "assumption-marker"
+];
+function commitScanRequest(root) {
+  return {
+    paths: ["packages"],
+    root,
+    rules: RATCHET_RULES,
+    excludes: ["/dist/", "node_modules"],
+    baseline: ".github/quality/quality-baseline.json",
+    failOn: "regression"
+  };
+}
 function usage(message) {
   return {
     exitCode: 3,
@@ -22332,12 +22363,7 @@ function materializeTree(root, ref) {
 function scannerEvidence(root, ref) {
   const stagedRoot = materializeTree(root, ref);
   try {
-    const result = runScan({
-      paths: ["."],
-      root: stagedRoot,
-      baseline: ".github/quality/quality-baseline.json",
-      failOn: "regression"
-    });
+    const result = runScan(commitScanRequest(stagedRoot));
     if (result.exitCode === 0) return { findings: [] };
     const finding = {
       severity: "fail",
@@ -22356,6 +22382,20 @@ function scannerEvidence(root, ref) {
 function isSourceOrConfiguration(filePath) {
   return /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i.test(filePath) || filePath === ".quality-guard.json";
 }
+function isDistributionPath(filePath) {
+  return /(?:^|[/\\])dist(?:[/\\]|$)/.test(filePath);
+}
+function withoutDistributionChanges(snapshot) {
+  return {
+    ...snapshot,
+    changes: snapshot.changes.filter((change) => {
+      const paths = [change.before?.path, change.after?.path].filter(
+        (filePath) => Boolean(filePath)
+      );
+      return paths.some((filePath) => !isDistributionPath(filePath));
+    })
+  };
+}
 function treeFile(root, ref, filePath, fallback) {
   try {
     return execFileSync3("git", ["show", ref === "index" ? `:${filePath}` : `${ref}:${filePath}`], {
@@ -22372,11 +22412,12 @@ function snapshotConfig(root, ref) {
   return treeFile(root, ref, ".quality-guard.json", "{}");
 }
 function decisionForSnapshot(root, snapshot, baseRef, targetRef, options) {
+  const decisionSnapshot = withoutDistributionChanges(snapshot);
   const refactorMap = options.intent === "refactor" && options.target ? parseResponsibilityMap(treeFile(root, targetRef, options.target)) : void 0;
-  const affected = snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((filePath) => Boolean(filePath));
+  const affected = decisionSnapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((filePath) => Boolean(filePath));
   if (!affected.some(isSourceOrConfiguration)) {
     return decideQuality({
-      snapshot,
+      snapshot: decisionSnapshot,
       config: parseQualityConfig("{}"),
       beforeFiles: [],
       afterFiles: [],
@@ -22390,7 +22431,7 @@ function decisionForSnapshot(root, snapshot, baseRef, targetRef, options) {
     treeFile(root, targetRef, DECISION_RECORD_PATH, "[]")
   );
   return decideQuality({
-    snapshot,
+    snapshot: decisionSnapshot,
     config: config2,
     beforeFiles: before.files,
     afterFiles: after.files,
