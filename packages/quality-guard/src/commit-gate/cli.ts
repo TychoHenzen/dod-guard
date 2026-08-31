@@ -2,15 +2,21 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
-import { parseQualityConfig } from "./config.js";
+import { runScan } from "../scanner.js";
 import { appendArchitectureAcknowledgement, parseArchitectureAcknowledgements } from "./acknowledgements.js";
+import { parseQualityConfig } from "./config.js";
 import { decideQuality, type ScannerEvidence } from "./decision-core.js";
 import { extractFactInventory } from "./facts.js";
 import { DECISION_RECORD_PATH } from "./fingerprint.js";
 import { parseResponsibilityMap } from "./responsibility-map.js";
-import { readSourceInventory, readStagedSnapshot } from "./snapshot.js";
+import {
+  readCommittedSnapshot,
+  readSourceInventory,
+  readStagedSnapshot,
+  type Snapshot,
+  type TreeReference,
+} from "./snapshot.js";
 import type { DecisionResult, FindingInput } from "./types.js";
-import { runScan } from "../scanner.js";
 
 export interface CheckOptions {
   json: boolean;
@@ -44,7 +50,12 @@ function acknowledgeUsage(message?: string): CommandResult {
 }
 
 function validTarget(value: string): boolean {
-  return Boolean(value.trim()) && !path.isAbsolute(value) && !/^[a-zA-Z]:[\\/]/.test(value) && !value.split(/[\\/]/).includes("..");
+  return (
+    Boolean(value.trim()) &&
+    !path.isAbsolute(value) &&
+    !/^[a-zA-Z]:[\\/]/.test(value) &&
+    !value.split(/[\\/]/).includes("..")
+  );
 }
 
 /** Parses only the public staged command. All unsupported options are usage errors. */
@@ -87,7 +98,13 @@ export function parseAcknowledgeArguments(args: string[]): AcknowledgeOptions | 
   let author: string | undefined;
   for (let index = 1; index < args.length; index += 1) {
     const arg = args[index];
-    const value = arg.startsWith("--finding=") ? arg.slice("--finding=".length) : arg.startsWith("--reason=") ? arg.slice("--reason=".length) : arg.startsWith("--author=") ? arg.slice("--author=".length) : args[++index];
+    const value = arg.startsWith("--finding=")
+      ? arg.slice("--finding=".length)
+      : arg.startsWith("--reason=")
+        ? arg.slice("--reason=".length)
+        : arg.startsWith("--author=")
+          ? arg.slice("--author=".length)
+          : args[++index];
     if (arg === "--finding" || arg.startsWith("--finding=")) findingId = value;
     else if (arg === "--reason" || arg.startsWith("--reason=")) reason = value;
     else if (arg === "--author" || arg.startsWith("--author=")) author = value;
@@ -108,8 +125,10 @@ export function renderDecision(result: DecisionResult, json: boolean): string {
   const lines: string[] = [result.verdict];
   if (result.input.reason) lines.push(result.input.reason);
   for (const error of result.errors) lines.push(`ERROR: ${error}`);
-  for (const finding of result.findings) lines.push(`${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`);
-  for (const findingId of result.staleAcknowledgements ?? []) lines.push(`STALE: acknowledgement for ${findingId} does not match the current staged fingerprint`);
+  for (const finding of result.findings)
+    lines.push(`${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`);
+  for (const findingId of result.staleAcknowledgements ?? [])
+    lines.push(`STALE: acknowledgement for ${findingId} does not match the current staged fingerprint`);
   if (result.refactorProgress) {
     for (const [name, indicator] of Object.entries(result.refactorProgress.indicators)) {
       lines.push(`REFACTOR: ${name} ${indicator.status} (${indicator.before} -> ${indicator.after})`);
@@ -118,16 +137,33 @@ export function renderDecision(result: DecisionResult, json: boolean): string {
   return lines.join("\n");
 }
 
-function materializeIndex(root: string): string {
+function materializeTree(root: string, ref: TreeReference): string {
   const target = mkdtempSync(path.join(tmpdir(), "quality-guard-index-"));
-  execFileSync("git", ["checkout-index", "--all", `--prefix=${target}${path.sep}`], { cwd: root, stdio: "ignore" });
+  if (ref === "index") {
+    execFileSync("git", ["checkout-index", "--all", `--prefix=${target}${path.sep}`], { cwd: root, stdio: "ignore" });
+    return target;
+  }
+  const indexPath = path.join(target, "index");
+  const env = { ...process.env, GIT_INDEX_FILE: indexPath };
+  execFileSync("git", ["read-tree", ref], { cwd: root, env, stdio: "ignore" });
+  execFileSync("git", ["checkout-index", "--all", `--prefix=${target}${path.sep}`], {
+    cwd: root,
+    env,
+    stdio: "ignore",
+  });
+  rmSync(indexPath, { force: true });
   return target;
 }
 
-function scannerEvidence(root: string): ScannerEvidence {
-  const stagedRoot = materializeIndex(root);
+function scannerEvidence(root: string, ref: TreeReference): ScannerEvidence {
+  const stagedRoot = materializeTree(root, ref);
   try {
-    const result = runScan({ paths: ["."], root: stagedRoot, baseline: ".github/quality/quality-baseline.json", failOn: "regression" });
+    const result = runScan({
+      paths: ["."],
+      root: stagedRoot,
+      baseline: ".github/quality/quality-baseline.json",
+      failOn: "regression",
+    });
     if (result.exitCode === 0) return { findings: [] };
     const finding: FindingInput = {
       severity: "fail",
@@ -145,50 +181,80 @@ function scannerEvidence(root: string): ScannerEvidence {
 }
 
 function isSourceOrConfiguration(filePath: string): boolean {
-  return /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i.test(filePath) || filePath === ".quality-guard.json";
+  return (
+    /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i.test(filePath) ||
+    filePath === ".quality-guard.json"
+  );
 }
 
-function stagedConfig(root: string, snapshot: ReturnType<typeof readStagedSnapshot>): string {
-  const change = snapshot.changes.find((item) => item.after?.path === ".quality-guard.json");
-  if (change?.after) return change.after.content;
+function treeFile(root: string, ref: TreeReference, filePath: string, fallback?: string): string {
   try {
-    return execFileSync("git", ["show", ":.quality-guard.json"], { cwd: root, encoding: "utf8" });
-  } catch {
-    return "{}";
-  }
-}
-
-function readIndexFile(root: string, filePath: string, fallback?: string): string {
-  try {
-    return execFileSync("git", ["show", `:${filePath}`], { cwd: root, encoding: "utf8" });
+    return execFileSync("git", ["show", ref === "index" ? `:${filePath}` : `${ref}:${filePath}`], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
   } catch {
     if (fallback !== undefined) return fallback;
-    throw new Error(`${filePath} is not present in the staged index`);
+    throw new Error(`${filePath} is not present in ${ref === "index" ? "the staged index" : `tree ${ref}`}`);
   }
 }
 
-/** Runs the index-only staged decision, including tracked review and refactor evidence. */
-export function runStagedCheck(root: string, options: CheckOptions): DecisionResult {
-  const snapshot = readStagedSnapshot(root);
-  const refactorMap = options.intent === "refactor" && options.target ? parseResponsibilityMap(readIndexFile(root, options.target)) : undefined;
-  const affected = snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((filePath): filePath is string => Boolean(filePath));
+function snapshotConfig(root: string, ref: TreeReference): string {
+  return treeFile(root, ref, ".quality-guard.json", "{}");
+}
+
+function decisionForSnapshot(
+  root: string,
+  snapshot: Snapshot,
+  baseRef: TreeReference,
+  targetRef: TreeReference,
+  options: CheckOptions,
+): DecisionResult {
+  const refactorMap =
+    options.intent === "refactor" && options.target
+      ? parseResponsibilityMap(treeFile(root, targetRef, options.target))
+      : undefined;
+  const affected = snapshot.changes
+    .flatMap((change) => [change.before?.path, change.after?.path])
+    .filter((filePath): filePath is string => Boolean(filePath));
   if (!affected.some(isSourceOrConfiguration)) {
-    return decideQuality({ snapshot, config: parseQualityConfig("{}"), beforeFiles: [], afterFiles: [], scanner: { findings: [] } });
+    return decideQuality({
+      snapshot,
+      config: parseQualityConfig("{}"),
+      beforeFiles: [],
+      afterFiles: [],
+      scanner: { findings: [] },
+    });
   }
-  const config = parseQualityConfig(stagedConfig(root, snapshot));
-  const before = extractFactInventory(readSourceInventory(root, "HEAD"), affected);
-  const after = extractFactInventory(readSourceInventory(root, "index"), affected);
-  const acknowledgementRecords = parseArchitectureAcknowledgements(readIndexFile(root, DECISION_RECORD_PATH, "[]"));
+  const config = parseQualityConfig(snapshotConfig(root, targetRef));
+  const before = extractFactInventory(readSourceInventory(root, baseRef), affected);
+  const after = extractFactInventory(readSourceInventory(root, targetRef), affected);
+  const acknowledgementRecords = parseArchitectureAcknowledgements(
+    treeFile(root, targetRef, DECISION_RECORD_PATH, "[]"),
+  );
   return decideQuality({
     snapshot,
     config,
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
-    scanner: scannerEvidence(root),
+    scanner: scannerEvidence(root, targetRef),
     acknowledgementRecords,
     refactorMap,
   });
+}
+
+/** Runs the index-only staged decision, including tracked review and refactor evidence. */
+export function runStagedCheck(root: string, options: CheckOptions): DecisionResult {
+  const snapshot = readStagedSnapshot(root);
+  return decisionForSnapshot(root, snapshot, "HEAD", "index", options);
+}
+
+/** Replays the staged decision against a committed tree and its first parent for CI. */
+export function runCommittedCheck(root: string, commit: string, options: CheckOptions): DecisionResult {
+  const snapshot = readCommittedSnapshot(root, commit);
+  return decisionForSnapshot(root, snapshot, `${commit}^`, commit, options);
 }
 
 function runAcknowledgeCommand(args: string[], root: string): CommandResult {
@@ -198,7 +264,8 @@ function runAcknowledgeCommand(args: string[], root: string): CommandResult {
     const decision = runStagedCheck(root, { json: false, intent: "change" });
     const finding = decision.findings.find((item) => item.id === options.findingId);
     if (!finding) return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
-    if (finding.severity !== "review") return acknowledgeUsage(`finding ${options.findingId} is deterministic and cannot be acknowledged`);
+    if (finding.severity !== "review")
+      return acknowledgeUsage(`finding ${options.findingId} is deterministic and cannot be acknowledged`);
     if (!decision.fingerprint) return acknowledgeUsage("no current staged source fingerprint is available");
     const recordPath = path.join(root, DECISION_RECORD_PATH);
     let source = "[]";
@@ -208,7 +275,15 @@ function runAcknowledgeCommand(args: string[], root: string): CommandResult {
       // A newly introduced tracked record begins as an empty array.
     }
     mkdirSync(path.dirname(recordPath), { recursive: true });
-    writeFileSync(recordPath, appendArchitectureAcknowledgement(source, { ...options, fingerprint: decision.fingerprint, time: new Date().toISOString() }), "utf8");
+    writeFileSync(
+      recordPath,
+      appendArchitectureAcknowledgement(source, {
+        ...options,
+        fingerprint: decision.fingerprint,
+        time: new Date().toISOString(),
+      }),
+      "utf8",
+    );
     execFileSync("git", ["add", "--", DECISION_RECORD_PATH], { cwd: root, stdio: "ignore" });
     return { exitCode: 0, output: `Acknowledged review finding ${options.findingId}` };
   } catch (error) {
@@ -218,6 +293,18 @@ function runAcknowledgeCommand(args: string[], root: string): CommandResult {
 
 export function runCheckCommand(args: string[], root = process.cwd()): CommandResult {
   if (args[0] === "acknowledge") return runAcknowledgeCommand(args, root);
+  if (args[0] === "check" && args[1] === "--committed") {
+    const commit = args[2];
+    if (!commit || commit.startsWith("-")) return usage("--committed requires a Git ref");
+    const options = parseCheckArguments(["check", "--staged", "--json", ...args.slice(3)]);
+    if ("exitCode" in options) return options;
+    try {
+      const result = runCommittedCheck(root, commit, options);
+      return { exitCode: exitCodeFor(result), output: renderDecision(result, true) };
+    } catch (error) {
+      return usage(error instanceof Error ? error.message : String(error));
+    }
+  }
   const options = parseCheckArguments(args);
   if ("exitCode" in options) return options;
   try {

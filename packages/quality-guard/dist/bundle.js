@@ -21154,6 +21154,12 @@ var StdioServerTransport = class {
   }
 };
 
+// src/commit-gate/cli.ts
+import { execFileSync as execFileSync3 } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path5 from "node:path";
+
 // src/scanner.ts
 import { execFileSync } from "node:child_process";
 import * as path from "node:path";
@@ -21195,40 +21201,53 @@ function runScan(request, run = execFileSync) {
   }
 }
 
-// src/skips.ts
-import { existsSync, readFileSync } from "node:fs";
-import * as path2 from "node:path";
-var SKIP_LOG = path2.join(".github", "quality", "skip-log.json");
-function readSkipLog(root) {
-  const target = path2.join(root, SKIP_LOG);
-  if (!existsSync(target)) return [];
-  try {
-    const parsed = JSON.parse(readFileSync(target, "utf8"));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+// src/commit-gate/fingerprint.ts
+import { createHash } from "node:crypto";
+var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
+var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
+function canonical(value) {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical(item)}`).join(",")}}`;
   }
+  return JSON.stringify(value);
 }
-function formatSkips(records) {
-  const open = records.filter((record3) => record3.acknowledged !== true);
-  if (open.length === 0) return "No unacknowledged quality-gate waivers.";
-  const lines = [`${open.length} unacknowledged waiver(s):`, ""];
-  for (const record3 of open) {
-    const kind = record3.rebaseline ? "rebaseline" : "new-file ceiling";
-    lines.push(`${record3.file}  [${kind}]  ${record3.at ?? "unknown time"}`);
-    for (const reason of record3.reasons ?? []) {
-      for (const line of reason.split("\n")) lines.push(`    ${line}`);
-    }
-  }
-  lines.push("", `Acknowledge by setting "acknowledged": true in ${SKIP_LOG}.`);
-  return lines.join("\n");
+function fingerprintSnapshot(snapshot, config2) {
+  const changes = snapshot.changes.filter((change) => change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH).filter((change) => SOURCE_PATH.test(change.before?.path ?? "") || SOURCE_PATH.test(change.after?.path ?? "")).map((change) => ({ kind: change.kind, before: change.before, after: change.after })).sort((left, right) => `${left.after?.path ?? left.before?.path}`.localeCompare(`${right.after?.path ?? right.before?.path}`));
+  return createHash("sha256").update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config: config2 })).digest("hex");
 }
 
-// src/commit-gate/cli.ts
-import { execFileSync as execFileSync3 } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync as readFileSync2, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import * as path6 from "node:path";
+// src/commit-gate/acknowledgements.ts
+function nonEmptyString(value, location) {
+  if (typeof value !== "string" || !value.trim()) throw new Error(`${location} must be a non-empty string`);
+  return value.trim();
+}
+function parseArchitectureAcknowledgements(source) {
+  let parsed;
+  try {
+    parsed = JSON.parse(source);
+  } catch {
+    throw new Error(`${DECISION_RECORD_PATH} must contain valid JSON`);
+  }
+  if (!Array.isArray(parsed)) throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
+  return parsed.map((item, index) => {
+    if (item === null || typeof item !== "object" || Array.isArray(item)) throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
+    const record3 = item;
+    const unexpected = Object.keys(record3).filter((key2) => !["findingId", "fingerprint", "reason", "author", "time"].includes(key2));
+    if (unexpected.length > 0) throw new Error(`${DECISION_RECORD_PATH}[${index}].${unexpected[0]} is not supported`);
+    return {
+      findingId: nonEmptyString(record3.findingId, `${DECISION_RECORD_PATH}[${index}].findingId`),
+      fingerprint: nonEmptyString(record3.fingerprint, `${DECISION_RECORD_PATH}[${index}].fingerprint`),
+      reason: nonEmptyString(record3.reason, `${DECISION_RECORD_PATH}[${index}].reason`),
+      author: nonEmptyString(record3.author, `${DECISION_RECORD_PATH}[${index}].author`),
+      time: nonEmptyString(record3.time, `${DECISION_RECORD_PATH}[${index}].time`)
+    };
+  });
+}
+function appendArchitectureAcknowledgement(source, record3) {
+  return `${JSON.stringify([...parseArchitectureAcknowledgements(source), record3], null, 2)}
+`;
+}
 
 // src/commit-gate/config.ts
 var ConfigError = class extends Error {
@@ -21327,59 +21346,11 @@ function parseQualityConfig(source) {
   };
 }
 
-// src/commit-gate/fingerprint.ts
-import { createHash } from "node:crypto";
-var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
-var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
-function canonical(value) {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  if (value !== null && typeof value === "object") {
-    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical(item)}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-function fingerprintSnapshot(snapshot, config2) {
-  const changes = snapshot.changes.filter((change) => change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH).filter((change) => SOURCE_PATH.test(change.before?.path ?? "") || SOURCE_PATH.test(change.after?.path ?? "")).map((change) => ({ kind: change.kind, before: change.before, after: change.after })).sort((left, right) => `${left.after?.path ?? left.before?.path}`.localeCompare(`${right.after?.path ?? right.before?.path}`));
-  return createHash("sha256").update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config: config2 })).digest("hex");
-}
-
-// src/commit-gate/acknowledgements.ts
-function nonEmptyString(value, location) {
-  if (typeof value !== "string" || !value.trim()) throw new Error(`${location} must be a non-empty string`);
-  return value.trim();
-}
-function parseArchitectureAcknowledgements(source) {
-  let parsed;
-  try {
-    parsed = JSON.parse(source);
-  } catch {
-    throw new Error(`${DECISION_RECORD_PATH} must contain valid JSON`);
-  }
-  if (!Array.isArray(parsed)) throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
-  return parsed.map((item, index) => {
-    if (item === null || typeof item !== "object" || Array.isArray(item)) throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
-    const record3 = item;
-    const unexpected = Object.keys(record3).filter((key2) => !["findingId", "fingerprint", "reason", "author", "time"].includes(key2));
-    if (unexpected.length > 0) throw new Error(`${DECISION_RECORD_PATH}[${index}].${unexpected[0]} is not supported`);
-    return {
-      findingId: nonEmptyString(record3.findingId, `${DECISION_RECORD_PATH}[${index}].findingId`),
-      fingerprint: nonEmptyString(record3.fingerprint, `${DECISION_RECORD_PATH}[${index}].fingerprint`),
-      reason: nonEmptyString(record3.reason, `${DECISION_RECORD_PATH}[${index}].reason`),
-      author: nonEmptyString(record3.author, `${DECISION_RECORD_PATH}[${index}].author`),
-      time: nonEmptyString(record3.time, `${DECISION_RECORD_PATH}[${index}].time`)
-    };
-  });
-}
-function appendArchitectureAcknowledgement(source, record3) {
-  return `${JSON.stringify([...parseArchitectureAcknowledgements(source), record3], null, 2)}
-`;
-}
-
 // src/commit-gate/dependency.ts
-import * as path4 from "node:path";
+import * as path3 from "node:path";
 
 // src/commit-gate/placement.ts
-import * as path3 from "node:path";
+import * as path2 from "node:path";
 function normalizeArchitecturePath(filePath) {
   return filePath.replaceAll("\\", "/").replace(/^\.\//, "");
 }
@@ -21399,7 +21370,7 @@ function typeNames(files, config2) {
   const result = /* @__PURE__ */ new Map();
   for (const file of files) {
     if (!isProductionArchitecturePath(file.path, config2)) continue;
-    const directory = path3.posix.dirname(normalizeArchitecturePath(file.path));
+    const directory = path2.posix.dirname(normalizeArchitecturePath(file.path));
     const names = result.get(directory) ?? /* @__PURE__ */ new Set();
     for (const name of file.types) names.add(name);
     result.set(directory, names);
@@ -21414,12 +21385,12 @@ function analyzePlacement(beforeFiles, afterFiles, affectedPaths, config2) {
   for (const file of afterFiles) {
     const normalized = normalizeArchitecturePath(file.path);
     if (!changed.has(normalized) || !isProductionArchitecturePath(file.path, config2)) continue;
-    const directory = path3.posix.dirname(normalized);
+    const directory = path2.posix.dirname(normalized);
     const previous = before.get(directory) ?? /* @__PURE__ */ new Set();
     const current = after.get(directory) ?? /* @__PURE__ */ new Set();
     const beforeCount = previous.size;
     const afterCount = current.size;
-    const generic = config2.genericBuckets.includes(path3.posix.basename(directory).toLowerCase());
+    const generic = config2.genericBuckets.includes(path2.posix.basename(directory).toLowerCase());
     for (const addedType of [...file.types].filter((name) => !previous.has(name)).sort((left, right) => left.localeCompare(right))) {
       if (generic || beforeCount > config2.directTypeLimit) {
         findings.push({
@@ -21444,7 +21415,7 @@ function extensionless(filePath) {
 }
 function resolveDependency(from, dependency, paths) {
   const normalized = normalizeArchitecturePath(dependency);
-  const candidate = dependency.startsWith(".") ? path4.posix.normalize(path4.posix.join(path4.posix.dirname(from), normalized)) : normalized;
+  const candidate = dependency.startsWith(".") ? path3.posix.normalize(path3.posix.join(path3.posix.dirname(from), normalized)) : normalized;
   if (paths.has(candidate)) return candidate;
   const target = extensionless(candidate);
   return [...paths].sort((left, right) => left.localeCompare(right)).find((filePath) => extensionless(filePath) === target);
@@ -21593,7 +21564,7 @@ function normalizeFindings(findings) {
 }
 
 // src/commit-gate/refactor-progress.ts
-import * as path5 from "node:path";
+import * as path4 from "node:path";
 function productionTypes(files, config2) {
   return files.filter((file) => isProductionArchitecturePath(file.path, config2)).flatMap((file) => file.types.map((type) => ({ path: normalizeArchitecturePath(file.path), type }))).sort((left, right) => left.path.localeCompare(right.path) || left.type.name.localeCompare(right.type.name));
 }
@@ -21635,7 +21606,7 @@ function dependencyReduction(moves, before, after) {
 function directTypePressure(types, config2) {
   const counts = /* @__PURE__ */ new Map();
   for (const item of types) {
-    const directory = path5.posix.dirname(item.path);
+    const directory = path4.posix.dirname(item.path);
     counts.set(directory, (counts.get(directory) ?? 0) + 1);
   }
   return [...counts.values()].reduce((total, count) => total + Math.max(0, count - config2.directTypeLimit), 0);
@@ -22087,9 +22058,15 @@ function changeSnapshot(root, source) {
     }
     const filePath = values[++index];
     if (code === "A") {
-      changes.push({ kind: "add", after: { path: filePath, content: objectContent(root, source.contentSpec(filePath, true)) } });
+      changes.push({
+        kind: "add",
+        after: { path: filePath, content: objectContent(root, source.contentSpec(filePath, true)) }
+      });
     } else if (code === "D") {
-      changes.push({ kind: "delete", before: { path: filePath, content: objectContent(root, source.contentSpec(filePath, false)) } });
+      changes.push({
+        kind: "delete",
+        before: { path: filePath, content: objectContent(root, source.contentSpec(filePath, false)) }
+      });
     } else {
       changes.push({
         kind: "modify",
@@ -22098,7 +22075,9 @@ function changeSnapshot(root, source) {
       });
     }
   }
-  changes.sort((left, right) => (left.after?.path ?? left.before?.path ?? "").localeCompare(right.after?.path ?? right.before?.path ?? ""));
+  changes.sort(
+    (left, right) => (left.after?.path ?? left.before?.path ?? "").localeCompare(right.after?.path ?? right.before?.path ?? "")
+  );
   return {
     baseIdentity: git(root, ["rev-parse", source.base]).trim(),
     targetIdentity: git(root, ["rev-parse", source.target]).trim(),
@@ -22112,14 +22091,22 @@ function readStagedSnapshot(root) {
     contentSpec: (filePath, after) => after ? `:${filePath}` : `HEAD:${filePath}`
   });
 }
+function readCommittedSnapshot(root, commit = "HEAD") {
+  const parent = git(root, ["rev-parse", `${commit}^`]);
+  return changeSnapshot(root, {
+    base: parent.trim(),
+    target: commit,
+    contentSpec: (filePath, after) => `${after ? commit : parent.trim()}:${filePath}`
+  });
+}
 function sourcePaths2(root, ref) {
-  const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", "HEAD"];
+  const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", ref];
   return git(root, args, "buffer").toString("utf8").split("\0").filter((filePath) => SOURCE_PATH3.test(filePath)).sort((left, right) => left.localeCompare(right));
 }
 function readSourceInventory(root, ref) {
   return sourcePaths2(root, ref).map((filePath) => ({
     path: filePath,
-    content: objectContent(root, ref === "index" ? `:${filePath}` : `HEAD:${filePath}`)
+    content: objectContent(root, ref === "index" ? `:${filePath}` : `${ref}:${filePath}`)
   }));
 }
 
@@ -22139,7 +22126,7 @@ function acknowledgeUsage(message) {
   };
 }
 function validTarget(value) {
-  return Boolean(value.trim()) && !path6.isAbsolute(value) && !/^[a-zA-Z]:[\\/]/.test(value) && !value.split(/[\\/]/).includes("..");
+  return Boolean(value.trim()) && !path5.isAbsolute(value) && !/^[a-zA-Z]:[\\/]/.test(value) && !value.split(/[\\/]/).includes("..");
 }
 function parseCheckArguments(args) {
   if (args[0] !== "check" || args[1] !== "--staged") return usage();
@@ -22197,8 +22184,10 @@ function renderDecision(result, json) {
   const lines = [result.verdict];
   if (result.input.reason) lines.push(result.input.reason);
   for (const error2 of result.errors) lines.push(`ERROR: ${error2}`);
-  for (const finding of result.findings) lines.push(`${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`);
-  for (const findingId of result.staleAcknowledgements ?? []) lines.push(`STALE: acknowledgement for ${findingId} does not match the current staged fingerprint`);
+  for (const finding of result.findings)
+    lines.push(`${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`);
+  for (const findingId of result.staleAcknowledgements ?? [])
+    lines.push(`STALE: acknowledgement for ${findingId} does not match the current staged fingerprint`);
   if (result.refactorProgress) {
     for (const [name, indicator] of Object.entries(result.refactorProgress.indicators)) {
       lines.push(`REFACTOR: ${name} ${indicator.status} (${indicator.before} -> ${indicator.after})`);
@@ -22206,15 +22195,32 @@ function renderDecision(result, json) {
   }
   return lines.join("\n");
 }
-function materializeIndex(root) {
-  const target = mkdtempSync(path6.join(tmpdir(), "quality-guard-index-"));
-  execFileSync3("git", ["checkout-index", "--all", `--prefix=${target}${path6.sep}`], { cwd: root, stdio: "ignore" });
+function materializeTree(root, ref) {
+  const target = mkdtempSync(path5.join(tmpdir(), "quality-guard-index-"));
+  if (ref === "index") {
+    execFileSync3("git", ["checkout-index", "--all", `--prefix=${target}${path5.sep}`], { cwd: root, stdio: "ignore" });
+    return target;
+  }
+  const indexPath = path5.join(target, "index");
+  const env = { ...process.env, GIT_INDEX_FILE: indexPath };
+  execFileSync3("git", ["read-tree", ref], { cwd: root, env, stdio: "ignore" });
+  execFileSync3("git", ["checkout-index", "--all", `--prefix=${target}${path5.sep}`], {
+    cwd: root,
+    env,
+    stdio: "ignore"
+  });
+  rmSync(indexPath, { force: true });
   return target;
 }
-function scannerEvidence(root) {
-  const stagedRoot = materializeIndex(root);
+function scannerEvidence(root, ref) {
+  const stagedRoot = materializeTree(root, ref);
   try {
-    const result = runScan({ paths: ["."], root: stagedRoot, baseline: ".github/quality/quality-baseline.json", failOn: "regression" });
+    const result = runScan({
+      paths: ["."],
+      root: stagedRoot,
+      baseline: ".github/quality/quality-baseline.json",
+      failOn: "regression"
+    });
     if (result.exitCode === 0) return { findings: [] };
     const finding = {
       severity: "fail",
@@ -22233,44 +22239,57 @@ function scannerEvidence(root) {
 function isSourceOrConfiguration(filePath) {
   return /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i.test(filePath) || filePath === ".quality-guard.json";
 }
-function stagedConfig(root, snapshot) {
-  const change = snapshot.changes.find((item) => item.after?.path === ".quality-guard.json");
-  if (change?.after) return change.after.content;
+function treeFile(root, ref, filePath, fallback) {
   try {
-    return execFileSync3("git", ["show", ":.quality-guard.json"], { cwd: root, encoding: "utf8" });
-  } catch {
-    return "{}";
-  }
-}
-function readIndexFile(root, filePath, fallback) {
-  try {
-    return execFileSync3("git", ["show", `:${filePath}`], { cwd: root, encoding: "utf8" });
+    return execFileSync3("git", ["show", ref === "index" ? `:${filePath}` : `${ref}:${filePath}`], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    });
   } catch {
     if (fallback !== void 0) return fallback;
-    throw new Error(`${filePath} is not present in the staged index`);
+    throw new Error(`${filePath} is not present in ${ref === "index" ? "the staged index" : `tree ${ref}`}`);
   }
 }
-function runStagedCheck(root, options) {
-  const snapshot = readStagedSnapshot(root);
-  const refactorMap = options.intent === "refactor" && options.target ? parseResponsibilityMap(readIndexFile(root, options.target)) : void 0;
+function snapshotConfig(root, ref) {
+  return treeFile(root, ref, ".quality-guard.json", "{}");
+}
+function decisionForSnapshot(root, snapshot, baseRef, targetRef, options) {
+  const refactorMap = options.intent === "refactor" && options.target ? parseResponsibilityMap(treeFile(root, targetRef, options.target)) : void 0;
   const affected = snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((filePath) => Boolean(filePath));
   if (!affected.some(isSourceOrConfiguration)) {
-    return decideQuality({ snapshot, config: parseQualityConfig("{}"), beforeFiles: [], afterFiles: [], scanner: { findings: [] } });
+    return decideQuality({
+      snapshot,
+      config: parseQualityConfig("{}"),
+      beforeFiles: [],
+      afterFiles: [],
+      scanner: { findings: [] }
+    });
   }
-  const config2 = parseQualityConfig(stagedConfig(root, snapshot));
-  const before = extractFactInventory(readSourceInventory(root, "HEAD"), affected);
-  const after = extractFactInventory(readSourceInventory(root, "index"), affected);
-  const acknowledgementRecords = parseArchitectureAcknowledgements(readIndexFile(root, DECISION_RECORD_PATH, "[]"));
+  const config2 = parseQualityConfig(snapshotConfig(root, targetRef));
+  const before = extractFactInventory(readSourceInventory(root, baseRef), affected);
+  const after = extractFactInventory(readSourceInventory(root, targetRef), affected);
+  const acknowledgementRecords = parseArchitectureAcknowledgements(
+    treeFile(root, targetRef, DECISION_RECORD_PATH, "[]")
+  );
   return decideQuality({
     snapshot,
     config: config2,
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
-    scanner: scannerEvidence(root),
+    scanner: scannerEvidence(root, targetRef),
     acknowledgementRecords,
     refactorMap
   });
+}
+function runStagedCheck(root, options) {
+  const snapshot = readStagedSnapshot(root);
+  return decisionForSnapshot(root, snapshot, "HEAD", "index", options);
+}
+function runCommittedCheck(root, commit, options) {
+  const snapshot = readCommittedSnapshot(root, commit);
+  return decisionForSnapshot(root, snapshot, `${commit}^`, commit, options);
 }
 function runAcknowledgeCommand(args, root) {
   const options = parseAcknowledgeArguments(args);
@@ -22279,16 +22298,25 @@ function runAcknowledgeCommand(args, root) {
     const decision = runStagedCheck(root, { json: false, intent: "change" });
     const finding = decision.findings.find((item) => item.id === options.findingId);
     if (!finding) return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
-    if (finding.severity !== "review") return acknowledgeUsage(`finding ${options.findingId} is deterministic and cannot be acknowledged`);
+    if (finding.severity !== "review")
+      return acknowledgeUsage(`finding ${options.findingId} is deterministic and cannot be acknowledged`);
     if (!decision.fingerprint) return acknowledgeUsage("no current staged source fingerprint is available");
-    const recordPath = path6.join(root, DECISION_RECORD_PATH);
+    const recordPath = path5.join(root, DECISION_RECORD_PATH);
     let source = "[]";
     try {
-      source = readFileSync2(recordPath, "utf8");
+      source = readFileSync(recordPath, "utf8");
     } catch {
     }
-    mkdirSync(path6.dirname(recordPath), { recursive: true });
-    writeFileSync(recordPath, appendArchitectureAcknowledgement(source, { ...options, fingerprint: decision.fingerprint, time: (/* @__PURE__ */ new Date()).toISOString() }), "utf8");
+    mkdirSync(path5.dirname(recordPath), { recursive: true });
+    writeFileSync(
+      recordPath,
+      appendArchitectureAcknowledgement(source, {
+        ...options,
+        fingerprint: decision.fingerprint,
+        time: (/* @__PURE__ */ new Date()).toISOString()
+      }),
+      "utf8"
+    );
     execFileSync3("git", ["add", "--", DECISION_RECORD_PATH], { cwd: root, stdio: "ignore" });
     return { exitCode: 0, output: `Acknowledged review finding ${options.findingId}` };
   } catch (error2) {
@@ -22297,6 +22325,18 @@ function runAcknowledgeCommand(args, root) {
 }
 function runCheckCommand(args, root = process.cwd()) {
   if (args[0] === "acknowledge") return runAcknowledgeCommand(args, root);
+  if (args[0] === "check" && args[1] === "--committed") {
+    const commit = args[2];
+    if (!commit || commit.startsWith("-")) return usage("--committed requires a Git ref");
+    const options2 = parseCheckArguments(["check", "--staged", "--json", ...args.slice(3)]);
+    if ("exitCode" in options2) return options2;
+    try {
+      const result = runCommittedCheck(root, commit, options2);
+      return { exitCode: exitCodeFor(result), output: renderDecision(result, true) };
+    } catch (error2) {
+      return usage(error2 instanceof Error ? error2.message : String(error2));
+    }
+  }
   const options = parseCheckArguments(args);
   if ("exitCode" in options) return options;
   try {
@@ -22307,13 +22347,38 @@ function runCheckCommand(args, root = process.cwd()) {
   }
 }
 
+// src/skips.ts
+import { existsSync, readFileSync as readFileSync2 } from "node:fs";
+import * as path6 from "node:path";
+var SKIP_LOG = path6.join(".github", "quality", "skip-log.json");
+function readSkipLog(root) {
+  const target = path6.join(root, SKIP_LOG);
+  if (!existsSync(target)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync2(target, "utf8"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+function formatSkips(records) {
+  const open = records.filter((record3) => record3.acknowledged !== true);
+  if (open.length === 0) return "No unacknowledged quality-gate waivers.";
+  const lines = [`${open.length} unacknowledged waiver(s):`, ""];
+  for (const record3 of open) {
+    const kind = record3.rebaseline ? "rebaseline" : "new-file ceiling";
+    lines.push(`${record3.file}  [${kind}]  ${record3.at ?? "unknown time"}`);
+    for (const reason of record3.reasons ?? []) {
+      for (const line of reason.split("\n")) lines.push(`    ${line}`);
+    }
+  }
+  lines.push("", `Acknowledge by setting "acknowledged": true in ${SKIP_LOG}.`);
+  return lines.join("\n");
+}
+
 // src/index.ts
 var _dirname = path7.dirname(fileURLToPath2(import.meta.url));
 var _pkg = JSON.parse(readFileSync3(path7.join(_dirname, "..", "package.json"), "utf-8"));
-var server = new McpServer({
-  name: "quality-guard",
-  version: _pkg.version
-});
 var PATHS = external_exports.array(external_exports.string()).min(1).describe("Paths to scan, relative to root");
 var ROOT = external_exports.string().optional().describe("Repository root. Point this at the repo, not at the target, so manifest files are in scope");
 function text(value) {
@@ -22322,72 +22387,97 @@ function text(value) {
 function toolError(err) {
   return { content: [{ type: "text", text: `ERROR: ${err instanceof Error ? err.message : String(err)}` }] };
 }
-server.tool(
-  "quality_scan",
-  "Measure structural quality of the given paths and return the raw report. No verdict, no baseline. Use quality_gate to decide pass or fail.",
-  {
-    paths: PATHS,
-    root: ROOT,
-    rules: external_exports.array(external_exports.string()).optional().describe("Only run these rules"),
-    excludes: external_exports.array(external_exports.string()).optional().describe("Skip paths containing these fragments"),
-    testPaths: external_exports.array(external_exports.string()).optional().describe("Treat paths containing these fragments as test code"),
-    profile: external_exports.enum(["default", "strict"]).optional()
-  },
-  async ({ paths, root, rules, excludes, testPaths, profile }) => {
-    try {
-      const { report } = runScan({ paths, root, rules, excludes, testPaths, profile });
-      return text(JSON.stringify(report, null, 2));
-    } catch (err) {
-      return toolError(err);
+function createQualityGuardServer() {
+  const server2 = new McpServer({
+    name: "quality-guard",
+    version: _pkg.version
+  });
+  server2.tool(
+    "quality_scan",
+    "Measure structural quality of the given paths and return the raw report. No verdict, no baseline. Use quality_gate to decide pass or fail.",
+    {
+      paths: PATHS,
+      root: ROOT,
+      rules: external_exports.array(external_exports.string()).optional().describe("Only run these rules"),
+      excludes: external_exports.array(external_exports.string()).optional().describe("Skip paths containing these fragments"),
+      testPaths: external_exports.array(external_exports.string()).optional().describe("Treat paths containing these fragments as test code"),
+      profile: external_exports.enum(["default", "strict"]).optional()
+    },
+    async ({ paths, root, rules, excludes, testPaths, profile }) => {
+      try {
+        const { report } = runScan({ paths, root, rules, excludes, testPaths, profile });
+        return text(JSON.stringify(report, null, 2));
+      } catch (err) {
+        return toolError(err);
+      }
     }
-  }
-);
-server.tool(
-  "quality_gate",
-  "Compare the given paths against a recorded baseline and report regressions. Existing debt is allowed, making it worse is not. A file the baseline has never seen is adopted rather than failed.",
-  {
-    paths: PATHS,
-    baseline: external_exports.string().describe("Path to the baseline, normally .github/quality/quality-baseline.json"),
-    root: ROOT,
-    rules: external_exports.array(external_exports.string()).optional(),
-    excludes: external_exports.array(external_exports.string()).optional(),
-    testPaths: external_exports.array(external_exports.string()).optional(),
-    failOn: external_exports.enum(["none", "error", "regression", "any"]).optional().describe("Default regression")
-  },
-  async ({ paths, baseline, root, rules, excludes, testPaths, failOn }) => {
-    try {
-      const result = runScan({
-        paths,
-        baseline,
-        root,
-        rules,
-        excludes,
-        testPaths,
-        failOn: failOn ?? "regression"
-      });
-      const verdict = result.exitCode === 0 ? "PASS" : "FAIL";
-      return text(`${verdict} (exit ${result.exitCode})
+  );
+  server2.tool(
+    "quality_gate",
+    "Compare the given paths against a recorded baseline and report regressions. Existing debt is allowed, making it worse is not. A file the baseline has never seen is adopted rather than failed.",
+    {
+      paths: PATHS,
+      baseline: external_exports.string().describe("Path to the baseline, normally .github/quality/quality-baseline.json"),
+      root: ROOT,
+      rules: external_exports.array(external_exports.string()).optional(),
+      excludes: external_exports.array(external_exports.string()).optional(),
+      testPaths: external_exports.array(external_exports.string()).optional(),
+      failOn: external_exports.enum(["none", "error", "regression", "any"]).optional().describe("Default regression")
+    },
+    async ({ paths, baseline, root, rules, excludes, testPaths, failOn }) => {
+      try {
+        const result = runScan({
+          paths,
+          baseline,
+          root,
+          rules,
+          excludes,
+          testPaths,
+          failOn: failOn ?? "regression"
+        });
+        const verdict = result.exitCode === 0 ? "PASS" : "FAIL";
+        return text(`${verdict} (exit ${result.exitCode})
 
 ${JSON.stringify(result.report, null, 2)}`);
-    } catch (err) {
-      return toolError(err);
+      } catch (err) {
+        return toolError(err);
+      }
     }
-  }
-);
-server.tool(
-  "quality_skips",
-  "List .quality-skip waivers that were consumed but never acknowledged. Each one is a place where the quality gate was bypassed on purpose. The pre-commit hook refuses to commit while any remain open.",
-  {
-    root: external_exports.string().describe("Repository root")
-  },
-  async ({ root }) => {
-    try {
-      return text(formatSkips(readSkipLog(root)));
-    } catch (err) {
-      return toolError(err);
+  );
+  server2.tool(
+    "quality_skips",
+    "List .quality-skip waivers that were consumed but never acknowledged. Each one is a place where the quality gate was bypassed on purpose. The pre-commit hook refuses to commit while any remain open.",
+    {
+      root: external_exports.string().describe("Repository root")
+    },
+    async ({ root }) => {
+      try {
+        return text(formatSkips(readSkipLog(root)));
+      } catch (err) {
+        return toolError(err);
+      }
     }
-  }
-);
+  );
+  server2.tool(
+    "quality_commit_gate",
+    "Judge staged source content through the authoritative commit decision. Returns a stable JSON verdict, fingerprint, and ordered findings.",
+    {
+      root: external_exports.string().min(1).describe("Repository root"),
+      intent: external_exports.enum(["change", "refactor"]).optional().describe("Change intent. Defaults to change."),
+      target: external_exports.string().optional().describe("Repository-relative responsibility-map path required for refactor intent")
+    },
+    async ({ root, intent, target }) => {
+      if (intent === "refactor" && !target) return text("ERROR: Usage error: refactor intent requires --target");
+      try {
+        return text(renderDecision(runStagedCheck(root, { json: true, intent: intent ?? "change", target }), true));
+      } catch (err) {
+        return toolError(err);
+      }
+    }
+  );
+  return server2;
+}
+var server = createQualityGuardServer();
 var _filename = fileURLToPath2(import.meta.url);
 async function main() {
   const args = process.argv.slice(2);
@@ -22418,6 +22508,7 @@ if (isMainModule()) {
   });
 }
 export {
+  createQualityGuardServer,
   text,
   toolError
 };

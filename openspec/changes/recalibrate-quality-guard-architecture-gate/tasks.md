@@ -73,13 +73,15 @@
 <!-- covers: quality-guard/commit-gate :: Refactor intent requires structural evidence :: Local metrics improve without ownership change -->
 <!-- covers: quality-guard/commit-gate :: Refactor intent requires structural evidence :: Declared structural outcome is achieved -->
 
-- [ ] 3.5 Add committed-tree execution for CI and parity tests that feed identical local-index and committed-tree fixtures through the same decision core and compare verdicts and ordered finding identifiers.
+- [x] 3.5 Add committed-tree execution for CI and parity tests that feed identical local-index and committed-tree fixtures through the same decision core and compare verdicts and ordered finding identifiers.
+<!-- status: completed -->
 <!-- covers: quality-guard/commit-gate :: Local and CI execution agree :: Commit bypasses the local hook -->
 <!-- covers: quality-guard/commit-gate :: Local and CI execution agree :: Local and CI inputs match -->
 
 ## 4. MCP Surface
 
-- [ ] 4.1 Add `quality_commit_gate` to the MCP server with root, intent, and target inputs. Route it through the shared decision core, preserve concise text errors, and update tool-list and CLI-parity tests.
+- [x] 4.1 Add `quality_commit_gate` to the MCP server with root, intent, and target inputs. Route it through the shared decision core, preserve concise text errors, and update tool-list and CLI-parity tests.
+<!-- status: completed -->
 <!-- covers: quality-guard/mcp-tools :: Server exposes three tools :: Client lists the tools -->
 <!-- covers: quality-guard/mcp-tools :: Commit-gate tool uses the authoritative decision :: Agent checks a staged change -->
 <!-- covers: quality-guard/mcp-tools :: Commit-gate tool uses the authoritative decision :: Refactor tool call omits target -->

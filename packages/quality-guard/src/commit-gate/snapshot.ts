@@ -55,9 +55,15 @@ function changeSnapshot(root: string, source: GitSource): Snapshot {
     }
     const filePath = values[++index];
     if (code === "A") {
-      changes.push({ kind: "add", after: { path: filePath, content: objectContent(root, source.contentSpec(filePath, true)) } });
+      changes.push({
+        kind: "add",
+        after: { path: filePath, content: objectContent(root, source.contentSpec(filePath, true)) },
+      });
     } else if (code === "D") {
-      changes.push({ kind: "delete", before: { path: filePath, content: objectContent(root, source.contentSpec(filePath, false)) } });
+      changes.push({
+        kind: "delete",
+        before: { path: filePath, content: objectContent(root, source.contentSpec(filePath, false)) },
+      });
     } else {
       changes.push({
         kind: "modify",
@@ -66,7 +72,9 @@ function changeSnapshot(root: string, source: GitSource): Snapshot {
       });
     }
   }
-  changes.sort((left, right) => (left.after?.path ?? left.before?.path ?? "").localeCompare(right.after?.path ?? right.before?.path ?? ""));
+  changes.sort((left, right) =>
+    (left.after?.path ?? left.before?.path ?? "").localeCompare(right.after?.path ?? right.before?.path ?? ""),
+  );
   return {
     baseIdentity: (git(root, ["rev-parse", source.base]) as string).trim(),
     targetIdentity: (git(root, ["rev-parse", source.target]) as string).trim(),
@@ -93,8 +101,10 @@ export function readCommittedSnapshot(root: string, commit = "HEAD"): Snapshot {
   });
 }
 
-function sourcePaths(root: string, ref: "HEAD" | "index"): string[] {
-  const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", "HEAD"];
+export type TreeReference = string | "index";
+
+function sourcePaths(root: string, ref: TreeReference): string[] {
+  const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", ref];
   return (git(root, args, "buffer") as Buffer)
     .toString("utf8")
     .split("\0")
@@ -103,9 +113,9 @@ function sourcePaths(root: string, ref: "HEAD" | "index"): string[] {
 }
 
 /** Returns the complete supported-source inventory from Git objects, never the working tree. */
-export function readSourceInventory(root: string, ref: "HEAD" | "index"): SnapshotFile[] {
+export function readSourceInventory(root: string, ref: TreeReference): SnapshotFile[] {
   return sourcePaths(root, ref).map((filePath) => ({
     path: filePath,
-    content: objectContent(root, ref === "index" ? `:${filePath}` : `HEAD:${filePath}`),
+    content: objectContent(root, ref === "index" ? `:${filePath}` : `${ref}:${filePath}`),
   }));
 }

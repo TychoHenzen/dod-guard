@@ -1,11 +1,25 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
 import { test } from "node:test";
-import { parseAcknowledgeArguments, exitCodeFor, parseCheckArguments, renderDecision } from "./cli.js";
+import {
+  exitCodeFor,
+  parseAcknowledgeArguments,
+  parseCheckArguments,
+  renderDecision,
+  runCheckCommand,
+  runCommittedCheck,
+  runStagedCheck,
+} from "./cli.js";
 import type { DecisionResult } from "./types.js";
 
 const review: DecisionResult = {
   verdict: "REVIEW_REQUIRED",
-  findings: [{ id: "finding", severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" }],
+  findings: [
+    { id: "finding", severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" },
+  ],
   errors: [],
   input: { baseIdentity: "base", targetIdentity: "index", changedSourcePaths: ["src/a.ts"] },
 };
@@ -37,11 +51,72 @@ test("unsupported intent is a usage error", () => {
 });
 
 test("acknowledge requires a finding, reason, and author", () => {
-  assert.deepEqual(parseAcknowledgeArguments(["acknowledge", "--finding", "finding", "--reason", "Reviewed", "--author", "A. Reviewer"]), {
-    findingId: "finding",
-    reason: "Reviewed",
-    author: "A. Reviewer",
-  });
-  const result = parseAcknowledgeArguments(["acknowledge", "--finding", "finding", "--reason", "", "--author", "A. Reviewer"]);
+  assert.deepEqual(
+    parseAcknowledgeArguments([
+      "acknowledge",
+      "--finding",
+      "finding",
+      "--reason",
+      "Reviewed",
+      "--author",
+      "A. Reviewer",
+    ]),
+    {
+      findingId: "finding",
+      reason: "Reviewed",
+      author: "A. Reviewer",
+    },
+  );
+  const result = parseAcknowledgeArguments([
+    "acknowledge",
+    "--finding",
+    "finding",
+    "--reason",
+    "",
+    "--author",
+    "A. Reviewer",
+  ]);
   assert.equal("exitCode" in result && result.exitCode, 3);
+});
+
+function git(root: string, args: string[]): void {
+  execFileSync("git", args, { cwd: root, stdio: "ignore" });
+}
+
+function parityFixture(): string {
+  const root = mkdtempSync(path.join(tmpdir(), "quality-guard-parity-"));
+  git(root, ["init"]);
+  git(root, ["config", "user.email", "test@example.invalid"]);
+  git(root, ["config", "user.name", "Test"]);
+  mkdirSync(path.join(root, ".github", "quality"), { recursive: true });
+  writeFileSync(path.join(root, "source.ts"), "export class Existing {}\n");
+  writeFileSync(
+    path.join(root, ".github", "quality", "quality-baseline.json"),
+    '{"version":2,"profile":"default","total":0,"counts":{},"files":["source.ts"]}\n',
+  );
+  git(root, ["add", "."]);
+  git(root, ["commit", "-m", "base"]);
+  return root;
+}
+
+// covers: quality-guard/commit-gate :: Local and CI execution agree :: Local and CI inputs match
+test("runs the same decision against staged and committed fixtures", () => {
+  const root = parityFixture();
+  try {
+    writeFileSync(path.join(root, "source.ts"), "export class Existing { public added(): void {} }\n");
+    git(root, ["add", "source.ts"]);
+    const local = runStagedCheck(root, { json: true, intent: "change" });
+    git(root, ["commit", "-m", "change without hook"]);
+    const committed = runCommittedCheck(root, "HEAD", { json: true, intent: "change" });
+    const command = runCheckCommand(["check", "--committed", "HEAD"], root);
+    assert.equal(committed.verdict, local.verdict);
+    assert.deepEqual(
+      committed.findings.map((finding) => finding.id),
+      local.findings.map((finding) => finding.id),
+    );
+    assert.equal(command.exitCode, committed.verdict === "PASS" ? 0 : committed.verdict === "FAIL" ? 1 : 2);
+    assert.equal(JSON.parse(command.output).verdict, committed.verdict);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
