@@ -139,7 +139,8 @@
 
 ## 4. Browser automation, practice, and packaging
 
-- [ ] 4.1 Pin `@playwright/test` 1.55.1, add the fake-core Chromium harness, browser asset compilation, package scripts, tracked distribution files, lockfile entries, and repository gate adoption. Add `.codex-plugin/plugin.json` and the repository-local Codex marketplace entry beside the existing Claude metadata. Extend package-integrity fixtures to launch the same tracked bundle from both installed layouts and prove a fresh Codex task discovers the five tools without separate MCP registration. Run all deterministic browser scenarios against built assets on Node 18 and the CI Node version, then run the clean package build, package tests, strict Biome checks, plugin validation, package integrity, and `openspec validate --all --strict --no-interactive`.
+- [x] 4.1 Pin `@playwright/test` 1.55.1, add the fake-core Chromium harness, browser asset compilation, package scripts, tracked distribution files, lockfile entries, and repository gate adoption. Add `.codex-plugin/plugin.json` and the repository-local Codex marketplace entry beside the existing Claude metadata. Extend package-integrity fixtures to launch the same tracked bundle from both installed layouts and prove a fresh Codex task discovers the five tools without separate MCP registration. Run all deterministic browser scenarios against built assets on Node 18 and the CI Node version, then run the clean package build, package tests, strict Biome checks, plugin validation, package integrity, and `openspec validate --all --strict --no-interactive`.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-server :: Static assets and server errors have stable behavior :: Browser requests the application shell -->
   <!-- covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Fresh Codex marketplace installation lists the tools -->
 

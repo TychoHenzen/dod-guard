@@ -8,6 +8,11 @@ node_modules/
 # TypeScript compiler output (bundle.js is tracked; the git checkout is the delivery path)
 dist/*
 !dist/bundle.js
+!dist/browser/
+dist/browser/*
+!dist/browser/index.html
+!dist/browser/client.js
+!dist/browser/style.css
 
 # Logs
 *.log

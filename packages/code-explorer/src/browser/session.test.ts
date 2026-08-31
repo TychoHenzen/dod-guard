@@ -7,11 +7,25 @@ function harness(type: string, lockAvailable = true, prefix = "id") {
   const storage: Stored = {};
   const requests: Array<{ body: Record<string, unknown>; headers: Record<string, string> }> = [];
   const client = new BrowserSessionClient({
-    storage: { get: (key) => storage[key] ?? null, set: (key, value) => { storage[key] = value; }, clear: () => { for (const key of Object.keys(storage)) delete storage[key]; } },
+    storage: {
+      get: (key) => storage[key] ?? null,
+      set: (key, value) => {
+        storage[key] = value;
+      },
+      clear: () => {
+        for (const key of Object.keys(storage)) delete storage[key];
+      },
+    },
     navigationType: () => type,
     lock: async (_name, action) => action(lockAvailable),
-    randomId: (() => { let id = 0; return () => `${prefix}-${++id}`; })(),
-    request: async (body, headers) => { requests.push({ body, headers }); return { state: "created", data: { browser_session_id: `${prefix}-server` } }; },
+    randomId: (() => {
+      let id = 0;
+      return () => `${prefix}-${++id}`;
+    })(),
+    request: async (body, headers) => {
+      requests.push({ body, headers });
+      return { state: "created", data: { browser_session_id: `${prefix}-server` } };
+    },
   });
   return { client, storage, requests };
 }
@@ -20,7 +34,8 @@ describe("browser tab session", () => {
   // covers: code-explorer/browser-server :: Each browser tab owns one isolated session :: Tab reloads during a live session
   it("restores only a reload with a prior tab session", async () => {
     const { client, storage, requests } = harness("reload");
-    storage.browser_session_id = "old"; storage.tab_instance_id = "tab";
+    storage.browser_session_id = "old";
+    storage.tab_instance_id = "tab";
     await client.start();
     assert.deepEqual(requests[0]?.body, { action: "restore", tab_instance_id: "tab", document_start: "reload" });
   });
@@ -29,7 +44,8 @@ describe("browser tab session", () => {
   // covers: code-explorer/browser-server :: Each browser tab owns one isolated session :: Duplicated tab presents copied storage
   it("rotates copied identifiers for a navigation document", async () => {
     const { client, storage, requests } = harness("navigate");
-    storage.browser_session_id = "copied"; storage.tab_instance_id = "copied-tab";
+    storage.browser_session_id = "copied";
+    storage.tab_instance_id = "copied-tab";
     await client.start();
     assert.equal(requests[0]?.body.action, "create");
     assert.notEqual(requests[0]?.body.tab_instance_id, "copied-tab");
@@ -48,7 +64,8 @@ describe("browser tab session", () => {
   // covers: code-explorer/browser-server :: Each browser tab owns one isolated session :: Tab presents another session identifier
   it("sends ownership headers from one stored pair only", async () => {
     const { client, storage, requests } = harness("reload");
-    storage.browser_session_id = "owned"; storage.tab_instance_id = "owned-tab";
+    storage.browser_session_id = "owned";
+    storage.tab_instance_id = "owned-tab";
     await client.start();
     assert.deepEqual(requests[0]?.headers, { "x-code-explorer-session": "owned", "x-code-explorer-tab": "owned-tab" });
   });
@@ -56,7 +73,8 @@ describe("browser tab session", () => {
   // covers: code-explorer/browser-server :: Each browser tab owns one isolated session :: Duplicated tab presents copied storage
   it("rotates a reload that loses the old tab lock race", async () => {
     const { client, storage, requests } = harness("reload", false);
-    storage.browser_session_id = "old"; storage.tab_instance_id = "old-tab";
+    storage.browser_session_id = "old";
+    storage.tab_instance_id = "old-tab";
     const result = await client.start();
     assert.equal(result.state, "browser_session_replaced");
     assert.equal(requests[0]?.body.action, "create");
@@ -77,7 +95,8 @@ describe("browser tab session", () => {
   // covers: code-explorer/browser-server :: Idle browser sessions expire predictably :: Page recovers from expiry
   it("replaces expired state with a new empty session", async () => {
     const { client, storage, requests } = harness("reload");
-    storage.browser_session_id = "old"; storage.tab_instance_id = "tab";
+    storage.browser_session_id = "old";
+    storage.tab_instance_id = "tab";
     await client.start();
     await client.recoverExpired();
     assert.equal(requests[1]?.body.action, "create");
@@ -96,7 +115,8 @@ describe("browser tab session", () => {
   // covers: code-explorer/browser-server :: Idle browser sessions expire predictably :: Session is idle for 30 minutes
   it("clears the previous identifiers before an expiry recovery creates a replacement", async () => {
     const { client, storage, requests } = harness("reload");
-    storage.browser_session_id = "expired"; storage.tab_instance_id = "expired-tab";
+    storage.browser_session_id = "expired";
+    storage.tab_instance_id = "expired-tab";
     await client.recoverExpired();
     assert.equal(requests[0]?.body.action, "create");
     assert.notEqual(storage.browser_session_id, "expired");

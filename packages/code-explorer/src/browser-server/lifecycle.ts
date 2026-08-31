@@ -1,10 +1,10 @@
 import { spawn } from "node:child_process";
-import path from "node:path";
 import { createServer, type Server } from "node:http";
 import type { Socket } from "node:net";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "../semantic/project-root.js";
-import { BrowserHttpRouter, type BrowserCoreReply } from "./http-router.js";
+import { type BrowserCoreReply, BrowserHttpRouter } from "./http-router.js";
 
 export type BrowserServerErrorCode = "invalid_request" | "invalid_project_root" | "browser_port_unavailable";
 
@@ -131,30 +131,40 @@ export const nativePortBinder: PortBinder = {
     if (signal.aborted) throw new Error("aborted");
     const sockets = new Set<Socket>();
     let admitting = true;
+    const router = new BrowserHttpRouter({
+      origin: `http://${host}:${port}`,
+      assetRoot: path.join(path.dirname(fileURLToPath(import.meta.url)), "browser"),
+      call:
+        core?.call ??
+        (async () => ({
+          schema_version: 1,
+          code: "workspace_unavailable",
+          message: "workspace_unavailable",
+          retryable: true,
+        })),
+    });
     const server: Server = createServer({ maxHeaderSize: 16 * 1024 }, (request, response) => {
       if (!admitting) {
         response.destroy();
         return;
       }
-      const origin = `http://${host}:${port}`;
-      const router = new BrowserHttpRouter({
-        origin,
-        assetRoot: path.join(path.dirname(fileURLToPath(import.meta.url)), "browser"),
-        call: core?.call ?? (async () => ({ schema_version: 1, code: "workspace_unavailable", message: "workspace_unavailable", retryable: true })),
-      });
       const chunks: Buffer[] = [];
       request.on("data", (chunk: Buffer) => chunks.push(chunk));
       request.on("end", () => {
-        void router.handle({
-          method: request.method ?? "GET",
-          path: request.url ?? "/",
-          headers: Object.fromEntries(Object.entries(request.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])),
-          body: Buffer.concat(chunks),
-        }).then((result) => {
-          response.statusCode = result.status;
-          for (const [key, value] of Object.entries(result.headers)) response.setHeader(key, value);
-          response.end(result.body);
-        });
+        void router
+          .handle({
+            method: request.method ?? "GET",
+            path: request.url ?? "/",
+            headers: Object.fromEntries(
+              Object.entries(request.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
+            ),
+            body: Buffer.concat(chunks),
+          })
+          .then((result) => {
+            response.statusCode = result.status;
+            for (const [key, value] of Object.entries(result.headers)) response.setHeader(key, value);
+            response.end(result.body);
+          });
       });
     });
     server.headersTimeout = 5_000;
@@ -167,18 +177,31 @@ export const nativePortBinder: PortBinder = {
     await new Promise<void>((resolve, reject) => {
       const onAbort = () => reject(new Error("aborted"));
       signal.addEventListener("abort", onAbort, { once: true });
-      server.once("error", (error) => { signal.removeEventListener("abort", onAbort); reject(error); });
-      server.listen(port, host, () => { signal.removeEventListener("abort", onAbort); resolve(); });
+      server.once("error", (error) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      });
+      server.listen(port, host, () => {
+        signal.removeEventListener("abort", onAbort);
+        resolve();
+      });
     });
     return {
       address: new URL(`http://${host}:${port}/`),
-      stopAdmission: () => { admitting = false; },
+      stopAdmission: () => {
+        admitting = false;
+      },
       close: async (closeSignal) => {
         if (!server.listening) return;
         await new Promise<void>((resolve) => {
-          const force = () => { for (const socket of sockets) socket.destroy(); };
+          const force = () => {
+            for (const socket of sockets) socket.destroy();
+          };
           closeSignal.addEventListener("abort", force, { once: true });
-          server.close(() => { closeSignal.removeEventListener("abort", force); resolve(); });
+          server.close(() => {
+            closeSignal.removeEventListener("abort", force);
+            resolve();
+          });
         });
       },
     };
@@ -188,15 +211,29 @@ export const nativePortBinder: PortBinder = {
 export const nativeBrowserOpener: BrowserOpener = {
   async open(url, signal) {
     const href = url.href;
-    const command = process.platform === "win32" ? "cmd.exe" : process.platform === "darwin" ? "/usr/bin/open" : process.platform === "linux" ? "xdg-open" : undefined;
+    const command =
+      process.platform === "win32"
+        ? "cmd.exe"
+        : process.platform === "darwin"
+          ? "/usr/bin/open"
+          : process.platform === "linux"
+            ? "xdg-open"
+            : undefined;
     if (!command) throw new Error("unsupported platform");
     const arguments_ = process.platform === "win32" ? ["/d", "/s", "/c", "start", "", href] : [href];
     await new Promise<void>((resolve, reject) => {
       const child = spawn(command, arguments_, { detached: true, stdio: "ignore", windowsHide: true });
       const onAbort = () => reject(new Error("aborted"));
       signal.addEventListener("abort", onAbort, { once: true });
-      child.once("error", (error) => { signal.removeEventListener("abort", onAbort); reject(error); });
-      child.once("spawn", () => { signal.removeEventListener("abort", onAbort); child.unref(); resolve(); });
+      child.once("error", (error) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      });
+      child.once("spawn", () => {
+        signal.removeEventListener("abort", onAbort);
+        child.unref();
+        resolve();
+      });
     });
   },
 };

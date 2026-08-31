@@ -7,6 +7,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import {
+  BrowserServerError,
+  type ExplorerCoreFactory,
+  nativeBrowserOpener,
+  nativePortBinder,
+  parseServeArguments,
+  startBrowserServer,
+} from "./browser-server/lifecycle.js";
 import { type LandmarkDiscovery, landmarksNotReady } from "./discovery/landmarks.js";
 import { normalizeDiscoveryQuery } from "./discovery/matcher.js";
 import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
@@ -34,14 +42,6 @@ import type { LanguageAdapter } from "./semantic/language-adapter.js";
 import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "./semantic/project-root.js";
 import { RootAccessGate } from "./semantic/root-access.js";
 import { createStartedRuntimeAdapters } from "./semantic/runtime-bootstrap.js";
-import {
-  BrowserServerError,
-  nativeBrowserOpener,
-  nativePortBinder,
-  parseServeArguments,
-  startBrowserServer,
-  type ExplorerCoreFactory,
-} from "./browser-server/lifecycle.js";
 
 const filename = fileURLToPath(import.meta.url);
 const packagePath = path.join(path.dirname(filename), "..", "package.json");
@@ -675,14 +675,16 @@ async function collectFocusedSymbol(adapters: readonly LanguageAdapter[], symbol
   const replies = await Promise.allSettled(
     adapters.map((adapter) => run(() => adapter.request({ operation: "focus", symbol_id: symbolId }))),
   );
-  throwBackendLimitFailure(replies);
-  return replies.find(
+  const focused = replies.find(
     (
       reply,
     ): reply is PromiseFulfilledResult<
       Extract<Awaited<ReturnType<LanguageAdapter["request"]>>, { operation: "focus" }>
     > => reply.status === "fulfilled" && reply.value.operation === "focus",
   )?.value;
+  if (focused) return focused;
+  throwBackendLimitFailure(replies);
+  return undefined;
 }
 
 type FollowCandidate = {

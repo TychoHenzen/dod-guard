@@ -132,12 +132,13 @@ async function main(argv) {
     return 3;
   }
   const expectedVersion = JSON.parse(readFileSync(join(ROOT, "packages", pkgName, "package.json"), "utf8")).version;
+  let directResult;
   try {
-    const result = await handshake(bundle, pkgName, expectedVersion);
+    directResult = await handshake(bundle, pkgName, expectedVersion);
     process.stdout.write(
-      `smoke OK — ${result.serverName} v${result.version} answered initialize and listed ${result.tools.length} tools\n`,
+      `smoke OK — ${directResult.serverName} v${directResult.version} answered initialize and listed ${directResult.tools.length} tools\n`,
     );
-    process.stdout.write(`  tools: ${result.tools.join(", ")}\n`);
+    process.stdout.write(`  tools: ${directResult.tools.join(", ")}\n`);
   } catch (err) {
     process.stdout.write(`smoke FAILED for ${pkgName}\n  ${err.message}\n`);
     return 1;
@@ -152,6 +153,31 @@ async function main(argv) {
       process.stdout.write(`smoke FAILED for ${pkgName} via symlink path\n  ${err.message}\n`);
       return 1;
     }
+  }
+
+  if (pkgName === "code-explorer") {
+    const codexManifest = JSON.parse(
+      readFileSync(join(ROOT, "packages", pkgName, ".codex-plugin", "plugin.json"), "utf8"),
+    );
+    const configured = codexManifest.mcpServers?.[pkgName];
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal Codex install template
+    const expected = "${CODEX_PLUGIN_ROOT}/dist/bundle.js";
+    if (configured?.command !== "node" || configured.args?.[0] !== expected) {
+      process.stdout.write(
+        "smoke FAILED for code-explorer Codex manifest\n  Codex manifest does not launch the tracked bundle\n",
+      );
+      return 1;
+    }
+    const expectedTools = ["code_search", "code_focus", "code_follow", "code_history", "code_status"];
+    if (JSON.stringify(directResult.tools) !== JSON.stringify(expectedTools)) {
+      process.stdout.write(
+        `smoke FAILED for code-explorer Codex manifest\n  fresh task listed ${JSON.stringify(directResult.tools)}\n`,
+      );
+      return 1;
+    }
+    process.stdout.write(
+      "  Codex marketplace manifest OK: fresh task resolves the tracked bundle and five MCP tools\n",
+    );
   }
 
   return 0;

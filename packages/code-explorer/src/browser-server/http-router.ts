@@ -1,5 +1,5 @@
-import { readFile, realpath } from "node:fs/promises";
 import { statSync } from "node:fs";
+import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 
 export type BrowserCoreReply = Record<string, unknown>;
@@ -18,7 +18,8 @@ type BrowserSession = { coreSessionId: string; tabId: string; lastAcceptedAt: nu
 const maxBodyBytes = 64 * 1024;
 const maxResponseBytes = 1024 * 1024;
 const idleMilliseconds = 30 * 60 * 1000;
-const csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'";
+const csp =
+  "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'";
 const routes: Record<string, string> = {
   "/api/search": "code_search",
   "/api/focus": "code_focus",
@@ -61,19 +62,34 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function exactKeys(body: Record<string, unknown>, required: readonly string[], optional: readonly string[] = []): boolean {
-  return required.every((key) => key in body) && Object.keys(body).every((key) => required.includes(key) || optional.includes(key));
+function exactKeys(
+  body: Record<string, unknown>,
+  required: readonly string[],
+  optional: readonly string[] = [],
+): boolean {
+  return (
+    required.every((key) => key in body) &&
+    Object.keys(body).every((key) => required.includes(key) || optional.includes(key))
+  );
 }
 
 function validBody(route: string, body: Record<string, unknown>): boolean {
   if (route === "/api/session") {
-    return typeof body.tab_instance_id === "string" &&
-      ((body.action === "create" && body.document_start === "new" && exactKeys(body, ["action", "tab_instance_id", "document_start"])) ||
-        (body.action === "restore" && body.document_start === "reload" && exactKeys(body, ["action", "tab_instance_id", "document_start"])));
+    return (
+      typeof body.tab_instance_id === "string" &&
+      ((body.action === "create" &&
+        body.document_start === "new" &&
+        exactKeys(body, ["action", "tab_instance_id", "document_start"])) ||
+        (body.action === "restore" &&
+          body.document_start === "reload" &&
+          exactKeys(body, ["action", "tab_instance_id", "document_start"])))
+    );
   }
   if (route === "/api/status") {
-    return (body.action === "status" && exactKeys(body, ["action"])) ||
-      (body.action === "refresh" && typeof body.request_id === "string" && exactKeys(body, ["action", "request_id"]));
+    return (
+      (body.action === "status" && exactKeys(body, ["action"])) ||
+      (body.action === "refresh" && typeof body.request_id === "string" && exactKeys(body, ["action", "request_id"]))
+    );
   }
   const required: Record<string, readonly string[]> = {
     "/api/search": ["request_id", "query"],
@@ -97,14 +113,16 @@ export class BrowserHttpRouter {
   private readonly now: () => number;
   private active = 0;
 
-  constructor(private readonly options: {
-    origin: string;
-    call: BrowserCoreCall;
-    maxSessions?: number;
-    maxInFlight?: number;
-    clock?: MonotonicClock;
-    assetRoot?: string;
-  }) {
+  constructor(
+    private readonly options: {
+      origin: string;
+      call: BrowserCoreCall;
+      maxSessions?: number;
+      maxInFlight?: number;
+      clock?: MonotonicClock;
+      assetRoot?: string;
+    },
+  ) {
     this.maxSessions = options.maxSessions ?? 8;
     this.maxInFlight = options.maxInFlight ?? 8;
     this.now = () => options.clock?.nowMilliseconds() ?? performance.now();
@@ -128,11 +146,16 @@ export class BrowserHttpRouter {
         return json(400, browserError("invalid_request"));
       if (request.body.byteLength > maxBodyBytes) return json(413, browserError("resource_limit"));
       let body: unknown;
-      try { body = JSON.parse(request.body.toString("utf8")); } catch { return json(400, browserError("invalid_request")); }
-      if (!isRecord(body) || !validBody(request.path, body)) return json(400, browserError("invalid_request"));
-      const response = request.path === "/api/session"
-        ? await this.session(body, request.headers)
-        : await this.navigation(request.path, body, request.headers);
+      try {
+        body = JSON.parse(request.body.toString("utf8"));
+      } catch {
+        return json(400, browserError("invalid_request"));
+      }
+      if (!(isRecord(body) && validBody(request.path, body))) return json(400, browserError("invalid_request"));
+      const response =
+        request.path === "/api/session"
+          ? await this.session(body, request.headers)
+          : await this.navigation(request.path, body, request.headers);
       const encoded = Buffer.byteLength(response.body);
       return encoded > maxResponseBytes ? json(413, browserError("resource_limit")) : response;
     } finally {
@@ -140,7 +163,10 @@ export class BrowserHttpRouter {
     }
   }
 
-  private async session(body: Record<string, unknown>, headers: Record<string, string | undefined>): Promise<BrowserHttpResponse> {
+  private async session(
+    body: Record<string, unknown>,
+    headers: Record<string, string | undefined>,
+  ): Promise<BrowserHttpResponse> {
     const tabId = body.tab_instance_id as string;
     if (headers["x-code-explorer-tab"] !== tabId) return json(403, browserError("invalid_browser_session"));
     if (body.action === "create") {
@@ -156,20 +182,39 @@ export class BrowserHttpRouter {
     }
     const browserSessionId = headers["x-code-explorer-session"];
     const session = browserSessionId ? this.sessions.get(browserSessionId) : undefined;
-    if (!browserSessionId || !session || session.tabId !== tabId) return json(403, browserError("invalid_browser_session"));
+    if (!(browserSessionId && session) || session.tabId !== tabId)
+      return json(403, browserError("invalid_browser_session"));
     const expired = this.accept(browserSessionId, session);
     if (expired) return expired;
-    return json(200, { schema_version: 1, project_id: "project", project_generation: 0, pending_generation: null, state: "restored", data: {} });
+    return json(200, {
+      schema_version: 1,
+      project_id: "project",
+      project_generation: 0,
+      pending_generation: null,
+      state: "restored",
+      data: {},
+    });
   }
 
-  private async navigation(route: string, body: Record<string, unknown>, headers: Record<string, string | undefined>): Promise<BrowserHttpResponse> {
+  private async navigation(
+    route: string,
+    body: Record<string, unknown>,
+    headers: Record<string, string | undefined>,
+  ): Promise<BrowserHttpResponse> {
     const browserSessionId = headers["x-code-explorer-session"];
     const tabId = headers["x-code-explorer-tab"];
     const session = browserSessionId ? this.sessions.get(browserSessionId) : undefined;
-    if (!browserSessionId || !session || session.tabId !== tabId) return json(403, browserError("invalid_browser_session"));
+    if (!(browserSessionId && session) || session.tabId !== tabId)
+      return json(403, browserError("invalid_browser_session"));
     const expired = this.accept(browserSessionId, session);
     if (expired) return expired;
-    const reply = await this.options.call(routes[route], { ...body, session_id: session.coreSessionId });
+    const coreArguments =
+      route === "/api/search"
+        ? Object.fromEntries(Object.entries(body).filter(([key]) => key !== "request_id"))
+        : route === "/api/status" && body.action === "status"
+          ? body
+          : { ...body, session_id: session.coreSessionId };
+    const reply = await this.options.call(routes[route], coreArguments);
     return json("code" in reply ? errorStatus(String(reply.code)) : 200, reply);
   }
 
@@ -184,20 +229,59 @@ export class BrowserHttpRouter {
 
   private async asset(request: BrowserHttpRequest): Promise<BrowserHttpResponse> {
     if (request.method !== "GET" && request.method !== "HEAD") return json(405, browserError("method_not_allowed"));
-    if (!this.options.assetRoot || request.path.includes("%") || request.path.includes("..") || request.path.includes("\\"))
-      return { status: 404, headers: { "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer", "content-security-policy": csp }, body: "" };
+    if (
+      !this.options.assetRoot ||
+      request.path.includes("%") ||
+      request.path.includes("..") ||
+      request.path.includes("\\")
+    )
+      return {
+        status: 404,
+        headers: {
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "no-referrer",
+          "content-security-policy": csp,
+        },
+        body: "",
+      };
     const relative = request.path === "/" ? "index.html" : request.path.slice(1);
-    if (!relative || path.isAbsolute(relative) || relative.split("/").includes("..")) return { status: 404, headers: {}, body: "" };
+    if (!relative || path.isAbsolute(relative) || relative.split("/").includes(".."))
+      return { status: 404, headers: {}, body: "" };
     try {
       const root = await realpath(this.options.assetRoot);
       const candidate = path.join(root, relative);
       const actual = await realpath(candidate);
-      if (!actual.startsWith(`${root}${path.sep}`) && actual !== root || !statSync(actual).isFile()) throw new Error("missing");
+      if ((!actual.startsWith(`${root}${path.sep}`) && actual !== root) || !statSync(actual).isFile())
+        throw new Error("missing");
       const content = request.method === "HEAD" ? "" : await readFile(actual, "utf8");
-      const type = actual.endsWith(".html") ? "text/html; charset=utf-8" : actual.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/css; charset=utf-8";
-      return { status: 200, headers: { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer", "content-security-policy": csp }, body: content };
+      const type = actual.endsWith(".html")
+        ? "text/html; charset=utf-8"
+        : actual.endsWith(".js")
+          ? "text/javascript; charset=utf-8"
+          : "text/css; charset=utf-8";
+      return {
+        status: 200,
+        headers: {
+          "content-type": type,
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "no-referrer",
+          "content-security-policy": csp,
+        },
+        body: content,
+      };
     } catch {
-      return { status: 404, headers: { "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer", "content-security-policy": csp }, body: "" };
+      return {
+        status: 404,
+        headers: {
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "no-referrer",
+          "content-security-policy": csp,
+        },
+        body: "",
+      };
     }
   }
 }

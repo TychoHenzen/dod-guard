@@ -21156,154 +21156,11 @@ var StdioServerTransport = class {
   }
 };
 
-// src/discovery/landmarks.ts
-function landmarksNotReady() {
-  return { state: "landmarks_not_ready", landmarks: [] };
-}
-
-// src/discovery/matcher.ts
-function matchDiscoveryCandidates(query, candidates) {
-  const normalizedQuery = normalizeDiscoveryQuery(query);
-  if (normalizedQuery.length === 0) return [];
-  return candidates.map((candidate) => matchCandidate(normalizedQuery, candidate)).filter((candidate) => candidate !== void 0).sort(compareMatches);
-}
-function normalizeDiscoveryQuery(value) {
-  return normalizeValue(value).trim();
-}
-function matchCandidate(query, candidate) {
-  const normalized = normalizeCandidate(candidate);
-  if (normalized === void 0) return void 0;
-  const evidence = normalized.values.map((value) => classify(query, value)).filter((match) => match !== void 0).sort(compareEvidence)[0];
-  return evidence === void 0 ? void 0 : { ...normalized.candidate, ...evidence };
-}
-function normalizeCandidate(candidate) {
-  const path5 = normalizeProjectPath(candidate.path);
-  if (path5 === void 0) return void 0;
-  if (candidate.type === "symbol")
-    return { candidate: { ...candidate, path: path5 }, values: [normalizeValue(candidate.name)] };
-  const filename2 = path5.split("/").at(-1) ?? path5;
-  const stem = filename2.replace(/\.[^.]+$/, "");
-  return { candidate: { ...candidate, path: path5 }, values: [.../* @__PURE__ */ new Set([normalizeValue(filename2), normalizeValue(stem)])] };
-}
-function classify(query, candidate) {
-  if (candidate === query) return { match_class: "exact", match_score: 100 };
-  const matchScore = similarity(query, candidate);
-  if (candidate.startsWith(query)) return { match_class: "prefix", match_score: Math.round(matchScore) };
-  return matchScore >= 60 ? { match_class: "fuzzy", match_score: Math.round(matchScore) } : void 0;
-}
-function normalizeValue(value) {
-  return value.normalize("NFKC").toLowerCase();
-}
-function normalizeProjectPath(path5) {
-  const portable = path5.replace(/\\/g, "/");
-  const firstSegment = portable.split("/", 1)[0];
-  if (portable.length === 0 || portable.startsWith("/") || portable.startsWith("//") || /^[A-Za-z]:($|\/)/.test(portable) || firstSegment?.includes(":")) {
-    return void 0;
-  }
-  const parts = [];
-  for (const part of portable.split("/")) {
-    if (part.length === 0 || part === ".") continue;
-    if (part === "..") return void 0;
-    parts.push(part);
-  }
-  return parts.length === 0 ? void 0 : parts.join("/");
-}
-function similarity(left, right) {
-  const maximum = Math.max(codePoints(left).length, codePoints(right).length);
-  if (maximum === 0) return 100;
-  return (maximum - damerauLevenshtein(left, right)) / maximum * 100;
-}
-function damerauLevenshtein(left, right) {
-  const source = codePoints(left);
-  const target = codePoints(right);
-  const infinity = source.length + target.length;
-  const matrix = Array.from({ length: source.length + 2 }, () => Array(target.length + 2).fill(0));
-  setMatrixCell(matrix, 0, 0, infinity);
-  for (let row = 0; row <= source.length; row++) {
-    setMatrixCell(matrix, row + 1, 0, infinity);
-    setMatrixCell(matrix, row + 1, 1, row);
-  }
-  for (let column = 0; column <= target.length; column++) {
-    setMatrixCell(matrix, 0, column + 1, infinity);
-    setMatrixCell(matrix, 1, column + 1, column);
-  }
-  const lastSeen = /* @__PURE__ */ new Map();
-  for (let row = 1; row <= source.length; row++) {
-    let lastMatchingColumn = 0;
-    for (let column = 1; column <= target.length; column++) {
-      const targetCharacter = target[column - 1];
-      const sourceCharacter2 = source[row - 1];
-      if (targetCharacter === void 0 || sourceCharacter2 === void 0)
-        throw new Error("invalid Damerau-Levenshtein index");
-      const sourceMatchRow = lastSeen.get(targetCharacter) ?? 0;
-      const targetMatchColumn = lastMatchingColumn;
-      const cost = sourceCharacter2 === targetCharacter ? 0 : 1;
-      if (cost === 0) lastMatchingColumn = column;
-      setMatrixCell(
-        matrix,
-        row + 1,
-        column + 1,
-        Math.min(
-          matrixCell(matrix, row, column) + cost,
-          matrixCell(matrix, row + 1, column) + 1,
-          matrixCell(matrix, row, column + 1) + 1,
-          matrixCell(matrix, sourceMatchRow, targetMatchColumn) + (row - sourceMatchRow - 1) + 1 + (column - targetMatchColumn - 1)
-        )
-      );
-    }
-    const sourceCharacter = source[row - 1];
-    if (sourceCharacter === void 0) throw new Error("invalid Damerau-Levenshtein index");
-    lastSeen.set(sourceCharacter, row);
-  }
-  return matrixCell(matrix, source.length + 1, target.length + 1);
-}
-function matrixCell(matrix, row, column) {
-  const value = matrix[row]?.[column];
-  if (value === void 0) throw new Error("invalid Damerau-Levenshtein matrix index");
-  return value;
-}
-function setMatrixCell(matrix, row, column, value) {
-  const target = matrix[row];
-  if (target === void 0) throw new Error("invalid Damerau-Levenshtein matrix index");
-  target[column] = value;
-}
-function codePoints(value) {
-  return Array.from(value);
-}
-function compareMatches(left, right) {
-  return classOrder(left.match_class) - classOrder(right.match_class) || right.match_score - left.match_score || compareText(left.path, right.path) || compareText(left.type === "symbol" ? left.kind : "", right.type === "symbol" ? right.kind : "") || compareText(left.identity, right.identity) || compareCodePoints(left.path, right.path) || compareCodePoints(left.type === "symbol" ? left.kind : "", right.type === "symbol" ? right.kind : "") || compareCodePoints(left.identity, right.identity);
-}
-function compareEvidence(left, right) {
-  return classOrder(left.match_class) - classOrder(right.match_class) || right.match_score - left.match_score;
-}
-function compareText(left, right) {
-  return normalizeValue(left) < normalizeValue(right) ? -1 : normalizeValue(left) > normalizeValue(right) ? 1 : 0;
-}
-function compareCodePoints(left, right) {
-  const leftPoints = codePoints(left);
-  const rightPoints = codePoints(right);
-  const commonLength = Math.min(leftPoints.length, rightPoints.length);
-  for (let index = 0; index < commonLength; index++) {
-    const leftPoint = leftPoints[index];
-    const rightPoint = rightPoints[index];
-    if (leftPoint === void 0 || rightPoint === void 0) throw new Error("invalid code point comparison index");
-    const leftValue = leftPoint.codePointAt(0);
-    const rightValue = rightPoint.codePointAt(0);
-    if (leftValue === void 0 || rightValue === void 0) throw new Error("invalid code point comparison value");
-    const difference = leftValue - rightValue;
-    if (difference !== 0) return difference;
-  }
-  return leftPoints.length - rightPoints.length;
-}
-function classOrder(matchClass) {
-  if (matchClass === "exact") return 0;
-  if (matchClass === "prefix") return 1;
-  return 2;
-}
-
-// src/discovery/pipeline.ts
-import { lstatSync as lstatSync2, readdirSync as readdirSync3 } from "node:fs";
-import { join as join3 } from "node:path";
+// src/browser-server/lifecycle.ts
+import { spawn } from "node:child_process";
+import { createServer } from "node:http";
+import path3 from "node:path";
+import { fileURLToPath } from "node:url";
 
 // src/semantic/project-root.ts
 import { closeSync, constants, fstatSync, openSync, readFileSync, realpathSync, statSync } from "node:fs";
@@ -21501,6 +21358,550 @@ function isRelativeProjectPath(value, pathApi) {
   return value.length > 0 && !pathApi.isAbsolute(value) && !value.split(/[\\/]/).includes("..");
 }
 
+// src/browser-server/http-router.ts
+import { statSync as statSync2 } from "node:fs";
+import { readFile, realpath } from "node:fs/promises";
+import path2 from "node:path";
+var maxBodyBytes = 64 * 1024;
+var maxResponseBytes = 1024 * 1024;
+var idleMilliseconds = 30 * 60 * 1e3;
+var csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'";
+var routes = {
+  "/api/search": "code_search",
+  "/api/focus": "code_focus",
+  "/api/follow": "code_follow",
+  "/api/history": "code_history",
+  "/api/status": "code_status"
+};
+function browserError(code, retryable = false) {
+  return { schema_version: 1, code, message: code, retryable };
+}
+function errorStatus(code) {
+  if (code === "invalid_browser_origin" || code === "invalid_browser_session") return 403;
+  if (code === "route_not_found") return 404;
+  if (code === "method_not_allowed") return 405;
+  if (code === "browser_session_expired") return 410;
+  if (code === "resource_limit") return 413;
+  if (code === "project_capacity" || code === "http_capacity") return 429;
+  if (code === "workspace_unavailable" || code.startsWith("backend_")) return 503;
+  return 400;
+}
+function json(status, payload) {
+  const body = JSON.stringify(payload);
+  return {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+      "content-security-policy": csp
+    },
+    body
+  };
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function exactKeys(body, required2, optional2 = []) {
+  return required2.every((key) => key in body) && Object.keys(body).every((key) => required2.includes(key) || optional2.includes(key));
+}
+function validBody(route, body) {
+  if (route === "/api/session") {
+    return typeof body.tab_instance_id === "string" && (body.action === "create" && body.document_start === "new" && exactKeys(body, ["action", "tab_instance_id", "document_start"]) || body.action === "restore" && body.document_start === "reload" && exactKeys(body, ["action", "tab_instance_id", "document_start"]));
+  }
+  if (route === "/api/status") {
+    return body.action === "status" && exactKeys(body, ["action"]) || body.action === "refresh" && typeof body.request_id === "string" && exactKeys(body, ["action", "request_id"]);
+  }
+  const required2 = {
+    "/api/search": ["request_id", "query"],
+    "/api/focus": ["request_id", "symbol_id"],
+    "/api/follow": ["request_id", "view_id", "handle", "relation"],
+    "/api/history": ["request_id", "action"]
+  };
+  const optional2 = {
+    "/api/search": ["path_globs", "languages", "kinds", "content", "include_generated", "limit"],
+    "/api/focus": ["body_limit_bytes"],
+    "/api/follow": ["limit"],
+    "/api/history": ["limit"]
+  };
+  return required2[route] !== void 0 && exactKeys(body, required2[route], optional2[route]);
+}
+var BrowserHttpRouter = class {
+  constructor(options) {
+    this.options = options;
+    this.maxSessions = options.maxSessions ?? 8;
+    this.maxInFlight = options.maxInFlight ?? 8;
+    this.now = () => options.clock?.nowMilliseconds() ?? performance.now();
+  }
+  options;
+  sessions = /* @__PURE__ */ new Map();
+  maxSessions;
+  maxInFlight;
+  now;
+  active = 0;
+  async handle(request) {
+    const authority = new URL(this.options.origin).host;
+    if (request.headers.host !== authority) return json(403, browserError("invalid_browser_origin"));
+    if (request.path.startsWith("/api/") && request.headers.origin !== this.options.origin)
+      return json(403, browserError("invalid_browser_origin"));
+    if (request.method === "OPTIONS") return json(405, browserError("method_not_allowed"));
+    if (request.method === "GET" || request.method === "HEAD") return this.asset(request);
+    if (request.method !== "POST") return json(405, browserError("method_not_allowed"));
+    if (request.path === "/") return json(400, browserError("invalid_request"));
+    if (!(request.path in routes) && request.path !== "/api/session") return json(404, browserError("route_not_found"));
+    if (this.active >= this.maxInFlight) return json(429, browserError("http_capacity", true));
+    this.active += 1;
+    try {
+      if (request.headers["content-encoding"] || request.headers["content-type"] !== "application/json")
+        return json(400, browserError("invalid_request"));
+      if (request.body.byteLength > maxBodyBytes) return json(413, browserError("resource_limit"));
+      let body;
+      try {
+        body = JSON.parse(request.body.toString("utf8"));
+      } catch {
+        return json(400, browserError("invalid_request"));
+      }
+      if (!(isRecord(body) && validBody(request.path, body))) return json(400, browserError("invalid_request"));
+      const response = request.path === "/api/session" ? await this.session(body, request.headers) : await this.navigation(request.path, body, request.headers);
+      const encoded = Buffer.byteLength(response.body);
+      return encoded > maxResponseBytes ? json(413, browserError("resource_limit")) : response;
+    } finally {
+      this.active -= 1;
+    }
+  }
+  async session(body, headers) {
+    const tabId = body.tab_instance_id;
+    if (headers["x-code-explorer-tab"] !== tabId) return json(403, browserError("invalid_browser_session"));
+    if (body.action === "create") {
+      if (headers["x-code-explorer-session"] || this.sessions.size >= this.maxSessions)
+        return json(429, browserError("project_capacity", true));
+      const reply = await this.options.call("code_status", { action: "start_session" });
+      if ("code" in reply) return json(errorStatus(String(reply.code)), reply);
+      const coreSessionId = reply.data?.session_id;
+      if (typeof coreSessionId !== "string") return json(500, browserError("internal_error"));
+      const browserSessionId2 = crypto.randomUUID();
+      this.sessions.set(browserSessionId2, { coreSessionId, tabId, lastAcceptedAt: this.now() });
+      return json(200, { ...reply, state: "created", data: { browser_session_id: browserSessionId2 } });
+    }
+    const browserSessionId = headers["x-code-explorer-session"];
+    const session = browserSessionId ? this.sessions.get(browserSessionId) : void 0;
+    if (!(browserSessionId && session) || session.tabId !== tabId)
+      return json(403, browserError("invalid_browser_session"));
+    const expired = this.accept(browserSessionId, session);
+    if (expired) return expired;
+    return json(200, {
+      schema_version: 1,
+      project_id: "project",
+      project_generation: 0,
+      pending_generation: null,
+      state: "restored",
+      data: {}
+    });
+  }
+  async navigation(route, body, headers) {
+    const browserSessionId = headers["x-code-explorer-session"];
+    const tabId = headers["x-code-explorer-tab"];
+    const session = browserSessionId ? this.sessions.get(browserSessionId) : void 0;
+    if (!(browserSessionId && session) || session.tabId !== tabId)
+      return json(403, browserError("invalid_browser_session"));
+    const expired = this.accept(browserSessionId, session);
+    if (expired) return expired;
+    const coreArguments = route === "/api/search" ? Object.fromEntries(Object.entries(body).filter(([key]) => key !== "request_id")) : route === "/api/status" && body.action === "status" ? body : { ...body, session_id: session.coreSessionId };
+    const reply = await this.options.call(routes[route], coreArguments);
+    return json("code" in reply ? errorStatus(String(reply.code)) : 200, reply);
+  }
+  accept(browserSessionId, session) {
+    if (this.now() - session.lastAcceptedAt >= idleMilliseconds) {
+      this.sessions.delete(browserSessionId);
+      return json(410, browserError("browser_session_expired", true));
+    }
+    session.lastAcceptedAt = this.now();
+    return void 0;
+  }
+  async asset(request) {
+    if (request.method !== "GET" && request.method !== "HEAD") return json(405, browserError("method_not_allowed"));
+    if (!this.options.assetRoot || request.path.includes("%") || request.path.includes("..") || request.path.includes("\\"))
+      return {
+        status: 404,
+        headers: {
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "no-referrer",
+          "content-security-policy": csp
+        },
+        body: ""
+      };
+    const relative6 = request.path === "/" ? "index.html" : request.path.slice(1);
+    if (!relative6 || path2.isAbsolute(relative6) || relative6.split("/").includes(".."))
+      return { status: 404, headers: {}, body: "" };
+    try {
+      const root = await realpath(this.options.assetRoot);
+      const candidate = path2.join(root, relative6);
+      const actual = await realpath(candidate);
+      if (!actual.startsWith(`${root}${path2.sep}`) && actual !== root || !statSync2(actual).isFile())
+        throw new Error("missing");
+      const content = request.method === "HEAD" ? "" : await readFile(actual, "utf8");
+      const type = actual.endsWith(".html") ? "text/html; charset=utf-8" : actual.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/css; charset=utf-8";
+      return {
+        status: 200,
+        headers: {
+          "content-type": type,
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "no-referrer",
+          "content-security-policy": csp
+        },
+        body: content
+      };
+    } catch {
+      return {
+        status: 404,
+        headers: {
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "no-referrer",
+          "content-security-policy": csp
+        },
+        body: ""
+      };
+    }
+  }
+};
+
+// src/browser-server/lifecycle.ts
+var BrowserServerError = class extends Error {
+  constructor(code) {
+    super(code);
+    this.code = code;
+  }
+  code;
+};
+var firstPort = 4410;
+var lastPort = 4429;
+function parseServeArguments(arguments_) {
+  if (arguments_[0] !== "serve") throw new BrowserServerError("invalid_request");
+  let projectRoot = ".";
+  let noOpen = false;
+  for (let index = 1; index < arguments_.length; index += 1) {
+    const argument = arguments_[index];
+    if (argument === "--no-open" && !noOpen) {
+      noOpen = true;
+      continue;
+    }
+    if (argument === "--project-root" && projectRoot === ".") {
+      const value = arguments_[index + 1];
+      if (!value) throw new BrowserServerError("invalid_request");
+      projectRoot = value;
+      index += 1;
+      continue;
+    }
+    throw new BrowserServerError("invalid_request");
+  }
+  return { project_root: projectRoot, no_open: noOpen };
+}
+async function startBrowserServer(options) {
+  const controller = new AbortController();
+  const parentSignal = options.signal;
+  const abort = () => controller.abort();
+  parentSignal?.addEventListener("abort", abort, { once: true });
+  let projectRoot;
+  try {
+    projectRoot = createNativeProjectRoot(options.project_root);
+  } catch (error2) {
+    if (error2 instanceof ProjectPathError) throw new BrowserServerError("invalid_project_root");
+    throw error2;
+  }
+  let core;
+  let listener;
+  try {
+    core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
+    for (let port = firstPort; port <= lastPort; port += 1) {
+      try {
+        listener = await options.binder.listen("127.0.0.1", port, controller.signal, core);
+        break;
+      } catch (error2) {
+        if (!(error2 instanceof Error && "code" in error2 && error2.code === "EADDRINUSE")) throw error2;
+      }
+    }
+    if (!listener) throw new BrowserServerError("browser_port_unavailable");
+    options.write?.(`Code Explorer: ${listener.address.href}`);
+    if (!options.no_open) {
+      try {
+        await options.opener.open(listener.address, controller.signal);
+      } catch {
+        options.writeError?.("browser_open_failed");
+      }
+    }
+    let closing;
+    return {
+      url: listener.address,
+      projectRoot,
+      close: () => closing ??= (async () => {
+        controller.abort();
+        listener?.stopAdmission();
+        const timeout = AbortSignal.timeout(1e4);
+        await Promise.allSettled([listener?.close(timeout), core?.close(timeout)]);
+        parentSignal?.removeEventListener("abort", abort);
+      })()
+    };
+  } catch (error2) {
+    controller.abort();
+    const timeout = AbortSignal.timeout(1e4);
+    await Promise.allSettled([listener?.close(timeout), core?.close(timeout)]);
+    parentSignal?.removeEventListener("abort", abort);
+    throw error2;
+  }
+}
+var nativePortBinder = {
+  async listen(host, port, signal, core) {
+    if (signal.aborted) throw new Error("aborted");
+    const sockets = /* @__PURE__ */ new Set();
+    let admitting = true;
+    const router = new BrowserHttpRouter({
+      origin: `http://${host}:${port}`,
+      assetRoot: path3.join(path3.dirname(fileURLToPath(import.meta.url)), "browser"),
+      call: core?.call ?? (async () => ({
+        schema_version: 1,
+        code: "workspace_unavailable",
+        message: "workspace_unavailable",
+        retryable: true
+      }))
+    });
+    const server = createServer({ maxHeaderSize: 16 * 1024 }, (request, response) => {
+      if (!admitting) {
+        response.destroy();
+        return;
+      }
+      const chunks = [];
+      request.on("data", (chunk) => chunks.push(chunk));
+      request.on("end", () => {
+        void router.handle({
+          method: request.method ?? "GET",
+          path: request.url ?? "/",
+          headers: Object.fromEntries(
+            Object.entries(request.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])
+          ),
+          body: Buffer.concat(chunks)
+        }).then((result) => {
+          response.statusCode = result.status;
+          for (const [key, value] of Object.entries(result.headers)) response.setHeader(key, value);
+          response.end(result.body);
+        });
+      });
+    });
+    server.headersTimeout = 5e3;
+    server.keepAliveTimeout = 5e3;
+    server.maxRequestsPerSocket = 100;
+    server.on("connection", (socket) => {
+      sockets.add(socket);
+      socket.once("close", () => sockets.delete(socket));
+    });
+    await new Promise((resolve5, reject) => {
+      const onAbort = () => reject(new Error("aborted"));
+      signal.addEventListener("abort", onAbort, { once: true });
+      server.once("error", (error2) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error2);
+      });
+      server.listen(port, host, () => {
+        signal.removeEventListener("abort", onAbort);
+        resolve5();
+      });
+    });
+    return {
+      address: new URL(`http://${host}:${port}/`),
+      stopAdmission: () => {
+        admitting = false;
+      },
+      close: async (closeSignal) => {
+        if (!server.listening) return;
+        await new Promise((resolve5) => {
+          const force = () => {
+            for (const socket of sockets) socket.destroy();
+          };
+          closeSignal.addEventListener("abort", force, { once: true });
+          server.close(() => {
+            closeSignal.removeEventListener("abort", force);
+            resolve5();
+          });
+        });
+      }
+    };
+  }
+};
+var nativeBrowserOpener = {
+  async open(url, signal) {
+    const href = url.href;
+    const command = process.platform === "win32" ? "cmd.exe" : process.platform === "darwin" ? "/usr/bin/open" : process.platform === "linux" ? "xdg-open" : void 0;
+    if (!command) throw new Error("unsupported platform");
+    const arguments_ = process.platform === "win32" ? ["/d", "/s", "/c", "start", "", href] : [href];
+    await new Promise((resolve5, reject) => {
+      const child = spawn(command, arguments_, { detached: true, stdio: "ignore", windowsHide: true });
+      const onAbort = () => reject(new Error("aborted"));
+      signal.addEventListener("abort", onAbort, { once: true });
+      child.once("error", (error2) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error2);
+      });
+      child.once("spawn", () => {
+        signal.removeEventListener("abort", onAbort);
+        child.unref();
+        resolve5();
+      });
+    });
+  }
+};
+
+// src/discovery/landmarks.ts
+function landmarksNotReady() {
+  return { state: "landmarks_not_ready", landmarks: [] };
+}
+
+// src/discovery/matcher.ts
+function matchDiscoveryCandidates(query, candidates) {
+  const normalizedQuery = normalizeDiscoveryQuery(query);
+  if (normalizedQuery.length === 0) return [];
+  return candidates.map((candidate) => matchCandidate(normalizedQuery, candidate)).filter((candidate) => candidate !== void 0).sort(compareMatches);
+}
+function normalizeDiscoveryQuery(value) {
+  return normalizeValue(value).trim();
+}
+function matchCandidate(query, candidate) {
+  const normalized = normalizeCandidate(candidate);
+  if (normalized === void 0) return void 0;
+  const evidence = normalized.values.map((value) => classify(query, value)).filter((match) => match !== void 0).sort(compareEvidence)[0];
+  return evidence === void 0 ? void 0 : { ...normalized.candidate, ...evidence };
+}
+function normalizeCandidate(candidate) {
+  const path5 = normalizeProjectPath(candidate.path);
+  if (path5 === void 0) return void 0;
+  if (candidate.type === "symbol")
+    return { candidate: { ...candidate, path: path5 }, values: [normalizeValue(candidate.name)] };
+  const filename2 = path5.split("/").at(-1) ?? path5;
+  const stem = filename2.replace(/\.[^.]+$/, "");
+  return { candidate: { ...candidate, path: path5 }, values: [.../* @__PURE__ */ new Set([normalizeValue(filename2), normalizeValue(stem)])] };
+}
+function classify(query, candidate) {
+  if (candidate === query) return { match_class: "exact", match_score: 100 };
+  const matchScore = similarity(query, candidate);
+  if (candidate.startsWith(query)) return { match_class: "prefix", match_score: Math.round(matchScore) };
+  return matchScore >= 60 ? { match_class: "fuzzy", match_score: Math.round(matchScore) } : void 0;
+}
+function normalizeValue(value) {
+  return value.normalize("NFKC").toLowerCase();
+}
+function normalizeProjectPath(path5) {
+  const portable = path5.replace(/\\/g, "/");
+  const firstSegment = portable.split("/", 1)[0];
+  if (portable.length === 0 || portable.startsWith("/") || portable.startsWith("//") || /^[A-Za-z]:($|\/)/.test(portable) || firstSegment?.includes(":")) {
+    return void 0;
+  }
+  const parts = [];
+  for (const part of portable.split("/")) {
+    if (part.length === 0 || part === ".") continue;
+    if (part === "..") return void 0;
+    parts.push(part);
+  }
+  return parts.length === 0 ? void 0 : parts.join("/");
+}
+function similarity(left, right) {
+  const maximum = Math.max(codePoints(left).length, codePoints(right).length);
+  if (maximum === 0) return 100;
+  return (maximum - damerauLevenshtein(left, right)) / maximum * 100;
+}
+function damerauLevenshtein(left, right) {
+  const source = codePoints(left);
+  const target = codePoints(right);
+  const infinity = source.length + target.length;
+  const matrix = Array.from({ length: source.length + 2 }, () => Array(target.length + 2).fill(0));
+  setMatrixCell(matrix, 0, 0, infinity);
+  for (let row = 0; row <= source.length; row++) {
+    setMatrixCell(matrix, row + 1, 0, infinity);
+    setMatrixCell(matrix, row + 1, 1, row);
+  }
+  for (let column = 0; column <= target.length; column++) {
+    setMatrixCell(matrix, 0, column + 1, infinity);
+    setMatrixCell(matrix, 1, column + 1, column);
+  }
+  const lastSeen = /* @__PURE__ */ new Map();
+  for (let row = 1; row <= source.length; row++) {
+    let lastMatchingColumn = 0;
+    for (let column = 1; column <= target.length; column++) {
+      const targetCharacter = target[column - 1];
+      const sourceCharacter2 = source[row - 1];
+      if (targetCharacter === void 0 || sourceCharacter2 === void 0)
+        throw new Error("invalid Damerau-Levenshtein index");
+      const sourceMatchRow = lastSeen.get(targetCharacter) ?? 0;
+      const targetMatchColumn = lastMatchingColumn;
+      const cost = sourceCharacter2 === targetCharacter ? 0 : 1;
+      if (cost === 0) lastMatchingColumn = column;
+      setMatrixCell(
+        matrix,
+        row + 1,
+        column + 1,
+        Math.min(
+          matrixCell(matrix, row, column) + cost,
+          matrixCell(matrix, row + 1, column) + 1,
+          matrixCell(matrix, row, column + 1) + 1,
+          matrixCell(matrix, sourceMatchRow, targetMatchColumn) + (row - sourceMatchRow - 1) + 1 + (column - targetMatchColumn - 1)
+        )
+      );
+    }
+    const sourceCharacter = source[row - 1];
+    if (sourceCharacter === void 0) throw new Error("invalid Damerau-Levenshtein index");
+    lastSeen.set(sourceCharacter, row);
+  }
+  return matrixCell(matrix, source.length + 1, target.length + 1);
+}
+function matrixCell(matrix, row, column) {
+  const value = matrix[row]?.[column];
+  if (value === void 0) throw new Error("invalid Damerau-Levenshtein matrix index");
+  return value;
+}
+function setMatrixCell(matrix, row, column, value) {
+  const target = matrix[row];
+  if (target === void 0) throw new Error("invalid Damerau-Levenshtein matrix index");
+  target[column] = value;
+}
+function codePoints(value) {
+  return Array.from(value);
+}
+function compareMatches(left, right) {
+  return classOrder(left.match_class) - classOrder(right.match_class) || right.match_score - left.match_score || compareText(left.path, right.path) || compareText(left.type === "symbol" ? left.kind : "", right.type === "symbol" ? right.kind : "") || compareText(left.identity, right.identity) || compareCodePoints(left.path, right.path) || compareCodePoints(left.type === "symbol" ? left.kind : "", right.type === "symbol" ? right.kind : "") || compareCodePoints(left.identity, right.identity);
+}
+function compareEvidence(left, right) {
+  return classOrder(left.match_class) - classOrder(right.match_class) || right.match_score - left.match_score;
+}
+function compareText(left, right) {
+  return normalizeValue(left) < normalizeValue(right) ? -1 : normalizeValue(left) > normalizeValue(right) ? 1 : 0;
+}
+function compareCodePoints(left, right) {
+  const leftPoints = codePoints(left);
+  const rightPoints = codePoints(right);
+  const commonLength = Math.min(leftPoints.length, rightPoints.length);
+  for (let index = 0; index < commonLength; index++) {
+    const leftPoint = leftPoints[index];
+    const rightPoint = rightPoints[index];
+    if (leftPoint === void 0 || rightPoint === void 0) throw new Error("invalid code point comparison index");
+    const leftValue = leftPoint.codePointAt(0);
+    const rightValue = rightPoint.codePointAt(0);
+    if (leftValue === void 0 || rightValue === void 0) throw new Error("invalid code point comparison value");
+    const difference = leftValue - rightValue;
+    if (difference !== 0) return difference;
+  }
+  return leftPoints.length - rightPoints.length;
+}
+function classOrder(matchClass) {
+  if (matchClass === "exact") return 0;
+  if (matchClass === "prefix") return 1;
+  return 2;
+}
+
+// src/discovery/pipeline.ts
+import { lstatSync as lstatSync2, readdirSync as readdirSync3 } from "node:fs";
+import { join as join3 } from "node:path";
+
 // src/discovery/classification.ts
 import { readFileSync as readFileSync2 } from "node:fs";
 
@@ -21536,7 +21937,7 @@ function loadClassificationConfig(projectRoot, platform = process.platform) {
   }
 }
 function parseClassificationConfig(value) {
-  if (!isRecord(value) || Object.keys(value).some((key) => !keys.includes(key)))
+  if (!isRecord2(value) || Object.keys(value).some((key) => !keys.includes(key)))
     throw new Error("classification_config_invalid");
   return {
     generated: parseGlobArray(value.generated),
@@ -21597,7 +21998,7 @@ function parseOverrides(value) {
   if (value === void 0) return [];
   if (!Array.isArray(value)) throw new Error("classification_config_invalid");
   return value.map((entry) => {
-    if (!isRecord(entry) || Object.keys(entry).length !== 2 || !("glob" in entry) || !("class" in entry))
+    if (!isRecord2(entry) || Object.keys(entry).length !== 2 || !("glob" in entry) || !("class" in entry))
       throw new Error("classification_config_invalid");
     if (typeof entry.glob !== "string" || !isSafeProjectGlob(entry.glob) || entry.class !== "generated" && entry.class !== "test" && entry.class !== "production")
       throw new Error("classification_config_invalid");
@@ -21629,7 +22030,7 @@ function matchesTestMarker(path5) {
 function matchesProductionMarker(path5) {
   return /^(src|lib|app)\//iu.test(path5);
 }
-function isRecord(value) {
+function isRecord2(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -21792,7 +22193,7 @@ var ProjectGenerationScheduler = class {
 
 // src/freshness/workspace-freshness.ts
 import { createHash } from "node:crypto";
-import { readdir as readdir3, readFile, stat as stat4 } from "node:fs/promises";
+import { readdir as readdir3, readFile as readFile2, stat as stat4 } from "node:fs/promises";
 import { join as join6, relative as relative3 } from "node:path";
 
 // ../../node_modules/chokidar/esm/index.js
@@ -21802,7 +22203,7 @@ import { EventEmitter } from "events";
 import * as sysPath2 from "path";
 
 // ../../node_modules/readdirp/esm/index.js
-import { stat, lstat, readdir, realpath } from "node:fs/promises";
+import { stat, lstat, readdir, realpath as realpath2 } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { resolve as presolve, relative as prelative, join as pjoin, sep as psep } from "node:path";
 var EntryTypes = {
@@ -21978,7 +22379,7 @@ var ReaddirpStream = class extends Readable {
     if (stats && stats.isSymbolicLink()) {
       const full = entry.fullPath;
       try {
-        const entryRealPath = await realpath(full);
+        const entryRealPath = await realpath2(full);
         const entryRealPathStats = await lstat(entryRealPath);
         if (entryRealPathStats.isFile()) {
           return "file";
@@ -23732,7 +24133,7 @@ async function stableHash(path5, now, sleep) {
     await sleep(100);
     const after = await stat4(path5);
     if (before.size === after.size && before.mtimeMs === after.mtimeMs)
-      return createHash("sha256").update(await readFile(path5)).digest("hex");
+      return createHash("sha256").update(await readFile2(path5)).digest("hex");
     if (now() - started >= 1e4) return "incomplete_write";
   }
 }
@@ -24175,7 +24576,7 @@ function canonicalize2(value) {
 import { readFileSync as readFileSync3 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname as dirname3, join as join7, resolve as resolve3 } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // src/semantic/backend-launch-policy.ts
 import { createHash as createHash3 } from "node:crypto";
@@ -24659,7 +25060,7 @@ var evidenceSchema = external_exports.object({
   }).strict()
 }).strict();
 function loadAdapterSelectionRecord() {
-  const packageRoot = findPackageRoot(dirname3(fileURLToPath(import.meta.url)));
+  const packageRoot = findPackageRoot(dirname3(fileURLToPath2(import.meta.url)));
   let input;
   try {
     input = JSON.parse(readFileSync3(join7(packageRoot, "adapter-selection.json"), "utf8"));
@@ -24831,7 +25232,7 @@ var RootAccessGate = class {
 };
 
 // src/semantic/runtime-bootstrap.ts
-import { fileURLToPath as fileURLToPath3, pathToFileURL as pathToFileURL2 } from "node:url";
+import { fileURLToPath as fileURLToPath4, pathToFileURL as pathToFileURL2 } from "node:url";
 
 // src/semantic/filtered-workspace.ts
 import { existsSync, lstatSync as lstatSync3, mkdirSync, mkdtempSync, readdirSync as readdirSync4, rmSync, writeFileSync } from "node:fs";
@@ -24973,7 +25374,7 @@ function defaultBackendName(language) {
 // src/semantic/native-backend-inspector.ts
 import { spawnSync } from "node:child_process";
 import { createHash as createHash4 } from "node:crypto";
-import { lstatSync as lstatSync4, readFileSync as readFileSync4, realpathSync as realpathSync2, statSync as statSync2 } from "node:fs";
+import { lstatSync as lstatSync4, readFileSync as readFileSync4, realpathSync as realpathSync2, statSync as statSync3 } from "node:fs";
 import { dirname as dirname5, isAbsolute as isAbsolute2, join as join9, relative as relative4, resolve as resolve4, sep } from "node:path";
 function createNativeBackendInspector(commandRoots, projectRoot) {
   const roots = commandRoots.filter((root) => isAbsolute2(root) && !(projectRoot && isWithin2(projectRoot, root)));
@@ -25026,7 +25427,7 @@ function inspectFile(candidate, root, projectRoot) {
     if (!link.isFile() || link.isSymbolicLink()) return void 0;
     const canonicalPath = realpathSync2.native(candidate);
     if (!isWithin2(root, canonicalPath) || projectRoot && isWithin2(projectRoot, canonicalPath)) return void 0;
-    const stat5 = statSync2(canonicalPath, { bigint: true });
+    const stat5 = statSync3(canonicalPath, { bigint: true });
     return {
       canonical_path: canonicalPath,
       device: String(stat5.dev),
@@ -25093,7 +25494,7 @@ import {
 } from "node:fs";
 import { tmpdir as tmpdir2 } from "node:os";
 import { dirname as dirname6, join as join10, relative as relative5 } from "node:path";
-import { fileURLToPath as fileURLToPath2, pathToFileURL } from "node:url";
+import { fileURLToPath as fileURLToPath3, pathToFileURL } from "node:url";
 var bundledTypeshed = Object.freeze({
   "typeshed/stdlib/builtins.pyi": "class object: ...\nclass str(object): ...\nclass int(object): ...\n"
 });
@@ -25224,7 +25625,7 @@ function readProjectPythonConfiguration(root) {
   if (pyright !== void 0) {
     try {
       const parsed = JSON.parse(pyright);
-      if (!isRecord2(parsed)) throw new Error("invalid");
+      if (!isRecord3(parsed)) throw new Error("invalid");
       config2.pyrightconfig = parsed;
     } catch {
       throw new Error("unsafe_backend_mode");
@@ -25333,7 +25734,7 @@ function mirrorTreeMatches(root, expected) {
 function relativeMirrorPath(uri, mirrorRoot) {
   try {
     if (!uri.startsWith("file:")) return void 0;
-    const path5 = fileURLToPath2(uri);
+    const path5 = fileURLToPath3(uri);
     const relativePath = relative5(mirrorRoot, path5).replaceAll("\\", "/");
     return relativePath && !relativePath.startsWith("../") && relativePath !== ".." ? relativePath : void 0;
   } catch {
@@ -25343,7 +25744,7 @@ function relativeMirrorPath(uri, mirrorRoot) {
 function sha2562(value) {
   return createHash5("sha256").update(value).digest("hex");
 }
-function isRecord2(value) {
+function isRecord3(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 function samePath2(left, right) {
@@ -25999,9 +26400,9 @@ function symbolFor(location, index, options) {
 }
 
 // src/semantic/native-lsp-process.ts
-import { spawn } from "node:child_process";
+import { spawn as spawn2 } from "node:child_process";
 function spawnNativeLspProcess(executable, arguments_, environment) {
-  const child = spawn(executable, arguments_, {
+  const child = spawn2(executable, arguments_, {
     shell: false,
     stdio: ["pipe", "pipe", "ignore"],
     // Do not inherit project-controlled PATH, Python, or package settings.
@@ -26158,7 +26559,7 @@ function createRuntimeAdapters(projectRoot) {
         toBackendUri: (location) => pathToFileURL2((filtered?.root ?? projectRoot).resolveClientPath(location.path)).href,
         fromBackendUri: (uri) => {
           if (!uri.startsWith("file:")) return void 0;
-          const classified = (filtered?.root ?? projectRoot).classifyBackendPath(fileURLToPath3(uri));
+          const classified = (filtered?.root ?? projectRoot).classifyBackendPath(fileURLToPath4(uri));
           return "relative_path" in classified ? classified.relative_path : void 0;
         },
         prepare: () => policy.prepare(backend.language),
@@ -26248,361 +26649,6 @@ function makeAdapter(language, options) {
   if (language === "python") return createPythonAdapter(options);
   return createCSharpAdapter(options);
 }
-
-// src/browser-server/lifecycle.ts
-import { spawn as spawn2 } from "node:child_process";
-import path3 from "node:path";
-import { createServer } from "node:http";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
-
-// src/browser-server/http-router.ts
-import { readFile as readFile2, realpath as realpath2 } from "node:fs/promises";
-import { statSync as statSync3 } from "node:fs";
-import path2 from "node:path";
-var maxBodyBytes = 64 * 1024;
-var maxResponseBytes = 1024 * 1024;
-var idleMilliseconds = 30 * 60 * 1e3;
-var csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'";
-var routes = {
-  "/api/search": "code_search",
-  "/api/focus": "code_focus",
-  "/api/follow": "code_follow",
-  "/api/history": "code_history",
-  "/api/status": "code_status"
-};
-function browserError(code, retryable = false) {
-  return { schema_version: 1, code, message: code, retryable };
-}
-function errorStatus(code) {
-  if (code === "invalid_browser_origin" || code === "invalid_browser_session") return 403;
-  if (code === "route_not_found") return 404;
-  if (code === "method_not_allowed") return 405;
-  if (code === "browser_session_expired") return 410;
-  if (code === "resource_limit") return 413;
-  if (code === "project_capacity" || code === "http_capacity") return 429;
-  if (code === "workspace_unavailable" || code.startsWith("backend_")) return 503;
-  return 400;
-}
-function json(status, payload) {
-  const body = JSON.stringify(payload);
-  return {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
-      "x-content-type-options": "nosniff",
-      "referrer-policy": "no-referrer",
-      "content-security-policy": csp
-    },
-    body
-  };
-}
-function isRecord3(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function exactKeys(body, required2, optional2 = []) {
-  return required2.every((key) => key in body) && Object.keys(body).every((key) => required2.includes(key) || optional2.includes(key));
-}
-function validBody(route, body) {
-  if (route === "/api/session") {
-    return typeof body.tab_instance_id === "string" && (body.action === "create" && body.document_start === "new" && exactKeys(body, ["action", "tab_instance_id", "document_start"]) || body.action === "restore" && body.document_start === "reload" && exactKeys(body, ["action", "tab_instance_id", "document_start"]));
-  }
-  if (route === "/api/status") {
-    return body.action === "status" && exactKeys(body, ["action"]) || body.action === "refresh" && typeof body.request_id === "string" && exactKeys(body, ["action", "request_id"]);
-  }
-  const required2 = {
-    "/api/search": ["request_id", "query"],
-    "/api/focus": ["request_id", "symbol_id"],
-    "/api/follow": ["request_id", "view_id", "handle", "relation"],
-    "/api/history": ["request_id", "action"]
-  };
-  const optional2 = {
-    "/api/search": ["path_globs", "languages", "kinds", "content", "include_generated", "limit"],
-    "/api/focus": ["body_limit_bytes"],
-    "/api/follow": ["limit"],
-    "/api/history": ["limit"]
-  };
-  return required2[route] !== void 0 && exactKeys(body, required2[route], optional2[route]);
-}
-var BrowserHttpRouter = class {
-  constructor(options) {
-    this.options = options;
-    this.maxSessions = options.maxSessions ?? 8;
-    this.maxInFlight = options.maxInFlight ?? 8;
-    this.now = () => options.clock?.nowMilliseconds() ?? performance.now();
-  }
-  options;
-  sessions = /* @__PURE__ */ new Map();
-  maxSessions;
-  maxInFlight;
-  now;
-  active = 0;
-  async handle(request) {
-    const authority = new URL(this.options.origin).host;
-    if (request.headers.host !== authority) return json(403, browserError("invalid_browser_origin"));
-    if (request.path.startsWith("/api/") && request.headers.origin !== this.options.origin)
-      return json(403, browserError("invalid_browser_origin"));
-    if (request.method === "OPTIONS") return json(405, browserError("method_not_allowed"));
-    if (request.method === "GET" || request.method === "HEAD") return this.asset(request);
-    if (request.method !== "POST") return json(405, browserError("method_not_allowed"));
-    if (request.path === "/") return json(400, browserError("invalid_request"));
-    if (!(request.path in routes) && request.path !== "/api/session") return json(404, browserError("route_not_found"));
-    if (this.active >= this.maxInFlight) return json(429, browserError("http_capacity", true));
-    this.active += 1;
-    try {
-      if (request.headers["content-encoding"] || request.headers["content-type"] !== "application/json")
-        return json(400, browserError("invalid_request"));
-      if (request.body.byteLength > maxBodyBytes) return json(413, browserError("resource_limit"));
-      let body;
-      try {
-        body = JSON.parse(request.body.toString("utf8"));
-      } catch {
-        return json(400, browserError("invalid_request"));
-      }
-      if (!isRecord3(body) || !validBody(request.path, body)) return json(400, browserError("invalid_request"));
-      const response = request.path === "/api/session" ? await this.session(body, request.headers) : await this.navigation(request.path, body, request.headers);
-      const encoded = Buffer.byteLength(response.body);
-      return encoded > maxResponseBytes ? json(413, browserError("resource_limit")) : response;
-    } finally {
-      this.active -= 1;
-    }
-  }
-  async session(body, headers) {
-    const tabId = body.tab_instance_id;
-    if (headers["x-code-explorer-tab"] !== tabId) return json(403, browserError("invalid_browser_session"));
-    if (body.action === "create") {
-      if (headers["x-code-explorer-session"] || this.sessions.size >= this.maxSessions)
-        return json(429, browserError("project_capacity", true));
-      const reply = await this.options.call("code_status", { action: "start_session" });
-      if ("code" in reply) return json(errorStatus(String(reply.code)), reply);
-      const coreSessionId = reply.data?.session_id;
-      if (typeof coreSessionId !== "string") return json(500, browserError("internal_error"));
-      const browserSessionId2 = crypto.randomUUID();
-      this.sessions.set(browserSessionId2, { coreSessionId, tabId, lastAcceptedAt: this.now() });
-      return json(200, { ...reply, state: "created", data: { browser_session_id: browserSessionId2 } });
-    }
-    const browserSessionId = headers["x-code-explorer-session"];
-    const session = browserSessionId ? this.sessions.get(browserSessionId) : void 0;
-    if (!browserSessionId || !session || session.tabId !== tabId) return json(403, browserError("invalid_browser_session"));
-    const expired = this.accept(browserSessionId, session);
-    if (expired) return expired;
-    return json(200, { schema_version: 1, project_id: "project", project_generation: 0, pending_generation: null, state: "restored", data: {} });
-  }
-  async navigation(route, body, headers) {
-    const browserSessionId = headers["x-code-explorer-session"];
-    const tabId = headers["x-code-explorer-tab"];
-    const session = browserSessionId ? this.sessions.get(browserSessionId) : void 0;
-    if (!browserSessionId || !session || session.tabId !== tabId) return json(403, browserError("invalid_browser_session"));
-    const expired = this.accept(browserSessionId, session);
-    if (expired) return expired;
-    const reply = await this.options.call(routes[route], { ...body, session_id: session.coreSessionId });
-    return json("code" in reply ? errorStatus(String(reply.code)) : 200, reply);
-  }
-  accept(browserSessionId, session) {
-    if (this.now() - session.lastAcceptedAt >= idleMilliseconds) {
-      this.sessions.delete(browserSessionId);
-      return json(410, browserError("browser_session_expired", true));
-    }
-    session.lastAcceptedAt = this.now();
-    return void 0;
-  }
-  async asset(request) {
-    if (request.method !== "GET" && request.method !== "HEAD") return json(405, browserError("method_not_allowed"));
-    if (!this.options.assetRoot || request.path.includes("%") || request.path.includes("..") || request.path.includes("\\"))
-      return { status: 404, headers: { "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer", "content-security-policy": csp }, body: "" };
-    const relative6 = request.path === "/" ? "index.html" : request.path.slice(1);
-    if (!relative6 || path2.isAbsolute(relative6) || relative6.split("/").includes("..")) return { status: 404, headers: {}, body: "" };
-    try {
-      const root = await realpath2(this.options.assetRoot);
-      const candidate = path2.join(root, relative6);
-      const actual = await realpath2(candidate);
-      if (!actual.startsWith(`${root}${path2.sep}`) && actual !== root || !statSync3(actual).isFile()) throw new Error("missing");
-      const content = request.method === "HEAD" ? "" : await readFile2(actual, "utf8");
-      const type = actual.endsWith(".html") ? "text/html; charset=utf-8" : actual.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/css; charset=utf-8";
-      return { status: 200, headers: { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer", "content-security-policy": csp }, body: content };
-    } catch {
-      return { status: 404, headers: { "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer", "content-security-policy": csp }, body: "" };
-    }
-  }
-};
-
-// src/browser-server/lifecycle.ts
-var BrowserServerError = class extends Error {
-  constructor(code) {
-    super(code);
-    this.code = code;
-  }
-  code;
-};
-var firstPort = 4410;
-var lastPort = 4429;
-function parseServeArguments(arguments_) {
-  if (arguments_[0] !== "serve") throw new BrowserServerError("invalid_request");
-  let projectRoot = ".";
-  let noOpen = false;
-  for (let index = 1; index < arguments_.length; index += 1) {
-    const argument = arguments_[index];
-    if (argument === "--no-open" && !noOpen) {
-      noOpen = true;
-      continue;
-    }
-    if (argument === "--project-root" && projectRoot === ".") {
-      const value = arguments_[index + 1];
-      if (!value) throw new BrowserServerError("invalid_request");
-      projectRoot = value;
-      index += 1;
-      continue;
-    }
-    throw new BrowserServerError("invalid_request");
-  }
-  return { project_root: projectRoot, no_open: noOpen };
-}
-async function startBrowserServer(options) {
-  const controller = new AbortController();
-  const parentSignal = options.signal;
-  const abort = () => controller.abort();
-  parentSignal?.addEventListener("abort", abort, { once: true });
-  let projectRoot;
-  try {
-    projectRoot = createNativeProjectRoot(options.project_root);
-  } catch (error2) {
-    if (error2 instanceof ProjectPathError) throw new BrowserServerError("invalid_project_root");
-    throw error2;
-  }
-  let core;
-  let listener;
-  try {
-    core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
-    for (let port = firstPort; port <= lastPort; port += 1) {
-      try {
-        listener = await options.binder.listen("127.0.0.1", port, controller.signal, core);
-        break;
-      } catch (error2) {
-        if (!(error2 instanceof Error && "code" in error2 && error2.code === "EADDRINUSE")) throw error2;
-      }
-    }
-    if (!listener) throw new BrowserServerError("browser_port_unavailable");
-    options.write?.(`Code Explorer: ${listener.address.href}`);
-    if (!options.no_open) {
-      try {
-        await options.opener.open(listener.address, controller.signal);
-      } catch {
-        options.writeError?.("browser_open_failed");
-      }
-    }
-    let closing;
-    return {
-      url: listener.address,
-      projectRoot,
-      close: () => closing ??= (async () => {
-        controller.abort();
-        listener?.stopAdmission();
-        const timeout = AbortSignal.timeout(1e4);
-        await Promise.allSettled([listener?.close(timeout), core?.close(timeout)]);
-        parentSignal?.removeEventListener("abort", abort);
-      })()
-    };
-  } catch (error2) {
-    controller.abort();
-    const timeout = AbortSignal.timeout(1e4);
-    await Promise.allSettled([listener?.close(timeout), core?.close(timeout)]);
-    parentSignal?.removeEventListener("abort", abort);
-    throw error2;
-  }
-}
-var nativePortBinder = {
-  async listen(host, port, signal, core) {
-    if (signal.aborted) throw new Error("aborted");
-    const sockets = /* @__PURE__ */ new Set();
-    let admitting = true;
-    const server = createServer({ maxHeaderSize: 16 * 1024 }, (request, response) => {
-      if (!admitting) {
-        response.destroy();
-        return;
-      }
-      const origin = `http://${host}:${port}`;
-      const router = new BrowserHttpRouter({
-        origin,
-        assetRoot: path3.join(path3.dirname(fileURLToPath4(import.meta.url)), "browser"),
-        call: core?.call ?? (async () => ({ schema_version: 1, code: "workspace_unavailable", message: "workspace_unavailable", retryable: true }))
-      });
-      const chunks = [];
-      request.on("data", (chunk) => chunks.push(chunk));
-      request.on("end", () => {
-        void router.handle({
-          method: request.method ?? "GET",
-          path: request.url ?? "/",
-          headers: Object.fromEntries(Object.entries(request.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])),
-          body: Buffer.concat(chunks)
-        }).then((result) => {
-          response.statusCode = result.status;
-          for (const [key, value] of Object.entries(result.headers)) response.setHeader(key, value);
-          response.end(result.body);
-        });
-      });
-    });
-    server.headersTimeout = 5e3;
-    server.keepAliveTimeout = 5e3;
-    server.maxRequestsPerSocket = 100;
-    server.on("connection", (socket) => {
-      sockets.add(socket);
-      socket.once("close", () => sockets.delete(socket));
-    });
-    await new Promise((resolve5, reject) => {
-      const onAbort = () => reject(new Error("aborted"));
-      signal.addEventListener("abort", onAbort, { once: true });
-      server.once("error", (error2) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(error2);
-      });
-      server.listen(port, host, () => {
-        signal.removeEventListener("abort", onAbort);
-        resolve5();
-      });
-    });
-    return {
-      address: new URL(`http://${host}:${port}/`),
-      stopAdmission: () => {
-        admitting = false;
-      },
-      close: async (closeSignal) => {
-        if (!server.listening) return;
-        await new Promise((resolve5) => {
-          const force = () => {
-            for (const socket of sockets) socket.destroy();
-          };
-          closeSignal.addEventListener("abort", force, { once: true });
-          server.close(() => {
-            closeSignal.removeEventListener("abort", force);
-            resolve5();
-          });
-        });
-      }
-    };
-  }
-};
-var nativeBrowserOpener = {
-  async open(url, signal) {
-    const href = url.href;
-    const command = process.platform === "win32" ? "cmd.exe" : process.platform === "darwin" ? "/usr/bin/open" : process.platform === "linux" ? "xdg-open" : void 0;
-    if (!command) throw new Error("unsupported platform");
-    const arguments_ = process.platform === "win32" ? ["/d", "/s", "/c", "start", "", href] : [href];
-    await new Promise((resolve5, reject) => {
-      const child = spawn2(command, arguments_, { detached: true, stdio: "ignore", windowsHide: true });
-      const onAbort = () => reject(new Error("aborted"));
-      signal.addEventListener("abort", onAbort, { once: true });
-      child.once("error", (error2) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(error2);
-      });
-      child.once("spawn", () => {
-        signal.removeEventListener("abort", onAbort);
-        child.unref();
-        resolve5();
-      });
-    });
-  }
-};
 
 // src/index.ts
 var filename = fileURLToPath5(import.meta.url);
@@ -27126,10 +27172,12 @@ async function collectFocusedSymbol(adapters, symbolId, run) {
   const replies = await Promise.allSettled(
     adapters.map((adapter) => run(() => adapter.request({ operation: "focus", symbol_id: symbolId })))
   );
-  throwBackendLimitFailure(replies);
-  return replies.find(
+  const focused = replies.find(
     (reply) => reply.status === "fulfilled" && reply.value.operation === "focus"
   )?.value;
+  if (focused) return focused;
+  throwBackendLimitFailure(replies);
+  return void 0;
 }
 async function collectRelations(adapters, relation, symbolId, run) {
   const supported = adapters.filter((adapter) => adapter.status().capabilities[relation].state === "ready");

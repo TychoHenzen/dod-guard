@@ -1,0 +1,10 @@
+{
+  "name": "dod-guard-monorepo",
+  "plugins": [
+    {
+      "name": "code-explorer",
+      "source": "./packages/code-explorer",
+      "manifest": ".codex-plugin/plugin.json"
+    }
+  ]
+}

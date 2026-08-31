@@ -1,0 +1,9 @@
+:root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+body { margin: 0; }
+.status-strip { display: flex; gap: 1rem; justify-content: space-between; padding: .5rem 1rem; border-bottom: 1px solid CanvasText; }
+.explorer-shell { display: grid; min-height: calc(100vh - 3rem); grid-template-columns: minmax(12rem, 22rem) minmax(0, 1fr) minmax(12rem, 22rem); }
+.explorer-shell > aside, .explorer-shell > section { padding: 1rem; border-inline-end: 1px solid CanvasText; }
+.explorer-shell > section { overflow: auto; }
+.narrow { grid-template-columns: minmax(0, 1fr); }
+.narrow > aside { display: none; }
+.narrow > button { margin: .5rem; }

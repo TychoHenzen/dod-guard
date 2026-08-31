@@ -2,10 +2,8 @@ import assert from "node:assert/strict";
 import { request } from "node:http";
 import { describe, it } from "node:test";
 import {
-  type BrowserOpener,
   type ExplorerCoreFactory,
   type HttpListener,
-  type PortBinder,
   nativePortBinder,
   parseServeArguments,
   startBrowserServer,
@@ -33,7 +31,9 @@ async function post(url: URL, body: string): Promise<{ status: number; body: str
     const request_ = request(url, { method: "POST", headers: { "content-type": "application/json" } }, (response) => {
       const chunks: Buffer[] = [];
       response.on("data", (chunk: Buffer) => chunks.push(chunk));
-      response.on("end", () => resolve({ status: response.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") }));
+      response.on("end", () =>
+        resolve({ status: response.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") }),
+      );
     });
     request_.once("error", reject);
     request_.end(body);
@@ -79,7 +79,12 @@ describe("browser server lifecycle", () => {
         project_root: "missing-project-root",
         no_open: true,
         coreFactory: factory([]),
-        binder: { listen: async () => { bound = true; throw new Error("unexpected"); } },
+        binder: {
+          listen: async () => {
+            bound = true;
+            throw new Error("unexpected");
+          },
+        },
         opener: { open: async () => undefined },
       }),
       (error: unknown) => (error as { code?: string }).code === "invalid_project_root",
@@ -94,7 +99,11 @@ describe("browser server lifecycle", () => {
       project_root: ".",
       no_open: true,
       coreFactory: {
-        start: async ({ signal }) => ({ close: async () => { coreAborted = signal.aborted; } }),
+        start: async ({ signal }) => ({
+          close: async () => {
+            coreAborted = signal.aborted;
+          },
+        }),
       },
       binder: { listen: async (_host, port) => fakeListener(port, stopped) },
       opener: { open: async () => undefined },
@@ -113,7 +122,12 @@ describe("browser server lifecycle", () => {
       project_root: ".",
       no_open: true,
       coreFactory: factory([]),
-      binder: { listen: async (host, port) => { attempts.push([host, port]); return fakeListener(port, stopped); } },
+      binder: {
+        listen: async (host, port) => {
+          attempts.push([host, port]);
+          return fakeListener(port, stopped);
+        },
+      },
       opener: { open: async () => undefined },
       write: (line) => urls.push(line),
     });
@@ -131,7 +145,13 @@ describe("browser server lifecycle", () => {
       project_root: ".",
       no_open: true,
       coreFactory: factory([]),
-      binder: { listen: async (_host, port) => { attempts.push(port); if (port < 4412) throw Object.assign(new Error("busy"), { code: "EADDRINUSE" }); return fakeListener(port, []); } },
+      binder: {
+        listen: async (_host, port) => {
+          attempts.push(port);
+          if (port < 4412) throw Object.assign(new Error("busy"), { code: "EADDRINUSE" });
+          return fakeListener(port, []);
+        },
+      },
       opener: { open: async () => undefined },
       write: (line) => output.push(line),
     });
@@ -148,8 +168,16 @@ describe("browser server lifecycle", () => {
         project_root: ".",
         no_open: false,
         coreFactory: factory([]),
-        binder: { listen: async () => { throw Object.assign(new Error("busy"), { code: "EADDRINUSE" }); } },
-        opener: { open: async () => { opens += 1; } },
+        binder: {
+          listen: async () => {
+            throw Object.assign(new Error("busy"), { code: "EADDRINUSE" });
+          },
+        },
+        opener: {
+          open: async () => {
+            opens += 1;
+          },
+        },
       }),
       (error: unknown) => (error as { code?: string }).code === "browser_port_unavailable",
     );
@@ -165,7 +193,11 @@ describe("browser server lifecycle", () => {
       no_open: false,
       coreFactory: factory([]),
       binder: { listen: async (_host, port) => fakeListener(port, []) },
-      opener: { open: async (url) => { opened.push(url.href); } },
+      opener: {
+        open: async (url) => {
+          opened.push(url.href);
+        },
+      },
       write: (line) => lines.push(line),
     });
     assert.deepEqual(lines, ["Code Explorer: http://127.0.0.1:4410/"]);
@@ -176,7 +208,17 @@ describe("browser server lifecycle", () => {
   // covers: code-explorer/browser-server :: Startup opens the local browser unless disabled :: Automatic opening is disabled
   it("does not request a browser launch for no-open", async () => {
     let opened = false;
-    const service = await startBrowserServer({ project_root: ".", no_open: true, coreFactory: factory([]), binder: { listen: async (_host, port) => fakeListener(port, []) }, opener: { open: async () => { opened = true; } } });
+    const service = await startBrowserServer({
+      project_root: ".",
+      no_open: true,
+      coreFactory: factory([]),
+      binder: { listen: async (_host, port) => fakeListener(port, []) },
+      opener: {
+        open: async () => {
+          opened = true;
+        },
+      },
+    });
     assert.equal(opened, false);
     await service.close();
   });
@@ -184,7 +226,18 @@ describe("browser server lifecycle", () => {
   // covers: code-explorer/browser-server :: Startup opens the local browser unless disabled :: Operating system cannot open the browser
   it("keeps serving when browser opening fails", async () => {
     const errors: string[] = [];
-    const service = await startBrowserServer({ project_root: ".", no_open: false, coreFactory: factory([]), binder: { listen: async (_host, port) => fakeListener(port, []) }, opener: { open: async () => { throw new Error("spawn failed"); } }, writeError: (line) => errors.push(line) });
+    const service = await startBrowserServer({
+      project_root: ".",
+      no_open: false,
+      coreFactory: factory([]),
+      binder: { listen: async (_host, port) => fakeListener(port, []) },
+      opener: {
+        open: async () => {
+          throw new Error("spawn failed");
+        },
+      },
+      writeError: (line) => errors.push(line),
+    });
     assert.deepEqual(errors, ["browser_open_failed"]);
     await service.close();
   });

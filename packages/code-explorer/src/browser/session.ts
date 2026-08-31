@@ -3,13 +3,18 @@ export type BrowserSessionReply = { state: string; data?: { browser_session_id?:
 
 /** Keeps a server session tied to this document's exclusive tab lock. */
 export class BrowserSessionClient {
-  constructor(private readonly options: {
-    storage: BrowserStorage;
-    navigationType: () => string | undefined;
-    lock: (name: string, action: (available: boolean) => Promise<BrowserSessionReply>) => Promise<BrowserSessionReply>;
-    randomId: () => string;
-    request: (body: Record<string, unknown>, headers: Record<string, string>) => Promise<BrowserSessionReply>;
-  }) {}
+  constructor(
+    private readonly options: {
+      storage: BrowserStorage;
+      navigationType: () => string | undefined;
+      lock: (
+        name: string,
+        action: (available: boolean) => Promise<BrowserSessionReply>,
+      ) => Promise<BrowserSessionReply>;
+      randomId: () => string;
+      request: (body: Record<string, unknown>, headers: Record<string, string>) => Promise<BrowserSessionReply>;
+    },
+  ) {}
 
   async start(): Promise<BrowserSessionReply> {
     const navigation = this.options.navigationType();
@@ -18,7 +23,7 @@ export class BrowserSessionClient {
     const storedTab = this.options.storage.get("tab_instance_id");
     const restore = navigation === "reload" && !!storedSession && !!storedTab;
     if (!restore) this.options.storage.clear();
-    const tabId = restore ? storedTab! : this.options.randomId();
+    const tabId = restore ? (storedTab ?? this.options.randomId()) : this.options.randomId();
     return this.options.lock(`code-explorer-tab:${tabId}`, async (available) => {
       if (!available) {
         if (!restore) return { state: "browser_capability_unavailable" };
@@ -28,7 +33,7 @@ export class BrowserSessionClient {
       if (restore) {
         const reply = await this.options.request(
           { action: "restore", tab_instance_id: tabId, document_start: "reload" },
-          { "x-code-explorer-session": storedSession!, "x-code-explorer-tab": tabId },
+          { "x-code-explorer-session": storedSession ?? "", "x-code-explorer-tab": tabId },
         );
         if (reply.state !== "browser_session_expired") return reply;
         return this.recoverExpired();
