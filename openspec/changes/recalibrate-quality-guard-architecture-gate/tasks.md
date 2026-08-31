@@ -50,12 +50,14 @@
 
 ## 3. Authoritative Commit Gate
 
-- [ ] 3.1 Implement the shared decision core that combines scanner regressions, hard bounds, architecture failures, analysis errors, and review findings with `FAIL` before `REVIEW_REQUIRED` before `PASS`. Include documentation-only input behavior.
+- [x] 3.1 Implement the shared decision core that combines scanner regressions, hard bounds, architecture failures, analysis errors, and review findings with `FAIL` before `REVIEW_REQUIRED` before `PASS`. Include documentation-only input behavior.
+<!-- status: completed -->
 <!-- covers: quality-guard/commit-gate :: Verdict states have fixed precedence :: Failure and review finding coexist -->
 <!-- covers: quality-guard/commit-gate :: Verdict states have fixed precedence :: All evidence is accepted -->
 <!-- covers: quality-guard/commit-gate :: Non-source commits report their limited scope :: Documentation-only commit -->
 
-- [ ] 3.2 Add `quality-guard check --staged` dispatch to the bundled executable with change and refactor intent, required refactor target, human and JSON rendering, and exit codes 0, 1, 2, and 3.
+- [x] 3.2 Add `quality-guard check --staged` dispatch to the bundled executable with change and refactor intent, required refactor target, human and JSON rendering, and exit codes 0, 1, 2, and 3.
+<!-- status: completed -->
 <!-- covers: quality-guard/commit-gate :: One command judges the staged change :: Ordinary staged change is checked -->
 <!-- covers: quality-guard/commit-gate :: One command judges the staged change :: Refactor target is missing -->
 <!-- covers: quality-guard/commit-gate :: Process exit codes preserve the verdict :: Review blocks a Git hook -->

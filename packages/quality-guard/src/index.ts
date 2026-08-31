@@ -19,6 +19,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { runScan } from "./scanner.js";
 import { formatSkips, readSkipLog } from "./skips.js";
+import { runCheckCommand } from "./commit-gate/cli.js";
 
 const _dirname = path.dirname(fileURLToPath(import.meta.url));
 const _pkg = JSON.parse(readFileSync(path.join(_dirname, "..", "package.json"), "utf-8"));
@@ -116,6 +117,13 @@ server.tool(
 const _filename = fileURLToPath(import.meta.url);
 
 async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+  if (args[0] === "check") {
+    const result = runCheckCommand(args);
+    process.stdout.write(`${result.output}\n`);
+    process.exitCode = result.exitCode;
+    return;
+  }
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
 import { fingerprintSnapshot } from "./fingerprint.js";
 import { createFinding, failureResult, normalizeFindings } from "./types.js";
+import { decideQuality } from "./decision-core.js";
 import type { Snapshot } from "./snapshot.js";
 
 const snapshot: Snapshot = {
@@ -39,4 +40,49 @@ test("fingerprint excludes only the tracked decision record and changes for sour
   assert.equal(fingerprintSnapshot(withDecisionRecord, config), original);
   assert.notEqual(fingerprintSnapshot({ ...snapshot, changes: [{ kind: "modify", before: { path: "src/a.ts", content: "before" }, after: { path: "src/a.ts", content: "changed" } }] }, config), original);
   assert.notEqual(fingerprintSnapshot(snapshot, parseQualityConfig('{"directTypeLimit": 13}')), original);
+});
+
+// covers: quality-guard/commit-gate :: Verdict states have fixed precedence :: Failure and review finding coexist
+test("a deterministic failure wins while preserving review findings", () => {
+  const result = decideQuality({
+    snapshot,
+    config: parseQualityConfig("{}"),
+    beforeFiles: [],
+    afterFiles: [],
+    scanner: { findings: [{ severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" }] },
+    hardBounds: [{ severity: "fail", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "bound" }],
+  });
+  assert.equal(result.verdict, "FAIL");
+  assert.equal(result.findings.length, 2);
+  assert.ok(result.findings.some((finding) => finding.severity === "review"));
+  assert.ok(result.findings.some((finding) => finding.severity === "fail"));
+});
+
+// covers: quality-guard/commit-gate :: Verdict states have fixed precedence :: All evidence is accepted
+test("accepted review evidence produces pass when deterministic checks pass", () => {
+  const review = createFinding({ severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" });
+  const result = decideQuality({
+    snapshot,
+    config: parseQualityConfig("{}"),
+    beforeFiles: [],
+    afterFiles: [],
+    scanner: { findings: [{ severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" }] },
+    acknowledgements: [review.id],
+  });
+  assert.equal(result.verdict, "PASS");
+  assert.equal(result.errors.length, 0);
+});
+
+// covers: quality-guard/commit-gate :: Non-source commits report their limited scope :: Documentation-only commit
+test("documentation-only changes report that no source decision was required", () => {
+  const result = decideQuality({
+    snapshot: { baseIdentity: "base", targetIdentity: "index", changes: [{ kind: "modify", before: { path: "README.md", content: "before" }, after: { path: "README.md", content: "after" } }] },
+    config: parseQualityConfig("{}"),
+    beforeFiles: [],
+    afterFiles: [],
+    scanner: { findings: [] },
+  });
+  assert.equal(result.verdict, "PASS");
+  assert.match(result.input.reason ?? "", /No source quality decision was required/);
+  assert.equal(result.findings.length, 0);
 });

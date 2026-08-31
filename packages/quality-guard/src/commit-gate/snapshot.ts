@@ -19,6 +19,8 @@ export interface Snapshot {
   changes: SnapshotChange[];
 }
 
+const SOURCE_PATH = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
+
 interface GitSource {
   base: string;
   target: string;
@@ -89,4 +91,21 @@ export function readCommittedSnapshot(root: string, commit = "HEAD"): Snapshot {
     target: commit,
     contentSpec: (filePath, after) => `${after ? commit : parent.trim()}:${filePath}`,
   });
+}
+
+function sourcePaths(root: string, ref: "HEAD" | "index"): string[] {
+  const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", "HEAD"];
+  return (git(root, args, "buffer") as Buffer)
+    .toString("utf8")
+    .split("\0")
+    .filter((filePath) => SOURCE_PATH.test(filePath))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+/** Returns the complete supported-source inventory from Git objects, never the working tree. */
+export function readSourceInventory(root: string, ref: "HEAD" | "index"): SnapshotFile[] {
+  return sourcePaths(root, ref).map((filePath) => ({
+    path: filePath,
+    content: objectContent(root, ref === "index" ? `:${filePath}` : `HEAD:${filePath}`),
+  }));
 }

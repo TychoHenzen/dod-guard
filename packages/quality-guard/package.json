@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "tsc && node --test \"dist/*.test.js\" && node --test \"scripts/*.test.mjs\" && node --test \"skills/*/scripts/lib/*.test.mjs\"",
+    "test": "tsc && node --test \"dist/**/*.test.js\" && node --test \"scripts/*.test.mjs\" && node --test \"skills/*/scripts/lib/*.test.mjs\"",
     "bundle": "node esbuild.config.mjs",
     "start": "node dist/bundle.js",
     "coverage": "c8 --include=\"src/*.ts\" --exclude=\"src/*.test.ts\" --reporter=text --reporter=html node --test \"dist/*.test.js\"",

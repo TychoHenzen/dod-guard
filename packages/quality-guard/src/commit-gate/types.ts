@@ -20,6 +20,8 @@ export interface SnapshotSummary {
   baseIdentity: string;
   targetIdentity: string;
   changedSourcePaths: string[];
+  /** Present when the staged input requires no source-quality decision. */
+  reason?: string;
 }
 
 export interface DecisionResult {
