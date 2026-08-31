@@ -183,16 +183,16 @@ describe("listDocFiles", () => {
         "README.md",
         "src/index.ts",
         ".claude-plugin/plugin.json",
-        "packages/dod-guard/.claude-plugin/marketplace.json",
+        ".claude-plugin/marketplace.json",
         "notes.txt",
       ].join("\n");
     };
     const files = listDocFiles("/repo", run);
     assert.deepEqual(calls, [["ls-files"]]);
     assert.deepEqual(files, [
+      ".claude-plugin/marketplace.json",
       ".claude-plugin/plugin.json",
       "README.md",
-      "packages/dod-guard/.claude-plugin/marketplace.json",
     ]);
   });
 });

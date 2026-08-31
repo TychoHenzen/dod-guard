@@ -9,7 +9,7 @@ import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { cliWorkspaceTree, invalidPluginWorkspaceTree } from "./fixtures/cli-workspace.mjs";
-import { buildPkg, goodTree } from "./fixtures/plugin-tracked.mjs";
+import { buildPkg, goodTree, PKG_NAME, write } from "./fixtures/plugin-tracked.mjs";
 import { createPluginChecks } from "./lib/plugin-checks.mjs";
 import { discoverPluginWorkspaces } from "./lib/workspace-discovery.mjs";
 
@@ -71,6 +71,19 @@ describe("validate-plugins: git-tracked rules", () => {
     const violations = collect(pkg, isTracked);
     strictEqual(violations.length, 1, JSON.stringify(violations));
     match(violations[0].message, /hook command targets untracked file/);
+  });
+
+  it("fails when a package contains its own marketplace", () => {
+    const root = tree();
+    const pkg = buildPkg(root);
+    write(
+      root,
+      `packages/${PKG_NAME}/.claude-plugin/marketplace.json`,
+      JSON.stringify({ name: PKG_NAME, plugins: [{ name: PKG_NAME }] }),
+    );
+    const violations = collect(pkg, alwaysTracked);
+    strictEqual(violations.length, 1, JSON.stringify(violations));
+    match(violations[0].message, /package-level marketplace is forbidden/);
   });
 });
 

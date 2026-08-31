@@ -1,5 +1,6 @@
 // Per-package plugin manifest checks: package.json, .mcp.json, plugin.json,
-// skills, agents, and marketplace entries must all describe the same plugin.
+// skills, and agents must all describe the same plugin. The repository has one
+// marketplace at the root; package-level marketplaces create duplicate catalogs.
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -218,7 +219,9 @@ export function createPluginChecks(report, isTracked) {
     checkAgents(pkg);
     checkAgentReferences(pkg, packages);
     const local = join(pkg.dir, ".claude-plugin", "marketplace.json");
-    if (existsSync(local)) checkMarketplace(local, packages, false);
+    if (existsSync(local)) {
+      report(local, "package-level marketplace is forbidden - use the repository root .claude-plugin/marketplace.json");
+    }
   }
 
   return { checkPackage, checkMarketplace };

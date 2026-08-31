@@ -16,9 +16,9 @@ You are a publish workflow guide for the dod-guard monorepo. Follow this procedu
 
 **Nothing publishes to npm.** The marketplace installs straight from a git checkout of this repo, tracked `dist/bundle.js` included. A release is: push to master, wait for CI to go green, then `/plugin update` + `/reload-plugins`.
 
-`static-analysis` rebuilds both tracked bundles and, if anything drifted, commits and pushes a follow-up `chore: apply Biome autofixes, tightened baselines and rebuilt bundles [skip ci]` commit. That means the commit you pushed is not necessarily the one that ends up on master - always resync after CI finishes (Step 6).
+`static-analysis` rebuilds the tracked bundles and, if anything drifted, commits and pushes a follow-up `chore: apply Biome autofixes, tightened baselines and rebuilt bundles [skip ci]` commit. That means the commit you pushed is not necessarily the one that ends up on master - always resync after CI finishes (Step 6).
 
-**Every plugin's `plugin.json` version is a cache key, not a release trigger.** `/plugin update` copies files into `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`. A content change with no version bump is invisible: the cache already has that version and does not re-copy. Bump the version in `<plugin>/.claude-plugin/plugin.json` (root-level for `plugins/natural-output-style`, or `packages/<name>/.claude-plugin/plugin.json` for the two package plugins) whenever you change any file that plugin ships. This applies to both package plugins and to `plugins/natural-output-style`.
+**Every plugin's `plugin.json` version is a cache key, not a release trigger.** `/plugin update` copies files into `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`. A content change with no version bump is invisible: the cache already has that version and does not re-copy. Bump the version in `<plugin>/.claude-plugin/plugin.json` (root-level for `plugins/natural-output-style`, or `packages/<name>/.claude-plugin/plugin.json` for package plugins) whenever you change any file that plugin ships.
 
 There is no other reason to touch a version number. `validate-plugins.mjs` only checks that `plugin.json`'s version, when present, matches `package.json` - it does not require either to change.
 
@@ -26,7 +26,7 @@ There is no other reason to touch a version number. `validate-plugins.mjs` only 
 
 - Shell is **Git Bash on Windows**. `/dev/stdin` does NOT work - `cat x.json | node -e "...readFileSync('/dev/stdin')"` fails with `ENOENT: C:\dev\stdin`. To inspect JSON, use the **Read tool** or `node -e "console.log(require('./path/file.json').description)"`.
 - Root `package.json` scripts include `clean`, `build`, `test`, and `bundle`.
-- Only `dod-guard` has `packages/<name>/.claude-plugin/marketplace.json`. `quality-guard` has **only** `plugin.json`. Never assume a per-package marketplace.json exists.
+- The only marketplace is the repository root `.claude-plugin/marketplace.json`. Package plugin directories contain `plugin.json`, never `marketplace.json`; `validate-plugins.mjs` rejects duplicates.
 - CI runs Biome autofix, the ratchets, and a bundle rebuild on every push to master, and if any of that changed anything, commits and pushes the `[skip ci]` commit described above. So remote master is frequently AHEAD of local after a push. Step 0 exists because of this.
 - Bash tool default timeout is 2 minutes. Any `gh run watch` or long CI wait MUST pass an explicit longer `timeout` (600000).
 
@@ -101,7 +101,10 @@ node scripts/ci/check-coverage-gate.mjs
 node packages/quality-guard/scripts/check-skips.mjs .
 npx @biomejs/biome check packages/*/src/ scripts/ci/ --no-errors-on-unmatched
 node "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs" packages --exclude=/dist/ --exclude=node_modules --rules="file-length,function-length,complexity,param-count,nesting-depth,types-per-file,duplicate-block,else-branch,unnamed-tuple,dead-export,unused-local,test-only-export,commented-out-code,todo-marker,stateless-method,comment-bloat,comment-restates-code,assumption-marker" --baseline=.github/quality/quality-baseline.json --fail-on=regression
-for p in dod-guard quality-guard; do node scripts/ci/smoke-bundle.mjs "$p"; done
+node --test scripts/ci/smoke-bundle-standalone.test.mjs scripts/ci/smoke-cli-bundle.test.mjs
+for p in dod-guard quality-guard code-explorer; do node scripts/ci/smoke-bundle.mjs "$p"; done
+node scripts/ci/smoke-cli-bundle.mjs fossil
+node scripts/ci/smoke-bundle-standalone.mjs
 ```
 
 `check-skips.mjs` hard-fails CI on any unacknowledged `.quality-skip` waiver - it appears in no CI job name, so it is easy to forget locally. The quality scan lives under `packages/quality-guard/skills/`, not `scripts/ci/`, for the same reason; copy its invocation from the `Quality ratchet (structure)` step in `.github/workflows/ci.yml` if that command ever changes there.

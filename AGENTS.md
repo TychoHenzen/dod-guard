@@ -85,7 +85,7 @@ The flow:
 
 Nothing publishes to npm. A version bump in `package.json` is a changelog entry now, not a release trigger - `validate-plugins.mjs` still enforces that `plugin.json`'s version, when present, matches `package.json`.
 
-**Marketplace**: Update `.claude-plugin/marketplace.json` in each plugin package when adding or removing plugins or skills. The monorepo root `.claude-plugin/marketplace.json` describes marketplace plugins only. Fossil must not be added to that marketplace contract.
+**Marketplace**: The repository has exactly one marketplace file: the root `.claude-plugin/marketplace.json`. Update it when adding or removing marketplace plugins, or when an entry's description changes. Package directories contain `plugin.json`, never `marketplace.json`; `validate-plugins.mjs` rejects package-level marketplaces. Fossil must not be added to the marketplace contract.
 
 **CI behavior** (`.github/workflows/ci.yml`):
 - Push to `master` -> every gate below runs.
@@ -107,7 +107,7 @@ updated `package-lock.json` with the new package.
 
 `validate-plugins.mjs` checks, all hard-fail:
 
-- **Manifest agreement** - plugin.json / .mcp.json / package.json / marketplace.json name the same plugin; `main` is `dist/bundle.js`; `repository.directory` is right; plugin.json `version`, if present, matches package.json.
+- **Manifest agreement** - plugin.json / .mcp.json / package.json name the same plugin; the root marketplace points to every plugin; `main` is `dist/bundle.js`; `repository.directory` is right; plugin.json `version`, if present, matches package.json; package-level marketplaces are forbidden.
 - **Reachability** - `dist/bundle.js` must exist and be git-tracked; `.mcp.json` and `.claude-plugin/` are git-tracked; `skills/` and `agents/` are git-tracked when they exist; hook commands point at files that exist and are git-tracked; marketplace `source` paths resolve; every plugin appears in the root marketplace.
 - **Skills and agents** - each skill directory has a SKILL.md whose frontmatter `name` matches the directory; each agent file's `name` matches its filename; both carry a description; `subagent_type: "<plugin>:<agent>"` references resolve.
 - **Description honesty** - every `/slug` mentioned resolves to a skill that ships, "Ships N skills" matches the real count, and no mojibake or control characters (this is what shipped the double-encoded em-dash in `b4b2e13`).
