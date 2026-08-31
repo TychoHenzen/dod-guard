@@ -211,15 +211,18 @@
   <!-- covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: Project contains candidates for several groups -->
   <!-- covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: One group exceeds its limit -->
   <!-- covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: Related message and service symbols remain distinct -->
-- [ ] 5.5 Exclude raw frequency from landmark selection and use deterministic tie ordering.
+- [x] 5.5 Exclude raw frequency from landmark selection and use deterministic tie ordering.
+<!-- status: completed -->
   <!-- covers: code-explorer/project-landmarks :: Raw word frequency never establishes a landmark :: Generic identifier occurs most often -->
   <!-- covers: code-explorer/project-landmarks :: Raw word frequency never establishes a landmark :: Landmark scores tie -->
   <!-- covers: code-explorer/project-landmarks :: Raw word frequency never establishes a landmark :: Language does not report visibility -->
-- [ ] 5.6 Run the landmark practice fixture and inspect every selected concept's visible evidence and group.
+- [x] 5.6 Run the landmark practice fixture and inspect every selected concept's visible evidence and group.
+<!-- status: completed -->
 
 ## 6. Revisioned Workspace Freshness
 
-- [ ] 6.1 Watch or receive saved renames and deletions, invalidate affected data, and expose pending backend processing.
+- [x] 6.1 Watch or receive saved renames and deletions, invalidate affected data, and expose pending backend processing.
+<!-- status: completed -->
   <!-- covers: code-explorer/workspace-freshness :: Saved project changes become visible without a process restart :: Existing symbol is renamed on disk -->
   <!-- covers: code-explorer/workspace-freshness :: Saved project changes become visible without a process restart :: Source file is deleted -->
   <!-- covers: code-explorer/workspace-freshness :: Saved project changes become visible without a process restart :: Backend is still processing a change -->

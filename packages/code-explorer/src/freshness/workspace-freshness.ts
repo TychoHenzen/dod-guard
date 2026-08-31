@@ -1,0 +1,280 @@
+import { createHash } from "node:crypto";
+import { readdir, readFile, stat } from "node:fs/promises";
+import { join, relative } from "node:path";
+import chokidar from "chokidar";
+
+export type FreshnessCause = "freshness_unavailable" | "incomplete_write" | "scan_limit";
+export type FreshnessState = "initializing" | "ready" | "refreshing" | "degraded";
+export type FreshnessStatus = {
+  current_generation: number;
+  pending_generation: number | null;
+  state: FreshnessState;
+  mode: "watching" | "polling";
+  degraded_cause?: FreshnessCause;
+};
+
+export type Manifest = ReadonlyMap<string, string>;
+export type ReconcileResult = { manifest: Manifest } | { cause: FreshnessCause };
+export type WorkspaceWatcher = {
+  on(event: "all" | "error", listener: (...args: unknown[]) => void): WorkspaceWatcher;
+  close(): Promise<void>;
+};
+export type FreshnessOptions = {
+  reconcile: () => Promise<ReconcileResult>;
+  createWatcher?: () => WorkspaceWatcher;
+  watch_paths?: readonly string[];
+  setTimeout?: (callback: () => void, delay: number) => unknown;
+  clearTimeout?: (timer: unknown) => void;
+};
+
+const coalesceMilliseconds = 100;
+export const chokidarWatchOptions = {
+  atomic: 100,
+  awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 100 },
+  alwaysStat: true,
+  followSymlinks: false,
+  ignorePermissionErrors: false,
+} as const;
+
+/** Reconciles final manifests, so watcher event order never becomes project state. */
+export class WorkspaceFreshness {
+  #status: FreshnessStatus = {
+    current_generation: 0,
+    pending_generation: null,
+    state: "initializing",
+    mode: "watching",
+  };
+  #manifest: Manifest = new Map();
+  #watcher: WorkspaceWatcher | undefined;
+  #activeSessions = 0;
+  #coalesceTimer: unknown;
+  #pollTimer: unknown;
+  #manifestTimer: unknown;
+  #running: Promise<void> | undefined;
+
+  constructor(private readonly options: FreshnessOptions) {}
+
+  status(): FreshnessStatus {
+    return { ...this.#status };
+  }
+
+  async start(activeSessions = 0): Promise<void> {
+    this.#activeSessions = activeSessions;
+    try {
+      this.#watcher = (this.options.createWatcher ?? (() => createChokidarWatcher(this.options.watch_paths ?? [])))();
+      this.#watcher.on("all", () => this.schedule());
+      this.#watcher.on("error", () => this.schedule());
+    } catch {
+      this.#status = { ...this.#status, mode: "polling" };
+      this.#schedulePolling();
+    }
+    this.#scheduleManifestCheck();
+    await this.reconcile();
+  }
+
+  setActiveSessions(count: number): void {
+    this.#activeSessions = count;
+    this.#schedulePolling();
+    this.#scheduleManifestCheck();
+  }
+
+  schedule(): void {
+    if (this.#coalesceTimer !== undefined) return;
+    this.#coalesceTimer = this.timeout(() => {
+      this.#coalesceTimer = undefined;
+      void this.reconcile();
+    }, coalesceMilliseconds);
+  }
+
+  async reconcile(): Promise<void> {
+    if (this.#running) return this.#running;
+    this.#status = {
+      current_generation: this.#status.current_generation,
+      pending_generation: this.#status.current_generation + 1,
+      state: "refreshing",
+      mode: this.#status.mode,
+    };
+    const run = this.options
+      .reconcile()
+      .then((result) => {
+        if ("cause" in result) {
+          this.#status = {
+            current_generation: this.#status.current_generation,
+            pending_generation: null,
+            state: "degraded",
+            mode: this.#status.mode,
+            degraded_cause: result.cause,
+          };
+          return;
+        }
+        if (this.#status.current_generation > 0 && sameManifest(this.#manifest, result.manifest)) {
+          this.#status = {
+            current_generation: this.#status.current_generation,
+            pending_generation: null,
+            state: this.#status.current_generation === 0 ? "initializing" : "ready",
+            mode: this.#status.mode,
+          };
+          return;
+        }
+        this.#manifest = new Map(result.manifest);
+        this.#status = {
+          current_generation: this.#status.current_generation + 1,
+          pending_generation: null,
+          state: "ready",
+          mode: this.#status.mode,
+        };
+      })
+      .catch(() => {
+        this.#status = {
+          current_generation: this.#status.current_generation,
+          pending_generation: null,
+          state: "degraded",
+          mode: this.#status.mode,
+          degraded_cause: "freshness_unavailable",
+        };
+      })
+      .finally(() => {
+        this.#running = undefined;
+      });
+    this.#running = run;
+    return run;
+  }
+
+  async close(): Promise<void> {
+    if (this.#coalesceTimer !== undefined) this.clear(this.#coalesceTimer);
+    if (this.#pollTimer !== undefined) this.clear(this.#pollTimer);
+    if (this.#manifestTimer !== undefined) this.clear(this.#manifestTimer);
+    await this.#watcher?.close();
+  }
+
+  #schedulePeriodic(delay: number, assign: (timer: unknown) => void, callback: () => void): void {
+    assign(
+      this.timeout(() => {
+        callback();
+      }, delay),
+    );
+  }
+
+  #schedulePolling(): void {
+    if (this.#status.mode !== "polling" || this.#activeSessions === 0 || this.#pollTimer !== undefined) return;
+    this.#schedulePeriodic(
+      5_000,
+      (timer) => {
+        this.#pollTimer = timer;
+      },
+      () => {
+        this.#pollTimer = undefined;
+        void this.reconcile().finally(() => this.#schedulePolling());
+      },
+    );
+  }
+
+  #scheduleManifestCheck(): void {
+    if (this.#activeSessions === 0 || this.#manifestTimer !== undefined) return;
+    this.#schedulePeriodic(
+      30_000,
+      (timer) => {
+        this.#manifestTimer = timer;
+      },
+      () => {
+        this.#manifestTimer = undefined;
+        void this.reconcile().finally(() => this.#scheduleManifestCheck());
+      },
+    );
+  }
+
+  private timeout(callback: () => void, delay: number): unknown {
+    return (this.options.setTimeout ?? globalThis.setTimeout)(callback, delay);
+  }
+
+  private clear(timer: unknown): void {
+    (this.options.clearTimeout ?? globalThis.clearTimeout)(timer as ReturnType<typeof setTimeout>);
+  }
+}
+
+function createChokidarWatcher(paths: readonly string[]): WorkspaceWatcher {
+  return chokidar.watch([...paths], chokidarWatchOptions) as unknown as WorkspaceWatcher;
+}
+
+function sameManifest(left: Manifest, right: Manifest): boolean {
+  return left.size === right.size && [...left].every(([path, hash]) => right.get(path) === hash);
+}
+
+export type NativeManifestOptions = {
+  root: string;
+  supported: (path: string) => boolean;
+  now?: () => number;
+  sleep?: (milliseconds: number) => Promise<void>;
+};
+
+/** Creates the real filesystem implementation while keeping tests on controllable watcher and clock seams. */
+export function createNativeWorkspaceFreshness(options: NativeManifestOptions): WorkspaceFreshness {
+  return new WorkspaceFreshness({
+    reconcile: () => reconcileNativeManifest(options),
+    watch_paths: [options.root],
+  });
+}
+
+/** Reads a complete, bounded, stable manifest for the supplied supported files. */
+export async function reconcileNativeManifest(options: NativeManifestOptions): Promise<ReconcileResult> {
+  const started = (options.now ?? Date.now)();
+  try {
+    const files = await supportedFiles(options.root, options.supported, started, options.now ?? Date.now);
+    const manifest = new Map<string, string>();
+    for (const file of files) {
+      const stable = await stableHash(join(options.root, file), options.now ?? Date.now, options.sleep ?? delay);
+      if (stable === "incomplete_write") return { cause: stable };
+      if (stable === "scan_limit") return { cause: stable };
+      manifest.set(file, stable);
+    }
+    return { manifest };
+  } catch (error) {
+    return { cause: error instanceof Error && error.message === "scan_limit" ? "scan_limit" : "freshness_unavailable" };
+  }
+}
+
+async function supportedFiles(
+  root: string,
+  supported: (path: string) => boolean,
+  started: number,
+  now: () => number,
+): Promise<string[]> {
+  const output: string[] = [];
+  const visit = async (directory: string): Promise<void> => {
+    if (now() - started > 60_000 || output.length > 50_000) throw new Error("scan_limit");
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const absolute = join(directory, entry.name);
+      if (entry.isDirectory()) await visit(absolute);
+      else {
+        const path = relative(root, absolute).replaceAll("\\", "/");
+        if (supported(path)) output.push(path);
+      }
+    }
+  };
+  await visit(root);
+  if (output.length > 50_000) throw new Error("scan_limit");
+  return output.sort();
+}
+
+async function stableHash(
+  path: string,
+  now: () => number,
+  sleep: (milliseconds: number) => Promise<void>,
+): Promise<string | "incomplete_write" | "scan_limit"> {
+  const started = now();
+  for (;;) {
+    const before = await stat(path);
+    if (before.size > 4 * 1024 * 1024) return "scan_limit";
+    await sleep(100);
+    const after = await stat(path);
+    if (before.size === after.size && before.mtimeMs === after.mtimeMs)
+      return createHash("sha256")
+        .update(await readFile(path))
+        .digest("hex");
+    if (now() - started >= 10_000) return "incomplete_write";
+  }
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
+}

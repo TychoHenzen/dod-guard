@@ -88,7 +88,8 @@ export function scoreLandmark(candidate: LandmarkCandidate): ScoredLandmark {
       .map((reference) => reference.path.split("/")[0])
       .filter((directory): directory is string => Boolean(directory)),
   ).size;
-  const testOnly = candidate.references.some((reference) => reference.content === "test") && productionReferenceFiles === 0;
+  const testOnly =
+    candidate.references.some((reference) => reference.content === "test") && productionReferenceFiles === 0;
   const incomingCallSites = candidate.incoming_call_sites?.length ?? 0;
   const publicOrExported = candidate.public_or_exported === true;
   const evidence: LandmarkEvidence = {
@@ -121,7 +122,10 @@ export function scoreLandmark(candidate: LandmarkCandidate): ScoredLandmark {
 
 /** Ranks candidates by the declared score while retaining failed candidates for explainable comparison. */
 export function rankLandmarks(candidates: readonly LandmarkCandidate[]): ScoredLandmark[] {
-  return candidates.map(scoreLandmark).sort((left, right) => right.score - left.score);
+  return candidates
+    .map((candidate) => ({ candidate, landmark: scoreLandmark(candidate) }))
+    .sort(compareRankedLandmarks)
+    .map(({ landmark }) => landmark);
 }
 
 /** Leaves generated-only identities out of the default selectable set and keeps the score threshold at the boundary. */
@@ -138,15 +142,38 @@ export function groupLandmarks(
   const scoredCandidates = candidates
     .map((candidate) => ({ candidate, landmark: scoreLandmark(candidate) }))
     .filter(({ landmark }) => landmark.eligible)
-    .sort((left, right) => right.landmark.score - left.landmark.score);
+    .sort(compareRankedLandmarks);
   return landmarkGroupNames.flatMap((group) => {
     const matches = scoredCandidates
       .filter(({ candidate }) => landmarkGroupFor(candidate) === group)
       .map(({ landmark }) => landmark);
     return matches.length
-      ? [{ group, candidates: matches.slice(0, perGroupLimit), omitted_candidate_count: Math.max(0, matches.length - perGroupLimit) }]
+      ? [
+          {
+            group,
+            candidates: matches.slice(0, perGroupLimit),
+            omitted_candidate_count: Math.max(0, matches.length - perGroupLimit),
+          },
+        ]
       : [];
   });
+}
+
+/** Resolves equal evidence without consulting raw source-word frequency. */
+function compareRankedLandmarks(
+  left: { candidate: LandmarkCandidate; landmark: ScoredLandmark },
+  right: { candidate: LandmarkCandidate; landmark: ScoredLandmark },
+): number {
+  if (left.landmark.score !== right.landmark.score) return right.landmark.score - left.landmark.score;
+  return landmarkTieKey(left.candidate).localeCompare(landmarkTieKey(right.candidate));
+}
+
+function landmarkTieKey(candidate: LandmarkCandidate): string {
+  const group = landmarkGroupNames.indexOf(landmarkGroupFor(candidate) ?? "common_actions");
+  const path = candidate.symbol.path.normalize("NFKC").replaceAll("\\", "/").toLocaleLowerCase();
+  const kind = candidate.symbol.kind.normalize("NFKC").toLocaleLowerCase();
+  const symbol = candidate.symbol.symbol_id.normalize("NFKC").toLocaleLowerCase();
+  return `${String(group).padStart(2, "0")}\u0000${path}\u0000${kind}\u0000${symbol}`;
 }
 
 /** Converts grouped analysis into the empty-search response shape without dropping evidence or omitted counts. */
@@ -183,7 +210,9 @@ export function readyLandmarks(groups: readonly LandmarkGroup[]): LandmarkDiscov
     landmarks: groups.slice(0, MAX_LANDMARK_GROUPS).map((group) => ({
       group: group.group,
       symbols: group.symbols.slice(0, MAX_LANDMARKS_PER_GROUP),
-      ...(group.omitted_candidate_count === undefined ? {} : { omitted_candidate_count: group.omitted_candidate_count }),
+      ...(group.omitted_candidate_count === undefined
+        ? {}
+        : { omitted_candidate_count: group.omitted_candidate_count }),
     })),
   };
 }
