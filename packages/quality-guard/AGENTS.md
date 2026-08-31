@@ -10,7 +10,7 @@ repository decision:
 | Part | Where | Role |
 |------|-------|------|
 | Scanner | `skills/quality-refactor/scripts/` | Zero-dependency structural scanner. The single implementation. |
-| Hook | `scripts/quality-guard.mjs` | PostToolUse file-local feedback. It reads the baseline but never changes it or claims commit readiness. |
+| Hook | `hooks/hooks.json`, `scripts/quality-guard.mjs` | PostToolUse registration and file-local feedback. It reads the baseline but never changes it or claims commit readiness. |
 | Commit gate | `src/commit-gate/` | The staged decision and the committed-tree replay used by CI. |
 | MCP server | `src/` | Four tools, including `quality_commit_gate`, that expose scanner, baseline, waiver, and staged-decision views. |
 

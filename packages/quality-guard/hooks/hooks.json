@@ -1,0 +1,19 @@
+{
+  "description": "File-local structural feedback after supported source writes.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "apply_patch|Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/scripts/quality-guard.mjs\"",
+            "commandWindows": "\"${PLUGIN_ROOT}\\scripts\\quality-guard-hook.cmd\"",
+            "timeout": 30,
+            "statusMessage": "quality-guard: checking structure..."
+          }
+        ]
+      }
+    ]
+  }
+}
