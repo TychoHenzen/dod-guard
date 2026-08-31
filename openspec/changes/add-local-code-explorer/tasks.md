@@ -49,14 +49,16 @@
 
 ## 2. Local browser navigation
 
-- [ ] 2.1 Build the packaged HTML, CSS, TypeScript store, three-pane desktop shell, narrow drawers, status strip, and closed action dispatcher under `packages/code-explorer/src/browser/`. Verify with the package browser test command at wide and narrow viewports.
+- [x] 2.1 Build the packaged HTML, CSS, TypeScript store, three-pane desktop shell, narrow drawers, status strip, and closed action dispatcher under `packages/code-explorer/src/browser/`. Verify with the package browser test command at wide and narrow viewports.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-navigation :: The desktop view keeps one symbol central :: Browser opens with no focused symbol -->
   <!-- covers: code-explorer/browser-navigation :: The desktop view keeps one symbol central :: Symbol is focused -->
   <!-- covers: code-explorer/browser-navigation :: The desktop view keeps one symbol central :: Window becomes narrow -->
   <!-- covers: code-explorer/browser-navigation :: Browser actions cannot modify project content :: User inspects every visible action -->
   <!-- covers: code-explorer/browser-navigation :: Browser actions cannot modify project content :: Browser submits an unadvertised operation -->
 
-- [ ] 2.2 Implement discovery inputs, grouped landmarks, service-ordered result rendering, filters, fuzzy labels, omitted counts, and refinement guidance in `packages/code-explorer/src/browser/`. Verify with deterministic fake-core browser tests.
+- [x] 2.2 Implement discovery inputs, grouped landmarks, service-ordered result rendering, filters, fuzzy labels, omitted counts, and refinement guidance in `packages/code-explorer/src/browser/`. Verify with deterministic fake-core browser tests.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-navigation :: Browser discovery preserves service ranking and filters :: User searches with a misspelling -->
   <!-- covers: code-explorer/browser-navigation :: Browser discovery preserves service ranking and filters :: User narrows search filters -->
   <!-- covers: code-explorer/browser-navigation :: Browser discovery preserves service ranking and filters :: User clears the query -->

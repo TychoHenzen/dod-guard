@@ -1,0 +1,118 @@
+export type DiscoveryFilters = {
+  path_globs?: readonly string[];
+  languages?: readonly string[];
+  kinds?: readonly string[];
+  content?: "production" | "test" | "all";
+  include_generated?: boolean;
+};
+
+export type DiscoveryCandidate = {
+  name: string;
+  match_class: string;
+  score: number;
+  classification?: string;
+  path: string;
+  kind: string;
+};
+
+export type BrowserLandmark = { name: string; path: string; kind: string };
+export type BrowserLandmarkGroup = { group: string; items: readonly BrowserLandmark[] };
+export type DiscoveryReply = {
+  data: {
+    candidates?: readonly DiscoveryCandidate[];
+    omitted_count?: number;
+    refinement_guidance?: string;
+  };
+};
+
+export type DiscoveryState = {
+  query: string;
+  filters: DiscoveryFilters;
+  candidates: readonly DiscoveryCandidate[];
+  landmarks: readonly BrowserLandmarkGroup[];
+  omittedCount: number;
+  refinementGuidance?: string;
+  mode: "landmarks" | "results";
+};
+
+function escapeText(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+/** Preserves the service result order and fields without browser-side fuzzy scoring or reranking. */
+export class BrowserDiscoveryController {
+  private current: DiscoveryState;
+
+  constructor(
+    private readonly searchCore: (request: Record<string, unknown>) => Promise<DiscoveryReply>,
+    landmarks: readonly BrowserLandmarkGroup[] = [],
+  ) {
+    this.current = { query: "", filters: {}, candidates: [], landmarks, omittedCount: 0, mode: "landmarks" };
+  }
+
+  state(): DiscoveryState {
+    return this.current;
+  }
+
+  async search(query: string, filters: DiscoveryFilters = {}): Promise<DiscoveryState> {
+    const normalized = query.trim();
+    if (normalized.length === 0) {
+      this.current = {
+        ...this.current,
+        query: "",
+        filters,
+        candidates: [],
+        omittedCount: 0,
+        refinementGuidance: undefined,
+        mode: "landmarks",
+      };
+      return this.current;
+    }
+    const request: Record<string, unknown> = { query: normalized };
+    if (filters.path_globs) request.path_globs = [...filters.path_globs];
+    if (filters.languages) request.languages = [...filters.languages];
+    if (filters.kinds) request.kinds = [...filters.kinds];
+    if (filters.content) request.content = filters.content;
+    if (filters.include_generated !== undefined) request.include_generated = filters.include_generated;
+    const reply = await this.searchCore(request);
+    this.current = {
+      ...this.current,
+      query: normalized,
+      filters,
+      candidates: reply.data.candidates ?? [],
+      omittedCount: reply.data.omitted_count ?? 0,
+      refinementGuidance: reply.data.refinement_guidance,
+      mode: "results",
+    };
+    return this.current;
+  }
+}
+
+function renderLandmarks(landmarks: readonly BrowserLandmarkGroup[]): string {
+  return landmarks
+    .map(
+      (group) =>
+        `<section class="landmark-group"><h3>${escapeText(group.group)}</h3><ul>${group.items.map((item) => `<li>${escapeText(item.name)} <span>${escapeText(item.kind)} · ${escapeText(item.path)}</span></li>`).join("")}</ul></section>`,
+    )
+    .join("");
+}
+
+/** Renders only service-provided fields. Candidate order is intentionally unchanged. */
+export function renderDiscovery(state: DiscoveryState): string {
+  if (state.mode === "landmarks")
+    return `<section data-discovery="landmarks">${renderLandmarks(state.landmarks)}</section>`;
+  const candidates = state.candidates
+    .map(
+      (candidate) =>
+        `<li data-match-class="${escapeText(candidate.match_class)}"><strong>${escapeText(candidate.name)}</strong> <span>${escapeText(candidate.match_class)} ${candidate.score}</span> <span>${escapeText(candidate.path)} · ${escapeText(candidate.kind)}</span></li>`,
+    )
+    .join("");
+  const omitted = state.omittedCount > 0 ? `<p>${state.omittedCount} omitted</p>` : "";
+  const guidance = state.refinementGuidance ? `<p>${escapeText(state.refinementGuidance)}</p>` : "";
+  return `<section data-discovery="results"><ul>${candidates}</ul>${omitted}${guidance}</section>`;
+}
