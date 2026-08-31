@@ -1,7 +1,7 @@
 {
   "name": "quality-guard",
   "version": "0.5.4",
-  "description": "Structural code quality gate. A PostToolUse hook ratchets every write against a recorded baseline, so existing debt is allowed but making it worse is not. Ships 1 skill: /quality-refactor (systematic refactoring to an explicit machine-checked quality bar).",
+  "description": "Structural code quality gate. The PostToolUse hook gives file-local feedback, while the staged gate makes the commit decision and CI replays it from the committed tree. Ships 1 skill: /quality-refactor (systematic refactoring to an explicit machine-checked quality bar).",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"

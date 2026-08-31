@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
+import { decideQuality } from "./decision-core.js";
 import type { ArchitectureFileFact } from "./encapsulation.js";
 import { analyzeRefactorProgress } from "./refactor-progress.js";
 import { evaluateResponsibilityMap, parseResponsibilityMap } from "./responsibility-map.js";
-import { decideQuality } from "./decision-core.js";
 
 // covers: quality-guard/architecture-analysis :: Refactor analysis reports structural progress :: Responsibility moves to a focused module
 test("reports an operation ownership move and reduced dependency on the old owner as structural progress", () => {
@@ -22,10 +22,20 @@ test("reports an operation ownership move and reduced dependency on the old owne
         },
       ],
     },
-    { path: "src/ledger.ts", imports: [], references: [], types: [{ name: "Ledger", members: [], dependencies: [], forwardingPaths: [] }] },
+    {
+      path: "src/ledger.ts",
+      imports: [],
+      references: [],
+      types: [{ name: "Ledger", members: [], dependencies: [], forwardingPaths: [] }],
+    },
   ];
   const after: ArchitectureFileFact[] = [
-    { path: "src/coordinator.ts", imports: [], references: [], types: [{ name: "Coordinator", members: [], dependencies: [], forwardingPaths: [] }] },
+    {
+      path: "src/coordinator.ts",
+      imports: [],
+      references: [],
+      types: [{ name: "Coordinator", members: [], dependencies: [], forwardingPaths: [] }],
+    },
     {
       path: "src/reconciliation/reconciler.ts",
       imports: ["../ledger"],
@@ -39,10 +49,20 @@ test("reports an operation ownership move and reduced dependency on the old owne
         },
       ],
     },
-    { path: "src/ledger.ts", imports: [], references: [], types: [{ name: "Ledger", members: [], dependencies: [], forwardingPaths: [] }] },
+    {
+      path: "src/ledger.ts",
+      imports: [],
+      references: [],
+      types: [{ name: "Ledger", members: [], dependencies: [], forwardingPaths: [] }],
+    },
   ];
 
-  const result = analyzeRefactorProgress(before, after, ["src/coordinator.ts", "src/reconciliation/reconciler.ts"], parseQualityConfig("{}"));
+  const result = analyzeRefactorProgress(
+    before,
+    after,
+    ["src/coordinator.ts", "src/reconciliation/reconciler.ts"],
+    parseQualityConfig("{}"),
+  );
   assert.equal(result.hasArchitecturalProgress, true);
   assert.deepEqual(result.ownershipMoves, [{ operation: "reconcile", from: "Coordinator", to: "Reconciler" }]);
   assert.equal(result.indicators.ownership.status, "improved");
@@ -66,7 +86,12 @@ test("reports no architectural progress when only names and formatting change", 
         },
       ],
     },
-    { path: "src/clock.ts", imports: [], references: [], types: [{ name: "Clock", members: [], dependencies: [], forwardingPaths: [] }] },
+    {
+      path: "src/clock.ts",
+      imports: [],
+      references: [],
+      types: [{ name: "Clock", members: [], dependencies: [], forwardingPaths: [] }],
+    },
   ];
   const after = structuredClone(before);
   const result = analyzeRefactorProgress(before, after, ["src/service.ts"], parseQualityConfig("{}"));
@@ -79,12 +104,42 @@ test("reports no architectural progress when only names and formatting change", 
 
 // covers: quality-guard/commit-gate :: Refactor intent requires structural evidence :: Local metrics improve without ownership change
 test("requires declared ownership progress instead of accepting local metric improvements", () => {
-  const before: ArchitectureFileFact[] = [{ path: "src/service.ts", imports: [], references: [], types: [{ name: "Service", members: [{ name: "run", kind: "method", visibility: "private" }], dependencies: [], forwardingPaths: [] }] }];
-  const map = parseResponsibilityMap('{"targetScope":["src/service.ts"],"responsibilities":[{"name":"run","currentOwners":["Service"],"consumers":[],"dependencies":[]}],"desired":{"ownership":[{"responsibility":"run","owner":"Runner"}],"boundaries":[]}}');
+  const before: ArchitectureFileFact[] = [
+    {
+      path: "src/service.ts",
+      imports: [],
+      references: [],
+      types: [
+        {
+          name: "Service",
+          members: [{ name: "run", kind: "method", visibility: "private" }],
+          dependencies: [],
+          forwardingPaths: [],
+        },
+      ],
+    },
+  ];
+  const map = parseResponsibilityMap(
+    '{"targetScope":["src/service.ts"],"responsibilities":[{"name":"run","currentOwners":["Service"],"consumers":[],"dependencies":[]}],"desired":{"ownership":[{"responsibility":"run","owner":"Runner"}],"boundaries":[]}}',
+  );
   const progress = evaluateResponsibilityMap(map, before, before, parseQualityConfig("{}"));
   const result = decideQuality({
-    snapshot: { baseIdentity: "base", targetIdentity: "index", changes: [{ kind: "modify", before: { path: "src/service.ts", content: "before" }, after: { path: "src/service.ts", content: "after" } }] },
-    config: parseQualityConfig("{}"), beforeFiles: before, afterFiles: before, scanner: { findings: [] }, refactorMap: map,
+    snapshot: {
+      baseIdentity: "base",
+      targetIdentity: "index",
+      changes: [
+        {
+          kind: "modify",
+          before: { path: "src/service.ts", content: "before" },
+          after: { path: "src/service.ts", content: "after" },
+        },
+      ],
+    },
+    config: parseQualityConfig("{}"),
+    beforeFiles: before,
+    afterFiles: before,
+    scanner: { findings: [] },
+    refactorMap: map,
   });
   assert.equal(progress.hasDeclaredOutcomeProgress, false);
   assert.equal(progress.indicators.ownership.status, "unchanged");
@@ -95,13 +150,57 @@ test("requires declared ownership progress instead of accepting local metric imp
 
 // covers: quality-guard/commit-gate :: Refactor intent requires structural evidence :: Declared structural outcome is achieved
 test("recognizes when the declared ownership outcome is achieved", () => {
-  const before: ArchitectureFileFact[] = [{ path: "src/service.ts", imports: [], references: [], types: [{ name: "Service", members: [{ name: "run", kind: "method", visibility: "private" }], dependencies: [], forwardingPaths: [] }] }];
-  const after: ArchitectureFileFact[] = [{ path: "src/runner.ts", imports: [], references: [], types: [{ name: "Runner", members: [{ name: "run", kind: "method", visibility: "private" }], dependencies: [], forwardingPaths: [] }] }];
-  const map = parseResponsibilityMap('{"targetScope":["src/service.ts","src/runner.ts"],"responsibilities":[{"name":"run","currentOwners":["Service"],"consumers":[],"dependencies":[]}],"desired":{"ownership":[{"responsibility":"run","owner":"Runner"}],"boundaries":[]}}');
+  const before: ArchitectureFileFact[] = [
+    {
+      path: "src/service.ts",
+      imports: [],
+      references: [],
+      types: [
+        {
+          name: "Service",
+          members: [{ name: "run", kind: "method", visibility: "private" }],
+          dependencies: [],
+          forwardingPaths: [],
+        },
+      ],
+    },
+  ];
+  const after: ArchitectureFileFact[] = [
+    {
+      path: "src/runner.ts",
+      imports: [],
+      references: [],
+      types: [
+        {
+          name: "Runner",
+          members: [{ name: "run", kind: "method", visibility: "private" }],
+          dependencies: [],
+          forwardingPaths: [],
+        },
+      ],
+    },
+  ];
+  const map = parseResponsibilityMap(
+    '{"targetScope":["src/service.ts","src/runner.ts"],"responsibilities":[{"name":"run","currentOwners":["Service"],"consumers":[],"dependencies":[]}],"desired":{"ownership":[{"responsibility":"run","owner":"Runner"}],"boundaries":[]}}',
+  );
   const progress = evaluateResponsibilityMap(map, before, after, parseQualityConfig("{}"));
   const result = decideQuality({
-    snapshot: { baseIdentity: "base", targetIdentity: "index", changes: [{ kind: "modify", before: { path: "src/service.ts", content: "before" }, after: { path: "src/runner.ts", content: "after" } }] },
-    config: parseQualityConfig("{}"), beforeFiles: before, afterFiles: after, scanner: { findings: [] }, refactorMap: map,
+    snapshot: {
+      baseIdentity: "base",
+      targetIdentity: "index",
+      changes: [
+        {
+          kind: "modify",
+          before: { path: "src/service.ts", content: "before" },
+          after: { path: "src/runner.ts", content: "after" },
+        },
+      ],
+    },
+    config: parseQualityConfig("{}"),
+    beforeFiles: before,
+    afterFiles: after,
+    scanner: { findings: [] },
+    refactorMap: map,
   });
   assert.equal(progress.hasDeclaredOutcomeProgress, true);
   assert.equal(progress.indicators.ownership.status, "improved");
@@ -109,7 +208,25 @@ test("recognizes when the declared ownership outcome is achieved", () => {
 });
 
 test("rejects incomplete, outcome-free, and unknown responsibility map fields", () => {
-  assert.throws(() => parseResponsibilityMap('{"targetScope":["src/a.ts"],"responsibilities":[],"desired":{"ownership":[],"boundaries":[]}}'), /responsibilities/);
-  assert.throws(() => parseResponsibilityMap('{"targetScope":["src/a.ts"],"responsibilities":[{"name":"run","currentOwners":["Service"],"consumers":[],"dependencies":[]}],"desired":{"ownership":[],"boundaries":[]}}'), /outcome/);
-  assert.throws(() => parseResponsibilityMap('{"targetScope":["src/a.ts"],"responsibilities":[{"name":"run","currentOwners":["Service"],"consumers":[],"dependencies":[]}],"desired":{"ownership":[],"boundaries":[]},"extra":true}'), /not supported/);
+  assert.throws(
+    () =>
+      parseResponsibilityMap(
+        '{"targetScope":["src/a.ts"],"responsibilities":[],"desired":{"ownership":[],"boundaries":[]}}',
+      ),
+    /responsibilities/,
+  );
+  assert.throws(
+    () =>
+      parseResponsibilityMap(
+        '{"targetScope":["src/a.ts"],"responsibilities":[{"name":"run","currentOwners":["Service"],"consumers":[],"dependencies":[]}],"desired":{"ownership":[],"boundaries":[]}}',
+      ),
+    /outcome/,
+  );
+  assert.throws(
+    () =>
+      parseResponsibilityMap(
+        '{"targetScope":["src/a.ts"],"responsibilities":[{"name":"run","currentOwners":["Service"],"consumers":[],"dependencies":[]}],"desired":{"ownership":[],"boundaries":[]},"extra":true}',
+      ),
+    /not supported/,
+  );
 });

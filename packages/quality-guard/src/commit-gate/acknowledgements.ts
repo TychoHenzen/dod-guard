@@ -23,9 +23,12 @@ export function parseArchitectureAcknowledgements(source: string): ArchitectureA
   }
   if (!Array.isArray(parsed)) throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
   return parsed.map((item, index) => {
-    if (item === null || typeof item !== "object" || Array.isArray(item)) throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
+    if (item === null || typeof item !== "object" || Array.isArray(item))
+      throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
     const record = item as Record<string, unknown>;
-    const unexpected = Object.keys(record).filter((key) => !["findingId", "fingerprint", "reason", "author", "time"].includes(key));
+    const unexpected = Object.keys(record).filter(
+      (key) => !["findingId", "fingerprint", "reason", "author", "time"].includes(key),
+    );
     if (unexpected.length > 0) throw new Error(`${DECISION_RECORD_PATH}[${index}].${unexpected[0]} is not supported`);
     return {
       findingId: nonEmptyString(record.findingId, `${DECISION_RECORD_PATH}[${index}].findingId`),

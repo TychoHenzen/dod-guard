@@ -4,17 +4,21 @@ Shared agent guidance for work in `packages/quality-guard`.
 
 ## What this package is
 
-A structural code quality gate, in three parts that all measure the same way:
+A structural code quality gate with file-local feedback and one authoritative
+repository decision:
 
 | Part | Where | Role |
 |------|-------|------|
 | Scanner | `skills/quality-refactor/scripts/` | Zero-dependency structural scanner. The single implementation. |
-| Hook | `scripts/quality-guard.mjs` | PostToolUse gate. Ratchets one written file against the baseline. |
-| MCP server | `src/` | 3 tools that ask the same questions on purpose. |
+| Hook | `scripts/quality-guard.mjs` | PostToolUse file-local feedback. It reads the baseline but never changes it or claims commit readiness. |
+| Commit gate | `src/commit-gate/` | The staged decision and the committed-tree replay used by CI. |
+| MCP server | `src/` | Four tools, including `quality_commit_gate`, that expose scanner, baseline, waiver, and staged-decision views. |
 
 The scanner lives with the skill, not in `src/`, because it must run with no
 build step and no dependencies. The hook and the server both reach into it
-rather than reimplementing it.
+rather than reimplementing it. The commit-gate core combines that structural
+evidence with architecture facts, fingerprint-bound acknowledgements, and
+responsibility-map progress.
 
 ## Build and test
 
@@ -29,8 +33,8 @@ Three test globs run, and all three must stay wired in `package.json`:
 
 ## One baseline, one format
 
-The hook and the CI ratchet both read `.github/quality/quality-baseline.json`
-at the repository root. The hook does not keep a baseline of its own. It
+The hook and the CI structural ratchet both read
+`.github/quality/quality-baseline.json` at the repository root. The hook does not keep a baseline of its own. It
 imports `readBaseline`, `compareToBaseline` and `writeBaseline` from the
 scanner through `scripts/baseline-lib.mjs`. That module exists so the path to
 the skill appears exactly once.
@@ -58,6 +62,19 @@ left switched on. The pre-commit hook refuses a commit while any record stays
 unacknowledged. Read them with the `quality_skips` tool.
 
 This bypass is easy on purpose. It must never be silent.
+
+## Commit decision and CI replay
+
+`quality-guard check --staged` is the commit decision. It compares the Git
+index with `HEAD` and returns `PASS`, `REVIEW_REQUIRED`, or `FAIL`. Review
+acknowledgements live in `.github/quality/architecture-decisions.json`; each
+record includes the staged fingerprint, so it expires after relevant source
+content changes.
+
+The CI static-analysis job runs `quality-guard check --committed HEAD --json`
+after the structural ratchet. It uses the same decision core against `HEAD`
+and its first parent. A local Git hook may run the staged command for earlier
+feedback, but CI does not depend on that hook having run.
 
 ## Cross-language boundary
 

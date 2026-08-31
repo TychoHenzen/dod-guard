@@ -22,6 +22,10 @@ export function fingerprintSnapshot(snapshot: Snapshot, config: QualityConfig): 
     .filter((change) => change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH)
     .filter((change) => SOURCE_PATH.test(change.before?.path ?? "") || SOURCE_PATH.test(change.after?.path ?? ""))
     .map((change) => ({ kind: change.kind, before: change.before, after: change.after }))
-    .sort((left, right) => `${left.after?.path ?? left.before?.path}`.localeCompare(`${right.after?.path ?? right.before?.path}`));
-  return createHash("sha256").update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config })).digest("hex");
+    .sort((left, right) =>
+      `${left.after?.path ?? left.before?.path}`.localeCompare(`${right.after?.path ?? right.before?.path}`),
+    );
+  return createHash("sha256")
+    .update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config }))
+    .digest("hex");
 }

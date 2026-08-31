@@ -41,7 +41,10 @@ function isTestPath(filePath: string, declaredPaths: string[]): boolean {
 
 export function isProductionArchitecturePath(filePath: string, config: QualityConfig): boolean {
   const normalized = normalizeArchitecturePath(filePath);
-  return !config.generatedPaths.some((pattern) => matchesArchitecturePath(normalized, pattern)) && !isTestPath(normalized, config.testPaths);
+  return !(
+    config.generatedPaths.some((pattern) => matchesArchitecturePath(normalized, pattern)) ||
+    isTestPath(normalized, config.testPaths)
+  );
 }
 
 function typeNames(files: ProductionTypeFile[], config: QualityConfig): Map<string, Set<string>> {
@@ -73,14 +76,16 @@ export function analyzePlacement(
 
   for (const file of afterFiles) {
     const normalized = normalizeArchitecturePath(file.path);
-    if (!changed.has(normalized) || !isProductionArchitecturePath(file.path, config)) continue;
+    if (!(changed.has(normalized) && isProductionArchitecturePath(file.path, config))) continue;
     const directory = path.posix.dirname(normalized);
     const previous = before.get(directory) ?? new Set<string>();
     const current = after.get(directory) ?? new Set<string>();
     const beforeCount = previous.size;
     const afterCount = current.size;
     const generic = config.genericBuckets.includes(path.posix.basename(directory).toLowerCase());
-    for (const addedType of [...file.types].filter((name) => !previous.has(name)).sort((left, right) => left.localeCompare(right))) {
+    for (const addedType of [...file.types]
+      .filter((name) => !previous.has(name))
+      .sort((left, right) => left.localeCompare(right))) {
       if (generic || beforeCount > config.directTypeLimit) {
         findings.push({
           kind: generic ? "generic-bucket" : "flat-accumulation",
@@ -95,6 +100,8 @@ export function analyzePlacement(
   }
   return findings.sort(
     (left, right) =>
-      left.directory.localeCompare(right.directory) || left.addedType.localeCompare(right.addedType) || left.kind.localeCompare(right.kind),
+      left.directory.localeCompare(right.directory) ||
+      left.addedType.localeCompare(right.addedType) ||
+      left.kind.localeCompare(right.kind),
   );
 }

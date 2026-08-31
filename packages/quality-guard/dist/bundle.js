@@ -21213,7 +21213,9 @@ function canonical(value) {
   return JSON.stringify(value);
 }
 function fingerprintSnapshot(snapshot, config2) {
-  const changes = snapshot.changes.filter((change) => change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH).filter((change) => SOURCE_PATH.test(change.before?.path ?? "") || SOURCE_PATH.test(change.after?.path ?? "")).map((change) => ({ kind: change.kind, before: change.before, after: change.after })).sort((left, right) => `${left.after?.path ?? left.before?.path}`.localeCompare(`${right.after?.path ?? right.before?.path}`));
+  const changes = snapshot.changes.filter((change) => change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH).filter((change) => SOURCE_PATH.test(change.before?.path ?? "") || SOURCE_PATH.test(change.after?.path ?? "")).map((change) => ({ kind: change.kind, before: change.before, after: change.after })).sort(
+    (left, right) => `${left.after?.path ?? left.before?.path}`.localeCompare(`${right.after?.path ?? right.before?.path}`)
+  );
   return createHash("sha256").update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config: config2 })).digest("hex");
 }
 
@@ -21231,9 +21233,12 @@ function parseArchitectureAcknowledgements(source) {
   }
   if (!Array.isArray(parsed)) throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
   return parsed.map((item, index) => {
-    if (item === null || typeof item !== "object" || Array.isArray(item)) throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
+    if (item === null || typeof item !== "object" || Array.isArray(item))
+      throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
     const record3 = item;
-    const unexpected = Object.keys(record3).filter((key2) => !["findingId", "fingerprint", "reason", "author", "time"].includes(key2));
+    const unexpected = Object.keys(record3).filter(
+      (key2) => !["findingId", "fingerprint", "reason", "author", "time"].includes(key2)
+    );
     if (unexpected.length > 0) throw new Error(`${DECISION_RECORD_PATH}[${index}].${unexpected[0]} is not supported`);
     return {
       findingId: nonEmptyString(record3.findingId, `${DECISION_RECORD_PATH}[${index}].findingId`),
@@ -21304,7 +21309,19 @@ function parseQualityConfig(source) {
     throw new ConfigError("must contain valid JSON");
   }
   const input = record2(parsed, "root");
-  keysOnly(input, ["pathGroups", "dependencyDirections", "directTypeLimit", "genericBuckets", "generatedPaths", "testPaths", "history"], "root");
+  keysOnly(
+    input,
+    [
+      "pathGroups",
+      "dependencyDirections",
+      "directTypeLimit",
+      "genericBuckets",
+      "generatedPaths",
+      "testPaths",
+      "history"
+    ],
+    "root"
+  );
   const pathGroups = {};
   if (input.pathGroups !== void 0) {
     const groups = record2(input.pathGroups, "pathGroups");
@@ -21322,7 +21339,7 @@ function parseQualityConfig(source) {
       if (typeof direction.from !== "string" || typeof direction.to !== "string" || typeof direction.allowed !== "boolean") {
         throw new ConfigError(`dependencyDirections[${index}] requires string from/to and boolean allowed`);
       }
-      if (!(direction.from in pathGroups) || !(direction.to in pathGroups)) {
+      if (!(direction.from in pathGroups && direction.to in pathGroups)) {
         throw new ConfigError(`dependencyDirections[${index}] references an unknown path group`);
       }
       dependencyDirections.push({ from: direction.from, to: direction.to, allowed: direction.allowed });
@@ -21332,8 +21349,11 @@ function parseQualityConfig(source) {
   if (input.history !== void 0) {
     const historyInput = record2(input.history, "history");
     keysOnly(historyInput, ["maxFirstParentCommits"], "history");
-    if (historyInput.maxFirstParentCommits === void 0) throw new ConfigError("history must declare maxFirstParentCommits");
-    history = { maxFirstParentCommits: positiveInteger(historyInput.maxFirstParentCommits, "history.maxFirstParentCommits") };
+    if (historyInput.maxFirstParentCommits === void 0)
+      throw new ConfigError("history must declare maxFirstParentCommits");
+    history = {
+      maxFirstParentCommits: positiveInteger(historyInput.maxFirstParentCommits, "history.maxFirstParentCommits")
+    };
   }
   return {
     pathGroups,
@@ -21364,7 +21384,7 @@ function isTestPath(filePath, declaredPaths) {
 }
 function isProductionArchitecturePath(filePath, config2) {
   const normalized = normalizeArchitecturePath(filePath);
-  return !config2.generatedPaths.some((pattern) => matchesArchitecturePath(normalized, pattern)) && !isTestPath(normalized, config2.testPaths);
+  return !(config2.generatedPaths.some((pattern) => matchesArchitecturePath(normalized, pattern)) || isTestPath(normalized, config2.testPaths));
 }
 function typeNames(files, config2) {
   const result = /* @__PURE__ */ new Map();
@@ -21384,7 +21404,7 @@ function analyzePlacement(beforeFiles, afterFiles, affectedPaths, config2) {
   const findings = [];
   for (const file of afterFiles) {
     const normalized = normalizeArchitecturePath(file.path);
-    if (!changed.has(normalized) || !isProductionArchitecturePath(file.path, config2)) continue;
+    if (!(changed.has(normalized) && isProductionArchitecturePath(file.path, config2))) continue;
     const directory = path2.posix.dirname(normalized);
     const previous = before.get(directory) ?? /* @__PURE__ */ new Set();
     const current = after.get(directory) ?? /* @__PURE__ */ new Set();
@@ -21468,7 +21488,9 @@ function analyzeDependencies(beforeFiles, afterFiles, affectedPaths, config2) {
   const after = graph(afterFiles, config2);
   const oldEdges = edgeKeys(before);
   const changed = new Set(affectedPaths.map(normalizeArchitecturePath));
-  const stagedEdges = [...after.values()].flat().filter((edge) => changed.has(edge.from) && !oldEdges.has(`${edge.from}\0${edge.to}`)).sort((left, right) => left.from.localeCompare(right.from) || left.to.localeCompare(right.to) || left.dependency.localeCompare(right.dependency));
+  const stagedEdges = [...after.values()].flat().filter((edge) => changed.has(edge.from) && !oldEdges.has(`${edge.from}\0${edge.to}`)).sort(
+    (left, right) => left.from.localeCompare(right.from) || left.to.localeCompare(right.to) || left.dependency.localeCompare(right.dependency)
+  );
   const findings = [];
   for (const edge of stagedEdges) {
     for (const fromGroup of groupFor(edge.from, config2.pathGroups)) {
@@ -21483,7 +21505,9 @@ function analyzeDependencies(beforeFiles, afterFiles, affectedPaths, config2) {
   for (const cycle of cycles(after)) {
     if (beforeCycles.has(cycle.join("\0"))) continue;
     const cycleEdges = cycle.slice(0, -1).flatMap((from, index) => (after.get(from) ?? []).filter((edge) => edge.to === cycle[index + 1]));
-    const stagedEdge = cycleEdges.find((edge) => stagedEdges.some((added) => added.from === edge.from && added.to === edge.to));
+    const stagedEdge = cycleEdges.find(
+      (edge) => stagedEdges.some((added) => added.from === edge.from && added.to === edge.to)
+    );
     if (stagedEdge) findings.push({ kind: "cycle", cycle, stagedEdge });
   }
   return findings.sort((left, right) => {
@@ -21498,7 +21522,9 @@ function key(type, member) {
   return `${type.name}.${member.name}`;
 }
 function members(type) {
-  return new Set(type.members.filter((member) => member.visibility === "public").map((member) => `${member.kind}\0${member.name}`));
+  return new Set(
+    type.members.filter((member) => member.visibility === "public").map((member) => `${member.kind}\0${member.name}`)
+  );
 }
 function observedCallers(symbol, files, config2) {
   const productionCallers = [];
@@ -21520,7 +21546,7 @@ function analyzeEncapsulation(beforeFiles, afterFiles, affectedPaths, config2) {
   const findings = [];
   for (const afterFile of afterFiles) {
     const filePath = normalizeArchitecturePath(afterFile.path);
-    if (!affected.has(filePath) || !isProductionArchitecturePath(filePath, config2)) continue;
+    if (!(affected.has(filePath) && isProductionArchitecturePath(filePath, config2))) continue;
     const beforeTypes = new Map((beforeByPath.get(filePath)?.types ?? []).map((type) => [type.name, type]));
     for (const type of afterFile.types) {
       const previous = beforeTypes.get(type.name);
@@ -21537,30 +21563,18 @@ function analyzeEncapsulation(beforeFiles, afterFiles, affectedPaths, config2) {
       const priorForwarding = previous ? forwardingKeys(previous) : /* @__PURE__ */ new Set();
       for (const path8 of type.forwardingPaths) {
         if (!priorForwarding.has(`${path8.member}\0${path8.target}`)) {
-          findings.push({ kind: "forwarding-path", path: filePath, type: type.name, member: path8.member, target: path8.target });
+          findings.push({
+            kind: "forwarding-path",
+            path: filePath,
+            type: type.name,
+            member: path8.member,
+            target: path8.target
+          });
         }
       }
     }
   }
   return findings.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
-}
-
-// src/commit-gate/types.ts
-import { createHash as createHash2 } from "node:crypto";
-function canonical2(value) {
-  if (Array.isArray(value)) return `[${value.map(canonical2).join(",")}]`;
-  if (value !== null && typeof value === "object") {
-    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical2(item)}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-function createFinding(input) {
-  const affectedPaths = [...new Set(input.affectedPaths)].sort((left, right) => left.localeCompare(right));
-  const identity = canonical2({ ...input, affectedPaths });
-  return { ...input, affectedPaths, id: createHash2("sha256").update(identity).digest("hex") };
-}
-function normalizeFindings(findings) {
-  return findings.map(({ id: _id, ...finding }) => createFinding(finding)).sort((left, right) => left.id.localeCompare(right.id));
 }
 
 // src/commit-gate/refactor-progress.ts
@@ -21589,10 +21603,14 @@ function ownershipMoves(before, after) {
     if (!newOwners || oldOwners.length !== 1 || newOwners.length !== 1 || oldOwners[0] === newOwners[0]) continue;
     moves.push({ operation, from: oldOwners[0], to: newOwners[0] });
   }
-  return moves.sort((left, right) => left.operation.localeCompare(right.operation) || left.from.localeCompare(right.from) || left.to.localeCompare(right.to));
+  return moves.sort(
+    (left, right) => left.operation.localeCompare(right.operation) || left.from.localeCompare(right.from) || left.to.localeCompare(right.to)
+  );
 }
 function dependencyKeys(types) {
-  return new Set(types.flatMap((item) => item.type.dependencies.map((dependency) => `${item.type.name}\0${dependency}`)));
+  return new Set(
+    types.flatMap((item) => item.type.dependencies.map((dependency) => `${item.type.name}\0${dependency}`))
+  );
 }
 function dependencyReduction(moves, before, after) {
   const beforeTypes = new Map(before.map((item) => [item.type.name, item.type]));
@@ -21612,7 +21630,10 @@ function directTypePressure(types, config2) {
   return [...counts.values()].reduce((total, count) => total + Math.max(0, count - config2.directTypeLimit), 0);
 }
 function publicSurfaceCount(types) {
-  return types.reduce((total, item) => total + item.type.members.filter((member) => member.visibility === "public").length, 0);
+  return types.reduce(
+    (total, item) => total + item.type.members.filter((member) => member.visibility === "public").length,
+    0
+  );
 }
 function compatibilityPathCount(types) {
   return types.reduce((total, item) => total + item.type.forwardingPaths.length, 0);
@@ -21660,19 +21681,26 @@ function analyzeRefactorProgress(beforeFiles, afterFiles, _affectedPaths, config
     details: []
   };
   const indicators = { ownership, dependencyEdges, placement, publicSurface, compatibilityPaths: compatibility };
-  return { ownershipMoves: moves, indicators, hasArchitecturalProgress: Object.values(indicators).some((indicator) => indicator.status === "improved") };
+  return {
+    ownershipMoves: moves,
+    indicators,
+    hasArchitecturalProgress: Object.values(indicators).some((indicator) => indicator.status === "improved")
+  };
 }
 
 // src/commit-gate/responsibility-map.ts
 function object3(value, location) {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error(`${location} must be an object`);
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw new Error(`${location} must be an object`);
   return value;
 }
 function onlyKeys(value, allowed, location) {
-  for (const key2 of Object.keys(value)) if (!allowed.includes(key2)) throw new Error(`${location}.${key2} is not supported`);
+  for (const key2 of Object.keys(value))
+    if (!allowed.includes(key2)) throw new Error(`${location}.${key2} is not supported`);
 }
 function strings(value, location) {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item.trim())) throw new Error(`${location} must be an array of non-empty strings`);
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item.trim()))
+    throw new Error(`${location} must be an array of non-empty strings`);
   const result = value.map((item) => item.trim());
   if (new Set(result).size !== result.length) throw new Error(`${location} contains duplicates`);
   return result;
@@ -21692,13 +21720,21 @@ function parseResponsibilityMap(source) {
   onlyKeys(root, ["targetScope", "responsibilities", "desired"], "responsibility map");
   const targetScope = strings(root.targetScope, "responsibility map.targetScope");
   if (targetScope.length === 0) throw new Error("responsibility map.targetScope must not be empty");
-  if (!Array.isArray(root.responsibilities) || root.responsibilities.length === 0) throw new Error("responsibility map.responsibilities must be a non-empty array");
+  if (!Array.isArray(root.responsibilities) || root.responsibilities.length === 0)
+    throw new Error("responsibility map.responsibilities must be a non-empty array");
   const responsibilities = root.responsibilities.map((item, index) => {
     const responsibility = object3(item, `responsibility map.responsibilities[${index}]`);
-    onlyKeys(responsibility, ["name", "currentOwners", "consumers", "dependencies"], `responsibility map.responsibilities[${index}]`);
+    onlyKeys(
+      responsibility,
+      ["name", "currentOwners", "consumers", "dependencies"],
+      `responsibility map.responsibilities[${index}]`
+    );
     return {
       name: string3(responsibility.name, `responsibility map.responsibilities[${index}].name`),
-      currentOwners: strings(responsibility.currentOwners, `responsibility map.responsibilities[${index}].currentOwners`),
+      currentOwners: strings(
+        responsibility.currentOwners,
+        `responsibility map.responsibilities[${index}].currentOwners`
+      ),
       consumers: strings(responsibility.consumers, `responsibility map.responsibilities[${index}].consumers`),
       dependencies: strings(responsibility.dependencies, `responsibility map.responsibilities[${index}].dependencies`)
     };
@@ -21708,23 +21744,37 @@ function parseResponsibilityMap(source) {
   }
   const desired = object3(root.desired, "responsibility map.desired");
   onlyKeys(desired, ["ownership", "boundaries"], "responsibility map.desired");
-  if (!Array.isArray(desired.ownership) || !Array.isArray(desired.boundaries)) throw new Error("responsibility map.desired requires ownership and boundaries arrays");
+  if (!(Array.isArray(desired.ownership) && Array.isArray(desired.boundaries)))
+    throw new Error("responsibility map.desired requires ownership and boundaries arrays");
   const ownership = desired.ownership.map((item, index) => {
     const outcome = object3(item, `responsibility map.desired.ownership[${index}]`);
     onlyKeys(outcome, ["responsibility", "owner"], `responsibility map.desired.ownership[${index}]`);
-    return { responsibility: string3(outcome.responsibility, `responsibility map.desired.ownership[${index}].responsibility`), owner: string3(outcome.owner, `responsibility map.desired.ownership[${index}].owner`) };
+    return {
+      responsibility: string3(outcome.responsibility, `responsibility map.desired.ownership[${index}].responsibility`),
+      owner: string3(outcome.owner, `responsibility map.desired.ownership[${index}].owner`)
+    };
   });
   const boundaries = desired.boundaries.map((item, index) => {
     const outcome = object3(item, `responsibility map.desired.boundaries[${index}]`);
     onlyKeys(outcome, ["from", "to", "allowed"], `responsibility map.desired.boundaries[${index}]`);
-    if (typeof outcome.allowed !== "boolean") throw new Error(`responsibility map.desired.boundaries[${index}].allowed must be boolean`);
-    return { from: string3(outcome.from, `responsibility map.desired.boundaries[${index}].from`), to: string3(outcome.to, `responsibility map.desired.boundaries[${index}].to`), allowed: outcome.allowed };
+    if (typeof outcome.allowed !== "boolean")
+      throw new Error(`responsibility map.desired.boundaries[${index}].allowed must be boolean`);
+    return {
+      from: string3(outcome.from, `responsibility map.desired.boundaries[${index}].from`),
+      to: string3(outcome.to, `responsibility map.desired.boundaries[${index}].to`),
+      allowed: outcome.allowed
+    };
   });
-  if (ownership.length + boundaries.length === 0) throw new Error("responsibility map.desired must contain an ownership or boundary outcome");
+  if (ownership.length + boundaries.length === 0)
+    throw new Error("responsibility map.desired must contain an ownership or boundary outcome");
   return { targetScope, responsibilities, desired: { ownership, boundaries } };
 }
 function owns(files, responsibility, owner) {
-  return files.some((file) => file.types.some((type) => type.name === owner && type.members.some((member) => member.kind === "method" && member.name === responsibility)));
+  return files.some(
+    (file) => file.types.some(
+      (type) => type.name === owner && type.members.some((member) => member.kind === "method" && member.name === responsibility)
+    )
+  );
 }
 function hasDependency(files, from, to) {
   return files.some((file) => file.types.some((type) => type.name === from && type.dependencies.includes(to)));
@@ -21732,25 +21782,59 @@ function hasDependency(files, from, to) {
 function evaluateResponsibilityMap(map, before, after, config2) {
   const progress = analyzeRefactorProgress(before, after, map.targetScope, config2);
   const outcomes = [
-    ...map.desired.ownership.map((outcome) => ({ description: `${outcome.responsibility} is owned by ${outcome.owner}`, before: owns(before, outcome.responsibility, outcome.owner), after: owns(after, outcome.responsibility, outcome.owner) })),
-    ...map.desired.boundaries.map((outcome) => ({ description: `${outcome.from} -> ${outcome.to} is ${outcome.allowed ? "allowed" : "absent"}`, before: hasDependency(before, outcome.from, outcome.to) === outcome.allowed, after: hasDependency(after, outcome.from, outcome.to) === outcome.allowed }))
+    ...map.desired.ownership.map((outcome) => ({
+      description: `${outcome.responsibility} is owned by ${outcome.owner}`,
+      before: owns(before, outcome.responsibility, outcome.owner),
+      after: owns(after, outcome.responsibility, outcome.owner)
+    })),
+    ...map.desired.boundaries.map((outcome) => ({
+      description: `${outcome.from} -> ${outcome.to} is ${outcome.allowed ? "allowed" : "absent"}`,
+      before: hasDependency(before, outcome.from, outcome.to) === outcome.allowed,
+      after: hasDependency(after, outcome.from, outcome.to) === outcome.allowed
+    }))
   ];
-  return { ...progress, outcomes, hasDeclaredOutcomeProgress: outcomes.some((outcome) => !outcome.before && outcome.after) };
+  return {
+    ...progress,
+    outcomes,
+    hasDeclaredOutcomeProgress: outcomes.some((outcome) => !outcome.before && outcome.after)
+  };
+}
+
+// src/commit-gate/types.ts
+import { createHash as createHash2 } from "node:crypto";
+function canonical2(value) {
+  if (Array.isArray(value)) return `[${value.map(canonical2).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical2(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+function createFinding(input) {
+  const affectedPaths = [...new Set(input.affectedPaths)].sort((left, right) => left.localeCompare(right));
+  const identity = canonical2({ ...input, affectedPaths });
+  return { ...input, affectedPaths, id: createHash2("sha256").update(identity).digest("hex") };
+}
+function normalizeFindings(findings) {
+  return findings.map(({ id: _id, ...finding }) => createFinding(finding)).sort((left, right) => left.id.localeCompare(right.id));
 }
 
 // src/commit-gate/decision-core.ts
 var SOURCE_PATH2 = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
 var QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
 function changedPaths(snapshot) {
-  return [...new Set(snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((path8) => Boolean(path8)))].sort(
-    (left, right) => left.localeCompare(right)
-  );
+  return [
+    ...new Set(
+      snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((path8) => Boolean(path8))
+    )
+  ].sort((left, right) => left.localeCompare(right));
 }
 function sourcePaths(snapshot) {
   return changedPaths(snapshot).filter((filePath) => SOURCE_PATH2.test(filePath));
 }
 function requiresSourceDecision(snapshot) {
-  return changedPaths(snapshot).some((filePath) => SOURCE_PATH2.test(filePath) || filePath === QUALITY_CONFIGURATION_PATH);
+  return changedPaths(snapshot).some(
+    (filePath) => SOURCE_PATH2.test(filePath) || filePath === QUALITY_CONFIGURATION_PATH
+  );
 }
 function architectureFinding(kind, severity, affectedPaths, evidence, reason) {
   return createFinding({ severity, affectedPaths, before: {}, after: evidence, reason: `${kind}: ${reason}` });
@@ -21763,11 +21847,19 @@ function placementFindings(findings) {
 function dependencyFindings(findings) {
   return findings.map((finding) => {
     const paths = finding.kind === "cycle" ? finding.cycle : [finding.from, finding.to];
-    return architectureFinding(finding.kind, "fail", paths, finding, "a deterministic dependency boundary was introduced");
+    return architectureFinding(
+      finding.kind,
+      "fail",
+      paths,
+      finding,
+      "a deterministic dependency boundary was introduced"
+    );
   });
 }
 function encapsulationFindings(findings) {
-  return findings.map((finding) => architectureFinding(finding.kind, "review", [finding.path], finding, "public or compatibility surface changed"));
+  return findings.map(
+    (finding) => architectureFinding(finding.kind, "review", [finding.path], finding, "public or compatibility surface changed")
+  );
 }
 function decideQuality(input) {
   const affectedPaths = sourcePaths(input.snapshot);
@@ -21781,7 +21873,10 @@ function decideQuality(input) {
       verdict: "PASS",
       findings: [],
       errors: [],
-      input: { ...summary, reason: "No source quality decision was required because the staged change contains no supported source or quality configuration." }
+      input: {
+        ...summary,
+        reason: "No source quality decision was required because the staged change contains no supported source or quality configuration."
+      }
     };
   }
   const refactorProgress = input.refactorMap ? evaluateResponsibilityMap(input.refactorMap, input.beforeFiles, input.afterFiles, input.config) : void 0;
@@ -21799,16 +21894,28 @@ function decideQuality(input) {
     ),
     ...dependencyFindings(analyzeDependencies(input.beforeFiles, input.afterFiles, affectedPaths, input.config)),
     ...encapsulationFindings(analyzeEncapsulation(input.beforeFiles, input.afterFiles, affectedPaths, input.config)),
-    ...refactorProgress && !refactorProgress.hasDeclaredOutcomeProgress ? [architectureFinding("refactor-structural-progress", "review", input.refactorMap?.targetScope ?? affectedPaths, { ...refactorProgress }, "declared ownership or boundary outcome is unchanged")] : []
+    ...refactorProgress && !refactorProgress.hasDeclaredOutcomeProgress ? [
+      architectureFinding(
+        "refactor-structural-progress",
+        "review",
+        input.refactorMap?.targetScope ?? affectedPaths,
+        { ...refactorProgress },
+        "declared ownership or boundary outcome is unchanged"
+      )
+    ] : []
   ];
   const normalized = normalizeFindings(findings);
   const fingerprint = fingerprintSnapshot(input.snapshot, input.config);
   const currentRecords = (input.acknowledgementRecords ?? []).filter((record3) => record3.fingerprint === fingerprint);
   const accepted = /* @__PURE__ */ new Set([...input.acknowledgements ?? [], ...currentRecords.map((record3) => record3.findingId)]);
   const staleAcknowledgements = (input.acknowledgementRecords ?? []).filter((record3) => record3.fingerprint !== fingerprint).map((record3) => record3.findingId).sort();
-  const errors = [...input.scanner.errors ?? [], ...input.analysisErrors ?? []].sort((left, right) => left.localeCompare(right));
+  const errors = [...input.scanner.errors ?? [], ...input.analysisErrors ?? []].sort(
+    (left, right) => left.localeCompare(right)
+  );
   const hasFailure = errors.length > 0 || normalized.some((finding) => finding.severity === "fail");
-  const hasUnacknowledgedReview = normalized.some((finding) => finding.severity === "review" && !accepted.has(finding.id));
+  const hasUnacknowledgedReview = normalized.some(
+    (finding) => finding.severity === "review" && !accepted.has(finding.id)
+  );
   return {
     verdict: hasFailure ? "FAIL" : hasUnacknowledgedReview ? "REVIEW_REQUIRED" : "PASS",
     fingerprint,
@@ -22024,9 +22131,19 @@ function extractFactInventory(files, requiredPaths) {
   const facts = files.flatMap((file) => {
     const result = extractArchitectureFacts(file);
     if (required2.has(file.path)) errors.push(...result.errors.map((error2) => `${file.path}: ${error2}`));
-    return result.facts ? [{ path: result.facts.path, imports: result.facts.imports, references: result.facts.references, types: result.facts.types }] : [];
+    return result.facts ? [
+      {
+        path: result.facts.path,
+        imports: result.facts.imports,
+        references: result.facts.references,
+        types: result.facts.types
+      }
+    ] : [];
   });
-  return { files: facts.sort((left, right) => left.path.localeCompare(right.path)), errors: errors.sort((left, right) => left.localeCompare(right)) };
+  return {
+    files: facts.sort((left, right) => left.path.localeCompare(right.path)),
+    errors: errors.sort((left, right) => left.localeCompare(right))
+  };
 }
 
 // src/commit-gate/snapshot.ts

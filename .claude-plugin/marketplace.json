@@ -15,7 +15,7 @@
     },
     {
       "name": "quality-guard",
-      "description": "Structural code quality gate. A PostToolUse hook ratchets every write against a recorded baseline, so existing debt is allowed but making it worse is not. Ships 1 skill: /quality-refactor (systematic refactoring to an explicit machine-checked quality bar - one type per file, complexity and size bounds, dead-code removal - with a zero-dependency scanner and a ratcheting baseline).",
+      "description": "Structural code quality gate. File-local PostToolUse feedback never claims commit readiness. The staged decision analyzes architecture and fingerprint-bound reviews, and CI replays that decision from the committed tree. Ships 1 skill: /quality-refactor (responsibility-first refactoring with a zero-dependency scanner and a staged commit gate).",
       "source": "./packages/quality-guard",
       "category": "productivity"
     },

@@ -129,10 +129,13 @@
 
 ## 7. Repository Integration and Verification
 
-- [ ] 7.1 Wire committed-tree quality checking into the CI static-analysis job after the existing structural ratchet. Add focused CI-script tests that prove a local-hook bypass cannot avoid `FAIL` or `REVIEW_REQUIRED`.
+- [x] 7.1 Wire committed-tree quality checking into the CI static-analysis job after the existing structural ratchet. Add focused CI-script tests that prove a local-hook bypass cannot avoid `FAIL` or `REVIEW_REQUIRED`.
+<!-- status: completed -->
 <!-- covers: quality-guard/commit-gate :: Local and CI execution agree :: Commit bypasses the local hook -->
 
-- [ ] 7.2 Update quality-guard user documentation, package descriptions, skill references, and package architecture guidance to distinguish write feedback, staged decisions, architectural review, acknowledgements, and optional repository-owned Git-hook wiring.
+- [x] 7.2 Update quality-guard user documentation, package descriptions, skill references, and package architecture guidance to distinguish write feedback, staged decisions, architectural review, acknowledgements, and optional repository-owned Git-hook wiring.
+<!-- status: completed -->
 <!-- covers: quality-guard/write-gate :: Write-time success is not commit evidence :: File-local write passes -->
 
-- [ ] 7.3 Run focused quality-guard tests, the package build and bundle, all workspace tests, Biome, plugin validation, package smoke, `dod-guard cover recalibrate-quality-guard-architecture-gate`, and strict OpenSpec validation. Record the real command results without marking unwired scenarios as verified.
+- [x] 7.3 Run focused quality-guard tests, the package build and bundle, all workspace tests, Biome, plugin validation, package smoke, `dod-guard cover recalibrate-quality-guard-architecture-gate`, and strict OpenSpec validation. Record the real command results without marking unwired scenarios as verified.
+<!-- status: completed -->

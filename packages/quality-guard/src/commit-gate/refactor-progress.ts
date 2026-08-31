@@ -64,11 +64,18 @@ function ownershipMoves(before: TypeAtPath[], after: TypeAtPath[]): OwnershipMov
     if (!newOwners || oldOwners.length !== 1 || newOwners.length !== 1 || oldOwners[0] === newOwners[0]) continue;
     moves.push({ operation, from: oldOwners[0] as string, to: newOwners[0] as string });
   }
-  return moves.sort((left, right) => left.operation.localeCompare(right.operation) || left.from.localeCompare(right.from) || left.to.localeCompare(right.to));
+  return moves.sort(
+    (left, right) =>
+      left.operation.localeCompare(right.operation) ||
+      left.from.localeCompare(right.from) ||
+      left.to.localeCompare(right.to),
+  );
 }
 
 function dependencyKeys(types: TypeAtPath[]): Set<string> {
-  return new Set(types.flatMap((item) => item.type.dependencies.map((dependency) => `${item.type.name}\0${dependency}`)));
+  return new Set(
+    types.flatMap((item) => item.type.dependencies.map((dependency) => `${item.type.name}\0${dependency}`)),
+  );
 }
 
 function dependencyReduction(moves: OwnershipMove[], before: TypeAtPath[], after: TypeAtPath[]): string[] {
@@ -94,7 +101,10 @@ function directTypePressure(types: TypeAtPath[], config: QualityConfig): number 
 }
 
 function publicSurfaceCount(types: TypeAtPath[]): number {
-  return types.reduce((total, item) => total + item.type.members.filter((member) => member.visibility === "public").length, 0);
+  return types.reduce(
+    (total, item) => total + item.type.members.filter((member) => member.visibility === "public").length,
+    0,
+  );
 }
 
 function compatibilityPathCount(types: TypeAtPath[]): number {
@@ -154,5 +164,9 @@ export function analyzeRefactorProgress(
     details: [],
   };
   const indicators = { ownership, dependencyEdges, placement, publicSurface, compatibilityPaths: compatibility };
-  return { ownershipMoves: moves, indicators, hasArchitecturalProgress: Object.values(indicators).some((indicator) => indicator.status === "improved") };
+  return {
+    ownershipMoves: moves,
+    indicators,
+    hasArchitecturalProgress: Object.values(indicators).some((indicator) => indicator.status === "improved"),
+  };
 }

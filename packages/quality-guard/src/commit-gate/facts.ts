@@ -14,7 +14,19 @@ export function extractFactInventory(files: SnapshotFile[], requiredPaths: strin
   const facts = files.flatMap((file) => {
     const result = extractArchitectureFacts(file);
     if (required.has(file.path)) errors.push(...result.errors.map((error) => `${file.path}: ${error}`));
-    return result.facts ? [{ path: result.facts.path, imports: result.facts.imports, references: result.facts.references, types: result.facts.types }] : [];
+    return result.facts
+      ? [
+          {
+            path: result.facts.path,
+            imports: result.facts.imports,
+            references: result.facts.references,
+            types: result.facts.types,
+          },
+        ]
+      : [];
   });
-  return { files: facts.sort((left, right) => left.path.localeCompare(right.path)), errors: errors.sort((left, right) => left.localeCompare(right)) };
+  return {
+    files: facts.sort((left, right) => left.path.localeCompare(right.path)),
+    errors: errors.sort((left, right) => left.localeCompare(right)),
+  };
 }

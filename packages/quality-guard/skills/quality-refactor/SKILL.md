@@ -6,9 +6,11 @@ description: >-
   cyclomatic complexity under 10, at most 7 parameters, no unnamed tuples,
   guard clauses instead of else, free functions instead of stateless methods,
   and aggressive deletion of dead, test-only, duplicate, and compatibility-shim
-  code. Ships a zero-dependency scanner and opens an OpenSpec change to hold
-  its wave plan in tasks.md for /dod-guard:step-by-step to execute one
-  structural outcome at a time.
+  code. Ships a zero-dependency scanner, plans from responsibilities and
+  dependency boundaries, and ends with the staged commit gate instead of a
+  file-local write result. It opens an OpenSpec change to hold its wave plan
+  in tasks.md for /dod-guard:step-by-step to execute one structural outcome
+  at a time.
   TRIGGER when: user says "refactor this properly", "clean this up to a high
   standard", "enforce code quality", "quality pass", "reduce complexity",
   "split these files", "this file is too long", "remove dead code", or asks for
@@ -16,6 +18,15 @@ description: >-
 argument-hint: "[target: repo, folder path, module name, or file list]"
 ---
 # Quality Refactor
+
+## Commit evidence
+
+The PostToolUse hook provides file-local feedback only. It cannot establish
+repository reachability, dependency boundaries, staged architecture, or commit
+readiness. Record architecture acknowledgements against the current staged
+fingerprint, then use `quality-guard check --staged` for the authoritative
+decision. CI replays the same decision from the committed tree, so a local
+Git-hook integration remains optional convenience wiring.
 
 ## What you deliver
 

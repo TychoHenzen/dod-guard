@@ -32,7 +32,13 @@ export interface ArchitectureFileFact {
 }
 
 export type EncapsulationFinding =
-  | { kind: "public-surface-growth" | "test-only-seam"; path: string; symbol: string; productionCallers: string[]; testCallers: string[] }
+  | {
+      kind: "public-surface-growth" | "test-only-seam";
+      path: string;
+      symbol: string;
+      productionCallers: string[];
+      testCallers: string[];
+    }
   | { kind: "forwarding-path"; path: string; type: string; member: string; target: string };
 
 export interface LocalityFinding {
@@ -53,10 +59,16 @@ function key(type: ArchitectureTypeFact, member: ArchitectureMemberFact): string
 }
 
 function members(type: ArchitectureTypeFact): Set<string> {
-  return new Set(type.members.filter((member) => member.visibility === "public").map((member) => `${member.kind}\0${member.name}`));
+  return new Set(
+    type.members.filter((member) => member.visibility === "public").map((member) => `${member.kind}\0${member.name}`),
+  );
 }
 
-function observedCallers(symbol: string, files: ArchitectureFileFact[], config: QualityConfig): { productionCallers: string[]; testCallers: string[] } {
+function observedCallers(
+  symbol: string,
+  files: ArchitectureFileFact[],
+  config: QualityConfig,
+): { productionCallers: string[]; testCallers: string[] } {
   const productionCallers: string[] = [];
   const testCallers: string[] = [];
   for (const file of files) {
@@ -87,7 +99,7 @@ export function analyzeEncapsulation(
   const findings: EncapsulationFinding[] = [];
   for (const afterFile of afterFiles) {
     const filePath = normalizeArchitecturePath(afterFile.path);
-    if (!affected.has(filePath) || !isProductionArchitecturePath(filePath, config)) continue;
+    if (!(affected.has(filePath) && isProductionArchitecturePath(filePath, config))) continue;
     const beforeTypes = new Map((beforeByPath.get(filePath)?.types ?? []).map((type) => [type.name, type]));
     for (const type of afterFile.types) {
       const previous = beforeTypes.get(type.name);
@@ -104,7 +116,13 @@ export function analyzeEncapsulation(
       const priorForwarding = previous ? forwardingKeys(previous) : new Set<string>();
       for (const path of type.forwardingPaths) {
         if (!priorForwarding.has(`${path.member}\0${path.target}`)) {
-          findings.push({ kind: "forwarding-path", path: filePath, type: type.name, member: path.member, target: path.target });
+          findings.push({
+            kind: "forwarding-path",
+            path: filePath,
+            type: type.name,
+            member: path.member,
+            target: path.target,
+          });
         }
       }
     }
@@ -114,10 +132,14 @@ export function analyzeEncapsulation(
 
 /** Reads only a bounded first-parent window. It is evidence for review, never a failure. */
 export function readFirstParentHistory(root: string, maxFirstParentCommits: number): HistoryCommit[] {
-  const output = execFileSync("git", ["log", "--first-parent", `-n${maxFirstParentCommits}`, "--format=%x00%H", "--name-only", "-z", "HEAD"], {
-    cwd: root,
-    encoding: "buffer",
-  });
+  const output = execFileSync(
+    "git",
+    ["log", "--first-parent", `-n${maxFirstParentCommits}`, "--format=%x00%H", "--name-only", "-z", "HEAD"],
+    {
+      cwd: root,
+      encoding: "buffer",
+    },
+  );
   const commits: HistoryCommit[] = [];
   let current: string[] | undefined;
   for (const value of output.toString("utf8").split("\0")) {
@@ -143,9 +165,20 @@ export function analyzeChangeLocality(root: string, affectedPaths: string[], con
       const comparedPaths = paths.filter((path) => path !== filePath);
       if (comparedPaths.length === 0) return [];
       const containing = commits.filter((commit) => commit.paths.includes(filePath));
-      const coChangeCount = containing.filter((commit) => comparedPaths.some((path) => commit.paths.includes(path))).length;
+      const coChangeCount = containing.filter((commit) =>
+        comparedPaths.some((path) => commit.paths.includes(path)),
+      ).length;
       return coChangeCount === 0 && containing.length > 0
-        ? [{ kind: "outside-change-cluster" as const, path: filePath, historyWindow: commits.length, fileChangeCount: containing.length, coChangeCount, comparedPaths }]
+        ? [
+            {
+              kind: "outside-change-cluster" as const,
+              path: filePath,
+              historyWindow: commits.length,
+              fileChangeCount: containing.length,
+              coChangeCount,
+              comparedPaths,
+            },
+          ]
         : [];
     })
     .sort((left, right) => left.path.localeCompare(right.path));

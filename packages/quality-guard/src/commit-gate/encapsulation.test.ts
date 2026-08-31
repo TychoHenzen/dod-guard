@@ -1,22 +1,36 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { execFileSync } from "node:child_process";
 import { test } from "node:test";
-import { analyzeChangeLocality, analyzeEncapsulation } from "./encapsulation.js";
 import { parseQualityConfig } from "./config.js";
+import { analyzeChangeLocality, analyzeEncapsulation } from "./encapsulation.js";
 
 // covers: quality-guard/architecture-analysis :: Encapsulation and change locality are measured :: Public surface grows without a production caller
 test("reports a newly public symbol with its observed callers", () => {
   const result = analyzeEncapsulation(
-    [{ path: "src/service.ts", imports: [], references: [], types: [{ name: "Service", members: [], dependencies: [], forwardingPaths: [] }] }],
     [
       {
         path: "src/service.ts",
         imports: [],
         references: [],
-        types: [{ name: "Service", members: [{ name: "preview", kind: "method", visibility: "public" }], dependencies: [], forwardingPaths: [] }],
+        types: [{ name: "Service", members: [], dependencies: [], forwardingPaths: [] }],
+      },
+    ],
+    [
+      {
+        path: "src/service.ts",
+        imports: [],
+        references: [],
+        types: [
+          {
+            name: "Service",
+            members: [{ name: "preview", kind: "method", visibility: "public" }],
+            dependencies: [],
+            forwardingPaths: [],
+          },
+        ],
       },
       { path: "test/service.test.ts", imports: [], references: ["Service.preview"], types: [] },
     ],
@@ -43,19 +57,35 @@ test("reports a newly public symbol with its observed callers", () => {
 
 test("reports forwarding compatibility paths as review evidence", () => {
   const result = analyzeEncapsulation(
-    [{ path: "src/service.ts", imports: [], references: [], types: [{ name: "Service", members: [], dependencies: [], forwardingPaths: [] }] }],
     [
       {
         path: "src/service.ts",
         imports: [],
         references: [],
-        types: [{ name: "Service", members: [], dependencies: [], forwardingPaths: [{ member: "oldRun", target: "worker.run" }] }],
+        types: [{ name: "Service", members: [], dependencies: [], forwardingPaths: [] }],
+      },
+    ],
+    [
+      {
+        path: "src/service.ts",
+        imports: [],
+        references: [],
+        types: [
+          {
+            name: "Service",
+            members: [],
+            dependencies: [],
+            forwardingPaths: [{ member: "oldRun", target: "worker.run" }],
+          },
+        ],
       },
     ],
     ["src/service.ts"],
     parseQualityConfig("{}"),
   );
-  assert.deepEqual(result, [{ kind: "forwarding-path", path: "src/service.ts", type: "Service", member: "oldRun", target: "worker.run" }]);
+  assert.deepEqual(result, [
+    { kind: "forwarding-path", path: "src/service.ts", type: "Service", member: "oldRun", target: "worker.run" },
+  ]);
 });
 
 function git(root: string, args: string[]): void {
@@ -82,7 +112,11 @@ test("reports a staged file with no co-changes in the bounded first-parent histo
     git(root, ["add", "."]);
     git(root, ["commit", "-m", "outsider only"]);
 
-    const result = analyzeChangeLocality(root, ["owner.ts", "helper.ts", "outsider.ts"], parseQualityConfig('{"history":{"maxFirstParentCommits":2}}'));
+    const result = analyzeChangeLocality(
+      root,
+      ["owner.ts", "helper.ts", "outsider.ts"],
+      parseQualityConfig('{"history":{"maxFirstParentCommits":2}}'),
+    );
     assert.deepEqual(result, [
       {
         kind: "outside-change-cluster",

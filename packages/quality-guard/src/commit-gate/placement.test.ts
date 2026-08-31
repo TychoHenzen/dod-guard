@@ -3,7 +3,9 @@ import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
 import { analyzePlacement } from "./placement.js";
 
-const config = parseQualityConfig('{"directTypeLimit":2,"genericBuckets":["utils"],"generatedPaths":["generated/**"],"testPaths":["test/**"]}');
+const config = parseQualityConfig(
+  '{"directTypeLimit":2,"genericBuckets":["utils"],"generatedPaths":["generated/**"],"testPaths":["test/**"]}',
+);
 
 // covers: quality-guard/architecture-analysis :: Placement analysis detects flat and generic accumulation :: Overloaded directory gains another class
 test("reports an added type when its direct production directory was already overloaded", () => {

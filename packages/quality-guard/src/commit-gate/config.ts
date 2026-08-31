@@ -79,7 +79,19 @@ export function parseQualityConfig(source: string): QualityConfig {
     throw new ConfigError("must contain valid JSON");
   }
   const input = record(parsed, "root");
-  keysOnly(input, ["pathGroups", "dependencyDirections", "directTypeLimit", "genericBuckets", "generatedPaths", "testPaths", "history"], "root");
+  keysOnly(
+    input,
+    [
+      "pathGroups",
+      "dependencyDirections",
+      "directTypeLimit",
+      "genericBuckets",
+      "generatedPaths",
+      "testPaths",
+      "history",
+    ],
+    "root",
+  );
   const pathGroups: Record<string, string[]> = {};
   if (input.pathGroups !== undefined) {
     const groups = record(input.pathGroups, "pathGroups");
@@ -94,10 +106,14 @@ export function parseQualityConfig(source: string): QualityConfig {
     for (const [index, item] of input.dependencyDirections.entries()) {
       const direction = record(item, `dependencyDirections[${index}]`);
       keysOnly(direction, ["from", "to", "allowed"], `dependencyDirections[${index}]`);
-      if (typeof direction.from !== "string" || typeof direction.to !== "string" || typeof direction.allowed !== "boolean") {
+      if (
+        typeof direction.from !== "string" ||
+        typeof direction.to !== "string" ||
+        typeof direction.allowed !== "boolean"
+      ) {
         throw new ConfigError(`dependencyDirections[${index}] requires string from/to and boolean allowed`);
       }
-      if (!(direction.from in pathGroups) || !(direction.to in pathGroups)) {
+      if (!(direction.from in pathGroups && direction.to in pathGroups)) {
         throw new ConfigError(`dependencyDirections[${index}] references an unknown path group`);
       }
       dependencyDirections.push({ from: direction.from, to: direction.to, allowed: direction.allowed });
@@ -107,14 +123,23 @@ export function parseQualityConfig(source: string): QualityConfig {
   if (input.history !== undefined) {
     const historyInput = record(input.history, "history");
     keysOnly(historyInput, ["maxFirstParentCommits"], "history");
-    if (historyInput.maxFirstParentCommits === undefined) throw new ConfigError("history must declare maxFirstParentCommits");
-    history = { maxFirstParentCommits: positiveInteger(historyInput.maxFirstParentCommits, "history.maxFirstParentCommits") };
+    if (historyInput.maxFirstParentCommits === undefined)
+      throw new ConfigError("history must declare maxFirstParentCommits");
+    history = {
+      maxFirstParentCommits: positiveInteger(historyInput.maxFirstParentCommits, "history.maxFirstParentCommits"),
+    };
   }
   return {
     pathGroups,
     dependencyDirections,
-    directTypeLimit: input.directTypeLimit === undefined ? DEFAULT_CONFIG.directTypeLimit : positiveInteger(input.directTypeLimit, "directTypeLimit"),
-    genericBuckets: input.genericBuckets === undefined ? [...DEFAULT_CONFIG.genericBuckets] : stringList(input.genericBuckets, "genericBuckets"),
+    directTypeLimit:
+      input.directTypeLimit === undefined
+        ? DEFAULT_CONFIG.directTypeLimit
+        : positiveInteger(input.directTypeLimit, "directTypeLimit"),
+    genericBuckets:
+      input.genericBuckets === undefined
+        ? [...DEFAULT_CONFIG.genericBuckets]
+        : stringList(input.genericBuckets, "genericBuckets"),
     generatedPaths: input.generatedPaths === undefined ? [] : stringList(input.generatedPaths, "generatedPaths"),
     testPaths: input.testPaths === undefined ? [] : stringList(input.testPaths, "testPaths"),
     history,

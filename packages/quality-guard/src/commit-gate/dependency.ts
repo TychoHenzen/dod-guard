@@ -28,7 +28,9 @@ function resolveDependency(from: string, dependency: string, paths: Set<string>)
     : normalized;
   if (paths.has(candidate)) return candidate;
   const target = extensionless(candidate);
-  return [...paths].sort((left, right) => left.localeCompare(right)).find((filePath) => extensionless(filePath) === target);
+  return [...paths]
+    .sort((left, right) => left.localeCompare(right))
+    .find((filePath) => extensionless(filePath) === target);
 }
 
 function graph(files: ProductionDependencyFile[], config: QualityConfig): Map<string, DependencyEdge[]> {
@@ -102,13 +104,20 @@ export function analyzeDependencies(
   const stagedEdges = [...after.values()]
     .flat()
     .filter((edge) => changed.has(edge.from) && !oldEdges.has(`${edge.from}\0${edge.to}`))
-    .sort((left, right) => left.from.localeCompare(right.from) || left.to.localeCompare(right.to) || left.dependency.localeCompare(right.dependency));
+    .sort(
+      (left, right) =>
+        left.from.localeCompare(right.from) ||
+        left.to.localeCompare(right.to) ||
+        left.dependency.localeCompare(right.dependency),
+    );
   const findings: DependencyFinding[] = [];
 
   for (const edge of stagedEdges) {
     for (const fromGroup of groupFor(edge.from, config.pathGroups)) {
       for (const toGroup of groupFor(edge.to, config.pathGroups)) {
-        if (config.dependencyDirections.some((rule) => rule.from === fromGroup && rule.to === toGroup && !rule.allowed)) {
+        if (
+          config.dependencyDirections.some((rule) => rule.from === fromGroup && rule.to === toGroup && !rule.allowed)
+        ) {
           findings.push({ kind: "forbidden-direction", ...edge, fromGroup, toGroup });
         }
       }
@@ -118,13 +127,18 @@ export function analyzeDependencies(
   const beforeCycles = new Set(cycles(before).map((cycle) => cycle.join("\0")));
   for (const cycle of cycles(after)) {
     if (beforeCycles.has(cycle.join("\0"))) continue;
-    const cycleEdges = cycle.slice(0, -1).flatMap((from, index) => (after.get(from) ?? []).filter((edge) => edge.to === cycle[index + 1]));
-    const stagedEdge = cycleEdges.find((edge) => stagedEdges.some((added) => added.from === edge.from && added.to === edge.to));
+    const cycleEdges = cycle
+      .slice(0, -1)
+      .flatMap((from, index) => (after.get(from) ?? []).filter((edge) => edge.to === cycle[index + 1]));
+    const stagedEdge = cycleEdges.find((edge) =>
+      stagedEdges.some((added) => added.from === edge.from && added.to === edge.to),
+    );
     if (stagedEdge) findings.push({ kind: "cycle", cycle, stagedEdge });
   }
   return findings.sort((left, right) => {
     const leftKey = left.kind === "cycle" ? `cycle:${left.cycle.join("\0")}` : `forbidden:${left.from}\0${left.to}`;
-    const rightKey = right.kind === "cycle" ? `cycle:${right.cycle.join("\0")}` : `forbidden:${right.from}\0${right.to}`;
+    const rightKey =
+      right.kind === "cycle" ? `cycle:${right.cycle.join("\0")}` : `forbidden:${right.from}\0${right.to}`;
     return leftKey.localeCompare(rightKey);
   });
 }

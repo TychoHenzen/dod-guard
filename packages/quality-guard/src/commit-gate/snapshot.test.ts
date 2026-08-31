@@ -49,12 +49,15 @@ test("normalizes staged rename, addition, edit, and deletion snapshots", () => {
     git(root, ["rm", "deleted.ts"]);
     git(root, ["add", "."]);
     const snapshot = readStagedSnapshot(root);
-    assert.deepEqual(snapshot.changes.map((change) => [change.kind, change.before?.path, change.after?.path]), [
-      ["add", undefined, "added.ts"],
-      ["delete", "deleted.ts", undefined],
-      ["rename", "old.ts", "domain/moved.ts"],
-      ["modify", "edit.ts", "edit.ts"],
-    ]);
+    assert.deepEqual(
+      snapshot.changes.map((change) => [change.kind, change.before?.path, change.after?.path]),
+      [
+        ["add", undefined, "added.ts"],
+        ["delete", "deleted.ts", undefined],
+        ["rename", "old.ts", "domain/moved.ts"],
+        ["modify", "edit.ts", "edit.ts"],
+      ],
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
