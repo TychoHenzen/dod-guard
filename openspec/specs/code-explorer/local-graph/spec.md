@@ -1,8 +1,10 @@
+# local-graph Specification
+
 ## Purpose
 
 Defines a small visual map around the currently focused symbol without expanding into a whole-project code diagram.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: The graph contains one focus and loaded one-hop relations
 The graph SHALL contain the current focused symbol and only project-local relation results that the user explicitly loaded from that view. It SHALL NOT preload, infer, or recursively expand additional nodes. A node SHALL appear at most once for one normalized symbol identity.
@@ -96,3 +98,4 @@ The SVG graph SHALL be a derived presentation of current view data. A graph layo
 #### Scenario: Graph area is collapsed
 - **WHEN** the user collapses the graph area
 - **THEN** the focused source and relation lists remain available and no navigation state is discarded
+

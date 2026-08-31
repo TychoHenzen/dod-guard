@@ -1,8 +1,10 @@
+# browser-server Specification
+
 ## Purpose
 
 Defines how one project-scoped Code Explorer process exposes its shared read-only navigation service to a local browser.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: The package starts a project-scoped browser server
 `code-explorer serve` SHALL start one HTTP server for the startup working directory or one `--project-root` argument. When the argument is present, it SHALL always take precedence. A relative argument SHALL resolve from the startup working directory. Before listener or backend work, the server SHALL apply `code-explorer/language-adapters` requirement `One server process is confined to one canonical project root`, including its real-path, filesystem-identity, broken-link, platform-comparison, and revalidation rules. The browser status SHALL display the frozen root as `.` rather than expose its absolute canonical path. The server SHALL use the same frozen project root and navigation core as the MCP mode, and SHALL NOT accept a project path through an HTTP request.
@@ -184,3 +186,4 @@ The server SHALL serve only checked-in regular browser assets from the real `dis
 #### Scenario: Navigation core returns a redacted error
 - **WHEN** the shared core rejects an operation
 - **THEN** the HTTP adapter preserves its stable code and retryability without adding raw paths, environment data, or backend payloads
+

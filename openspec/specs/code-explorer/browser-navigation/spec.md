@@ -1,8 +1,10 @@
+# browser-navigation Specification
+
 ## Purpose
 
 Defines the localized browser workflow for discovering, focusing, and following project symbols through the shared Code Explorer service.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: The desktop view keeps one symbol central
 The browser SHALL present search and landmarks in a left pane, one focused source view in a center pane, and semantic relation groups in a right pane. It SHALL display project status and Back, Forward, Refocus, and Refresh controls without introducing a whole-project view.
@@ -161,3 +163,4 @@ The browser SHALL use the same panes, result fields, history, freshness behavior
 #### Scenario: C# practice project is explored
 - **WHEN** the live C# fixture runs search, focus, one semantic follow, Back, Forward, and saved-file freshness
 - **THEN** the browser completes the workflow with C# source locations and honest capability states
+
