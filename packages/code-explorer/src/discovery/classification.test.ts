@@ -32,15 +32,51 @@ it("keeps unknown only in the default search and excludes it from test and produ
 });
 
 // covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Classification rules conflict
-// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client includes generated content
-it("lets the last matching explicit configuration rule override generated markers", () => {
-  const config = { generated: ["generated/**"], test: [], production: ["generated/**"], overrides: [] };
+it("lets the last matching explicit override classify a generated path as production", () => {
+  const config = {
+    generated: [],
+    test: [],
+    production: [],
+    overrides: [{ glob: "generated/**", class: "production" as const }],
+  };
   assert.deepEqual(classifyProjectPath("generated/helper.ts", config), {
     content: "production",
-    source: "configuration",
+    source: "configuration_override",
   });
-  const generated = classifyProjectPath("target/helper.ts", config);
+});
+
+it("applies ordered class arrays and ordered overrides after those arrays", () => {
+  const config = {
+    generated: ["shared/**"],
+    test: ["shared/**"],
+    production: ["shared/**"],
+    overrides: [
+      { glob: "shared/**", class: "test" as const },
+      { glob: "shared/**", class: "generated" as const },
+    ],
+  };
+  assert.deepEqual(classifyProjectPath("shared/helper.ts", config), {
+    content: "generated",
+    source: "configuration_override",
+  });
+});
+
+// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Generated content uses the default policy
+it("excludes generated content before ranking unless explicitly requested", () => {
+  const generated = classifyProjectPath("target/helper.ts");
+  assert.equal(matchesDiscoveryFilters("target/helper.ts", generated, {}, {}), false);
+});
+
+// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client includes generated content
+it("includes generated content when the client requests it", () => {
+  const generated = classifyProjectPath("target/helper.ts");
   assert.equal(matchesDiscoveryFilters("target/helper.ts", generated, { include_generated: true }, {}), true);
+});
+
+// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client requests production content
+it("excludes test content before ranking when production content is requested", () => {
+  const test = classifyProjectPath("tests/helper.test.ts");
+  assert.equal(matchesDiscoveryFilters("tests/helper.test.ts", test, { content: "production" }, {}), false);
 });
 
 // covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Classification configuration is malformed

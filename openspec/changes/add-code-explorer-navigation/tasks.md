@@ -115,7 +115,8 @@
 <!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Search order is deterministic :: Equal-rank candidates are returned -->
   <!-- covers: code-explorer/symbol-discovery :: Search order is deterministic :: Search is repeated without project changes -->
-- [ ] 3.3 Apply path, language, symbol-kind, test, production, generated, and ordered typed-override filters before ranking and limiting.
+- [x] 3.3 Apply path, language, symbol-kind, test, production, generated, and ordered typed-override filters before ranking and limiting.
+<!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client filters by symbol kind and path -->
   <!-- covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client requests production content -->
   <!-- covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Generated content uses the default policy -->
@@ -127,10 +128,12 @@
 <!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Sensitive paths are never indexed or returned :: Project contains a denied credential file -->
   <!-- covers: code-explorer/symbol-discovery :: Sensitive paths are never indexed or returned :: Project configuration tries to include a denied path -->
-- [ ] 3.5 Return bounded candidate sets, omitted counts, narrowing filters, and honest empty results.
+- [x] 3.5 Return bounded candidate sets, omitted counts, narrowing filters, and honest empty results.
+<!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Broad searches return a refinement response :: Candidate count exceeds the limit -->
   <!-- covers: code-explorer/symbol-discovery :: Broad searches return a refinement response :: No candidate matches -->
-- [ ] 3.6 Route empty and whitespace-only searches exclusively to ready or not-ready landmark results.
+- [x] 3.6 Route empty and whitespace-only searches exclusively to ready or not-ready landmark results.
+<!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Empty search is reserved for landmarks :: Empty query has no qualifying landmarks -->
   <!-- covers: code-explorer/symbol-discovery :: Empty search is reserved for landmarks :: Whitespace-only query is submitted -->
 - [ ] 3.7 Normalize browser-independent project paths and reject out-of-root backend locations.

@@ -10,13 +10,18 @@ type MatchEvidence = { match_class: MatchClass; match_score: number };
 
 /** Matches a non-empty query using Unicode-normalized visible discovery evidence. */
 export function matchDiscoveryCandidates(query: string, candidates: readonly DiscoveryCandidate[]): DiscoveryMatch[] {
-  const normalizedQuery = normalizeQuery(query);
+  const normalizedQuery = normalizeDiscoveryQuery(query);
   if (normalizedQuery.length === 0) return [];
 
   return candidates
     .map((candidate) => matchCandidate(normalizedQuery, candidate))
     .filter((candidate): candidate is DiscoveryMatch => candidate !== undefined)
     .sort(compareMatches);
+}
+
+/** Normalizes client input once so blank searches can take the landmark-only path. */
+export function normalizeDiscoveryQuery(value: string): string {
+  return normalizeValue(value).trim();
 }
 
 function matchCandidate(query: string, candidate: DiscoveryCandidate): DiscoveryMatch | undefined {
@@ -48,10 +53,6 @@ function classify(query: string, candidate: string): MatchEvidence | undefined {
   const matchScore = similarity(query, candidate);
   if (candidate.startsWith(query)) return { match_class: "prefix", match_score: Math.round(matchScore) };
   return matchScore >= 60 ? { match_class: "fuzzy", match_score: Math.round(matchScore) } : undefined;
-}
-
-function normalizeQuery(value: string): string {
-  return normalizeValue(value).trim();
 }
 
 function normalizeValue(value: string): string {

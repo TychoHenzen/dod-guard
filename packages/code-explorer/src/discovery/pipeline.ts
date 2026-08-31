@@ -14,8 +14,15 @@ import { type DiscoveryMatch, matchDiscoveryCandidates } from "./matcher.js";
 import { isSensitiveProjectPath } from "./sensitive-paths.js";
 
 export type DiscoveryResult = DiscoveryMatch & PathClassification;
+export type DiscoverySearchResponse = {
+  candidates: readonly DiscoveryResult[];
+  omitted_candidate_count: number;
+  applied_filters: DiscoveryFilters;
+  available_narrowing_filters: readonly (keyof DiscoveryFilters)[];
+};
 export type DiscoveryPipeline = {
   search(query: string, filters: DiscoveryFilters, symbols?: readonly SymbolIdentity[]): DiscoveryResult[];
+  searchResult(query: string, filters: DiscoveryFilters, symbols?: readonly SymbolIdentity[]): DiscoverySearchResponse;
   status(): ClassificationConfigStatus;
 };
 export type DiscoveryFilters = {
@@ -39,6 +46,21 @@ export function createDiscoveryPipeline(root: ProjectRoot): DiscoveryPipeline {
   return {
     status: () => loaded.status,
     search(query, filters, symbols = []) {
+      return searchCandidates(query, filters, symbols).slice(0, resultLimit(filters));
+    },
+    searchResult(query, filters, symbols = []) {
+      const matches = searchCandidates(query, filters, symbols);
+      const limit = resultLimit(filters);
+      return {
+        candidates: matches.slice(0, limit),
+        omitted_candidate_count: Math.max(0, matches.length - limit),
+        applied_filters: { ...filters },
+        available_narrowing_filters: ["path_globs", "languages", "kinds", "content", "include_generated"],
+      };
+    },
+  };
+
+  function searchCandidates(query: string, filters: DiscoveryFilters, symbols: readonly SymbolIdentity[]): DiscoveryResult[] {
       // Adapter locations are untrusted. Reject denied paths before classification can read a header.
       const allowedSymbols = symbols.filter((symbol) => !isSensitiveProjectPath(symbol.location.path));
       const semanticCandidates = allowedSymbols.map((symbol) => ({
@@ -69,10 +91,12 @@ export function createDiscoveryPipeline(root: ProjectRoot): DiscoveryPipeline {
           const classification = classifications.get(candidate.identity);
           if (!classification) throw new Error("missing discovery classification");
           return { ...candidate, ...classification };
-        })
-        .slice(0, Math.max(0, filters.limit ?? 50));
-    },
-  };
+        });
+  }
+}
+
+function resultLimit(filters: DiscoveryFilters): number {
+  return Math.max(0, filters.limit ?? 50);
 }
 
 function hasGeneratedHeader(root: ProjectRoot, path: string): boolean {

@@ -6,6 +6,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
+import { landmarksNotReady, type LandmarkDiscovery } from "./discovery/landmarks.js";
+import { normalizeDiscoveryQuery } from "./discovery/matcher.js";
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
 import { loadAdapterSelectionRecord } from "./semantic/adapter-selection.js";
 import { createBackendStatusReport } from "./semantic/backend-status.js";
@@ -19,7 +21,7 @@ const packageInfo = JSON.parse(readFileSync(packagePath, "utf-8")) as { version:
 
 const toolNames = ["code_search", "code_focus", "code_follow", "code_history", "code_status"] as const;
 type ToolName = (typeof toolNames)[number];
-type EnvelopeState = "ready" | "refreshed" | "unavailable_relation";
+type EnvelopeState = "ready" | "refreshed" | "unavailable_relation" | "landmarks_not_ready";
 
 export type CodeExplorerState = {
   refresh_generation: number;
@@ -206,7 +208,12 @@ function textResult(result: CodeExplorerEnvelope | CodeExplorerError, isError = 
 }
 
 export function createServer(
-  options: { adapters?: readonly LanguageAdapter[]; projectRoot?: ProjectRoot; sensitive_paths_excluded?: number } = {},
+  options: {
+    adapters?: readonly LanguageAdapter[];
+    projectRoot?: ProjectRoot;
+    sensitive_paths_excluded?: number;
+    landmarks?: LandmarkDiscovery;
+  } = {},
 ): CodeExplorerServer {
   let refreshGeneration = 0;
   const viewHistory: string[] = [];
@@ -241,15 +248,26 @@ export function createServer(
     }
     if (name === "code_search" && discovery) {
       const search = schemas.code_search.parse(arguments_);
+      if (normalizeDiscoveryQuery(search.query).length === 0) {
+        const landmarks = options.landmarks ?? landmarksNotReady();
+        return {
+          schema_version: 1,
+          project_id: "project",
+          project_generation: 0,
+          pending_generation: null,
+          state: landmarks.state === "ready" ? "ready" : "landmarks_not_ready",
+          data: { landmarks: landmarks.landmarks, landmark_state: landmarks.state },
+        };
+      }
       const semanticSymbols = await collectSemanticSymbols(options.adapters ?? [], search.query);
-      const results = discovery.search(search.query, search, semanticSymbols);
+      const results = discovery.searchResult(search.query, search, semanticSymbols);
       return {
         schema_version: 1,
         project_id: "project",
         project_generation: 0,
         pending_generation: null,
         state: "ready",
-        data: { candidates: results },
+        data: results,
       };
     }
     const backendStatus =

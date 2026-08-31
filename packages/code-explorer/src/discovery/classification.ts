@@ -4,6 +4,7 @@ import { classificationConfigPath } from "./config-path.js";
 export type ContentClass = "generated" | "test" | "production" | "unknown";
 export type ClassificationSource =
   | "configuration"
+  | "configuration_override"
   | "generated_marker"
   | "test_marker"
   | "production_marker"
@@ -14,8 +15,10 @@ export type ClassificationConfig = {
   generated: readonly string[];
   test: readonly string[];
   production: readonly string[];
-  overrides: readonly string[];
+  overrides: readonly ClassificationOverride[];
 };
+
+export type ClassificationOverride = { glob: string; class: Exclude<ContentClass, "unknown"> };
 
 export type ClassificationConfigStatus = { classification_config_invalid: boolean };
 
@@ -44,11 +47,12 @@ export function loadClassificationConfig(
 export function parseClassificationConfig(value: unknown): ClassificationConfig {
   if (!isRecord(value) || Object.keys(value).some((key) => !keys.includes(key as (typeof keys)[number])))
     throw new Error("classification_config_invalid");
-  const config = Object.fromEntries(keys.map((key) => [key, parseGlobArray(value[key])])) as Record<
-    (typeof keys)[number],
-    string[]
-  >;
-  return config;
+  return {
+    generated: parseGlobArray(value.generated),
+    test: parseGlobArray(value.test),
+    production: parseGlobArray(value.production),
+    overrides: parseOverrides(value.overrides),
+  };
 }
 
 /** Applies explicit rules before generated, test, production, then unknown marker classes. */
@@ -59,6 +63,8 @@ export function classifyProjectPath(
 ): PathClassification {
   const normalized = normalizeProjectPath(path);
   if (!normalized) return { content: "unknown", source: "unknown" };
+  const override = lastConfiguredOverride(normalized, config);
+  if (override) return { content: override, source: "configuration_override" };
   const explicit = lastConfiguredClass(normalized, config);
   if (explicit) return { content: explicit, source: "configuration" };
   if (generatedHeader || matchesGeneratedMarker(normalized))
@@ -108,11 +114,33 @@ function lastConfiguredClass(path: string, config: ClassificationConfig): Conten
   return matched;
 }
 
+function lastConfiguredOverride(path: string, config: ClassificationConfig): ClassificationOverride["class"] | undefined {
+  let matched: ClassificationOverride["class"] | undefined;
+  for (const override of config.overrides) if (safeGlobMatches(path, override.glob)) matched = override.class;
+  return matched;
+}
+
 function parseGlobArray(value: unknown): string[] {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string" || !isSafeProjectGlob(entry)))
     throw new Error("classification_config_invalid");
   return [...value];
+}
+
+function parseOverrides(value: unknown): ClassificationOverride[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new Error("classification_config_invalid");
+  return value.map((entry) => {
+    if (!isRecord(entry) || Object.keys(entry).length !== 2 || !("glob" in entry) || !("class" in entry))
+      throw new Error("classification_config_invalid");
+    if (
+      typeof entry.glob !== "string" ||
+      !isSafeProjectGlob(entry.glob) ||
+      (entry.class !== "generated" && entry.class !== "test" && entry.class !== "production")
+    )
+      throw new Error("classification_config_invalid");
+    return { glob: entry.glob, class: entry.class };
+  });
 }
 
 function isSafeProjectGlob(glob: string): boolean {
@@ -139,7 +167,7 @@ function normalizeProjectPath(path: string): string | undefined {
 
 function matchesGeneratedMarker(path: string): boolean {
   return (
-    path.split("/").some((part) => /^(dist|target|bin|obj|\.venv)$/iu.test(part)) ||
+    path.split("/").some((part) => /^(dist|target|bin|obj|\.venv|generated|auto-generated)$/iu.test(part)) ||
     /\.g\.(cs|ts)$/iu.test(path) ||
     /(^|\/)(?:generated|auto-generated)\.[^.]+$/iu.test(path) ||
     /(?:^|\/).+\.(?:generated|designer)\.(?:cs|ts|js)$/iu.test(path)
