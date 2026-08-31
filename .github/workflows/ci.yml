@@ -48,6 +48,9 @@ jobs:
       # (fetchInstructions/fetchStatus in src/openspec/steps-cli.test.ts).
       - name: Install the openspec CLI
         run: npm install -g @fission-ai/openspec@1.8.0
+      # code-explorer's packaged-browser test launches the real Chromium binary.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
       - run: npm test
         env:
           OPENSPEC_TELEMETRY: 0
