@@ -1,9 +1,8 @@
+# quality-guard/architecture-analysis Specification
+
 ## Purpose
-
 Defines repository and staged-diff architecture evidence that reveals responsibility, placement, boundary, and structural-change problems a single-file metric cannot decide.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: Analysis compares staged architecture with its base
 The architecture analysis SHALL compare the content in the Git index with `HEAD`. It SHALL account for added, modified, deleted, renamed, and moved source files. It SHALL use staged content rather than unstaged working-tree content.
 

@@ -1,9 +1,8 @@
+# quality-guard/commit-gate Specification
+
 ## Purpose
-
 Defines one authoritative staged quality decision that agents, local Git hooks, MCP clients, and CI can invoke before accepting a commit.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: One command judges the staged change
 The command-line interface SHALL provide `quality-guard check --staged`. It SHALL compare the Git index with `HEAD`, run the repository-wide structural ratchet, and run architecture analysis. It SHALL accept `change` and `refactor` intent, defaulting to `change`.
 

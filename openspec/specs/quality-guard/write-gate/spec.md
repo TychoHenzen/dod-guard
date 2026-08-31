@@ -5,9 +5,7 @@
 Checks every code file an agent writes, at the moment it writes it, and blocks
 the write when that file got structurally worse. The gate reports the reason
 and the way to proceed, so a blocked agent is never stuck without a next move.
-
 ## Requirements
-
 ### Requirement: Gate runs after a file-writing tool call
 
 The gate SHALL run after a `Write`, `Edit`, or `MultiEdit` tool call and SHALL
@@ -24,18 +22,15 @@ other tool call.
 
 ### Requirement: Gate declines work it cannot judge
 
-The gate SHALL take no action when the tool call names no file. It SHALL take
-no action when the file extension is not one the scanner supports, or when the
-file does not exist on disk. It SHALL take no action when the repository has no
-recorded baseline.
+The gate SHALL take no action when the tool call names no file. It SHALL take no action when the file extension is not one the scanner supports, or when the file does not exist on disk. When the repository has no recorded baseline, the gate SHALL still apply the scanner's absolute hard bounds but SHALL make no baseline comparison.
 
 #### Scenario: Markdown file written
 - **WHEN** an edit targets a file whose extension the scanner does not support
 - **THEN** the gate takes no action
 
 #### Scenario: Repository has no baseline
-- **WHEN** no baseline file exists under the repository root
-- **THEN** the gate takes no action, because it has nothing to compare against
+- **WHEN** no baseline file exists under the repository root and an agent writes a supported source file
+- **THEN** the gate checks the file against absolute hard bounds and makes no regression claim
 
 ### Requirement: A file can opt out and so can the whole session
 
@@ -98,59 +93,17 @@ dead. Line length SHALL be excluded, because the repository formatter owns it.
 - **WHEN** a written line is longer than the scanner's bound
 - **THEN** the gate does not block on it
 
-### Requirement: Git tracking decides how an unknown file is judged
-
-A file the baseline has never seen and that git already tracks SHALL be adopted
-at its current counts, with no ceiling applied. A file the baseline has never
-seen and that git does not track SHALL be held to the new-file ceiling. When
-the tracking answer cannot be read, the gate SHALL treat the file as untracked.
-
-#### Scenario: Existing file scanned for the first time
-- **WHEN** a git-tracked file that the baseline does not list is edited, and it
-  measures over the ceiling
-- **THEN** the gate allows the write and adopts the file into the baseline
-
-#### Scenario: Brand new oversized file
-- **WHEN** an untracked file measures over the ceiling
-- **THEN** the gate blocks the write
-
-#### Scenario: Not a git working tree
-- **WHEN** git cannot answer whether the file is tracked
-- **THEN** the gate applies the new-file ceiling
-
-### Requirement: A new file is held to a generous ceiling
-
-The new-file ceiling SHALL be the rule's hard bound multiplied by 1.5 and
-rounded. It SHALL apply only to rules with a numeric bound, and SHALL block
-only on a value strictly above the ceiling. The resulting ceilings are line
-length 180, file length 450, function length 90, complexity 15, parameter
-count 11, and nesting depth 8.
-
-#### Scenario: New file just under the ceiling
-- **WHEN** an untracked new file measures 449 lines
-- **THEN** the gate allows the write
-
-#### Scenario: New file just over the ceiling
-- **WHEN** an untracked new file measures 451 lines
-- **THEN** the gate blocks the write and names the ceiling it passed
-
-#### Scenario: Rule with no numeric bound
-- **WHEN** a new file holds violations of a presence rule such as a todo marker
-- **THEN** the ceiling does not apply and the gate does not block on them
-
 ### Requirement: A blocked write records nothing
 
-The gate SHALL update the baseline only when the write is allowed. A blocked
-file SHALL NOT be adopted, and its counts SHALL NOT be recorded.
+The gate SHALL NOT update the tracked quality baseline after any write. A blocked or allowed write SHALL leave the baseline byte-for-byte unchanged. Baseline recording SHALL remain an explicit repository or CI operation.
 
 #### Scenario: Oversized new file is blocked
 - **WHEN** the gate blocks an untracked new file
-- **THEN** the baseline still does not list that file
+- **THEN** the tracked baseline remains unchanged
 
 #### Scenario: Write is allowed after adoption
-- **WHEN** the gate allows a write for a file it adopted or rebaselined
-- **THEN** the baseline records that file's current counts, replacing any rows
-  it held before
+- **WHEN** the gate allows a tracked or untracked source write
+- **THEN** the tracked baseline remains unchanged
 
 ### Requirement: The project linter runs on top of the structural gate
 
@@ -204,3 +157,25 @@ no single-file mode SHALL share a longer one.
 #### Scenario: No linter configured
 - **WHEN** the repository holds no configuration for any supported linter
 - **THEN** the gate spawns nothing and reports no findings
+
+### Requirement: A new file is held to normal hard bounds
+An untracked supported source file SHALL be checked against the scanner's normal hard bounds. The write gate SHALL NOT multiply those bounds or adopt the file at its current counts. Presence errors SHALL block in the same way they block a normal scanner run.
+
+#### Scenario: New file exceeds normal file limit
+- **WHEN** an untracked new file measures 301 lines under the default profile
+- **THEN** the gate blocks the write for exceeding the 300-line hard bound
+
+#### Scenario: New file contains a second top-level type
+- **WHEN** an untracked new file declares two top-level types
+- **THEN** the gate blocks the write for the types-per-file error
+
+### Requirement: Write-time success is not commit evidence
+The write gate SHALL describe its verdict as file-local feedback. It SHALL NOT claim that repository reachability, directory placement, dependency boundaries, staged architecture, or commit readiness were checked. A successful write SHALL direct commit callers to the staged commit gate.
+
+#### Scenario: File-local write passes
+- **WHEN** the write gate finds no file-local regression or hard-bound violation
+- **THEN** it allows the write and identifies the staged gate as the commit decision
+
+#### Scenario: Project-level rule could not run
+- **WHEN** a rule requires repository or staged-diff context
+- **THEN** the write gate omits that rule and makes no clean claim about it
