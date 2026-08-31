@@ -793,6 +793,7 @@ export function createRuntimeCoreFactory(): ExplorerCoreFactory {
         }),
       });
       return {
+        call: (name, arguments_) => server.call(name, arguments_),
         close: async () => {
           await server.close();
           await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));

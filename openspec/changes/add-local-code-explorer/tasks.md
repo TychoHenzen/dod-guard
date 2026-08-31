@@ -19,7 +19,8 @@
   <!-- covers: code-explorer/browser-server :: Startup opens the local browser unless disabled :: Automatic opening is disabled -->
   <!-- covers: code-explorer/browser-server :: Startup opens the local browser unless disabled :: Operating system cannot open the browser -->
 
-- [ ] 1.3 Implement the closed session-control and read-only JSON routes, exact Host and POST Origin checks, CSP and attribute allowlist, connection/header/body/rate ceilings, core limits, real-path static asset root, response headers, and stable HTTP error mapping in `packages/code-explorer/src/browser-server/`. Add binder, opener, route, traversal, schema, boundary-byte, slow-client, hostile-field, capacity, and read-only tests. Verify with `npm test -w packages/code-explorer`.
+- [x] 1.3 Implement the closed session-control and read-only JSON routes, exact Host and POST Origin checks, CSP and attribute allowlist, connection/header/body/rate ceilings, core limits, real-path static asset root, response headers, and stable HTTP error mapping in `packages/code-explorer/src/browser-server/`. Add binder, opener, route, traversal, schema, boundary-byte, slow-client, hostile-field, capacity, and read-only tests. Verify with `npm test -w packages/code-explorer`.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-server :: The HTTP boundary remains read-only and same-origin :: Browser lists or calls a write route -->
   <!-- covers: code-explorer/browser-server :: The HTTP boundary remains read-only and same-origin :: Cross-origin preflight is sent -->
   <!-- covers: code-explorer/browser-server :: The HTTP boundary remains read-only and same-origin :: Request authority or origin is not the printed endpoint -->
@@ -34,7 +35,8 @@
   <!-- covers: code-explorer/browser-server :: Static assets and server errors have stable behavior :: Static path attempts traversal -->
   <!-- covers: code-explorer/browser-server :: Static assets and server errors have stable behavior :: Navigation core returns a redacted error -->
 
-- [ ] 1.4 Map Performance Navigation Timing and exclusive-Web-Lock tab identifiers to core sessions in `packages/code-explorer/src/browser-server/` and `packages/code-explorer/src/browser/`. Cover exact create/restore bodies and headers, reload restore, reload-race replacement, duplicate rotation, unsupported-browser closure, cross-tab rejection, fake-clock boundary expiry, and visible recovery. Verify with `npm test -w packages/code-explorer` and the package browser test command.
+- [x] 1.4 Map Performance Navigation Timing and exclusive-Web-Lock tab identifiers to core sessions in `packages/code-explorer/src/browser-server/` and `packages/code-explorer/src/browser/`. Cover exact create/restore bodies and headers, reload restore, reload-race replacement, duplicate rotation, unsupported-browser closure, cross-tab rejection, fake-clock boundary expiry, and visible recovery. Verify with `npm test -w packages/code-explorer` and the package browser test command.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-server :: Each browser tab owns one isolated session :: Tab reloads during a live session -->
   <!-- covers: code-explorer/browser-server :: Each browser tab owns one isolated session :: User opens another tab -->
   <!-- covers: code-explorer/browser-server :: Each browser tab owns one isolated session :: Tab presents another session identifier -->

@@ -1,7 +1,10 @@
 import { spawn } from "node:child_process";
+import path from "node:path";
 import { createServer, type Server } from "node:http";
 import type { Socket } from "node:net";
+import { fileURLToPath } from "node:url";
 import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "../semantic/project-root.js";
+import { BrowserHttpRouter, type BrowserCoreReply } from "./http-router.js";
 
 export type BrowserServerErrorCode = "invalid_request" | "invalid_project_root" | "browser_port_unavailable";
 
@@ -11,7 +14,10 @@ export class BrowserServerError extends Error {
   }
 }
 
-export type ExplorerCore = { close(signal: AbortSignal): Promise<void> };
+export type ExplorerCore = {
+  close(signal: AbortSignal): Promise<void>;
+  call?(name: string, arguments_: Record<string, unknown>): Promise<BrowserCoreReply>;
+};
 export type ExplorerCoreFactory = {
   start(input: { projectRoot: ProjectRoot; signal: AbortSignal }): Promise<ExplorerCore>;
 };
@@ -23,7 +29,7 @@ export type HttpListener = {
 };
 
 export type PortBinder = {
-  listen(host: "127.0.0.1", port: number, signal: AbortSignal): Promise<HttpListener>;
+  listen(host: "127.0.0.1", port: number, signal: AbortSignal, core?: ExplorerCore): Promise<HttpListener>;
 };
 
 export type BrowserOpener = { open(url: URL, signal: AbortSignal): Promise<void> };
@@ -82,7 +88,7 @@ export async function startBrowserServer(options: {
     core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
     for (let port = firstPort; port <= lastPort; port += 1) {
       try {
-        listener = await options.binder.listen("127.0.0.1", port, controller.signal);
+        listener = await options.binder.listen("127.0.0.1", port, controller.signal, core);
         break;
       } catch (error) {
         if (!(error instanceof Error && "code" in error && error.code === "EADDRINUSE")) throw error;
@@ -119,28 +125,41 @@ export async function startBrowserServer(options: {
   }
 }
 
-/** Production binder. Routes are intentionally closed until the HTTP adapter is installed. */
+/** Production binder exposes only the fixed browser routes for one already-frozen core. */
 export const nativePortBinder: PortBinder = {
-  async listen(host, port, signal) {
+  async listen(host, port, signal, core) {
     if (signal.aborted) throw new Error("aborted");
     const sockets = new Set<Socket>();
     let admitting = true;
-    const server: Server = createServer((request, response) => {
+    const server: Server = createServer({ maxHeaderSize: 16 * 1024 }, (request, response) => {
       if (!admitting) {
         response.destroy();
         return;
       }
-      // Browser routes are added separately. Before then, any attempted request
-      // body is invalid and cannot select or replace this process's frozen root.
-      if (request.method !== "GET" && request.method !== "HEAD") {
-        response.statusCode = 400;
-        response.setHeader("content-type", "application/json");
-        response.end(JSON.stringify({ schema_version: 1, code: "invalid_request", message: "invalid_request", retryable: false }));
-        return;
-      }
-      response.statusCode = 404;
-      response.end();
+      const origin = `http://${host}:${port}`;
+      const router = new BrowserHttpRouter({
+        origin,
+        assetRoot: path.join(path.dirname(fileURLToPath(import.meta.url)), "browser"),
+        call: core?.call ?? (async () => ({ schema_version: 1, code: "workspace_unavailable", message: "workspace_unavailable", retryable: true })),
+      });
+      const chunks: Buffer[] = [];
+      request.on("data", (chunk: Buffer) => chunks.push(chunk));
+      request.on("end", () => {
+        void router.handle({
+          method: request.method ?? "GET",
+          path: request.url ?? "/",
+          headers: Object.fromEntries(Object.entries(request.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])),
+          body: Buffer.concat(chunks),
+        }).then((result) => {
+          response.statusCode = result.status;
+          for (const [key, value] of Object.entries(result.headers)) response.setHeader(key, value);
+          response.end(result.body);
+        });
+      });
     });
+    server.headersTimeout = 5_000;
+    server.keepAliveTimeout = 5_000;
+    server.maxRequestsPerSocket = 100;
     server.on("connection", (socket) => {
       sockets.add(socket);
       socket.once("close", () => sockets.delete(socket));
