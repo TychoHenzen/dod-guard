@@ -115,7 +115,7 @@
 <!-- status: completed -->
   <!-- covers: code-explorer/symbol-discovery :: Search order is deterministic :: Equal-rank candidates are returned -->
   <!-- covers: code-explorer/symbol-discovery :: Search order is deterministic :: Search is repeated without project changes -->
-- [ ] 3.3 Apply path, language, symbol-kind, test, production, and generated filters before ranking and limiting.
+- [ ] 3.3 Apply path, language, symbol-kind, test, production, generated, and ordered typed-override filters before ranking and limiting.
   <!-- covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client filters by symbol kind and path -->
   <!-- covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client requests production content -->
   <!-- covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Generated content uses the default policy -->
