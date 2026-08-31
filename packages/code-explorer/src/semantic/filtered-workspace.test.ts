@@ -29,15 +29,16 @@ it("creates a native backend root before initialization without sensitive conten
   }
 });
 
-it("never copies a Windows case-insensitive classification configuration into a native backend tree", () => {
+it("never copies the host-recognized classification configuration into a native backend tree", () => {
   const project = mkdtempSync(join(tmpdir(), "code-explorer-config-case-native-"));
+  const configName = process.platform === "win32" ? ".CODE-EXPLORER.JSON" : ".code-explorer.json";
   try {
     mkdirSync(join(project, "src"));
     writeFileSync(join(project, "src", "main.rs"), "fn main() {}\n");
-    writeFileSync(join(project, ".CODE-EXPLORER.JSON"), JSON.stringify({ production: [".env"] }));
+    writeFileSync(join(project, configName), JSON.stringify({ production: [".env"] }));
     const filtered = createFilteredWorkspace(createNativeProjectRoot(project));
     try {
-      assert.equal(existsSync(join(filtered.root.canonicalPath, ".CODE-EXPLORER.JSON")), false);
+      assert.equal(existsSync(join(filtered.root.canonicalPath, configName)), false);
       assert.equal(readFileSync(join(filtered.root.canonicalPath, "src", "main.rs"), "utf8"), "fn main() {}\n");
     } finally {
       filtered.dispose();

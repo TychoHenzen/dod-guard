@@ -21659,7 +21659,7 @@ function createDiscoveryPipeline(root) {
     }
   };
   function searchCandidates(query, filters, symbols) {
-    const allowedSymbols = symbols.filter((symbol) => !isSensitiveProjectPath(symbol.location.path)).map((symbol) => normalizeBackendSymbol(root, symbol));
+    const allowedSymbols = symbols.map((symbol) => normalizeBackendSymbol(root, symbol)).filter((symbol) => !isSensitiveProjectPath(symbol.location.path));
     const semanticCandidates = allowedSymbols.map((symbol) => ({
       type: "symbol",
       name: symbol.name,

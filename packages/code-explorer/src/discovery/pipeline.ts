@@ -65,10 +65,10 @@ export function createDiscoveryPipeline(root: ProjectRoot): DiscoveryPipeline {
     filters: DiscoveryFilters,
     symbols: readonly SymbolIdentity[],
   ): DiscoveryResult[] {
-    // Adapter locations are untrusted. Reject denied paths before classification can read a header.
+    // Adapter locations are untrusted. Classify absolute paths before filtering denied project-relative paths.
     const allowedSymbols = symbols
-      .filter((symbol) => !isSensitiveProjectPath(symbol.location.path))
-      .map((symbol) => normalizeBackendSymbol(root, symbol));
+      .map((symbol) => normalizeBackendSymbol(root, symbol))
+      .filter((symbol) => !isSensitiveProjectPath(symbol.location.path));
     const semanticCandidates = allowedSymbols.map((symbol) => ({
       type: "symbol" as const,
       name: symbol.name,
