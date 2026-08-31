@@ -9,6 +9,7 @@ export const MAX_BODY_LIMIT_BYTES = 128 * 1024;
 export type FocusHandle = { handle: string; name: string; symbol_id: string };
 export type FocusView = {
   view_id: string;
+  project_generation: number;
   symbol_id: string;
   name: string;
   qualified_name: string;
@@ -43,6 +44,7 @@ export function createFocusView(
   symbol: SymbolIdentity,
   detail: FocusContent | undefined,
   requestedLimit?: number,
+  projectGeneration = 0,
 ): FocusView {
   const limit = requestedLimit ?? DEFAULT_BODY_LIMIT_BYTES;
   if (!Number.isInteger(limit) || limit < MIN_BODY_LIMIT_BYTES || limit > MAX_BODY_LIMIT_BYTES)
@@ -67,6 +69,7 @@ export function createFocusView(
     .map(({ name, symbol_id }) => ({ handle: mintOpaqueId(), name, symbol_id }));
   return {
     view_id: mintOpaqueId(),
+    project_generation: projectGeneration,
     symbol_id: symbolId,
     name: symbol.name,
     qualified_name: symbol.qualified_name ?? symbol.name,

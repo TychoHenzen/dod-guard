@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { chokidarWatchOptions, type ReconcileResult, WorkspaceFreshness } from "./workspace-freshness.js";
+import {
+  canPublishGeneration,
+  chokidarWatchOptions,
+  type ReconcileResult,
+  WorkspaceFreshness,
+} from "./workspace-freshness.js";
 
 type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void };
 
@@ -59,6 +64,10 @@ function fixture(results: Array<ReconcileResult | Promise<ReconcileResult>>, wat
   return { freshness, watcher, timers };
 }
 
+async function settle(): Promise<void> {
+  for (let index = 0; index < 6; index += 1) await Promise.resolve();
+}
+
 // covers: code-explorer/workspace-freshness :: Saved project changes become visible without a process restart :: Existing symbol is renamed on disk
 it("publishes a changed final manifest for a saved rename", async () => {
   const { freshness, watcher, timers } = fixture([
@@ -68,8 +77,7 @@ it("publishes a changed final manifest for a saved rename", async () => {
   await freshness.start();
   watcher.all?.();
   timers.fire(100);
-  await Promise.resolve();
-  await Promise.resolve();
+  await settle();
   assert.deepEqual(freshness.status(), {
     current_generation: 2,
     pending_generation: null,
@@ -84,8 +92,7 @@ it("publishes deletion only from the final manifest", async () => {
   await freshness.start();
   watcher.all?.();
   timers.fire(100);
-  await Promise.resolve();
-  await Promise.resolve();
+  await settle();
   assert.equal(freshness.status().current_generation, 2);
 });
 
@@ -104,8 +111,7 @@ it("reports the prior revision and a pending revision while reconciliation runs"
     mode: "watching",
   });
   next.resolve(manifest({ "src/a.ts": "two" }));
-  await Promise.resolve();
-  await Promise.resolve();
+  await settle();
 });
 
 // covers: code-explorer/workspace-freshness :: Saved project changes become visible without a process restart :: Editor saves by atomic replacement
@@ -115,8 +121,7 @@ it("treats an atomic replacement as a changed final path", async () => {
   watcher.all?.();
   watcher.all?.();
   timers.fire(100);
-  await Promise.resolve();
-  await Promise.resolve();
+  await settle();
   assert.equal(freshness.status().current_generation, 2);
 });
 
@@ -155,8 +160,7 @@ it("keeps the prior generation when reconciliation cannot read a supported path"
   await freshness.start();
   watcher.all?.();
   timers.fire(100);
-  await Promise.resolve();
-  await Promise.resolve();
+  await settle();
   assert.deepEqual(freshness.status(), {
     current_generation: 1,
     pending_generation: null,
@@ -171,8 +175,7 @@ it("reconciles an active session manifest every thirty seconds", async () => {
   const { freshness, timers } = fixture([manifest({ "src/a.ts": "one" }), manifest({ "src/a.ts": "two" })]);
   await freshness.start(1);
   timers.fire(30_000);
-  await Promise.resolve();
-  await Promise.resolve();
+  await settle();
   assert.equal(freshness.status().current_generation, 2);
 });
 
@@ -240,5 +243,93 @@ it("uses the pinned Chokidar stability and safety options", () => {
     alwaysStat: true,
     followSymlinks: false,
     ignorePermissionErrors: false,
+  });
+});
+
+// covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: Two responses use the same analyzed state
+it("retains one published generation when two operations observe the same manifest", async () => {
+  const freshness = new WorkspaceFreshness({ reconcile: async () => manifest({ "src/a.ts": "one" }) });
+  await freshness.start();
+  const first = freshness.status();
+  const second = freshness.status();
+  assert.equal(first.current_generation, second.current_generation);
+  assert.equal(first.pending_generation, null);
+});
+
+// covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: Relevant source content changes
+it("publishes a new generation only after a changed manifest verifies", async () => {
+  const captured = [manifest({ "src/a.ts": "one" }), manifest({ "src/a.ts": "two" })];
+  const verified = [manifest({ "src/a.ts": "one" }), manifest({ "src/a.ts": "two" })];
+  const freshness = new WorkspaceFreshness({
+    reconcile: async () => captured.shift() ?? manifest({ "src/a.ts": "two" }),
+    verify: async () => verified.shift() ?? manifest({ "src/a.ts": "two" }),
+  });
+  await freshness.start();
+  const first = freshness.status().current_generation;
+  await freshness.reconcile();
+  assert.ok(freshness.status().current_generation > first);
+});
+
+// covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: Older analysis finishes after newer analysis
+it("rejects an older completed analysis after a newer generation is current", () => {
+  const stable = new Map([["src/a.ts", "stable"]]);
+  assert.equal(canPublishGeneration(5, 4, stable, stable), false);
+});
+
+// covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: One saved change advances the observable timeline
+it("keeps the prior generation current while a reserved generation is pending", async () => {
+  const next = deferred<ReconcileResult>();
+  const captured = [manifest({ "src/a.ts": "one" }), manifest({ "src/a.ts": "two" })];
+  const verified: Array<ReconcileResult | Promise<ReconcileResult>> = [manifest({ "src/a.ts": "one" }), next.promise];
+  const freshness = new WorkspaceFreshness({
+    reconcile: async () => captured.shift() ?? manifest({ "src/a.ts": "two" }),
+    verify: async () => await (verified.shift() ?? manifest({ "src/a.ts": "two" })),
+  });
+  await freshness.start();
+  const current = freshness.status().current_generation;
+  const refresh = freshness.reconcile();
+  assert.deepEqual(freshness.status(), {
+    current_generation: current,
+    pending_generation: current + 1,
+    state: "refreshing",
+    mode: "watching",
+  });
+  next.resolve(manifest({ "src/a.ts": "two" }));
+  await refresh;
+  assert.deepEqual(freshness.status(), {
+    current_generation: current + 1,
+    pending_generation: null,
+    state: "ready",
+    mode: "watching",
+  });
+});
+
+// covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: Files change during analysis
+it("discards mismatched manifests and preserves the prior generation after repeated churn", async () => {
+  const manifests = [
+    manifest({ "src/a.ts": "one" }),
+    manifest({ "src/a.ts": "two" }),
+    manifest({ "src/a.ts": "three" }),
+    manifest({ "src/a.ts": "four" }),
+  ];
+  const verified = [
+    manifest({ "src/a.ts": "one" }),
+    manifest({ "src/a.ts": "two-prime" }),
+    manifest({ "src/a.ts": "three-prime" }),
+    manifest({ "src/a.ts": "four-prime" }),
+  ];
+  const freshness = new WorkspaceFreshness({
+    reconcile: async () => manifests.shift() ?? manifest({ "src/a.ts": "missing" }),
+    verify: async () => verified.shift() ?? manifest({ "src/a.ts": "missing-prime" }),
+  });
+  await freshness.start();
+  const prior = freshness.status().current_generation;
+  await freshness.reconcile();
+  assert.deepEqual(freshness.status(), {
+    current_generation: prior,
+    pending_generation: null,
+    state: "degraded",
+    mode: "watching",
+    degraded_cause: "workspace_churn",
   });
 });

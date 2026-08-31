@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createServer } from "../index.js";
+import { WorkspaceFreshness } from "../freshness/workspace-freshness.js";
 import type { LanguageAdapter } from "../semantic/language-adapter.js";
 import { createFocusView, stableSymbolId } from "./focus-view.js";
 
@@ -88,6 +89,73 @@ it("returns semantic identity without reading a whole file when the backend supp
     returned_bytes: 0,
     total_bytes: 0,
   });
+});
+
+// covers: code-explorer/workspace-freshness :: Views remain immutable after creation :: Client follows a handle from an older view
+it("returns stale_view generations without dispatching semantics for an old view", async () => {
+  const manifests = [new Map([["src/lib.rs", "one"]]), new Map([["src/lib.rs", "two"]])];
+  const freshness = new WorkspaceFreshness({ reconcile: async () => ({ manifest: manifests.shift() ?? new Map() }) });
+  let requests = 0;
+  const adapter = focusAdapter({ body: "TypeName", visible_symbols: [{ name: "TypeName", symbol_id: "type-id" }] });
+  const originalRequest = adapter.request;
+  adapter.request = async (request) => {
+    requests += 1;
+    return originalRequest(request);
+  };
+  const server = createServer({ adapters: [adapter], freshness });
+  const sessionId = await startSession(server);
+  const focused = await server.call("code_focus", {
+    session_id: sessionId,
+    request_id: "focus-request-0001",
+    symbol_id: "backend-id",
+  });
+  if ("code" in focused) throw new Error("expected focus view");
+  const view = focused.data as ReturnType<typeof createFocusView>;
+  await freshness.reconcile();
+  const followed = await server.call("code_follow", {
+    session_id: sessionId,
+    request_id: "follow-request-0001",
+    view_id: view.view_id,
+    handle: view.handles[0]?.handle ?? "missing",
+    relation: "definition",
+  });
+  assert.deepEqual(followed, {
+    schema_version: 1,
+    code: "stale_view",
+    message: "stale_view",
+    retryable: false,
+    details: { view_generation: 1, current_generation: 2 },
+  });
+  assert.equal(requests, 1);
+});
+
+// covers: code-explorer/workspace-freshness :: Views remain immutable after creation :: Client restores old history
+it("restores an old immutable view with its original generation and stale label", async () => {
+  const manifests = [new Map([["src/lib.rs", "one"]]), new Map([["src/lib.rs", "two"]])];
+  const freshness = new WorkspaceFreshness({ reconcile: async () => ({ manifest: manifests.shift() ?? new Map() }) });
+  const server = createServer({ adapters: [focusAdapter({ body: "TypeName", visible_symbols: [{ name: "TypeName", symbol_id: "type-id" }] })], freshness });
+  const sessionId = await startSession(server);
+  const first = await server.call("code_focus", {
+    session_id: sessionId,
+    request_id: "focus-request-0001",
+    symbol_id: "backend-id",
+  });
+  if ("code" in first) throw new Error("expected first focus");
+  await freshness.reconcile();
+  await server.call("code_focus", {
+    session_id: sessionId,
+    request_id: "focus-request-0002",
+    symbol_id: "backend-id",
+  });
+  const restored = await server.call("code_history", {
+    session_id: sessionId,
+    request_id: "history-request-0001",
+    action: "back",
+  });
+  if ("code" in restored) throw new Error("expected restored view");
+  assert.equal(restored.project_generation, 2);
+  assert.equal(restored.data.project_generation, 1);
+  assert.equal(restored.data.stale, true);
 });
 
 function focusAdapter(

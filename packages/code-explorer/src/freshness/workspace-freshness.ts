@@ -3,7 +3,7 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 import chokidar from "chokidar";
 
-export type FreshnessCause = "freshness_unavailable" | "incomplete_write" | "scan_limit";
+export type FreshnessCause = "freshness_unavailable" | "incomplete_write" | "scan_limit" | "workspace_churn";
 export type FreshnessState = "initializing" | "ready" | "refreshing" | "degraded";
 export type FreshnessStatus = {
   current_generation: number;
@@ -21,6 +21,10 @@ export type WorkspaceWatcher = {
 };
 export type FreshnessOptions = {
   reconcile: () => Promise<ReconcileResult>;
+  /** Builds derived data for one immutable manifest before it can become current. */
+  analyze?: (generation: number, manifest: Manifest) => Promise<void>;
+  /** Re-reads the final manifest after analysis. Native callers must provide this. */
+  verify?: () => Promise<ReconcileResult>;
   createWatcher?: () => WorkspaceWatcher;
   watch_paths?: readonly string[];
   setTimeout?: (callback: () => void, delay: number) => unknown;
@@ -28,6 +32,15 @@ export type FreshnessOptions = {
 };
 
 const coalesceMilliseconds = 100;
+
+export function canPublishGeneration(
+  currentGeneration: number,
+  analyzedGeneration: number,
+  captured: Manifest,
+  prepublication: Manifest,
+): boolean {
+  return analyzedGeneration > currentGeneration && sameManifest(captured, prepublication);
+}
 export const chokidarWatchOptions = {
   atomic: 100,
   awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 100 },
@@ -51,6 +64,7 @@ export class WorkspaceFreshness {
   #pollTimer: unknown;
   #manifestTimer: unknown;
   #running: Promise<void> | undefined;
+  #nextGeneration = 1;
 
   constructor(private readonly options: FreshnessOptions) {}
 
@@ -88,43 +102,8 @@ export class WorkspaceFreshness {
 
   async reconcile(): Promise<void> {
     if (this.#running) return this.#running;
-    this.#status = {
-      current_generation: this.#status.current_generation,
-      pending_generation: this.#status.current_generation + 1,
-      state: "refreshing",
-      mode: this.#status.mode,
-    };
-    const run = this.options
-      .reconcile()
-      .then((result) => {
-        if ("cause" in result) {
-          this.#status = {
-            current_generation: this.#status.current_generation,
-            pending_generation: null,
-            state: "degraded",
-            mode: this.#status.mode,
-            degraded_cause: result.cause,
-          };
-          return;
-        }
-        if (this.#status.current_generation > 0 && sameManifest(this.#manifest, result.manifest)) {
-          this.#status = {
-            current_generation: this.#status.current_generation,
-            pending_generation: null,
-            state: this.#status.current_generation === 0 ? "initializing" : "ready",
-            mode: this.#status.mode,
-          };
-          return;
-        }
-        this.#manifest = new Map(result.manifest);
-        this.#status = {
-          current_generation: this.#status.current_generation + 1,
-          pending_generation: null,
-          state: "ready",
-          mode: this.#status.mode,
-        };
-      })
-      .catch(() => {
+    this.#reserveGeneration();
+    const run = this.#reconcile().catch(() => {
         this.#status = {
           current_generation: this.#status.current_generation,
           pending_generation: null,
@@ -132,12 +111,64 @@ export class WorkspaceFreshness {
           mode: this.#status.mode,
           degraded_cause: "freshness_unavailable",
         };
-      })
-      .finally(() => {
+      }).finally(() => {
         this.#running = undefined;
       });
     this.#running = run;
     return run;
+  }
+
+  async #reconcile(): Promise<void> {
+    for (let mismatchCount = 0; mismatchCount < 3; mismatchCount += 1) {
+      const captured = await this.options.reconcile();
+      if ("cause" in captured) return this.#degrade(captured.cause);
+      if (this.#status.current_generation > 0 && sameManifest(this.#manifest, captured.manifest)) {
+        this.#status = {
+          current_generation: this.#status.current_generation,
+          pending_generation: null,
+          state: "ready",
+          mode: this.#status.mode,
+        };
+        return;
+      }
+      const generation = this.#status.pending_generation ?? this.#reserveGeneration();
+      await this.options.analyze?.(generation, captured.manifest);
+      const published = this.options.verify ? await this.options.verify() : captured;
+      if ("cause" in published) return this.#degrade(published.cause);
+      if (canPublishGeneration(this.#status.current_generation, generation, captured.manifest, published.manifest)) {
+        this.#manifest = new Map(published.manifest);
+        this.#status = {
+          current_generation: generation,
+          pending_generation: null,
+          state: "ready",
+          mode: this.#status.mode,
+        };
+        return;
+      }
+      this.#reserveGeneration();
+    }
+    this.#degrade("workspace_churn");
+  }
+
+  #degrade(cause: FreshnessCause): void {
+    this.#status = {
+      current_generation: this.#status.current_generation,
+      pending_generation: null,
+      state: "degraded",
+      mode: this.#status.mode,
+      degraded_cause: cause,
+    };
+  }
+
+  #reserveGeneration(): number {
+    const generation = this.#nextGeneration++;
+    this.#status = {
+      current_generation: this.#status.current_generation,
+      pending_generation: generation,
+      state: "refreshing",
+      mode: this.#status.mode,
+    };
+    return generation;
   }
 
   async close(): Promise<void> {
@@ -211,6 +242,7 @@ export type NativeManifestOptions = {
 export function createNativeWorkspaceFreshness(options: NativeManifestOptions): WorkspaceFreshness {
   return new WorkspaceFreshness({
     reconcile: () => reconcileNativeManifest(options),
+    verify: () => reconcileNativeManifest(options),
     watch_paths: [options.root],
   });
 }

@@ -26,6 +26,8 @@ import type { RelationName, RelationResult, SymbolIdentity } from "./semantic/co
 import type { LanguageAdapter } from "./semantic/language-adapter.js";
 import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "./semantic/project-root.js";
 import { createStartedRuntimeAdapters } from "./semantic/runtime-bootstrap.js";
+import { createNativeWorkspaceFreshness, WorkspaceFreshness } from "./freshness/workspace-freshness.js";
+import { ProjectGenerationScheduler } from "./freshness/project-generation-scheduler.js";
 
 const filename = fileURLToPath(import.meta.url);
 const packagePath = path.join(path.dirname(filename), "..", "package.json");
@@ -33,7 +35,7 @@ const packageInfo = JSON.parse(readFileSync(packagePath, "utf-8")) as { version:
 
 const toolNames = ["code_search", "code_focus", "code_follow", "code_history", "code_status"] as const;
 type ToolName = (typeof toolNames)[number];
-type EnvelopeState = "ready" | "refreshed" | "unavailable_relation" | "landmarks_not_ready";
+type EnvelopeState = "ready" | "refreshed" | "refreshing" | "degraded" | "unavailable_relation" | "landmarks_not_ready";
 
 export type CodeExplorerState = {
   refresh_generation: number;
@@ -46,7 +48,7 @@ export type CodeExplorerEnvelope = {
   schema_version: 1;
   project_id: string;
   project_generation: number;
-  pending_generation: null;
+  pending_generation: number | null;
   state: EnvelopeState;
   data: Record<string, unknown>;
 };
@@ -265,6 +267,8 @@ export function createServer(
     connection_id?: string;
     now?: () => number;
     backend_timeout_ms?: number;
+    freshness?: WorkspaceFreshness;
+    generation_scheduler?: ProjectGenerationScheduler;
   } = {},
 ): CodeExplorerServer {
   let refreshGeneration = 0;
@@ -272,7 +276,11 @@ export function createServer(
   const connectionId = options.connection_id ?? mintOpaqueId();
   const sessions = new SessionManager();
   const backendRequests = new BackendRequestLimiter(options.backend_timeout_ms);
-  let refreshing: Promise<void> | undefined;
+  const freshness =
+    options.freshness ?? new WorkspaceFreshness({ reconcile: async () => ({ manifest: new Map<string, string>() }) });
+  let freshnessStarted: Promise<void> | undefined;
+  const ensureFreshness = () => (freshnessStarted ??= freshness.start());
+  const generationScheduler = options.generation_scheduler ?? new ProjectGenerationScheduler(freshness);
   const mcp = new McpServer({ name: "code-explorer", version: packageInfo.version }, { capabilities: { tools: {} } });
   const discovery: DiscoveryPipeline | undefined = options.projectRoot
     ? createDiscoveryPipeline(options.projectRoot)
@@ -287,6 +295,7 @@ export function createServer(
     if (limit) return limitedResource(limit);
     const parsed = schemas[name].safeParse(arguments_);
     if (!parsed.success) return invalidRequest();
+    if (!(name === "code_status" && arguments_.action === "start_session")) await ensureFreshness();
     if (name === "code_status" && arguments_.action === "start_session") {
       const sessionId = sessions.tryStart(connectionId, options.now?.());
       if (!sessionId) return projectCapacity();
@@ -310,26 +319,20 @@ export function createServer(
     if (stateChanging && !(requestId && hasValidRequestId(requestId) && sessionId)) return invalidRequest();
 
     const perform = async (): Promise<CodeExplorerEnvelope | CodeExplorerError> => {
+      let capturedFreshness;
       if (name === "code_status" && arguments_.action === "refresh") {
-        if (!refreshing) {
+        await generationScheduler.refresh(async () => {
           refreshGeneration += 1;
-          const activeRefresh = Promise.all(
+          await Promise.all(
             (options.adapters ?? []).flatMap((adapter) => {
               const refresh = adapter.refresh;
               return refresh ? [backendRequests.run(sessionId, () => refresh())] : [];
             }),
-          ).then(() => undefined);
-          refreshing = activeRefresh;
-          void activeRefresh.then(
-            () => {
-              if (refreshing === activeRefresh) refreshing = undefined;
-            },
-            () => {
-              if (refreshing === activeRefresh) refreshing = undefined;
-            },
           );
-        }
-        await refreshing;
+        });
+        capturedFreshness = freshness.status();
+      } else {
+        capturedFreshness = (await generationScheduler.accept()).status;
       }
       if (name === "code_focus") {
         const focus = schemas.code_focus.parse(arguments_);
@@ -338,14 +341,19 @@ export function createServer(
         );
         if (selected) {
           try {
-            const view = createFocusView(selected.symbol, selected.content, focus.body_limit_bytes);
+            const view = createFocusView(
+              selected.symbol,
+              selected.content,
+              focus.body_limit_bytes,
+              capturedFreshness.current_generation,
+            );
             if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
             viewHistory.push(view.view_id);
             return {
               schema_version: 1,
               project_id: "project",
-              project_generation: selected.revision.generation,
-              pending_generation: null,
+              project_generation: capturedFreshness.current_generation,
+              pending_generation: capturedFreshness.pending_generation,
               state: "ready",
               data: { ...view, history_position: sessions.historyPosition(connectionId, focus.session_id) ?? 0 },
             };
@@ -358,8 +366,20 @@ export function createServer(
       const relation = arguments_.relation;
       if (name === "code_follow" && typeof relation === "string") {
         const follow = schemas.code_follow.parse(arguments_);
-        const resolved = sessions.resolveHandle(connectionId, follow.session_id, follow.view_id, follow.handle);
-        if (resolved.state === "stale_view") return staleView();
+        const resolved = sessions.resolveHandle(
+          connectionId,
+          follow.session_id,
+          follow.view_id,
+          follow.handle,
+          capturedFreshness.current_generation,
+        );
+        if (resolved.state === "stale_view") {
+          if (resolved.viewGeneration === undefined) return staleView();
+          return codeExplorerError("stale_view", {
+            view_generation: resolved.viewGeneration,
+            current_generation: resolved.currentGeneration ?? capturedFreshness.current_generation,
+          });
+        }
         if (resolved.state !== "ok") return invalidViewHandle();
         const symbolId = resolved.symbolId;
         const semanticRelation = follow.relation === "type" ? "type_definition" : follow.relation;
@@ -370,8 +390,8 @@ export function createServer(
           return {
             schema_version: 1,
             project_id: "project",
-            project_generation: 0,
-            pending_generation: null,
+            project_generation: capturedFreshness.current_generation,
+            pending_generation: capturedFreshness.pending_generation,
             state: "unavailable_relation",
             data: { relation },
           };
@@ -390,8 +410,8 @@ export function createServer(
             return {
               schema_version: 1,
               project_id: "project",
-              project_generation: result.revision.generation,
-              pending_generation: null,
+              project_generation: capturedFreshness.current_generation,
+              pending_generation: capturedFreshness.pending_generation,
               state: "ready",
               data: { focus: local, source_location: local.range },
             };
@@ -400,8 +420,8 @@ export function createServer(
         return {
           schema_version: 1,
           project_id: "project",
-          project_generation: result.revision.generation,
-          pending_generation: null,
+          project_generation: capturedFreshness.current_generation,
+          pending_generation: capturedFreshness.pending_generation,
           state: "ready",
           data: { relation, candidates },
         };
@@ -414,8 +434,8 @@ export function createServer(
           return {
             schema_version: 1,
             project_id: "project",
-            project_generation: 0,
-            pending_generation: null,
+            project_generation: capturedFreshness.current_generation,
+            pending_generation: capturedFreshness.pending_generation,
             state: "ready",
             data: { views: recent },
           };
@@ -425,10 +445,14 @@ export function createServer(
         return {
           schema_version: 1,
           project_id: "project",
-          project_generation: 0,
-          pending_generation: null,
+          project_generation: capturedFreshness.current_generation,
+          pending_generation: capturedFreshness.pending_generation,
           state: "ready",
-          data: { ...restored, history_position: sessions.historyPosition(connectionId, history.session_id) ?? 0 },
+          data: {
+            ...restored,
+            history_position: sessions.historyPosition(connectionId, history.session_id) ?? 0,
+            stale: restored.project_generation !== capturedFreshness.current_generation,
+          },
         };
       }
       if (name === "code_search" && discovery) {
@@ -438,8 +462,8 @@ export function createServer(
           return {
             schema_version: 1,
             project_id: "project",
-            project_generation: 0,
-            pending_generation: null,
+            project_generation: capturedFreshness.current_generation,
+            pending_generation: capturedFreshness.pending_generation,
             state: landmarks.state === "ready" ? "ready" : "landmarks_not_ready",
             data: { landmarks: landmarks.landmarks, landmark_state: landmarks.state },
           };
@@ -457,8 +481,8 @@ export function createServer(
         return {
           schema_version: 1,
           project_id: "project",
-          project_generation: 0,
-          pending_generation: null,
+          project_generation: capturedFreshness.current_generation,
+          pending_generation: capturedFreshness.pending_generation,
           state: "ready",
           data: results,
         };
@@ -474,9 +498,14 @@ export function createServer(
       return {
         schema_version: 1,
         project_id: "project",
-        project_generation: 0,
-        pending_generation: null,
-        state: name === "code_status" && arguments_.action === "refresh" ? "refreshed" : "ready",
+        project_generation: capturedFreshness.current_generation,
+        pending_generation: capturedFreshness.pending_generation,
+        state:
+          name === "code_status" && arguments_.action === "refresh"
+            ? "refreshed"
+            : capturedFreshness.state === "refreshing" || capturedFreshness.state === "degraded"
+              ? capturedFreshness.state
+              : "ready",
         data: backendStatus,
       };
     };
@@ -657,6 +686,10 @@ async function main(): Promise<void> {
     projectRoot,
     adapters,
     sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
+    freshness: createNativeWorkspaceFreshness({
+      root: projectRoot.canonicalPath,
+      supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate),
+    }),
   });
   const transport = new StdioServerTransport();
   let shuttingDown: Promise<void> | undefined;

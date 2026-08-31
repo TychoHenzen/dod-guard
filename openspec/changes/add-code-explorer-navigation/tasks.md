@@ -235,16 +235,19 @@
   <!-- covers: code-explorer/workspace-freshness :: Saved project changes become visible without a process restart :: File remains incomplete -->
   <!-- covers: code-explorer/workspace-freshness :: Saved project changes become visible without a process restart :: Full scan exceeds a bound -->
   <!-- covers: code-explorer/workspace-freshness :: Saved project changes become visible without a process restart :: Initial reconciliation cannot publish -->
-- [ ] 6.2 Attach monotonic project generations to every response and discard analysis that finishes for an older generation.
+- [x] 6.2 Attach monotonic project generations to every response and discard analysis that finishes for an older generation.
+<!-- status: completed -->
   <!-- covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: Two responses use the same analyzed state -->
   <!-- covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: Relevant source content changes -->
   <!-- covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: Older analysis finishes after newer analysis -->
   <!-- covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: One saved change advances the observable timeline -->
   <!-- covers: code-explorer/workspace-freshness :: Every result identifies its monotonic project generation :: Files change during analysis -->
-- [ ] 6.3 Serialize project-wide generation reservation, reconciliation, and refresh across every MCP connection.
+- [x] 6.3 Serialize project-wide generation reservation, reconciliation, and refresh across every MCP connection.
+<!-- status: completed -->
   <!-- covers: code-explorer/workspace-freshness :: Project generation work has one global order :: Two sessions request refresh concurrently -->
   <!-- covers: code-explorer/workspace-freshness :: Project generation work has one global order :: Search races with a generation reservation -->
-- [ ] 6.4 Preserve immutable old views and return explicit stale-view behavior after the project advances.
+- [x] 6.4 Preserve immutable old views and return explicit stale-view behavior after the project advances.
+<!-- status: completed -->
   <!-- covers: code-explorer/workspace-freshness :: Views remain immutable after creation :: Client follows a handle from an older view -->
   <!-- covers: code-explorer/workspace-freshness :: Views remain immutable after creation :: Client restores old history -->
 - [ ] 6.5 Rebuild derived discovery and landmark data atomically while retaining the prior complete revision after refresh failure.

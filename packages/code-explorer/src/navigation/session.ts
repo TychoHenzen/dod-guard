@@ -131,11 +131,18 @@ export class SessionManager {
     sessionId: string,
     viewId: string,
     handle: string,
-  ): { state: "ok"; symbolId: string } | { state: "invalid_view_handle" | "stale_view" } {
+    currentGeneration = 0,
+  ):
+    | { state: "ok"; symbolId: string }
+    | { state: "invalid_view_handle" }
+    | { state: "stale_view"; viewGeneration?: number; currentGeneration?: number } {
     const session = this.ownedSession(connectionId, sessionId);
     if (!session) return { state: "invalid_view_handle" };
     if (session.staleViews.has(viewId)) return { state: "stale_view" };
-    const symbolId = session.views.get(viewId)?.handles.find((candidate) => candidate.handle === handle)?.symbol_id;
+    const view = session.views.get(viewId);
+    if (view && view.project_generation !== currentGeneration)
+      return { state: "stale_view", viewGeneration: view.project_generation, currentGeneration };
+    const symbolId = view?.handles.find((candidate) => candidate.handle === handle)?.symbol_id;
     return symbolId ? { state: "ok", symbolId } : { state: "invalid_view_handle" };
   }
 
