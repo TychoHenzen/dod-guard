@@ -167,18 +167,21 @@
   <!-- covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Client requests references -->
   <!-- covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Client requests callers or callees -->
   <!-- covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Requested semantic relation is unavailable -->
-- [ ] 4.4 Implement session-isolated Back, Forward, branch replacement, recent locations, and deterministic 64-view eviction.
+- [x] 4.4 Implement session-isolated Back, Forward, branch replacement, recent locations, and deterministic 64-view eviction.
+<!-- status: completed -->
   <!-- covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: Client navigates back -->
   <!-- covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: Client navigates forward -->
   <!-- covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: New navigation follows Back -->
   <!-- covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: Client asks for recent locations -->
   <!-- covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: History exceeds its capacity -->
-- [ ] 4.5 Enforce query, filter, result, body, concurrency, timeout, and refresh-coalescing resource limits.
+- [x] 4.5 Enforce query, filter, result, body, concurrency, timeout, and refresh-coalescing resource limits.
+<!-- status: completed -->
   <!-- covers: code-explorer/mcp-navigation :: Navigation work has enforceable resource limits :: Request exceeds a declared limit -->
   <!-- covers: code-explorer/mcp-navigation :: Navigation work has enforceable resource limits :: Backend request times out -->
   <!-- covers: code-explorer/mcp-navigation :: Navigation work has enforceable resource limits :: Refresh is already running -->
   <!-- covers: code-explorer/mcp-navigation :: Navigation work has enforceable resource limits :: Filter value is oversized -->
-- [ ] 4.6 Enforce project-wide connection, session, retained-byte, queue, and idle-expiry limits before allocation.
+- [x] 4.6 Enforce project-wide connection, session, retained-byte, queue, and idle-expiry limits before allocation.
+<!-- status: completed -->
   <!-- covers: code-explorer/mcp-navigation :: Aggregate retained state is bounded :: Live session capacity is reached -->
   <!-- covers: code-explorer/mcp-navigation :: Aggregate retained state is bounded :: Retained view bytes reach the project limit -->
   <!-- covers: code-explorer/mcp-navigation :: Aggregate retained state is bounded :: Idle session expires -->

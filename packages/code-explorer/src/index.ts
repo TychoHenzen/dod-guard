@@ -11,7 +11,14 @@ import { normalizeDiscoveryQuery } from "./discovery/matcher.js";
 import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
 import { createFocusView, FocusBodyLimitError, type FocusView, mintOpaqueId } from "./navigation/focus-view.js";
-import { SessionManager } from "./navigation/session.js";
+import {
+  BackendCapacityError,
+  BackendRequestLimiter,
+  BackendTimeoutError,
+  type ResourceLimit,
+  validateResourceLimits,
+} from "./navigation/resource-limits.js";
+import { SessionCapacityError, SessionManager } from "./navigation/session.js";
 import { loadAdapterSelectionRecord } from "./semantic/adapter-selection.js";
 import { createBackendStatusReport } from "./semantic/backend-status.js";
 import type { RelationName, RelationResult, SymbolIdentity } from "./semantic/contract.js";
@@ -39,11 +46,15 @@ export type CodeExplorerError = {
     | "invalid_request"
     | "path_outside_project"
     | "resource_limit"
+    | "backend_timeout"
+    | "project_capacity"
     | "invalid_session"
     | "invalid_view_handle"
+    | "stale_view"
     | "request_id_conflict";
   message: CodeExplorerError["code"];
   retryable: boolean;
+  details?: { field: string; limit: number; actual: number };
 };
 
 export type CodeExplorerEnvelope = {
@@ -83,12 +94,28 @@ function resourceLimit(): CodeExplorerError {
   return { schema_version: 1, code: "resource_limit", message: "resource_limit", retryable: false };
 }
 
+function limitedResource(limit: ResourceLimit): CodeExplorerError {
+  return { ...resourceLimit(), details: limit };
+}
+
+function backendTimeout(): CodeExplorerError {
+  return { schema_version: 1, code: "backend_timeout", message: "backend_timeout", retryable: true };
+}
+
 function invalidSession(): CodeExplorerError {
   return { schema_version: 1, code: "invalid_session", message: "invalid_session", retryable: true };
 }
 
+function projectCapacity(): CodeExplorerError {
+  return { schema_version: 1, code: "project_capacity", message: "project_capacity", retryable: true };
+}
+
 function invalidViewHandle(): CodeExplorerError {
   return { schema_version: 1, code: "invalid_view_handle", message: "invalid_view_handle", retryable: false };
+}
+
+function staleView(): CodeExplorerError {
+  return { schema_version: 1, code: "stale_view", message: "stale_view", retryable: false };
 }
 
 function requestIdConflict(): CodeExplorerError {
@@ -252,12 +279,15 @@ export function createServer(
     landmarks?: LandmarkDiscovery;
     connection_id?: string;
     now?: () => number;
+    backend_timeout_ms?: number;
   } = {},
 ): CodeExplorerServer {
   let refreshGeneration = 0;
   const viewHistory: string[] = [];
   const connectionId = options.connection_id ?? mintOpaqueId();
   const sessions = new SessionManager();
+  const backendRequests = new BackendRequestLimiter(options.backend_timeout_ms);
+  let refreshing: Promise<void> | undefined;
   const mcp = new McpServer({ name: "code-explorer", version: packageInfo.version }, { capabilities: { tools: {} } });
   const discovery: DiscoveryPipeline | undefined = options.projectRoot
     ? createDiscoveryPipeline(options.projectRoot)
@@ -268,16 +298,20 @@ export function createServer(
     arguments_: Record<string, unknown>,
   ): Promise<CodeExplorerEnvelope | CodeExplorerError> => {
     if (!isToolName(name)) return unknownTool();
+    const limit = validateResourceLimits(name, arguments_);
+    if (limit) return limitedResource(limit);
     const parsed = schemas[name].safeParse(arguments_);
     if (!parsed.success) return invalidRequest();
     if (name === "code_status" && arguments_.action === "start_session") {
+      const sessionId = sessions.tryStart(connectionId, options.now?.());
+      if (!sessionId) return projectCapacity();
       return {
         schema_version: 1,
         project_id: "project",
         project_generation: 0,
         pending_generation: null,
         state: "ready",
-        data: { session_id: sessions.start(connectionId) },
+        data: { session_id: sessionId },
       };
     }
     const parsedArguments = parsed.data as Record<string, unknown>;
@@ -292,18 +326,35 @@ export function createServer(
 
     const perform = async (): Promise<CodeExplorerEnvelope | CodeExplorerError> => {
       if (name === "code_status" && arguments_.action === "refresh") {
-        refreshGeneration += 1;
-        await Promise.allSettled(
-          (options.adapters ?? []).flatMap((adapter) => (adapter.refresh ? [adapter.refresh()] : [])),
-        );
+        if (!refreshing) {
+          refreshGeneration += 1;
+          const activeRefresh = Promise.all(
+            (options.adapters ?? []).flatMap((adapter) => {
+              const refresh = adapter.refresh;
+              return refresh ? [backendRequests.run(sessionId, () => refresh())] : [];
+            }),
+          ).then(() => undefined);
+          refreshing = activeRefresh;
+          void activeRefresh.then(
+            () => {
+              if (refreshing === activeRefresh) refreshing = undefined;
+            },
+            () => {
+              if (refreshing === activeRefresh) refreshing = undefined;
+            },
+          );
+        }
+        await refreshing;
       }
       if (name === "code_focus") {
         const focus = schemas.code_focus.parse(arguments_);
-        const selected = await collectFocusedSymbol(options.adapters ?? [], focus.symbol_id);
+        const selected = await collectFocusedSymbol(options.adapters ?? [], focus.symbol_id, (operation) =>
+          backendRequests.run(focus.session_id, operation),
+        );
         if (selected) {
           try {
             const view = createFocusView(selected.symbol, selected.content, focus.body_limit_bytes);
-            sessions.addView(connectionId, focus.session_id, view);
+            if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
             viewHistory.push(view.view_id);
             return {
               schema_version: 1,
@@ -311,7 +362,7 @@ export function createServer(
               project_generation: selected.revision.generation,
               pending_generation: null,
               state: "ready",
-              data: { ...view, history_position: sessions.history(connectionId, focus.session_id)?.length ?? 0 },
+              data: { ...view, history_position: sessions.historyPosition(connectionId, focus.session_id) ?? 0 },
             };
           } catch (error) {
             if (error instanceof FocusBodyLimitError) return resourceLimit();
@@ -322,10 +373,14 @@ export function createServer(
       const relation = arguments_.relation;
       if (name === "code_follow" && typeof relation === "string") {
         const follow = schemas.code_follow.parse(arguments_);
-        const symbolId = sessions.resolveHandle(connectionId, follow.session_id, follow.view_id, follow.handle);
-        if (!symbolId) return invalidViewHandle();
+        const resolved = sessions.resolveHandle(connectionId, follow.session_id, follow.view_id, follow.handle);
+        if (resolved.state === "stale_view") return staleView();
+        if (resolved.state !== "ok") return invalidViewHandle();
+        const symbolId = resolved.symbolId;
         const semanticRelation = follow.relation === "type" ? "type_definition" : follow.relation;
-        const replies = await collectRelations(options.adapters ?? [], semanticRelation, symbolId);
+        const replies = await collectRelations(options.adapters ?? [], semanticRelation, symbolId, (operation) =>
+          backendRequests.run(follow.session_id, operation),
+        );
         if (replies.length === 0) {
           return {
             schema_version: 1,
@@ -366,6 +421,31 @@ export function createServer(
           data: { relation, candidates },
         };
       }
+      if (name === "code_history") {
+        const history = schemas.code_history.parse(arguments_);
+        if (history.action === "recent") {
+          const recent = sessions.recent(connectionId, history.session_id, history.limit ?? 64);
+          if (!recent) return invalidSession();
+          return {
+            schema_version: 1,
+            project_id: "project",
+            project_generation: 0,
+            pending_generation: null,
+            state: "ready",
+            data: { views: recent },
+          };
+        }
+        const restored = sessions.restore(connectionId, history.session_id, history.action);
+        if (!restored) return invalidViewHandle();
+        return {
+          schema_version: 1,
+          project_id: "project",
+          project_generation: 0,
+          pending_generation: null,
+          state: "ready",
+          data: { ...restored, history_position: sessions.historyPosition(connectionId, history.session_id) ?? 0 },
+        };
+      }
       if (name === "code_search" && discovery) {
         const search = schemas.code_search.parse(arguments_);
         if (normalizeDiscoveryQuery(search.query).length === 0) {
@@ -379,7 +459,9 @@ export function createServer(
             data: { landmarks: landmarks.landmarks, landmark_state: landmarks.state },
           };
         }
-        const semanticSymbols = await collectSemanticSymbols(options.adapters ?? [], search.query);
+        const semanticSymbols = await collectSemanticSymbols(options.adapters ?? [], search.query, (operation) =>
+          backendRequests.run(undefined, operation),
+        );
         let results: ReturnType<DiscoveryPipeline["searchResult"]>;
         try {
           results = discovery.searchResult(search.query, search, semanticSymbols);
@@ -426,10 +508,11 @@ export function createServer(
       );
       if (execution.state === "invalid_session") return invalidSession();
       if (execution.state === "request_id_conflict") return requestIdConflict();
-      if (execution.state === "ok") return execution.response;
+      if (execution.state === "project_capacity") return projectCapacity();
+      if (execution.state === "ok") return execution.response.catch(normalizeBackendFailure);
       return invalidSession();
     }
-    return perform();
+    return perform().catch(normalizeBackendFailure);
   };
 
   mcp.server.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -454,17 +537,30 @@ export function createServer(
 }
 
 /** Workspace-symbol replies are discovery evidence only. Relation authority remains in the language adapters. */
-async function collectSemanticSymbols(adapters: readonly LanguageAdapter[], query: string) {
-  const replies = await Promise.allSettled(adapters.map((adapter) => adapter.request({ operation: "search", query })));
+function normalizeBackendFailure(error: unknown): CodeExplorerError {
+  if (error instanceof BackendTimeoutError) return backendTimeout();
+  if (error instanceof BackendCapacityError) return resourceLimit();
+  if (error instanceof SessionCapacityError) return projectCapacity();
+  throw error;
+}
+
+type BackendOperation = <T>(operation: () => Promise<T>) => Promise<T>;
+
+async function collectSemanticSymbols(adapters: readonly LanguageAdapter[], query: string, run: BackendOperation) {
+  const replies = await Promise.allSettled(
+    adapters.map((adapter) => run(() => adapter.request({ operation: "search", query }))),
+  );
+  throwBackendLimitFailure(replies);
   return replies.flatMap((reply) =>
     reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : [],
   );
 }
 
-async function collectFocusedSymbol(adapters: readonly LanguageAdapter[], symbolId: string) {
+async function collectFocusedSymbol(adapters: readonly LanguageAdapter[], symbolId: string, run: BackendOperation) {
   const replies = await Promise.allSettled(
-    adapters.map((adapter) => adapter.request({ operation: "focus", symbol_id: symbolId })),
+    adapters.map((adapter) => run(() => adapter.request({ operation: "focus", symbol_id: symbolId }))),
   );
+  throwBackendLimitFailure(replies);
   return replies.find(
     (
       reply,
@@ -491,16 +587,31 @@ type FollowCandidate = {
   content?: FocusView["content"];
 };
 
-async function collectRelations(adapters: readonly LanguageAdapter[], relation: RelationName, symbolId: string) {
+async function collectRelations(
+  adapters: readonly LanguageAdapter[],
+  relation: RelationName,
+  symbolId: string,
+  run: BackendOperation,
+) {
   const supported = adapters.filter((adapter) => adapter.status().capabilities[relation].state === "ready");
   const replies = await Promise.allSettled(
-    supported.map((adapter) => adapter.request({ operation: relation, symbol_id: symbolId })),
+    supported.map((adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId }))),
   );
+  throwBackendLimitFailure(replies);
   return replies.flatMap((reply, index) =>
     reply.status === "fulfilled" && reply.value.operation === relation
       ? [{ adapter: supported[index], result: reply.value as RelationResult }]
       : [],
   );
+}
+
+function throwBackendLimitFailure(replies: readonly PromiseSettledResult<unknown>[]): void {
+  const failed = replies.find(
+    (reply): reply is PromiseRejectedResult =>
+      reply.status === "rejected" &&
+      (reply.reason instanceof BackendTimeoutError || reply.reason instanceof BackendCapacityError),
+  );
+  if (failed) throw failed.reason;
 }
 
 function relationCandidate(
@@ -527,7 +638,7 @@ function relationCandidate(
     declaration: symbol.name,
     visible_symbols: [{ name: symbol.name, symbol_id: symbol.id }],
   });
-  sessions.addView(connectionId, sessionId, view);
+  if (sessions.addView(connectionId, sessionId, view) !== "ok") throw new SessionCapacityError();
   const handle = view.handles[0]?.handle;
   const sourceRange = "range" in candidate.location ? candidate.location.range : symbol.location.range;
   return {
