@@ -198,16 +198,19 @@
 <!-- status: completed -->
   <!-- covers: code-explorer/project-landmarks :: An empty search returns project landmarks :: Client has no search term -->
   <!-- covers: code-explorer/project-landmarks :: An empty search returns project landmarks :: Landmark index is not ready -->
-- [ ] 5.2 Compute and expose the declared landmark counters and score while treating unavailable evidence as zero.
+- [x] 5.2 Compute and expose the declared landmark counters and score while treating unavailable evidence as zero.
+<!-- status: completed -->
   <!-- covers: code-explorer/project-landmarks :: Landmarks use a visible deterministic score :: Public type is used across production directories -->
   <!-- covers: code-explorer/project-landmarks :: Landmarks use a visible deterministic score :: Call evidence is unavailable -->
-- [ ] 5.3 Penalize test-only candidates and remove generated duplicate identities from default landmarks.
+- [x] 5.3 Penalize test-only candidates and remove generated duplicate identities from default landmarks.
+<!-- status: completed -->
   <!-- covers: code-explorer/project-landmarks :: Tests and generated content do not dominate landmarks :: Symbol appears only in tests -->
   <!-- covers: code-explorer/project-landmarks :: Tests and generated content do not dominate landmarks :: Generated symbol duplicates a source symbol -->
-- [ ] 5.4 Group and bound types, messages or events, services, entry points, and common actions with omitted counts.
+- [x] 5.4 Group and bound types, messages or events, services, entry points, and common actions with omitted counts.
+<!-- status: completed -->
   <!-- covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: Project contains candidates for several groups -->
   <!-- covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: One group exceeds its limit -->
-  <!-- covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: Candidate matches several group rules -->
+  <!-- covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: Related message and service symbols remain distinct -->
 - [ ] 5.5 Exclude raw frequency from landmark selection and use deterministic tie ordering.
   <!-- covers: code-explorer/project-landmarks :: Raw word frequency never establishes a landmark :: Generic identifier occurs most often -->
   <!-- covers: code-explorer/project-landmarks :: Raw word frequency never establishes a landmark :: Landmark scores tie -->

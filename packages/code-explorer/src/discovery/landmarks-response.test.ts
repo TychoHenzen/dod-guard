@@ -19,7 +19,7 @@ it("returns bounded grouped landmarks with selectable symbol identities for an e
       landmarks: readyLandmarks([
         {
           group: "entry_points",
-          symbols: Array.from({ length: 11 }, (_, index) => ({
+          symbols: Array.from({ length: 13 }, (_, index) => ({
             symbol_id: `entry-${index}`,
             name: `Entry${index}`,
             path: "src/main.rs",
@@ -35,7 +35,7 @@ it("returns bounded grouped landmarks with selectable symbol identities for an e
     assert.equal(result.state, "ready");
     const groups = result.data.landmarks as Array<{ group: string; symbols: Array<{ symbol_id: string }> }>;
     assert.deepEqual(groups.map(({ group }) => group), ["entry_points"]);
-    assert.equal(groups[0]?.symbols.length, 10);
+    assert.equal(groups[0]?.symbols.length, 12);
     assert.equal(groups[0]?.symbols[0]?.symbol_id, "entry-0");
     assert.equal(searches, 0);
   } finally {

@@ -48,9 +48,9 @@ The landmark response SHALL assign each candidate to one group by this priority:
 - **WHEN** more candidates qualify for a group than its configured limit
 - **THEN** the response returns the bounded leading candidates and the omitted count for that group
 
-#### Scenario: Candidate matches several group rules
-- **WHEN** a type candidate's name satisfies both a message rule and a service rule
-- **THEN** the candidate appears once in the messages or events group because that group has higher priority
+#### Scenario: Related message and service symbols remain distinct
+- **WHEN** the project contains an `OrderEvent` sent by an `OrderService`
+- **THEN** `OrderEvent` appears once in messages or events and `OrderService` appears once in services
 
 ### Requirement: Raw word frequency never establishes a landmark
 A name SHALL NOT become a landmark solely because its text occurs frequently in source content.
