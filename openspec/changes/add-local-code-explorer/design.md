@@ -14,6 +14,8 @@ The pre-change Biome baseline is zero lint violations and zero format violations
 - Make the common search, focus, relation, history, freshness, and graph sequence runnable in a real browser.
 - Keep browser state bounded, tab-isolated, project-scoped, and removable with process exit.
 - Ship browser assets and tests through the package build and repository gates.
+- Make the same tracked MCP bundle installable and discoverable through Claude and Codex local marketplaces.
+- Give MCP clients operation-specific discovery metadata and native structured envelopes without breaking text-only clients.
 
 **Non-Goals:**
 
@@ -22,6 +24,7 @@ The pre-change Biome baseline is zero lint violations and zero format violations
 - No whole-project visualization, automatic graph expansion, or graph analysis.
 - No authentication, CORS, editing, diagnostics, agent-follow behavior, or OpenSpec dashboard integration.
 - No accessibility-specific acceptance program beyond the browser's native behavior.
+- No second MCP implementation, remote MCP endpoint, or runtime-specific navigation behavior.
 
 ## Imported contracts
 
@@ -162,6 +165,26 @@ Alternatives considered:
 - Fake-adapter tests only. Rejected because the user required a system that can be tested in practice for Rust, Python, and C#.
 - Installing every language server in CI. Rejected because selection and safe-mode prerequisites are platform-specific and already have contract tests in the navigation change.
 
+### 9. Package one MCP contract for Claude and Codex
+
+The package keeps `.claude-plugin/plugin.json` and `.mcp.json` for the existing Claude marketplace. It also ships the required `.codex-plugin/plugin.json` manifest and a repository-local Codex marketplace entry. Both plugin descriptions name version `0.1.1` until the implementation task applies the repository's normal version policy. Both entries launch the same tracked `dist/bundle.js`; neither copies the bundle, registers another server, accepts a project root from a tool request, or starts the browser mode implicitly. A new task or runtime reload is the installation boundary because MCP tools are discovered when the task starts.
+
+The MCP registration owns one immutable metadata record keyed by `code_search`, `code_focus`, `code_follow`, `code_history`, and `code_status`. Each record contains the closed input schema plus a distinct description. Search describes project symbol and file discovery. Focus names the session and symbol requirements. Follow names the view-scoped handle and supported semantic relations. History names session-local Back, Forward, and recent views. Status names status, session creation, and explicit refresh. `tools/list` is built only from this record so a new tool cannot acquire the old generic description by default.
+
+The call adapter returns the same envelope in two representations:
+
+```ts
+{
+  content: [{ type: "text", text: JSON.stringify(envelope) }],
+  structuredContent: envelope,
+  ...(isError ? { isError: true } : {}),
+}
+```
+
+The envelope remains the source of truth. Tests parse the text item and assert deep equality with `structuredContent` for one success and every stable error family exercised by the process tests. The compatibility text is retained because existing Claude clients and shell smoke scripts already consume it. The structured field gives Codex and other current MCP clients a native object without reparsing text.
+
+Package-integrity tests resolve each manifest from an installed-layout fixture, launch the referenced tracked bundle, complete `initialize` and `tools/list`, call one success and one error, and assert the five exact tools, distinct descriptions, structured/text equality, and absence of write capabilities. A fresh Codex-task fixture proves the local marketplace entry makes the MCP namespace callable without a separate user MCP configuration.
+
 ## Risks / Trade-offs
 
 - [No authentication on a source-reading loopback server] -> Bind only to `127.0.0.1`, validate exact Host and API Origin, expose no CORS permission, apply CSP, keep operations read-only, and document the trusted personal-machine boundary.
@@ -179,10 +202,11 @@ Alternatives considered:
 3. Add closed browser API routes, tab sessions, expiry, and packaged static assets.
 4. Add the three-pane browser through search, focus, lazy relations, history, and freshness slices.
 5. Add the deterministic SVG graph and local graph failure boundary.
-6. Add Playwright automation, package scripts, tracked browser assets, and repository gate adoption.
-7. Run and record the Rust, Python, and C# live practice sequences, then run all package and repository gates.
+6. Add Playwright automation, package scripts, tracked browser assets, dual-runtime plugin metadata, and repository gate adoption.
+7. Verify MCP discovery and structured results through installed Claude and Codex layouts.
+8. Run and record the Rust, Python, and C# live practice sequences, then run all package and repository gates.
 
-Rollback removes the browser asset entry, HTTP mode, Playwright development dependency, and package scripts. The MCP surface and navigation capabilities remain unchanged, and no persisted user data requires migration.
+Rollback removes the browser asset entry, HTTP mode, Playwright development dependency, package scripts, Codex manifest, and Codex marketplace entry. It restores the prior text-only MCP result adapter and metadata table. The five tool names and navigation behavior remain unchanged, and no persisted user data requires migration.
 
 ## Phase 1 review
 

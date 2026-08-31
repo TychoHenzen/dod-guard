@@ -1,12 +1,17 @@
 ## 1. Package and server boundary
 
-- [ ] 1.1 Gate execution on the implemented `add-code-explorer-navigation` capability requirements, `adapter-selection.json`, and language manifests. Add the server-owned core factory, shutdown lifecycle, `serve`, and `--project-root` parsing in `packages/code-explorer/src/` with exact project vectors and cancellation tests. Verify with `npm test -w packages/code-explorer`.
+- [x] 1.1 Gate execution on the implemented `add-code-explorer-navigation` capability requirements, `adapter-selection.json`, and language manifests. Add the server-owned core factory, shutdown lifecycle, `serve`, and `--project-root` parsing in `packages/code-explorer/src/` with exact project vectors and cancellation tests. Replace the shared generic MCP description with five operation-specific records and return every MCP envelope through both `structuredContent` and the compatibility JSON text item, with success, error, and process-handshake tests. Verify with `npm test -w packages/code-explorer`.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-server :: The package starts a project-scoped browser server :: Server starts from the working directory -->
   <!-- covers: code-explorer/browser-server :: The package starts a project-scoped browser server :: Startup argument selects the project -->
   <!-- covers: code-explorer/browser-server :: The package starts a project-scoped browser server :: Browser request contains a project path -->
   <!-- covers: code-explorer/browser-server :: The package starts a project-scoped browser server :: Startup project is invalid -->
+  <!-- covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Tool discovery explains each operation -->
+  <!-- covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Successful tool result is structured and text-compatible -->
+  <!-- covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Failed tool result is structured and text-compatible -->
 
-- [ ] 1.2 Add the bounded `127.0.0.1` listener and platform browser opener in `packages/code-explorer/src/browser-server/`, including `--no-open` and nonfatal launch errors. Verify with `npm test -w packages/code-explorer`.
+- [x] 1.2 Add the bounded `127.0.0.1` listener and platform browser opener in `packages/code-explorer/src/browser-server/`, including `--no-open` and nonfatal launch errors. Verify with `npm test -w packages/code-explorer`.
+<!-- status: completed -->
   <!-- covers: code-explorer/browser-server :: The server is reachable only through loopback :: Preferred port is available -->
   <!-- covers: code-explorer/browser-server :: The server is reachable only through loopback :: Preferred port is occupied -->
   <!-- covers: code-explorer/browser-server :: The server is reachable only through loopback :: Every configured port is occupied -->
@@ -119,8 +124,9 @@
 
 ## 4. Browser automation, practice, and packaging
 
-- [ ] 4.1 Pin `@playwright/test` 1.55.1, add the fake-core Chromium harness, browser asset compilation, package scripts, tracked distribution files, lockfile entries, and repository gate adoption. Run all deterministic browser scenarios against built assets on Node 18 and the CI Node version, then run the clean package build, package tests, strict Biome checks, plugin validation, package integrity, and `openspec validate --all --strict --no-interactive`.
+- [ ] 4.1 Pin `@playwright/test` 1.55.1, add the fake-core Chromium harness, browser asset compilation, package scripts, tracked distribution files, lockfile entries, and repository gate adoption. Add `.codex-plugin/plugin.json` and the repository-local Codex marketplace entry beside the existing Claude metadata. Extend package-integrity fixtures to launch the same tracked bundle from both installed layouts and prove a fresh Codex task discovers the five tools without separate MCP registration. Run all deterministic browser scenarios against built assets on Node 18 and the CI Node version, then run the clean package build, package tests, strict Biome checks, plugin validation, package integrity, and `openspec validate --all --strict --no-interactive`.
   <!-- covers: code-explorer/browser-server :: Static assets and server errors have stable behavior :: Browser requests the application shell -->
+  <!-- covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Fresh Codex marketplace installation lists the tools -->
 
 - [ ] 4.2 Add the exact `practice:browser` process harness, disposable fixtures, cleanup, timeout, exit codes, and redacted evidence recording for Rust, Python, and C# under `packages/code-explorer/`. Run the live search, focus, semantic follow, Back, Forward, saved-file, stale, Refocus, and Refresh sequence once for each language.
   <!-- covers: code-explorer/browser-navigation :: The same browser workflow supports Rust, Python, and C# :: Rust practice project is explored -->

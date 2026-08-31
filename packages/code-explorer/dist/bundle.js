@@ -26249,6 +26249,171 @@ function makeAdapter(language, options) {
   return createCSharpAdapter(options);
 }
 
+// src/browser-server/lifecycle.ts
+import { spawn as spawn2 } from "node:child_process";
+import { createServer } from "node:http";
+var BrowserServerError = class extends Error {
+  constructor(code) {
+    super(code);
+    this.code = code;
+  }
+  code;
+};
+var firstPort = 4410;
+var lastPort = 4429;
+function parseServeArguments(arguments_) {
+  if (arguments_[0] !== "serve") throw new BrowserServerError("invalid_request");
+  let projectRoot = ".";
+  let noOpen = false;
+  for (let index = 1; index < arguments_.length; index += 1) {
+    const argument = arguments_[index];
+    if (argument === "--no-open" && !noOpen) {
+      noOpen = true;
+      continue;
+    }
+    if (argument === "--project-root" && projectRoot === ".") {
+      const value = arguments_[index + 1];
+      if (!value) throw new BrowserServerError("invalid_request");
+      projectRoot = value;
+      index += 1;
+      continue;
+    }
+    throw new BrowserServerError("invalid_request");
+  }
+  return { project_root: projectRoot, no_open: noOpen };
+}
+async function startBrowserServer(options) {
+  const controller = new AbortController();
+  const parentSignal = options.signal;
+  const abort = () => controller.abort();
+  parentSignal?.addEventListener("abort", abort, { once: true });
+  let projectRoot;
+  try {
+    projectRoot = createNativeProjectRoot(options.project_root);
+  } catch (error2) {
+    if (error2 instanceof ProjectPathError) throw new BrowserServerError("invalid_project_root");
+    throw error2;
+  }
+  let core;
+  let listener;
+  try {
+    core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
+    for (let port = firstPort; port <= lastPort; port += 1) {
+      try {
+        listener = await options.binder.listen("127.0.0.1", port, controller.signal);
+        break;
+      } catch (error2) {
+        if (!(error2 instanceof Error && "code" in error2 && error2.code === "EADDRINUSE")) throw error2;
+      }
+    }
+    if (!listener) throw new BrowserServerError("browser_port_unavailable");
+    options.write?.(`Code Explorer: ${listener.address.href}`);
+    if (!options.no_open) {
+      try {
+        await options.opener.open(listener.address, controller.signal);
+      } catch {
+        options.writeError?.("browser_open_failed");
+      }
+    }
+    let closing;
+    return {
+      url: listener.address,
+      projectRoot,
+      close: () => closing ??= (async () => {
+        controller.abort();
+        listener?.stopAdmission();
+        const timeout = AbortSignal.timeout(1e4);
+        await Promise.allSettled([listener?.close(timeout), core?.close(timeout)]);
+        parentSignal?.removeEventListener("abort", abort);
+      })()
+    };
+  } catch (error2) {
+    controller.abort();
+    const timeout = AbortSignal.timeout(1e4);
+    await Promise.allSettled([listener?.close(timeout), core?.close(timeout)]);
+    parentSignal?.removeEventListener("abort", abort);
+    throw error2;
+  }
+}
+var nativePortBinder = {
+  async listen(host, port, signal) {
+    if (signal.aborted) throw new Error("aborted");
+    const sockets = /* @__PURE__ */ new Set();
+    let admitting = true;
+    const server = createServer((request, response) => {
+      if (!admitting) {
+        response.destroy();
+        return;
+      }
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        response.statusCode = 400;
+        response.setHeader("content-type", "application/json");
+        response.end(JSON.stringify({ schema_version: 1, code: "invalid_request", message: "invalid_request", retryable: false }));
+        return;
+      }
+      response.statusCode = 404;
+      response.end();
+    });
+    server.on("connection", (socket) => {
+      sockets.add(socket);
+      socket.once("close", () => sockets.delete(socket));
+    });
+    await new Promise((resolve5, reject) => {
+      const onAbort = () => reject(new Error("aborted"));
+      signal.addEventListener("abort", onAbort, { once: true });
+      server.once("error", (error2) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error2);
+      });
+      server.listen(port, host, () => {
+        signal.removeEventListener("abort", onAbort);
+        resolve5();
+      });
+    });
+    return {
+      address: new URL(`http://${host}:${port}/`),
+      stopAdmission: () => {
+        admitting = false;
+      },
+      close: async (closeSignal) => {
+        if (!server.listening) return;
+        await new Promise((resolve5) => {
+          const force = () => {
+            for (const socket of sockets) socket.destroy();
+          };
+          closeSignal.addEventListener("abort", force, { once: true });
+          server.close(() => {
+            closeSignal.removeEventListener("abort", force);
+            resolve5();
+          });
+        });
+      }
+    };
+  }
+};
+var nativeBrowserOpener = {
+  async open(url, signal) {
+    const href = url.href;
+    const command = process.platform === "win32" ? "cmd.exe" : process.platform === "darwin" ? "/usr/bin/open" : process.platform === "linux" ? "xdg-open" : void 0;
+    if (!command) throw new Error("unsupported platform");
+    const arguments_ = process.platform === "win32" ? ["/d", "/s", "/c", "start", "", href] : [href];
+    await new Promise((resolve5, reject) => {
+      const child = spawn2(command, arguments_, { detached: true, stdio: "ignore", windowsHide: true });
+      const onAbort = () => reject(new Error("aborted"));
+      signal.addEventListener("abort", onAbort, { once: true });
+      child.once("error", (error2) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error2);
+      });
+      child.once("spawn", () => {
+        signal.removeEventListener("abort", onAbort);
+        child.unref();
+        resolve5();
+      });
+    });
+  }
+};
+
 // src/index.ts
 var filename = fileURLToPath4(import.meta.url);
 var packagePath = path2.join(path2.dirname(filename), "..", "package.json");
@@ -26421,13 +26586,21 @@ var inputSchemas = {
     ]
   }
 };
-function textResult(result, isError = false) {
+function toMcpToolResult(result, isError = false) {
   return {
     content: [{ type: "text", text: JSON.stringify(result) }],
+    structuredContent: result,
     ...isError ? { isError: true } : {}
   };
 }
-function createServer(options = {}) {
+var toolDescriptions = {
+  code_search: "Search the frozen project for symbols and files, or return project landmarks for an empty query.",
+  code_focus: "Open one search result in a bounded source view owned by an active navigation session.",
+  code_follow: "Follow one visible handle from a current view through a named semantic relation.",
+  code_history: "Restore a prior or next immutable view, or list recent views in the active navigation session.",
+  code_status: "Read workspace and backend status, start a navigation session, or refresh derived navigation data."
+};
+function createServer2(options = {}) {
   let refreshGeneration = 0;
   const viewHistory = [];
   const connectionId = options.connection_id ?? mintOpaqueId();
@@ -26692,20 +26865,24 @@ function createServer(options = {}) {
   mcp.server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: toolNames.map((name) => ({
       name,
-      description: "Read-only Code Explorer navigation operation.",
+      description: toolDescriptions[name],
       inputSchema: inputSchemas[name]
     }))
   }));
   mcp.server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const result = await call(request.params.name, request.params.arguments ?? {});
-    return textResult(result, "code" in result);
+    return toMcpToolResult(result, "code" in result);
   });
   return {
     mcp,
     call,
     state: () => ({ refresh_generation: refreshGeneration, view_history: [...viewHistory] }),
     projectRoot: options.projectRoot,
-    closeConnection: () => sessions.closeConnection(connectionId)
+    closeConnection: () => sessions.closeConnection(connectionId),
+    close: async () => {
+      sessions.closeConnection(connectionId);
+      await freshness.close();
+    }
   };
 }
 function nativeWorkspaceStatus(root) {
@@ -26820,11 +26997,52 @@ function compareRelationCandidates(left, right) {
     `${right.path ?? ""}\0${right.range?.start.line ?? 0}\0${right.range?.start.character ?? 0}\0${right.kind ?? ""}\0${right.symbol_id ?? right.display_name ?? ""}`
   );
 }
+function createRuntimeCoreFactory() {
+  return {
+    async start({ projectRoot }) {
+      loadAdapterSelectionRecord();
+      const adapters = await createStartedRuntimeAdapters(projectRoot);
+      const server = createServer2({
+        projectRoot,
+        adapters,
+        sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
+        freshness: createNativeWorkspaceFreshness({
+          root: projectRoot.canonicalPath,
+          supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
+        })
+      });
+      return {
+        close: async () => {
+          await server.close();
+          await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+        }
+      };
+    }
+  };
+}
 async function main() {
+  const arguments_ = process.argv.slice(2);
+  if (arguments_[0] === "serve") {
+    const parsed = parseServeArguments(arguments_);
+    const service = await startBrowserServer({
+      ...parsed,
+      coreFactory: createRuntimeCoreFactory(),
+      binder: nativePortBinder,
+      opener: nativeBrowserOpener,
+      write: (line) => process.stdout.write(`${line}
+`),
+      writeError: (line) => process.stderr.write(`${line}
+`)
+    });
+    const shutdown = () => void service.close().then(() => process.exit(0));
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+    return;
+  }
   loadAdapterSelectionRecord();
-  const projectRoot = createNativeProjectRoot(parseProjectRootArgument(process.argv.slice(2)));
+  const projectRoot = createNativeProjectRoot(parseProjectRootArgument(arguments_));
   const adapters = await createStartedRuntimeAdapters(projectRoot);
-  const server = createServer({
+  const server = createServer2({
     projectRoot,
     adapters,
     sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
@@ -26840,10 +27058,9 @@ async function main() {
     return shuttingDown;
   };
   transport.onclose = () => {
-    server.closeConnection();
-    void shutdownBackends();
+    void server.close().then(shutdownBackends);
   };
-  process.stdin.once("end", () => void shutdownBackends());
+  process.stdin.once("end", () => void server.close().then(shutdownBackends));
   await server.mcp.connect(transport);
 }
 function parseProjectRootArgument(arguments_) {
@@ -26862,14 +27079,16 @@ function isMainModule() {
 }
 if (isMainModule()) {
   main().catch((error2) => {
-    const message = error2 instanceof ProjectPathError ? `${error2.code}:${error2.root_source ?? "cwd"}` : String(error2);
+    const message = error2 instanceof ProjectPathError ? `${error2.code}:${error2.root_source ?? "cwd"}` : error2 instanceof BrowserServerError ? error2.code : String(error2);
     process.stderr.write(`code-explorer MCP server failed: ${message}
 `);
     process.exit(1);
   });
 }
 export {
-  createServer
+  createRuntimeCoreFactory,
+  createServer2 as createServer,
+  toMcpToolResult
 };
 /*! Bundled license information:
 

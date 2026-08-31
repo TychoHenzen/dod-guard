@@ -23,6 +23,29 @@ Defines how one project-scoped Code Explorer process exposes its shared read-onl
 - **WHEN** the selected project root is missing, inaccessible, or fails the navigation service's root checks
 - **THEN** startup exits nonzero with a redacted `invalid_project_root` error and opens no browser
 
+### Requirement: The packaged plugin is discoverable with useful MCP metadata
+The package SHALL ship compatible Claude and Codex plugin manifests that identify the same `code-explorer` name, version, tracked bundle, and read-only MCP server. A fresh installation from each local marketplace SHALL start that tracked bundle for the selected project and return exactly `code_search`, `code_focus`, `code_follow`, `code_history`, and `code_status` from `tools/list` without separate manual MCP registration. No manifest SHALL advertise a write, edit, shell, or unrestricted filesystem capability.
+
+Each listed tool SHALL have an operation-specific description that explains its observable result and required navigation context. The five descriptions SHALL NOT all be identical. The descriptions for session-bound tools SHALL identify the session, view, handle, or request identifier required to call them in the correct order.
+
+Every MCP tool result SHALL include the versioned success or error envelope as native `structuredContent`. For compatibility, the first text content item SHALL remain the JSON serialization of that exact envelope. Parsing the text item SHALL produce a value deeply equal to `structuredContent`. Error results SHALL retain `isError: true`, the redacted code, retryability, and closed details object.
+
+#### Scenario: Fresh Codex marketplace installation lists the tools
+- **WHEN** a new Codex task installs and enables the packaged Code Explorer entry from its local marketplace
+- **THEN** the task can call the five read-only MCP tools without another MCP registration step
+
+#### Scenario: Tool discovery explains each operation
+- **WHEN** an MCP client requests `tools/list`
+- **THEN** each of the five tools has a distinct operation-specific description that provides the context needed to call it
+
+#### Scenario: Successful tool result is structured and text-compatible
+- **WHEN** a Code Explorer tool returns a success envelope
+- **THEN** `structuredContent` contains that envelope and the first text content item parses to the same value
+
+#### Scenario: Failed tool result is structured and text-compatible
+- **WHEN** a Code Explorer tool returns a redacted error envelope
+- **THEN** the result retains `isError: true`, `structuredContent` contains that envelope, and the first text content item parses to the same value
+
 ### Requirement: The server is reachable only through loopback
 The server SHALL listen on `127.0.0.1` only. It SHALL try ports 4410 through 4429 in ascending order, print the selected URL, and fail after all 20 attempts. Exhaustion SHALL print one `browser_port_unavailable` line to stderr, invoke no opener, release startup resources, and exit with status 1. It SHALL provide no option to bind a non-loopback interface. The port binder SHALL be replaceable in tests so the attempted sequence does not depend on other host processes.
 

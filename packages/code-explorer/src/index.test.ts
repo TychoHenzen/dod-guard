@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { createServer } from "./index.js";
+import { createServer, toMcpToolResult } from "./index.js";
 import type { LanguageAdapter } from "./semantic/language-adapter.js";
 import { createNativeProjectRoot } from "./semantic/project-root.js";
 import { FakeSemanticAdapter } from "./testing/fake-semantic-adapter.js";
@@ -455,6 +455,28 @@ describe("code-explorer package boundary", () => {
     }
   });
 
+  // covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Tool discovery explains each operation
+  it("gives every advertised tool its own operation-specific description", async () => {
+    const client = new Client({ name: "code-explorer-metadata-test", version: "1.0.0" });
+    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });
+    try {
+      await client.connect(transport);
+      const descriptions = (await client.listTools()).tools.map(({ description }) => description);
+      assert.equal(new Set(descriptions).size, 5);
+      assert.ok(descriptions.every((description) => description && description.length > 30));
+    } finally {
+      await client.close();
+    }
+  });
+
+  // covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Successful tool result is structured and text-compatible
+  it("returns success envelopes through structuredContent and matching JSON text", async () => {
+    const result = await createServer().call("code_status", { action: "start_session" });
+    assert.equal("code" in result, false);
+    const response = toMcpToolResult(result);
+    assert.deepEqual(response.structuredContent, JSON.parse(response.content[0]?.text ?? ""));
+  });
+
   it("uses an explicit startup root and redacts invalid root paths in the compiled child", async () => {
     const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
     const transport = new StdioClientTransport({
@@ -525,6 +547,24 @@ describe("code-explorer package boundary", () => {
         message: "unknown_tool",
         retryable: false,
       });
+    } finally {
+      await client.close();
+    }
+  });
+
+  // covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Failed tool result is structured and text-compatible
+  it("returns error envelopes through structuredContent and matching JSON text", async () => {
+    const client = new Client({ name: "code-explorer-structured-error-test", version: "1.0.0" });
+    const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });
+    try {
+      await client.connect(transport);
+      const response = (await client.callTool({ name: "not_a_tool", arguments: {} })) as {
+        isError?: boolean;
+        structuredContent: unknown;
+        content: Array<{ text: string }>;
+      };
+      assert.equal(response.isError, true);
+      assert.deepEqual(response.structuredContent, JSON.parse(response.content[0]?.text ?? ""));
     } finally {
       await client.close();
     }

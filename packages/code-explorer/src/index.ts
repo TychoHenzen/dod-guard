@@ -34,6 +34,14 @@ import type { LanguageAdapter } from "./semantic/language-adapter.js";
 import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "./semantic/project-root.js";
 import { RootAccessGate } from "./semantic/root-access.js";
 import { createStartedRuntimeAdapters } from "./semantic/runtime-bootstrap.js";
+import {
+  BrowserServerError,
+  nativeBrowserOpener,
+  nativePortBinder,
+  parseServeArguments,
+  startBrowserServer,
+  type ExplorerCoreFactory,
+} from "./browser-server/lifecycle.js";
 
 const filename = fileURLToPath(import.meta.url);
 const packagePath = path.join(path.dirname(filename), "..", "package.json");
@@ -72,6 +80,7 @@ export type CodeExplorerServer = {
   state(): CodeExplorerState;
   projectRoot: ProjectRoot | undefined;
   closeConnection(): void;
+  close(): Promise<void>;
 };
 
 function isToolName(name: string): name is ToolName {
@@ -264,12 +273,21 @@ const inputSchemas = {
   },
 } as const;
 
-function textResult(result: CodeExplorerEnvelope | CodeExplorerError, isError = false) {
+export function toMcpToolResult(result: CodeExplorerEnvelope | CodeExplorerError, isError = false) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(result) }],
+    structuredContent: result,
     ...(isError ? { isError: true } : {}),
   };
 }
+
+const toolDescriptions: Record<ToolName, string> = {
+  code_search: "Search the frozen project for symbols and files, or return project landmarks for an empty query.",
+  code_focus: "Open one search result in a bounded source view owned by an active navigation session.",
+  code_follow: "Follow one visible handle from a current view through a named semantic relation.",
+  code_history: "Restore a prior or next immutable view, or list recent views in the active navigation session.",
+  code_status: "Read workspace and backend status, start a navigation session, or refresh derived navigation data.",
+};
 
 export function createServer(
   options: {
@@ -573,13 +591,13 @@ export function createServer(
   mcp.server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: toolNames.map((name) => ({
       name,
-      description: "Read-only Code Explorer navigation operation.",
+      description: toolDescriptions[name],
       inputSchema: inputSchemas[name],
     })),
   }));
   mcp.server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const result = await call(request.params.name, request.params.arguments ?? {});
-    return textResult(result, "code" in result);
+    return toMcpToolResult(result, "code" in result);
   });
 
   return {
@@ -588,6 +606,10 @@ export function createServer(
     state: () => ({ refresh_generation: refreshGeneration, view_history: [...viewHistory] }),
     projectRoot: options.projectRoot,
     closeConnection: () => sessions.closeConnection(connectionId),
+    close: async () => {
+      sessions.closeConnection(connectionId);
+      await freshness.close();
+    },
   };
 }
 
@@ -756,9 +778,49 @@ function compareRelationCandidates(left: FollowCandidate, right: FollowCandidate
   );
 }
 
+export function createRuntimeCoreFactory(): ExplorerCoreFactory {
+  return {
+    async start({ projectRoot }) {
+      loadAdapterSelectionRecord();
+      const adapters = await createStartedRuntimeAdapters(projectRoot);
+      const server = createServer({
+        projectRoot,
+        adapters,
+        sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
+        freshness: createNativeWorkspaceFreshness({
+          root: projectRoot.canonicalPath,
+          supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate),
+        }),
+      });
+      return {
+        close: async () => {
+          await server.close();
+          await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+        },
+      };
+    },
+  };
+}
+
 async function main(): Promise<void> {
+  const arguments_ = process.argv.slice(2);
+  if (arguments_[0] === "serve") {
+    const parsed = parseServeArguments(arguments_);
+    const service = await startBrowserServer({
+      ...parsed,
+      coreFactory: createRuntimeCoreFactory(),
+      binder: nativePortBinder,
+      opener: nativeBrowserOpener,
+      write: (line) => process.stdout.write(`${line}\n`),
+      writeError: (line) => process.stderr.write(`${line}\n`),
+    });
+    const shutdown = () => void service.close().then(() => process.exit(0));
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+    return;
+  }
   loadAdapterSelectionRecord();
-  const projectRoot = createNativeProjectRoot(parseProjectRootArgument(process.argv.slice(2)));
+  const projectRoot = createNativeProjectRoot(parseProjectRootArgument(arguments_));
   const adapters = await createStartedRuntimeAdapters(projectRoot);
   const server = createServer({
     projectRoot,
@@ -776,10 +838,9 @@ async function main(): Promise<void> {
     return shuttingDown;
   };
   transport.onclose = () => {
-    server.closeConnection();
-    void shutdownBackends();
+    void server.close().then(shutdownBackends);
   };
-  process.stdin.once("end", () => void shutdownBackends());
+  process.stdin.once("end", () => void server.close().then(shutdownBackends));
   await server.mcp.connect(transport);
 }
 
@@ -801,7 +862,12 @@ function isMainModule(): boolean {
 
 if (isMainModule()) {
   main().catch((error) => {
-    const message = error instanceof ProjectPathError ? `${error.code}:${error.root_source ?? "cwd"}` : String(error);
+    const message =
+      error instanceof ProjectPathError
+        ? `${error.code}:${error.root_source ?? "cwd"}`
+        : error instanceof BrowserServerError
+          ? error.code
+          : String(error);
     process.stderr.write(`code-explorer MCP server failed: ${message}\n`);
     process.exit(1);
   });
