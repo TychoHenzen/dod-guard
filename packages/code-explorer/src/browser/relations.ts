@@ -1,5 +1,14 @@
 export type RelationName = "definition" | "references" | "callers" | "callees" | "type" | "implementations";
-export type RelationCandidate = { name: string; external: boolean; local_handle?: string };
+export type RelationCandidate = {
+  /** Browser adapter preserves the core's normalized local identity for graph projection. */
+  symbol_id?: string;
+  /** Older browser fixtures use `name`; runtime follow replies use `display_name`. */
+  name?: string;
+  display_name?: string;
+  external: boolean;
+  discovery_only?: boolean;
+  local_handle?: string;
+};
 export type RelationReply = {
   state: string;
   data?: { candidates?: readonly RelationCandidate[]; omitted_count?: number };
@@ -25,6 +34,10 @@ function escapeText(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function displayName(candidate: RelationCandidate): string {
+  return candidate.name ?? candidate.display_name ?? candidate.symbol_id ?? "";
 }
 
 /** Stores relation data by the immutable focus view and dispatches no follow request until a group opens. */
@@ -100,7 +113,7 @@ export function renderRelationGroup(group: RelationGroup): string {
     return `<section data-relation="${group.relation}" data-state="empty">empty</section>`;
   const rows = group.candidates
     .map((candidate) => {
-      const name = escapeText(candidate.name);
+      const name = escapeText(displayName(candidate));
       if (candidate.external) return `<li data-external="true">${name}</li>`;
       return `<li data-focus="${escapeText(candidate.local_handle ?? "")}">${name}</li>`;
     })

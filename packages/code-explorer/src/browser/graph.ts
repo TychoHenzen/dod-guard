@@ -24,6 +24,7 @@ export type GraphNode = {
   symbol_id: string;
   name: string;
   center: boolean;
+  selectable: boolean;
 };
 
 export type GraphEdge = {
@@ -85,7 +86,9 @@ function edgeFor(relation: GraphRelationName, candidate: GraphRelationCandidate,
 export function projectOneHopGraph(focus: GraphFocus, groups: readonly GraphRelationGroup[]): OneHopGraph {
   const focusId = normalizedIdentity(focus.symbol_id);
   if (focusId.length === 0) throw new Error("invalid_graph_focus");
-  const nodes = new Map<string, GraphNode>([[focusId, { symbol_id: focusId, name: focus.name, center: true }]]);
+  const nodes = new Map<string, GraphNode>([
+    [focusId, { symbol_id: focusId, name: focus.name, center: true, selectable: false }],
+  ]);
   const edges: GraphEdge[] = [];
   const omitted = new Map<GraphRelationName, number>();
   const byRelation = new Map(groups.map((group) => [group.relation, group]));
@@ -97,7 +100,8 @@ export function projectOneHopGraph(focus: GraphFocus, groups: readonly GraphRela
     for (const candidate of group.candidates) {
       if (!isLocalSemanticCandidate(candidate)) continue;
       const symbol_id = normalizedIdentity(candidate.symbol_id);
-      if (!nodes.has(symbol_id)) nodes.set(symbol_id, { symbol_id, name: candidate.name, center: false });
+      if (!nodes.has(symbol_id))
+        nodes.set(symbol_id, { symbol_id, name: candidate.name, center: false, selectable: true });
       edges.push(edgeFor(relation, candidate, focusId));
     }
   }
@@ -150,7 +154,8 @@ export function renderOneHopGraph(graph: OneHopGraph): string {
     .map((node) => {
       const position = positions.get(node.symbol_id);
       if (!position) throw new Error("invalid_graph_projection");
-      return `<text data-node-id="${escapeText(node.symbol_id)}" data-lane="${position.lane}" x="${position.x}" y="${position.y}">${escapeText(node.name)}</text>`;
+      const selection = node.selectable ? ` data-focus="${escapeText(node.symbol_id)}"` : "";
+      return `<text data-node-id="${escapeText(node.symbol_id)}" data-lane="${position.lane}" x="${position.x}" y="${position.y}"${selection}>${escapeText(node.name)}</text>`;
     })
     .join("");
   const omittedMarkup = [...graph.omitted.entries()]

@@ -124,12 +124,14 @@
   <!-- covers: code-explorer/local-graph :: Graph growth remains visibly bounded :: Relation response is truncated -->
   <!-- covers: code-explorer/local-graph :: Graph growth remains visibly bounded :: Several bounded groups are loaded -->
 
-- [ ] 3.4 Route selectable local graph nodes through normal focus navigation and exclude external or unavailable results. Verify successful recenter, failed-focus preservation, and external list-only behavior.
+- [x] 3.4 Route selectable local graph nodes through normal focus navigation and exclude external or unavailable results. Verify successful recenter, failed-focus preservation, and external list-only behavior.
+<!-- status: completed -->
   <!-- covers: code-explorer/local-graph :: Selecting a graph node recenters through normal navigation :: User selects a local graph node -->
   <!-- covers: code-explorer/local-graph :: Selecting a graph node recenters through normal navigation :: Graph focus request fails -->
   <!-- covers: code-explorer/local-graph :: Selecting a graph node recenters through normal navigation :: External result is loaded -->
 
-- [ ] 3.5 Bind graph data to immutable views, restore it through history, disable stale graph actions, and contain validation or layout failures to the SVG area. Verify stale, restored, malformed, and collapsed states.
+- [x] 3.5 Bind graph data to immutable views, restore it through history, disable stale graph actions, and contain validation or layout failures to the SVG area. Verify stale, restored, malformed, and collapsed states.
+<!-- status: completed -->
   <!-- covers: code-explorer/local-graph :: Stale and restored views keep recorded graph state :: Project generation advances -->
   <!-- covers: code-explorer/local-graph :: Stale and restored views keep recorded graph state :: History restores an older view -->
   <!-- covers: code-explorer/local-graph :: Graph rendering failure does not remove source navigation :: Graph renderer rejects malformed local state -->

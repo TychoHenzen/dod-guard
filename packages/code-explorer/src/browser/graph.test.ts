@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { BrowserFocusNavigation } from "./focus-navigation.js";
 import { type GraphRelationGroup, projectOneHopGraph, renderOneHopGraph } from "./graph.js";
+import { BrowserGraphController, graphSnapshot, renderGraphArea, toGraphRelationGroups } from "./graph-navigation.js";
+import { BrowserViewHistory } from "./history.js";
+import type { RelationGroup } from "./relations.js";
 
 const focus = { symbol_id: "project::Focus", name: "Focus" };
 
@@ -172,5 +176,133 @@ describe("bounded graph growth", () => {
     );
     assert.equal(graph.edges.length, 3);
     assert.doesNotMatch(JSON.stringify(graph), /Hidden/);
+  });
+});
+
+function browserGroup(
+  relation: RelationGroup["relation"],
+  candidates: RelationGroup["candidates"],
+  omitted_count = 0,
+): RelationGroup {
+  return { relation, state: "loaded", candidates, omitted_count };
+}
+
+describe("graph navigation and view ownership", () => {
+  // covers: code-explorer/local-graph :: Selecting a graph node recenters through normal navigation :: User selects a local graph node
+  it("routes a local graph node through focus navigation and resets the graph after success", async () => {
+    const navigation = new BrowserFocusNavigation(
+      { view_id: "view-old", symbol_id: "old", name: "Old" },
+      async ({ symbol_id }) => ({ state: "ok", data: { view_id: "view-new", symbol_id, name: "New" } }),
+    );
+    const controller = new BrowserGraphController(navigation, () => false);
+    const graph = projectOneHopGraph(
+      focus,
+      toGraphRelationGroups([
+        browserGroup("callers", [{ name: "Caller", external: false, symbol_id: "project::Caller", local_handle: "h" }]),
+      ]),
+    );
+
+    assert.equal(await controller.select(graph.nodes[1]), true);
+    assert.deepEqual(
+      navigation.state().history.map((entry) => entry.view_id),
+      ["view-old", "view-new"],
+    );
+    assert.match(renderOneHopGraph(graph), /data-focus="project::Caller"/);
+    assert.deepEqual(
+      controller.graphFor({ symbol_id: "project::Caller", name: "New" }, []).nodes.map((node) => node.symbol_id),
+      ["project::Caller"],
+    );
+  });
+
+  // covers: code-explorer/local-graph :: Selecting a graph node recenters through normal navigation :: Graph focus request fails
+  it("keeps the prior graph and history when graph focus fails", async () => {
+    const navigation = new BrowserFocusNavigation({ view_id: "view-old", symbol_id: "old", name: "Old" }, async () => ({
+      state: "stale_view",
+    }));
+    const controller = new BrowserGraphController(navigation, () => false);
+    const graph = projectOneHopGraph(focus, [loaded("callers", [{ symbol_id: "project::Caller", name: "Caller" }])]);
+
+    assert.equal(await controller.select(graph.nodes[1]), false);
+    assert.deepEqual(
+      navigation.state().history.map((entry) => entry.view_id),
+      ["view-old"],
+    );
+    assert.deepEqual(
+      graph.nodes.map((node) => node.symbol_id),
+      ["project::Focus", "project::Caller"],
+    );
+  });
+
+  // covers: code-explorer/local-graph :: Selecting a graph node recenters through normal navigation :: External result is loaded
+  it("keeps external results list-only and out of selectable graph nodes", () => {
+    const groups = toGraphRelationGroups([
+      browserGroup("callees", [
+        { name: "Local", external: false, symbol_id: "project::Local", local_handle: "h" },
+        { name: "External", external: true },
+      ]),
+    ]);
+    const graph = projectOneHopGraph(focus, groups);
+
+    assert.deepEqual(
+      graph.nodes.map((node) => node.symbol_id),
+      ["project::Focus", "project::Local"],
+    );
+    assert.doesNotMatch(renderOneHopGraph(graph), /External/);
+  });
+
+  // covers: code-explorer/local-graph :: Stale and restored views keep recorded graph state :: Project generation advances
+  it("keeps stale graph data visible while disabling its node actions", async () => {
+    const navigation = new BrowserFocusNavigation({ view_id: "view-old", symbol_id: "old", name: "Old" }, async () => ({
+      state: "ok",
+      data: { view_id: "unexpected", symbol_id: "unexpected", name: "Unexpected" },
+    }));
+    const controller = new BrowserGraphController(navigation, () => true);
+    const graph = projectOneHopGraph(focus, [loaded("callers", [{ symbol_id: "project::Caller", name: "Caller" }])]);
+
+    assert.match(renderGraphArea(graph, { stale: true }), /data-state="stale"/);
+    assert.equal(await controller.select(graph.nodes[1]), false);
+    assert.equal(navigation.state().history.length, 1);
+  });
+
+  // covers: code-explorer/local-graph :: Stale and restored views keep recorded graph state :: History restores an older view
+  it("restores an immutable recorded graph without relation loading", () => {
+    const oldGraph = projectOneHopGraph(focus, [loaded("references", [{ symbol_id: "project::Ref", name: "Ref" }], 2)]);
+    const history = new BrowserViewHistory({
+      view_id: "old",
+      symbol_id: "old",
+      source: { body: "old" },
+      relations: { references: ["ref"] },
+      graph: graphSnapshot(oldGraph, true),
+      stale: true,
+    });
+    history.append({ view_id: "new", symbol_id: "new", source: {}, relations: {}, graph: {}, stale: false });
+
+    const restored = history.back();
+
+    assert.deepEqual(restored?.graph, graphSnapshot(oldGraph, true));
+    assert.equal(restored?.stale, true);
+  });
+
+  // covers: code-explorer/local-graph :: Graph rendering failure does not remove source navigation :: Graph renderer rejects malformed local state
+  it("contains malformed graph rendering at the SVG area", () => {
+    const malformed = {
+      nodes: [{ symbol_id: "focus", name: "Focus", center: true, selectable: false }],
+      edges: [{ from: "missing", to: "focus", label: "caller" }],
+      omitted: new Map(),
+    } as const;
+
+    assert.match(renderGraphArea(malformed), /graph_render_failed/);
+    assert.equal(renderGraphArea(malformed).includes("source"), false);
+  });
+
+  // covers: code-explorer/local-graph :: Graph rendering failure does not remove source navigation :: Graph area is collapsed
+  it("collapses only the graph presentation without discarding graph state", () => {
+    const graph = projectOneHopGraph(focus, [loaded("callees", [{ symbol_id: "project::Callee", name: "Callee" }])]);
+
+    assert.match(renderGraphArea(graph, { collapsed: true }), /data-state="collapsed"/);
+    assert.deepEqual(
+      graph.nodes.map((node) => node.symbol_id),
+      ["project::Focus", "project::Callee"],
+    );
   });
 });
