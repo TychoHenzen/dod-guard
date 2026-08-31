@@ -38,11 +38,13 @@
 <!-- covers: quality-guard/architecture-analysis :: Dependency boundaries are enforceable :: Policy imports a forbidden driver -->
 <!-- covers: quality-guard/architecture-analysis :: Dependency boundaries are enforceable :: Staged edge closes a cycle -->
 
-- [ ] 2.5 Implement encapsulation and bounded Git co-change evidence for public-surface growth, test-only seams, forwarding compatibility paths, and files outside their historical structural cluster.
+- [x] 2.5 Implement encapsulation and bounded Git co-change evidence for public-surface growth, test-only seams, forwarding compatibility paths, and files outside their historical structural cluster.
+<!-- status: completed -->
 <!-- covers: quality-guard/architecture-analysis :: Encapsulation and change locality are measured :: Public surface grows without a production caller -->
 <!-- covers: quality-guard/architecture-analysis :: Encapsulation and change locality are measured :: File is outside the historical change cluster -->
 
-- [ ] 2.6 Implement refactor progress comparison across responsibility owners, dependency edges, placement, public surface, and deleted compatibility paths. Prove local-only polish produces no architectural progress.
+- [x] 2.6 Implement refactor progress comparison across responsibility owners, dependency edges, placement, public surface, and deleted compatibility paths. Prove local-only polish produces no architectural progress.
+<!-- status: completed -->
 <!-- covers: quality-guard/architecture-analysis :: Refactor analysis reports structural progress :: Responsibility moves to a focused module -->
 <!-- covers: quality-guard/architecture-analysis :: Refactor analysis reports structural progress :: Refactor only renames and reformats -->
 
