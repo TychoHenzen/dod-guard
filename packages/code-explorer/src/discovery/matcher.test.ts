@@ -55,7 +55,6 @@ it("uses unrestricted Damerau-Levenshtein for repeated transpositions", () => {
   assert.equal(result?.match_score, 78);
 });
 
-// covers: code-explorer/symbol-discovery :: Search order is deterministic :: Equal-rank candidates are returned
 // covers: code-explorer/symbol-discovery :: Search order is deterministic :: Search is repeated without project changes
 it("uses stable path, kind, and identity keys independently of collection order", () => {
   const candidates = [
@@ -76,6 +75,19 @@ it("uses stable path, kind, and identity keys independently of collection order"
   assert.deepEqual(
     matchDiscoveryCandidates("helper", candidates).map((result) => result),
     matchDiscoveryCandidates("helper", candidates).map((result) => result),
+  );
+});
+
+// covers: code-explorer/symbol-discovery :: Search order is deterministic :: Equal-rank candidates are returned
+it("orders equal-match candidates by their stable path, kind, and identity keys", () => {
+  const candidates = [
+    symbol("helper", "src/zeta.ts", "zeta", "method"),
+    symbol("helper", "src/alpha.ts", "method", "method"),
+    symbol("helper", "src/alpha.ts", "function", "function"),
+  ];
+  assert.deepEqual(
+    matchDiscoveryCandidates("helper", candidates).map((result) => result.identity),
+    ["function", "method", "zeta"],
   );
 });
 

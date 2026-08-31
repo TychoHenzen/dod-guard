@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import { landmarksNotReady, readyLandmarks } from "./landmarks.js";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
 import type { LanguageAdapter } from "../semantic/language-adapter.js";
+import { createNativeProjectRoot } from "../semantic/project-root.js";
+import { landmarksNotReady, readyLandmarks } from "./landmarks.js";
 
 // covers: code-explorer/project-landmarks :: An empty search returns project landmarks :: Client has no search term
 it("returns bounded grouped landmarks with selectable symbol identities for an empty query", async () => {
@@ -34,7 +34,10 @@ it("returns bounded grouped landmarks with selectable symbol identities for an e
     if ("code" in result) throw new Error("expected landmarks");
     assert.equal(result.state, "ready");
     const groups = result.data.landmarks as Array<{ group: string; symbols: Array<{ symbol_id: string }> }>;
-    assert.deepEqual(groups.map(({ group }) => group), ["entry_points"]);
+    assert.deepEqual(
+      groups.map(({ group }) => group),
+      ["entry_points"],
+    );
     assert.equal(groups[0]?.symbols.length, 12);
     assert.equal(groups[0]?.symbols[0]?.symbol_id, "entry-0");
     assert.equal(searches, 0);
@@ -81,8 +84,12 @@ function countingAdapter(onSearch: () => void): LanguageAdapter {
       discovery_source: "injected",
       state: "ready",
       capabilities: {
-        definition: { state: "ready" }, references: { state: "ready" }, type_definition: { state: "ready" },
-        implementation: { state: "ready" }, callers: { state: "ready" }, callees: { state: "ready" },
+        definition: { state: "ready" },
+        references: { state: "ready" },
+        type_definition: { state: "ready" },
+        implementation: { state: "ready" },
+        callers: { state: "ready" },
+        callees: { state: "ready" },
       },
       last_transition_time: 0,
     }),

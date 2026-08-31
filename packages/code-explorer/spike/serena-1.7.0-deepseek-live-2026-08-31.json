@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "dependency": "serena",
+  "version": "1.7.0",
+  "run_at": "2026-08-31T12:01:00+02:00",
+  "project": "DeepSeekCustom",
+  "boundary": {
+    "heartbeat": "GET http://127.0.0.1:24225/heartbeat",
+    "query": "POST http://127.0.0.1:24225/query_project",
+    "result": "heartbeat returned status alive"
+  },
+  "spike_targets": [
+    {
+      "query": "TranscriptContent",
+      "result": "one Enum at crates/deepseek-custom/src/application/dto.rs:101-138"
+    },
+    {
+      "query": "AgentEvent",
+      "result": "no exact symbol"
+    },
+    {
+      "query": "SendMessage",
+      "result": "one EnumMember AppCommand/SendMessage at crates/deepseek-custom/src/application/dto.rs:337-340"
+    },
+    {
+      "query": "Tool",
+      "result": "three exact matches: Role/Tool, HarnessError/Tool, and the Tool trait. The name remains ambiguous."
+    },
+    {
+      "query": "project_block",
+      "result": "bounded symbol lookup found crates/deepseek-custom/src/application/session.rs. The path-qualified body request returned HTTP 500, so no body was retained."
+    }
+  ],
+  "scope": "Each query used max_matches at most 5 and max_answer_chars 1000. No broad project dump was requested.",
+  "relation_note": "The service reports reference search separately. Exact symbol lookup alone does not establish a call hierarchy."
+}

@@ -106,5 +106,11 @@ function sanitizeDetails(details: ErrorDetails): ErrorDetails {
 }
 
 function isNormalizedProjectRelativePath(value: string): boolean {
-  return value.length > 0 && !value.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(value) && !value.includes("\\") && !value.split("/").includes("..");
+  return (
+    value.length > 0 &&
+    !value.startsWith("/") &&
+    !/^[A-Za-z]:[\\/]/.test(value) &&
+    !value.includes("\\") &&
+    !value.split("/").includes("..")
+  );
 }

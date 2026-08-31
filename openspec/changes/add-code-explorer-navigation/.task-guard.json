@@ -210,22 +210,28 @@
       "status": "completed"
     },
     "7.1": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     },
     "7.2": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     },
     "7.3": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     },
     "7.4": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     },
     "7.5": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     },
     "7.6": {
-      "checked": false
+      "checked": true,
+      "status": "completed"
     }
   },
   "hmac": "7e06436a4b90530a4f6a0cb32101dcdf52f13529f184966cdbe787c6b6549742"

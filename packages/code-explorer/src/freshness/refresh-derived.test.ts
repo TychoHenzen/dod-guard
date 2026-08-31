@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createServer } from "../index.js";
+import type { LanguageAdapter } from "../semantic/language-adapter.js";
 import { createNativeProjectRoot } from "../semantic/project-root.js";
 import { WorkspaceFreshness } from "./workspace-freshness.js";
-import type { LanguageAdapter } from "../semantic/language-adapter.js";
 
 function adapter(refresh: () => Promise<void>, name: () => string): LanguageAdapter {
   return {
@@ -17,8 +17,12 @@ function adapter(refresh: () => Promise<void>, name: () => string): LanguageAdap
       discovery_source: "injected",
       state: "ready",
       capabilities: {
-        definition: { state: "ready" }, references: { state: "ready" }, type_definition: { state: "ready" },
-        implementation: { state: "ready" }, callers: { state: "ready" }, callees: { state: "ready" },
+        definition: { state: "ready" },
+        references: { state: "ready" },
+        type_definition: { state: "ready" },
+        implementation: { state: "ready" },
+        callers: { state: "ready" },
+        callees: { state: "ready" },
       },
       last_transition_time: 0,
     }),
@@ -26,10 +30,15 @@ function adapter(refresh: () => Promise<void>, name: () => string): LanguageAdap
     request: async () => ({
       operation: "search",
       revision: { generation: 1, manifest_sha256: "fixture" },
-      symbols: [{
-        id: name(), name: name(), language: "rust", kind: "function",
-        location: { path: "src/lib.rs", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } } },
-      }],
+      symbols: [
+        {
+          id: name(),
+          name: name(),
+          language: "rust",
+          kind: "function",
+          location: { path: "src/lib.rs", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } } },
+        },
+      ],
     }),
   };
 }
@@ -60,11 +69,24 @@ it("atomically publishes replacement derived discovery after backend refresh com
   const directory = root();
   try {
     const server = createServer({
-      projectRoot: createNativeProjectRoot(directory), adapters: [adapter(async () => { symbol = "after"; }, () => symbol)], freshness: freshness(),
+      projectRoot: createNativeProjectRoot(directory),
+      adapters: [
+        adapter(
+          async () => {
+            symbol = "after";
+          },
+          () => symbol,
+        ),
+      ],
+      freshness: freshness(),
     });
     const id = await session(server);
     const before = await server.call("code_search", { query: "before" });
-    const status = await server.call("code_status", { action: "refresh", session_id: id, request_id: "refresh-success-0001" });
+    const status = await server.call("code_status", {
+      action: "refresh",
+      session_id: id,
+      request_id: "refresh-success-0001",
+    });
     const after = await server.call("code_search", { query: "after" });
     assert.equal("code" in before, false);
     assert.equal("code" in status, false);
@@ -72,8 +94,13 @@ it("atomically publishes replacement derived discovery after backend refresh com
     if ("code" in status || "code" in after) throw new Error("expected refresh result");
     assert.equal(status.state, "refreshed");
     assert.equal(status.project_generation, 2);
-    assert.deepEqual((after.data.candidates as Array<{ name: string }>).map((candidate) => candidate.name), ["after"]);
-  } finally { rmSync(directory, { recursive: true, force: true }); }
+    assert.deepEqual(
+      (after.data.candidates as Array<{ name: string }>).map((candidate) => candidate.name),
+      ["after"],
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 // covers: code-explorer/workspace-freshness :: Explicit refresh rebuilds derived discovery data :: Refresh fails before completion
@@ -81,11 +108,24 @@ it("retains the complete generation and reports refresh_failed when a backend be
   const directory = root();
   try {
     const server = createServer({
-      projectRoot: createNativeProjectRoot(directory), adapters: [adapter(async () => { throw new Error("backend unavailable at C:/private"); }, () => "retained")], freshness: freshness(),
+      projectRoot: createNativeProjectRoot(directory),
+      adapters: [
+        adapter(
+          async () => {
+            throw new Error("backend unavailable at C:/private");
+          },
+          () => "retained",
+        ),
+      ],
+      freshness: freshness(),
     });
     const id = await session(server);
     const prior = await server.call("code_search", { query: "retained" });
-    const status = await server.call("code_status", { action: "refresh", session_id: id, request_id: "refresh-failure-01" });
+    const status = await server.call("code_status", {
+      action: "refresh",
+      session_id: id,
+      request_id: "refresh-failure-01",
+    });
     const later = await server.call("code_search", { query: "retained" });
     assert.equal("code" in prior, false);
     assert.equal("code" in status, false);
@@ -94,6 +134,11 @@ it("retains the complete generation and reports refresh_failed when a backend be
     assert.equal(status.state, "refresh_failed");
     assert.equal(status.project_generation, 1);
     assert.equal(JSON.stringify(status).includes("C:/private"), false);
-    assert.deepEqual((later.data.candidates as Array<{ name: string }>).map((candidate) => candidate.name), ["retained"]);
-  } finally { rmSync(directory, { recursive: true, force: true }); }
+    assert.deepEqual(
+      (later.data.candidates as Array<{ name: string }>).map((candidate) => candidate.name),
+      ["retained"],
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

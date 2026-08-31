@@ -47,8 +47,12 @@ export class RootAccessGate {
     return { state: this.#state, restart_required: this.#state === "project_root_unavailable" };
   }
 
-  async #stop(): Promise<void> { await Promise.all(this.adapters.flatMap((adapter) => adapter.shutdown ? [adapter.shutdown()] : [])); }
-  async #restart(): Promise<void> { await Promise.all(this.adapters.flatMap((adapter) => adapter.start ? [adapter.start()] : [])); }
+  async #stop(): Promise<void> {
+    await Promise.all(this.adapters.flatMap((adapter) => (adapter.shutdown ? [adapter.shutdown()] : [])));
+  }
+  async #restart(): Promise<void> {
+    await Promise.all(this.adapters.flatMap((adapter) => (adapter.start ? [adapter.start()] : [])));
+  }
   #scheduleRetry(): void {
     if (this.#retryTimer !== undefined) return;
     this.#retryTimer = setTimeout(() => {

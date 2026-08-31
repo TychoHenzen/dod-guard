@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
 import type { LanguageAdapter } from "../semantic/language-adapter.js";
+import { createNativeProjectRoot } from "../semantic/project-root.js";
 
 it("runs fuzzy search through focus, follow, history, and stale-handle rejection", async () => {
   const root = fixtureRoot();
@@ -14,7 +14,10 @@ it("runs fuzzy search through focus, follow, history, and stale-handle rejection
     const search = await server.call("code_search", { query: "helpertargt" });
     assert.equal("code" in search, false);
     if ("code" in search) throw new Error("expected fuzzy search result");
-    assert.deepEqual((search.data.candidates as Array<{ identity: string }>).map(({ identity }) => identity), ["source"]);
+    assert.deepEqual(
+      (search.data.candidates as Array<{ identity: string }>).map(({ identity }) => identity),
+      ["source"],
+    );
 
     const started = await server.call("code_status", { action: "start_session" });
     if ("code" in started || typeof started.data.session_id !== "string") throw new Error("expected session");
@@ -100,8 +103,12 @@ function practiceAdapter(): LanguageAdapter {
       discovery_source: "injected",
       state: "ready",
       capabilities: {
-        definition: { state: "ready" }, references: { state: "unavailable" }, type_definition: { state: "unavailable" },
-        implementation: { state: "unavailable" }, callers: { state: "unavailable" }, callees: { state: "unavailable" },
+        definition: { state: "ready" },
+        references: { state: "unavailable" },
+        type_definition: { state: "unavailable" },
+        implementation: { state: "unavailable" },
+        callers: { state: "unavailable" },
+        callees: { state: "unavailable" },
       },
       last_transition_time: 0,
     }),
@@ -112,7 +119,10 @@ function practiceAdapter(): LanguageAdapter {
           operation: "focus",
           revision: revision(),
           symbol: source,
-          content: { body: "fn helper_target() { Destination; }", visible_symbols: [{ name: "Destination", symbol_id: "destination" }] },
+          content: {
+            body: "fn helper_target() { Destination; }",
+            visible_symbols: [{ name: "Destination", symbol_id: "destination" }],
+          },
         };
       if (request.operation === "definition")
         return {

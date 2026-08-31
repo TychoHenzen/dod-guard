@@ -267,9 +267,15 @@
 
 ## 7. Packaging and Repository Gates
 
-- [ ] 7.1 Add the root marketplace entry, root lockfile workspace data, tracked bundle, and package documentation for installation and project-scoped startup.
-- [ ] 7.2 Extend plugin validation fixtures and bundle smoke discovery for the new MCP package.
-- [ ] 7.3 Add explicit resource limits and tests for body bytes, candidates, handles, views, history, concurrent requests, and refresh work.
-- [ ] 7.4 Run the live DeepSeekCustom practice sequence and record results for all five spike targets without broad file dumps.
-- [ ] 7.5 Run the package build, package tests, bundle, handshake smoke test, Biome checks, root tests, ratchets, plugin validation, and strict OpenSpec validation.
-- [ ] 7.6 Run `dod-guard cover add-code-explorer-navigation` and close every scenario binding before implementation is reported complete.
+- [x] 7.1 Add the root marketplace entry, root lockfile workspace data, tracked bundle, and package documentation for installation and project-scoped startup.
+<!-- status: completed -->
+- [x] 7.2 Extend plugin validation fixtures and bundle smoke discovery for the new MCP package.
+<!-- status: completed -->
+- [x] 7.3 Add explicit resource limits and tests for body bytes, candidates, handles, views, history, concurrent requests, and refresh work.
+<!-- status: completed -->
+- [x] 7.4 Run the live DeepSeekCustom practice sequence and record results for all five spike targets without broad file dumps.
+<!-- status: completed -->
+- [x] 7.5 Run the package build, package tests, bundle, handshake smoke test, Biome checks, root tests, ratchets, plugin validation, and strict OpenSpec validation.
+<!-- status: completed -->
+- [x] 7.6 Run `dod-guard cover add-code-explorer-navigation` and close every scenario binding before implementation is reported complete.
+<!-- status: completed -->

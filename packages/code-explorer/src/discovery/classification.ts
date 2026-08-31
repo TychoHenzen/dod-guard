@@ -114,7 +114,10 @@ function lastConfiguredClass(path: string, config: ClassificationConfig): Conten
   return matched;
 }
 
-function lastConfiguredOverride(path: string, config: ClassificationConfig): ClassificationOverride["class"] | undefined {
+function lastConfiguredOverride(
+  path: string,
+  config: ClassificationConfig,
+): ClassificationOverride["class"] | undefined {
   let matched: ClassificationOverride["class"] | undefined;
   for (const override of config.overrides) if (safeGlobMatches(path, override.glob)) matched = override.class;
   return matched;

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { createServer } from "../index.js";
 import { WorkspaceFreshness } from "../freshness/workspace-freshness.js";
+import { createServer } from "../index.js";
 import type { LanguageAdapter } from "../semantic/language-adapter.js";
 import { createFocusView, stableSymbolId } from "./focus-view.js";
 
@@ -133,7 +133,10 @@ it("returns stale_view generations without dispatching semantics for an old view
 it("restores an old immutable view with its original generation and stale label", async () => {
   const manifests = [new Map([["src/lib.rs", "one"]]), new Map([["src/lib.rs", "two"]])];
   const freshness = new WorkspaceFreshness({ reconcile: async () => ({ manifest: manifests.shift() ?? new Map() }) });
-  const server = createServer({ adapters: [focusAdapter({ body: "TypeName", visible_symbols: [{ name: "TypeName", symbol_id: "type-id" }] })], freshness });
+  const server = createServer({
+    adapters: [focusAdapter({ body: "TypeName", visible_symbols: [{ name: "TypeName", symbol_id: "type-id" }] })],
+    freshness,
+  });
   const sessionId = await startSession(server);
   const first = await server.call("code_focus", {
     session_id: sessionId,

@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
 import type { LanguageAdapter } from "../semantic/language-adapter.js";
+import { createNativeProjectRoot } from "../semantic/project-root.js";
 
 // covers: code-explorer/symbol-discovery :: Empty search is reserved for landmarks :: Empty query has no qualifying landmarks
 it("returns a ready but empty landmark set without running ordinary search", async () => {
@@ -33,7 +33,10 @@ it("routes whitespace-only queries to the same not-ready landmark path", async (
   const root = fixtureRoot();
   let searches = 0;
   try {
-    const server = createServer({ projectRoot: createNativeProjectRoot(root), adapters: [countingAdapter(() => (searches += 1))] });
+    const server = createServer({
+      projectRoot: createNativeProjectRoot(root),
+      adapters: [countingAdapter(() => (searches += 1))],
+    });
     const result = await server.call("code_search", { query: " \u00a0" });
     assert.equal("code" in result, false);
     if ("code" in result) throw new Error("expected landmark result");

@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
 import type { LanguageAdapter } from "../semantic/language-adapter.js";
+import { createNativeProjectRoot } from "../semantic/project-root.js";
 
 // covers: code-explorer/mcp-navigation :: Errors use one redacted schema :: Backend returns a verbose failure
 it("redacts backend payloads, absolute paths, and environment values from tool errors", async () => {
@@ -13,7 +13,10 @@ it("redacts backend payloads, absolute paths, and environment values from tool e
   const secret = "CODE_EXPLORER_TEST_SECRET=not-for-client";
   const rawPayload = '{"jsonrpc":"2.0","error":{"data":"backend-detail"}}';
   try {
-    const server = createServer({ projectRoot: createNativeProjectRoot(root), adapters: [failingAdapter(`${root} ${secret} ${rawPayload}`)] });
+    const server = createServer({
+      projectRoot: createNativeProjectRoot(root),
+      adapters: [failingAdapter(`${root} ${secret} ${rawPayload}`)],
+    });
     const result = await server.call("code_search", { query: "helper" });
 
     assert.deepEqual(result, {
@@ -64,8 +67,12 @@ function failingAdapter(message: string): LanguageAdapter {
       discovery_source: "injected",
       state: "ready",
       capabilities: {
-        definition: { state: "ready" }, references: { state: "ready" }, type_definition: { state: "ready" },
-        implementation: { state: "ready" }, callers: { state: "ready" }, callees: { state: "ready" },
+        definition: { state: "ready" },
+        references: { state: "ready" },
+        type_definition: { state: "ready" },
+        implementation: { state: "ready" },
+        callers: { state: "ready" },
+        callees: { state: "ready" },
       },
       last_transition_time: 0,
     }),

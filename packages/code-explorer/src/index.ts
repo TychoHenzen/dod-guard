@@ -11,8 +11,14 @@ import { type LandmarkDiscovery, landmarksNotReady } from "./discovery/landmarks
 import { normalizeDiscoveryQuery } from "./discovery/matcher.js";
 import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
+import { ProjectGenerationScheduler } from "./freshness/project-generation-scheduler.js";
+import {
+  createNativeWorkspaceFreshness,
+  type FreshnessStatus,
+  WorkspaceFreshness,
+} from "./freshness/workspace-freshness.js";
+import { type CodeExplorerError, codeExplorerError, normalizeError } from "./navigation/error.js";
 import { createFocusView, FocusBodyLimitError, type FocusView, mintOpaqueId } from "./navigation/focus-view.js";
-import { codeExplorerError, normalizeError, type CodeExplorerError } from "./navigation/error.js";
 import {
   BackendCapacityError,
   BackendRequestLimiter,
@@ -26,10 +32,8 @@ import { createBackendStatusReport } from "./semantic/backend-status.js";
 import type { RelationName, RelationResult, SymbolIdentity } from "./semantic/contract.js";
 import type { LanguageAdapter } from "./semantic/language-adapter.js";
 import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "./semantic/project-root.js";
-import { createStartedRuntimeAdapters } from "./semantic/runtime-bootstrap.js";
 import { RootAccessGate } from "./semantic/root-access.js";
-import { createNativeWorkspaceFreshness, WorkspaceFreshness } from "./freshness/workspace-freshness.js";
-import { ProjectGenerationScheduler } from "./freshness/project-generation-scheduler.js";
+import { createStartedRuntimeAdapters } from "./semantic/runtime-bootstrap.js";
 
 const filename = fileURLToPath(import.meta.url);
 const packagePath = path.join(path.dirname(filename), "..", "package.json");
@@ -279,7 +283,7 @@ export function createServer(
     freshness?: WorkspaceFreshness;
     generation_scheduler?: ProjectGenerationScheduler;
     /** Rebuilds replacement derived data off to the side of the current generation. */
-    rebuild_derived?: () => Promise<{ landmarks?: LandmarkDiscovery } | void>;
+    rebuild_derived?: () => Promise<{ landmarks?: LandmarkDiscovery } | undefined>;
     workspace_status?: () => Record<string, unknown>;
   } = {},
 ): CodeExplorerServer {
@@ -320,7 +324,12 @@ export function createServer(
         project_generation: 0,
         pending_generation: null,
         state: rootStatus.state === "ready" ? "ready" : "degraded",
-        data: { session_id: sessionId, project_root: ".", root_access: rootStatus.state, restart_required: rootStatus.restart_required },
+        data: {
+          session_id: sessionId,
+          project_root: ".",
+          root_access: rootStatus.state,
+          restart_required: rootStatus.restart_required,
+        },
       };
     }
     const parsedArguments = parsed.data as Record<string, unknown>;
@@ -336,7 +345,7 @@ export function createServer(
     const perform = async (): Promise<CodeExplorerEnvelope | CodeExplorerError> => {
       const rootStatus = await rootAccess.check();
       if (name !== "code_status" && rootStatus.state !== "ready") return codeExplorerError(rootStatus.state);
-      let capturedFreshness;
+      let capturedFreshness: FreshnessStatus;
       if (name === "code_status" && arguments_.action === "refresh") {
         await generationScheduler.refresh(async () => {
           refreshGeneration += 1;
@@ -532,10 +541,12 @@ export function createServer(
           name === "code_status" && rootStatus.state !== "ready"
             ? "degraded"
             : name === "code_status" && arguments_.action === "refresh" && capturedFreshness.state === "ready"
-            ? "refreshed"
-            : capturedFreshness.state === "refreshing" || capturedFreshness.state === "degraded" || capturedFreshness.state === "refresh_failed"
-              ? capturedFreshness.state
-              : "ready",
+              ? "refreshed"
+              : capturedFreshness.state === "refreshing" ||
+                  capturedFreshness.state === "degraded" ||
+                  capturedFreshness.state === "refresh_failed"
+                ? capturedFreshness.state
+                : "ready",
         data: backendStatus,
       };
     };
@@ -583,20 +594,35 @@ export function createServer(
 function nativeWorkspaceStatus(root: ProjectRoot | undefined): Record<string, unknown> {
   if (!root) return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
   try {
-    const output = execFileSync("git", ["-C", root.canonicalPath, "status", "--porcelain=v1", "--untracked-files=all"], {
-      encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
-    });
+    const output = execFileSync(
+      "git",
+      ["-C", root.canonicalPath, "status", "--porcelain=v1", "--untracked-files=all"],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      },
+    );
     const changed_paths: Array<{ path: string; state: "modified" | "deleted" }> = [];
     const untracked_paths: Array<{ path: string; state: "untracked" }> = [];
     for (const line of output.split(/\r?\n/u)) {
       const status = line.slice(0, 2);
       const candidate = line.slice(3).replaceAll("\\", "/");
-      if (!candidate || candidate.startsWith("/") || /^[A-Za-z]:\//u.test(candidate) || candidate.split("/").includes("..")) continue;
+      if (
+        !candidate ||
+        candidate.startsWith("/") ||
+        /^[A-Za-z]:\//u.test(candidate) ||
+        candidate.split("/").includes("..")
+      )
+        continue;
       if (!/\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)) continue;
       if (status === "??") untracked_paths.push({ path: candidate, state: "untracked" });
       else changed_paths.push({ path: candidate, state: status.includes("D") ? "deleted" : "modified" });
     }
-    return { changed_paths, untracked_paths, active_exclusions: ["dist/**", "target/**", "bin/**", "obj/**", ".venv/**"] };
+    return {
+      changed_paths,
+      untracked_paths,
+      active_exclusions: ["dist/**", "target/**", "bin/**", "obj/**", ".venv/**"],
+    };
   } catch {
     return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
   }

@@ -79,4 +79,15 @@ describe("complete tool via MCP", () => {
     assert.equal(parsed.passed, true);
     assert.equal(parsed.exitCode, 0);
   });
+
+  it("returns a usage error when lock cannot find tasks.md", async () => {
+    const result = await client.callTool({
+      name: "lock",
+      arguments: { cwd, changeId: "no-such-change" },
+    });
+    const parsed = JSON.parse((result.content as Array<{ text: string }>)[0].text);
+    assert.equal(parsed.locked, false);
+    assert.equal(parsed.exitCode, 3);
+    assert.match(parsed.errors, /no-such-change.*tasks\.md not found/);
+  });
 });

@@ -90,12 +90,15 @@ export function createProjectRoot<Handle = unknown>(options: ProjectRootOptions<
         const identity = options.filesystem.stat(path);
         if (!(isStableIdentityPart(identity.dev) && isStableIdentityPart(identity.ino))) return "unavailable";
         const current = { path, identity };
-        return sameCanonicalPath(current.path, root.path, options.platform) && sameIdentity(current.identity, root.identity)
+        return sameCanonicalPath(current.path, root.path, options.platform) &&
+          sameIdentity(current.identity, root.identity)
           ? "ready"
           : "unavailable";
       } catch (error) {
         const code = error instanceof Error && "code" in error ? (error as { code?: string }).code : undefined;
-        return code === "EACCES" || code === "EPERM" || code === "EBUSY" || code === "EIO" ? "inaccessible" : "unavailable";
+        return code === "EACCES" || code === "EPERM" || code === "EBUSY" || code === "EIO"
+          ? "inaccessible"
+          : "unavailable";
       }
     },
     resolveClientPath,

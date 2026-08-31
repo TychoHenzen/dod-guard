@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 // smoke-bundle-standalone - run every packaged bundle with no repository
-// node_modules available to resolve external dependencies. The package.json
-// copied beside each bundle is expected runtime metadata, not a dependency
-// installation or plugin cache.
+// node_modules available to resolve external dependencies. Package-root JSON
+// records copied beside each bundle are expected runtime metadata, not a
+// dependency installation or plugin cache.
 
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -172,7 +172,13 @@ export async function runBundles(bundles) {
       const isolatedBundle = join(isolatedPackage, "dist", "bundle.js");
       await mkdir(dirname(isolatedBundle), { recursive: true });
       await cp(bundle.path, isolatedBundle);
-      await cp(bundle.manifest, join(isolatedPackage, "package.json"));
+      const sourcePackage = dirname(bundle.manifest);
+      const runtimeMetadata = await readdir(sourcePackage, { withFileTypes: true });
+      await Promise.all(
+        runtimeMetadata
+          .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+          .map((entry) => cp(join(sourcePackage, entry.name), join(isolatedPackage, entry.name))),
+      );
       try {
         await handshake(isolatedBundle, bundle.name, bundle.version);
         process.stdout.write(`standalone smoke OK - ${bundle.name}\n`);

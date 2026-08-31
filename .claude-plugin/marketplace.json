@@ -20,6 +20,12 @@
       "category": "productivity"
     },
     {
+      "name": "code-explorer",
+      "description": "Read-only MCP source navigation for one project. Provides search, focus, semantic relation following, history, and workspace status without project-editing tools.",
+      "source": "./packages/code-explorer",
+      "category": "productivity"
+    },
+    {
       "name": "natural-output-style",
       "description": "Two output styles. Natural: plain prose, common words, short sentences, active voice, no filler. Neurodivergent: tuned for an AuDHD reader with demand avoidance - choice-first, memoryless, no obligations, interest-first ordering. Both keep Claude Code's built-in coding behavior. No MCP server, no skills, no hooks.",
       "source": "./plugins/natural-output-style",

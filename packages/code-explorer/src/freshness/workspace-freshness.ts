@@ -122,7 +122,8 @@ export class WorkspaceFreshness {
   async reconcile(): Promise<void> {
     if (this.#running) return this.#running;
     if (this.#status.pending_generation === null) this.#reserveGeneration();
-    const run = this.#reconcile().catch(() => {
+    const run = this.#reconcile()
+      .catch(() => {
         this.#status = {
           current_generation: this.#status.current_generation,
           pending_generation: null,
@@ -130,7 +131,8 @@ export class WorkspaceFreshness {
           mode: this.#status.mode,
           degraded_cause: "freshness_unavailable",
         };
-      }).finally(() => {
+      })
+      .finally(() => {
         this.#running = undefined;
       });
     this.#running = run;
@@ -141,7 +143,11 @@ export class WorkspaceFreshness {
     for (let mismatchCount = 0; mismatchCount < 3; mismatchCount += 1) {
       const captured = await this.options.reconcile();
       if ("cause" in captured) return this.#degrade(captured.cause);
-      if (!this.#forceRefresh && this.#status.current_generation > 0 && sameManifest(this.#manifest, captured.manifest)) {
+      if (
+        !this.#forceRefresh &&
+        this.#status.current_generation > 0 &&
+        sameManifest(this.#manifest, captured.manifest)
+      ) {
         this.#status = {
           current_generation: this.#status.current_generation,
           pending_generation: null,
