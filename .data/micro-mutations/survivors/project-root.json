@@ -1,0 +1,501 @@
+{
+  "source": "packages/code-explorer/src/semantic/project-root.ts",
+  "date": "2026-08-31T14:34:28.222Z",
+  "summary": {
+    "total": 253,
+    "killed": 133,
+    "survived": 61,
+    "timeout": 0,
+    "unviable": 59
+  },
+  "survivors": [
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "2",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 18,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 22,
+      "dist_col": 99
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "14",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 26,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "17",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 26,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "18",
+      "mutator": "EqualityOperator",
+      "replacement": "normalizedCandidate !== normalizedRoot",
+      "dist_line": 26,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "20",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 26,
+      "dist_col": 89
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "21",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 28,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "24",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 30,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "28",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 32,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "29",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 32,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "31",
+      "mutator": "LogicalOperator",
+      "replacement": "sameCanonicalPath(current.path, root.path, options.platform) || sameIdentity(current.identity, root.identity)",
+      "dist_line": 32,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "64",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 60,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "66",
+      "mutator": "LogicalOperator",
+      "replacement": "error instanceof Error || \"code\" in error",
+      "dist_line": 60,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "68",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 61,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "105",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 85,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "106",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 85,
+      "dist_col": 75
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "118",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 95,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "117",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 95,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "120",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 97,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "119",
+      "mutator": "EqualityOperator",
+      "replacement": "handle === undefined",
+      "dist_line": 95,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "131",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 108,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "132",
+      "mutator": "LogicalOperator",
+      "replacement": "finalPath || sameCanonicalPath(finalPath.path, protectedPath.path, options.platform)",
+      "dist_line": 108,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "159",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 142,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "164",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 149,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "165",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 149,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "167",
+      "mutator": "LogicalOperator",
+      "replacement": "isStableIdentityPart(identity.dev) || isStableIdentityPart(identity.ino)",
+      "dist_line": 149,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "169",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 153,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "170",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 154,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "179",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 161,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "180",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 164,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "188",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 171,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "195",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 174,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "199",
+      "mutator": "EqualityOperator",
+      "replacement": "value !== 0",
+      "dist_line": 174,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "215",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 182,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "217",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 182,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "219",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 185,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "222",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 187,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "223",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 188,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "224",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 188,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "225",
+      "mutator": "EqualityOperator",
+      "replacement": "platform !== \"win32\"",
+      "dist_line": 188,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "226",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 188,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "227",
+      "mutator": "Regex",
+      "replacement": "/\\\\\\\\\\?\\\\/",
+      "dist_line": 188,
+      "dist_col": 67
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "228",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 188,
+      "dist_col": 80
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "229",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 189,
+      "dist_col": 56
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "230",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 189,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "231",
+      "mutator": "Regex",
+      "replacement": "/\\/+/",
+      "dist_line": 189,
+      "dist_col": 75
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "232",
+      "mutator": "Regex",
+      "replacement": "/\\/$/",
+      "dist_line": 189,
+      "dist_col": 75
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "233",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 189,
+      "dist_col": 83
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "235",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 190,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "234",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 190,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "237",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 190,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "236",
+      "mutator": "EqualityOperator",
+      "replacement": "platform !== \"win32\"",
+      "dist_line": 190,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "238",
+      "mutator": "MethodExpression",
+      "replacement": "slashSeparated.toLocaleUpperCase(\"en-US\")",
+      "dist_line": 190,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "241",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 193,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "243",
+      "mutator": "LogicalOperator",
+      "replacement": "value.length > 0 && !pathApi.isAbsolute(value) || !value.split(/[\\\\/]/).includes(\"..\")",
+      "dist_line": 193,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "244",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 193,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "245",
+      "mutator": "LogicalOperator",
+      "replacement": "value.length > 0 || !pathApi.isAbsolute(value)",
+      "dist_line": 193,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "246",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 193,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "247",
+      "mutator": "EqualityOperator",
+      "replacement": "value.length >= 0",
+      "dist_line": 193,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "251",
+      "mutator": "Regex",
+      "replacement": "/[^\\\\/]/",
+      "dist_line": 193,
+      "dist_col": 75
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/project-root.js",
+      "id": "252",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 193,
+      "dist_col": 93
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "source": "packages/code-explorer/src/freshness/workspace-freshness.ts",
+  "date": "2026-08-31T14:35:13.208Z",
+  "summary": {
+    "total": 248,
+    "killed": 86,
+    "survived": 32,
+    "timeout": 7,
+    "unviable": 123
+  },
+  "survivors": [
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "5",
+      "mutator": "EqualityOperator",
+      "replacement": "analyzedGeneration >= currentGeneration",
+      "dist_line": 7,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 22,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "15",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 33,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "36",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 62,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "44",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 77,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "49",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 85,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "50",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 87,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "60",
+      "mutator": "EqualityOperator",
+      "replacement": "mismatchCount <= 3",
+      "dist_line": 106,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "68",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 110,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "70",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 110,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "71",
+      "mutator": "LogicalOperator",
+      "replacement": "!this.#forceRefresh || this.#status.current_generation > 0",
+      "dist_line": 110,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "72",
+      "mutator": "BooleanLiteral",
+      "replacement": "this.#forceRefresh",
+      "dist_line": 110,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "73",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 111,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "74",
+      "mutator": "EqualityOperator",
+      "replacement": "this.#status.current_generation >= 0",
+      "dist_line": 111,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "75",
+      "mutator": "EqualityOperator",
+      "replacement": "this.#status.current_generation <= 0",
+      "dist_line": 111,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "83",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 125,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "84",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 125,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "90",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 135,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "93",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 143,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "115",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 177,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "116",
+      "mutator": "LogicalOperator",
+      "replacement": "(this.#status.mode !== \"polling\" || this.#activeSessions === 0) && this.#pollTimer !== undefined",
+      "dist_line": 177,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "117",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 177,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "118",
+      "mutator": "LogicalOperator",
+      "replacement": "this.#status.mode !== \"polling\" && this.#activeSessions === 0",
+      "dist_line": 177,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "119",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 177,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "122",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 177,
+      "dist_col": 48
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "124",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 177,
+      "dist_col": 78
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "126",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 179,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "135",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 187,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "137",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 189,
+      "dist_col": 51
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "139",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 193,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "145",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 204,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/code-explorer/dist/freshness/workspace-freshness.js",
+      "id": "150",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 207,
+      "dist_col": 12
+    }
+  ]
+}

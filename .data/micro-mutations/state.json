@@ -794,61 +794,331 @@
       "recent_commits": 1,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
+    },
+    "packages/code-explorer/src/discovery/classification.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 176,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/discovery/config-path.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 18,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/discovery/landmarks.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 204,
+      "error_count": 0,
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/discovery/matcher.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 177,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/discovery/pipeline.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 160,
+      "error_count": 0,
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/discovery/sensitive-paths.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 42,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/freshness/project-generation-scheduler.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 44,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/freshness/workspace-freshness.ts": {
+      "last_tested": "2026-08-31",
+      "last_result": {
+        "total": 248,
+        "caught": 86,
+        "missed": 32,
+        "timeout": 7,
+        "unviable": 123,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 310,
+      "error_count": 0,
+      "recent_commits": 4,
+      "fingerprint": "1429ad17ec8d0b9b5ebf4bd2be2379f4162d3b7e610f4d6a22dd400a9f326ef1",
+      "dirty": false
+    },
+    "packages/code-explorer/src/index.ts": {
+      "last_tested": "2026-08-31",
+      "last_result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "spawnSync /bin/sh ETIMEDOUT"
+      },
+      "lines": 766,
+      "error_count": 1,
+      "recent_commits": 13,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/navigation/error.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 109,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/navigation/focus-view.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 110,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/navigation/resource-limits.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 86,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/navigation/session.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 233,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/adapter-selection.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 327,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/backend-launch-policy.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 496,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/backend-result-validator.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 125,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/backend-status.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 24,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/contract.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 158,
+      "error_count": 0,
+      "recent_commits": 5,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/direct-lsp-semantic.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 314,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/direct-lsp.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 382,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/file-analysis-state.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 42,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/filtered-workspace.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 71,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/language-adapter.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 145,
+      "error_count": 0,
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/native-backend-inspector.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 129,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/native-lsp-process.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 34,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/project-root.ts": {
+      "last_tested": "2026-08-31",
+      "last_result": {
+        "total": 253,
+        "caught": 133,
+        "missed": 61,
+        "timeout": 0,
+        "unviable": 59,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 218,
+      "error_count": 0,
+      "recent_commits": 5,
+      "fingerprint": "ca704067b9f52e260a4baa81b2a337fa3fe48a5a8b163fe306dfeb80c98cc4a6",
+      "dirty": false
+    },
+    "packages/code-explorer/src/semantic/python-mirror-runtime.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 320,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/root-access.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 62,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/runtime-bootstrap.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 178,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/runtime-lsp-backend.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 113,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/semantic/semantic-authority.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 56,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/testing/fake-semantic-adapter.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 56,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     }
   },
   "cumulative": {
-    "total_mutants": 24515,
-    "caught": 9298,
-    "missed": 7585,
-    "timeout": 110,
-    "unviable": 7522,
-    "error": 44,
-    "runs": 170,
-    "files_tested": 170
+    "total_mutants": 25016,
+    "caught": 9517,
+    "missed": 7678,
+    "timeout": 117,
+    "unviable": 7704,
+    "error": 45,
+    "runs": 173,
+    "files_tested": 173
   },
   "runs": [
-    {
-      "date": "2026-07-15",
-      "commit": "e2ad0b34e889a32e7b65a8220509eb7cf9c2086a",
-      "file": "packages/dod-guard/src/evaluate-proof.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/evaluate-proof.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
-    {
-      "date": "2026-07-16",
-      "commit": "9eab038926576f5169a273f1bf17ece0302caa85",
-      "file": "packages/dod-guard/src/index.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
-      }
-    },
-    {
-      "date": "2026-07-16",
-      "commit": "9eab038926576f5169a273f1bf17ece0302caa85",
-      "file": "packages/dod-guard/src/checker.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/checker.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
     {
       "date": "2026-07-16",
       "commit": "9eab038926576f5169a273f1bf17ece0302caa85",
@@ -2203,6 +2473,48 @@
         "missed": 29,
         "timeout": 0,
         "unviable": 24,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-31",
+      "commit": "ebdb26acb410f63cea1841ba8973b2b37d14f676",
+      "file": "packages/code-explorer/src/index.ts",
+      "result": {
+        "total": 0,
+        "caught": 0,
+        "missed": 0,
+        "timeout": 0,
+        "unviable": 0,
+        "status": "error",
+        "error": "spawnSync /bin/sh ETIMEDOUT"
+      }
+    },
+    {
+      "date": "2026-08-31",
+      "commit": "ebdb26acb410f63cea1841ba8973b2b37d14f676",
+      "file": "packages/code-explorer/src/semantic/project-root.ts",
+      "result": {
+        "total": 253,
+        "caught": 133,
+        "missed": 61,
+        "timeout": 0,
+        "unviable": 59,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-08-31",
+      "commit": "ebdb26acb410f63cea1841ba8973b2b37d14f676",
+      "file": "packages/code-explorer/src/freshness/workspace-freshness.ts",
+      "result": {
+        "total": 248,
+        "caught": 86,
+        "missed": 32,
+        "timeout": 7,
+        "unviable": 123,
         "status": "ok",
         "error": null
       }
