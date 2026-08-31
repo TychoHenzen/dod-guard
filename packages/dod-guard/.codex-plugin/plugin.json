@@ -1,0 +1,31 @@
+{
+  "name": "dod-guard",
+  "version": "4.10.3",
+  "description": "OpenSpec scenario coverage, guarded task completion, and delivery skills.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  },
+  "repository": "https://github.com/TychoHenzen/dod-guard",
+  "license": "MIT",
+  "keywords": ["openspec", "verification", "mcp"],
+  "mcpServers": {
+    "dod-guard": {
+      "command": "node",
+      "args": ["dist/bundle.js"],
+      "cwd": "."
+    }
+  },
+  "interface": {
+    "displayName": "dod-guard",
+    "shortDescription": "OpenSpec coverage and task completion gates.",
+    "longDescription": "Checks scenario bindings, gates task completion, and provides delivery skills for OpenSpec projects.",
+    "developerName": "tychohenzen",
+    "category": "Developer Tools",
+    "capabilities": ["MCP tools", "Skills"],
+    "defaultPrompt": [
+      "Check this OpenSpec change's scenario coverage.",
+      "Gate completion of the next planned task."
+    ]
+  }
+}

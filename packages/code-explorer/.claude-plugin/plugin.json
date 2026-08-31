@@ -1,6 +1,6 @@
 {
   "name": "code-explorer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Read-only MCP source navigation for one project.",
   "author": {
     "name": "tychohenzen",

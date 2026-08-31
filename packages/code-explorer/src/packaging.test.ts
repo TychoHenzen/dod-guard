@@ -26,7 +26,7 @@ describe("browser packaging", () => {
     const manifest = JSON.parse(readFileSync(path.join(packageRoot, ".codex-plugin", "plugin.json"), "utf8"));
     assert.equal(manifest.name, "code-explorer");
     assert.equal(manifest.mcpServers?.["code-explorer"]?.command, "node");
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal Codex install template
-    assert.deepEqual(manifest.mcpServers?.["code-explorer"]?.args, ["${CODEX_PLUGIN_ROOT}/dist/bundle.js"]);
+    assert.deepEqual(manifest.mcpServers?.["code-explorer"]?.args, ["dist/bundle.js"]);
+    assert.equal(manifest.mcpServers?.["code-explorer"]?.cwd, ".");
   });
 });

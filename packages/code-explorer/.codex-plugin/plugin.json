@@ -1,11 +1,31 @@
 {
   "name": "code-explorer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Read-only MCP source navigation for one project.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  },
+  "repository": "https://github.com/TychoHenzen/dod-guard",
+  "license": "MIT",
+  "keywords": ["code-navigation", "source-search", "mcp"],
   "mcpServers": {
     "code-explorer": {
       "command": "node",
-      "args": ["${CODEX_PLUGIN_ROOT}/dist/bundle.js"]
+      "args": ["dist/bundle.js"],
+      "cwd": "."
     }
+  },
+  "interface": {
+    "displayName": "code-explorer",
+    "shortDescription": "Read-only source navigation for one project.",
+    "longDescription": "Searches source, focuses symbols, follows relations, and reports history without editing the project.",
+    "developerName": "tychohenzen",
+    "category": "Developer Tools",
+    "capabilities": ["MCP tools", "Read-only navigation"],
+    "defaultPrompt": [
+      "Find the implementation of this symbol.",
+      "Show the local callers and related definitions."
+    ]
   }
 }

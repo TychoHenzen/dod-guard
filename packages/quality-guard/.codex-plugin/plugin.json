@@ -1,0 +1,31 @@
+{
+  "name": "quality-guard",
+  "version": "0.5.6",
+  "description": "Structural code quality analysis, commit decisions, and guided refactoring.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  },
+  "repository": "https://github.com/TychoHenzen/dod-guard",
+  "license": "MIT",
+  "keywords": ["code-quality", "refactoring", "mcp"],
+  "mcpServers": {
+    "quality-guard": {
+      "command": "node",
+      "args": ["dist/bundle.js"],
+      "cwd": "."
+    }
+  },
+  "interface": {
+    "displayName": "quality-guard",
+    "shortDescription": "Structural quality checks and refactoring guidance.",
+    "longDescription": "Scans structural quality, reports tracked exceptions, and evaluates staged or committed changes.",
+    "developerName": "tychohenzen",
+    "category": "Developer Tools",
+    "capabilities": ["MCP tools", "Skills"],
+    "defaultPrompt": [
+      "Check the staged changes with the quality gate.",
+      "Refactor the highest structural quality violation."
+    ]
+  }
+}

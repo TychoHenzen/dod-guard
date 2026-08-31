@@ -59,8 +59,8 @@ function attachStdout(child, state) {
   });
 }
 
-async function handshake(bundle, pkgName, expectedVersion) {
-  const child = spawn(process.execPath, [bundle], { cwd: ROOT, stdio: ["pipe", "pipe", "pipe"] });
+async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT) {
+  const child = spawn(process.execPath, [bundle], { cwd, stdio: ["pipe", "pipe", "pipe"] });
   const state = { waiters: new Map(), junk: [] };
   let stderr = "";
   child.stderr.on("data", (chunk) => {
@@ -155,19 +155,30 @@ async function main(argv) {
     }
   }
 
-  if (pkgName === "code-explorer") {
-    const codexManifest = JSON.parse(
-      readFileSync(join(ROOT, "packages", pkgName, ".codex-plugin", "plugin.json"), "utf8"),
+  const codexManifest = JSON.parse(
+    readFileSync(join(ROOT, "packages", pkgName, ".codex-plugin", "plugin.json"), "utf8"),
+  );
+  const configured = codexManifest.mcpServers?.[pkgName];
+  if (
+    configured?.command !== "node" ||
+    JSON.stringify(configured.args) !== JSON.stringify(["dist/bundle.js"]) ||
+    configured.cwd !== "."
+  ) {
+    process.stdout.write(
+      `smoke FAILED for ${pkgName} Codex manifest\n  Codex manifest must launch dist/bundle.js from the plugin root\n`,
     );
-    const configured = codexManifest.mcpServers?.[pkgName];
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal Codex install template
-    const expected = "${CODEX_PLUGIN_ROOT}/dist/bundle.js";
-    if (configured?.command !== "node" || configured.args?.[0] !== expected) {
-      process.stdout.write(
-        "smoke FAILED for code-explorer Codex manifest\n  Codex manifest does not launch the tracked bundle\n",
-      );
-      return 1;
-    }
+    return 1;
+  }
+  process.stdout.write("  Codex manifest OK: relative bundle path resolves from the plugin root\n");
+  try {
+    await handshake(configured.args[0], pkgName, expectedVersion, join(ROOT, "packages", pkgName));
+    process.stdout.write("  Codex manifest launch OK: initialize completed through the relative path\n");
+  } catch (err) {
+    process.stdout.write(`smoke FAILED for ${pkgName} Codex manifest launch\n  ${err.message}\n`);
+    return 1;
+  }
+
+  if (pkgName === "code-explorer") {
     const expectedTools = ["code_search", "code_focus", "code_follow", "code_history", "code_status"];
     if (JSON.stringify(directResult.tools) !== JSON.stringify(expectedTools)) {
       process.stdout.write(
@@ -175,9 +186,7 @@ async function main(argv) {
       );
       return 1;
     }
-    process.stdout.write(
-      "  Codex marketplace manifest OK: fresh task resolves the tracked bundle and five MCP tools\n",
-    );
+    process.stdout.write("  code-explorer tool contract OK: five MCP tools listed\n");
   }
 
   return 0;
