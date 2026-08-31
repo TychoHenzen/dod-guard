@@ -22,7 +22,6 @@ test("normalizes findings into stable identifiers and order", () => {
   assert.match(first[0]?.id ?? "", /^[a-f0-9]{64}$/);
 });
 
-// covers: quality-guard/architecture-analysis :: Every finding is reproducible :: Required analysis cannot complete
 test("required-analysis errors cannot return a clean decision", () => {
   const result = failureResult({ baseIdentity: "base", targetIdentity: "index", changedSourcePaths: ["src/a.ts"] }, "cannot read staged source");
   assert.equal(result.verdict, "FAIL");

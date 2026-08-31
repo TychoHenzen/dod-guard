@@ -19,11 +19,13 @@
 
 ## 2. Architecture Evidence
 
-- [ ] 2.1 Extend the shared parser facts for TypeScript, JavaScript, C#, Java, and Kotlin to expose top-level types, members, visibility, imports, references, and forwarding paths. Add realistic before-and-after fixtures for structural growth and body-only edits.
+- [x] 2.1 Extend the shared parser facts for TypeScript, JavaScript, C#, Java, and Kotlin to expose top-level types, members, visibility, imports, references, and forwarding paths. Add realistic before-and-after fixtures for structural growth and body-only edits.
+<!-- status: completed -->
 <!-- covers: quality-guard/architecture-analysis :: Responsibility growth carries concrete evidence :: Existing class gains a new dependency and operation -->
 <!-- covers: quality-guard/architecture-analysis :: Responsibility growth carries concrete evidence :: Method changes without structural growth -->
 
-- [ ] 2.2 Extend the same parser facts and before-and-after fixture contract for Rust, Python, Go, C, and C++. Require an explicit analysis error when a changed supported file cannot yield required facts.
+- [x] 2.2 Extend the same parser facts and before-and-after fixture contract for Rust, Python, Go, C, and C++. Require an explicit analysis error when a changed supported file cannot yield required facts.
+<!-- status: completed -->
 <!-- covers: quality-guard/architecture-analysis :: Every finding is reproducible :: Required analysis cannot complete -->
 
 - [ ] 2.3 Implement placement analysis over affected directories, including direct production-type counts, configured limits, generic buckets, test-support exclusions, and deterministic before-and-after evidence.

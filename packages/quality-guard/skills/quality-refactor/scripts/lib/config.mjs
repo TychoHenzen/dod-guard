@@ -14,6 +14,7 @@ export const LANG_BY_EXT = {
   ".rs": "rs",
   ".py": "py",
   ".go": "go",
+  ".c": "cpp",
   ".java": "java",
   ".kt": "java",
   ".cpp": "cpp",
