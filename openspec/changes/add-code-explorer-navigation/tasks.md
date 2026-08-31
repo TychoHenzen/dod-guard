@@ -185,14 +185,17 @@
   <!-- covers: code-explorer/mcp-navigation :: Aggregate retained state is bounded :: Live session capacity is reached -->
   <!-- covers: code-explorer/mcp-navigation :: Aggregate retained state is bounded :: Retained view bytes reach the project limit -->
   <!-- covers: code-explorer/mcp-navigation :: Aggregate retained state is bounded :: Idle session expires -->
-- [ ] 4.7 Normalize every failure through the stable redacted error schema.
+- [x] 4.7 Normalize every failure through the stable redacted error schema.
+<!-- status: completed -->
   <!-- covers: code-explorer/mcp-navigation :: Errors use one redacted schema :: Backend returns a verbose failure -->
   <!-- covers: code-explorer/mcp-navigation :: Errors use one redacted schema :: Path input is rejected -->
-- [ ] 4.8 Run the navigation practice fixture from fuzzy search through focus, visible-handle follow, Back, Forward, and stale-handle rejection.
+- [x] 4.8 Run the navigation practice fixture from fuzzy search through focus, visible-handle follow, Back, Forward, and stale-handle rejection.
+<!-- status: completed -->
 
 ## 5. Evidence-Ranked Project Landmarks
 
-- [ ] 5.1 Return grouped landmarks for an empty query and report landmark initialization instead of arbitrary fallback symbols.
+- [x] 5.1 Return grouped landmarks for an empty query and report landmark initialization instead of arbitrary fallback symbols.
+<!-- status: completed -->
   <!-- covers: code-explorer/project-landmarks :: An empty search returns project landmarks :: Client has no search term -->
   <!-- covers: code-explorer/project-landmarks :: An empty search returns project landmarks :: Landmark index is not ready -->
 - [ ] 5.2 Compute and expose the declared landmark counters and score while treating unavailable evidence as zero.

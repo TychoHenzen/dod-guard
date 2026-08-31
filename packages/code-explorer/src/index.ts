@@ -11,6 +11,7 @@ import { normalizeDiscoveryQuery } from "./discovery/matcher.js";
 import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
 import { createFocusView, FocusBodyLimitError, type FocusView, mintOpaqueId } from "./navigation/focus-view.js";
+import { codeExplorerError, normalizeError, type CodeExplorerError } from "./navigation/error.js";
 import {
   BackendCapacityError,
   BackendRequestLimiter,
@@ -39,23 +40,7 @@ export type CodeExplorerState = {
   view_history: readonly string[];
 };
 
-export type CodeExplorerError = {
-  schema_version: 1;
-  code:
-    | "unknown_tool"
-    | "invalid_request"
-    | "path_outside_project"
-    | "resource_limit"
-    | "backend_timeout"
-    | "project_capacity"
-    | "invalid_session"
-    | "invalid_view_handle"
-    | "stale_view"
-    | "request_id_conflict";
-  message: CodeExplorerError["code"];
-  retryable: boolean;
-  details?: { field: string; limit: number; actual: number };
-};
+export type { CodeExplorerError } from "./navigation/error.js";
 
 export type CodeExplorerEnvelope = {
   schema_version: 1;
@@ -79,47 +64,47 @@ function isToolName(name: string): name is ToolName {
 }
 
 function unknownTool(): CodeExplorerError {
-  return { schema_version: 1, code: "unknown_tool", message: "unknown_tool", retryable: false };
+  return codeExplorerError("unknown_tool");
 }
 
 function invalidRequest(): CodeExplorerError {
-  return { schema_version: 1, code: "invalid_request", message: "invalid_request", retryable: false };
+  return codeExplorerError("invalid_request");
 }
 
 function pathOutsideProject(): CodeExplorerError {
-  return { schema_version: 1, code: "path_outside_project", message: "path_outside_project", retryable: false };
+  return codeExplorerError("path_outside_project");
 }
 
 function resourceLimit(): CodeExplorerError {
-  return { schema_version: 1, code: "resource_limit", message: "resource_limit", retryable: false };
+  return codeExplorerError("resource_limit");
 }
 
 function limitedResource(limit: ResourceLimit): CodeExplorerError {
-  return { ...resourceLimit(), details: limit };
+  return codeExplorerError("resource_limit", limit);
 }
 
 function backendTimeout(): CodeExplorerError {
-  return { schema_version: 1, code: "backend_timeout", message: "backend_timeout", retryable: true };
+  return codeExplorerError("backend_timeout");
 }
 
 function invalidSession(): CodeExplorerError {
-  return { schema_version: 1, code: "invalid_session", message: "invalid_session", retryable: true };
+  return codeExplorerError("invalid_session");
 }
 
 function projectCapacity(): CodeExplorerError {
-  return { schema_version: 1, code: "project_capacity", message: "project_capacity", retryable: true };
+  return codeExplorerError("project_capacity");
 }
 
 function invalidViewHandle(): CodeExplorerError {
-  return { schema_version: 1, code: "invalid_view_handle", message: "invalid_view_handle", retryable: false };
+  return codeExplorerError("invalid_view_handle");
 }
 
 function staleView(): CodeExplorerError {
-  return { schema_version: 1, code: "stale_view", message: "stale_view", retryable: false };
+  return codeExplorerError("stale_view");
 }
 
 function requestIdConflict(): CodeExplorerError {
-  return { schema_version: 1, code: "request_id_conflict", message: "request_id_conflict", retryable: false };
+  return codeExplorerError("request_id_conflict");
 }
 
 function hasValidRequestId(value: string): boolean {
@@ -541,7 +526,8 @@ function normalizeBackendFailure(error: unknown): CodeExplorerError {
   if (error instanceof BackendTimeoutError) return backendTimeout();
   if (error instanceof BackendCapacityError) return resourceLimit();
   if (error instanceof SessionCapacityError) return projectCapacity();
-  throw error;
+  if (error instanceof ProjectPathError) return codeExplorerError(error.code);
+  return normalizeError(error);
 }
 
 type BackendOperation = <T>(operation: () => Promise<T>) => Promise<T>;
@@ -606,11 +592,7 @@ async function collectRelations(
 }
 
 function throwBackendLimitFailure(replies: readonly PromiseSettledResult<unknown>[]): void {
-  const failed = replies.find(
-    (reply): reply is PromiseRejectedResult =>
-      reply.status === "rejected" &&
-      (reply.reason instanceof BackendTimeoutError || reply.reason instanceof BackendCapacityError),
-  );
+  const failed = replies.find((reply): reply is PromiseRejectedResult => reply.status === "rejected");
   if (failed) throw failed.reason;
 }
 
