@@ -1,9 +1,8 @@
+# code-explorer/project-landmarks Specification
+
 ## Purpose
-
 Defines a compact, evidence-ranked project table of contents that exposes useful concepts before the client knows what names to search for.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: An empty search returns project landmarks
 `code_search` SHALL return the current bounded landmark set when the query is empty and the requested filters permit landmark discovery.
 

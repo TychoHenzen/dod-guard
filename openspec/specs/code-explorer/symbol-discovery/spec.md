@@ -1,9 +1,8 @@
+# code-explorer/symbol-discovery Specification
+
 ## Purpose
-
 Defines deterministic fuzzy discovery and filtering for symbols and files when the client does not already know an exact project name.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: Search accepts incomplete symbol and file names
 `code_search` SHALL find project symbols and source files without requiring a fully qualified name. It SHALL normalize a non-empty query and candidate using Unicode NFKC and locale-independent lowercase. It SHALL classify a name as exact when normalized values equal, prefix when the candidate starts with the query, and fuzzy when their Damerau-Levenshtein similarity is at least 60 on a 0 through 100 scale.
 

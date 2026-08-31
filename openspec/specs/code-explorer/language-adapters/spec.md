@@ -1,9 +1,8 @@
+# code-explorer/language-adapters Specification
+
 ## Purpose
-
 Defines the semantic navigation contract and honest capability reporting shared by Rust, Python, and C# project adapters.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: Rust, Python, and C# share one capability-aware navigation contract
 The service SHALL accept the same search, focus, definition, references, type-definition, implementation, callers, and callees request shapes for Rust, Python, and C#. Each adapter SHALL report every relation as `ready`, `unavailable`, or `failed`; accepting a shared request shape SHALL NOT imply that every language server supports every relation.
 

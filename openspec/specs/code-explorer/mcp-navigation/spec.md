@@ -1,9 +1,8 @@
+# code-explorer/mcp-navigation Specification
+
 ## Purpose
-
 Defines the read-only MCP interaction that lets an agent focus one symbol, follow visible relations, and retain explicit navigation history.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: The MCP surface stays small and workspace-read-only
 The Code Explorer SHALL expose `code_search`, `code_focus`, `code_follow`, `code_history`, and `code_status` as its navigation tools and SHALL expose no tool that modifies protected project content. Protected content is supported source plus non-generated project configuration. Internal session, cache, index, refresh state, and excluded backend cache files MAY change without changing protected content or an existing view's recorded content.
 

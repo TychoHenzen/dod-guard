@@ -1,9 +1,8 @@
+# code-explorer/workspace-freshness Specification
+
 ## Purpose
-
 Defines how navigation results identify their project revision and reflect saved working-tree changes without silently serving stale semantic data.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: Saved project changes become visible without a process restart
 The service SHALL use pinned Chokidar 4.0.3 with `atomic: 100`, `awaitWriteFinish.stabilityThreshold: 200`, `awaitWriteFinish.pollInterval: 100`, `alwaysStat: true`, `followSymlinks: false`, and `ignorePermissionErrors: false`. It SHALL observe add, change, rename, atomic-replace, and delete events for supported source and configuration files and coalesce events within 100 milliseconds. Event order and duplicates SHALL not determine state; reconciliation SHALL compare the final filesystem manifest. A watcher error or overflow SHALL trigger a full supported-file rescan before a generation becomes stable. An independent manifest-hash reconciliation SHALL run every 30 seconds while a session is active to detect silently missed events. When watching is unavailable, active sessions SHALL use manifest polling every 5 seconds. Explicit refresh SHALL remain available.
 
