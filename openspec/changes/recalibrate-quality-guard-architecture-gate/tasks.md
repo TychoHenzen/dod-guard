@@ -111,14 +111,16 @@
 <!-- covers: quality-guard/quality-refactor :: desired ownership is defined before implementation tasks :: Responsibility needs a new module -->
 <!-- covers: quality-guard/quality-refactor :: desired ownership is defined before implementation tasks :: Public contract must remain stable -->
 
-- [ ] 6.2 Replace per-file and worst-file task generation with independently runnable responsibility moves, necessary call-site and test migrations, dependency ordering, and bounded responsibility clusters for large scopes.
+- [x] 6.2 Replace per-file and worst-file task generation with independently runnable responsibility moves, necessary call-site and test migrations, dependency ordering, and bounded responsibility clusters for large scopes.
+<!-- status: completed -->
 <!-- covers: quality-guard/quality-refactor :: task boundaries follow structural outcomes :: Extraction needs call-site migration -->
 <!-- covers: quality-guard/quality-refactor :: task boundaries follow structural outcomes :: Several local symptoms share one cause -->
 <!-- covers: quality-guard/quality-refactor :: scope stays within the target :: out-of-scope violations reported only -->
 <!-- covers: quality-guard/quality-refactor :: scope stays within the target :: large scope batches the worst files first -->
 <!-- covers: quality-guard/quality-refactor :: scope stays within the target :: concept word argument requires user confirmation -->
 
-- [ ] 6.3 Update refactor verification and reporting to allow ordered temporary metric redistribution, keep initial tracked baselines unchanged, require passing behavior checks, and compare final architectural evidence with the declared target structure.
+- [x] 6.3 Update refactor verification and reporting to allow ordered temporary metric redistribution, keep initial tracked baselines unchanged, require passing behavior checks, and compare final architectural evidence with the declared target structure.
+<!-- status: completed -->
 <!-- covers: quality-guard/quality-refactor :: measurement guards against regression :: proposed change would add violations -->
 <!-- covers: quality-guard/quality-refactor :: measurement guards against regression :: build or tests already failing stops the run -->
 <!-- covers: quality-guard/quality-refactor :: measurement guards against regression :: baseline recorded before planning -->

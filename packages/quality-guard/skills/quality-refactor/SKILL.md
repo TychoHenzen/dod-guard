@@ -7,8 +7,8 @@ description: >-
   guard clauses instead of else, free functions instead of stateless methods,
   and aggressive deletion of dead, test-only, duplicate, and compatibility-shim
   code. Ships a zero-dependency scanner and opens an OpenSpec change to hold
-  its wave plan in tasks.md for /dod-guard:step-by-step to execute one file
-  at a time.
+  its wave plan in tasks.md for /dod-guard:step-by-step to execute one
+  structural outcome at a time.
   TRIGGER when: user says "refactor this properly", "clean this up to a high
   standard", "enforce code quality", "quality pass", "reduce complexity",
   "split these files", "this file is too long", "remove dead code", or asks for
@@ -23,13 +23,13 @@ A refactor changes no behavior, so it declares no capability, and still needs a 
 Open an OpenSpec change with `--skip-specs` before planning starts, and set `skip_specs: true` in that
 change's `.openspec.yaml`. Invent no requirement to satisfy validation; the change carries no spec delta.
 
-You produce one artifact: a step plan that `/dod-guard:step-by-step` executes one file at a time. You write
+You produce one artifact: a step plan that `/dod-guard:step-by-step` executes one structural outcome at a time. You write
 the plan and stop. You run no step yourself, you change nothing about what the program does, and you dispatch
 no subagent of your own. The user approves the plan before any of it runs.
 
-The plan sorts its steps into six waves, named below. Write one step per file per wave. A step that would
-touch two files becomes two steps. The single exception is a deletion that has to update its call sites,
-which stays one step.
+The plan sorts its steps into six waves, named below. Write one step per independently runnable responsibility
+move or structural outcome. A task may include its owner, destination, necessary call sites, and tests when
+splitting that work would leave the repository unusable. Do not create a task per existing file or scanner unit.
 
 Write the waves as checklist items in the change's `tasks.md`, one section per wave in the order below.
 Each task is a `- [ ]` checkbox line naming its refactoring and the concrete target. Inline HTML comment
@@ -48,8 +48,9 @@ Name the refactoring in each task's text, taken from the catalog. Examples: Extr
 Nested Conditional with Guard Clauses, Introduce Parameter Object. Pair the name with the concrete
 target. A deletion task says what to delete and what to migrate.
 
-Hold each task to one file plus that file's test file plus its call sites. Write `<!-- status: pending -->`
-on every new task. The executor is what later flips it to `completed`, `skipped`, or `blocked`.
+Hold each task to its responsibility boundary, including its destination, call-site migration, and behavior tests.
+Write `<!-- status: pending -->` on every new task. The executor is what later flips it to `completed`, `skipped`,
+or `blocked`.
 
 ## Wave order
 
@@ -70,11 +71,13 @@ Keep the waves in that sequence on every run.
 |----------|-----------------------|
 | empty | every source directory in the repository |
 | a directory path | that tree |
-| a concept word | the matching file list, confirmed with the user first |
+| a concept word | candidate file lists, confirmed with the user before planning when they imply different scopes |
 | a file list | exactly those files plus their tests |
 
-At 50 files or more, plan only the worst 10 by error count, execute them, re-scan, and repeat until the scope
-is clean. The ratchet baseline makes that safe, because each pass locks in what the pass before it fixed.
+At 50 files or more, group dependency-connected responsibilities into bounded clusters of at most ten outcomes.
+Execute one cluster, re-scan, and plan the next cluster in dependency order. Use worst-file counts only to choose
+the starting cluster when several ready clusters are independent. Do not split a responsibility move to chase a
+worst-file ranking.
 
 Deleting dead code, splitting files, simplifying control flow, reshaping signatures and recording the ratchet
 baseline all sit inside this skill. Executing the plan, altering behavior and spawning subagents sit outside
@@ -212,8 +215,9 @@ always real, and a clean scan is permission to keep reading rather than proof th
 changes, or to abort. Run the project's build and full test suite and record the result. Stop and report when
 either is already failing, because behavior preservation cannot be proved against a red baseline. Resolve the
 exact test command once and write it down, because every step uses it. Open the OpenSpec change with
-`--skip-specs` and set `skip_specs: true` in its `.openspec.yaml`. Run `mkdir -p .quality`, then record the
-ratchet baseline with `--write-baseline=.quality/baseline.json`.
+`--skip-specs` and set `skip_specs: true` in its `.openspec.yaml`. Run `mkdir -p .quality`, then record local
+scanner and architectural evidence in `.quality/initial-evidence.json`. Do not modify the repository's tracked
+quality baseline during planning or execution.
 
 **Phase 1.** Build a responsibility map before writing any implementation task. Run the scanner twice over
 the scope. The first run is a worst-first summary with `--top=20`. The second writes per-file work units to
@@ -239,12 +243,17 @@ a move. Define the desired owner, directory, public boundary, dependency directi
 and forwarding or compatibility paths to remove before creating implementation tasks. Do not use existing
 file boundaries or scanner units as task boundaries.
 
-**Phase 2, sort units into waves.** Place every unit into the six waves and hold that sequence. A file
-with violations in three waves yields three tasks, one in each. Write the waves to the change's
-`tasks.md`, one checklist section per wave.
+**Phase 2, form structural tasks.** Use `scripts/lib/responsibility-plan.mjs` to turn the discovery record
+into tasks. Each task names the responsibility move, destination, required callers, preserved contracts, test
+migration, compatibility removals, and any local scanner symptoms it resolves. Put dependencies before their
+consumers. When an extraction temporarily redistributes a metric, keep every dependent repair in one ordered
+structural unit and judge the final unit result, not its intermediate file counts. List violations outside the
+target and its necessary call-site, test, or dependency boundary as informational. Create no repair task for them.
+Write the six waves to the change's `tasks.md`, one checklist section per wave.
 
 **Phase 3, write task metadata.** Add inline metadata to each task as described at the top of this skill.
-Write one task per file per wave, with a resolved `verify_cmd` and text that names its refactoring.
+Write one task per structural outcome with a resolved `verify_cmd` that runs behavior checks and the final scanner
+comparison for that ordered unit. Name the responsibility move and the refactoring in the task text.
 
 **Phase 4.** Report to the user before any step runs: the number of files in scope, the total violation count
 with the error count called out, and anything in `design.md` that changes a public API or the file layout.
@@ -256,6 +265,10 @@ budget and the approach-pivot rule. Point at it rather than restating any of tha
 rather than executing one here. Your work ends at a correct plan.
 
 **Phase 6.** Once every step has finished, run the full build and test suite and compare against the Phase 0
-result. Run the scanner with `--fail-on=error` and require exit 0. Rewrite the baseline with
-`--write-baseline`. Report before and after counts per rule, plus the files deleted and the types split out.
-Present a commit message and leave the commit to the user.
+result. Run the scanner with `--fail-on=error` and require exit 0. Compare final responsibility owners, dependency
+edges, directory placement, public surface, and compatibility removals against the declared structural outcomes and
+the initial evidence. Do not call the refactor complete when only names, comments, formatting, or local metrics
+improved. Report before and after counts per rule, structural evidence, behavior-check results, files deleted, and
+types split out. The result is ready for the staged commit gate only when the declared ownership and boundary target
+is reached and behavior checks pass. Leave the tracked baseline unchanged. Present a commit message and leave the
+commit to the user.
