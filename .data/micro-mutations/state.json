@@ -45,11 +45,11 @@
         "status": "ok",
         "error": null
       },
-      "lines": 125,
+      "lines": 158,
       "error_count": 0,
-      "recent_commits": 2,
+      "recent_commits": 5,
       "fingerprint": "90106dc85efd93c50aa9662e93c960904573796a9a201e82f087614e549c3191",
-      "dirty": false
+      "dirty": true
     },
     "packages/quality-guard/src/scanner.ts": {
       "last_tested": "2026-08-19",
@@ -886,9 +886,9 @@
         "status": "error",
         "error": "spawnSync /bin/sh ETIMEDOUT"
       },
-      "lines": 766,
+      "lines": 834,
       "error_count": 1,
-      "recent_commits": 13,
+      "recent_commits": 17,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
@@ -974,22 +974,38 @@
       "dirty": true
     },
     "packages/code-explorer/src/semantic/direct-lsp-semantic.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 314,
+      "last_tested": "2026-09-01",
+      "last_result": {
+        "total": 638,
+        "caught": 382,
+        "missed": 192,
+        "timeout": 0,
+        "unviable": 64,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 433,
       "error_count": 0,
-      "recent_commits": 3,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "recent_commits": 4,
+      "fingerprint": "2dfe5a8b930825833474883deb02e6f51f95ec1ed663f62d22c5eed983550012",
+      "dirty": false
     },
     "packages/code-explorer/src/semantic/direct-lsp.ts": {
-      "last_tested": null,
-      "last_result": null,
-      "lines": 382,
+      "last_tested": "2026-09-01",
+      "last_result": {
+        "total": 605,
+        "caught": 393,
+        "missed": 165,
+        "timeout": 11,
+        "unviable": 36,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 398,
       "error_count": 0,
-      "recent_commits": 3,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "recent_commits": 4,
+      "fingerprint": "d641ce23311edf8933466b990e78a6f7c087f8ee365c4d8e2ed84d4be1515578",
+      "dirty": false
     },
     "packages/code-explorer/src/semantic/file-analysis-state.ts": {
       "last_tested": null,
@@ -1003,9 +1019,9 @@
     "packages/code-explorer/src/semantic/filtered-workspace.ts": {
       "last_tested": null,
       "last_result": null,
-      "lines": 71,
+      "lines": 75,
       "error_count": 0,
-      "recent_commits": 1,
+      "recent_commits": 2,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
@@ -1056,9 +1072,9 @@
     "packages/code-explorer/src/semantic/python-mirror-runtime.ts": {
       "last_tested": null,
       "last_result": null,
-      "lines": 320,
+      "lines": 322,
       "error_count": 0,
-      "recent_commits": 2,
+      "recent_commits": 3,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
@@ -1074,18 +1090,18 @@
     "packages/code-explorer/src/semantic/runtime-bootstrap.ts": {
       "last_tested": null,
       "last_result": null,
-      "lines": 178,
+      "lines": 183,
       "error_count": 0,
-      "recent_commits": 3,
+      "recent_commits": 4,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
     "packages/code-explorer/src/semantic/runtime-lsp-backend.ts": {
       "last_tested": null,
       "last_result": null,
-      "lines": 113,
+      "lines": 132,
       "error_count": 0,
-      "recent_commits": 1,
+      "recent_commits": 2,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
@@ -1106,61 +1122,270 @@
       "recent_commits": 2,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
+    },
+    "packages/code-explorer/src/browser-server/http-router.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 271,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser-server/lifecycle.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 228,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/app.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 87,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/client.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 21,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/discovery.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 127,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/focus-navigation.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 65,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/freshness.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 111,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/graph-navigation.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 69,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/graph.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 146,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/history.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 46,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/relations.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 113,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/session.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 58,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/source.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 85,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/code-explorer/src/browser/states.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 38,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/acknowledgements.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 41,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/architecture-facts.d.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 22,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/cli.ts": {
+      "last_tested": "2026-09-01",
+      "last_result": {
+        "total": 465,
+        "caught": 177,
+        "missed": 155,
+        "timeout": 3,
+        "unviable": 130,
+        "status": "ok",
+        "error": null
+      },
+      "lines": 339,
+      "error_count": 0,
+      "recent_commits": 4,
+      "fingerprint": "f64cd6e333da4e2f5d07d36d01237596c62248ab68071d21a86795c2e983d1bd",
+      "dirty": false
+    },
+    "packages/quality-guard/src/commit-gate/config.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 138,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/decision-core.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 162,
+      "error_count": 0,
+      "recent_commits": 3,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/dependency.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 131,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/encapsulation.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 170,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/facts.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 30,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/fingerprint.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 28,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/placement.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 98,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/refactor-progress.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 157,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/responsibility-map.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 144,
+      "error_count": 0,
+      "recent_commits": 2,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/snapshot.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 108,
+      "error_count": 0,
+      "recent_commits": 4,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     }
   },
   "cumulative": {
-    "total_mutants": 25016,
-    "caught": 9517,
-    "missed": 7678,
-    "timeout": 117,
-    "unviable": 7704,
+    "total_mutants": 26724,
+    "caught": 10469,
+    "missed": 8190,
+    "timeout": 131,
+    "unviable": 7934,
     "error": 45,
-    "runs": 173,
-    "files_tested": 173
+    "runs": 176,
+    "files_tested": 176
   },
   "runs": [
-    {
-      "date": "2026-07-16",
-      "commit": "9eab038926576f5169a273f1bf17ece0302caa85",
-      "file": "packages/obsidian-rag/src/store.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/obsidian-rag/dist/store.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/obsidian-rag/dist/store.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
-    {
-      "date": "2026-07-17",
-      "commit": "f1343d0e9fadb29c7f0f81a6e025e00c03ee6bbb",
-      "file": "packages/dod-guard/src/index.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
-      }
-    },
-    {
-      "date": "2026-07-17",
-      "commit": "f1343d0e9fadb29c7f0f81a6e025e00c03ee6bbb",
-      "file": "packages/evomcp/src/index.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/evomcp/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigError"
-      }
-    },
     {
       "date": "2026-07-17",
       "commit": "f1343d0e9fadb29c7f0f81a6e025e00c03ee6bbb",
@@ -2515,6 +2740,48 @@
         "missed": 32,
         "timeout": 7,
         "unviable": 123,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-09-01",
+      "commit": "14104b5069d2e57746e6fbae8f1318614eeefd76",
+      "file": "packages/code-explorer/src/semantic/direct-lsp-semantic.ts",
+      "result": {
+        "total": 638,
+        "caught": 382,
+        "missed": 192,
+        "timeout": 0,
+        "unviable": 64,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-09-01",
+      "commit": "14104b5069d2e57746e6fbae8f1318614eeefd76",
+      "file": "packages/code-explorer/src/semantic/direct-lsp.ts",
+      "result": {
+        "total": 605,
+        "caught": 393,
+        "missed": 165,
+        "timeout": 11,
+        "unviable": 36,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-09-01",
+      "commit": "14104b5069d2e57746e6fbae8f1318614eeefd76",
+      "file": "packages/quality-guard/src/commit-gate/cli.ts",
+      "result": {
+        "total": 465,
+        "caught": 177,
+        "missed": 155,
+        "timeout": 3,
+        "unviable": 130,
         "status": "ok",
         "error": null
       }

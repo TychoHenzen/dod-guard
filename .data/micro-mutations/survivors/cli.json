@@ -1,85 +1,1253 @@
 {
-  "source": "packages/dod-guard/src/cli.ts",
-  "date": "2026-08-23T07:12:26.114Z",
+  "source": "packages/quality-guard/src/commit-gate/cli.ts",
+  "date": "2026-09-01T11:59:40.577Z",
   "summary": {
-    "total": 75,
-    "killed": 61,
-    "survived": 9,
-    "timeout": 0,
-    "unviable": 5
+    "total": 465,
+    "killed": 177,
+    "survived": 155,
+    "timeout": 3,
+    "unviable": 130
   },
   "survivors": [
     {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "27",
-      "mutator": "ObjectLiteral",
-      "replacement": "{}",
-      "dist_line": 58,
-      "dist_col": 19
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 16,
+      "dist_col": 5
     },
     {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "28",
-      "mutator": "ArrowFunction",
-      "replacement": "() => undefined",
-      "dist_line": 59,
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "0",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 15,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 17,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 18,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 19,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 20,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 22,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 21,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 24,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 23,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 25,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 26,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 28,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "12",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 27,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "14",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 29,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 30,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 32,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 31,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "19",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 36,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "18",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 33,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "20",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 37,
       "dist_col": 12
     },
     {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "29",
-      "mutator": "ArrowFunction",
-      "replacement": "() => undefined",
-      "dist_line": 60,
-      "dist_col": 15
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "21",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 38,
+      "dist_col": 16
     },
     {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "33",
-      "mutator": "ConditionalExpression",
-      "replacement": "true",
-      "dist_line": 70,
-      "dist_col": 14
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "22",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 38,
+      "dist_col": 17
     },
     {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "41",
-      "mutator": "ConditionalExpression",
-      "replacement": "true",
-      "dist_line": 73,
-      "dist_col": 24
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "23",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 41,
+      "dist_col": 19
     },
     {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "55",
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 41,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 41,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "26",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 42,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 43,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "35",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 55,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "36",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 55,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "57",
       "mutator": "ConditionalExpression",
       "replacement": "false",
-      "dist_line": 79,
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "58",
+      "mutator": "LogicalOperator",
+      "replacement": "args[0] !== \"check\" && args[1] !== \"--staged\"",
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "59",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "62",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 66,
       "dist_col": 32
     },
     {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "57",
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "76",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 73,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "77",
       "mutator": "BooleanLiteral",
       "replacement": "false",
-      "dist_line": 79,
+      "dist_line": 74,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "78",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 76,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "85",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 78,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "87",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 78,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "88",
+      "mutator": "EqualityOperator",
+      "replacement": "value === \"change\"",
+      "dist_line": 78,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "89",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 78,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "97",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 82,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "98",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 82,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "99",
+      "mutator": "MethodExpression",
+      "replacement": "arg.endsWith(\"--intent=\")",
+      "dist_line": 82,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "100",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 82,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "102",
+      "mutator": "MethodExpression",
+      "replacement": "arg",
+      "dist_line": 83,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "103",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 83,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "104",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 84,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "106",
+      "mutator": "LogicalOperator",
+      "replacement": "value !== \"change\" || value !== \"refactor\"",
+      "dist_line": 84,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "107",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 84,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "109",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 84,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "110",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 84,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "112",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 84,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "113",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 85,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "142",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 102,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "149",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 108,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "157",
+      "mutator": "MethodExpression",
+      "replacement": "arg.endsWith(\"--finding=\")",
+      "dist_line": 115,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "161",
+      "mutator": "MethodExpression",
+      "replacement": "arg.endsWith(\"--reason=\")",
+      "dist_line": 117,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "165",
+      "mutator": "MethodExpression",
+      "replacement": "arg.endsWith(\"--author=\")",
+      "dist_line": 119,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "176",
+      "mutator": "MethodExpression",
+      "replacement": "arg.endsWith(\"--finding=\")",
+      "dist_line": 122,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "184",
+      "mutator": "MethodExpression",
+      "replacement": "arg.endsWith(\"--reason=\")",
+      "dist_line": 124,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "186",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 126,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "198",
+      "mutator": "MethodExpression",
+      "replacement": "findingId",
+      "dist_line": 131,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "197",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 131,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "199",
+      "mutator": "OptionalChaining",
+      "replacement": "findingId.trim",
+      "dist_line": 131,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "205",
+      "mutator": "OptionalChaining",
+      "replacement": "reason.trim",
+      "dist_line": 133,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "204",
+      "mutator": "MethodExpression",
+      "replacement": "reason",
+      "dist_line": 133,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "206",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 134,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "209",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 135,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "211",
+      "mutator": "OptionalChaining",
+      "replacement": "author.trim",
+      "dist_line": 135,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "210",
+      "mutator": "MethodExpression",
+      "replacement": "author",
+      "dist_line": 135,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "214",
+      "mutator": "MethodExpression",
+      "replacement": "findingId",
+      "dist_line": 137,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "216",
+      "mutator": "MethodExpression",
+      "replacement": "author",
+      "dist_line": 137,
+      "dist_col": 74
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "215",
+      "mutator": "MethodExpression",
+      "replacement": "reason",
+      "dist_line": 137,
+      "dist_col": 51
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "223",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 140,
       "dist_col": 44
     },
     {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "58",
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "225",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 140,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "230",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 146,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "231",
       "mutator": "ConditionalExpression",
       "replacement": "false",
-      "dist_line": 79,
+      "dist_line": 146,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "233",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 151,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "234",
+      "mutator": "MethodExpression",
+      "replacement": "finding.severity.toLowerCase()",
+      "dist_line": 151,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "236",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 152,
+      "dist_col": 61
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "239",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 154,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "243",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 159,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "246",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 163,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "257",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 164,
+      "dist_col": 111
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "259",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 168,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "264",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 169,
+      "dist_col": 70
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "271",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 173,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "272",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 175,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "273",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 175,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "276",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 182,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "280",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 183,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "292",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 196,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "296",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 200,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "295",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 197,
+      "dist_col": 54
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "298",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 201,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "297",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 201,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "299",
+      "mutator": "LogicalOperator",
+      "replacement": "/\\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i.test(filePath) && filePath === \".qual",
+      "dist_line": 201,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "300",
+      "mutator": "Regex",
+      "replacement": "/\\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)/i",
+      "dist_line": 201,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "305",
+      "mutator": "Regex",
+      "replacement": "/(?:[/\\\\])dist(?:[/\\\\]|$)/",
+      "dist_line": 205,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "307",
+      "mutator": "Regex",
+      "replacement": "/(?:^|[/\\\\])dist(?:[/\\\\])/",
+      "dist_line": 205,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "312",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 210,
+      "dist_col": 54
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "314",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 211,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "316",
+      "mutator": "OptionalChaining",
+      "replacement": "change.after.path",
+      "dist_line": 211,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "317",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 211,
+      "dist_col": 76
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "318",
+      "mutator": "MethodExpression",
+      "replacement": "paths.every(filePath => !isDistributionPath(filePath))",
+      "dist_line": 212,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "319",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 212,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "323",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 218,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "324",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 218,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "325",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 218,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "326",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 218,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "327",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 218,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "328",
+      "mutator": "EqualityOperator",
+      "replacement": "ref !== \"index\"",
+      "dist_line": 218,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "329",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 218,
+      "dist_col": 53
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "330",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 218,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "331",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 218,
+      "dist_col": 80
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "332",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 218,
+      "dist_col": 103
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "333",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 220,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "334",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 221,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "335",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 221,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "336",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 221,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "337",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 221,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "339",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 225,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "354",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 235,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "355",
+      "mutator": "LogicalOperator",
+      "replacement": "options.intent === \"refactor\" || options.target",
+      "dist_line": 235,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "356",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 235,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "357",
+      "mutator": "EqualityOperator",
+      "replacement": "options.intent !== \"refactor\"",
+      "dist_line": 235,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "358",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 235,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "359",
+      "mutator": "MethodExpression",
+      "replacement": "decisionSnapshot.changes.flatMap(change => [change.before?.path, change.after?.path])",
+      "dist_line": 238,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "360",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 239,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "361",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 239,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "362",
+      "mutator": "OptionalChaining",
+      "replacement": "change.before.path",
+      "dist_line": 239,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "363",
+      "mutator": "OptionalChaining",
+      "replacement": "change.after.path",
+      "dist_line": 239,
       "dist_col": 52
     },
     {
-      "file": "packages/dod-guard/dist/cli.js",
-      "id": "60",
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "364",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 240,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "365",
+      "mutator": "BooleanLiteral",
+      "replacement": "affected.some(isSourceOrConfiguration)",
+      "dist_line": 241,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "366",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 241,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "367",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 241,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "368",
+      "mutator": "MethodExpression",
+      "replacement": "affected.every(isSourceOrConfiguration)",
+      "dist_line": 241,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "369",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 241,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "372",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 245,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "373",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 246,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "374",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 247,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "375",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 247,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "378",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 259,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "427",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 310,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "429",
       "mutator": "StringLiteral",
       "replacement": "\"\"",
-      "dist_line": 79,
-      "dist_col": 64
+      "dist_line": 310,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "430",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 312,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "432",
+      "mutator": "LogicalOperator",
+      "replacement": "args[0] === \"check\" || args[1] === \"--committed\"",
+      "dist_line": 312,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "433",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 312,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "436",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 312,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "441",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 314,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "442",
+      "mutator": "LogicalOperator",
+      "replacement": "!commit && commit.startsWith(\"-\")",
+      "dist_line": 314,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "444",
+      "mutator": "MethodExpression",
+      "replacement": "commit.endsWith(\"-\")",
+      "dist_line": 314,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "453",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 317,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/quality-guard/dist/commit-gate/cli.js",
+      "id": "454",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 317,
+      "dist_col": 13
     }
   ]
 }

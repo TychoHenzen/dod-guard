@@ -1,0 +1,1333 @@
+{
+  "source": "packages/code-explorer/src/semantic/direct-lsp.ts",
+  "date": "2026-09-01T11:58:11.612Z",
+  "summary": {
+    "total": 605,
+    "killed": 393,
+    "survived": 165,
+    "timeout": 11,
+    "unviable": 36
+  },
+  "survivors": [
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 7,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "5",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 8,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 9,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "11",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "13",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 17,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "14",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 18,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "15",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 19,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "17",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 21,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "16",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 20,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "20",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 32,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "21",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 33,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "25",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 43,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "26",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 46,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "27",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 47,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "28",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 48,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "29",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 49,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "37",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 58,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "39",
+      "mutator": "LogicalOperator",
+      "replacement": "process || current(expectedEpoch)",
+      "dist_line": 58,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "43",
+      "mutator": "MethodExpression",
+      "replacement": "crashTimes",
+      "dist_line": 69,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "45",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 69,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "47",
+      "mutator": "EqualityOperator",
+      "replacement": "time > scheduler.now() - RESTART_WINDOW_MS",
+      "dist_line": 69,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "58",
+      "mutator": "OptionalChaining",
+      "replacement": "options.restart()",
+      "dist_line": 78,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "59",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 79,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "71",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 84,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "73",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 84,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "75",
+      "mutator": "OptionalChaining",
+      "replacement": "process.kill",
+      "dist_line": 88,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "76",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 89,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "84",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 96,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "85",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 96,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "87",
+      "mutator": "LogicalOperator",
+      "replacement": "current(expectedEpoch) || pending.delete(id)",
+      "dist_line": 96,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "93",
+      "mutator": "MethodExpression",
+      "replacement": "timeoutTimes",
+      "dist_line": 100,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "95",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 100,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "97",
+      "mutator": "EqualityOperator",
+      "replacement": "time > scheduler.now() - RESTART_WINDOW_MS",
+      "dist_line": 100,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "111",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 110,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "112",
+      "mutator": "LogicalOperator",
+      "replacement": "(!current(expectedEpoch) || stopped || state === \"failed\") && state === \"unavailable\"",
+      "dist_line": 110,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "113",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 110,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "114",
+      "mutator": "LogicalOperator",
+      "replacement": "(!current(expectedEpoch) || stopped) && state === \"failed\"",
+      "dist_line": 110,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "115",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 110,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "116",
+      "mutator": "LogicalOperator",
+      "replacement": "!current(expectedEpoch) && stopped",
+      "dist_line": 110,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "118",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 110,
+      "dist_col": 51
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "120",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 110,
+      "dist_col": 61
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "121",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 110,
+      "dist_col": 73
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "123",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 110,
+      "dist_col": 83
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "126",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 112,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "136",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 114,
+      "dist_col": 55
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "142",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 115,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "161",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 121,
+      "dist_col": 65
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "166",
+      "mutator": "OptionalChaining",
+      "replacement": "message.params.items",
+      "dist_line": 122,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "178",
+      "mutator": "LogicalOperator",
+      "replacement": "\"method\" in message || typeof message.method === \"string\"",
+      "dist_line": 129,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "180",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 129,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "187",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 131,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "188",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 131,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "198",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 135,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "203",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 136,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "211",
+      "mutator": "OptionalChaining",
+      "replacement": "message.error.code",
+      "dist_line": 143,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "212",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 144,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "221",
+      "mutator": "LogicalOperator",
+      "replacement": "(!current(expectedEpoch) || stopped || state === \"failed\") && state === \"unavailable\"",
+      "dist_line": 150,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "220",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 150,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "223",
+      "mutator": "LogicalOperator",
+      "replacement": "(!current(expectedEpoch) || stopped) && state === \"failed\"",
+      "dist_line": 150,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "222",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 150,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "225",
+      "mutator": "LogicalOperator",
+      "replacement": "!current(expectedEpoch) && stopped",
+      "dist_line": 150,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "224",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 150,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "227",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 150,
+      "dist_col": 51
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "229",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 150,
+      "dist_col": 61
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "230",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 150,
+      "dist_col": 73
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "232",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 150,
+      "dist_col": 83
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "237",
+      "mutator": "EqualityOperator",
+      "replacement": "boundary <= 0",
+      "dist_line": 155,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "243",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 156,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "244",
+      "mutator": "EqualityOperator",
+      "replacement": "bytes.length >= 8_192",
+      "dist_line": 156,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "247",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 157,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "250",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 161,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "251",
+      "mutator": "MethodExpression",
+      "replacement": "headerBytes.every(value => value > 127)",
+      "dist_line": 161,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "252",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 161,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "254",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 161,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "255",
+      "mutator": "EqualityOperator",
+      "replacement": "value >= 127",
+      "dist_line": 161,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "258",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 162,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "260",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 163,
+      "dist_col": 53
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "261",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 163,
+      "dist_col": 62
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "264",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 164,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "265",
+      "mutator": "Regex",
+      "replacement": "/Content-Length: [0-9]+$/",
+      "dist_line": 164,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "266",
+      "mutator": "Regex",
+      "replacement": "/^Content-Length: [0-9]+/",
+      "dist_line": 164,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "278",
+      "mutator": "EqualityOperator",
+      "replacement": "length >= MAX_BODY_BYTES",
+      "dist_line": 167,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "281",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 168,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "285",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 170,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "290",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 174,
+      "dist_col": 61
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "291",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 174,
+      "dist_col": 70
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "299",
+      "mutator": "UpdateOperator",
+      "replacement": "--epoch",
+      "dist_line": 185,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "302",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 190,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "307",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 193,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "308",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 195,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "314",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 198,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "320",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 205,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "322",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 206,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "340",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 215,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "343",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 215,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "348",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 220,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "350",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 221,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "379",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 245,
+      "dist_col": 54
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "381",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 245,
+      "dist_col": 64
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "406",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 263,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "419",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 265,
+      "dist_col": 59
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "426",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 270,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "428",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 272,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "429",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 272,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "432",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 277,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "433",
+      "mutator": "LogicalOperator",
+      "replacement": "!process && state === \"unavailable\"",
+      "dist_line": 277,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "435",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 277,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "437",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 277,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "443",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 287,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "446",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 292,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "449",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 294,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "451",
+      "mutator": "LogicalOperator",
+      "replacement": "!stopped || current(expectedEpoch)",
+      "dist_line": 294,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "454",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 295,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "455",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 296,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "457",
+      "mutator": "OptionalChaining",
+      "replacement": "exitResolver()",
+      "dist_line": 298,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "460",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 310,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "462",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 312,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "461",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 311,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "474",
+      "mutator": "MethodExpression",
+      "replacement": "root.pathname.startsWith(\"/\")",
+      "dist_line": 327,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "475",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 327,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "476",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 327,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "479",
+      "mutator": "LogicalOperator",
+      "replacement": "document.protocol === \"file:\" && !document.search && !document.hash || document.pathname.startsWith(rootPath)",
+      "dist_line": 328,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "480",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 328,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "481",
+      "mutator": "LogicalOperator",
+      "replacement": "document.protocol === \"file:\" && !document.search || !document.hash",
+      "dist_line": 328,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "482",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 328,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "483",
+      "mutator": "LogicalOperator",
+      "replacement": "document.protocol === \"file:\" || !document.search",
+      "dist_line": 328,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "484",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 328,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "495",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 335,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "496",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 335,
+      "dist_col": 53
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "505",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 344,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "507",
+      "mutator": "LogicalOperator",
+      "replacement": "!!value && typeof value === \"object\" || value.jsonrpc === \"2.0\"",
+      "dist_line": 344,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "508",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 344,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "509",
+      "mutator": "LogicalOperator",
+      "replacement": "!!value || typeof value === \"object\"",
+      "dist_line": 344,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "512",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 344,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "515",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 344,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "523",
+      "mutator": "LogicalOperator",
+      "replacement": "!!value && typeof value === \"object\" && !!value.capabilities || typeof value.capabilities === \"object\"",
+      "dist_line": 347,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "525",
+      "mutator": "LogicalOperator",
+      "replacement": "!!value && typeof value === \"object\" || !!value.capabilities",
+      "dist_line": 347,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "524",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 347,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "527",
+      "mutator": "LogicalOperator",
+      "replacement": "!!value || typeof value === \"object\"",
+      "dist_line": 347,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "526",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 347,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "530",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 348,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "535",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 350,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "540",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 354,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "547",
+      "mutator": "LogicalOperator",
+      "replacement": "typeof value === \"number\" || Number.isFinite(value)",
+      "dist_line": 354,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "548",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 354,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "555",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 357,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "556",
+      "mutator": "LogicalOperator",
+      "replacement": "typeof value === \"number\" || Number.isSafeInteger(value)",
+      "dist_line": 357,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "557",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 357,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "567",
+      "mutator": "EqualityOperator",
+      "replacement": "index < haystack.length - needle.length",
+      "dist_line": 366,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "569",
+      "mutator": "ArithmeticOperator",
+      "replacement": "haystack.length + needle.length",
+      "dist_line": 366,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "583",
+      "mutator": "EqualityOperator",
+      "replacement": "indexOf(haystack, needle) > 0",
+      "dist_line": 372,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "586",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 375,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "588",
+      "mutator": "LogicalOperator",
+      "replacement": "Number.isFinite(value) || value > 0",
+      "dist_line": 375,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "589",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 375,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "590",
+      "mutator": "EqualityOperator",
+      "replacement": "value >= 0",
+      "dist_line": 375,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "595",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 381,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "596",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 381,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "597",
+      "mutator": "LogicalOperator",
+      "replacement": "value && typeof value === \"object\" || !Object.isFrozen(value)",
+      "dist_line": 381,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "598",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 381,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "599",
+      "mutator": "LogicalOperator",
+      "replacement": "value || typeof value === \"object\"",
+      "dist_line": 381,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "600",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 381,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "601",
+      "mutator": "EqualityOperator",
+      "replacement": "typeof value !== \"object\"",
+      "dist_line": 381,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "602",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 381,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "603",
+      "mutator": "BooleanLiteral",
+      "replacement": "Object.isFrozen(value)",
+      "dist_line": 381,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/direct-lsp.js",
+      "id": "604",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 381,
+      "dist_col": 72
+    }
+  ]
+}
