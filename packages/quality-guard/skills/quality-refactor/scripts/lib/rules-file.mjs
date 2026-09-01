@@ -65,7 +65,7 @@ const DECISION_PATTERNS = {
 };
 
 /**
- * A tuple type element, with or without a field name.
+ * A tuple type element, optionally carrying a field name.
  * Excluding parens, quotes, and braces is what keeps array *values* like
  * `leaves: [makeLeaf(a), makeLeaf(b)]` out of the results.
  */
@@ -177,17 +177,17 @@ function csPropertyNames(body) {
 /**
  * Idiomatic C++ rarely gives a field its own modifier. It groups fields
  * under a `private:`, `protected:` or `public:` access-specifier section.
- * A class with no section defaults to private, a struct to public. None of
+ * A type lacking a section defaults to private, an aggregate to public. None of
  * that changes which names count as fields here, because state access does
  * not care which section declared a name. So no specifier keyword is
  * matched at all. A specifier is just a line the pattern below skips,
  * harmless whichever section it opens.
  *
- * What the pattern does need is depth. A C++ class body mixes field
+ * What the pattern does need is depth. A C++ type body mixes field
  * declarations with inline method bodies in one textual scope, unlike a
- * Rust struct body. A local variable inside one of those bodies has the
+ * Rust aggregate body. A local variable inside one of those bodies has the
  * same `TYPE NAME;` shape as a field. So blankNested blanks every span
- * nested one brace deeper than the class body before the field pattern
+ * nested one brace deeper than the type body before the field pattern
  * runs. That covers a method body, a constructor initializer list, and a
  * lambda, and it keeps a local from reading as a field.
  *
@@ -266,7 +266,7 @@ function bracedSpan(code, offset) {
   return { open, close, body: code.slice(open, close) };
 }
 
-/** Struct/class/enum spans plus the field set each one carries, by name. */
+/** Type spans plus the field set each one carries, by name. */
 function typeSpans(code, types, lang) {
   const spans = [];
   const fieldsByType = new Map();
@@ -281,11 +281,11 @@ function typeSpans(code, types, lang) {
 }
 
 /**
- * Rust impl-block spans. A struct's own span cannot tell a Rust method from
- * a free function. Rust keeps fields in the `struct` body and methods in a
+ * Rust impl-block spans. An aggregate's own span cannot tell a Rust method from
+ * a free function. Rust keeps fields in the aggregate body and methods in a
  * separate `impl` block. Each span borrows its field set from
  * `fieldsByType`, keyed by the implementing type's name. When this file
- * holds no struct of that name, fields stays null. Then
+ * holds no aggregate of that name, fields stays null. Then
  * `checkStatelessMethod` treats the method's state access as unproven,
  * rather than guessing "stateless".
  */
@@ -304,7 +304,7 @@ function implSpans(code, fieldsByType) {
  * Class body spans, so a method can be told apart from a free function.
  * `findRustImpls` in parse-types.mjs stays out of `findTypes` on purpose.
  * An impl block is not a type declaration. Folding it in would count
- * `struct Foo` plus `impl Foo` as two types instead of one.
+ * A named aggregate plus `impl Foo` as two types instead of one.
  */
 function classSpans(code, types, lang) {
   const { spans, fieldsByType } = typeSpans(code, types, lang);
@@ -413,7 +413,7 @@ function touchesState(fn, fields, interpolations) {
 function checkStatelessMethod(file, config, fn, context, out) {
   const owner = enclosingClass(context.spans, fn);
   if (owner === null || fn.name === "constructor" || fn.name === owner.name) return;
-  // owner.fields is null only for a Rust impl block whose struct lives
+  // owner.fields is null only for a Rust impl block whose aggregate lives
   // outside this file. State access cannot be proven either way there, so
   // stay quiet rather than report a false "stateless".
   if (owner.fields === null) return;
@@ -501,9 +501,9 @@ function cfgTestAttributeEnds(code) {
 
 /**
  * The end offset of the item that starts right after `from`. For a
- * brace-bodied item such as `mod`, `fn`, a braced `struct` or `impl`, that
+ * brace-bodied item such as `mod`, `fn`, a braced aggregate or `impl`, that
  * is the matching `}`. For a semicolon-terminated one such as `const`,
- * `static`, `use` or a unit struct, it is the `;`. A stray attribute
+ * `static`, `use` or a unit aggregate, it is the `;`. A stray attribute
  * between the cfg gate and the item, a stacked `#[allow(...)]` say, holds
  * neither character. The scan passes straight through it to the real item.
  */
