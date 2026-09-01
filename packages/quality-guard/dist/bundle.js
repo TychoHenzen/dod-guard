@@ -22012,6 +22012,9 @@ function braceBody(source, offset) {
   if (close === -1) return null;
   return { start: open + 1, end: close, text: source.slice(open + 1, close) };
 }
+function blankComments(source) {
+  return source.replace(/\/\/[^\r\n]*|\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\r\n]/g, " "));
+}
 function pythonTypes(source) {
   const lines = source.split("\n");
   const result = [];
@@ -22035,9 +22038,10 @@ function pythonTypes(source) {
 function declaredTypes(source, lang) {
   if (lang === "py") return { types: pythonTypes(source) };
   const pattern = TYPE_PATTERNS[lang];
+  const searchable = blankComments(source);
   const types = [];
   let match;
-  while ((match = pattern.exec(source)) !== null) {
+  while ((match = pattern.exec(searchable)) !== null) {
     const name = lang === "go" ? match[1] : match[2];
     const kind = lang === "go" ? match[2] : match[1];
     const body = braceBody(source, match.index + match[0].length);
