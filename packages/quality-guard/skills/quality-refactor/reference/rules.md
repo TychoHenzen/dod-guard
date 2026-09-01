@@ -271,20 +271,21 @@ type.
 
 ---
 
-## `unnamed-tuple` - positional return values
+## `unnamed-tuple` - tuple types
 
-**Detects:** tuple types in type positions: TypeScript `: [A, B]` in a return
-type, variable annotation, or type alias; C# `(int, string) Method(...)`; Rust
-`-> (A, B)`; Python `-> Tuple[A, B]`.
+**Detects:** named and unnamed tuple types in supported type positions:
+TypeScript `: [A, B]` and `[first: A, second: B]`; C# `(int, string)` and
+`(int first, string second)` return types; Rust `-> (A, B)`; Python
+`-> Tuple[A, B]`.
 
 **Why hard:** `result.0` and `result[1]` carry no meaning, so every call site
 re-derives what the fields are. Adding or reordering a field silently breaks
 every destructuring that still compiles.
 
-**Fix:** *Replace Primitive with Object* - declare a named type (a record, a
-struct, an interface). In C#, named tuple elements `(int count, string label)`
-are an acceptable middle ground and are not flagged. Local destructuring
-(`const [a, b] = ...`) is not flagged; only declared types are.
+**Fix:** *Replace Primitive with Object* - declare a named type such as a
+record, struct, class, or interface. Naming tuple elements does not exempt the
+tuple. Local destructuring (`const [a, b] = ...`) is not flagged because it is
+not a declared tuple type.
 
 ---
 

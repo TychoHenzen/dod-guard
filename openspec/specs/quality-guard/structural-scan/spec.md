@@ -113,9 +113,13 @@ SHALL be left alone.
 ### Requirement: Presence rules report a pattern, not a measurement
 
 The scanner SHALL emit these rules on presence rather than on a threshold.
-Unnamed tuple, unused local, commented-out code, and dead export SHALL be
+Tuple type, unused local, commented-out code, and dead export SHALL be
 errors. Else branch, stateless method, comment restates code, todo marker,
 assumption marker, and test-only export SHALL be warnings.
+
+#### Scenario: Named tuple elements
+- **WHEN** a tuple type gives every element a name
+- **THEN** the scanner reports an `unnamed-tuple` error because all tuple types are forbidden
 
 #### Scenario: Marker left in a comment
 - **WHEN** a comment holds TODO, FIXME, HACK, or XXX
