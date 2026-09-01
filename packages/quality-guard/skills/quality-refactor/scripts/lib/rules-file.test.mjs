@@ -16,6 +16,33 @@ function csFile(rel, code) {
   return { rel, lang: "cs", isTest: false, source: code, lines: code.split("\n") };
 }
 
+function tsFile(rel, code) {
+  return { rel, lang: "ts", isTest: false, source: code, lines: code.split("\n") };
+}
+
+function tupleViolations(file) {
+  const { violations } = scanFile(file, buildConfig("default"));
+  return violations.filter((violation) => violation.rule === "unnamed-tuple");
+}
+
+test("the tuple rule rejects named and unnamed TypeScript tuple types", () => {
+  const code = `
+type Named = [count: number, label: string];
+type Unnamed = [number, string];
+`;
+  assert.equal(tupleViolations(tsFile("src/types.ts", code)).length, 2);
+});
+
+test("the tuple rule rejects named and unnamed C# tuple return types", () => {
+  const code = `
+class Results {
+    (int count, string label) Named() => (1, "one");
+    (int, string) Unnamed() => (1, "one");
+}
+`;
+  assert.equal(tupleViolations(csFile("src/Results.cs", code)).length, 2);
+});
+
 function statelessViolations(code) {
   const config = buildConfig("default");
   const { violations } = scanFile(rustFile("src/lib.rs", code), config);

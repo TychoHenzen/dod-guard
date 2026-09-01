@@ -1,6 +1,6 @@
 {
   "name": "quality-guard",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "Structural code quality gate. File-local write feedback, staged commit decisions, committed-tree CI replay, and an MCP server. Ships 1 skill: /quality-refactor.",
   "type": "module",
   "main": "dist/bundle.js",

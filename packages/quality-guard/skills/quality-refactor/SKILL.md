@@ -3,7 +3,7 @@ name: quality-refactor
 description: >-
   Systematically refactor code to a high quality bar using an explicit,
   machine-checked rule set - one type per file, files under 300 lines,
-  cyclomatic complexity under 10, at most 7 parameters, no unnamed tuples,
+  cyclomatic complexity under 10, at most 7 parameters, no tuple types,
   guard clauses instead of else, free functions instead of stateless methods,
   and aggressive deletion of dead, test-only, duplicate, and compatibility-shim
   code. Ships a zero-dependency scanner, plans from responsibilities and

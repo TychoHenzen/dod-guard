@@ -65,19 +65,19 @@ const DECISION_PATTERNS = {
 };
 
 /**
- * A tuple type element: an identifier and its type decorations, nothing else.
+ * A tuple type element, with or without a field name.
  * Excluding parens, quotes, and braces is what keeps array *values* like
  * `leaves: [makeLeaf(a), makeLeaf(b)]` out of the results.
  */
-const TYPE_ELEMENT = "[A-Za-z_$][\\w$.<>|& \\[\\]]*";
+const TYPE_ELEMENT = "(?:[A-Za-z_$][\\w$]*\\??\\s*:\\s*)?[A-Za-z_$][\\w$.<>|& \\[\\]]*";
 const TUPLE_LITERAL = `\\[\\s*${TYPE_ELEMENT}\\s*(?:,\\s*${TYPE_ELEMENT}\\s*)+\\]`;
 /** Only positions that are unambiguously type annotations, never values. */
 const TS_TYPE_POSITION = `(?:\\)\\s*:|\\b(?:const|let|var|readonly)\\s+[\\w$]+\\s*:|\\btype\\s+[\\w$]+\\s*=)`;
 
-/** Tuple types with no field names - the reader has to guess what .0 means. */
+/** Tuple types are forbidden, including variants whose elements have names. */
 const TUPLE_PATTERNS = {
   ts: new RegExp(`${TS_TYPE_POSITION}\\s*(?:readonly\\s+)?${TUPLE_LITERAL}`, "g"),
-  cs: /\((?:[\w.<>[\]?]+\s*,\s*)+[\w.<>[\]?]+\)\s+\w+\s*\(/g,
+  cs: /\((?:[\w.<>[\]?]+(?:\s+\w+)?\s*,\s*)+[\w.<>[\]?]+(?:\s+\w+)?\)\s+\w+\s*\(/g,
   rs: /->\s*\([^)\n]*,[^)\n]*\)/g,
   py: /:\s*[Tt]uple\[[^\]\n]*,/g,
 };
@@ -453,7 +453,7 @@ function checkTuples(file, config, code, starts, out) {
   while (match !== null) {
     const line = lineAt(starts, match.index);
     const severity = config.presence["unnamed-tuple"];
-    const message = `unnamed tuple ${match[0].trim()} — name the fields`;
+    const message = `tuple ${match[0].trim()} — replace it with a named type`;
     push(out, file, line, "unnamed-tuple", severity, message, 1);
     match = pattern.exec(code);
   }
