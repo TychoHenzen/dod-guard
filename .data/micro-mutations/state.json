@@ -814,13 +814,21 @@
       "dirty": true
     },
     "packages/code-explorer/src/discovery/landmarks.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-09-02",
+      "last_result": {
+        "total": 198,
+        "caught": 160,
+        "missed": 22,
+        "timeout": 0,
+        "unviable": 16,
+        "status": "ok",
+        "error": null
+      },
       "lines": 204,
       "error_count": 0,
       "recent_commits": 4,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "b329b63f50dc7bb909b5667f40779083ab8d15b5d7d2527a2b4f0c9c9394edf9",
+      "dirty": false
     },
     "packages/code-explorer/src/discovery/matcher.ts": {
       "last_tested": null,
@@ -965,13 +973,21 @@
       "dirty": true
     },
     "packages/code-explorer/src/semantic/contract.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-09-02",
+      "last_result": {
+        "total": 68,
+        "caught": 29,
+        "missed": 34,
+        "timeout": 0,
+        "unviable": 5,
+        "status": "ok",
+        "error": null
+      },
       "lines": 158,
       "error_count": 0,
       "recent_commits": 5,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "d5aa28c97bbfd6dcccec20c19225c6c53b81d92c47e834124c068d8761d90178",
+      "dirty": false
     },
     "packages/code-explorer/src/semantic/direct-lsp-semantic.ts": {
       "last_tested": "2026-09-01",
@@ -1070,13 +1086,21 @@
       "dirty": false
     },
     "packages/code-explorer/src/semantic/python-mirror-runtime.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-09-02",
+      "last_result": {
+        "total": 360,
+        "caught": 213,
+        "missed": 110,
+        "timeout": 0,
+        "unviable": 37,
+        "status": "ok",
+        "error": null
+      },
       "lines": 322,
       "error_count": 0,
       "recent_commits": 3,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "2c00b8475487611e6f92a709645db35a24c77fccd7b7c4295a956b1abb7ec7b8",
+      "dirty": false
     },
     "packages/code-explorer/src/semantic/root-access.ts": {
       "last_tested": null,
@@ -1376,58 +1400,16 @@
     }
   },
   "cumulative": {
-    "total_mutants": 26724,
-    "caught": 10469,
-    "missed": 8190,
+    "total_mutants": 27350,
+    "caught": 10871,
+    "missed": 8356,
     "timeout": 131,
-    "unviable": 7934,
+    "unviable": 7992,
     "error": 45,
-    "runs": 176,
-    "files_tested": 176
+    "runs": 179,
+    "files_tested": 179
   },
   "runs": [
-    {
-      "date": "2026-07-17",
-      "commit": "f1343d0e9fadb29c7f0f81a6e025e00c03ee6bbb",
-      "file": "packages/gitevo/src/operations.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/gitevo/dist/operations.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/gitevo/dist/operations.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
-    {
-      "date": "2026-07-18",
-      "commit": "6492b5457dda754a68c0f69eaee899acc3cf50ea",
-      "file": "packages/dod-guard/src/index.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
-      }
-    },
-    {
-      "date": "2026-07-18",
-      "commit": "6492b5457dda754a68c0f69eaee899acc3cf50ea",
-      "file": "packages/dod-guard/src/evaluate-proof.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/evaluate-proof.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/evaluate-proof.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
     {
       "date": "2026-07-18",
       "commit": "6492b5457dda754a68c0f69eaee899acc3cf50ea",
@@ -2782,6 +2764,48 @@
         "missed": 155,
         "timeout": 3,
         "unviable": 130,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-09-02",
+      "commit": "96551fe0159ad8471188ddb1aa52e6727129ea0b",
+      "file": "packages/code-explorer/src/semantic/contract.ts",
+      "result": {
+        "total": 68,
+        "caught": 29,
+        "missed": 34,
+        "timeout": 0,
+        "unviable": 5,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-09-02",
+      "commit": "96551fe0159ad8471188ddb1aa52e6727129ea0b",
+      "file": "packages/code-explorer/src/discovery/landmarks.ts",
+      "result": {
+        "total": 198,
+        "caught": 160,
+        "missed": 22,
+        "timeout": 0,
+        "unviable": 16,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-09-02",
+      "commit": "96551fe0159ad8471188ddb1aa52e6727129ea0b",
+      "file": "packages/code-explorer/src/semantic/python-mirror-runtime.ts",
+      "result": {
+        "total": 360,
+        "caught": 213,
+        "missed": 110,
+        "timeout": 0,
+        "unviable": 37,
         "status": "ok",
         "error": null
       }

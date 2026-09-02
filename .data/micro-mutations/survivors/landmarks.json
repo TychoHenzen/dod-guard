@@ -1,0 +1,189 @@
+{
+  "source": "packages/code-explorer/src/discovery/landmarks.ts",
+  "date": "2026-09-02T11:37:30.771Z",
+  "summary": {
+    "total": 198,
+    "killed": 160,
+    "survived": 22,
+    "timeout": 0,
+    "unviable": 16
+  },
+  "survivors": [
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "21",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "23",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "24",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 15,
+      "dist_col": 68
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 16,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "38",
+      "mutator": "MethodExpression",
+      "replacement": "productionReferences.map(reference => reference.path.split(\"/\")[0])",
+      "dist_line": 21,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "40",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 22,
+      "dist_col": 50
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "44",
+      "mutator": "LogicalOperator",
+      "replacement": "candidate.references.some(reference => reference.content === \"test\") || productionReferenceFiles === 0",
+      "dist_line": 24,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "45",
+      "mutator": "MethodExpression",
+      "replacement": "candidate.references.every(reference => reference.content === \"test\")",
+      "dist_line": 24,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "47",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 24,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "51",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 24,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "100",
+      "mutator": "EqualityOperator",
+      "replacement": "perGroupLimit >= MAX_GROUP_LIMIT",
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "123",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 89,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "129",
+      "mutator": "MethodExpression",
+      "replacement": "candidate.symbol.path.normalize(\"NFKC\").replaceAll(\"\\\\\", \"/\").toLocaleUpperCase()",
+      "dist_line": 95,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "131",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 95,
+      "dist_col": 69
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "132",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 95,
+      "dist_col": 75
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "133",
+      "mutator": "MethodExpression",
+      "replacement": "candidate.symbol.kind.normalize(\"NFKC\").toLocaleUpperCase()",
+      "dist_line": 96,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "135",
+      "mutator": "MethodExpression",
+      "replacement": "candidate.symbol.symbol_id.normalize(\"NFKC\").toLocaleUpperCase()",
+      "dist_line": 97,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "138",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 98,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "141",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 103,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "170",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 119,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "172",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 119,
+      "dist_col": 48
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/landmarks.js",
+      "id": "180",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 123,
+      "dist_col": 9
+    }
+  ]
+}

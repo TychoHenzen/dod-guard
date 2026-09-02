@@ -1,0 +1,285 @@
+{
+  "source": "packages/code-explorer/src/semantic/contract.ts",
+  "date": "2026-09-02T11:37:19.976Z",
+  "summary": {
+    "total": 68,
+    "killed": 29,
+    "survived": 34,
+    "timeout": 0,
+    "unviable": 5
+  },
+  "survivors": [
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "2",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 2,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "6",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 5,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "7",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 6,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "8",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 7,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "9",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 8,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "10",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 9,
+      "dist_col": 5
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "17",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 18,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "18",
+      "mutator": "LogicalOperator",
+      "replacement": "(path.startsWith(\"/\") || /^[A-Za-z]:[\\\\/]/.test(path)) && path.split(/[\\\\/]/).includes(\"..\")",
+      "dist_line": 18,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "19",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 18,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "20",
+      "mutator": "LogicalOperator",
+      "replacement": "path.startsWith(\"/\") && /^[A-Za-z]:[\\\\/]/.test(path)",
+      "dist_line": 18,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "21",
+      "mutator": "MethodExpression",
+      "replacement": "path.endsWith(\"/\")",
+      "dist_line": 18,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "23",
+      "mutator": "Regex",
+      "replacement": "/[A-Za-z]:[\\\\/]/",
+      "dist_line": 18,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "24",
+      "mutator": "Regex",
+      "replacement": "/^[^A-Za-z]:[\\\\/]/",
+      "dist_line": 18,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "25",
+      "mutator": "Regex",
+      "replacement": "/^[A-Za-z]:[^\\\\/]/",
+      "dist_line": 18,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "26",
+      "mutator": "Regex",
+      "replacement": "/[^\\\\/]/",
+      "dist_line": 18,
+      "dist_col": 92
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "27",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 18,
+      "dist_col": 110
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "29",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 20,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "30",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 20,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "35",
+      "mutator": "MethodExpression",
+      "replacement": "z.string().max(1)",
+      "dist_line": 26,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "40",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 35,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "42",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 36,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "44",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 37,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "45",
+      "mutator": "MethodExpression",
+      "replacement": "z.string().max(1)",
+      "dist_line": 37,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "48",
+      "mutator": "MethodExpression",
+      "replacement": "z.string().max(1)",
+      "dist_line": 38,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "52",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 41,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "55",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 48,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "54",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 44,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "57",
+      "mutator": "MethodExpression",
+      "replacement": "z.string().max(1)",
+      "dist_line": 52,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "56",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 52,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "58",
+      "mutator": "MethodExpression",
+      "replacement": "z.string().max(1)",
+      "dist_line": 52,
+      "dist_col": 71
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "63",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 73,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "64",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 75,
+      "dist_col": 57
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/contract.js",
+      "id": "65",
+      "mutator": "MethodExpression",
+      "replacement": "z.string().max(1)",
+      "dist_line": 75,
+      "dist_col": 73
+    }
+  ]
+}
