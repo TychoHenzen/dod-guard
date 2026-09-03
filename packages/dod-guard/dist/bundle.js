@@ -21522,7 +21522,7 @@ var KOTLIN_SPEC = {
   language: "kotlin",
   resolveWholeFileCommand: configuredCommand("kotlin")
 };
-var CSHARP_METHOD_RE = /^\s*(?:(?:public|private|protected|internal|static|virtual|override|sealed|abstract|async|new|extern|unsafe|partial)\s+)*(?:[\w.<>,\[\]?]+\s+)+(\w+)\s*\(/;
+var CSHARP_METHOD_RE = /^\s*(?:(?:public|private|protected|internal|static|virtual|override|sealed|abstract|async|new|extern|unsafe|partial)\s+)*(?:[\w.<>,[\]?]+\s+)+(\w+)\s*\(/;
 var CSHARP_TEST_ATTRIBUTE_RE = /^\s*\[(?:[\w.]+\.)?(?:Fact|Theory|Test|TestCase|TestMethod|DataTestMethod)(?:Attribute)?(?:\s*\(|\s*\])/;
 function findCsharpMethodLine(lines, from) {
   let line = skipBlanks(lines, from);
