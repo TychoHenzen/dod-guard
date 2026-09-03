@@ -12,7 +12,7 @@
     "managed_cleanup": true
   },
   "error_code": null,
-  "elapsed_ms": 4627,
+  "elapsed_ms": 4420,
   "ports": {
     "dashboard": 4400,
     "explorer": 4410

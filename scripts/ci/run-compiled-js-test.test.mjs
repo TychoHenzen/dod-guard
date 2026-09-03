@@ -21,7 +21,10 @@ test("runs a JavaScript tool test directly without a package build", () => {
   const mapped = mapCompiledTest(workspaceRoot, "tools/openspec-dashboard/test/code-explorer-launch.test.mjs");
 
   assert.equal(mapped.packageName, undefined);
-  assert.equal(mapped.compiledTest, resolve(workspaceRoot, "tools/openspec-dashboard/test/code-explorer-launch.test.mjs"));
+  assert.equal(
+    mapped.compiledTest,
+    resolve(workspaceRoot, "tools/openspec-dashboard/test/code-explorer-launch.test.mjs"),
+  );
 });
 
 test("rejects unsupported tool test paths", () => {

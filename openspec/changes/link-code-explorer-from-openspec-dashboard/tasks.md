@@ -108,4 +108,5 @@
 <!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: The bridge does not proxy navigation or write project content :: Real packaged launch lifecycle runs -->
 
-- [ ] 4.4 Run final local gates: `npm run test:openspec-dashboard`, platform integration tests, dashboard syntax checks, unchanged root Biome lint and format commands, `openspec validate --all --strict --no-interactive`, live practice, and `dod-guard cover link-code-explorer-from-openspec-dashboard` after test markers exist.
+- [x] 4.4 Run final local gates: `npm run test:openspec-dashboard`, platform integration tests, dashboard syntax checks, unchanged root Biome lint and format commands, `openspec validate --all --strict --no-interactive`, live practice, and `dod-guard cover link-code-explorer-from-openspec-dashboard` after test markers exist.
+<!-- status: completed -->

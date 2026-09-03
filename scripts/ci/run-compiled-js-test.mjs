@@ -18,7 +18,7 @@ export function mapCompiledTest(root, testPath) {
 
   const parts = relative(root, source).split(sep);
   if (parts[0] === "tools") {
-    if (!source.endsWith(".test.js") && !source.endsWith(".test.mjs")) {
+    if (!(source.endsWith(".test.js") || source.endsWith(".test.mjs"))) {
       throw new Error(`expected a tools/**/*.test.js or tools/**/*.test.mjs path: ${testPath}`);
     }
     return { packageName: undefined, compiledTest: source };
