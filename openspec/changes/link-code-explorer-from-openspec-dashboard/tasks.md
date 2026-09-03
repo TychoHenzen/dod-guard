@@ -81,7 +81,8 @@
   <!-- covers: openspec-dashboard/ui :: The selected readable project offers Code Explorer :: Registry becomes stale -->
   <!-- covers: openspec-dashboard/ui :: The selected readable project offers Code Explorer :: No project is registered -->
 
-- [ ] 3.2 Add the pure WindowPort action controller with immutable launch tokens and project snapshots. Test synchronous open ordering, success, redacted failure, null popup, `WindowProxy.closed`, duplicate suppression, selection changes, and stale-child replacement. Verify with `npm run test:openspec-dashboard`.
+- [x] 3.2 Add the pure WindowPort action controller with immutable launch tokens and project snapshots. Test synchronous open ordering, success, redacted failure, null popup, `WindowProxy.closed`, duplicate suppression, selection changes, and stale-child replacement. Verify with `npm run test:openspec-dashboard`.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/ui :: Launch state and browser handoff remain locally bound :: Launch succeeds -->
   <!-- covers: openspec-dashboard/ui :: Launch state and browser handoff remain locally bound :: Launch fails -->
   <!-- covers: openspec-dashboard/ui :: Launch state and browser handoff remain locally bound :: Browser blocks the placeholder -->
@@ -90,7 +91,8 @@
   <!-- covers: openspec-dashboard/ui :: Launch state and browser handoff remain locally bound :: Selection changes during startup -->
   <!-- covers: openspec-dashboard/ui :: Launch state and browser handoff remain locally bound :: Managed child exits after opening -->
 
-- [ ] 3.3 Preserve task boxes as display-only controls and prove dashboard launch code writes no registered-project content. Verify with UI action tests and fixture hash assertions.
+- [x] 3.3 Preserve task boxes as display-only controls and prove dashboard launch code writes no registered-project content. Verify with UI action tests and fixture hash assertions.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/ui :: The view never edits anything :: Reader clicks a task's completion box -->
   <!-- covers: openspec-dashboard/ui :: The view never edits anything :: Reader launches Code Explorer -->
 

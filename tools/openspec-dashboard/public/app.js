@@ -16,6 +16,7 @@ const dom = {
   filter: document.getElementById("filter"),
   refresh: document.getElementById("refresh"),
   codeExplorer: document.getElementById("code-explorer"),
+  codeExplorerStatus: document.getElementById("code-explorer-status"),
 };
 
 const state = {
@@ -36,12 +37,14 @@ api.setDashboardCapability(takeDashboardCapability());
 
 const codeExplorerAction = createCodeExplorerAction({
   request: api.launchCodeExplorer,
+  windowPort: { openBlank: () => window.open("about:blank", "_blank") },
   reload: async () => {
     await reloadProjects();
     return { projects: state.projects, registryRevision: state.registryRevision, active: state.active };
   },
-  render: ({ disabled }) => {
-    dom.codeExplorer.disabled = disabled;
+  render: ({ disabled, state, code }) => {
+    dom.codeExplorer.disabled = disabled || state === "starting";
+    dom.codeExplorerStatus.textContent = code ?? (state === "starting" ? "starting" : "");
   },
 });
 
