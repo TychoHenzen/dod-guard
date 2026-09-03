@@ -8,7 +8,7 @@ import { HttpError } from "./http-error.mjs";
 import { createAdmin } from "./project-admin.mjs";
 import { createReads } from "./project-reads.mjs";
 
-export function createApi({ read, cache, store }) {
+export function createApi({ read, cache, store, launchAdmission = () => true }) {
   const admin = createAdmin(store);
   const reads = createReads({ read, cache });
 
@@ -26,6 +26,7 @@ export function createApi({ read, cache, store }) {
     const segments = pathname.split("/").filter(Boolean);
     if (segments[1] === "project" && segments[3] === "code-explorer" && segments.length === 4) {
       if (method !== "POST") throw new HttpError(400, "invalid_launch_request");
+      if (!launchAdmission()) throw new HttpError(503, "dashboard_shutting_down");
       return admin.selectLaunch(Number(segments[2]), body);
     }
     if (segments[1] === "projects") return method === "POST" ? admin.mutate(body) : admin.listProjects();

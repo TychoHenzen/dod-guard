@@ -55,7 +55,8 @@
   <!-- covers: openspec-dashboard/code-explorer-launch :: Managed child capacity is finite :: Idle capacity can be reclaimed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Managed child capacity is finite :: Every capacity slot is active -->
 
-- [ ] 2.5 Replace PID signaling with the authenticated ownership endpoint and fail-closed handoff. Add idempotent managed shutdown, joined-start settlement, direct-child exit waiting, private-directory and ACL checks, strict direct control-target validation, bounded response handling, tampering tests, and real platform fixture tests for descendant cleanup. Verify on Windows and a POSIX CI-equivalent shell when available.
+- [x] 2.5 Replace PID signaling with the authenticated ownership endpoint and fail-closed handoff. Add idempotent managed shutdown, joined-start settlement, direct-child exit waiting, private-directory and ACL checks, strict direct control-target validation, bounded response handling, tampering tests, and real platform fixture tests for descendant cleanup. Verify on Windows and a POSIX CI-equivalent shell when available.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Dashboard stops with open explorers -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Dashboard stops during startup -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Responsive dashboard replacement starts -->

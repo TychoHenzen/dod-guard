@@ -99,6 +99,19 @@ function capacityError() {
   return error;
 }
 
+function shuttingDownError() {
+  return new HttpError(503, "dashboard_shutting_down");
+}
+
+function waitForExit(child) {
+  if (!isLive(child)) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => resolve();
+    child.once?.("exit", done);
+    child.once?.("error", done);
+  });
+}
+
 /**
  * Keep one record per canonical project path plus filesystem identity.
  * `start` returns `{ child, url }`; its readiness and shutdown wiring live at the API boundary.
@@ -111,6 +124,8 @@ export function createCodeExplorerManager({
   now = () => performance.now(),
 } = {}) {
   const records = new Map();
+  let shuttingDown = false;
+  let shutdownPromise;
 
   async function remove(record) {
     if (records.get(record.key) !== record) return;
@@ -135,6 +150,7 @@ export function createCodeExplorerManager({
   function createStartingRecord(projectPath, identity, key) {
     let settle;
     let reject;
+    let finishStopped;
     const record = {
       key,
       projectPath,
@@ -147,6 +163,11 @@ export function createCodeExplorerManager({
         settle = resolve;
         reject = rejectPromise;
       }),
+      reject: (error) => reject(error),
+      stopped: new Promise((resolve) => {
+        finishStopped = resolve;
+      }),
+      finishStopped: () => finishStopped(),
     };
     records.set(key, record);
     try {
@@ -154,6 +175,13 @@ export function createCodeExplorerManager({
         .then(({ child, url }) => {
           if (records.get(key) !== record) return;
           record.child = child;
+          if (shuttingDown) {
+            child.kill?.();
+            return waitForExit(child).then(() => {
+              records.delete(key);
+              record.finishStopped();
+            });
+          }
           record.url = url;
           record.state = "open";
           record.lastUsedAt = now();
@@ -161,11 +189,13 @@ export function createCodeExplorerManager({
         })
         .catch((error) => {
           if (records.get(key) === record) records.delete(key);
-          reject(error);
+          if (shuttingDown) record.finishStopped();
+          else reject(error);
         });
     } catch (error) {
       records.delete(key);
-      reject(error);
+      if (shuttingDown) record.finishStopped();
+      else reject(error);
     }
     return record;
   }
@@ -189,6 +219,7 @@ export function createCodeExplorerManager({
   }
 
   function launch(projectPath) {
+    if (shuttingDown) return Promise.reject(shuttingDownError());
     const identity = projectIdentity(projectPath);
     const key = identityKey(projectPath, identity);
     const stale = stalePathRecords(projectPath, key);
@@ -202,5 +233,29 @@ export function createCodeExplorerManager({
     return launchAfterStale(projectPath, identity, key);
   }
 
-  return { launch, records: () => [...records.values()] };
+  async function stopRecord(record) {
+    if (record.state === "starting") {
+      // Joined launch callers settle immediately. A child returned later is terminated above.
+      record.state = "stopping";
+      record.reject(shuttingDownError());
+      await record.stopped;
+      return;
+    }
+    if (records.get(record.key) === record) records.delete(record.key);
+    record.state = "stopping";
+    if (record.child) {
+      record.child.kill?.();
+      await waitForExit(record.child);
+    }
+    await stop(record);
+  }
+
+  function shutdown() {
+    if (shutdownPromise) return shutdownPromise;
+    shuttingDown = true;
+    shutdownPromise = Promise.all([...records.values()].map(stopRecord)).then(() => undefined);
+    return shutdownPromise;
+  }
+
+  return { launch, shutdown, records: () => [...records.values()] };
 }

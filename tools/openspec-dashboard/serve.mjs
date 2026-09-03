@@ -8,10 +8,11 @@
 //   OPENSPEC_DASHBOARD_PORT   preferred port, default 4400
 
 import { createServer } from "node:http";
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApi } from "./lib/api.mjs";
+import { createCodeExplorerManager } from "./lib/code-explorer-manager.mjs";
+import { createDashboardOwnership } from "./lib/dashboard-ownership.mjs";
 import { assertLaunchRequest, createCapabilities, LAUNCH_PATH, readLaunchBody } from "./lib/launch-http.mjs";
 import { createCache } from "./lib/cache.mjs";
 import { createReader, locateCli } from "./lib/cli.mjs";
@@ -20,25 +21,6 @@ import { serveStatic } from "./lib/static.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dir, "public");
-const PID_FILE = join(__dir, ".dashboard.pid");
-
-function killPrior() {
-  if (!existsSync(PID_FILE)) return;
-  const pid = Number(readFileSync(PID_FILE, "utf-8").trim());
-  if (!pid) return;
-  try {
-    process.kill(pid);
-  } catch {}
-  try {
-    unlinkSync(PID_FILE);
-  } catch {}
-}
-
-killPrior();
-writeFileSync(PID_FILE, String(process.pid));
-process.on("exit", () => {
-  try { unlinkSync(PID_FILE); } catch {}
-});
 const HOST = "127.0.0.1";
 const capabilities = createCapabilities();
 const FIRST_PORT = Number(process.env.OPENSPEC_DASHBOARD_PORT ?? 4400);
@@ -50,7 +32,19 @@ if (!entry) {
   process.exit(1);
 }
 
-const handle = createApi({ read: createReader(entry), cache: createCache(), store: createStore() });
+let acceptingLaunches = false;
+const children = createCodeExplorerManager({
+  projectIdentity: (projectPath) => projectPath,
+  start: async () => {
+    throw new Error("code_explorer_start_failed");
+  },
+});
+const handle = createApi({
+  read: createReader(entry),
+  cache: createCache(),
+  store: createStore(),
+  launchAdmission: () => acceptingLaunches,
+});
 
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload);
@@ -71,6 +65,17 @@ function readBody(req) {
 
 async function handleApi(req, res, url) {
   try {
+    if (url.pathname === "/api/admin/shutdown") {
+      if (req.method !== "POST" || req.socket.remoteAddress?.replace("::ffff:", "") !== HOST || req.headers["x-openspec-dashboard-replacement-capability"] !== capabilities.replacement) {
+        sendJson(res, 404, { error: "unknown route" });
+        return;
+      }
+      // Finish this authenticated response before close waits for active sockets.
+      acceptingLaunches = false;
+      res.once("finish", () => void managedShutdown());
+      sendJson(res, 200, { state: "closed" });
+      return;
+    }
     const launch = LAUNCH_PATH.test(url.pathname);
     if (launch) assertLaunchRequest({ method: req.method, urlPath: url.pathname, headers: req.headers }, {
       capability: capabilities.browser,
@@ -93,6 +98,24 @@ const server = createServer((req, res) => {
   void serveStatic(PUBLIC_DIR, url.pathname, res);
 });
 
+let ownership;
+let shutdownPromise;
+
+function managedShutdown() {
+  if (shutdownPromise) return shutdownPromise;
+  acceptingLaunches = false;
+  shutdownPromise = children.shutdown().then(
+    () =>
+      new Promise((resolve) => {
+        server.close(() => {
+          ownership?.release();
+          resolve();
+        });
+      }),
+  );
+  return shutdownPromise;
+}
+
 let port = FIRST_PORT;
 server.on("error", (err) => {
   if (err.code !== "EADDRINUSE" || port >= FIRST_PORT + PORT_ATTEMPTS) throw err;
@@ -100,6 +123,21 @@ server.on("error", (err) => {
   server.listen(port, HOST);
 });
 server.on("listening", () => {
-  process.stdout.write(`OpenSpec dashboard on http://${HOST}:${port}/#${capabilities.browser}\nCLI: ${entry}\n`);
+  void (async () => {
+    ownership = createDashboardOwnership();
+    try {
+      await ownership.claim({
+        pid: process.pid,
+        control_url: `http://${HOST}:${port}/api/admin/shutdown`,
+        replacement_capability: capabilities.replacement,
+      });
+      acceptingLaunches = true;
+      process.stdout.write(`OpenSpec dashboard on http://${HOST}:${port}/#${capabilities.browser}\nCLI: ${entry}\n`);
+    } catch {
+      server.close(() => process.exit(1));
+    }
+  })();
 });
 server.listen(port, HOST);
+process.once("SIGINT", () => void managedShutdown());
+process.once("SIGTERM", () => void managedShutdown());
