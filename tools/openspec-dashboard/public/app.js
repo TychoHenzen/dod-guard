@@ -15,7 +15,16 @@ const dom = {
   refresh: document.getElementById("refresh"),
 };
 
-const state = { projects: [], active: 0, overview: null, selection: null, filter: "", scan: null, foldState: new Map() };
+const state = {
+  projects: [],
+  registryRevision: null,
+  active: 0,
+  overview: null,
+  selection: null,
+  filter: "",
+  scan: null,
+  foldState: new Map(),
+};
 
 const problem = (err) => el("p", { class: "error" }, err.message);
 const notice = (text) => el("p", { class: "empty" }, text);
@@ -64,7 +73,9 @@ function openItem(kind, id) {
 }
 
 async function reloadProjects(keepActive = true) {
-  state.projects = await api.listProjects();
+  const registry = await api.listProjects();
+  state.projects = registry.projects;
+  state.registryRevision = registry.registry_revision;
   const index = keepActive ? Math.min(state.active, state.projects.length - 1) : state.projects.length - 1;
   paintTabs();
   if (state.projects.length) await openProject(Math.max(index, 0));

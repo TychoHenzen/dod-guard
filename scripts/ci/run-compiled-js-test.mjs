@@ -17,8 +17,15 @@ export function mapCompiledTest(root, testPath) {
   if (!isInside(root, source)) throw new Error(`test path is outside the workspace: ${testPath}`);
 
   const parts = relative(root, source).split(sep);
+  if (parts[0] === "tools") {
+    if (!source.endsWith(".test.js") && !source.endsWith(".test.mjs")) {
+      throw new Error(`expected a tools/**/*.test.js or tools/**/*.test.mjs path: ${testPath}`);
+    }
+    return { packageName: undefined, compiledTest: source };
+  }
+
   if (parts.length < 4 || parts[0] !== "packages") {
-    throw new Error(`expected a test path inside packages/<name>: ${testPath}`);
+    throw new Error(`expected a test path inside packages/<name> or tools: ${testPath}`);
   }
 
   const packageName = parts[1];
@@ -52,7 +59,9 @@ function findNpmCli() {
 
 export function main(args) {
   if (args.length !== 1) {
-    process.stderr.write("usage: run-compiled-js-test.mjs <packages/<name>/(src/**/*.test.ts|dist/**/*.test.js)>\n");
+    process.stderr.write(
+      "usage: run-compiled-js-test.mjs <packages/<name>/(src/**/*.test.ts|dist/**/*.test.js)|tools/**/*.test.(js|mjs)>\n",
+    );
     return 3;
   }
 
@@ -64,13 +73,15 @@ export function main(args) {
     return 3;
   }
 
-  const npmCli = findNpmCli();
-  if (!npmCli) {
-    process.stderr.write("npm CLI could not be located next to the active Node.js runtime\n");
-    return 3;
+  if (mapped.packageName) {
+    const npmCli = findNpmCli();
+    if (!npmCli) {
+      process.stderr.write("npm CLI could not be located next to the active Node.js runtime\n");
+      return 3;
+    }
+    const buildStatus = run(process.execPath, [npmCli, "run", "build", "-w", `packages/${mapped.packageName}`]);
+    if (buildStatus !== 0) return buildStatus;
   }
-  const buildStatus = run(process.execPath, [npmCli, "run", "build", "-w", `packages/${mapped.packageName}`]);
-  if (buildStatus !== 0) return buildStatus;
   if (!existsSync(mapped.compiledTest)) {
     process.stderr.write(`compiled test was not created: ${relative(workspaceRoot, mapped.compiledTest)}\n`);
     return 1;

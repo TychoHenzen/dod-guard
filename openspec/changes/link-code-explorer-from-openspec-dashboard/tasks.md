@@ -1,8 +1,10 @@
 ## 1. Prerequisites, registry identity, and executable boundary
 
-- [ ] 1.1 Verify the two prerequisite Code Explorer changes and their imported requirements are implemented and passing. Record the exact package, CLI, readiness, shell-route, read-only, root, and signal-cleanup contracts used by this bridge.
+- [x] 1.1 Verify the two prerequisite Code Explorer changes and their imported requirements are implemented and passing. Record the exact package, CLI, readiness, shell-route, read-only, root, and signal-cleanup contracts used by this bridge.
+<!-- status: completed -->
 
-- [ ] 1.2 Add deterministic registry revisions and snapshot-aware selection. Reject stale revisions before index resolution, reload the browser list without automatic retry, and test insert, removal, reorder, missing index, unreadable project, and forbidden path fields. Verify with `npm run test:openspec-dashboard`.
+- [x] 1.2 Add deterministic registry revisions and snapshot-aware selection. Reject stale revisions before index resolution, reload the browser list without automatic retry, and test insert, removal, reorder, missing index, unreadable project, and forbidden path fields. Verify with `npm run test:openspec-dashboard`.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Registered readable project is selected -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Registry changed after rendering -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Browser includes a project path -->
