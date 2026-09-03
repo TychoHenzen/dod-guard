@@ -1,0 +1,893 @@
+{
+  "source": "packages/code-explorer/src/semantic/python-mirror-runtime.ts",
+  "date": "2026-09-02T11:37:56.598Z",
+  "summary": {
+    "total": 360,
+    "killed": 213,
+    "survived": 110,
+    "timeout": 0,
+    "unviable": 37
+  },
+  "survivors": [
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "1",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 10,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "10",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 36,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "24",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 47,
+      "dist_col": 75
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "30",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 52,
+      "dist_col": 60
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "36",
+      "mutator": "OptionalChaining",
+      "replacement": "active.mirror",
+      "dist_line": 60,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "39",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 68,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "48",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 77,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "49",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 77,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "61",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 94,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "62",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 96,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "63",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 97,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "66",
+      "mutator": "BooleanLiteral",
+      "replacement": "false",
+      "dist_line": 99,
+      "dist_col": 55
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "67",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 101,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "69",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 103,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "73",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 104,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "75",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 105,
+      "dist_col": 66
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "78",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 109,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "79",
+      "mutator": "LogicalOperator",
+      "replacement": "!expected && disposed",
+      "dist_line": 109,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "84",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 114,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "93",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 118,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "95",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 118,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "99",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 127,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "115",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 149,
+      "dist_col": 126
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "125",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 158,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "134",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 169,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "138",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 171,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "145",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 180,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "146",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 181,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "147",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 185,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "148",
+      "mutator": "Regex",
+      "replacement": "/\\uFEFF/",
+      "dist_line": 186,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "149",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 186,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "151",
+      "mutator": "BooleanLiteral",
+      "replacement": "true",
+      "dist_line": 187,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "153",
+      "mutator": "MethodExpression",
+      "replacement": "raw.replace(/\\s+#.*$/, \"\")",
+      "dist_line": 190,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "154",
+      "mutator": "Regex",
+      "replacement": "/\\s+#.*/",
+      "dist_line": 190,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "155",
+      "mutator": "Regex",
+      "replacement": "/\\s#.*$/",
+      "dist_line": 190,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "156",
+      "mutator": "Regex",
+      "replacement": "/\\S+#.*$/",
+      "dist_line": 190,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "157",
+      "mutator": "Regex",
+      "replacement": "/\\s+#.$/",
+      "dist_line": 190,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "158",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 190,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "161",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 191,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "164",
+      "mutator": "Regex",
+      "replacement": "/\\[.*\\]$/",
+      "dist_line": 193,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "165",
+      "mutator": "Regex",
+      "replacement": "/^\\[.*\\]/",
+      "dist_line": 193,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "168",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 194,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "174",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 197,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "175",
+      "mutator": "Regex",
+      "replacement": "/([A-Za-z0-9_.-]+)\\s*=\\s*(.+)$/",
+      "dist_line": 199,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "176",
+      "mutator": "Regex",
+      "replacement": "/^([A-Za-z0-9_.-]+)\\s*=\\s*(.+)/",
+      "dist_line": 199,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "177",
+      "mutator": "Regex",
+      "replacement": "/^([A-Za-z0-9_.-])\\s*=\\s*(.+)$/",
+      "dist_line": 199,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "178",
+      "mutator": "Regex",
+      "replacement": "/^([^A-Za-z0-9_.-]+)\\s*=\\s*(.+)$/",
+      "dist_line": 199,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "179",
+      "mutator": "Regex",
+      "replacement": "/^([A-Za-z0-9_.-]+)\\s=\\s*(.+)$/",
+      "dist_line": 199,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "180",
+      "mutator": "Regex",
+      "replacement": "/^([A-Za-z0-9_.-]+)\\S*=\\s*(.+)$/",
+      "dist_line": 199,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "181",
+      "mutator": "Regex",
+      "replacement": "/^([A-Za-z0-9_.-]+)\\s*=\\s(.+)$/",
+      "dist_line": 199,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "182",
+      "mutator": "Regex",
+      "replacement": "/^([A-Za-z0-9_.-]+)\\s*=\\S*(.+)$/",
+      "dist_line": 199,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "183",
+      "mutator": "Regex",
+      "replacement": "/^([A-Za-z0-9_.-]+)\\s*=\\s*(.)$/",
+      "dist_line": 199,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "185",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 200,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "187",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 206,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "188",
+      "mutator": "MethodExpression",
+      "replacement": "value",
+      "dist_line": 207,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "189",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 208,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "190",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 208,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "191",
+      "mutator": "Regex",
+      "replacement": "/(true|false)$/",
+      "dist_line": 208,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "192",
+      "mutator": "Regex",
+      "replacement": "/^(true|false)/",
+      "dist_line": 208,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "197",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 210,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "198",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 210,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "199",
+      "mutator": "Regex",
+      "replacement": "/[\"'].*[\"']$/",
+      "dist_line": 210,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "200",
+      "mutator": "Regex",
+      "replacement": "/^[\"'].*[\"']/",
+      "dist_line": 210,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "201",
+      "mutator": "Regex",
+      "replacement": "/^[^\"'].*[\"']$/",
+      "dist_line": 210,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "202",
+      "mutator": "Regex",
+      "replacement": "/^[\"'].[\"']$/",
+      "dist_line": 210,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "203",
+      "mutator": "Regex",
+      "replacement": "/^[\"'].*[^\"']$/",
+      "dist_line": 210,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "204",
+      "mutator": "MethodExpression",
+      "replacement": "trimmed",
+      "dist_line": 211,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "205",
+      "mutator": "UnaryOperator",
+      "replacement": "+1",
+      "dist_line": 211,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "243",
+      "mutator": "MethodExpression",
+      "replacement": "relativePath.startsWith(\".pyi\")",
+      "dist_line": 226,
+      "dist_col": 66
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "248",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 231,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "255",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 240,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "256",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 240,
+      "dist_col": 45
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "257",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 242,
+      "dist_col": 42
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "259",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 243,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "260",
+      "mutator": "LogicalOperator",
+      "replacement": "isSensitiveProjectPath(path) && path.split(\"/\").some(part => /^(\\.venv|venv|node_modules|__pycache__)$/iu.test(part))",
+      "dist_line": 243,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "261",
+      "mutator": "MethodExpression",
+      "replacement": "path.split(\"/\").every(part => /^(\\.venv|venv|node_modules|__pycache__)$/iu.test(part))",
+      "dist_line": 244,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "262",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 244,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "263",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 244,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "264",
+      "mutator": "Regex",
+      "replacement": "/(\\.venv|venv|node_modules|__pycache__)$/iu",
+      "dist_line": 244,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "265",
+      "mutator": "Regex",
+      "replacement": "/^(\\.venv|venv|node_modules|__pycache__)/iu",
+      "dist_line": 244,
+      "dist_col": 40
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "275",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 257,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "289",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 276,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "293",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 280,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "295",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 281,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "298",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 287,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "300",
+      "mutator": "LogicalOperator",
+      "replacement": "actual.size === expected.size || [...expected].every(([path, digest]) => actual.get(path) === digest)",
+      "dist_line": 287,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "301",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 287,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "303",
+      "mutator": "MethodExpression",
+      "replacement": "[...expected].some(([path, digest]) => actual.get(path) === digest)",
+      "dist_line": 287,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "304",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 287,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "306",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 287,
+      "dist_col": 89
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "315",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 295,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "317",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 295,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "319",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 298,
+      "dist_col": 74
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "320",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 299,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "322",
+      "mutator": "LogicalOperator",
+      "replacement": "relativePath && !relativePath.startsWith(\"../\") || relativePath !== \"..\"",
+      "dist_line": 299,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "324",
+      "mutator": "LogicalOperator",
+      "replacement": "relativePath || !relativePath.startsWith(\"../\")",
+      "dist_line": 299,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "323",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 299,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "326",
+      "mutator": "MethodExpression",
+      "replacement": "relativePath.endsWith(\"../\")",
+      "dist_line": 299,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "328",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 299,
+      "dist_col": 67
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "330",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 299,
+      "dist_col": 84
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "336",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 309,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "338",
+      "mutator": "LogicalOperator",
+      "replacement": "!!value && typeof value === \"object\" || !Array.isArray(value)",
+      "dist_line": 309,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "339",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 309,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "340",
+      "mutator": "LogicalOperator",
+      "replacement": "!!value || typeof value === \"object\"",
+      "dist_line": 309,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "343",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 309,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "348",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 312,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "349",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 312,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "350",
+      "mutator": "EqualityOperator",
+      "replacement": "process.platform !== \"win32\"",
+      "dist_line": 312,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "351",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 312,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/python-mirror-runtime.js",
+      "id": "357",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 312,
+      "dist_col": 88
+    }
+  ]
+}
