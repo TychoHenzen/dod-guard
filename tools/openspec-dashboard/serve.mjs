@@ -12,6 +12,7 @@ import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApi } from "./lib/api.mjs";
+import { assertLaunchRequest, createCapabilities, LAUNCH_PATH, readLaunchBody } from "./lib/launch-http.mjs";
 import { createCache } from "./lib/cache.mjs";
 import { createReader, locateCli } from "./lib/cli.mjs";
 import { createStore } from "./lib/registry.mjs";
@@ -39,6 +40,7 @@ process.on("exit", () => {
   try { unlinkSync(PID_FILE); } catch {}
 });
 const HOST = "127.0.0.1";
+const capabilities = createCapabilities();
 const FIRST_PORT = Number(process.env.OPENSPEC_DASHBOARD_PORT ?? 4400);
 const PORT_ATTEMPTS = 20;
 
@@ -69,7 +71,13 @@ function readBody(req) {
 
 async function handleApi(req, res, url) {
   try {
-    const body = req.method === "POST" ? await readBody(req) : {};
+    const launch = LAUNCH_PATH.test(url.pathname);
+    if (launch) assertLaunchRequest({ method: req.method, urlPath: url.pathname, headers: req.headers }, {
+      capability: capabilities.browser,
+      host: `${HOST}:${port}`,
+      origin: `http://${HOST}:${port}`,
+    });
+    const body = launch ? await readLaunchBody(req) : req.method === "POST" ? await readBody(req) : {};
     sendJson(res, 200, await handle(req.method, url.pathname, url.searchParams, body));
   } catch (err) {
     sendJson(res, err.status ?? 500, { error: err.message });
@@ -92,6 +100,6 @@ server.on("error", (err) => {
   server.listen(port, HOST);
 });
 server.on("listening", () => {
-  process.stdout.write(`OpenSpec dashboard on http://${HOST}:${port}\nCLI: ${entry}\n`);
+  process.stdout.write(`OpenSpec dashboard on http://${HOST}:${port}/#${capabilities.browser}\nCLI: ${entry}\n`);
 });
 server.listen(port, HOST);

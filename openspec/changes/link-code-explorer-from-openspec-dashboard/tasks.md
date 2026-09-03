@@ -26,14 +26,16 @@
 
 ## 2. HTTP and child lifecycle
 
-- [ ] 2.1 Generate browser and replacement capabilities. Add the fragment bootstrap, constant-time launch-capability check, exact Host and Origin checks, closed revision body, 1 KiB streaming limit, and no-CORS behavior. Test rejection before registry or process work. Verify with `npm run test:openspec-dashboard`.
+- [x] 2.1 Generate browser and replacement capabilities. Add the fragment bootstrap, constant-time launch-capability check, exact Host and Origin checks, closed revision body, 1 KiB streaming limit, and no-CORS behavior. Test rejection before registry or process work. Verify with `npm run test:openspec-dashboard`.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Capability-bound launch request is valid -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Another origin targets launch -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Local process forges browser headers -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Launch body exceeds its boundary -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Launch route uses another method or body shape -->
 
-- [ ] 2.2 Implement the fakeable incremental UTF-8 readiness parser with LF and CRLF framing, a fake monotonic timer, strict loopback URL validation, and per-stream byte counters. Test chunk-split readiness, partial final lines, early exit, 30-second expiry, and 65,536 versus 65,537 bytes across chunk shapes. Verify with `npm run test:openspec-dashboard`.
+- [x] 2.2 Implement the fakeable incremental UTF-8 readiness parser with LF and CRLF framing, a fake monotonic timer, strict loopback URL validation, and per-stream byte counters. Test chunk-split readiness, partial final lines, early exit, 30-second expiry, and 65,536 versus 65,537 bytes across chunk shapes. Verify with `npm run test:openspec-dashboard`.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Child reports valid chunked readiness -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Child prints a non-loopback URL -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Child exits or ends a partial line before readiness -->

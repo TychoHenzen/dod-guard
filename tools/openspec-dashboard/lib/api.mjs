@@ -24,6 +24,10 @@ export function createApi({ read, cache, store }) {
 
   return async function handle(method, pathname, query, body) {
     const segments = pathname.split("/").filter(Boolean);
+    if (segments[1] === "project" && segments[3] === "code-explorer" && segments.length === 4) {
+      if (method !== "POST") throw new HttpError(400, "invalid_launch_request");
+      return admin.selectLaunch(Number(segments[2]), body);
+    }
     if (segments[1] === "projects") return method === "POST" ? admin.mutate(body) : admin.listProjects();
     if (segments[1] === "scan") return admin.candidates();
     if (segments[1] === "project") return projectRoute(segments, query);
