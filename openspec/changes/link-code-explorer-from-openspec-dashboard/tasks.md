@@ -11,13 +11,15 @@
   <!-- covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Registry index does not exist -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Registered project is no longer readable -->
 
-- [ ] 1.3 Add Code Explorer package discovery with explicit override precedence, monorepo fallback, canonical bundle identity, package and plugin metadata validation, and project-local candidate rejection. Verify both checkout and installed-cache layouts with `npm run test:openspec-dashboard`.
+- [x] 1.3 Add Code Explorer package discovery with explicit override precedence, monorepo fallback, canonical bundle identity, package and plugin metadata validation, and project-local candidate rejection. Verify both checkout and installed-cache layouts with `npm run test:openspec-dashboard`.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Code Explorer discovery accepts only its packaged entry :: Operator override names a packaged entry -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Code Explorer discovery accepts only its packaged entry :: Operator override is absent -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Code Explorer discovery accepts only its packaged entry :: Selected package contract is invalid -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Code Explorer discovery accepts only its packaged entry :: Registered project contains an executable candidate -->
 
-- [ ] 1.4 Add the fixed shell-free child adapter and exact child-environment allowlist. Test metacharacter paths and parent credential, Node injection, override, and request values. Verify with `npm run test:openspec-dashboard`.
+- [x] 1.4 Add the fixed shell-free child adapter and exact child-environment allowlist. Test metacharacter paths and parent credential, Node injection, override, and request values. Verify with `npm run test:openspec-dashboard`.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Child launch is fixed, shell-free, and environment-minimal :: New child is started -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Child launch is fixed, shell-free, and environment-minimal :: Project name contains shell syntax -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Child launch is fixed, shell-free, and environment-minimal :: Dashboard environment contains credentials or Node options -->
