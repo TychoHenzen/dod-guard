@@ -1,6 +1,8 @@
 // app.js - state and wiring. The views live in the render-*.mjs modules.
 
 import * as api from "./api.mjs";
+import { takeDashboardCapability } from "./capability.mjs";
+import { createCodeExplorerAction } from "./code-explorer-action.mjs";
 import { el, replace } from "./dom.mjs";
 import { renderChange } from "./render-change.mjs";
 import { renderScan } from "./render-scan.mjs";
@@ -13,6 +15,7 @@ const dom = {
   detail: document.getElementById("detail"),
   filter: document.getElementById("filter"),
   refresh: document.getElementById("refresh"),
+  codeExplorer: document.getElementById("code-explorer"),
 };
 
 const state = {
@@ -28,6 +31,23 @@ const state = {
 
 const problem = (err) => el("p", { class: "error" }, err.message);
 const notice = (text) => el("p", { class: "empty" }, text);
+
+api.setDashboardCapability(takeDashboardCapability());
+
+const codeExplorerAction = createCodeExplorerAction({
+  request: api.launchCodeExplorer,
+  reload: async () => {
+    await reloadProjects();
+    return { projects: state.projects, registryRevision: state.registryRevision, active: state.active };
+  },
+  render: ({ disabled }) => {
+    dom.codeExplorer.disabled = disabled;
+  },
+});
+
+function syncCodeExplorerAction() {
+  codeExplorerAction.setRegistry({ projects: state.projects, registryRevision: state.registryRevision, active: state.active });
+}
 
 function paintTabs() {
   replace(dom.tabs, ...renderTabs(state.projects, state.active, { onSelect: openProject, onScan: openScan }));
@@ -52,6 +72,7 @@ async function openProject(index, refresh = false) {
   state.active = index;
   state.selection = null;
   state.overview = null;
+  syncCodeExplorerAction();
   paintTabs();
   paintLists();
   try {
@@ -77,6 +98,7 @@ async function reloadProjects(keepActive = true) {
   state.projects = registry.projects;
   state.registryRevision = registry.registry_revision;
   const index = keepActive ? Math.min(state.active, state.projects.length - 1) : state.projects.length - 1;
+  syncCodeExplorerAction();
   paintTabs();
   if (state.projects.length) await openProject(Math.max(index, 0));
   else replace(dom.detail, notice("No project registered yet. Use + to find one."));
@@ -108,5 +130,6 @@ dom.filter.addEventListener("input", (event) => {
   filterTimer = setTimeout(paintLists, 150);
 });
 dom.refresh.addEventListener("click", () => openProject(state.active, true));
+dom.codeExplorer.addEventListener("click", () => void codeExplorerAction.launch());
 
 reloadProjects().catch((err) => replace(dom.detail, problem(err)));

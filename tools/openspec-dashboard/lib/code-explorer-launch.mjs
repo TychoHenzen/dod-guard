@@ -4,6 +4,7 @@ import { readFileSync, realpathSync, statSync } from "node:fs";
 import { spawn as spawnChild } from "node:child_process";
 import { dirname, join, relative } from "node:path";
 import { HttpError } from "./http-error.mjs";
+import { createReadinessParser } from "./readiness.mjs";
 
 const CHILD_ENV_NAMES = [
   "PATH",
@@ -95,5 +96,47 @@ export function spawnCodeExplorer({
     shell: false,
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
+  });
+}
+
+/** Start one fixed child and resolve only after its bounded readiness protocol succeeds. */
+export function startCodeExplorer({
+  entry,
+  projectPath,
+  monorepoRoot,
+  env = process.env,
+  execPath = process.execPath,
+  spawn = spawnChild,
+  createParser = createReadinessParser,
+  setTimer = setTimeout,
+  clearTimer = clearTimeout,
+}) {
+  let child;
+  try {
+    child = spawnCodeExplorer({ entry, projectPath, monorepoRoot, env, execPath, spawn });
+  } catch {
+    return Promise.reject(new HttpError(503, "code_explorer_start_failed"));
+  }
+
+  return new Promise((resolve, reject) => {
+    const parser = createParser();
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimer(timer);
+      if (result?.url) {
+        resolve({ child, url: result.url });
+        return;
+      }
+      child.kill?.();
+      reject(new HttpError(503, result?.error ?? "code_explorer_start_failed"));
+    };
+    const consume = (stream) => (chunk) => finish(parser.feed(stream, chunk));
+    child.stdout?.on?.("data", consume("stdout"));
+    child.stderr?.on?.("data", consume("stderr"));
+    child.once?.("error", () => finish({ error: "code_explorer_start_failed" }));
+    child.once?.("exit", () => finish(parser.end()));
+    const timer = setTimer(() => finish(parser.deadline() ?? { error: "code_explorer_start_timeout" }), 30_000);
   });
 }

@@ -64,7 +64,8 @@
   <!-- covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Ownership record contains an unsafe control target -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Prior dashboard ownership cannot be proved -->
 
-- [ ] 2.6 Add closed success and redacted error envelopes, isolated project failures, retry transitions, and navigation-operation rejection. Verify exact JSON keys and absence of capabilities, paths, arguments, environment values, raw streams, and stacks.
+- [x] 2.6 Add closed success and redacted error envelopes, isolated project failures, retry transitions, and navigation-operation rejection. Verify exact JSON keys and absence of capabilities, paths, arguments, environment values, raw streams, and stacks.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Launch failures are stable and redacted :: Child writes a verbose failure -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Launch failures are stable and redacted :: One project launch fails -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Launch failures are stable and redacted :: User retries after failure -->
@@ -72,7 +73,8 @@
 
 ## 3. Dashboard browser action
 
-- [ ] 3.1 Add the selected-project `Code Explorer` action beside `Refresh`. Key state by registry revision and index. Test readable, missing, switched, stale, and empty registry snapshots with injected render state. Verify with `npm run test:openspec-dashboard`.
+- [x] 3.1 Add the selected-project `Code Explorer` action beside `Refresh`. Key state by registry revision and index. Test readable, missing, switched, stale, and empty registry snapshots with injected render state. Verify with `npm run test:openspec-dashboard`.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/ui :: The selected readable project offers Code Explorer :: Readable project is selected -->
   <!-- covers: openspec-dashboard/ui :: The selected readable project offers Code Explorer :: Missing project is selected -->
   <!-- covers: openspec-dashboard/ui :: The selected readable project offers Code Explorer :: User switches project tabs -->

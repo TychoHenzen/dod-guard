@@ -12,8 +12,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApi } from "./lib/api.mjs";
 import { createCodeExplorerManager } from "./lib/code-explorer-manager.mjs";
+import { discoverCodeExplorer, startCodeExplorer } from "./lib/code-explorer-launch.mjs";
 import { createDashboardOwnership } from "./lib/dashboard-ownership.mjs";
+import { createProjectIdentity } from "./lib/project-identity.mjs";
 import { assertLaunchRequest, createCapabilities, LAUNCH_PATH, readLaunchBody } from "./lib/launch-http.mjs";
+import { launchFailure } from "./lib/launch-result.mjs";
 import { createCache } from "./lib/cache.mjs";
 import { createReader, locateCli } from "./lib/cli.mjs";
 import { createStore } from "./lib/registry.mjs";
@@ -21,6 +24,7 @@ import { serveStatic } from "./lib/static.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dir, "public");
+const MONOREPO_ROOT = dirname(dirname(__dir));
 const HOST = "127.0.0.1";
 const capabilities = createCapabilities();
 const FIRST_PORT = Number(process.env.OPENSPEC_DASHBOARD_PORT ?? 4400);
@@ -33,10 +37,19 @@ if (!entry) {
 }
 
 let acceptingLaunches = false;
+const projectIdentity = createProjectIdentity();
+let codeExplorerEntry;
+try {
+  codeExplorerEntry = discoverCodeExplorer({ monorepoRoot: MONOREPO_ROOT });
+} catch {
+  // The dashboard can still read projects when Code Explorer is not installed.
+  codeExplorerEntry = null;
+}
 const children = createCodeExplorerManager({
-  projectIdentity: (projectPath) => projectPath,
-  start: async () => {
-    throw new Error("code_explorer_start_failed");
+  projectIdentity: projectIdentity.identity,
+  start: async ({ projectPath }) => {
+    if (!codeExplorerEntry) throw new Error("code_explorer_unavailable");
+    return startCodeExplorer({ entry: codeExplorerEntry, projectPath, monorepoRoot: MONOREPO_ROOT });
   },
 });
 const handle = createApi({
@@ -44,6 +57,7 @@ const handle = createApi({
   cache: createCache(),
   store: createStore(),
   launchAdmission: () => acceptingLaunches,
+  launchCodeExplorer: (projectPath) => children.launch(projectIdentity.canonicalPath(projectPath)),
 });
 
 function sendJson(res, status, payload) {
@@ -64,6 +78,7 @@ function readBody(req) {
 }
 
 async function handleApi(req, res, url) {
+  const launch = LAUNCH_PATH.test(url.pathname);
   try {
     if (url.pathname === "/api/admin/shutdown") {
       if (req.method !== "POST" || req.socket.remoteAddress?.replace("::ffff:", "") !== HOST || req.headers["x-openspec-dashboard-replacement-capability"] !== capabilities.replacement) {
@@ -76,7 +91,6 @@ async function handleApi(req, res, url) {
       sendJson(res, 200, { state: "closed" });
       return;
     }
-    const launch = LAUNCH_PATH.test(url.pathname);
     if (launch) assertLaunchRequest({ method: req.method, urlPath: url.pathname, headers: req.headers }, {
       capability: capabilities.browser,
       host: `${HOST}:${port}`,
@@ -85,7 +99,7 @@ async function handleApi(req, res, url) {
     const body = launch ? await readLaunchBody(req) : req.method === "POST" ? await readBody(req) : {};
     sendJson(res, 200, await handle(req.method, url.pathname, url.searchParams, body));
   } catch (err) {
-    sendJson(res, err.status ?? 500, { error: err.message });
+    sendJson(res, err.status ?? 500, launch ? launchFailure(err) : { error: err.message });
   }
 }
 

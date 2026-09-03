@@ -3,10 +3,12 @@ import { EventEmitter } from "node:events";
 import test from "node:test";
 import { PassThrough } from "node:stream";
 import { createAdmin } from "../lib/project-admin.mjs";
-import { discoverCodeExplorer, spawnCodeExplorer } from "../lib/code-explorer-launch.mjs";
+import { discoverCodeExplorer, spawnCodeExplorer, startCodeExplorer } from "../lib/code-explorer-launch.mjs";
 import { assertLaunchRequest, createCapabilities, readLaunchBody } from "../lib/launch-http.mjs";
 import { createReadinessParser, validateExplorerUrl } from "../lib/readiness.mjs";
 import { createCodeExplorerManager, probeCodeExplorer } from "../lib/code-explorer-manager.mjs";
+import { launchFailure, launchResult } from "../lib/launch-result.mjs";
+import { createProjectIdentity } from "../lib/project-identity.mjs";
 
 function storeFor(projects) {
   return { get: () => ({ projects }) };
@@ -232,6 +234,21 @@ test("drops credentials, Node injection, overrides, and project values from the 
   assert.deepEqual(options.env, { PATH: "C:/bin", SystemRoot: "C:/Windows" });
 });
 
+test("waits for bounded readiness before returning the spawned child", async () => {
+  const stdout = new EventEmitter();
+  const stderr = new EventEmitter();
+  const child = { stdout, stderr, once() {}, kill() {} };
+  const launched = startCodeExplorer({
+    entry: "C:/trusted/dist/bundle.js",
+    projectPath: "C:/project",
+    monorepoRoot: "C:/monorepo",
+    env: {},
+    spawn: () => child,
+  });
+  stdout.emit("data", Buffer.from("Code Explorer: http://127.0.0.1:4410/\n"));
+  assert.deepEqual(await launched, { child, url: "http://127.0.0.1:4410/" });
+});
+
 function launchRequest(overrides = {}) {
   return {
     method: "POST",
@@ -453,6 +470,27 @@ test("removes dead children and records whose project filesystem identity change
   assert.equal(stopped, 2);
 });
 
+test("canonical root reuse follows the device and inode pair after root replacement", async () => {
+  let replacement = false;
+  const identity = createProjectIdentity({
+    fs: {
+      realpath: () => "C:/projects/canonical",
+      stat: () => (replacement ? { dev: 7n, ino: 11n } : { dev: 7n, ino: 10n }),
+    },
+  });
+  let starts = 0;
+  const manager = lifecycle({
+    identity: identity.identity,
+    start: () => ({ child: child(), url: `http://127.0.0.1:${4410 + starts++}/` }),
+  });
+  const root = identity.canonicalPath("C:/projects/link");
+  assert.equal((await manager.launch(root)).reused, false);
+  assert.equal((await manager.launch(root)).reused, true);
+  replacement = true;
+  assert.equal((await manager.launch(root)).reused, false);
+  assert.equal(starts, 2);
+});
+
 // covers: openspec-dashboard/code-explorer-launch :: Managed child capacity is finite :: Idle capacity can be reclaimed
 test("evicts the least recently used open child at the exact 30-minute idle boundary", async () => {
   let time = 0;
@@ -574,5 +612,72 @@ test("direct probe rejects a redirect, non-loopback socket, overflow, and timeou
       return req;
     };
     assert.equal(await probeCodeExplorer("http://127.0.0.1:4410/", { request }), false);
+  }
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: Launch failures are stable and redacted :: Child writes a verbose failure
+test("redacts verbose child failures into stable launch envelopes", () => {
+  const verbose = new Error("Error: C:/users/me/project TOKEN=secret capability=abc\n at start (bundle.js:1)");
+  assert.deepEqual(launchFailure(verbose), {
+    code: "code_explorer_start_failed",
+    message: "code_explorer_start_failed",
+    retryable: true,
+  });
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: Launch failures are stable and redacted :: One project launch fails
+test("a failed project envelope does not alter another project's reusable launch result", async () => {
+  const manager = lifecycle({
+    start: ({ projectPath }) => {
+      if (projectPath === "C:/projects/failing") throw new Error("verbose secret failure");
+      return { child: child(), url: "http://127.0.0.1:4410/" };
+    },
+  });
+  assert.deepEqual(await launchResult(() => manager.launch("C:/projects/live")), {
+    state: "open",
+    url: "http://127.0.0.1:4410/",
+    reused: false,
+  });
+  assert.deepEqual(await launchResult(() => manager.launch("C:/projects/failing")), {
+    code: "code_explorer_start_failed",
+    message: "code_explorer_start_failed",
+    retryable: true,
+  });
+  assert.deepEqual(await launchResult(() => manager.launch("C:/projects/live")), {
+    state: "open",
+    url: "http://127.0.0.1:4410/",
+    reused: true,
+  });
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: Launch failures are stable and redacted :: User retries after failure
+test("a corrected retry starts a fresh bounded launch", async () => {
+  let starts = 0;
+  let corrected = false;
+  const manager = lifecycle({
+    start: () => {
+      starts += 1;
+      if (!corrected) throw new Error("not ready");
+      return { child: child(), url: "http://127.0.0.1:4410/" };
+    },
+  });
+  assert.equal((await launchResult(() => manager.launch("C:/projects/one"))).code, "code_explorer_start_failed");
+  corrected = true;
+  assert.deepEqual(await launchResult(() => manager.launch("C:/projects/one")), {
+    state: "open",
+    url: "http://127.0.0.1:4410/",
+    reused: false,
+  });
+  assert.equal(starts, 2);
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: The bridge does not proxy navigation or write project content :: Browser requests navigation through the dashboard
+test("rejects navigation-operation launch bodies without forwarding an operation", () => {
+  const { admin } = launchSnapshot([{ name: "one", path: "C:/projects/one" }]);
+  for (const operation of ["search", "focus", "follow", "history", "status", "arbitrary"]) {
+    assert.throws(
+      () => admin.selectLaunch(0, { registry_revision: admin.listProjects().registry_revision, operation }),
+      (error) => error.message === "invalid_launch_request",
+    );
   }
 });

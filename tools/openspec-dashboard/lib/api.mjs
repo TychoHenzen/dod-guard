@@ -5,10 +5,11 @@
 // even though every read spawns a child process.
 
 import { HttpError } from "./http-error.mjs";
+import { launchResult } from "./launch-result.mjs";
 import { createAdmin } from "./project-admin.mjs";
 import { createReads } from "./project-reads.mjs";
 
-export function createApi({ read, cache, store, launchAdmission = () => true }) {
+export function createApi({ read, cache, store, launchAdmission = () => true, launchCodeExplorer }) {
   const admin = createAdmin(store);
   const reads = createReads({ read, cache });
 
@@ -27,7 +28,11 @@ export function createApi({ read, cache, store, launchAdmission = () => true }) 
     if (segments[1] === "project" && segments[3] === "code-explorer" && segments.length === 4) {
       if (method !== "POST") throw new HttpError(400, "invalid_launch_request");
       if (!launchAdmission()) throw new HttpError(503, "dashboard_shutting_down");
-      return admin.selectLaunch(Number(segments[2]), body);
+      return launchResult(async () => {
+        const project = admin.selectLaunch(Number(segments[2]), body);
+        if (!launchCodeExplorer) throw new HttpError(503, "code_explorer_unavailable");
+        return launchCodeExplorer(project.path);
+      });
     }
     if (segments[1] === "projects") return method === "POST" ? admin.mutate(body) : admin.listProjects();
     if (segments[1] === "scan") return admin.candidates();
