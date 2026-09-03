@@ -33,7 +33,9 @@ project's active changes and its specs, with a filter above them.
   section.
 
 Press `+` in the tab bar to scan for more projects. Press `Refresh` to re-read
-the current project from disk.
+the current project from disk. The selected readable project also has a `Code
+Explorer` action. If the registry changed after the page loaded, the action
+reports a stale registry, reloads the project list, and does not retry itself.
 
 ## It never writes to a project
 
@@ -63,6 +65,7 @@ directory. Edit the `roots` list in the registry file to change them.
 |---|---|
 | `OPENSPEC_JS` | Path to the CLI's `bin/openspec.js`. Set this when the dashboard cannot find the CLI. |
 | `OPENSPEC_DASHBOARD_PORT` | Preferred port. Default 4400. |
+| `CODE_EXPLORER_JS` | Trusted operator path to `dist/bundle.js` in a packaged `code-explorer` installation. Its package and plugin metadata must still name `code-explorer`. When unset, the dashboard uses this checkout's `packages/code-explorer/dist/bundle.js`. |
 
 ## Notes on the design
 
@@ -77,4 +80,34 @@ directory moves. Walking that small tree is far cheaper than running the
 command again.
 
 A request names a project by its position in the registry, never by a path. So
-no request can point the CLI at a directory you did not register.
+no request can point the CLI at a directory you did not register. The browser
+capability is a startup-generated 256-bit value kept in the dashboard URL
+fragment. It is sent only to the fixed loopback launch route. A separate
+replacement capability protects dashboard handoff.
+
+The dashboard owns explorer lifetime. It reuses a healthy child for the same
+project, runs at most eight children, and may evict an idle child after 30
+minutes. Launch failures use stable redacted codes such as
+`code_explorer_start_failed` and `code_explorer_capacity`. It never includes
+paths, capabilities, environment values, child output, or stacks.
+
+If an earlier dashboard crashed and left an ownership file, start a replacement
+only after its authenticated shutdown endpoint responds. If that proof fails,
+the dashboard reports `dashboard_replacement_failed`. Remove the stale
+ownership file manually only after confirming that its prior dashboard is no
+longer running.
+
+## Local checks
+
+```bash
+npm run test:openspec-dashboard
+node tools/openspec-dashboard/practice-code-explorer-link.mjs --language rust
+```
+
+The practice command uses Code Explorer's pinned Playwright and Chromium. It
+starts a disposable fixture under an isolated home, checks browser handoff and
+managed cleanup, then writes redacted evidence to
+`tools/openspec-dashboard/practice/code-explorer-link-rust.json`.
+
+This developer tool has no CI gate. Run these local checks before relying on a
+dashboard launch change.

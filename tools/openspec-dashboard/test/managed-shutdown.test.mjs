@@ -7,7 +7,23 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { createCodeExplorerManager } from "../lib/code-explorer-manager.mjs";
-import { createDashboardOwnership, requestAuthenticatedShutdown, validateControlTarget } from "../lib/dashboard-ownership.mjs";
+import { createDashboardOwnership, requestAuthenticatedShutdown, validateControlTarget, windowsAclEnvironment } from "../lib/dashboard-ownership.mjs";
+
+test("passes only required host values to the Windows ACL adapter", () => {
+  assert.deepEqual(windowsAclEnvironment("C:/private/owner.json", {
+    SystemRoot: "C:/Windows",
+    WINDIR: "C:/Windows",
+    ComSpec: "C:/Windows/System32/cmd.exe",
+    NODE_OPTIONS: "--require C:/injected.js",
+    API_TOKEN: "secret",
+    PATH: "C:/bin",
+  }), {
+    SystemRoot: "C:/Windows",
+    WINDIR: "C:/Windows",
+    ComSpec: "C:/Windows/System32/cmd.exe",
+    OPENSPEC_DASHBOARD_ACL_PATH: "C:/private/owner.json",
+  });
+});
 
 function deferred() {
   let resolve;

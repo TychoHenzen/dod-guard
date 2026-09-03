@@ -10,6 +10,7 @@
     "clean": "node -e \"const fs=require('fs');for(const p of fs.readdirSync('packages'))fs.rmSync('packages/'+p+'/dist',{recursive:true,force:true})\"",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
+    "test:openspec-dashboard": "node --test tools/openspec-dashboard/test/all.test.mjs",
     "bundle": "npm run bundle --workspaces"
   },
   "devDependencies": {

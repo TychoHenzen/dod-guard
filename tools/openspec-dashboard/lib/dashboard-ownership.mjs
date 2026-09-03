@@ -130,12 +130,27 @@ const systemFs = {
   write: writeFileSync,
 };
 
+export function windowsAclEnvironment(path, env = process.env) {
+  return Object.fromEntries(
+    ["SystemRoot", "WINDIR", "ComSpec"]
+      .filter((name) => env[name] !== undefined)
+      .map((name) => [name, env[name]])
+      .concat([["OPENSPEC_DASHBOARD_ACL_PATH", path]]),
+  );
+}
+
 function verifyWindowsPrivateAcl(path) {
   // This is a fixed PowerShell host adapter, started without a shell. The path
-  // is an argument, never interpolated into the script.
-  const script = "$me=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value;$a=Get-Acl -LiteralPath $args[-1];$x=@($a.Access|%{$sid=$_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value;@{sid=$sid;type=$_.AccessControlType.ToString()}});@{owner=$a.GetOwner([Security.Principal.SecurityIdentifier]).Value;current=$me;access=$x}|ConvertTo-Json -Compress";
+  // travels in one child-only environment value and is never interpolated.
+  const script = "$me=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value;$a=([System.IO.FileInfo]$env:OPENSPEC_DASHBOARD_ACL_PATH).GetAccessControl();$x=@($a.Access|%{$sid=$_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value;@{sid=$sid;type=$_.AccessControlType.ToString()}});@{owner=$a.GetOwner([Security.Principal.SecurityIdentifier]).Value;current=$me;access=$x}|ConvertTo-Json -Compress";
   try {
-    const result = JSON.parse(execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script, "--", path], { encoding: "utf8", windowsHide: true, shell: false }));
+    const powershell = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+    const result = JSON.parse(execFileSync(powershell, ["-NoProfile", "-NonInteractive", "-Command", script], {
+      encoding: "utf8",
+      env: windowsAclEnvironment(path),
+      windowsHide: true,
+      shell: false,
+    }));
     const allowed = new Set([result.current, "S-1-5-18", "S-1-5-32-544"]);
     const access = Array.isArray(result.access) ? result.access : [result.access];
     return result.owner === result.current && access.every((entry) => entry && entry.type === "Allow" && allowed.has(entry.sid));

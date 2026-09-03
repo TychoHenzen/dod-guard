@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "language": "rust",
+  "checks": {
+    "selected_project_isolated": true,
+    "blank_tab_handoff": true,
+    "root_dot": true,
+    "second_click_reuse": true,
+    "browser_closure": true,
+    "protected_hash_equal": true,
+    "external_cache": true,
+    "managed_cleanup": true
+  },
+  "error_code": null,
+  "elapsed_ms": 4627,
+  "ports": {
+    "dashboard": 4400,
+    "explorer": 4410
+  }
+}

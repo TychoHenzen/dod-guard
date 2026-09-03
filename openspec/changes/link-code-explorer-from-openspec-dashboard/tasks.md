@@ -98,11 +98,14 @@
 
 ## 4. Commands, documentation, and real acceptance
 
-- [ ] 4.1 Add the dependency-free test aggregator, fake explorer, process fixtures, and root `test:openspec-dashboard` script. Run that command and syntax-check every touched `.mjs` and `.js` file.
+- [x] 4.1 Add the dependency-free test aggregator, fake explorer, process fixtures, and root `test:openspec-dashboard` script. Run that command and syntax-check every touched `.mjs` and `.js` file.
+<!-- status: completed -->
 
-- [ ] 4.2 Update `tools/openspec-dashboard/README.md` with the action, registry refresh behavior, package override contract, capabilities, capacity, managed lifetime, stable failures, recovery from a stale ownership file, test command, practice command, and absence of a CI gate.
+- [x] 4.2 Update `tools/openspec-dashboard/README.md` with the action, registry refresh behavior, package override contract, capabilities, capacity, managed lifetime, stable failures, recovery from a stale ownership file, test command, practice command, and absence of a CI gate.
+<!-- status: completed -->
 
-- [ ] 4.3 Add and run `node tools/openspec-dashboard/practice-code-explorer-link.mjs --language rust` using the prerequisite workspace's pinned browser and built bundle. Use an isolated temporary home and disposable fixture. Enforce the 90-second bound, exit codes, redacted evidence schema, blank-tab handoff, root `.`, selection isolation, second-click reuse, browser closure, managed cleanup, external cache placement, and protected-file hash equality.
+- [x] 4.3 Add and run `node tools/openspec-dashboard/practice-code-explorer-link.mjs --language rust` using the prerequisite workspace's pinned browser and built bundle. Use an isolated temporary home and disposable fixture. Enforce the 90-second bound, exit codes, redacted evidence schema, blank-tab handoff, root `.`, selection isolation, second-click reuse, browser closure, managed cleanup, external cache placement, and protected-file hash equality.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: The bridge does not proxy navigation or write project content :: Real packaged launch lifecycle runs -->
 
 - [ ] 4.4 Run final local gates: `npm run test:openspec-dashboard`, platform integration tests, dashboard syntax checks, unchanged root Biome lint and format commands, `openspec validate --all --strict --no-interactive`, live practice, and `dod-guard cover link-code-explorer-from-openspec-dashboard` after test markers exist.
