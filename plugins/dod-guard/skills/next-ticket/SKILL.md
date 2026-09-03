@@ -1,6 +1,6 @@
 ---
 name: next-ticket
-description: Take a GitHub Project issue from the current repository through a feature branch, verified implementation, and draft pull request. Use when the user asks to pick up, start, or continue a project ticket.
+description: Execute a refined GitHub Project PBI through a feature branch, verified commits, and a pushed branch. Use when the user asks to pick up, start, or continue a ready PBI. Use submit-draft-pr to create its pull request.
 ---
 
 # Next ticket
@@ -8,9 +8,8 @@ description: Take a GitHub Project issue from the current repository through a f
 Use the current Git checkout as the source of truth. Never choose a project by
 title similarity or from a remembered owner.
 
-After selection, create the ticket's feature branch, assign the issue, move it
-to the project's in-progress status, implement it, and open a verified draft
-pull request.
+After selection, create the PBI's feature branch, assign the issue, move it
+to In Progress, implement it, verify it, commit it, and push the branch.
 
 ## Preconditions
 
@@ -53,16 +52,20 @@ mapping. It works for personal and organization projects.
 If the user supplied an issue number, verify that it belongs to this repository
 and appears in the linked project.
 
-Without an issue number, list open project items from this repository. Exclude
-pull requests and issues already assigned to someone else. Show the issue
-number, title, assignee, and status. If exactly one issue remains, select it.
-Otherwise let the user choose.
+Without an issue number, list open project items from this repository. Keep
+only unassigned issues whose Status is exactly `Todo`, and exclude pull
+requests. Show the issue number, title, assignee, and status. If exactly one
+issue remains, select it. Otherwise let the user choose.
 
 Before reporting a ticket as ready, read its body and require:
 
 - a short description of the intended change;
 - implementation notes;
 - acceptance criteria written as checkboxes with observable outcomes.
+
+Require every linked sub-issue to be open or closed with pushed implementation
+evidence. A parent PBI with no linked sub-issues is valid when its acceptance
+criteria form one coherent implementation slice.
 
 Stop and name the missing section when the issue is incomplete. Do not invent
 requirements.
@@ -78,9 +81,10 @@ Resolve every value before changing local or remote state:
    under 64 characters by shortening only the slug.
 4. Confirm that the branch name exists neither locally nor on `origin`.
 5. Read the linked project's fields and find exactly one `Status` field with
-   exactly one case-insensitive `In Progress` option.
-6. Resolve the selected issue's project item id, the project id, the Status
-   field id, and the In Progress option id.
+   exactly one case-insensitive `Todo` option and one case-insensitive
+   `In Progress` option.
+6. Confirm the selected PBI currently has Status `Todo`. Resolve its project
+   item id, the project id, the Status field id, and the In Progress option id.
 
 Stop before any mutation if a value is missing or ambiguous. Never hardcode a
 project, field, option, repository, default branch, or user id from an earlier
@@ -141,27 +145,7 @@ belong to the issue.
 Create a concise commit that names the implemented outcome. Push the current
 branch to its existing upstream. Do not force-push or rewrite existing commits.
 
-## Open the draft pull request
-
-Confirm no open pull request already uses this head branch. Create one draft PR
-against the resolved default branch with an explicit title and body.
-
-Keep the body short. Include:
-
-- what changed and why;
-- the material verification commands and results;
-- the issue's acceptance checklist, checked only where evidence exists;
-- `Closes #<issue-number>`.
-
-The closing keyword closes the issue only after merge. Leave the Project status
-as `In Progress` while the PR is open.
-
-Never approve the PR, mark it ready for review, merge it, close it, or close the
-issue. These are human-owned actions even when the active GitHub credential has
-permission to perform them.
-
 ## Result
 
 Report the repository, linked project, selected issue, branch, commit, checks,
-and draft PR URL. Name any check that could not run. Stop after creating the
-draft PR.
+and pushed branch. Name any check that could not run. Stop after the push.

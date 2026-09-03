@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "dod-guard",
-      "description": "GitHub issue delivery and repository maintenance. Ships 6 skills, including /next-ticket for linked Projects and draft pull requests.",
+      "description": "GitHub issue delivery, repository maintenance, and marketplace release. Ships 10 skills, including backlog capture, PBI refinement, /next-ticket, /submit-draft-pr, and /publish.",
       "source": "./plugins/dod-guard",
       "category": "productivity"
     },

@@ -5,13 +5,15 @@ maintenance.
 
 ## Delivery workflow
 
-`/next-ticket` resolves the repository from the current checkout. It requires
-exactly one open GitHub Project explicitly linked to that repository.
+`/add-backlog-idea` captures work. `/refine-backlog-item` turns it into a Todo
+PBI. `/next-ticket` implements and pushes that PBI. `/submit-draft-pr` submits
+its verified draft pull request. Each skill resolves the current repository and
+requires exactly one open GitHub Project explicitly linked to it.
 
 One issue becomes one branch and one draft pull request:
 
 ```text
-GitHub issue -> codex/<issue>-<slug> -> verified commits -> draft PR
+backlog idea -> Todo PBI and subtasks -> codex/<issue>-<slug> -> verified commits -> draft PR
 ```
 
 The issue holds the requested outcome and acceptance sub-issues. The branch
@@ -22,7 +24,11 @@ Merging and approval remain human actions.
 
 | Skill | Purpose |
 |---|---|
-| `/next-ticket` | Deliver a linked Project issue through a verified draft PR. |
+| `/add-backlog-idea` | Capture a requested idea as a Backlog issue in its chosen repository. |
+| `/refine-backlog-item` | Turn a Backlog issue into a Todo PBI and independent subtasks. |
+| `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
+| `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
+| `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
 | `/codex-migrate` | Adapt Claude-oriented repository instructions for Codex. |
 | `/doc-reconcile` | Resolve contradictory documentation using Git history. |
