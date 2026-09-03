@@ -142,3 +142,28 @@ export function analyzeDependencies(
     return leftKey.localeCompare(rightKey);
   });
 }
+
+/** Reports every current configured boundary violation and dependency cycle. */
+export function analyzeCurrentDependencies(files: ProductionDependencyFile[], config: QualityConfig) {
+  const current = graph(files, config);
+  const dependencies = [...current.values()]
+    .flat()
+    .flatMap((edge) =>
+      groupFor(edge.from, config.pathGroups).flatMap((fromGroup) =>
+        groupFor(edge.to, config.pathGroups).flatMap((toGroup) =>
+          config.dependencyDirections.some((rule) => rule.from === fromGroup && rule.to === toGroup && !rule.allowed)
+            ? [{ kind: "forbidden-direction" as const, ...edge, fromGroup, toGroup }]
+            : [],
+        ),
+      ),
+    )
+    .sort((left, right) =>
+      `${left.from}\0${left.to}\0${left.fromGroup}\0${left.toGroup}`.localeCompare(
+        `${right.from}\0${right.to}\0${right.fromGroup}\0${right.toGroup}`,
+      ),
+    );
+  return {
+    dependencies,
+    cycles: cycles(current).map((cycle) => ({ kind: "cycle" as const, cycle })),
+  };
+}

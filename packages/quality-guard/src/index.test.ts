@@ -72,6 +72,7 @@ test("the MCP server lists scan, baseline, waiver, and commit-gate tools", async
     assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), [
       "quality_commit_gate",
       "quality_gate",
+      "quality_report",
       "quality_scan",
       "quality_skips",
     ]);

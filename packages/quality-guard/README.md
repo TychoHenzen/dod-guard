@@ -33,4 +33,6 @@ Codex discovers the plugin hook from `hooks/hooks.json`. After installation or a
 
 ## MCP tools
 
-The server exposes `quality_scan`, `quality_gate`, `quality_skips`, and `quality_commit_gate`. Use `quality_commit_gate` when an MCP client needs the same staged decision as the command line.
+The server exposes `quality_scan`, `quality_report`, `quality_gate`, `quality_skips`, and `quality_commit_gate`.
+`quality_report` scores every supported source file under the repository root and adds an unscored current-state
+architecture audit. Use `quality_commit_gate` when an MCP client needs the same staged decision as the command line.

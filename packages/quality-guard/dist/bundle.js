@@ -2984,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3011,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3229,8 +3229,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path8) {
-      let input = path8;
+    function removeDotSegments(path9) {
+      let input = path9;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3482,8 +3482,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path8, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path8 && path8 !== "/" ? path8 : void 0;
+        const [path9, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path9 && path9 !== "/" ? path9 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3642,7 +3642,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve(baseURI, relativeURI, options) {
+    function resolve2(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -3926,7 +3926,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -6916,8 +6916,8 @@ var require_dist = __commonJS({
 });
 
 // src/index.ts
-import { readFileSync as readFileSync3, realpathSync } from "node:fs";
-import * as path7 from "node:path";
+import { readFileSync as readFileSync4, realpathSync } from "node:fs";
+import * as path8 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
@@ -7398,8 +7398,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path8, errorMaps, issueData } = params;
-  const fullPath = [...path8, ...issueData.path || []];
+  const { data, path: path9, errorMaps, issueData } = params;
+  const fullPath = [...path9, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7515,11 +7515,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path8, key2) {
+  constructor(parent, value, path9, key2) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path8;
+    this._path = path9;
     this._key = key2;
   }
   get path() {
@@ -11156,10 +11156,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path8) {
-  if (!path8)
+function getElementAtPath(obj, path9) {
+  if (!path9)
     return obj;
-  return path8.reduce((acc, key2) => acc?.[key2], obj);
+  return path9.reduce((acc, key2) => acc?.[key2], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11479,11 +11479,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path8, issues) {
+function prefixIssues(path9, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path8);
+    iss.path.unshift(path9);
     return iss;
   });
 }
@@ -14894,11 +14894,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path8) {
-  if (path8.length === 0) {
+function getDotPath(path9) {
+  if (path9.length === 0) {
     return "object root";
   }
-  return path8.reduce((acc, seg, index) => {
+  return path9.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -19027,7 +19027,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -19044,7 +19044,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -19122,7 +19122,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve(parseResult.data);
+            resolve2(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -19383,12 +19383,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve, interval);
+      const timeoutId = setTimeout(resolve2, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20479,7 +20479,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21143,12 +21143,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve) => {
+    return new Promise((resolve2) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve();
+        resolve2();
       } else {
-        this._stdout.once("drain", resolve);
+        this._stdout.once("drain", resolve2);
       }
     });
   }
@@ -21428,6 +21428,18 @@ function analyzePlacement(beforeFiles, afterFiles, affectedPaths, config2) {
     (left, right) => left.directory.localeCompare(right.directory) || left.addedType.localeCompare(right.addedType) || left.kind.localeCompare(right.kind)
   );
 }
+function analyzeCurrentPlacement(files, config2) {
+  const directories = typeNames(files, config2);
+  return [...directories.entries()].filter(
+    ([directory, types]) => config2.genericBuckets.includes(path2.posix.basename(directory).toLowerCase()) || types.size > config2.directTypeLimit
+  ).map(([directory, types]) => ({
+    kind: config2.genericBuckets.includes(path2.posix.basename(directory).toLowerCase()) ? "generic-bucket" : "flat-accumulation",
+    directory,
+    typeCount: types.size,
+    limit: config2.directTypeLimit,
+    types: [...types].sort((left, right) => left.localeCompare(right))
+  })).sort((left, right) => left.directory.localeCompare(right.directory) || left.kind.localeCompare(right.kind));
+}
 
 // src/commit-gate/dependency.ts
 function extensionless(filePath) {
@@ -21516,6 +21528,24 @@ function analyzeDependencies(beforeFiles, afterFiles, affectedPaths, config2) {
     return leftKey.localeCompare(rightKey);
   });
 }
+function analyzeCurrentDependencies(files, config2) {
+  const current = graph(files, config2);
+  const dependencies = [...current.values()].flat().flatMap(
+    (edge) => groupFor(edge.from, config2.pathGroups).flatMap(
+      (fromGroup) => groupFor(edge.to, config2.pathGroups).flatMap(
+        (toGroup) => config2.dependencyDirections.some((rule) => rule.from === fromGroup && rule.to === toGroup && !rule.allowed) ? [{ kind: "forbidden-direction", ...edge, fromGroup, toGroup }] : []
+      )
+    )
+  ).sort(
+    (left, right) => `${left.from}\0${left.to}\0${left.fromGroup}\0${left.toGroup}`.localeCompare(
+      `${right.from}\0${right.to}\0${right.fromGroup}\0${right.toGroup}`
+    )
+  );
+  return {
+    dependencies,
+    cycles: cycles(current).map((cycle) => ({ kind: "cycle", cycle }))
+  };
+}
 
 // src/commit-gate/encapsulation.ts
 function key(type, member) {
@@ -21530,15 +21560,15 @@ function observedCallers(symbol, files, config2) {
   const productionCallers = [];
   const testCallers = [];
   for (const file of files) {
-    const path8 = normalizeArchitecturePath(file.path);
+    const path9 = normalizeArchitecturePath(file.path);
     if (!file.references.some((reference) => reference === symbol || reference.endsWith(`.${symbol}`))) continue;
-    if (isProductionArchitecturePath(path8, config2)) productionCallers.push(path8);
-    else testCallers.push(path8);
+    if (isProductionArchitecturePath(path9, config2)) productionCallers.push(path9);
+    else testCallers.push(path9);
   }
   return { productionCallers: [...new Set(productionCallers)].sort(), testCallers: [...new Set(testCallers)].sort() };
 }
 function forwardingKeys(type) {
-  return new Set(type.forwardingPaths.map((path8) => `${path8.member}\0${path8.target}`));
+  return new Set(type.forwardingPaths.map((path9) => `${path9.member}\0${path9.target}`));
 }
 function analyzeEncapsulation(beforeFiles, afterFiles, affectedPaths, config2) {
   const beforeByPath = new Map(beforeFiles.map((file) => [normalizeArchitecturePath(file.path), file]));
@@ -21561,14 +21591,14 @@ function analyzeEncapsulation(beforeFiles, afterFiles, affectedPaths, config2) {
         }
       }
       const priorForwarding = previous ? forwardingKeys(previous) : /* @__PURE__ */ new Set();
-      for (const path8 of type.forwardingPaths) {
-        if (!priorForwarding.has(`${path8.member}\0${path8.target}`)) {
+      for (const path9 of type.forwardingPaths) {
+        if (!priorForwarding.has(`${path9.member}\0${path9.target}`)) {
           findings.push({
             kind: "forwarding-path",
             path: filePath,
             type: type.name,
-            member: path8.member,
-            target: path8.target
+            member: path9.member,
+            target: path9.target
           });
         }
       }
@@ -21824,7 +21854,7 @@ var QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
 function changedPaths(snapshot) {
   return [
     ...new Set(
-      snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((path8) => Boolean(path8))
+      snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((path9) => Boolean(path9))
     )
   ].sort((left, right) => left.localeCompare(right));
 }
@@ -22509,15 +22539,113 @@ function runCheckCommand(args, root = process.cwd()) {
   }
 }
 
-// src/skips.ts
+// src/report.ts
 import { existsSync, readFileSync as readFileSync2 } from "node:fs";
 import * as path6 from "node:path";
-var SKIP_LOG = path6.join(".github", "quality", "skip-log.json");
+
+// src/commit-gate/current-architecture.ts
+function analyzeCurrentArchitecture(files, config2) {
+  const paths = files.map((file) => file.path);
+  const dependency = analyzeCurrentDependencies(files, config2);
+  const encapsulation = analyzeEncapsulation([], files, paths, config2).filter(
+    (finding) => finding.kind !== "public-surface-growth" || finding.productionCallers.length === 0
+  );
+  return {
+    placement: analyzeCurrentPlacement(
+      files.map((file) => ({ path: file.path, types: file.types.map((type) => type.name) })),
+      config2
+    ),
+    dependencies: dependency.dependencies,
+    cycles: dependency.cycles,
+    encapsulation
+  };
+}
+
+// src/report.ts
+function compareFinding(left, right) {
+  return left.line - right.line || left.rule.localeCompare(right.rule) || left.message.localeCompare(right.message);
+}
+function summarize(files) {
+  const fileCount = files.length;
+  const errors = files.reduce((sum, file) => sum + file.errors, 0);
+  const warnings = files.reduce((sum, file) => sum + file.warnings, 0);
+  const averageScore = fileCount === 0 ? null : files.reduce((sum, file) => sum + file.score, 0) / fileCount;
+  const minimumScore = fileCount === 0 ? null : Math.min(...files.map((file) => file.score));
+  return { fileCount, errors, warnings, averageScore, minimumScore };
+}
+function buildQualityReport(scan, architecture) {
+  const byFile = /* @__PURE__ */ new Map();
+  for (const finding of scan.violations) {
+    const findings = byFile.get(finding.file) ?? [];
+    findings.push(finding);
+    byFile.set(finding.file, findings);
+  }
+  const files = [...scan.files].sort((left, right) => left.path.localeCompare(right.path)).map((file) => {
+    const findings = [...byFile.get(file.path) ?? []].sort(compareFinding);
+    const errors = findings.filter((finding) => finding.severity === "error").length;
+    const warnings = findings.length - errors;
+    return { ...file, score: Math.max(0, 100 - errors * 5 - warnings), errors, warnings, findings };
+  });
+  const production = files.filter((file) => file.classification === "production");
+  const tests = files.filter((file) => file.classification === "test");
+  return {
+    schemaVersion: 1,
+    scoring: { initial: 100, errorDeduction: 5, warningDeduction: 1, minimum: 0 },
+    scanner: {
+      profile: scan.profile,
+      fileSelection: "supported handwritten source; generated, dependency, build, binary, unreadable, and symlinked files excluded"
+    },
+    summaries: { overall: summarize(files), production: summarize(production), test: summarize(tests) },
+    files,
+    architecture
+  };
+}
+function architectureFor(root, scan) {
+  const configPath = path6.join(root, ".quality-guard.json");
+  const config2 = parseQualityConfig(existsSync(configPath) ? readFileSync2(configPath, "utf8") : "{}");
+  const sourceFiles = scan.files.map((file) => ({
+    path: file.path,
+    content: readFileSync2(path6.join(root, file.path), "utf8")
+  }));
+  const inventory = extractFactInventory(
+    sourceFiles,
+    sourceFiles.map((file) => file.path)
+  );
+  const analyzed = analyzeCurrentArchitecture(inventory.files, config2);
+  return {
+    ...analyzed,
+    errors: inventory.errors.map((message) => {
+      const separator = message.indexOf(": ");
+      return {
+        code: "ARCHITECTURE_EXTRACTION_FAILED",
+        target: separator === -1 ? "" : message.slice(0, separator),
+        message: separator === -1 ? message : message.slice(separator + 2)
+      };
+    })
+  };
+}
+function asReportScan(report) {
+  const candidate = report;
+  if (!(Array.isArray(candidate.files) && Array.isArray(candidate.violations) && candidate.profile)) {
+    throw new Error("quality scanner returned an invalid report");
+  }
+  return candidate;
+}
+function runQualityReport(request) {
+  const root = path6.resolve(request.root ?? process.cwd());
+  const scan = asReportScan(runScan({ ...request, root, paths: ["."] }).report);
+  return buildQualityReport(scan, architectureFor(root, scan));
+}
+
+// src/skips.ts
+import { existsSync as existsSync2, readFileSync as readFileSync3 } from "node:fs";
+import * as path7 from "node:path";
+var SKIP_LOG = path7.join(".github", "quality", "skip-log.json");
 function readSkipLog(root) {
-  const target = path6.join(root, SKIP_LOG);
-  if (!existsSync(target)) return [];
+  const target = path7.join(root, SKIP_LOG);
+  if (!existsSync2(target)) return [];
   try {
-    const parsed = JSON.parse(readFileSync2(target, "utf8"));
+    const parsed = JSON.parse(readFileSync3(target, "utf8"));
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -22539,8 +22667,8 @@ function formatSkips(records) {
 }
 
 // src/index.ts
-var _dirname = path7.dirname(fileURLToPath2(import.meta.url));
-var _pkg = JSON.parse(readFileSync3(path7.join(_dirname, "..", "package.json"), "utf-8"));
+var _dirname = path8.dirname(fileURLToPath2(import.meta.url));
+var _pkg = JSON.parse(readFileSync4(path8.join(_dirname, "..", "package.json"), "utf-8"));
 var PATHS = external_exports.array(external_exports.string()).min(1).describe("Paths to scan, relative to root");
 var ROOT = external_exports.string().optional().describe("Repository root. Point this at the repo, not at the target, so manifest files are in scope");
 function text(value) {
@@ -22601,6 +22729,23 @@ function createQualityGuardServer() {
         return text(`${verdict} (exit ${result.exitCode})
 
 ${JSON.stringify(result.report, null, 2)}`);
+      } catch (err) {
+        return toolError(err);
+      }
+    }
+  );
+  server2.tool(
+    "quality_report",
+    "Score every supported source file under the repository root and return a current-state architecture appendix. Read-only and not a gate verdict.",
+    {
+      root: ROOT,
+      excludes: external_exports.array(external_exports.string()).optional().describe("Skip paths containing these fragments"),
+      testPaths: external_exports.array(external_exports.string()).optional().describe("Treat paths containing these fragments as test code"),
+      profile: external_exports.enum(["default", "strict"]).optional()
+    },
+    async ({ root, excludes, testPaths, profile }) => {
+      try {
+        return text(JSON.stringify(runQualityReport({ root, excludes, testPaths, profile }), null, 2));
       } catch (err) {
         return toolError(err);
       }

@@ -1,8 +1,9 @@
 /**
  * quality-guard MCP server - structural code quality as tools.
  *
- * 4 tools.
+ * 5 tools.
  * `quality_scan` measures structure and gives no verdict.
+ * `quality_report` scores every supported file and audits current architecture.
  * `quality_gate` compares against the recorded baseline and returns a verdict.
  * `quality_skips` lists sentinel waivers nobody has acknowledged yet.
  *
@@ -18,6 +19,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { renderDecision, runCheckCommand, runStagedCheck } from "./commit-gate/cli.js";
+import { runQualityReport } from "./report.js";
 import { runScan } from "./scanner.js";
 import { formatSkips, readSkipLog } from "./skips.js";
 
@@ -93,6 +95,24 @@ export function createQualityGuardServer(): McpServer {
         });
         const verdict = result.exitCode === 0 ? "PASS" : "FAIL";
         return text(`${verdict} (exit ${result.exitCode})\n\n${JSON.stringify(result.report, null, 2)}`);
+      } catch (err) {
+        return toolError(err);
+      }
+    },
+  );
+
+  server.tool(
+    "quality_report",
+    "Score every supported source file under the repository root and return a current-state architecture appendix. Read-only and not a gate verdict.",
+    {
+      root: ROOT,
+      excludes: z.array(z.string()).optional().describe("Skip paths containing these fragments"),
+      testPaths: z.array(z.string()).optional().describe("Treat paths containing these fragments as test code"),
+      profile: z.enum(["default", "strict"]).optional(),
+    },
+    async ({ root, excludes, testPaths, profile }) => {
+      try {
+        return text(JSON.stringify(runQualityReport({ root, excludes, testPaths, profile }), null, 2));
       } catch (err) {
         return toolError(err);
       }

@@ -182,6 +182,13 @@ function main(argv) {
   const result = {
     profile: options.profile,
     fileCount: files.length,
+    files: files
+      .map((file) => ({
+        path: file.rel,
+        language: file.lang,
+        classification: file.isTest ? "test" : "production",
+      }))
+      .sort((left, right) => left.path.localeCompare(right.path)),
     summary,
     comparison,
     violations: sorted,
