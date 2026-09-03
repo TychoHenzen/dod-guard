@@ -1,7 +1,7 @@
 {
   "name": "dod-guard",
-  "version": "5.0.0",
-  "description": "Delivery review and repository maintenance skills.",
+  "version": "5.0.1",
+  "description": "GitHub issue delivery, repository maintenance, and marketplace release skills.",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
@@ -11,8 +11,8 @@
   "keywords": ["verification", "skills", "git"],
   "interface": {
     "displayName": "dod-guard",
-    "shortDescription": "Delivery review and repository maintenance skills.",
-    "longDescription": "Provides issue delivery, review, refactoring, migration, and repository maintenance workflows.",
+    "shortDescription": "Issue delivery, repository maintenance, and marketplace release skills.",
+    "longDescription": "Provides issue delivery, review, refactoring, migration, repository maintenance, and marketplace release workflows.",
     "developerName": "tychohenzen",
     "category": "Developer Tools",
     "capabilities": ["Skills"],
