@@ -1,0 +1,1749 @@
+{
+  "source": "packages/code-explorer/src/semantic/backend-launch-policy.ts",
+  "date": "2026-09-03T11:36:29.785Z",
+  "summary": {
+    "total": 721,
+    "killed": 410,
+    "survived": 217,
+    "timeout": 1,
+    "unviable": 93
+  },
+  "survivors": [
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "6",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 15,
+      "dist_col": 57
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "11",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 16,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "37",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 28,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "56",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 47,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "62",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 50,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "66",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 50,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "71",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 55,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "77",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 55,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "78",
+      "mutator": "EqualityOperator",
+      "replacement": "inspected.code !== \"version_incompatible\"",
+      "dist_line": 55,
+      "dist_col": 58
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "79",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 55,
+      "dist_col": 77
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "84",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 62,
+      "dist_col": 57
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "89",
+      "mutator": "LogicalOperator",
+      "replacement": "entry?.endpoint === endpoint || isPermittedEndpoint(endpoint)",
+      "dist_line": 63,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "90",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 63,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "92",
+      "mutator": "OptionalChaining",
+      "replacement": "entry.endpoint",
+      "dist_line": 63,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "101",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 70,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "103",
+      "mutator": "LogicalOperator",
+      "replacement": "method === \"workspace/applyEdit\" && method.startsWith(\"workspace/\")",
+      "dist_line": 70,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "104",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 70,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "105",
+      "mutator": "EqualityOperator",
+      "replacement": "method !== \"workspace/applyEdit\"",
+      "dist_line": 70,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "106",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 70,
+      "dist_col": 34
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "112",
+      "mutator": "OptionalChaining",
+      "replacement": "allowlist.find(entry => entry.language === language).safe_initialization_options",
+      "dist_line": 76,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "114",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 76,
+      "dist_col": 46
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "118",
+      "mutator": "LogicalOperator",
+      "replacement": "entry.entrypoint_basenames && []",
+      "dist_line": 81,
+      "dist_col": 81
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "123",
+      "mutator": "OptionalChaining",
+      "replacement": "identity.canonical_path",
+      "dist_line": 82,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "125",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 83,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "139",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 85,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "146",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 87,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "147",
+      "mutator": "LogicalOperator",
+      "replacement": "!identity.regular_file && identity.link_or_reparse_point",
+      "dist_line": 87,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "155",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 91,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "159",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 93,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "160",
+      "mutator": "Regex",
+      "replacement": "/[a-f0-9]{64}$/i",
+      "dist_line": 93,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "161",
+      "mutator": "Regex",
+      "replacement": "/^[a-f0-9]{64}/i",
+      "dist_line": 93,
+      "dist_col": 10
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "171",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 96,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "177",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 98,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "182",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 100,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "190",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 103,
+      "dist_col": 56
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "191",
+      "mutator": "OptionalChaining",
+      "replacement": "entry.entrypoint_basenames[index]",
+      "dist_line": 104,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "193",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 105,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "194",
+      "mutator": "LogicalOperator",
+      "replacement": "(!(file.canonical_path && file.device && file.file_id && file.sha256 && file.regular_file) || file.link_or_reparse_point",
+      "dist_line": 105,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "195",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 105,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "196",
+      "mutator": "LogicalOperator",
+      "replacement": "(!(file.canonical_path && file.device && file.file_id && file.sha256 && file.regular_file) || file.link_or_reparse_point",
+      "dist_line": 105,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "197",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 105,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "198",
+      "mutator": "LogicalOperator",
+      "replacement": "(!(file.canonical_path && file.device && file.file_id && file.sha256 && file.regular_file) || file.link_or_reparse_point",
+      "dist_line": 105,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "199",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 105,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "200",
+      "mutator": "LogicalOperator",
+      "replacement": "!(file.canonical_path && file.device && file.file_id && file.sha256 && file.regular_file) && file.link_or_reparse_point",
+      "dist_line": 105,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "202",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 105,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "204",
+      "mutator": "LogicalOperator",
+      "replacement": "file.canonical_path && file.device && file.file_id && file.sha256 || file.regular_file",
+      "dist_line": 105,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "205",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 105,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "206",
+      "mutator": "LogicalOperator",
+      "replacement": "file.canonical_path && file.device && file.file_id || file.sha256",
+      "dist_line": 105,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "207",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 105,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "208",
+      "mutator": "LogicalOperator",
+      "replacement": "file.canonical_path && file.device || file.file_id",
+      "dist_line": 105,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "209",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 105,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "210",
+      "mutator": "LogicalOperator",
+      "replacement": "file.canonical_path || file.device",
+      "dist_line": 105,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "211",
+      "mutator": "LogicalOperator",
+      "replacement": "options.platform && platformForHost()",
+      "dist_line": 107,
+      "dist_col": 65
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "213",
+      "mutator": "LogicalOperator",
+      "replacement": "options.platform && platformForHost()",
+      "dist_line": 108,
+      "dist_col": 53
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "216",
+      "mutator": "LogicalOperator",
+      "replacement": "options.platform && platformForHost()",
+      "dist_line": 108,
+      "dist_col": 109
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "218",
+      "mutator": "Regex",
+      "replacement": "/[a-f0-9]{64}$/i",
+      "dist_line": 109,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "219",
+      "mutator": "Regex",
+      "replacement": "/^[a-f0-9]{64}/i",
+      "dist_line": 109,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "227",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 112,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "229",
+      "mutator": "OptionalChaining",
+      "replacement": "entry.entrypoint_sha256s[index]",
+      "dist_line": 112,
+      "dist_col": 29
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "230",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 112,
+      "dist_col": 64
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "232",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 113,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "239",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 116,
+      "dist_col": 51
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "245",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 118,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "247",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 118,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "246",
+      "mutator": "LogicalOperator",
+      "replacement": "(!(metadata?.canonical_path && metadata.device && metadata.file_id && metadata.sha256 && metadata.regular_file) || metad",
+      "dist_line": 118,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "249",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 118,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "248",
+      "mutator": "LogicalOperator",
+      "replacement": "(!(metadata?.canonical_path && metadata.device && metadata.file_id && metadata.sha256 && metadata.regular_file) || metad",
+      "dist_line": 118,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "250",
+      "mutator": "LogicalOperator",
+      "replacement": "(!(metadata?.canonical_path && metadata.device && metadata.file_id && metadata.sha256 && metadata.regular_file) || metad",
+      "dist_line": 118,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "251",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 118,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "252",
+      "mutator": "LogicalOperator",
+      "replacement": "!(metadata?.canonical_path && metadata.device && metadata.file_id && metadata.sha256 && metadata.regular_file) && metada",
+      "dist_line": 118,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "254",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 118,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "256",
+      "mutator": "LogicalOperator",
+      "replacement": "metadata?.canonical_path && metadata.device && metadata.file_id && metadata.sha256 || metadata.regular_file",
+      "dist_line": 118,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "257",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 118,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "258",
+      "mutator": "LogicalOperator",
+      "replacement": "metadata?.canonical_path && metadata.device && metadata.file_id || metadata.sha256",
+      "dist_line": 118,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "259",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 118,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "261",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 118,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "260",
+      "mutator": "LogicalOperator",
+      "replacement": "metadata?.canonical_path && metadata.device || metadata.file_id",
+      "dist_line": 118,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "263",
+      "mutator": "OptionalChaining",
+      "replacement": "metadata.canonical_path",
+      "dist_line": 118,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "262",
+      "mutator": "LogicalOperator",
+      "replacement": "metadata?.canonical_path || metadata.device",
+      "dist_line": 118,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "264",
+      "mutator": "LogicalOperator",
+      "replacement": "options.platform && platformForHost()",
+      "dist_line": 120,
+      "dist_col": 69
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "265",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 121,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "267",
+      "mutator": "LogicalOperator",
+      "replacement": "options.platform && platformForHost()",
+      "dist_line": 121,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "270",
+      "mutator": "Regex",
+      "replacement": "/[a-f0-9]{64}$/i",
+      "dist_line": 122,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "271",
+      "mutator": "Regex",
+      "replacement": "/^[a-f0-9]{64}/i",
+      "dist_line": 122,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "278",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 124,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "281",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 127,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "297",
+      "mutator": "LogicalOperator",
+      "replacement": "samePath(left.canonical_path, right.canonical_path, platform) && left.device === right.device && left.file_id === right.",
+      "dist_line": 133,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "296",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 133,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "298",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 133,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "299",
+      "mutator": "LogicalOperator",
+      "replacement": "samePath(left.canonical_path, right.canonical_path, platform) && left.device === right.device || left.file_id === right.",
+      "dist_line": 133,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "300",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 133,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "301",
+      "mutator": "LogicalOperator",
+      "replacement": "samePath(left.canonical_path, right.canonical_path, platform) || left.device === right.device",
+      "dist_line": 133,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "302",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 134,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "304",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 135,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "306",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 136,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "312",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 142,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "315",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 142,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "316",
+      "mutator": "LogicalOperator",
+      "replacement": "left || right",
+      "dist_line": 142,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "317",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 143,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "341",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 152,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "376",
+      "mutator": "Regex",
+      "replacement": "/\\{entrypoint:(\\d+)\\}$/",
+      "dist_line": 167,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "377",
+      "mutator": "Regex",
+      "replacement": "/^\\{entrypoint:(\\d+)\\}/",
+      "dist_line": 167,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "378",
+      "mutator": "Regex",
+      "replacement": "/^\\{entrypoint:(\\d)\\}$/",
+      "dist_line": 167,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "383",
+      "mutator": "OptionalChaining",
+      "replacement": "entrypoints?.[Number(match[1])].canonical_path",
+      "dist_line": 170,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "384",
+      "mutator": "OptionalChaining",
+      "replacement": "entrypoints[Number(match[1])]",
+      "dist_line": 170,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "387",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 171,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "391",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 177,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "393",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 177,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "394",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 178,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "405",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 182,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "407",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 182,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "412",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 184,
+      "dist_col": 52
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "416",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 185,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "418",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 188,
+      "dist_col": 18
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "425",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 190,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "427",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 190,
+      "dist_col": 30
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "435",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 191,
+      "dist_col": 55
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "437",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 191,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "440",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 194,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "444",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 196,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "445",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 197,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "446",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 197,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "447",
+      "mutator": "EqualityOperator",
+      "replacement": "process.platform !== \"win32\"",
+      "dist_line": 197,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "448",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 197,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "450",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 197,
+      "dist_col": 53
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "452",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 200,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "458",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 204,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "463",
+      "mutator": "Regex",
+      "replacement": "/127(?:\\.\\d{1,3}){3}$/",
+      "dist_line": 204,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "464",
+      "mutator": "Regex",
+      "replacement": "/^127(?:\\.\\d{1,3}){3}/",
+      "dist_line": 204,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "466",
+      "mutator": "Regex",
+      "replacement": "/^127(?:\\.\\d){3}$/",
+      "dist_line": 204,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "482",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 214,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "485",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 214,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "484",
+      "mutator": "LogicalOperator",
+      "replacement": "cargo?.buildScripts?.enable === false && cargo?.procMacro?.enable === false && cargo?.checkOnSave?.enable === false || o",
+      "dist_line": 214,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "486",
+      "mutator": "LogicalOperator",
+      "replacement": "cargo?.buildScripts?.enable === false && cargo?.procMacro?.enable === false || cargo?.checkOnSave?.enable === false",
+      "dist_line": 214,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "487",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 214,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "488",
+      "mutator": "LogicalOperator",
+      "replacement": "cargo?.buildScripts?.enable === false || cargo?.procMacro?.enable === false",
+      "dist_line": 214,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "489",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 214,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "491",
+      "mutator": "OptionalChaining",
+      "replacement": "cargo?.buildScripts.enable",
+      "dist_line": 214,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "492",
+      "mutator": "OptionalChaining",
+      "replacement": "cargo.buildScripts",
+      "dist_line": 214,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "494",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 215,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "496",
+      "mutator": "OptionalChaining",
+      "replacement": "cargo?.procMacro.enable",
+      "dist_line": 215,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "497",
+      "mutator": "OptionalChaining",
+      "replacement": "cargo.procMacro",
+      "dist_line": 215,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "499",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 216,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "501",
+      "mutator": "OptionalChaining",
+      "replacement": "cargo?.checkOnSave.enable",
+      "dist_line": 216,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "502",
+      "mutator": "OptionalChaining",
+      "replacement": "cargo.checkOnSave",
+      "dist_line": 216,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "504",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 217,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "506",
+      "mutator": "OptionalChaining",
+      "replacement": "options.projectConfiguration.enable",
+      "dist_line": 217,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "513",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 220,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "515",
+      "mutator": "LogicalOperator",
+      "replacement": "options.analyzers === false || options.source_generators === false",
+      "dist_line": 220,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "516",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 220,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "519",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 220,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "522",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 222,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "524",
+      "mutator": "LogicalOperator",
+      "replacement": "options.use_project_environment === false || options.mirror_only === true",
+      "dist_line": 222,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "525",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 222,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "528",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 222,
+      "dist_col": 57
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "531",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 228,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "533",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 231,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "532",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 230,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "540",
+      "mutator": "MethodExpression",
+      "replacement": "files.every(file => !isSafePythonMirrorFile(file))",
+      "dist_line": 234,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "543",
+      "mutator": "MethodExpression",
+      "replacement": "options.bundled_typeshed.every(path => unsafePath(path))",
+      "dist_line": 235,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "544",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 235,
+      "dist_col": 39
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "557",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 241,
+      "dist_col": 60
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "565",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 255,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "566",
+      "mutator": "LogicalOperator",
+      "replacement": "path || generation === options.generation",
+      "dist_line": 255,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "567",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 255,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "603",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[]",
+      "dist_line": 272,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "604",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 273,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "605",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 274,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "606",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 275,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "607",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 276,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "608",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 277,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "609",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 278,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "610",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 279,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "611",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 280,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "612",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 281,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "613",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 282,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "614",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 283,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "616",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 285,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "617",
+      "mutator": "LogicalOperator",
+      "replacement": "key || prohibited.has(key)",
+      "dist_line": 285,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "620",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 287,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "622",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 287,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "624",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 289,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "628",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 291,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "629",
+      "mutator": "LogicalOperator",
+      "replacement": "!value && typeof value !== \"object\"",
+      "dist_line": 291,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "631",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 291,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "641",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "642",
+      "mutator": "LogicalOperator",
+      "replacement": "(file.path.endsWith(\".py\") || file.path.endsWith(\".pyi\")) && !file.symlink && !file.sensitive && !unsafePath(file.path) ",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "643",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "645",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "644",
+      "mutator": "LogicalOperator",
+      "replacement": "(file.path.endsWith(\".py\") || file.path.endsWith(\".pyi\")) && !file.symlink && !file.sensitive && !unsafePath(file.path) ",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "646",
+      "mutator": "LogicalOperator",
+      "replacement": "(file.path.endsWith(\".py\") || file.path.endsWith(\".pyi\")) && !file.symlink && !file.sensitive || !unsafePath(file.path)",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "647",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "649",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "648",
+      "mutator": "LogicalOperator",
+      "replacement": "(file.path.endsWith(\".py\") || file.path.endsWith(\".pyi\")) && !file.symlink || !file.sensitive",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "651",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 296,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "650",
+      "mutator": "LogicalOperator",
+      "replacement": "file.path.endsWith(\".py\") || file.path.endsWith(\".pyi\") || !file.symlink",
+      "dist_line": 296,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "654",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 296,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "661",
+      "mutator": "Regex",
+      "replacement": "/[^\\\\/]/",
+      "dist_line": 300,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "662",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 300,
+      "dist_col": 44
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "663",
+      "mutator": "Regex",
+      "replacement": "/[a-f0-9]{64}$/i",
+      "dist_line": 301,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "664",
+      "mutator": "Regex",
+      "replacement": "/^[a-f0-9]{64}/i",
+      "dist_line": 301,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "671",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 304,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "673",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 305,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "675",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 305,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "674",
+      "mutator": "LogicalOperator",
+      "replacement": "(posix.isAbsolute(value) || win32.isAbsolute(value)) && value.split(/[\\\\/]/).includes(\"..\")",
+      "dist_line": 305,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "676",
+      "mutator": "LogicalOperator",
+      "replacement": "posix.isAbsolute(value) && win32.isAbsolute(value)",
+      "dist_line": 305,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "677",
+      "mutator": "Regex",
+      "replacement": "/[^\\\\/]/",
+      "dist_line": 305,
+      "dist_col": 78
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "678",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 305,
+      "dist_col": 96
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "682",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 308,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "684",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 308,
+      "dist_col": 25
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "688",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 314,
+      "dist_col": 11
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "694",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 324,
+      "dist_col": 88
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "700",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 335,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "713",
+      "mutator": "LogicalOperator",
+      "replacement": "value && typeof value === \"object\" || !Object.isFrozen(value)",
+      "dist_line": 343,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "714",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 343,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "715",
+      "mutator": "LogicalOperator",
+      "replacement": "value || typeof value === \"object\"",
+      "dist_line": 343,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/backend-launch-policy.js",
+      "id": "716",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 343,
+      "dist_col": 18
+    }
+  ]
+}
