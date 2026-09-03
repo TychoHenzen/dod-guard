@@ -42,14 +42,16 @@
   <!-- covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Readiness deadline is reached -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Stream output crosses its byte ceiling -->
 
-- [ ] 2.3 Implement the project-identity launch state machine and direct Node HTTP probe. Test joined starts, independent projects, exact 200 reuse, redirects, changed remote address, response overflow, timeout, dead children, and changed filesystem identity. Verify with `npm run test:openspec-dashboard`.
+- [x] 2.3 Implement the project-identity launch state machine and direct Node HTTP probe. Test joined starts, independent projects, exact 200 reuse, redirects, changed remote address, response overflow, timeout, dead children, and changed filesystem identity. Verify with `npm run test:openspec-dashboard`.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Two requests race for one project -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Request targets a healthy child -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Probe redirects or connects elsewhere -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Request targets a different project -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Recorded child or project identity changed -->
 
-- [ ] 2.4 Add the eight-child limit, monotonic last-use timestamps, 30-minute least-recently-used eviction, and retryable capacity error. Test exact boundaries without wall-clock waiting. Verify with `npm run test:openspec-dashboard`.
+- [x] 2.4 Add the eight-child limit, monotonic last-use timestamps, 30-minute least-recently-used eviction, and retryable capacity error. Test exact boundaries without wall-clock waiting. Verify with `npm run test:openspec-dashboard`.
+<!-- status: completed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Managed child capacity is finite :: Idle capacity can be reclaimed -->
   <!-- covers: openspec-dashboard/code-explorer-launch :: Managed child capacity is finite :: Every capacity slot is active -->
 

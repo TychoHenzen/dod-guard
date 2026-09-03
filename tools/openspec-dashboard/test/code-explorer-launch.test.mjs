@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
 import test from "node:test";
 import { PassThrough } from "node:stream";
 import { createAdmin } from "../lib/project-admin.mjs";
 import { discoverCodeExplorer, spawnCodeExplorer } from "../lib/code-explorer-launch.mjs";
 import { assertLaunchRequest, createCapabilities, readLaunchBody } from "../lib/launch-http.mjs";
 import { createReadinessParser, validateExplorerUrl } from "../lib/readiness.mjs";
+import { createCodeExplorerManager, probeCodeExplorer } from "../lib/code-explorer-manager.mjs";
 
 function storeFor(projects) {
   return { get: () => ({ projects }) };
@@ -344,4 +346,233 @@ test("counts each stream before decoding across chunk shapes", () => {
   const separateStreams = createReadinessParser();
   assert.equal(separateStreams.feed("stdout", Buffer.alloc(65_536)), null);
   assert.equal(separateStreams.feed("stderr", Buffer.alloc(65_536)), null);
+});
+
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+function child() {
+  return { exitCode: null, signalCode: null };
+}
+
+function lifecycle({ now = () => 0, start, probe = async () => true, stop = async () => {}, identity = (path) => path } = {}) {
+  return createCodeExplorerManager({ now, start, probe, stop, projectIdentity: identity });
+}
+
+// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Two requests race for one project
+test("coalesces racing starts for the same canonical path and filesystem identity", async () => {
+  const pending = deferred();
+  let starts = 0;
+  const manager = lifecycle({
+    start: () => {
+      starts += 1;
+      return pending.promise;
+    },
+  });
+  const first = manager.launch("C:/projects/one");
+  const second = manager.launch("C:/projects/one");
+  assert.equal(starts, 1);
+  pending.resolve({ child: child(), url: "http://127.0.0.1:4410/" });
+  assert.deepEqual(await first, { state: "open", url: "http://127.0.0.1:4410/", reused: false });
+  assert.deepEqual(await second, { state: "open", url: "http://127.0.0.1:4410/", reused: false });
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Request targets a healthy child
+test("reuses only a live child after an exact successful root probe", async () => {
+  let starts = 0;
+  let probes = 0;
+  const managedChild = child();
+  const manager = lifecycle({
+    start: () => {
+      starts += 1;
+      return { child: managedChild, url: "http://127.0.0.1:4410/" };
+    },
+    probe: async (url) => {
+      probes += 1;
+      assert.equal(url, "http://127.0.0.1:4410/");
+      return true;
+    },
+  });
+  assert.equal((await manager.launch("C:/projects/one")).reused, false);
+  assert.deepEqual(await manager.launch("C:/projects/one"), { state: "open", url: "http://127.0.0.1:4410/", reused: true });
+  assert.equal(starts, 1);
+  assert.equal(probes, 1);
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Probe redirects or connects elsewhere
+test("replaces records when the direct probe rejects redirects, another address, overflow, timeout, or another status", async () => {
+  for (const probe of [false, async () => { throw new Error("redirect"); }]) {
+    let starts = 0;
+    let stopped = 0;
+    const manager = lifecycle({
+      start: () => ({ child: child(), url: `http://127.0.0.1:${4410 + starts++}/` }),
+      probe,
+      stop: async () => { stopped += 1; },
+    });
+    await manager.launch("C:/projects/one");
+    const result = await manager.launch("C:/projects/one");
+    assert.equal(result.reused, false);
+    assert.equal(starts, 2);
+    assert.equal(stopped, 1);
+  }
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Request targets a different project
+test("keeps separate lifecycle records for distinct project identities", async () => {
+  let starts = 0;
+  const manager = lifecycle({ start: () => ({ child: child(), url: `http://127.0.0.1:${4410 + starts++}/` }) });
+  const [one, two] = await Promise.all([manager.launch("C:/projects/one"), manager.launch("C:/projects/two")]);
+  assert.notEqual(one.url, two.url);
+  assert.equal(manager.records().length, 2);
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Recorded child or project identity changed
+test("removes dead children and records whose project filesystem identity changed", async () => {
+  let identity = "volume-a:file-1";
+  let starts = 0;
+  let stopped = 0;
+  const firstChild = child();
+  const manager = lifecycle({
+    identity: () => identity,
+    start: () => ({ child: starts++ === 0 ? firstChild : child(), url: `http://127.0.0.1:${4410 + starts - 1}/` }),
+    stop: async () => { stopped += 1; },
+  });
+  await manager.launch("C:/projects/one");
+  firstChild.exitCode = 1;
+  await manager.launch("C:/projects/one");
+  identity = "volume-a:file-2";
+  await manager.launch("C:/projects/one");
+  assert.equal(starts, 3);
+  assert.equal(stopped, 2);
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: Managed child capacity is finite :: Idle capacity can be reclaimed
+test("evicts the least recently used open child at the exact 30-minute idle boundary", async () => {
+  let time = 0;
+  let starts = 0;
+  const stopped = [];
+  const manager = lifecycle({
+    now: () => time,
+    start: ({ projectPath }) => ({ child: child(), url: `http://127.0.0.1:${4410 + starts++}/`, projectPath }),
+    stop: async (record) => { stopped.push(record.projectPath); },
+  });
+  for (let index = 0; index < 8; index += 1) {
+    time = index;
+    await manager.launch(`C:/projects/${index}`);
+  }
+  time = 30 * 60 * 1000;
+  await manager.launch("C:/projects/nine");
+  assert.deepEqual(stopped, ["C:/projects/0"]);
+  assert.equal(manager.records().length, 8);
+});
+
+// covers: openspec-dashboard/code-explorer-launch :: Managed child capacity is finite :: Every capacity slot is active
+test("does not evict starting or recently used capacity and returns retryable capacity", async () => {
+  let time = 0;
+  const pending = [];
+  const manager = lifecycle({
+    now: () => time,
+    start: () => {
+      const next = deferred();
+      pending.push(next);
+      return next.promise;
+    },
+  });
+  const starts = Array.from({ length: 8 }, (_value, index) => manager.launch(`C:/projects/${index}`));
+  await assert.rejects(manager.launch("C:/projects/nine"), (error) => error.message === "code_explorer_capacity" && error.retryable === true);
+  assert.equal(manager.records().length, 8);
+  for (const item of pending) item.resolve({ child: child(), url: "http://127.0.0.1:4410/" });
+  await Promise.all(starts);
+});
+
+test("direct probe uses Node HTTP with exact loopback target, host, and a 64 KiB response bound", async () => {
+  const request = (options, callback) => {
+    assert.deepEqual(options, {
+      host: "127.0.0.1",
+      port: 4410,
+      path: "/",
+      method: "GET",
+      headers: { Host: "127.0.0.1:4410" },
+      agent: false,
+    });
+    const req = new EventEmitter();
+    req.end = () => {
+      const socket = new EventEmitter();
+      socket.remoteAddress = "127.0.0.1";
+      req.emit("socket", socket);
+      const response = new EventEmitter();
+      response.statusCode = 200;
+      response.resume = () => {};
+      response.destroy = () => {};
+      callback(response);
+      response.emit("data", Buffer.alloc(65_536));
+      response.emit("end");
+    };
+    req.destroy = () => {};
+    return req;
+  };
+  assert.equal(await probeCodeExplorer("http://127.0.0.1:4410/", { request }), true);
+});
+
+test("direct probe waits for a connecting socket before checking its loopback address", async () => {
+  const request = (_options, callback) => {
+    const req = new EventEmitter();
+    req.destroy = () => {};
+    req.end = () => {
+      const socket = new EventEmitter();
+      socket.connecting = true;
+      req.emit("socket", socket);
+      socket.remoteAddress = "127.0.0.1";
+      socket.connecting = false;
+      socket.emit("connect");
+      const response = new EventEmitter();
+      response.statusCode = 200;
+      response.destroy = () => {};
+      callback(response);
+      response.emit("end");
+    };
+    return req;
+  };
+  assert.equal(await probeCodeExplorer("http://127.0.0.1:4410/", { request }), true);
+});
+
+test("direct probe rejects a redirect, non-loopback socket, overflow, and timeout", async () => {
+  for (const scenario of [
+    { status: 302 },
+    { remoteAddress: "127.0.0.2" },
+    { bytes: 65_537 },
+    { timeout: true },
+  ]) {
+    const request = (_options, callback) => {
+      const req = new EventEmitter();
+      req.destroy = () => {};
+      req.setTimeout = (_milliseconds, handler) => {
+        if (scenario.timeout) handler();
+      };
+      req.end = () => {
+        if (scenario.timeout) return;
+        const socket = new EventEmitter();
+        socket.remoteAddress = scenario.remoteAddress ?? "127.0.0.1";
+        req.emit("socket", socket);
+        if (scenario.remoteAddress) return;
+        const response = new EventEmitter();
+        response.statusCode = scenario.status ?? 200;
+        response.resume = () => {};
+        response.destroy = () => {};
+        callback(response);
+        if (scenario.status) return;
+        response.emit("data", Buffer.alloc(scenario.bytes ?? 0));
+        response.emit("end");
+      };
+      return req;
+    };
+    assert.equal(await probeCodeExplorer("http://127.0.0.1:4410/", { request }), false);
+  }
 });
