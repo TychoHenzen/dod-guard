@@ -62,8 +62,6 @@ async function session(server: ReturnType<typeof createServer>): Promise<string>
   if ("code" in result || typeof result.data.session_id !== "string") throw new Error("expected session");
   return result.data.session_id;
 }
-
-// covers: code-explorer/workspace-freshness :: Explicit refresh rebuilds derived discovery data :: Refresh completes
 it("atomically publishes replacement derived discovery after backend refresh completes", async () => {
   let symbol = "before";
   const directory = root();
@@ -102,8 +100,6 @@ it("atomically publishes replacement derived discovery after backend refresh com
     rmSync(directory, { recursive: true, force: true });
   }
 });
-
-// covers: code-explorer/workspace-freshness :: Explicit refresh rebuilds derived discovery data :: Refresh fails before completion
 it("retains the complete generation and reports refresh_failed when a backend becomes unavailable", async () => {
   const directory = root();
   try {

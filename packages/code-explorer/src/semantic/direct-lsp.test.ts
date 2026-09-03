@@ -115,8 +115,6 @@ it("opens each protected file URI once and exposes no generic notification route
     code: "backend_write_rejected",
   });
 });
-
-// covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: LSP backend starts and stops normally
 it("uses frozen initialization and a framed read-only request then shuts down without restart", async () => {
   const process = new FakeProcess();
   const { client } = await ready(process);
@@ -207,8 +205,6 @@ it("snapshots client capabilities and safe initialization options before process
     initializationOptions: { cargo: { buildScripts: false } },
   });
 });
-
-// covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: LSP response is malformed or oversized
 it("terminates on malformed, non-ASCII, incomplete, invalid, and oversized frames", async () => {
   for (const invalid of [
     new TextEncoder().encode("Content-Length: 2\n\n{}"),
@@ -234,8 +230,6 @@ it("terminates on malformed, non-ASCII, incomplete, invalid, and oversized frame
   await assert.rejects(incompletePending, { code: "backend_failed" });
   assert.equal(incomplete.killed, true);
 });
-
-// covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: LSP request times out
 it("cancels timeouts, rejects writes locally, and ignores late results from the timed-out epoch", async () => {
   const process = new FakeProcess();
   const { client, scheduler } = await ready(process);
@@ -266,8 +260,6 @@ it("force terminates after two semantic timeouts and rejects other in-flight wor
   process.respond({ jsonrpc: "2.0", id: lateId, result: ["late"] });
   assert.equal(client.status().state, "failed");
 });
-
-// covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: LSP backend crashes repeatedly
 it("restarts actual replacement processes at 250ms and 1s then requires explicit refresh", async () => {
   const scheduler = new Scheduler();
   const first = new FakeProcess();
@@ -299,8 +291,6 @@ it("restarts actual replacement processes at 250ms and 1s then requires explicit
   client.refresh();
   assert.equal(client.status().state, "initializing");
 });
-
-// covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: Backend dynamically registers a write method
 it("rejects every dynamic registration without accepting its requested method", async () => {
   const process = new FakeProcess();
   const { client } = await ready(process);
@@ -323,8 +313,6 @@ it("rejects every dynamic registration without accepting its requested method", 
     error: { code: -32601, message: "Method not found" },
   });
 });
-
-// covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: Backend ignores cancellation or shutdown
 it("force terminates ignored shutdown and counts initialization failures in the same restart budget", async () => {
   const process = new FakeProcess();
   const { client, scheduler } = await ready(process);
@@ -380,8 +368,6 @@ it("retries one read-only request after the server reports content modified", as
   assert.deepEqual(await pending, [{ uri: "file:///frozen/a.rs" }]);
   assert.equal(client.status().state, "ready");
 });
-
-// covers: code-explorer/language-adapters :: Direct LSP adapters follow one bounded process lifecycle :: Backend sends an unsolicited request
 it("rejects unsolicited requests, discards allowed notification payloads, and ignores old-process output", async () => {
   const scheduler = new Scheduler();
   const old = new FakeProcess();

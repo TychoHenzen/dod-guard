@@ -7,7 +7,6 @@ import { createNativeProjectRoot } from "../semantic/project-root.js";
 import { createDiscoveryPipeline } from "./pipeline.js";
 import { countSensitiveProjectPaths, isSensitiveProjectPath } from "./sensitive-paths.js";
 
-// covers: code-explorer/symbol-discovery :: Sensitive paths are never indexed or returned :: Project contains a denied credential file
 it("recognizes the non-overridable denylist across portable separators and nested directories", () => {
   for (const path of [
     ".git/config",

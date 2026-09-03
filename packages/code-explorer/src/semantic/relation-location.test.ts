@@ -26,8 +26,6 @@ const externalDefinition: ExternalSymbolIdentity = {
   kind: "function",
   location: { external: true },
 };
-
-// covers: code-explorer/language-adapters :: Relation results cite their source locations :: Project-local caller is found
 it("returns a project-local caller identity and its normalized call-site location", () => {
   const relation = createProjectSemanticRelation({
     relation: "callers",
@@ -49,8 +47,6 @@ it("returns a project-local caller identity and its normalized call-site locatio
     local_handle: "handle-1",
   });
 });
-
-// covers: code-explorer/language-adapters :: Relation results cite their source locations :: Definition belongs to an external dependency
 it("labels an external definition without a project-local focus handle", () => {
   const relation = createExternalSemanticRelation({
     relation: "definition",

@@ -15,8 +15,6 @@ const symbol = {
 function view() {
   return createFocusView(symbol, { body: "Type", visible_symbols: [{ name: "Type", symbol_id: "target" }] });
 }
-
-// covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Client follows a valid visible handle
 it("resolves a visible handle only from its immutable issuing view", () => {
   const sessions = new SessionManager();
   const sessionId = sessions.tryStart("connection", 0);
@@ -31,8 +29,6 @@ it("resolves a visible handle only from its immutable issuing view", () => {
   assert.equal(sessions.addView("connection", sessionId, result), "ok");
   assert.notEqual(result.view_id, first.view_id);
 });
-
-// covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Handle belongs to another view
 it("does not resolve handles through another or missing view", () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -47,8 +43,6 @@ it("does not resolve handles through another or missing view", () => {
     state: "invalid_view_handle",
   });
 });
-
-// covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Client connection closes
 it("removes a connection's sessions, views, and handles when it closes", () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -59,8 +53,6 @@ it("removes a connection's sessions, views, and handles when it closes", () => {
     state: "invalid_view_handle",
   });
 });
-
-// covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Concurrent requests target one session
 it("serializes concurrent work for one session in accepted order", async () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -79,8 +71,6 @@ it("serializes concurrent work for one session in accepted order", async () => {
   assert.deepEqual(await Promise.all([first.response, second.response]), [1, 2]);
   assert.deepEqual(observed, [1, 2]);
 });
-
-// covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Client reconnects after losing its session
 it("rejects a closed connection's identifier from a new connection", () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("old");
@@ -90,8 +80,6 @@ it("rejects a closed connection's identifier from a new connection", () => {
     "invalid_session",
   );
 });
-
-// covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Client retries the same navigation request
 it("replays retained completed responses without another operation", async () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -116,8 +104,6 @@ it("replays retained completed responses without another operation", async () =>
   assert.deepEqual(await Promise.all([one.response, two.response]), [1, 1]);
   assert.equal(operations, 1);
 });
-
-// covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Duplicate request is still in flight
 it("joins an in-flight duplicate without another queue slot", async () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -150,8 +136,6 @@ it("joins an in-flight duplicate without another queue slot", async () => {
   release?.();
   assert.deepEqual(await Promise.all([one.response, two.response]), [7, 7]);
 });
-
-// covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Request identifier is reused for different content
 it("rejects a retained identifier whose canonical request differs", async () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -181,8 +165,6 @@ it("rejects a retained identifier whose canonical request differs", async () => 
     canonicalFingerprint("code_focus", { request_id: "second", nested: { a: 1, b: 2 } }),
   );
 });
-
-// covers: code-explorer/mcp-navigation :: Sessions, views, and handles have explicit ownership :: Request identifier retention expires
 it("accepts an identifier as new work after its retention expires", async () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -193,8 +175,6 @@ it("accepts an identifier as new work after its retention expires", async () => 
   if (two.state !== "ok") throw new Error("expected renewed work");
   assert.equal(await two.response, 2);
 });
-
-// covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: Client navigates back
 it("restores the prior focused view with its original handles", () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -206,8 +186,6 @@ it("restores the prior focused view with its original handles", () => {
   assert.equal(restored, first);
   assert.equal(restored?.handles[0]?.handle, first.handles[0]?.handle);
 });
-
-// covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: Client navigates forward
 it("restores the next recorded view after moving back", () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -218,8 +196,6 @@ it("restores the next recorded view after moving back", () => {
   sessions.restore("connection", sessionId, "back");
   assert.equal(sessions.restore("connection", sessionId, "forward"), second);
 });
-
-// covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: New navigation follows Back
 it("replaces the abandoned forward branch when a new view follows back", () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -235,8 +211,6 @@ it("replaces the abandoned forward branch when a new view follows back", () => {
     state: "stale_view",
   });
 });
-
-// covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: Client asks for recent locations
 it("lists only bounded recent views from its own session", () => {
   const sessions = new SessionManager();
   const one = sessions.start("one");
@@ -252,8 +226,6 @@ it("lists only bounded recent views from its own session", () => {
     [second.view_id],
   );
 });
-
-// covers: code-explorer/mcp-navigation :: Navigation history is explicit, bounded, and isolated :: History exceeds its capacity
 it("evicts the oldest non-current retained view and marks its handles stale", () => {
   const sessions = new SessionManager();
   const sessionId = sessions.start("connection");
@@ -268,8 +240,6 @@ it("evicts the oldest non-current retained view and marks its handles stale", ()
     symbolId: "target",
   });
 });
-
-// covers: code-explorer/mcp-navigation :: Aggregate retained state is bounded :: Live session capacity is reached
 it("does not allocate a ninth live session", async () => {
   const server = createServer();
   for (let index = 0; index < 8; index += 1) {
@@ -284,8 +254,6 @@ it("does not allocate a ninth live session", async () => {
     retryable: true,
   });
 });
-
-// covers: code-explorer/mcp-navigation :: Aggregate retained state is bounded :: Retained view bytes reach the project limit
 it("evicts eligible views before rejecting a retained-body allocation that cannot fit", () => {
   const evicting = new SessionManager({ maxRetainedBodyBytes: 8 });
   const evictingSession = evicting.start("evicting");
@@ -311,8 +279,6 @@ it("evicts eligible views before rejecting a retained-body allocation that canno
     symbolId: "target",
   });
 });
-
-// covers: code-explorer/mcp-navigation :: Aggregate retained state is bounded :: Idle session expires
 it("releases an idle session before later request use", async () => {
   let now = 0;
   const server = createServer({ now: () => now });

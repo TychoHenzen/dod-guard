@@ -7,7 +7,6 @@ import { createServer } from "../index.js";
 import type { LanguageAdapter } from "../semantic/language-adapter.js";
 import { createNativeProjectRoot } from "../semantic/project-root.js";
 
-// covers: code-explorer/mcp-navigation :: Errors use one redacted schema :: Backend returns a verbose failure
 it("redacts backend payloads, absolute paths, and environment values from tool errors", async () => {
   const root = mkdtempSync(join(tmpdir(), "code-explorer-error-schema-"));
   const secret = "CODE_EXPLORER_TEST_SECRET=not-for-client";
@@ -33,8 +32,6 @@ it("redacts backend payloads, absolute paths, and environment values from tool e
     rmSync(root, { recursive: true, force: true });
   }
 });
-
-// covers: code-explorer/mcp-navigation :: Errors use one redacted schema :: Path input is rejected
 it("rejects an out-of-project backend path without returning the resolved external path", async () => {
   const root = mkdtempSync(join(tmpdir(), "code-explorer-error-root-"));
   const outside = mkdtempSync(join(tmpdir(), "code-explorer-error-outside-"));

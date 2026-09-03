@@ -9,8 +9,6 @@ const symbol = (name: string, path: string, identity = name, kind = "function") 
   kind,
   identity,
 });
-
-// covers: code-explorer/symbol-discovery :: Search accepts incomplete symbol and file names :: Exact symbol name exists
 it("normalizes Unicode compatibility forms and returns exact before prefix and fuzzy evidence", () => {
   const results = matchDiscoveryCandidates("ＦＯＯ", [
     symbol("Foobar", "src/prefix.ts", "prefix"),
@@ -27,8 +25,6 @@ it("normalizes Unicode compatibility forms and returns exact before prefix and f
     ],
   );
 });
-
-// covers: code-explorer/symbol-discovery :: Search accepts incomplete symbol and file names :: Symbol name is misspelled
 it("reports a close misspelling as scored fuzzy evidence", () => {
   const [result] = matchDiscoveryCandidates("helpr", [symbol("helper", "src/helper.ts", "helper")]);
 
@@ -54,8 +50,6 @@ it("uses unrestricted Damerau-Levenshtein for repeated transpositions", () => {
   assert.equal(result?.match_class, "fuzzy");
   assert.equal(result?.match_score, 78);
 });
-
-// covers: code-explorer/symbol-discovery :: Search order is deterministic :: Search is repeated without project changes
 it("uses stable path, kind, and identity keys independently of collection order", () => {
   const candidates = [
     symbol("helper", "src/zeta.ts", "zeta", "method"),
@@ -77,8 +71,6 @@ it("uses stable path, kind, and identity keys independently of collection order"
     matchDiscoveryCandidates("helper", candidates).map((result) => result),
   );
 });
-
-// covers: code-explorer/symbol-discovery :: Search order is deterministic :: Equal-rank candidates are returned
 it("orders equal-match candidates by their stable path, kind, and identity keys", () => {
   const candidates = [
     symbol("helper", "src/zeta.ts", "zeta", "method"),
@@ -95,8 +87,6 @@ it("includes 60 percent similarity and rejects a score below the threshold", () 
   assert.equal(matchDiscoveryCandidates("abcde", [symbol("abxye", "src/included.ts")])[0]?.match_score, 60);
   assert.deepEqual(matchDiscoveryCandidates("abcdefg", [symbol("abc", "src/rejected.ts")]), []);
 });
-
-// covers: code-explorer/symbol-discovery :: Search accepts incomplete symbol and file names :: Query matches a filename
 it("matches filename stems and extensions with a normalized project-relative path", () => {
   const stem = matchDiscoveryCandidates("Demo", [{ type: "file" as const, path: "src\\Demo.cs", identity: "stem" }])[0];
   const extension = matchDiscoveryCandidates("demo.cs", [

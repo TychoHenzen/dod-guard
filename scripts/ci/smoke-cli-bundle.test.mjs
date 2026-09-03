@@ -45,7 +45,6 @@ if (${JSON.stringify(analyzeOutput)} !== undefined && arguments_[0] === "analyze
 }
 
 describe("smoke-cli-bundle", () => {
-  // covers: fossil/cli :: CLI-only package contract :: Fossil package passes CLI integrity checks
   it("validates the CLI-only manifest, executable bundle, help command, and MCP exclusion", async () => {
     const packageDirectory = fixturePackage();
     const { manifest, result } = await smokeCliBundle(packageDirectory);

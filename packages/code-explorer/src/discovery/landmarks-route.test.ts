@@ -7,7 +7,6 @@ import { createServer } from "../index.js";
 import type { LanguageAdapter } from "../semantic/language-adapter.js";
 import { createNativeProjectRoot } from "../semantic/project-root.js";
 
-// covers: code-explorer/symbol-discovery :: Empty search is reserved for landmarks :: Empty query has no qualifying landmarks
 it("returns a ready but empty landmark set without running ordinary search", async () => {
   const root = fixtureRoot();
   let searches = 0;
@@ -27,8 +26,6 @@ it("returns a ready but empty landmark set without running ordinary search", asy
     rmSync(root, { recursive: true, force: true });
   }
 });
-
-// covers: code-explorer/symbol-discovery :: Empty search is reserved for landmarks :: Whitespace-only query is submitted
 it("routes whitespace-only queries to the same not-ready landmark path", async () => {
   const root = fixtureRoot();
   let searches = 0;

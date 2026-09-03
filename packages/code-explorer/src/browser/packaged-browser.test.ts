@@ -56,7 +56,6 @@ after(async () => {
 });
 
 describe("packaged browser", () => {
-  // covers: code-explorer/browser-server :: Static assets and server errors have stable behavior :: Browser requests the application shell
   it("loads the compiled shell and its same-origin assets in Chromium", async () => {
     const page = await browser.newPage();
     const script = page.waitForResponse((response) => response.url().endsWith("/client.js"));

@@ -383,8 +383,6 @@ describe("code-explorer package boundary", () => {
     assert.equal(/(?:import|require)\([^)]*(?:spike|serena|@p1va\/symbols)/i.test(bundle), false);
     assert.equal(/node_modules[\\/](?:serena|@p1va)[\\/]/i.test(bundle), false);
   });
-
-  // covers: code-explorer/language-adapters :: Production runtime uses a checked-in adapter selection record :: Runtime starts without spike dependencies
   it("runs the bundled installed package with only its production record and no spike tree", async () => {
     const temporary = mkdtempSync(join(tmpdir(), "code-explorer-installed-"));
     const installed = join(temporary, "node_modules", "code-explorer");
@@ -454,8 +452,6 @@ describe("code-explorer package boundary", () => {
       await client.close();
     }
   });
-
-  // covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Tool discovery explains each operation
   it("gives every advertised tool its own operation-specific description", async () => {
     const client = new Client({ name: "code-explorer-metadata-test", version: "1.0.0" });
     const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });
@@ -468,8 +464,6 @@ describe("code-explorer package boundary", () => {
       await client.close();
     }
   });
-
-  // covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Successful tool result is structured and text-compatible
   it("returns success envelopes through structuredContent and matching JSON text", async () => {
     const result = await createServer().call("code_status", { action: "start_session" });
     assert.equal("code" in result, false);
@@ -498,8 +492,6 @@ describe("code-explorer package boundary", () => {
     assert.match(invalid.stderr, /invalid_project_root:project_root/);
     assert.equal(invalid.stderr.includes("missing-project-root"), false);
   });
-
-  // covers: code-explorer/mcp-navigation :: The MCP surface stays small and workspace-read-only :: Client lists Code Explorer tools
   it("advertises exactly the five read-only navigation tools", async () => {
     const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
     const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });
@@ -517,8 +509,6 @@ describe("code-explorer package boundary", () => {
       await client.close();
     }
   });
-
-  // covers: code-explorer/mcp-navigation :: The MCP surface stays small and workspace-read-only :: Client requests an unknown tool
   it("returns a structured unknown-tool error without changing state", async () => {
     const server = createServer();
     const before = server.state();
@@ -551,8 +541,6 @@ describe("code-explorer package boundary", () => {
       await client.close();
     }
   });
-
-  // covers: code-explorer/browser-server :: The packaged plugin is discoverable with useful MCP metadata :: Failed tool result is structured and text-compatible
   it("returns error envelopes through structuredContent and matching JSON text", async () => {
     const client = new Client({ name: "code-explorer-structured-error-test", version: "1.0.0" });
     const transport = new StdioClientTransport({ command: process.execPath, args: [entryPoint], cwd: process.cwd() });
@@ -569,8 +557,6 @@ describe("code-explorer package boundary", () => {
       await client.close();
     }
   });
-
-  // covers: code-explorer/mcp-navigation :: The MCP surface stays small and workspace-read-only :: Client refreshes derived state
   it("refreshes only derived state and preserves view history", async () => {
     const server = createServer();
     const sessionId = await startSession(server);
@@ -597,8 +583,6 @@ describe("code-explorer package boundary", () => {
     assert.deepEqual((result.data as { backend_status?: { backends?: unknown } }).backend_status?.backends, []);
     assert.equal(JSON.stringify(result).includes(".env"), false);
   });
-
-  // covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Tool input contains an unknown field
   it("rejects unknown and action-mismatched fields before state work", async () => {
     const server = createServer();
     const before = server.state();
@@ -669,8 +653,6 @@ describe("code-explorer package boundary", () => {
       await client.close();
     }
   });
-
-  // covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Successful tool response uses the common envelope
   it("returns only the common versioned envelope for every successful tool", async () => {
     const server = createServer({ adapters: [focusableNavigationAdapter()] });
     const sessionId = await startSession(server);
@@ -714,8 +696,6 @@ describe("code-explorer package boundary", () => {
     });
     assert.equal("code" in followed, false);
   });
-
-  // covers: code-explorer/mcp-navigation :: MCP tool schemas are closed and versioned :: Backend reports an unsupported operation
   it("makes an unsupported relation explicit instead of returning an empty result array", async () => {
     const server = createServer({ adapters: [focusableNavigationAdapter()] });
     const sessionId = await startSession(server);
@@ -899,8 +879,6 @@ describe("code-explorer package boundary", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-
-  // covers: code-explorer/symbol-discovery :: Browser-independent paths use one form :: Backend returns Windows separators
   it("normalizes Windows-form backend paths in discovery responses", async () => {
     const root = mkdtempSync(join(tmpdir(), "code-explorer-server-windows-path-"));
     try {
@@ -918,8 +896,6 @@ describe("code-explorer package boundary", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-
-  // covers: code-explorer/symbol-discovery :: Browser-independent paths use one form :: Backend returns a path outside the project root
   it("rejects an out-of-project backend location without exposing its path", async () => {
     const root = mkdtempSync(join(tmpdir(), "code-explorer-server-external-path-"));
     const outside = mkdtempSync(join(tmpdir(), "code-explorer-external-path-"));

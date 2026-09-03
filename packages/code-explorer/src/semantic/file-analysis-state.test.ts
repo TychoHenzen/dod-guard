@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createFileAnalysisStates } from "./file-analysis-state.js";
 
-// covers: code-explorer/language-adapters :: Partial files fail locally instead of disabling a language :: One source file has invalid encoding
 it("keeps other files queryable when one supported source file has invalid UTF-8", () => {
   const states = createFileAnalysisStates([
     { path: "src/bad.rs", bytes: new Uint8Array([0xff]) },
@@ -12,8 +11,6 @@ it("keeps other files queryable when one supported source file has invalid UTF-8
   assert.deepEqual(states.status("src/bad.rs"), { state: "unavailable", reason: "invalid_encoding" });
   assert.deepEqual(states.queryablePaths(), ["src/good.rs"]);
 });
-
-// covers: code-explorer/language-adapters :: Partial files fail locally instead of disabling a language :: One file contains syntax errors
 it("labels only syntax-error results partial without inferring missing relations", () => {
   const states = createFileAnalysisStates([
     { path: "src/broken.py", text: "def broken(:" },
@@ -26,8 +23,6 @@ it("labels only syntax-error results partial without inferring missing relations
   assert.deepEqual(states.queryablePaths(), ["src/broken.py", "src/ready.py"]);
   assert.equal(states.mayInferMissingRelation("src/broken.py"), false);
 });
-
-// covers: code-explorer/language-adapters :: Partial files fail locally instead of disabling a language :: Project contains unsupported source syntax
 it("marks unsupported generated syntax unavailable without terminating other indexing", () => {
   const states = createFileAnalysisStates([
     { path: "src/generated.py", text: "generated" },

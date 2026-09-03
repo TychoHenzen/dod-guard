@@ -20,17 +20,12 @@ const post = (path, body) =>
     body: JSON.stringify(body),
   });
 
-const suffix = (refresh) => (refresh ? "?refresh=1" : "");
-
 export const listProjects = () => request("/api/projects");
 export const scanForProjects = () => post("/api/scan", {});
 export const addProjects = (paths) => post("/api/projects", { add: paths });
 export const removeProject = (path) => post("/api/projects", { remove: path });
 
-export const getOverview = (id, refresh) => request(`/api/project/${id}/overview${suffix(refresh)}`);
-export const getSpec = (id, specId) => request(`/api/project/${id}/spec/${encodeURIComponent(specId)}`);
-export const getChange = (id, changeId) =>
-  request(`/api/project/${id}/change/${encodeURIComponent(changeId)}`);
+export const getQuality = (id) => request(`/api/project/${id}/quality`);
 
 export const launchCodeExplorer = ({ index, registryRevision }) =>
   request(`/api/project/${index}/code-explorer`, {

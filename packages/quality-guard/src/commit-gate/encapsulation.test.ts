@@ -7,7 +7,6 @@ import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
 import { analyzeChangeLocality, analyzeEncapsulation } from "./encapsulation.js";
 
-// covers: quality-guard/architecture-analysis :: Encapsulation and change locality are measured :: Public surface grows without a production caller
 test("reports a newly public symbol with its observed callers", () => {
   const result = analyzeEncapsulation(
     [
@@ -91,8 +90,6 @@ test("reports forwarding compatibility paths as review evidence", () => {
 function git(root: string, args: string[]): void {
   execFileSync("git", args, { cwd: root, stdio: "pipe" });
 }
-
-// covers: quality-guard/architecture-analysis :: Encapsulation and change locality are measured :: File is outside the historical change cluster
 test("reports a staged file with no co-changes in the bounded first-parent history", () => {
   const root = mkdtempSync(join(tmpdir(), "quality-locality-"));
   try {

@@ -55,8 +55,6 @@ function assertHelperOracle({ manifest, source }: { manifest: FixtureManifest; s
   assert.ok(source.includes(manifest.symbols.helper.body));
   assert.ok(manifest.unavailable_relations.length > 0);
 }
-
-// covers: code-explorer/language-adapters :: Language fixtures define one exact semantic oracle :: Rust helper oracle
 it("keeps the Rust helper definition and call hierarchy ranges exact", async () => {
   const fixture = await loadFixture("rust");
   assert.equal(fixture.manifest.source_file, "src/lib.rs");
@@ -70,8 +68,6 @@ it("keeps the Rust helper definition and call hierarchy ranges exact", async () 
   });
   assertHelperOracle(fixture);
 });
-
-// covers: code-explorer/language-adapters :: Language fixtures define one exact semantic oracle :: Python helper oracle
 it("keeps the Python helper definition and call hierarchy ranges exact", async () => {
   const fixture = await loadFixture("python");
   assert.equal(fixture.manifest.source_file, "src/sample.py");
@@ -85,8 +81,6 @@ it("keeps the Python helper definition and call hierarchy ranges exact", async (
   });
   assertHelperOracle(fixture);
 });
-
-// covers: code-explorer/language-adapters :: Language fixtures define one exact semantic oracle :: C# helper oracle
 it("keeps the C# Helper definition and call hierarchy ranges exact", async () => {
   const fixture = await loadFixture("csharp");
   assert.equal(fixture.manifest.source_file, "src/Demo.cs");

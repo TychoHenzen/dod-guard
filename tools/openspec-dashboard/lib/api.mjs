@@ -1,4 +1,4 @@
-// api.mjs - route a request to a reader or to the registry.
+// api.mjs - route quality-report reads and registry operations.
 //
 // A project is addressed by its position in the registry, never by a path the
 // request carries. So no request can point the CLI at an arbitrary directory,
@@ -7,19 +7,14 @@
 import { HttpError } from "./http-error.mjs";
 import { launchResult } from "./launch-result.mjs";
 import { createAdmin } from "./project-admin.mjs";
-import { createReads } from "./project-reads.mjs";
+import { readQualityReport } from "./quality-report.mjs";
 
-export function createApi({ read, cache, store, launchAdmission = () => true, launchCodeExplorer }) {
+export function createApi({ store, launchAdmission = () => true, launchCodeExplorer }) {
   const admin = createAdmin(store);
-  const reads = createReads({ read, cache });
 
-  function projectRoute(segments, query) {
+  function projectRoute(segments) {
     const project = admin.pick(segments[2]);
-    if (query.get("refresh")) cache.clear(project.path);
-    const id = segments[4] ? decodeURIComponent(segments[4]) : "";
-    if (segments[3] === "overview") return reads.overview(project);
-    if (segments[3] === "spec") return reads.specDetail(project, id);
-    if (segments[3] === "change") return reads.changeDetail(project, id);
+    if (segments[3] === "quality") return readQualityReport(project.path);
     throw new HttpError(404, `unknown project route: ${segments.slice(3).join("/")}`);
   }
 
@@ -36,7 +31,7 @@ export function createApi({ read, cache, store, launchAdmission = () => true, la
     }
     if (segments[1] === "projects") return method === "POST" ? admin.mutate(body) : admin.listProjects();
     if (segments[1] === "scan") return admin.candidates();
-    if (segments[1] === "project") return projectRoute(segments, query);
+    if (segments[1] === "project") return projectRoute(segments);
     throw new HttpError(404, `unknown route: ${pathname}`);
   };
 }

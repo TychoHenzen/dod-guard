@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-// serve.mjs - start the OpenSpec dashboard on the loopback interface.
+// serve.mjs - start the quality dashboard on the loopback interface.
 //
 // Usage: node tools/openspec-dashboard/serve.mjs
 //
 // Environment:
-//   OPENSPEC_JS               path to the OpenSpec CLI entry file
 //   OPENSPEC_DASHBOARD_PORT   preferred port, default 4400
 
 import { createServer } from "node:http";
@@ -17,8 +16,6 @@ import { createDashboardOwnership } from "./lib/dashboard-ownership.mjs";
 import { createProjectIdentity } from "./lib/project-identity.mjs";
 import { assertLaunchRequest, createCapabilities, LAUNCH_PATH, readLaunchBody } from "./lib/launch-http.mjs";
 import { launchFailure } from "./lib/launch-result.mjs";
-import { createCache } from "./lib/cache.mjs";
-import { createReader, locateCli } from "./lib/cli.mjs";
 import { createStore } from "./lib/registry.mjs";
 import { serveStatic } from "./lib/static.mjs";
 
@@ -29,12 +26,6 @@ const HOST = "127.0.0.1";
 const capabilities = createCapabilities();
 const FIRST_PORT = Number(process.env.OPENSPEC_DASHBOARD_PORT ?? 4400);
 const PORT_ATTEMPTS = 20;
-
-const entry = locateCli();
-if (!entry) {
-  process.stderr.write("Cannot find the OpenSpec CLI. Set OPENSPEC_JS to its bin/openspec.js.\n");
-  process.exit(1);
-}
 
 let acceptingLaunches = false;
 const projectIdentity = createProjectIdentity();
@@ -53,8 +44,6 @@ const children = createCodeExplorerManager({
   },
 });
 const handle = createApi({
-  read: createReader(entry),
-  cache: createCache(),
   store: createStore(),
   launchAdmission: () => acceptingLaunches,
   launchCodeExplorer: (projectPath) => children.launch(projectIdentity.canonicalPath(projectPath)),
@@ -146,7 +135,7 @@ server.on("listening", () => {
         replacement_capability: capabilities.replacement,
       });
       acceptingLaunches = true;
-      process.stdout.write(`OpenSpec dashboard on http://${HOST}:${port}/#${capabilities.browser}\nCLI: ${entry}\n`);
+      process.stdout.write(`Quality dashboard on http://${HOST}:${port}/#${capabilities.browser}\n`);
     } catch {
       server.close(() => process.exit(1));
     }

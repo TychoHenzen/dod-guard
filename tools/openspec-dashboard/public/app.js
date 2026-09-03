@@ -4,10 +4,9 @@ import * as api from "./api.mjs";
 import { takeDashboardCapability } from "./capability.mjs";
 import { createCodeExplorerAction } from "./code-explorer-action.mjs";
 import { el, replace } from "./dom.mjs";
-import { renderChange } from "./render-change.mjs";
 import { renderScan } from "./render-scan.mjs";
-import { renderSpec } from "./render-spec.mjs";
-import { renderLists, renderTabs } from "./sidebar.mjs";
+import { renderQuality } from "./render-quality.mjs";
+import { renderTabs } from "./sidebar.mjs";
 
 const dom = {
   tabs: document.getElementById("tabs"),
@@ -23,7 +22,7 @@ const state = {
   projects: [],
   registryRevision: null,
   active: 0,
-  overview: null,
+  report: null,
   selection: null,
   filter: "",
   scan: null,
@@ -57,9 +56,8 @@ function paintTabs() {
 }
 
 function paintLists() {
-  if (!state.overview) return replace(dom.lists);
-  const options = { filter: state.filter, selection: state.selection, onOpen: openItem, foldState: state.foldState };
-  replace(dom.lists, ...renderLists(state.overview, options));
+  replace(dom.lists);
+  if (state.report) replace(dom.detail, renderQuality(state.report, state.filter));
 }
 
 async function show(build) {
@@ -74,26 +72,16 @@ async function show(build) {
 async function openProject(index, refresh = false) {
   state.active = index;
   state.selection = null;
-  state.overview = null;
+  state.report = null;
   syncCodeExplorerAction();
   paintTabs();
   paintLists();
   try {
-    state.overview = await api.getOverview(index, refresh);
-    replace(dom.detail, notice("Pick a change or a spec."));
+    state.report = await api.getQuality(index);
   } catch (err) {
     replace(dom.detail, problem(err));
   }
   paintLists();
-}
-
-function openItem(kind, id) {
-  state.selection = { kind, id };
-  paintLists();
-  const project = state.active;
-  if (kind === "spec") return show(async () => renderSpec(await api.getSpec(project, id)));
-  const summary = state.overview.changes.find((change) => change.name === id);
-  return show(async () => renderChange(await api.getChange(project, id), { ...summary, name: id }));
 }
 
 async function reloadProjects(keepActive = true) {

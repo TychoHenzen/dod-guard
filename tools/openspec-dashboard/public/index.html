@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OpenSpec dashboard</title>
+    <title>Quality dashboard</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <header>
-      <span class="brand">OpenSpec</span>
+      <span class="brand">Quality</span>
       <nav id="tabs" class="tabs"></nav>
       <div class="actions">
         <button id="refresh" type="button" title="Re-read this project from disk">Refresh</button>
@@ -18,11 +18,11 @@
     </header>
     <main>
       <aside id="sidebar">
-        <input id="filter" type="search" placeholder="Filter changes and specs" autocomplete="off" />
+        <input id="filter" type="search" placeholder="Filter files and findings" autocomplete="off" />
         <div id="lists"></div>
       </aside>
       <section id="detail">
-        <p class="empty">Pick a change or a spec.</p>
+        <p class="empty">Select a project.</p>
       </section>
     </main>
     <script type="module" src="/app.js"></script>

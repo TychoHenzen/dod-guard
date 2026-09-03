@@ -8,7 +8,6 @@ import type { LanguageAdapter } from "../semantic/language-adapter.js";
 import { createNativeProjectRoot } from "../semantic/project-root.js";
 import { landmarksNotReady, readyLandmarks } from "./landmarks.js";
 
-// covers: code-explorer/project-landmarks :: An empty search returns project landmarks :: Client has no search term
 it("returns bounded grouped landmarks with selectable symbol identities for an empty query", async () => {
   const root = fixtureRoot();
   let searches = 0;
@@ -45,8 +44,6 @@ it("returns bounded grouped landmarks with selectable symbol identities for an e
     rmSync(root, { recursive: true, force: true });
   }
 });
-
-// covers: code-explorer/project-landmarks :: An empty search returns project landmarks :: Landmark index is not ready
 it("reports landmark initialization without substituting ordinary search candidates", async () => {
   const root = fixtureRoot();
   let searches = 0;

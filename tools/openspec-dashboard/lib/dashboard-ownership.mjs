@@ -159,6 +159,27 @@ function verifyWindowsPrivateAcl(path) {
   }
 }
 
+function protectWindowsPrivateAcl(path, directory) {
+  const powershell = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  const script = `$me=[Security.Principal.WindowsIdentity]::GetCurrent().User;$a=New-Object Security.AccessControl.${directory ? "DirectorySecurity" : "FileSecurity"};$a.SetOwner($me);$a.SetAccessRuleProtection($true,$false);$inherit=[Security.AccessControl.InheritanceFlags]::${directory ? "ContainerInherit -bor [Security.AccessControl.InheritanceFlags]::ObjectInherit" : "None"};@($me.Value,'S-1-5-18','S-1-5-32-544')|%{$sid=New-Object Security.Principal.SecurityIdentifier($_);$rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'FullControl',$inherit,'None','Allow');$a.AddAccessRule($rule)};([System.IO.${directory ? "DirectoryInfo" : "FileInfo"}]$env:OPENSPEC_DASHBOARD_ACL_PATH).SetAccessControl($a)`;
+  execFileSync(powershell, ["-NoProfile", "-NonInteractive", "-Command", script], {
+    env: windowsAclEnvironment(path),
+    stdio: "ignore",
+    windowsHide: true,
+    shell: false,
+  });
+}
+
+function processIsAlive(pid) {
+  if (!Number.isSafeInteger(pid) || pid <= 0) return true;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code !== "ESRCH";
+  }
+}
+
 function privatePosix(path, directory, fs, uid) {
   const info = fs.stat(path);
   return info.uid === uid && (info.mode & 0o777) === (directory ? 0o700 : 0o600);
@@ -191,8 +212,10 @@ export function createDashboardOwnership({
   fs = systemFs,
   platform = process.platform,
   uid = process.getuid?.(),
+  protectWindowsAcl = protectWindowsPrivateAcl,
   verifyWindowsAcl = verifyWindowsPrivateAcl,
   requestShutdown = requestAuthenticatedShutdown,
+  isProcessAlive = processIsAlive,
   now = () => Date.now(),
   sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
 } = {}) {
@@ -204,6 +227,7 @@ export function createDashboardOwnership({
     fs.mkdir(directory, { recursive: true, mode: 0o700 });
     fs.chmod(directory, 0o700);
     if (fs.lstat(directory).isSymbolicLink() || !contained(fs.realpath(home), fs.realpath(directory))) throw failed();
+    if (platform === "win32") protectWindowsAcl(directory, true);
   }
 
   function write(record) {
@@ -213,6 +237,7 @@ export function createDashboardOwnership({
       descriptor = fs.open(file, "wx", 0o600);
       fs.write(descriptor, JSON.stringify(record));
       fs.chmod(file, 0o600);
+      if (platform === "win32") protectWindowsAcl(file, false);
       verifyPrivate(directory, file, { fs, platform, uid, verifyWindowsAcl });
     } catch (error) {
       if (descriptor !== undefined) {
@@ -229,13 +254,20 @@ export function createDashboardOwnership({
     prepareDirectory();
     if (fs.exists(file)) {
       try {
+        if (fs.lstat(file).isSymbolicLink() || !contained(fs.realpath(directory), fs.realpath(file))) throw failed();
+        if (platform === "win32") protectWindowsAcl(file, false);
         verifyPrivate(directory, file, { fs, platform, uid, verifyWindowsAcl });
         const prior = parseOwner(fs.readFile(file, "utf8"));
         if (!prior) throw failed();
-        await requestShutdown(prior);
-        const deadline = now() + RELEASE_TIMEOUT_MS;
-        while (fs.exists(file) && now() < deadline) await sleep(25);
-        if (fs.exists(file)) throw failed();
+        try {
+          await requestShutdown(prior);
+          const deadline = now() + RELEASE_TIMEOUT_MS;
+          while (fs.exists(file) && now() < deadline) await sleep(25);
+          if (fs.exists(file)) throw failed();
+        } catch (error) {
+          if (isProcessAlive(prior.pid)) throw error;
+          fs.unlink(file);
+        }
       } catch (error) {
         throw error?.code === "dashboard_replacement_failed" ? error : failed();
       }

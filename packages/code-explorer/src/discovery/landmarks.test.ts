@@ -9,7 +9,6 @@ import {
   scoreLandmark,
 } from "./landmarks.js";
 
-// covers: code-explorer/project-landmarks :: Landmarks use a visible deterministic score :: Public type is used across production directories
 it("reports every observed evidence counter, source, and declared score", () => {
   const landmark = scoreLandmark({
     symbol: { symbol_id: "order", name: "Order", path: "src/domain/order.ts", kind: "type" },
@@ -38,8 +37,6 @@ it("reports every observed evidence counter, source, and declared score", () => 
   assert.equal(landmark.score, 19);
   assert.equal(landmark.eligible, true);
 });
-
-// covers: code-explorer/project-landmarks :: Landmarks use a visible deterministic score :: Call evidence is unavailable
 it("does not infer incoming calls when the backend leaves that evidence unavailable", () => {
   const landmark = scoreLandmark({
     symbol: { symbol_id: "helper", name: "helper", path: "src/helper.ts", kind: "function" },
@@ -50,8 +47,6 @@ it("does not infer incoming calls when the backend leaves that evidence unavaila
   assert.equal(landmark.evidence.sources.incoming_call_sites, "unavailable");
   assert.equal(landmark.score, 5);
 });
-
-// covers: code-explorer/project-landmarks :: Tests and generated content do not dominate landmarks :: Symbol appears only in tests
 it("penalizes a test-only candidate below an otherwise comparable production candidate", () => {
   const [production, testOnly] = rankLandmarks([
     {
@@ -70,8 +65,6 @@ it("penalizes a test-only candidate below an otherwise comparable production can
   assert.equal(testOnly?.evidence.sources.test_only, "classification");
   assert.equal(testOnly?.score, -20);
 });
-
-// covers: code-explorer/project-landmarks :: Tests and generated content do not dominate landmarks :: Generated symbol duplicates a source symbol
 it("keeps only the source identity when generated output duplicates it", () => {
   const landmarks = defaultLandmarks([
     {
@@ -90,8 +83,6 @@ it("keeps only the source identity when generated output duplicates it", () => {
     ["src/order.ts"],
   );
 });
-
-// covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: Project contains candidates for several groups
 it("assigns each eligible landmark to its one declared group with identity and evidence", () => {
   const discovery = readyGroupedLandmarks([
     candidate("Order", "type"),
@@ -115,8 +106,6 @@ it("assigns each eligible landmark to its one declared group with identity and e
     assert.ok("evidence" in (landmark ?? {}));
   }
 });
-
-// covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: One group exceeds its limit
 it("bounds each group and reports its omitted candidate count", () => {
   const groups = groupLandmarks(
     [candidate("first", "function"), candidate("second", "function"), candidate("third", "function")],
@@ -132,8 +121,6 @@ it("bounds each group and reports its omitted candidate count", () => {
   assert.equal(groups[0]?.candidates.length, 2);
   assert.throws(() => groupLandmarks([], 51), /landmark_group_limit_exceeded/);
 });
-
-// covers: code-explorer/project-landmarks :: Landmark groups remain meaningful and bounded :: Related message and service symbols remain distinct
 it("keeps a related message and service symbol in their separate literal suffix groups", () => {
   const groups = groupLandmarks([candidate("OrderEvent", "type"), candidate("OrderService", "type")]);
   assert.deepEqual(
@@ -144,8 +131,6 @@ it("keeps a related message and service symbol in their separate literal suffix 
     ],
   );
 });
-
-// covers: code-explorer/project-landmarks :: Raw word frequency never establishes a landmark :: Generic identifier occurs most often
 it("does not select a frequently named generic identifier without supported evidence", () => {
   const landmarks = defaultLandmarks([
     { symbol: { symbol_id: "value", name: "value", path: "src/value.ts", kind: "function" }, references: [] },
@@ -157,8 +142,6 @@ it("does not select a frequently named generic identifier without supported evid
     ["UsefulService"],
   );
 });
-
-// covers: code-explorer/project-landmarks :: Raw word frequency never establishes a landmark :: Landmark scores tie
 it("uses group, normalized path, kind, and identity to order equal evidence", () => {
   const ranked = rankLandmarks([
     {
@@ -184,8 +167,6 @@ it("uses group, normalized path, kind, and identity to order equal evidence", ()
     ["event", "alpha", "beta", "zeta"],
   );
 });
-
-// covers: code-explorer/project-landmarks :: Raw word frequency never establishes a landmark :: Language does not report visibility
 it("records unavailable visibility as zero evidence", () => {
   const landmark = scoreLandmark({
     symbol: { symbol_id: "hidden", name: "Hidden", path: "src/hidden.ts", kind: "type" },

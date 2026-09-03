@@ -3,7 +3,6 @@ import { describe, it } from "node:test";
 import { renderFocusedSource } from "./source.js";
 
 describe("focused source", () => {
-  // covers: code-explorer/browser-navigation :: Focused source is bounded text with navigable handles :: Focused body contains visible symbols
   it("renders UTF-16 validated handles as view-owned selectable text", () => {
     const html = renderFocusedSource({
       view_id: "view-1",
@@ -24,8 +23,6 @@ describe("focused source", () => {
     assert.match(html, /project:run/);
     assert.match(html, /const \ud83d\ude00[\s\S]*Target/);
   });
-
-  // covers: code-explorer/browser-navigation :: Focused source is bounded text with navigable handles :: Focused body is truncated
   it("keeps the returned prefix and reports every byte count", () => {
     const html = renderFocusedSource({
       view_id: "view-1",
@@ -44,8 +41,6 @@ describe("focused source", () => {
     assert.match(html, /16 byte limit/);
     assert.match(html, /data-truncated="true"/);
   });
-
-  // covers: code-explorer/browser-navigation :: Focused source is bounded text with navigable handles :: Focused body contains unsafe markup text
   it("renders hostile source as text rather than markup", () => {
     const html = renderFocusedSource({
       view_id: "view-1",
