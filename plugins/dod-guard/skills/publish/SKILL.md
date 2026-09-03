@@ -21,13 +21,16 @@ bump `/plugin update` can retain old plugin content.
 
 ## Procedure
 
-1. Inspect `git status --short`, the current branch, and `gh repo view`. Keep
-   unrelated working-tree changes untouched. Do not publish directly from a
-   dirty workspace.
-2. Confirm the changed plugin's `plugin.json` version and description match its
+1. Inspect `git status --short`, the current branch, and `gh repo view`. A
+   dirty workspace is the release input. Include every pending change in this
+   release. Do not filter or leave changes behind.
+2. Confirm each changed plugin's `plugin.json` version and description match its
    shipped skills or agents. Update the root marketplace description if it
    states a changed skill count.
-3. Run the release gates from the repository root:
+3. Invoke `/commit` for all pending changes. `/commit` owns staging, the commit
+   message, push, and remote sync. Do not manually stage, commit, or push a
+   subset of the release.
+4. Run the release gates from the repository root:
 
    ```text
    npm run build
@@ -37,13 +40,14 @@ bump `/plugin update` can retain old plugin content.
    npx @biomejs/biome check packages/*/src/ scripts/ci/ --no-errors-on-unmatched
    ```
 
-4. Regenerate and commit any tracked bundle changes on the feature branch.
-   Push the branch, then invoke `/submit-draft-pr` with the parent PBI number.
+5. If a release gate generates tracked changes, invoke `/commit` again so every
+   pending change reaches the release branch. Then invoke `/submit-draft-pr`
+   with the parent PBI number.
    Do not create or update the pull request yourself. Never approve, mark
    ready, merge, or close that pull request.
-5. After a human merges it, inspect the merge commit's CI run. It must pass
+6. After a human merges it, inspect the merge commit's CI run. It must pass
    `build-test`, `plugin-config`, `static-analysis`, and `package-integrity`.
-6. Tell the user to run `/plugin update` and `/reload-plugins`. Do not copy
+7. Tell the user to run `/plugin update` and `/reload-plugins`. Do not copy
    files into a plugin cache manually.
 
 ## Boundaries
